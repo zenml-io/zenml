@@ -11,10 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import base64
 import json
+from io import BytesIO
 from typing import Optional
-from urllib.request import urlopen
+
+import requests
+from numpy import asarray
+from PIL import Image
 
 from zenml.steps import step
 from zenml.steps.base_step_config import BaseStepConfig
@@ -42,9 +45,8 @@ def pytorch_inference_processor(
     Returns:
         The request body includes a base64 coded image for the inference request.
     """
-
-    img = urlopen(config.img_url).read()
-    image_64_encode = base64.b64encode(img)
-    bytes_array = image_64_encode.decode("utf-8")
-    request = {"data": bytes_array}
+    response = requests.get(config.img_url)
+    img = Image.open(BytesIO(response.content))
+    numpydata = asarray(img)
+    request = numpydata.tolist()
     return json.dumps([request])

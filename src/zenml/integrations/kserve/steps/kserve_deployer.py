@@ -331,8 +331,8 @@ def kserve_custom_model_deployer_step(
 ) -> KServeDeploymentService:
     """KServe custom model deployer pipeline step.
 
-    This step can be used in a pipeline to implement continuous
-    deployment for an ML model with KServe.
+    This step can be used in a pipeline to implement the
+    process required to deploy a custom model with KServe.
 
     Args:
         deploy_decision: whether to deploy the model or not
@@ -351,7 +351,7 @@ def kserve_custom_model_deployer_step(
 
     model_deployer = KServeModelDeployer.get_active_model_deployer()
 
-    # get pipeline name, step name and run id
+    # get pipeline name, step name, run id and pipeline requirements
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
     pipeline_name = step_env.pipeline_name
     pipeline_run_id = step_env.pipeline_run_id
@@ -388,7 +388,7 @@ def kserve_custom_model_deployer_step(
             service.start(timeout=config.timeout)
         return service
 
-    # entrypoint for starting seldon microservice deployment for custom model
+    # entrypoint for starting KServe microservice deployment for custom model
     entrypoint_command = [
         "python",
         "-m",
@@ -399,10 +399,10 @@ def kserve_custom_model_deployer_step(
         config.custom_deploy_paramters.predict_function,
     ]
 
-    # invoke the KServe model deployer to create a new service
-    # or update an existing one that was previously deployed for the same
-    # model
-
+    # verify the flavor of the orchestrator.
+    # if the orchestrator is local, then we need to build a docker image with the repo
+    # and requirements and push it to the container registry.
+    # if the orchestrator is remote, then we can use same image used to run the pipeline.
     assert context.stack is not None
     if context.stack.orchestrator.FLAVOR == "local":
         # more information about stack ..

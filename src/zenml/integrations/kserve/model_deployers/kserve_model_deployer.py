@@ -522,6 +522,8 @@ class KServeModelDeployer(BaseModelDeployer):
         This method prepares a custom Docker image for a KServe model
         deployment. The image is built and pushed to the container registry
         configured for the active stack. The image digest is returned.
+        Note: this method is called only when the stack is using a local
+        orchestrator.
 
         Args:
             stack: the stack that the model deployment is part of.

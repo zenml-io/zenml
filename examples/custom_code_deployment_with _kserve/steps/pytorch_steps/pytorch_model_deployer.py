@@ -14,25 +14,24 @@
 
 from zenml.integrations.kserve.services import KServeDeploymentConfig
 from zenml.integrations.kserve.steps import (
+    CustomDeployParamters,
     KServeDeployerStepConfig,
-    TorchServeParameters,
-    kserve_model_deployer_step,
+    kserve_custom_model_deployer_step,
 )
 
 MODEL_NAME = "mnist"
 
-pytorch_model_deployer = kserve_model_deployer_step(
+custom_model_deployer = kserve_custom_model_deployer_step(
     config=KServeDeployerStepConfig(
         service_config=KServeDeploymentConfig(
             model_name=MODEL_NAME,
             replicas=1,
-            predictor="pytorch",
+            predictor="custom",
             resources={"requests": {"cpu": "200m", "memory": "500m"}},
         ),
         timeout=120,
-        torch_serve_paramters=TorchServeParameters(
-            model_class="steps/pytorch_steps/mnist.py",
-            handler="steps/pytorch_steps/mnist_handler.py",
+        custom_deploy_paramters=CustomDeployParamters(
+            predict_function="steps.pytorch_steps.custom_deploy_functions.custom_predict",
         ),
     )
 )

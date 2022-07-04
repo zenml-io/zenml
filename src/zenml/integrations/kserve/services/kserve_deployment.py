@@ -56,9 +56,11 @@ class KServeDeploymentConfig(ServiceConfig):
         model_uri: URI of the model (or models) to serve.
         model_name: the name of the model. Multiple versions of the same model
             should use the same model name.
+        secret_name: the name of the secret containing the model.
         predictor: the KServe predictor used to serve the model.
         replicas: number of replicas to use for the prediction service.
         resources: the Kubernetes resources to allocate for the prediction service.
+        containers: the containers to use for the custom prediction services.
     """
 
     model_uri: str = ""

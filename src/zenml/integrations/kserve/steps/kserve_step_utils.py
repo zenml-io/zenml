@@ -265,9 +265,11 @@ def prepare_custom_service_config(
 ) -> KServeDeploymentConfig:
     """Prepare the model files for model serving.
 
-    This function ensures that the model files are in the correct format
-    and file structure required by the KServe server implementation
-    used for model serving.
+    This function will prepare the model files for model serving.
+    In the context of custom model serving, this function will
+    copy the artifacts from original location to the location
+    where the model is served and saves additional data required to
+    load the model in the serving environment using the materializers
 
     Args:
         model_uri: the URI of the model artifact being served
@@ -298,31 +300,28 @@ def prepare_custom_service_config(
         )
     stack = context.stack
     artifact = stack.metadata_store.store.get_artifacts_by_uri(model_uri)
-    save_to_json_zenml_artifact(served_model_uri, artifact[0])
 
-    service_config = config.service_config.copy()
-    service_config.model_uri = served_model_uri
-    return service_config
-
-
-def save_to_json_zenml_artifact(
-    served_model_uri: str, artifact: Artifact
-) -> None:
-    """Save a zenml artifact to a json file.
-
-    Args:
-        served_model_uri: the URI of the model artifact being served
-        artifact: the artifact to save
-    """
+    if not artifact:
+        raise DoesNotExistException("No artifact found at {}".format(model_uri))
+    artifact = artifact[0]
+    # Save the artifact data_type and materializer_type to a json file
+    #  in the same directory as the model files.
     data = {}
+    # The data_type is the class type of the artifact.
     data["datatype"] = artifact.properties["datatype"].string_value
+    # The materializer_type is the class type of the materializer.
     data["materializer"] = artifact.properties["materializer"].string_value
+
     with tempfile.NamedTemporaryFile(
         mode="w", suffix=".json", delete=False
     ) as f:
         json.dump(data, f)
         # Copy it into artifact store
     fileio.copy(f.name, os.path.join(served_model_uri, ARTIFACT_FILE))
+
+    service_config = config.service_config.copy()
+    service_config.model_uri = served_model_uri
+    return service_config
 
 
 def load_from_json_zenml_artifact(model_file_dir: str) -> Any:

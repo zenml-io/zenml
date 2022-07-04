@@ -30,6 +30,9 @@ DEFAULT_LOCAL_MODEL_DIR = "/mnt/models"
 class ZenMLCustomModel(kserve.Model):  # type: ignore[misc]
     """Custom model class for ZenML and Kserve.
 
+    This class is used to implement a custom model for the Kserve integration,
+    which is used as the main entry point for custom code execution.
+
     Attributes:
         name: The name of the model.
         model_uri: The URI of the model.
@@ -59,6 +62,11 @@ class ZenMLCustomModel(kserve.Model):  # type: ignore[misc]
     def load(self) -> bool:
         """Load the model.
 
+        This function loads the model into memory and sets the ready flag to True.
+        The model is loaded using the materializer, by saving the information of
+        the artifact to a file at the preparing time and loading it again at the
+        prediction time by the materializer.
+
         Returns:
             True if the model was loaded successfully, False otherwise.
 
@@ -77,6 +85,10 @@ class ZenMLCustomModel(kserve.Model):  # type: ignore[misc]
 
     def predict(self, request: Dict[str, Any]) -> Dict[str, Any]:
         """Predict the given request.
+
+        The main predict function of the model. This function is called by the
+        KServe server when a request is received. Then inside this function,
+        the user-defined predict function is called.
 
         Args:
             request: The request to predict in a dictionary. e.g. {"instances": []}
@@ -113,13 +125,13 @@ class ZenMLCustomModel(kserve.Model):  # type: ignore[misc]
     default=DEFAULT_MODEL_NAME,
     required=True,
     type=click.STRING,
-    help="The name of the model to deploy.",
+    help="The name of the model to deploy. This important for the Kserve server.",
 )
 @click.option(
     "--predict_func",
     required=True,
     type=click.STRING,
-    help="The path to the predict function.",
+    help="The path to the custom predict function defined by the user.",
 )
 def main(model_name: str, model_uri: str, predict_func: str) -> None:
     """Main function for the custom model.

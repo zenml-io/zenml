@@ -15,8 +15,8 @@ from typing import cast
 
 import click
 from pipelines import (
+    custom_code_deployment_pipeline,
     pytorch_inference_pipeline,
-    pytorch_training_deployment_pipeline,
 )
 from rich import print
 from steps.deployment_trigger import DeploymentTriggerConfig, deployment_trigger
@@ -32,9 +32,9 @@ from steps.pytorch_steps import (
     pytorch_data_loader,
     pytorch_evaluator,
     pytorch_inference_processor,
-    pytorch_model_deployer,
     pytorch_trainer,
 )
+from steps.pytorch_steps.pytorch_model_deployer import custom_model_deployer
 
 from zenml.integrations.kserve.model_deployers import KServeModelDeployer
 from zenml.integrations.kserve.services import KServeDeploymentService
@@ -100,14 +100,14 @@ def main(
     predict = config == PREDICT or config == DEPLOY_AND_PREDICT
 
     model_name = "mnist"
-    deployment_pipeline_name = "pytorch_training_deployment_pipeline"
-    deployer_step_name = "kserve_model_deployer_step"
+    deployment_pipeline_name = "custom_code_deployment_pipeline"
+    deployer_step_name = "kserve_custom_model_deployer_step"
 
     model_deployer = KServeModelDeployer.get_active_model_deployer()
 
     if deploy:
         # Initialize and run a continuous deployment pipeline run
-        pytorch_training_deployment_pipeline(
+        custom_code_deployment_pipeline(
             data_loader=pytorch_data_loader(
                 PytorchDataLoaderConfig(
                     train_batch_size=batch_size, test_batch_size=batch_size
@@ -122,7 +122,7 @@ def main(
                     min_accuracy=min_accuracy,
                 )
             ),
-            deployer=pytorch_model_deployer,
+            deployer=custom_model_deployer,
         ).run()
 
     img_url: str = "https://raw.githubusercontent.com/kserve/kserve/master/docs/samples/v1beta1/torchserve/v1/imgconv/1.png"
