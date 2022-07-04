@@ -1,0 +1,4 @@
+optax
+dm-haiku
+Pillow
+h5py
