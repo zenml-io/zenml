@@ -47,7 +47,7 @@ TORCH_HANDLERS = [
 ]
 
 
-class TorchServeParamters(BaseModel):
+class TorchServeParameters(BaseModel):
     """KServe PyTorch model deployer step configuration.
 
     Attributes:
@@ -179,7 +179,7 @@ class KServeDeployerStepConfig(BaseStepConfig):
     """
 
     service_config: KServeDeploymentConfig
-    torch_serve_paramters: Optional[TorchServeParamters] = None
+    torch_serve_paramters: Optional[TorchServeParameters] = None
     timeout: int = DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT
 
 

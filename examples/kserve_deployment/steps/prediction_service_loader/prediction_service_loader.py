@@ -19,7 +19,7 @@ from zenml.steps import BaseStepConfig, step
 
 
 class PredectionServiceLoaderStepConfig(BaseStepConfig):
-    """KServe deployment loader configuration
+    """KServe deployment loader configuration.
     Attributes:
         pipeline_name: name of the pipeline that deployed the KServe prediction
             server

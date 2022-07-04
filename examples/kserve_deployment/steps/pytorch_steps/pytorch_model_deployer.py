@@ -15,7 +15,7 @@
 from zenml.integrations.kserve.services import KServeDeploymentConfig
 from zenml.integrations.kserve.steps import (
     KServeDeployerStepConfig,
-    TorchServeParamters,
+    TorchServeParameters,
     kserve_model_deployer_step,
 )
 
@@ -30,7 +30,7 @@ pytorch_model_deployer = kserve_model_deployer_step(
             resources={"requests": {"cpu": "200m", "memory": "500m"}},
         ),
         timeout=120,
-        torch_serve_paramters=TorchServeParamters(
+        torch_serve_paramters=TorchServeParameters(
             model_class="steps/pytorch_steps/mnist.py",
             handler="steps/pytorch_steps/mnist_handler.py",
         ),
