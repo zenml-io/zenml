@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from uuid import uuid4
+
 import pytest
 
 from zenml.artifact_stores import BaseArtifactStore
@@ -18,9 +20,10 @@ from zenml.enums import StackComponentType
 from zenml.metadata_stores import BaseMetadataStore
 from zenml.orchestrators import BaseOrchestrator
 from zenml.stack import Stack, StackComponent, StackValidator
-from uuid import uuid4
+
 MOCK_FLAVOR = "mock_flavor"
 MOCK_UUID = uuid4()
+
 
 @pytest.fixture
 def stack_with_mock_components(mocker):
