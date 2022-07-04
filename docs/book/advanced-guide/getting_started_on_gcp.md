@@ -1,6 +1,6 @@
 # Getting started with Google Cloud
 
-This guide will take you from the default local stack to an opinionated cloud 
+This guide will take you from the default local stack to a basic cloud 
 stack in no time. This should help you get started with running your machine 
 learning pipeline in production.
 
@@ -32,8 +32,8 @@ Cloud SQL.
 * The **orchestrator** to run the pipelines. Here we will opt for a Vertex AI
 pipelines orchestrator. This is a serverless GCP specific offering with minimal
 hassle.
-* A **container registry** for pushing and pulling the pipeline container.
-* Finally, the **secret manager** to store passwords and ssl certificates.
+* A **container registry** for pushing and pulling the pipeline image.
+* Finally, the **secrets manager** to store passwords and ssl certificates.
 
 ## Step 1/10 Set up a gcp project (Optional)
 
@@ -47,12 +47,12 @@ resources and simply note down the relevant information.
 For simplicity, just
 open up a terminal on the side and export relevant values as we go along. You
 will use these when we set up the ZenML stack.
-ZenML will use your project ID at a later stage to connect to some 
+ZenML will use your project number at a later stage to connect to some 
 resources, so let's export it. You'll most probably find it right 
-[here](https://console.cloud.google.com/welcome)
+[here](https://console.cloud.google.com/welcome).
 
 ```bash
-export PROJECT_ID=... 
+export PROJECT_NUMBER=492014921912
 ```
 
 ## Step 2/10 Enable billing
@@ -75,15 +75,15 @@ Vertex AI is available. At this point it might make sense to make this
 decision for your ZenML Stack and export the full region name.
 
 ```shell
-export GCP_LOCATION=...
+export GCP_LOCATION=europe-west3
 ```
 
-## Step 4/10 Enable Secret Manager
+## Step 4/10 Enable Secrets Manager
 
-The secret manager will be needed so that the orchestrator will have secure
+The secrets manager will be needed so that the orchestrator will have secure
 access to the other resources. 
 [Here](https://console.cloud.google.com/marketplace/product/google/secretmanager.googleapis.com)
-is where you'll be able to enable the secret manager.
+is where you'll be able to enable the secrets manager.
 
 ## Step 5/10 Enable Container Registry
 
@@ -92,27 +92,32 @@ for pipeline orchestration. For this to work you'll need to enable the gcp
 docker registry 
 [here](https://console.cloud.google.com/marketplace/product/google/containerregistry.googleapis.com).
 
-In order to use the container-registry at a later point you will need to 
+In order to use the container registry at a later point you will need to 
 set the container registry uri. This is how it is usually constructed:
+`gcr.io/<PROJECT_ID>`. 
 
-```bash
-export CONTAINER_REGISTRY_URI=eu.gcr.io/<PROJECT_NAME> 
-```
 
 {% hint style="info" %}
 The container registry has four options: **gcr**.io , us.gcr.io , eu.gcr.io , 
 or asia.gcr.io. Choose the one appropriate for you. 
 {% endhint %}
 
+
+```bash
+export CONTAINER_REGISTRY_URI=eu.gcr.io/zenml-project
+```
+
 ## Step 6/10 Set up Cloud Storage as Artifact Store
 
 Storing of step artifacts is an important part of reproducible MLOps. 
-[create](https://console.cloud.google.com/storage/create-bucket)
+Create a bucket [here](https://console.cloud.google.com/storage/create-bucket).
 
 Within the configuration of the newly created bucket you can find the 
-gsutil URI which you will need at a later point.
+gsutil URI which you will need at a later point. Its usually going to look like 
+this: `gs://<bucket-name>`
+
 ```bash
-export GSUTIL_URI=...
+export GSUTIL_URI=gs://zenml_vertex_storage
 ```
 
 ## Step 7/10 Set up a Cloud SQL instance as Metadata Store
@@ -129,10 +134,10 @@ creation of the instance is the root password. The default port for mysql is
 3306. 
 
 ```bash
-export DB_HOST_IP=...
+export DB_HOST_IP=35.137.24.15
 export DB_PORT=3306
 export DB_USER=root
-export DB_PWD=...
+export DB_PWD=secure_root_pwd
 ```
 
 Time to set up the connections to our database. To do this you'll need to go 
@@ -148,16 +153,16 @@ database.
 Now **Create Client Certificate** and download all three files. Export the paths 
 to these three files as follows with a leading **@**.
 ```bash
-export SSL_CA=@</PATH/TO/DOWNLOADED/SERVER-CERT>
-export SSL_CERT=@</PATH/TO/DOWNLOADED/CLIENT-CERT>
-export SSL_KEY=@</PATH/TO/DOWNLOADED/CLIENT-KEY>
+export SSL_CA=@/home/zen/Downloads/server-ca.pem
+export SSL_CERT=@/home/zen/Downloads/client-cert.pem
+export SSL_KEY=@/home/zen/Downloads/client-key.pem
 ```
 
 Finally, head on over to the `Databases` submenu and create your database and
 export its name. 
 
 ```bash
-export DB_NAME=...
+export DB_NAME=zenml_db
 ```
 
 ## Step 8/10 - Create a Service Account
@@ -178,14 +183,16 @@ Also give your user access to the service account. This is the service account
 that will be used by the Vertex AI compute engine.
 
 ```bash
-export SERVICE_ACCOUNT=...
+export SERVICE_ACCOUNT=zenml-vertex-sa@zenml-project.iam.gserviceaccount.com
 ```
 
 On top of this we will also need to give permissions to the service account
 of the custom code workers. For this head over to your IAM 
 [configurations](https://console.cloud.google.com/iam-admin/iam), click on 
 **Include Google-provided role grants** on the top right and find the 
-**<project_id>@gcp-sa-aiplatform-cc.iam.gserviceaccount.com** service account. 
+**<project_number>@gcp-sa-aiplatform-cc.iam.gserviceaccount.com** service
+account. 
+
 Now give this one the **Container Registry Service Agent** role.
 
 
@@ -199,7 +206,7 @@ You will then also need to set the gcp project that you want to communicate
 with:
 
 ```bash
-gcloud config set project $PROJECT_ID
+gcloud config set project $PROJECT_NUMBER
 ```
 
 Additionally, you will need to configure docker with the following command:
@@ -217,10 +224,10 @@ Copy-paste this into your terminal and press enter.
 
 ```bash
 zenml orchestrator register vertex_orchestrator --flavor=vertex \
-      --project=$PROJECT_ID --location=$GCP_LOCATION \
+      --project=$$PROJECT_NUMBER --location=$GCP_LOCATION \
       --workload_service_account=$SERVICE_ACCOUNT
 zenml secrets-manager register gcp_secrets_manager \
-      --flavor=gcp_secrets_manager --project_id=$PROJECT_ID
+      --flavor=gcp_secrets_manager --project_id=$$PROJECT_NUMBER
 zenml container-registry register gcp_registry --flavor=gcp \
       --uri=$CONTAINER_REGISTRY_URI
 zenml artifact-store register gcp_artifact_store --flavor=gcp \
@@ -236,7 +243,7 @@ zenml secret register mysql_secret --schema=mysql \
       --ssl_ca=$SSL_CA --ssl_cert=$SSL_CERT --ssl_key=$SSL_KEY
 ```
 
-This is where your zenml stack is created and connected to the gcp cloud 
+This is where your ZenML stack is created and connected to the gcp cloud 
 resources. If you now run `zenml stack describe` you should see this:
 
 ```bash
@@ -259,10 +266,10 @@ resources. If you now run `zenml stack describe` you should see this:
 
 ## Run your pipeline in the cloud
 
-With your ZenML stack set up and active, you are now ready to run your zenml
+With your ZenML stack set up and active, you are now ready to run your ZenML
 pipeline on Vertex AI. 
 
-For example, you could pull the zenml vertex ai example and run it.
+For example, you could pull the ZenML Vertex AI example and run it.
 
 ```bash
 zenml example pull vertex_ai_orchestration
@@ -270,7 +277,7 @@ cd zenml_examples/vertex_ai_orchestration/
 python run.py
 ```
 
-At the end of the logs you should be seeing a link to the vertex ai dashboard.
+At the end of the logs you should be seeing a link to the Vertex AI dashboard.
 
 ![](../assets/VertexAiRun.png)
 
