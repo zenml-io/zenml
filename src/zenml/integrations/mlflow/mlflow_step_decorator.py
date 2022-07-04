@@ -187,6 +187,9 @@ def mlflow_step_entrypoint(nested: Optional[bool] = False) -> Callable[[F], F]:
 
             if nested:
                 active_nested_run = experiment_tracker.active_nested_run
+                # At this point active_nested_run can never be `None`` as this 
+                # means that there is not parent active_run, in which case the 
+                # previous runtime error would have been raised. 
                 with active_run:
                     with active_nested_run:
                         return func(*args, **kwargs)

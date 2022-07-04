@@ -310,13 +310,9 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             The nested MLflow run.
         """
         step_env = Environment().step_environment
-        current_active_run, experiment_id, run_id = self._find_active_run()
+        current_active_run, _, _ = self._find_active_run()
         if current_active_run:
             return mlflow.start_run(run_name=step_env.step_name, nested=True)
         else:
-            return mlflow.start_run(
-                run_id=run_id,
-                run_name=step_env.step_name,
-                experiment_id=experiment_id,
-                nested=True
-            )
+            # Return None
+            return current_active_run
