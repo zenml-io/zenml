@@ -6,13 +6,13 @@ learning pipeline in production.
 
 
 {% hint style="info" %}
-This guide represents **one** of many ways to create a cloud stack on gcp. 
+This guide represents **one** of many ways to create a cloud stack on GCP. 
 Every component could be replaced by a different implementation.
 {% endhint %}
 
 ## Prerequisites 
 
-For this to work you need to have zenml installed locally with all gcp 
+For this to work you need to have zenml installed locally with all GCP 
 requirements.
 
 ```bash
@@ -20,14 +20,16 @@ pip install zenml
 zenml integration install gcp
 ```
 
+Additionally, you will need docker installed on your system. 
+
 ## The cloud stack
 
 A full cloud stack will necessarily contain these five stack components:
 
 * An **artifact store** to save all step output artifacts, in this guide we will
-use a gcp bucket for this purpose
+use a GCP bucket for this purpose
 * A **metadata store** that keeps track of the relationships between artifacts, 
-runs and parameters. In our case we will opt for a MySQL database on gcp
+runs and parameters. In our case we will opt for a MySQL database on GCP
 Cloud SQL.
 * The **orchestrator** to run the pipelines. Here we will opt for a Vertex AI
 pipelines orchestrator. This is a serverless GCP specific offering with minimal
@@ -35,11 +37,11 @@ hassle.
 * A **container registry** for pushing and pulling the pipeline image.
 * Finally, the **secrets manager** to store passwords and ssl certificates.
 
-## Step 1/10 Set up a gcp project (Optional)
+## Step 1/10 Set up a GCP project (Optional)
 
 As a first step it might make sense to 
 [create](https://console.cloud.google.com/projectcreate) 
-a separate gcp project for your zenml resources. However, this step is 
+a separate GCP project for your zenml resources. However, this step is 
 completely optional, and you can also move forward within an existing project. 
 If some resources already exist, feel free to skip the creation of the 
 resources and simply note down the relevant information. 
@@ -65,7 +67,7 @@ page to do so.
 
 ## Step 3/10 Enable Vertex AI
 
-Vertex AI pipelines is at the heart of our gcp stack. As the orchestrator 
+Vertex AI pipelines is at the heart of our GCP stack. As the orchestrator 
 Vertex AI will run your pipelines and use all the other stack components. 
 All you'll need to do at this stage is enable Vertex AI
 [here](https://console.cloud.google.com/vertex-ai).
@@ -88,7 +90,7 @@ is where you'll be able to enable the secrets manager.
 ## Step 5/10 Enable Container Registry
 
 The Vertex AI orchestrator uses Docker Images containing your pipeline code
-for pipeline orchestration. For this to work you'll need to enable the gcp
+for pipeline orchestration. For this to work you'll need to enable the GCP
 docker registry 
 [here](https://console.cloud.google.com/marketplace/product/google/containerregistry.googleapis.com).
 
@@ -202,7 +204,7 @@ Install the gcloud cli on your machine.
 [Here](https://cloud.google.com/sdk/docs/install) is a guide on how to install 
 it.
 
-You will then also need to set the gcp project that you want to communicate 
+You will then also need to set the GCP project that you want to communicate 
 with:
 
 ```bash
@@ -217,7 +219,7 @@ gcloud auth configure-docker
 
 ## Step 10/10 ZenML Stack
 
-Everything on the gcp side is set up, you're ready to set up the ZenML stack 
+Everything on the GCP side is set up, you're ready to set up the ZenML stack 
 components now. 
 
 Copy-paste this into your terminal and press enter.
@@ -243,7 +245,7 @@ zenml secret register mysql_secret --schema=mysql \
       --ssl_ca=$SSL_CA --ssl_cert=$SSL_CERT --ssl_key=$SSL_KEY
 ```
 
-This is where your ZenML stack is created and connected to the gcp cloud 
+This is where your ZenML stack is created and connected to the GCP cloud 
 resources. If you now run `zenml stack describe` you should see this:
 
 ```bash
