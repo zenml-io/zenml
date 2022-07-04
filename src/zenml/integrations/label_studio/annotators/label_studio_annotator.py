@@ -317,7 +317,7 @@ class LabelStudioAnnotator(BaseAnnotator):
 
         return dataset
 
-    def sync_external_storage(
+    def connect_and_sync_external_storage(
         self,
         uri: str,
         config: LabelStudioDatasetSyncConfig,

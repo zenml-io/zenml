@@ -13,8 +13,10 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
+
+from rich import print
 
 from zenml.exceptions import StackComponentInterfaceError
 from zenml.logger import get_logger
@@ -113,10 +115,46 @@ def get_azure_credentials() -> Tuple[str]:
     return account_name, account_key
 
 
+def get_new_tasks(tasks_before_sync, tasks_after_sync) -> List[Dict]:
+    """Returns a list of tasks that are new since the last sync."""
+    return [task for task in tasks_after_sync if task not in tasks_before_sync]
+
+
+def get_filename(url: str) -> str:
+    """Returns the filename of a url."""
+    return urlparse(url).path.split("/")[-1]
+
+
+def get_transformed_azure_url(url: str, scheme: str) -> str:
+    """Returns the transformed url for Azure."""
+    new_scheme_url = url.replace(scheme, "azure-blob")
+    return f"{urlparse(new_scheme_url).scheme}://{urlparse(new_scheme_url).netloc}{urlparse(new_scheme_url).path}"
+
+
+def switch_local_urls_for_cloud_urls(
+    predictions: List[Dict], new_tasks: List[Dict]
+) -> List[Dict]:
+    """Switches local urls for cloud urls."""
+    if new_tasks:
+        uri_prefix = urlparse(new_tasks[0]["data"]["image"]).scheme
+    image_name_mapping = {
+        get_filename(task["data"]["image"]): get_transformed_azure_url(
+            task["data"]["image"], uri_prefix
+        )
+        for task in new_tasks
+    }
+    for prediction in predictions:
+        prediction["data"]["image"] = image_name_mapping[
+            os.path.basename(prediction["data"]["image"])
+        ]
+    return predictions
+
+
 @step(enable_cache=False)
 def sync_new_data_to_label_studio(
     uri: str,
     dataset_id: int,
+    predictions: List[Dict[str, Any]],
     config: LabelStudioDatasetSyncConfig,
     context: StepContext,
 ) -> None:
@@ -131,11 +169,25 @@ def sync_new_data_to_label_studio(
             config.azure_account_key = account_key
             base_uri = urlparse(uri).netloc
 
+    tasks_before_sync = dataset.tasks
+
     if annotator and annotator._connection_available():
-        annotator.sync_external_storage(
+        annotator.connect_and_sync_external_storage(
             uri=base_uri,
             config=config,
             dataset=dataset,
         )
+        if predictions:
+            tasks_after_sync = dataset.tasks
+            newly_synced_tasks = get_new_tasks(
+                tasks_before_sync, tasks_after_sync
+            )
+
+            predictions_with_cloud_urls = switch_local_urls_for_cloud_urls(
+                predictions, newly_synced_tasks
+            )
+            print(newly_synced_tasks)
+            print(predictions_with_cloud_urls)
+            dataset.create_predictions(predictions_with_cloud_urls)
     else:
         raise StackComponentInterfaceError("No active annotator.")
