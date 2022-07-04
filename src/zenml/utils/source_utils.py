@@ -543,25 +543,18 @@ def import_python_file(file_path: str, zen_root: str) -> types.ModuleType:
     Returns:
         imported module: Module
     """
-    # Add directory of python file to PYTHONPATH so we can import it
     file_path = os.path.abspath(file_path)
     module_path = os.path.relpath(file_path, zen_root)
-    # module_name = os.path.splitext(os.path.basename(file_path))[0]
-
-    # In case the module is already fully or partially imported and the module
-    #  path is something like materializer.materializer the full path needs to
-    #  be checked for in the sys.modules to avoid getting an empty namespace
-    #  module
-    module_name = os.path.splitext(os.path.relpath(module_path, os.getcwd()))[
-        0
-    ].replace(os.path.sep, ".")
+    module_name = os.path.splitext(module_path)[0].replace(os.path.sep, ".")
 
     if module_name in sys.modules:
         del sys.modules[module_name]
+        # Add directory of python file to PYTHONPATH so we can import it
         with prepend_python_path([zen_root]):
             module = importlib.import_module(module_name)
         return module
     else:
+        # Add directory of python file to PYTHONPATH so we can import it
         with prepend_python_path([zen_root]):
             module = importlib.import_module(module_name)
         return module
