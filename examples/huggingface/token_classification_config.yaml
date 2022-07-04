@@ -1,0 +1,40 @@
+name: token_classifier_train_eval_pipeline
+steps:
+  importer:
+    source:
+      file: steps/data_importer/data_importer_step
+      name: data_importer
+    parameters:
+      dataset_name: conll2003
+  load_tokenizer:
+    source:
+      file: steps/load_tokenizer/load_tokenizer_step
+      name: load_tokenizer
+    parameters:
+      pretrained_model: distilbert-base-uncased
+  tokenization:
+    source:
+      file: steps/tokenization/token_classification_tokenization_step
+      name: token_classification_tokenization
+    parameters:
+      text_column: tokens
+      label_column: ner_tags
+      label_all_tokens: True
+  trainer:
+    source:
+      file: steps/training/token_training_step
+      name: token_trainer
+    parameters:
+      label_column: ner_tags
+      pretrained_model: distilbert-base-uncased
+      batch_size: 16
+      epochs: 1
+      init_lr: 0.00002
+      weight_decay_rate: 0.01
+      dummy_run: True
+  evaluator:
+    source:
+      file: steps/evaluation/token_evaluation_step
+      name: token_evaluator
+    parameters:
+      batch_size: 16
