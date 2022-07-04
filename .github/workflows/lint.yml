@@ -36,7 +36,10 @@ jobs:
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
           source $VENV
-          zenml integration install kserve xgboost pytorch huggingface slack github azure neural_prophet -y --ignore-integration feast 
+          pip install setuptools
+          git clone https://github.com/kserve/kserve.git
+          python -m pip install kserve/python/kserve/
+          zenml integration install -y --ignore-integration feast 
           pip install click~=8.0.3
         
       - name: Lint
