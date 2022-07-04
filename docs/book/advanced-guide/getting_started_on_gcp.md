@@ -34,7 +34,7 @@ Cloud SQL.
 pipelines orchestrator. This is a serverless GCP specific offering with minimal
 hassle.
 * A **container registry** for pushing and pulling the pipeline image.
-* Finally, the **SSL ger** to store passwords and SSL certificates.
+* Finally, the **Secrets Manager** to store passwords and SSL certificates.
 
 ## Step 1/10 Set up a GCP project (Optional)
 
