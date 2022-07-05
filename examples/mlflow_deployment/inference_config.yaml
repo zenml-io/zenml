@@ -1,0 +1,22 @@
+    
+name: inference_pipeline
+steps:
+  dynamic_importer:
+    source:
+      file: steps/dynamic_importer/dynamic_importer_step
+      name: dynamic_importer
+  predict_preprocessor:
+    source:
+      file: steps/tf_predict_preprocessor/tf_predict_preprocessor_step
+      name: tf_predict_preprocessor
+  prediction_service_loader:
+    source:
+      file: steps/prediction_service_loader/prediction_service_loader_step
+      name: prediction_service_loader
+    parameters:
+      pipeline_name: "continuous_deployment_pipeline"
+      pipeline_step_name: "mlflow_model_deployer_step"
+  predictor:
+    source:
+      file: steps/predictor/predictor_step
+      name: predictor

@@ -1,0 +1,10 @@
+name: feast_pipeline
+steps:
+  get_features:
+    source:
+      file: steps
+      name: get_features
+  feature_printer:
+    source:
+      file: steps
+      name: feature_printer

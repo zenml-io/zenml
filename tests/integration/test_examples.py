@@ -89,12 +89,6 @@ examples = [
         validation_function=drift_detection_example_validation,
     ),
     ExampleIntegrationTestConfiguration(
-        name="facets_visualize_statistics",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="boston_housing_pipeline", step_count=3
-        ),
-    ),
-    ExampleIntegrationTestConfiguration(
         name="kubeflow_pipelines_orchestration",
         validation_function=generate_basic_validation_function(
             pipeline_name="mnist_pipeline", step_count=4
