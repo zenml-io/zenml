@@ -203,7 +203,7 @@ A concrete example of using these step operators can be found
 
 To have ZenML run your steps in your own backend, all you need to do is
 implement
-the [BaseStepOperator](https://apidocs.zenml.io) class with the code that sets
+the [BaseStepOperator](../extending-zenml/step-operators.md) class with the code that sets
 up your environment and submits the ZenML
 entrypoint command to it.
 

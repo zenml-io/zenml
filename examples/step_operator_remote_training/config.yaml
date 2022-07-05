@@ -1,0 +1,15 @@
+name: step_operator_pipeline
+steps:
+  importer:
+    source:
+      file: steps
+      name: importer
+  trainer:
+    source:
+      file: steps
+      name: remote_trainer
+  evaluator:
+    source:
+      file: steps
+      name: evaluator
+
