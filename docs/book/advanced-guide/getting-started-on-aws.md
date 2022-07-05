@@ -67,7 +67,7 @@ aws s3api create-bucket --bucket=$S3_BUCKET_NAME \
     RDS_MYSQL_ENDPOINT=<RDS_MYSQL_ENDPOINT>
     ```
 - Click on the active VPC security group, select `Inbound rules` and click on `Edit inbound rules`
-- Add a new rule with type `MYSQL/Aurora` and source `Anywhere-IPv4`.
+- Add a new rule with type `MYSQL/Aurora` and source `Anywhere-IPv4`. (**Note**: You can also restrict this to more limited IP address ranges or security groups if you want to limit access to your database.)
 - Go back to your database page and click on `Modify` in the top right.
 - In the `Connectivity` section, open the `Advanced configuration` and enable public access.
 
@@ -88,7 +88,11 @@ aws rds create-db-instance --engine=mysql \
     --master-username=$RDS_MYSQL_USERNAME \
     --master-user-password=$RDS_MYSQL_PASSWORD
 
-# Fetch the endpoint for later
+# Wait until the database is created
+aws rds wait db-instance-available --db-instance-identifier=$MYSQL_DATABASE_ID \
+    --region=$REGION
+
+# Fetch the endpoint
 RDS_MYSQL_ENDPOINT=$(aws rds describe-db-instances --query='DBInstances[0].Endpoint.Address' \
     --output=text \
     --db-instance-identifier=$MYSQL_DATABASE_ID \
@@ -186,8 +190,7 @@ EKS_POLICY_JSON='{
 }'
 aws iam create-role \
     --role-name=$EKS_ROLE_NAME \
-    --assume-role-policy-document=$EKS_POLICY_JSON
-
+    --assume-role-policy-document="$EKS_POLICY_JSON"
 aws iam attach-role-policy \
     --policy-arn='arn:aws:iam::aws:policy/AmazonEKSClusterPolicy' \
     --role-name=$EKS_ROLE_NAME
@@ -207,7 +210,7 @@ EC2_POLICY_JSON='{
 }'
 aws iam create-role \
     --role-name=$EC2_ROLE_NAME \
-    --assume-role-policy-document=$EC2_POLICY_JSON
+    --assume-role-policy-document="$EC2_POLICY_JSON"
 aws iam attach-role-policy \
     --policy-arn='arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy' \
     --role-name=$EC2_ROLE_NAME
@@ -247,12 +250,20 @@ aws eks create-cluster --region=$REGION \
     --role-arn=$EKS_ROLE_ARN \
     --resources-vpc-config="{\"subnetIds\": $SUBNET_IDS}"
 
-# Wait until the cluster is created and then run
+# Wait until the cluster is active
+aws eks wait cluster-active --name=$EKS_CLUSTER_NAME \
+    --region=$REGION
+
 aws eks create-nodegroup --region=$REGION \
     --cluster-name=$EKS_CLUSTER_NAME \
     --nodegroup-name=$NODEGROUP_NAME \
     --node-role=$EC2_ROLE_ARN \
-    --subnets=$SUBNET_IDS
+    --subnets="$SUBNET_IDS"
+
+# Wait until the node group is active
+aws eks wait nodegroup-active --cluster-name=$EKS_CLUSTER_NAME \
+    --nodegroup-name=$NODEGROUP_NAME \
+    --region=$REGION
 ```
 
 {% endtab %}
