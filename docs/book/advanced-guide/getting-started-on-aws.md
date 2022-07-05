@@ -1,4 +1,4 @@
-# AWS Cloud Guide
+# Getting started with AWS
 
 This step-by-step guide explains how to set up and configure all the infrastructure necessary to run a ZenML pipeline on AWS.
 
@@ -15,7 +15,8 @@ This step-by-step guide explains how to set up and configure all the infrastruct
 
 ## Setting up the AWS resources
 
-Let's open up a terminal which we'll use to store some values along the way which we'll need to configure our ZenML stack later.
+All the AWS setup steps can either be done using the AWS UI or CLI. Simply select the tab for your preferred option and let's get started.
+First open up a terminal which we'll use to store some values along the way which we'll need to configure our ZenML stack later.
 
 ### Artifact Store (S3 bucket)
 
@@ -24,10 +25,10 @@ Let's open up a terminal which we'll use to store some values along the way whic
 
 - Go to the [S3 website](https://s3.console.aws.amazon.com/s3/buckets).
 - Click on `Create bucket`.
-- Select a descriptive name and a region. Let's also set these as environment variables in our terminal:
+- Select a descriptive name and a region. Let's also store these values in our terminal:
     ```shell
     REGION=<REGION> # for example us-west-1
-    S3_BUCKET_NAME=<BUCKET_NAME>
+    S3_BUCKET_NAME=<S3_BUCKET_NAME>
     ```
 
 {% tab title="AWS CLI" %}
@@ -80,7 +81,7 @@ RDS_MYSQL_PASSWORD=<RDS_MYSQL_PASSWORD>
 
 aws rds create-db-instance --engine=mysql \
     --db-instance-class=db.t3.micro \
-    --allocated-storage 20 \
+    --allocated-storage=20 \
     --publicly-accessible \
     --db-instance-identifier=$MYSQL_DATABASE_ID \
     --region=$REGION \
@@ -143,30 +144,31 @@ ECR_URI="$REGISTRY_ID.dkr.ecr.$REGION.amazonaws.com"
 {% tabs %}
 {% tab title="AWS UI" %}
 
-- Follow [this guide](https://docs.aws.amazon.com/eks/latest/userguide/service_IAM_role.html#create-service-role) to create an Amazon EKS cluster role.
-- Go to the [IAM website](https://console.aws.amazon.com/iam), select `Roles` and edit the role you just created.
+- Follow [this guide](https://docs.aws.amazon.com/eks/latest/userguide/service_IAM_role.html#create-service-role) to create an Amazon EKS cluster role. We'll refer to this role as the **cluster role** in following steps.
+- Follow [this guide](https://docs.aws.amazon.com/eks/latest/userguide/create-node-role.html#create-worker-node-role) to create an Amazon EC2 node role. We'll refer to this role as the **node role** in following steps.
+- Go to the [IAM website](https://console.aws.amazon.com/iam), select `Roles` and edit the **node role** role.
 - Click on `Add permissions` and select `Attach policies`.
-- Attach the `SecretsManagerReadWrite`, and `AmazonS3FullAccess` policies to the role.
+- Attach the `SecretsManagerReadWrite`, and `AmazonS3FullAccess` policies to the role. The node role should now have the following attached policies: `AmazonEKSWorkerNodePolicy`, `AmazonEC2ContainerRegistryReadOnly`, `AmazonEKS_CNI_Policy`, `SecretsManagerReadWrite` and `AmazonS3FullAccess`.
 - Go to the [EKS website](https://console.aws.amazon.com/eks).
 - Make sure the correct region is selected on the top right.
 - Click on `Add cluster` and select `Create`.
-- Enter a name and select our just created role for `Cluster service role`.
+- Enter a name and select the **cluster role** for `Cluster service role`.
 - Keep the default values for the networking and logging steps and create the cluster.
 - Note down the cluster name:
     ```shell
     EKS_CLUSTER_NAME=<EKS_CLUSTER_NAME>
     ```
 - After the cluster is created, select it and click on `Add node group` in the `Compute` tab.
-- Enter a name and select the `EKSNodeRole`.
+- Enter a name and select the **node role**.
 - Keep all other default values and create the node group.
 
 {% tab title="AWS CLI" %}
 
 ```shell
+# Choose names for your EKS cluster role and EC2 node role
 EKS_ROLE_NAME=<EKS_ROLE_NAME>
 EC2_ROLE_NAME=<EC2_ROLE_NAME>
-
-# Choose a name for your EKS cluster and node group
+# Choose names for your EKS cluster and node group
 EKS_CLUSTER_NAME=<EKS_CLUSTER_NAME>
 NODEGROUP_NAME=<NODEGROUP_NAME>
 
