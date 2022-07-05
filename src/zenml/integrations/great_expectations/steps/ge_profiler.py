@@ -73,8 +73,8 @@ class GreatExpectationsProfilerStep(BaseStep):
 
         return data_validator.data_profiling(
             dataset,
-            config.expectation_suite_name,
-            config.data_asset_name,
-            config.profiler_kwargs,
-            config.overwrite_existing_suite,
+            expectation_suite_name=config.expectation_suite_name,
+            data_asset_name=config.data_asset_name,
+            profiler_kwargs=config.profiler_kwargs,
+            overwrite_existing_suite=config.overwrite_existing_suite,
         )

@@ -13,14 +13,10 @@
 #  permissions and limitations under the License.
 """Base class for all ZenML data validators."""
 
-from abc import ABC, abstractmethod
-from typing import Any, ClassVar, List, Optional, Tuple, Type
-
-from pydantic import BaseModel
+from typing import Any, ClassVar, Optional, Sequence
 
 from zenml.enums import StackComponentType
 from zenml.stack import StackComponent
-from zenml.utils.enum_utils import StrEnum
 
 
 class BaseDataValidator(StackComponent):
@@ -30,7 +26,13 @@ class BaseDataValidator(StackComponent):
     TYPE: ClassVar[StackComponentType] = StackComponentType.DATA_VALIDATOR
     FLAVOR: ClassVar[str]
 
-    def data_profiling(self, dataset: Any, **kwargs: Any) -> Any:
+    def data_profiling(
+        self,
+        dataset: Any,
+        model: Optional[Any] = None,
+        profile_list: Optional[Sequence[str]] = None,
+        **kwargs: Any,
+    ) -> Any:
         """Analyze a dataset and generate a data profile.
 
         This method should be implemented by data validators that support
@@ -40,8 +42,30 @@ class BaseDataValidator(StackComponent):
         also be used to validate other datasets against it (see
         `data_profile_validation`).
 
+        Some data profiling methods implemented by the data validator may
+        require that a model be present during the profiling process to
+        provide or dynamically generate additional information (e.g. label
+        predictions, prediction probabilities, feature importance etc.) that is
+        otherwise missing from the input dataset. Where that is the case, the
+        method also takes in a model as argument.
+        Alternatively, the missing information can be supplied using
+        implementation specific keyword arguments, if so supported by the data
+        validator.
+
+        Data validators that support generating multiple categories of data
+        profiles should also take in a `profile_list` argument that lists the
+        subset of profiles to be generated. If not supplied, the default behavior
+        is implementation specific (e.g. a single default data profile type may
+        be generated and returned, or all available data profiles may be
+        generated and returned as a single result).
+
         Args:
             dataset: Reference dataset to be profiled.
+            model: Optional model to use to provide or dynamically generate
+                additional information necessary for data profiling (e.g.
+                labels, prediction probabilities, feature importance etc.).
+            profile_list: Optional list identifying the categories of data
+                profiles to be generated.
             kwargs: Implementation specific keyword arguments.
 
         Raises:
@@ -57,7 +81,12 @@ class BaseDataValidator(StackComponent):
         )
 
     def data_profile_validation(
-        self, dataset: Any, profile: Any, **kwargs: Any
+        self,
+        dataset: Any,
+        profile: Any,
+        model: Optional[Any] = None,
+        check_list: Optional[Sequence[str]] = None,
+        **kwargs: Any,
     ) -> Any:
         """Validate a dataset against a data profile.
 
@@ -77,10 +106,32 @@ class BaseDataValidator(StackComponent):
         separation may implement the `data_comparison` method instead, which
         accepts both the reference and the target datasets as input arguments.
 
+        Some data validation checks implemented by the data validator may
+        require that a model be present during the validation process to
+        provide or dynamically generate additional information (e.g. label
+        predictions, prediction probabilities, feature importance etc.) that is
+        otherwise missing from the input dataset. Where that is the case, the
+        method also takes in a model as argument.
+        Alternatively, the missing information can be supplied using
+        implementation specific keyword arguments, if so supported by the data
+        validator.
+
+        Data validators that support running multiple categories of profile-based
+        data validation checks should also take in a `check_list` argument that
+        lists the subset of checks to be performed. If not supplied, the
+        default behavior is implementation specific (e.g. a single default
+        validation check may be performed, or all available validation checks
+        may be performed and their results returned as a list of objects).
+
         Args:
             dataset: Target dataset to be validated.
             profile: Data profile (e.g. schema, statistical summary, data
                 distribution profile) to be used to validate the target dataset.
+            model: Optional model to use to provide or dynamically generate
+                additional information necessary for data validation (e.g.
+                labels, prediction probabilities, feature importance etc.).
+            check_list: Optional list identifying the data validation checks to
+                be performed.
             kwargs: Implementation specific keyword arguments.
 
         Raises:
@@ -96,7 +147,11 @@ class BaseDataValidator(StackComponent):
         )
 
     def data_validation(
-        self, dataset: Any, model: Optional[Any] = None, **kwargs: Any
+        self,
+        dataset: Any,
+        model: Optional[Any] = None,
+        check_list: Optional[Sequence[str]] = None,
+        **kwargs: Any,
     ) -> Any:
         """Run data integrity checks on a dataset.
 
@@ -104,15 +159,30 @@ class BaseDataValidator(StackComponent):
         analyzing and identifying potential integrity problems with a dataset
         (e.g. missing values, conflicting labels, mixed data types etc.).
 
-        Some data validation checks require data labels to be part of the
-        dataset. If labels are not included, the method also takes in a model as
-        argument that will be used to compute predictions on the fly.
+        Some data validation checks implemented by the data validator may
+        require that a model be present during the validation process to
+        provide or dynamically generate additional information (e.g. label
+        predictions, prediction probabilities, feature importance etc.) that is
+        otherwise missing from the input dataset. Where that is the case, the
+        method also takes in a model as argument.
+        Alternatively, the missing information can be supplied using
+        implementation specific keyword arguments, if so supported by the data
+        validator.
+
+        Data validators that support running multiple categories of data
+        integrity checks should also take in a `check_list` argument that
+        lists the subset of checks to be performed. If not supplied, the
+        default behavior is implementation specific (e.g. a single default
+        validation check may be performed, or all available validation checks
+        may be performed and their results returned as a list of objects).
 
         Args:
             dataset: Target dataset to be validated.
-            model: Optional model to use to compute predictions from the
-                dataset. Only required for data validations that require labels
-                to be part of the datasets and if the labels are missing.
+            model: Optional model to use to provide or dynamically generate
+                additional information necessary for data validation (e.g.
+                labels, prediction probabilities, feature importance etc.).
+            check_list: Optional list identifying the data integrity checks to
+                be performed.
             kwargs: Implementation specific keyword arguments.
 
         Raises:
@@ -126,32 +196,91 @@ class BaseDataValidator(StackComponent):
             f"Data validation not implemented for {self}."
         )
 
+    def model_validation(
+        self,
+        dataset: Any,
+        model: Any,
+        check_list: Optional[Sequence[str]] = None,
+        **kwargs: Any,
+    ) -> Any:
+        """Run model validation checks.
+
+        This method should be implemented by data validators that support
+        running model validation checks (e.g. confusion matrix validation,
+        performance reports, model error analyses, etc).
+
+        Model validation checks require that a model be present during
+        the validation process. Unlike `data_validation`, where the model
+        is only required as an alternative of providing information otherwise
+        not present in the input dataset or implementation specific keyword
+        arguments (e.g. labels, prediction probabilities, feature importance),
+        the model is a mandatory component of model validation.
+
+        Data validators that support running multiple categories of model
+        validation checks should also take in a `check_list` argument that
+        lists the subset of checks to be performed. If not supplied, the
+        default behavior is implementation specific (e.g. a single default
+        validation check may be performed, or all available validation checks
+        may be performed and their results returned as a list of objects).
+
+        Args:
+            dataset: Target dataset to be validated.
+            model: Target model to be validated.
+            check_list: Optional list identifying the model validation checks to
+                be performed.
+            kwargs: Implementation specific keyword arguments.
+
+        Raises:
+            NotImplementedError: if model validation is not supported by this
+            data validator.
+
+        Returns:
+            Model validation results.
+        """
+        raise NotImplementedError(
+            f"Model validation not implemented for {self}."
+        )
+
     def data_comparison(
         self,
         reference_dataset: Any,
         target_dataset: Any,
         model: Optional[Any] = None,
+        check_list: Optional[Sequence[str]] = None,
         **kwargs: Any,
     ) -> Any:
         """Validate a target dataset by comparing it to a reference dataset.
 
         This method should be implemented by data validators that support
-        running dataset comparison checks (i.e. data drift detection).
+        running dataset comparison checks (e.g. data drift checks).
 
-        Some data comparison checks require data labels to be part of both
-        datasets (e.g. prediction drift). If labels are not included, the method
-        also takes in a model as argument that will be used to compute
-        predictions on the fly.
+        Some data comparison methods implemented by the data validator may
+        require that a model be present during the comparison process to
+        provide or dynamically generate additional information (e.g. label
+        predictions, prediction probabilities, feature importance etc.) that is
+        otherwise missing from the input datasets. Where that is the case, the
+        method also takes in a model as argument.
+        Alternatively, the missing information can be supplied using
+        implementation specific keyword arguments, if so supported by the data
+        validator.
+
+        Data validators that support running multiple categories of data
+        comparison checks should also take in a `check_list` argument that
+        lists the subset of checks to be performed. If not supplied, the
+        default behavior is implementation specific (e.g. a single default
+        validation check may be performed, or all available validation checks
+        may be performed and their results returned as a list of objects).
 
         Args:
             reference_dataset: Reference dataset (e.g. dataset used during model
                 training).
             target_dataset: Dataset to be validated (e.g. dataset used during
                 model validation or new data used in production).
-            model: Optional model to use to compute predictions from the
-                datasets. Only required for data comparison validations that
-                require labels to be part of the datasets and if the labels are
-                missing.
+            model: Optional model to use to provide or dynamically generate
+                additional information necessary for data comparison (e.g.
+                labels, prediction probabilities, feature importance etc.).
+            check_list: Optional list identifying the data comparison checks to
+                be performed.
             kwargs: Implementation specific keyword arguments.
 
         Raises:
@@ -165,17 +294,52 @@ class BaseDataValidator(StackComponent):
             f"Data comparison not implemented for {self}."
         )
 
-    def model_validation(self, model: Any, **kwargs: Any) -> Any:
-        raise NotImplementedError(
-            f"Model validation not implemented for {self}."
-        )
-
     def model_comparison(
         self,
-        reference_dataset: List[Any],
-        target_dataset: List[Any],
-        models: List[Any],
+        reference_dataset: Any,
+        target_dataset: Any,
+        model: Any = None,
+        check_list: Optional[Sequence[str]] = None,
+        **kwargs: Any,
     ) -> Any:
+        """Validate a model using a target and a reference dataset.
+
+        This method should be implemented by data validators that support
+        identifying changes in a model performance by analyzing how it performs
+        on a target dataset in comparison to how it performs on a reference
+        dataset.
+
+        Model comparison checks require that a model be present during
+        the validation process. Unlike `data_comparison`, where the model
+        is only required as an alternative of providing information otherwise
+        not present in the input dataset or implementation specific keyword
+        arguments (e.g. labels, prediction probabilities, feature importance),
+        the model is a mandatory component of model comparison.
+
+        Data validators that support running multiple categories of model
+        comparison checks should also take in a `check_list` argument that
+        lists the subset of checks to be performed. If not supplied, the
+        default behavior is implementation specific (e.g. a single default
+        validation check may be performed, or all available validation checks
+        may be performed and their results returned as a list of objects).
+
+        Args:
+            reference_dataset: Reference dataset (e.g. dataset used during model
+                training).
+            target_dataset: Dataset to be validated (e.g. dataset used during
+                model validation or new data used in production).
+            model: Target model to be validated.
+            check_list: Optional list identifying the model comparison checks to
+                be performed.
+            kwargs: Implementation specific keyword arguments.
+
+        Raises:
+            NotImplementedError: if model comparison validation is not
+                supported by this data validator.
+
+        Returns:
+            Model comparison validation results.
+        """
         raise NotImplementedError(
             f"Model comparison not implemented for {self}."
         )

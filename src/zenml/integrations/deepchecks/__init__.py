@@ -11,17 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
+"""Deepchecks integration for ZenML.
+
 The Deepchecks integration provides a way to validate your data in your pipelines.
 It includes a way to detect data anomalies and define checks to ensure quality of
 data.
 
-The integration includes custom materializers to store deepchecks `SuiteResults` and
+The integration includes custom materializers to store Deepchecks `SuiteResults` and
 a visualizer to visualize the results in an easy way on a notebook and in your
 browser.
 """
 
 from typing import List
+
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import DEEPCHECKS
 from zenml.integrations.integration import Integration
@@ -31,11 +33,10 @@ DEEPCHECKS_DATA_VALIDATOR_FLAVOR = "deepchecks"
 
 
 class DeepchecksIntegration(Integration):
-    """Definition of [DeepChecks](https://github.com/deepchecks/deepchecks) integration
-    for ZenML."""
+    """Definition of [Deepchecks](https://github.com/deepchecks/deepchecks) integration for ZenML."""
 
     NAME = DEEPCHECKS
-    REQUIREMENTS = ["deepchecks>=0.6.3"]
+    REQUIREMENTS = ["deepchecks>=0.6.3", "torch", "torchvision"]
 
     @staticmethod
     def activate() -> None:

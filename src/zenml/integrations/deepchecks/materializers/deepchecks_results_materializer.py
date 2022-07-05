@@ -29,14 +29,12 @@ herein with full credit to them.
 """
 
 import os
-import tempfile
 from typing import Any, Type, Union
 
-from deepchecks.core.suite import SuiteResult
 from deepchecks.core.check_result import CheckResult
+from deepchecks.core.suite import SuiteResult
 
 from zenml.artifacts import DataAnalysisArtifact
-from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
 

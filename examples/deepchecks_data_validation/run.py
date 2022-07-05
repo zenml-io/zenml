@@ -19,7 +19,6 @@ from steps.trainer import trainer
 
 from zenml.integrations.deepchecks.visualizers import DeepchecksVisualizer
 from zenml.logger import get_logger
-from zenml.pipelines import pipeline
 from zenml.repository import Repository
 
 logger = get_logger(__name__)

@@ -14,7 +14,6 @@
 """Implementation of a MySQL metadata store."""
 
 import re
-
 from pathlib import Path
 from typing import Any, ClassVar, Optional, Union
 

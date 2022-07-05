@@ -13,16 +13,11 @@
 
 import pandas as pd
 from deepchecks.core.suite import SuiteResult
-from deepchecks.core.check_result import CheckResult
-
-from deepchecks.tabular import Dataset
-from deepchecks.tabular.suites import full_suite
-from deepchecks.tabular.checks import TrainTestLabelDrift
 from sklearn.base import ClassifierMixin
+
 from zenml.integrations.deepchecks.data_validators.deepchecks_data_validator import (
     DeepchecksDataValidator,
 )
-
 from zenml.steps import step
 
 LABEL_COL = "target"
@@ -37,9 +32,8 @@ def data_validator(
     """Validate data using deepchecks"""
     data_validator = DeepchecksDataValidator.get_active_data_validator()
 
-    return data_validator.data_model_comparison(
-        reference_dataset=reference_dataset,
-        target_dataset=comparison_dataset,
+    return data_validator.data_validation(
+        dataset=reference_dataset,
         model=model,
         dataset_args=dict(label=LABEL_COL, cat_features=[]),
     )

@@ -14,11 +14,14 @@
 """Implementation of the Great Expectations data validator."""
 
 import os
-from typing import Any, ClassVar, Dict, List, Optional, cast
+from typing import Any, ClassVar, Dict, List, Optional, Sequence, cast
 
-import great_expectations as ge  # type: ignore[import]
-import pandas as pd  # type: ignore[import]
+import pandas as pd
 import yaml
+from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import]
+    CheckpointResult,
+)
+from great_expectations.core import ExpectationSuite  # type: ignore[import]
 from great_expectations.data_context.data_context import (  # type: ignore[import]
     BaseDataContext,
     DataContext,
@@ -26,11 +29,6 @@ from great_expectations.data_context.data_context import (  # type: ignore[impor
 from great_expectations.data_context.types.base import (  # type: ignore[import]
     DataContextConfig,
 )
-
-from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import]
-    CheckpointResult,
-)
-from great_expectations.core import ExpectationSuite  # type: ignore[import]
 from great_expectations.data_context.types.resource_identifiers import (  # type: ignore[import]
     ExpectationSuiteIdentifier,
 )
@@ -47,16 +45,11 @@ from zenml.integrations.great_expectations import (
 from zenml.integrations.great_expectations.ge_store_backend import (
     ZenMLArtifactStoreBackend,
 )
-from zenml.integrations.great_expectations.utils import (
-    create_batch_request,
-)
+from zenml.integrations.great_expectations.utils import create_batch_request
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.repository import Repository
-from zenml.steps import (
-    STEP_ENVIRONMENT_NAME,
-    StepEnvironment,
-)
+from zenml.steps import STEP_ENVIRONMENT_NAME, StepEnvironment
 from zenml.utils import io_utils
 from zenml.utils.string_utils import random_str
 
@@ -374,10 +367,13 @@ class GreatExpectationsDataValidator(BaseDataValidator):
     def data_profiling(
         self,
         dataset: pd.DataFrame,
-        expectation_suite_name: str,
+        model: Optional[Any] = None,
+        profile_list: Optional[Sequence[str]] = None,
+        expectation_suite_name: Optional[str] = None,
         data_asset_name: Optional[str] = None,
         profiler_kwargs: Optional[Dict[str, Any]] = None,
         overwrite_existing_suite: bool = True,
+        **kwargs: Any,
     ) -> ExpectationSuite:
         """Infer a Great Expectation Expectation Suite from a given dataset.
 
@@ -389,19 +385,49 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         Args:
             dataset: The dataset from which the expectation suite will be
                 inferred.
+            model: Optional model to use to provide or dynamically generate
+                additional information necessary for data profiling (e.g.
+                labels, prediction probabilities, feature importance etc.).
+                Not required by the Great Expectations data validator.
+            profile_list: Optional list identifying the categories of data
+                profiles to be generated. Not supported by the Great Expectation
+                data validator.
             expectation_suite_name: The name of the expectation suite to create
-                or update.
+                or update. If not supplied, a unique name will be generated from
+                the current pipeline and step name, if running in the context of
+                a pipeline step.
             data_asset_name: The name of the data asset to use to identify the
                 dataset in the Great Expectations docs.
             profiler_kwargs: A dictionary of custom keyword arguments to pass to
                 the profiler.
             overwrite_existing_suite: Whether to overwrite an existing
                 expectation suite, if one exists with that name.
+            kwargs: Additional keyword arguments (unused).
 
         Returns:
             The inferred Expectation Suite.
+
+        Raises:
+            ValueError: if an `expectation_suite_name` value is not supplied and
+                a name for the expectation suite cannot be generated from the
+                current step name and pipeline name.
         """
         context = self.data_context
+
+        if not expectation_suite_name:
+            try:
+                # get pipeline name and step name
+                step_env = cast(
+                    StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME]
+                )
+                pipeline_name = step_env.pipeline_name
+                step_name = step_env.step_name
+                expectation_suite_name = f"{pipeline_name}_{step_name}"
+            except KeyError:
+                raise ValueError(
+                    "A expectation suite name is required when not running in "
+                    "the context of a pipeline step."
+                )
 
         suite_exists = False
         if context.expectations_store.has_key(  # noqa
@@ -452,8 +478,11 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         self,
         dataset: pd.DataFrame,
         profile: str,
+        model: Optional[Any] = None,
+        check_list: Optional[Sequence[str]] = None,
         data_asset_name: Optional[str] = None,
         action_list: Optional[List[Dict[str, Any]]] = None,
+        **kwargs: Any,
     ) -> CheckpointResult:
         """Great Expectations data validation.
 
@@ -466,10 +495,19 @@ class GreatExpectationsDataValidator(BaseDataValidator):
             dataset: The dataset to validate.
             profile: The name of the expectation suite to use to validate the
                 dataset.
+            model: Optional model to use to provide or dynamically generate
+                additional information necessary for data validation (e.g.
+                labels, prediction probabilities, feature importance etc.).
+                Not required by the Great Expectations data validator.
+            check_list: Optional list identifying the data validation checks to
+                be performed. Not supported by the Great Expectations data
+                validator.
             data_asset_name: The name of the data asset to use to identify the
                 dataset in the Great Expectations docs.
             action_list: A list of additional Great Expectations actions to run after
                 the validation check.
+            kwargs: Additional keyword arguments (unused).
+
         Returns:
             The Great Expectations validation (checkpoint) result.
         """
