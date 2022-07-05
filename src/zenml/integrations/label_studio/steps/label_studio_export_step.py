@@ -37,11 +37,6 @@ def generate_image_classification_label_config(labels: List[str]) -> str:
     return label_config_start + label_config_choices + label_config_end
 
 
-IMAGE_CLASSIFICATION_LABEL_CONFIG = generate_image_classification_label_config(
-    ["cat", "dog"]
-)
-
-
 class LabelStudioDatasetRegistrationConfig(BaseStepConfig):
     label_config: str
     dataset_name: str
