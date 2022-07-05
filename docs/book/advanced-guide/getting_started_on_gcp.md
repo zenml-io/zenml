@@ -1,8 +1,7 @@
-# Getting started with Google Cloud
-
-This guide will take you from the default local stack to a basic cloud 
-stack in no time. This should help you get started with running your machine 
-learning pipeline in production. 
+# GCP
+To get started using ZenML on the cloud, you need some basic infrastructure up 
+and running that you can then make more complicated depending on your use-case. 
+This guide sets up the easiest MLOPs stack that we can run on GCP with ZenML. 
 
 {% hint style="info" %}
 This guide represents **one** of many ways to create a cloud stack on GCP. 
@@ -34,16 +33,16 @@ Cloud SQL.
 pipelines orchestrator. This is a serverless GCP specific offering with minimal
 hassle.
 * A **container registry** for pushing and pulling the pipeline image.
-* Finally, the **Secrets Manager** to store passwords and SSL certificates.
+* Finally, the **secrets Manager** to store passwords and SSL certificates.
 
 ## Step 1/10 Set up a GCP project (Optional)
 
 As a first step it might make sense to 
 [create](https://console.cloud.google.com/projectcreate) 
-a separate GCP project for your zenml resources. However, this step is 
+a separate GCP project for your ZenML resources. However, this step is 
 completely optional, and you can also move forward within an existing project. 
-If some resources already exist, feel free to skip the creation of the 
-resources and simply note down the relevant information. 
+If some resources already exist, feel free to skip their creation step and 
+simply note down the relevant information. 
 
 For simplicity, just
 open up a terminal on the side and export relevant values as we go along. You
