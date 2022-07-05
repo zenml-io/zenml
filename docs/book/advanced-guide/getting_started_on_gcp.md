@@ -79,9 +79,9 @@ decision for your ZenML Stack and export the full region name.
 export GCP_LOCATION=<GCP_LOCATION> # for example 'europe-west3'
 ```
 
-## Step 4/10 Enable SSL ger
+## Step 4/10 Enable Secrets Manager
 
-The SSL ger will be needed so that the orchestrator will have secure
+The Secrets Manager will be needed so that the orchestrator will have secure
 access to the other resources. 
 [Here](https://console.cloud.google.com/marketplace/product/google/secretmanager.googleapis.com)
 is where you'll be able to enable the secrets manager.
@@ -228,7 +228,7 @@ zenml orchestrator register vertex_orchestrator --flavor=vertex \
       --project=$$PROJECT_NUMBER --location=$GCP_LOCATION \
       --workload_service_account=$SERVICE_ACCOUNT
 zenml secrets-manager register gcp_secrets_manager \
-      --flavor=gcp_secrets_manager --project_id=$$PROJECT_NUMBER
+      --flavor=gcp_secrets_manager --project_id=$PROJECT_NUMBER
 zenml container-registry register gcp_registry --flavor=gcp \
       --uri=$CONTAINER_REGISTRY_URI
 zenml artifact-store register gcp_artifact_store --flavor=gcp \
