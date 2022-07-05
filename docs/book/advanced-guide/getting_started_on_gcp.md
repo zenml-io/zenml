@@ -74,9 +74,18 @@ Once it is enabled you will see a drop-down with all the regions where
 Vertex AI is available. At this point it might make sense to make this 
 decision for your ZenML Stack and export the full region name.
 
+{% tabs %}
+{% tab title="Unix Shell" %}
 ```shell
 export GCP_LOCATION=<GCP_LOCATION> # for example 'europe-west3'
 ```
+{% endtab %}
+{% tab title="Windows Powershell" %}
+```shell
+$Env:GCP_LOCATION=<GCP_LOCATION> # for example 'europe-west3'
+```
+{% endtab %}
+{% endtabs %}
 
 ## Step 4/10 Enable Secrets Manager
 
@@ -103,9 +112,18 @@ or `asia.gcr.io`. Choose the one appropriate for you.
 {% endhint %}
 
 
+{% tabs %}
+{% tab title="Unix Shell" %}
 ```bash
 export CONTAINER_REGISTRY_URI=<CONTAINER_REGISTRY_URI> # for example 'eu.gcr.io/zenml-project'
 ```
+{% endtab %}
+{% tab title="Windows Powershell" %}
+```shell
+$Env:CONTAINER_REGISTRY_URI=<CONTAINER_REGISTRY_URI> # for example 'eu.gcr.io/zenml-project'
+```
+{% endtab %}
+{% endtabs %}
 
 ## Step 6/10 Set up Cloud Storage as Artifact Store
 
@@ -116,9 +134,18 @@ Within the configuration of the newly created bucket you can find the
 gsutil URI which you will need at a later point. It's usually going to look like 
 this: `gs://<bucket-name>`
 
+{% tabs %}
+{% tab title="Unix Shell" %}
 ```bash
 export GSUTIL_URI=<GSUTIL_URI> # for example 'gs://zenml_vertex_storage'
 ```
+{% endtab %}
+{% tab title="Windows Powershell" %}
+```shell
+$Env:GSUTIL_URI=<GSUTIL_URI> # for example 'gs://zenml_vertex_storage'
+```
+{% endtab %}
+{% endtabs %}
 
 ## Step 7/10 Set up a Cloud SQL instance as Metadata Store
 
@@ -133,12 +160,24 @@ Once it is set up you can find the IP-address. The password you set during
 creation of the instance is the root password. The default port for MySQL is 
 3306. 
 
+{% tabs %}
+{% tab title="Unix Shell" %}
 ```bash
 export DB_HOST_IP=<DB_HOST_IP> # for example '35.137.24.15'
 export DB_PORT=<DB_PORT> # usually by default '3306'
 export DB_USER=<DB_USER> # 'root' if you don't set up a separate user
 export DB_PWD=<DB_PWD> # for example 'secure_root_pwd'
 ```
+{% endtab %}
+{% tab title="Windows Powershell" %}
+```shell
+$Env:DB_HOST_IP=<DB_HOST_IP> # for example '35.137.24.15'
+$Env:DB_PORT=<DB_PORT> # usually by default '3306'
+$Env:DB_USER=<DB_USER> # 'root' if you don't set up a separate user
+$Env:DB_PWD=<DB_PWD> # for example 'secure_root_pwd'
+```
+{% endtab %}
+{% endtabs %}
 
 Time to set up the connections to our database. To do this you'll need to go 
 into the `Connections` menu. Under the `Networking` tab you'll need to add 
@@ -152,18 +191,39 @@ database.
 
 Now **Create Client Certificate** and download all three files. Export the paths 
 to these three files as follows with a leading **@**.
+
+{% tabs %}
+{% tab title="Unix Shell" %}
 ```bash
 export SSL_CA=@<SSL_CA> # for example @/home/zen/Downloads/server-ca.pem
 export SSL_CERT=@<SSL_CERT> # for example @/home/zen/Downloads/client-cert.pem
 export SSL_KEY=@<SSL_KEY> # for example @/home/zen/Downloads/client-key.pem
 ```
+{% endtab %}
+{% tab title="Windows Powershell" %}
+```shell
+$Env:SSL_CA=@<SSL_CA> # for example @/home/zen/Downloads/server-ca.pem
+$Env:SSL_CERT=@<SSL_CERT> # for example @/home/zen/Downloads/client-cert.pem
+$Env:SSL_KEY=@<SSL_KEY> # for example @/home/zen/Downloads/client-key.pem
+```
+{% endtab %}
+{% endtabs %}
 
 Finally, head on over to the `Databases` submenu and create your database and
 export its name. 
 
+{% tabs %}
+{% tab title="Unix Shell" %}
 ```bash
 export DB_NAME=<DB_NAME> # for example zenml_db
 ```
+{% endtab %}
+{% tab title="Windows Powershell" %}
+```shell
+$Env:DB_NAME=<DB_NAME> # for example zenml_db
+```
+{% endtab %}
+{% endtabs %}
 
 ## Step 8/10 - Create a Service Account
 
@@ -182,9 +242,18 @@ following roles:
 Also give your user access to the service account. This is the service account 
 that will be used by the Vertex AI compute engine.
 
+{% tabs %}
+{% tab title="Unix Shell" %}
 ```bash
 export SERVICE_ACCOUNT=<SERVICE_ACCOUNT> # for example zenml-vertex-sa@zenml-project.iam.gserviceaccount.com
 ```
+{% endtab %}
+{% tab title="Windows Powershell" %}
+```shell
+$Env:SERVICE_ACCOUNT=<SERVICE_ACCOUNT> # for example zenml-vertex-sa@zenml-project.iam.gserviceaccount.com
+```
+{% endtab %}
+{% endtabs %}
 
 On top of this we will also need to give permissions to the service account
 of the custom code workers. 
