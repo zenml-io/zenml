@@ -5,12 +5,13 @@ This guide sets up the easiest MLOPs stack that we can run on GCP with ZenML.
 
 {% hint style="info" %}
 This guide represents **one** of many ways to create a cloud stack on GCP. 
-Every component could be replaced by a different implementation.
+Every component could be replaced by a different implementation. Feel free to 
+take this as your starting point.
 {% endhint %}
 
 ## Prerequisites 
 
-For this to work you need to have zenml installed locally with all GCP 
+For this to work you need to have ZenML installed locally with all GCP 
 requirements.
 
 ```bash
@@ -18,7 +19,7 @@ pip install zenml
 zenml integration install gcp
 ```
 
-Additionally, you will need Docker  installed on your system. 
+Additionally, you will need Docker installed on your system. 
 
 ## The cloud stack
 
