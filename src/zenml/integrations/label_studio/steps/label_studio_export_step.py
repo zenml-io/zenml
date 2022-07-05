@@ -16,29 +16,70 @@ import os
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
+from zenml.enums import AnnotationTasks
 from zenml.exceptions import StackComponentInterfaceError
 from zenml.logger import get_logger
 from zenml.steps import BaseStepConfig, StepContext, step
 
 logger = get_logger(__name__)
 
-# TODO: use this to dynamically generate the classification label config
-def generate_image_classification_label_config(labels: List[str]) -> str:
-    """Generates a Label Studio label config for image classification."""
-    label_config_start = """<View>
+TASK_TO_FILENAME_REFERENCE_MAPPING = {
+    AnnotationTasks.IMAGE_CLASSIFICATION: "choice",
+    AnnotationTasks.OBJECT_DETECTION_BOUNDING_BOXES: "label",
+}
+
+
+def generate_image_classification_label_config(
+    labels: List[str],
+) -> Tuple[str, str]:
+    """Generates a Label Studio label config for image classification.
+
+    This is based on the basig config example shown at https://labelstud.io/templates/image_classification.html.
+    """
+    label_config_type = AnnotationTasks.IMAGE_CLASSIFICATION
+
+    label_config_start = f"""<View>
     <Image name="image" value="$image"/>
-    <Choices name="choice" toName="image">
+    <Choices name="{TASK_TO_FILENAME_REFERENCE_MAPPING[label_config_type]}" toName="image">
     """
     label_config_choices = "".join(
         f"<Choice value='{label}' />\n" for label in labels
     )
     label_config_end = "</Choices>\n</View>"
 
-    return label_config_start + label_config_choices + label_config_end
+    return (
+        label_config_start + label_config_choices + label_config_end,
+        label_config_type,
+    )
+
+
+def generate_basic_object_detection_bounding_boxes_label_config(
+    labels: List[str],
+) -> Tuple[str, str]:
+    """Generates a Label Studio config for object detection with bounding boxes.
+
+    This is based on the basic config example shown at https://labelstud.io/templates/image_bbox.html.
+    """
+    label_config_type = AnnotationTasks.OBJECT_DETECTION_BOUNDING_BOXES
+
+    label_config_start = f"""<View>
+    <Image name="image" value="$image"/>
+    <RectangleLabels name="{TASK_TO_FILENAME_REFERENCE_MAPPING[label_config_type]}" toName="image">
+    """
+    label_config_choices = "".join(
+        f"<Label value='{label}' />\n" for label in labels
+    )
+    label_config_end = "</RectangleLabels>\n</View>"
+
+    return (
+        label_config_start + label_config_choices + label_config_end,
+        label_config_type,
+    )
 
 
 class LabelStudioDatasetRegistrationConfig(BaseStepConfig):
     label_config: str
+    label_config_type: str
     dataset_name: str
 
 
@@ -175,11 +216,9 @@ def sync_new_data_to_label_studio(
             dataset=dataset,
         )
         if predictions:
-            parsed_label_config = annotator.get_parsed_label_config(dataset_id)
-            # TODO: replace with a more generic implementation beyond classification
-            filename_reference = parsed_label_config.get("choice").get(
-                "to_name"
-            )[0]
+            filename_reference = TASK_TO_FILENAME_REFERENCE_MAPPING[
+                config.label_config_type
+            ]
             preds_with_task_ids = convert_pred_filenames_to_task_ids(
                 predictions, dataset.tasks, filename_reference
             )

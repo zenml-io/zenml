@@ -107,3 +107,10 @@ class CliCategories(StrEnum):
     MANAGEMENT_TOOLS = "Management Tools"
     IDENTITY_AND_SECURITY = "Identity and Security"
     OTHER_COMMANDS = "Other Commands"
+
+
+class AnnotationTasks(StrEnum):
+    """Supported annotation tasks."""
+
+    IMAGE_CLASSIFICATION = "image_classification"
+    OBJECT_DETECTION_BOUNDING_BOXES = "object_detection_bounding_boxes"
