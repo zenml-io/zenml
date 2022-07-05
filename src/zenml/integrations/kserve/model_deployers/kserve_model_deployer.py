@@ -68,6 +68,7 @@ class KServeModelDeployer(BaseModelDeployer):
     kubernetes_namespace: Optional[str]
     base_url: str
     secret: Optional[str]
+    custom_domain: Optional[str]
 
     # private attributes
     _client: Optional[KServeClient] = None
@@ -160,6 +161,13 @@ class KServeModelDeployer(BaseModelDeployer):
                 # Handle additional params
                 else:
                     kserve_credentials[key] = content
+
+            # We need to add the namespace to the kserve_credentials
+            kserve_credentials["namespace"] = (
+                self.kubernetes_namespace
+                or utils.get_default_target_namespace()
+            )
+
             try:
                 self.kserve_client.set_credentials(**kserve_credentials)
             except Exception as e:
@@ -225,7 +233,7 @@ class KServeModelDeployer(BaseModelDeployer):
 
         # if the secret is passed in the config, use it to set the credentials
         if config.secret_name:
-            self.secret = config.secret_name
+            self.secret = config.secret_name or self.secret
         self._set_credentials()
 
         # if replace is True, find equivalent KServe deployments
@@ -247,7 +255,6 @@ class KServeModelDeployer(BaseModelDeployer):
                         # be deprovisioned
                         service.stop()
                     except RuntimeError as e:
-                        # ignore errors encountered while stopping old services
                         raise RuntimeError(
                             "Failed to stop the KServe deployment server:\n",
                             f"{e}\n",

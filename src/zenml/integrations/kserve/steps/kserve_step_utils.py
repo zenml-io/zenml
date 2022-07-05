@@ -114,7 +114,7 @@ def prepare_torch_service_config(
     fileio.makedirs(served_model_uri)
     fileio.makedirs(config_propreties_uri)
 
-    if config.torch_serve_paramters is None:
+    if config.torch_serve_parameters is None:
         raise RuntimeError("No torch serve parameters provided")
     else:
         # Create a temporary folder
@@ -127,10 +127,10 @@ def prepare_torch_service_config(
         torch_archiver_args = TorchModelArchiver(
             model_name=config.service_config.model_name,
             serialized_file=tmp_model_uri,
-            model_file=config.torch_serve_paramters.model_class,
-            handler=config.torch_serve_paramters.handler,
+            model_file=config.torch_serve_parameters.model_class,
+            handler=config.torch_serve_parameters.handler,
             export_path=temp_dir,
-            version=config.torch_serve_paramters.model_version,
+            version=config.torch_serve_parameters.model_version,
         )
 
         manifest = ModelExportUtils.generate_manifest_json(torch_archiver_args)
@@ -155,10 +155,10 @@ def prepare_torch_service_config(
         )
 
         # Get or Generate the config file
-        if config.torch_serve_paramters.torch_config:
+        if config.torch_serve_parameters.torch_config:
             # Copy the torch model config to the model store
             fileio.copy(
-                config.torch_serve_paramters.torch_config,
+                config.torch_serve_parameters.torch_config,
                 os.path.join(config_propreties_uri, "config.properties"),
             )
         else:

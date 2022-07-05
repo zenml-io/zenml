@@ -508,7 +508,9 @@ class KServeDeploymentService(BaseService):
             return None
 
         model_deployer = self._get_model_deployer()
-        model_name = self._get_kubernetes_labels().get("model_name") or "mnist"
+        model_name = (
+            self._get_kubernetes_labels().get("model_name") or "default"
+        )
         return os.path.join(
             model_deployer.base_url,
             "v1/models",
@@ -527,7 +529,10 @@ class KServeDeploymentService(BaseService):
             return None
 
         namespace = self._get_namespace()
-        return f"{self.crd_name}.{namespace}.example.com"
+
+        model_deployer = self._get_model_deployer()
+        custom_domain = model_deployer.custom_domain or "example.com"
+        return f"{self.crd_name}.{namespace}.{custom_domain}"
 
     def predict(self, request: str) -> Any:
         """Make a prediction using the service.

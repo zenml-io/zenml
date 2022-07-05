@@ -171,15 +171,12 @@ class KServeDeployerStepConfig(BaseStepConfig):
 
     Attributes:
         service_config: KServe deployment service configuration.
-        secrets: a list of ZenML secrets containing additional configuration
-            parameters for the KServe deployment (e.g. credentials to
-            access the Artifact Store where the models are stored). If supplied,
-            the information fetched from these secrets is passed to the KServe
-            deployment server as a list of environment variables.
+        torch_serve_params: TorchServe set of parameters to deploy model.
+        timeout: Timeout for model deployment.
     """
 
     service_config: KServeDeploymentConfig
-    torch_serve_paramters: Optional[TorchServeParameters] = None
+    torch_serve_parameters: Optional[TorchServeParameters] = None
     timeout: int = DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT
 
 

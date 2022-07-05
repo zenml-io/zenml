@@ -43,7 +43,6 @@ class KServeS3SecretSchema(BaseSecretSchema):
     TYPE: ClassVar[str] = KSERVE_S3_SECRET_SCHEMA_TYPE
 
     storage_type: Literal["S3"] = "S3"
-    namespace: Optional[str]
     credentials: Optional[str]
     service_account: Optional[str]
     s3_endpoint: Optional[str]
@@ -66,7 +65,6 @@ class KServeGSSecretSchema(BaseSecretSchema):
     TYPE: ClassVar[str] = KSERVE_GS_SECRET_SCHEMA_TYPE
 
     storage_type: Literal["GCS"] = "GCS"
-    namespace: Optional[str]
     credentials: Optional[str]
     service_account: Optional[str]
 
@@ -84,5 +82,4 @@ class KServeAzureSecretSchema(BaseSecretSchema):
     TYPE: ClassVar[str] = KSERVE_AZUREBLOB_SECRET_SCHEMA_TYPE
 
     storage_type: Literal["Azure"] = "Azure"
-    namespace: Optional[str]
     credentials: Optional[str]
