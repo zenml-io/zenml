@@ -257,6 +257,7 @@ class LabelStudioAnnotator(BaseAnnotator):
 
     def get_dataset(self, dataset_id: int) -> None:
         """Gets the dataset with the given name."""
+        # TODO: check for and raise error if client unavailable
         ls = self._get_client()
         return ls.get_project(dataset_id)
 
@@ -317,6 +318,60 @@ class LabelStudioAnnotator(BaseAnnotator):
 
         return dataset
 
+    def _get_azure_import_storage_sources(
+        self, dataset_id: int
+    ) -> List[Dict[str, Any]]:
+        """Gets a list of all Azure import storage sources."""
+        # TODO: check if client actually is connected etc
+        ls = self._get_client()
+        query_url = f"/api/storages/azure?project={dataset_id}"
+        response = ls.make_request(method="GET", url=query_url)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise ConnectionError(
+                f"Unable to get list of import storage sources. Client raised HTTP error {response.status_code}."
+            )
+
+    def _storage_source_already_exists(
+        self, uri: str, config: LabelStudioDatasetSyncConfig, dataset: Project
+    ) -> bool:
+        """Returns whether a storage source already exists."""
+        # TODO: check if client actually is connected etc
+        self._get_client()
+        if config.storage_type == "azure":
+            dataset_id = int(dataset.get_params()["id"])
+            azure_storage_sources = self._get_azure_import_storage_sources(
+                dataset_id
+            )
+
+            for source in azure_storage_sources:
+                if (
+                    source.get("presign") == config.presign
+                    and source.get("container") == uri
+                    and source.get("regex_filter") == config.regex_filter
+                    and source.get("use_blob_urls") == config.use_blob_urls
+                    and source.get("title") == dataset.get_params()["title"]
+                    and source.get("description") == config.description
+                    and source.get("presign_ttl") == config.presign_ttl
+                    and source.get("project") == dataset_id
+                ):
+                    return True
+        else:
+            return NotImplementedError("Storage type not implemented.")
+        return False
+
+    def get_parsed_label_config(self, dataset_id: int) -> Dict[str, Any]:
+        """Returns the parsed Label Studio labeling configuration for a
+        dataset."""
+        # TODO: check if client actually is connected etc
+        ls = self._get_client()
+        dataset = ls.get_project(dataset_id)
+        if dataset:
+            return dataset.parsed_label_config
+        else:
+            raise ValueError("No dataset found for the given id.")
+
     def connect_and_sync_external_storage(
         self,
         uri: str,
@@ -324,6 +379,8 @@ class LabelStudioAnnotator(BaseAnnotator):
         dataset: Project,
     ) -> None:
         """Syncs the external storage for the given project."""
+        if self._storage_source_already_exists(uri, config, dataset):
+            return
         if config.storage_type == "azure":
             if not config.azure_account_name or not config.azure_account_key:
                 logger.warn(

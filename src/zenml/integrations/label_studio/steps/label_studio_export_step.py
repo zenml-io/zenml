@@ -75,23 +75,28 @@ def get_or_create_dataset(
 ) -> int:
     """Gets preexisting dataset or creates a new one."""
     annotator = context.stack.annotator
-    preexisting_dataset_list = [
-        dataset
-        for dataset in annotator.get_datasets()
-        if dataset.get_params()["title"] == config.dataset_name
-    ]
-    if (
-        not preexisting_dataset_list
-        and annotator
-        and annotator._connection_available()
-    ):
-        registered_dataset = annotator.register_dataset_for_annotation(config)
-    elif preexisting_dataset_list:
-        return preexisting_dataset_list[0].get_params()["id"]
+    if annotator and annotator._connection_available():
+        preexisting_dataset_list = [
+            dataset
+            for dataset in annotator.get_datasets()
+            if dataset.get_params()["title"] == config.dataset_name
+        ]
+        if (
+            not preexisting_dataset_list
+            and annotator
+            and annotator._connection_available()
+        ):
+            registered_dataset = annotator.register_dataset_for_annotation(
+                config
+            )
+        elif preexisting_dataset_list:
+            return preexisting_dataset_list[0].get_params()["id"]
+        else:
+            raise StackComponentInterfaceError("No active annotator.")
+
+        return registered_dataset.get_params()["id"]
     else:
         raise StackComponentInterfaceError("No active annotator.")
-
-    return registered_dataset.get_params()["id"]
 
 
 @step
@@ -113,47 +118,16 @@ def get_azure_credentials() -> Tuple[str]:
     return account_name, account_key
 
 
-def get_new_tasks(tasks_before_sync, tasks_after_sync) -> List[Dict]:
-    """Returns a list of tasks that are new since the last sync."""
-    return [task for task in tasks_after_sync if task not in tasks_before_sync]
-
-
-def get_filename(url: str) -> str:
-    """Returns the filename of a url."""
-    return urlparse(url).path.split("/")[-1]
-
-
-def get_transformed_azure_url(url: str, scheme: str) -> str:
-    """Returns the transformed url for Azure."""
-    new_scheme_url = url.replace(scheme, "azure-blob")
-    return f"{urlparse(new_scheme_url).scheme}://{urlparse(new_scheme_url).netloc}{urlparse(new_scheme_url).path}"
-
-
-def switch_local_urls_for_cloud_urls(
-    predictions: List[Dict], new_tasks: List[Dict]
-) -> List[Dict]:
-    """Switches local urls for cloud urls."""
-    if new_tasks:
-        uri_prefix = urlparse(new_tasks[0]["data"]["image"]).scheme
-    image_name_mapping = {
-        get_filename(task["data"]["image"]): get_transformed_azure_url(
-            task["data"]["image"], uri_prefix
-        )
-        for task in new_tasks
-    }
-    for prediction in predictions:
-        prediction["data"]["image"] = image_name_mapping[
-            os.path.basename(prediction["data"]["image"])
-        ]
-    return predictions
-
-
 def convert_pred_filenames_to_task_ids(
-    preds: List[Dict[str, Any]], tasks: List[Dict[str, Any]]
+    preds: List[Dict[str, Any]],
+    tasks: List[Dict[str, Any]],
+    filename_reference: str,
 ) -> List[Dict[str, Any]]:
     """Converts a list of predictions from local file references to task id."""
     filename_id_mapping = {
-        os.path.basename(urlparse(task["data"]["image"]).path): task["id"]
+        os.path.basename(urlparse(task["data"][filename_reference]).path): task[
+            "id"
+        ]
         for task in tasks
     }
 
@@ -178,33 +152,79 @@ def sync_new_data_to_label_studio(
 ) -> None:
     """Syncs new data to Label Studio."""
     annotator = context.stack.annotator
+    # TODO: check that annotator is connected before querying it
     dataset = annotator.get_dataset(dataset_id)
     artifact_store = context.stack.artifact_store
-    if uri.startswith(artifact_store.path):
-        if config.storage_type == "azure":
-            account_name, account_key = get_azure_credentials()
-            config.azure_account_name = account_name
-            config.azure_account_key = account_key
-            config.prefix = urlparse(uri).path
-            base_uri = urlparse(uri).netloc
+    if not uri.startswith(artifact_store.path):
+        raise ValueError(
+            "ZenML only currently supports syncing data passed from other ZenML steps and via the Artifact Store."
+        )
 
-    tasks_before_sync = dataset.tasks
+    if config.storage_type == "azure":
+        account_name, account_key = get_azure_credentials()
+        config.azure_account_name = account_name
+        config.azure_account_key = account_key
+        # removes the initial backslash from the prefix attribute by slicing
+        config.prefix = urlparse(uri).path[1:]
+        base_uri = urlparse(uri).netloc
+    elif config.storage_type == "gcp":
+        return NotImplementedError("GCP storage not yet implemented.")
+    elif config.storage_type == "s3":
+        return NotImplementedError("S3 storage not yet implemented.")
 
     if annotator and annotator._connection_available():
+        # TODO: get existing (CHECK!) or create the sync connection
         annotator.connect_and_sync_external_storage(
             uri=base_uri,
             config=config,
             dataset=dataset,
         )
         if predictions:
-            tasks_after_sync = dataset.tasks
-            newly_synced_tasks = get_new_tasks(
-                tasks_before_sync, tasks_after_sync
-            )
-
+            parsed_label_config = annotator.get_parsed_label_config(dataset_id)
+            # TODO: replace with a more generic implementation beyond classification
+            filename_reference = parsed_label_config.get("choice").get(
+                "to_name"
+            )[0]
             preds_with_task_ids = convert_pred_filenames_to_task_ids(
-                predictions, newly_synced_tasks
+                predictions, dataset.tasks, filename_reference
             )
+            # TODO: filter out any predictions that exist + have already been
+            # made (maybe?). Only pass in preds for tasks without pre-annotations.
             dataset.create_predictions(preds_with_task_ids)
     else:
         raise StackComponentInterfaceError("No active annotator.")
+
+
+# def get_new_tasks(tasks_before_sync, tasks_after_sync) -> List[Dict]:
+#     """Returns a list of tasks that are new since the last sync."""
+#     return [task for task in tasks_after_sync if task not in tasks_before_sync]
+
+
+# def get_filename(url: str) -> str:
+#     """Returns the filename of a url."""
+#     return urlparse(url).path.split("/")[-1]
+
+
+# def get_transformed_azure_url(url: str, scheme: str) -> str:
+#     """Returns the transformed url for Azure."""
+#     new_scheme_url = url.replace(scheme, "azure-blob")
+#     return f"{urlparse(new_scheme_url).scheme}://{urlparse(new_scheme_url).netloc}{urlparse(new_scheme_url).path}"
+
+
+# def switch_local_urls_for_cloud_urls(
+#     predictions: List[Dict], new_tasks: List[Dict]
+# ) -> List[Dict]:
+#     """Switches local urls for cloud urls."""
+#     if new_tasks:
+#         uri_prefix = urlparse(new_tasks[0]["data"]["image"]).scheme
+#     image_name_mapping = {
+#         get_filename(task["data"]["image"]): get_transformed_azure_url(
+#             task["data"]["image"], uri_prefix
+#         )
+#         for task in new_tasks
+#     }
+#     for prediction in predictions:
+#         prediction["data"]["image"] = image_name_mapping[
+#             os.path.basename(prediction["data"]["image"])
+#         ]
+#     return predictions
