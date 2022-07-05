@@ -2,6 +2,12 @@
 description: Send automated alerts to chat services.
 ---
 
+- `What is it, what does it do`
+- `Why would you want to use it`
+- `When should you start adding this to your stack`
+- `Overview of flavors, tradeoffs, when to use which flavor (table)`
+
+
 # :speech_balloon: Send Automated Chat Alerts
 
 Many developer teams use real-time chat services like Slack for their

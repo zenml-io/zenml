@@ -2,6 +2,11 @@
 description: Implement end-to-end ML workflows with Continuous Training and Deployment.
 ---
 
+- `What is it, what does it do`
+- `Why would you want to use it`
+- `When should you start adding this to your stack`
+- `Overview of flavors, tradeoffs, when to use which flavor (table)`
+
 # Continuous Training and Continuous Deployment (CT/CD)
 
 As an organization develops across

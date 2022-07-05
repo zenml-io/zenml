@@ -1,6 +1,8 @@
 ---
-description: How to get started with extending ZenML.
+description: Overview of categories of MLOps tools
 ---
+
+# TODO: Overview of categories of MLOps tools
 
 While you are working on an ML task, it is very likely that you will require 
 a custom tailored solution. This might not only mean that you have to write 

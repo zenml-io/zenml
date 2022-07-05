@@ -2,6 +2,11 @@
 description: Execute individual steps in specialized environments.
 ---
 
+- `What is it, what does it do`
+- `Why would you want to use it`
+- `When should you start adding this to your stack`
+- `Overview of flavors, tradeoffs, when to use which flavor (table)`
+
 # Run steps in specialized environments with step operators
 
 The step operator defers the execution of individual steps in a pipeline to

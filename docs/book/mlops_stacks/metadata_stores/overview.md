@@ -2,6 +2,11 @@
 description: Use a MySQL database to track your metadata non-locally 
 ---
 
+- `What is it, what does it do`
+- `Why would you want to use it`
+- `When should you start adding this to your stack`
+- `Overview of flavors, tradeoffs, when to use which flavor (table)`
+
 # Track your Metadata in the Cloud
 
 While the local SQLite-based Metadata Store is a great default to get you 

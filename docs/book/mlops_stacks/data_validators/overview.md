@@ -2,6 +2,11 @@
 description: Guard against data drift with our Evidently integration.
 ---
 
+- `What is it, what does it do`
+- `Why would you want to use it`
+- `When should you start adding this to your stack`
+- `Overview of flavors, tradeoffs, when to use which flavor (table)`
+
 # Perform Drift Detection
 
 Data drift is something you often want to guard against in your pipelines.

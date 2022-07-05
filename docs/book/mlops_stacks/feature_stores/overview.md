@@ -2,6 +2,11 @@
 description: ZenML integrates with Feast so you can access your batch and online data via a Feature Store
 ---
 
+- `What is it, what does it do`
+- `Why would you want to use it`
+- `When should you start adding this to your stack`
+- `Overview of flavors, tradeoffs, when to use which flavor (table)`
+
 # Feature Store
 
 Feature stores allow data teams to serve data via an offline store and an online
