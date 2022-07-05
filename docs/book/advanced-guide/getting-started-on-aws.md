@@ -36,7 +36,7 @@ Let's open up a terminal which we'll use to store some values along the way whic
 # Replace the <PLACEHOLDERS> with a name for your bucket and the AWS region for your resources
 # Select one of the region codes for <REGION>: https://docs.aws.amazon.com/general/latest/gr/rande.html#regional-endpoints
 REGION=<REGION>  
-S3_BUCKET_NAME=<BUCKET_NAME>
+S3_BUCKET_NAME=<S3_BUCKET_NAME>
 
 aws s3api create-bucket --bucket=$S3_BUCKET_NAME \
     --region=$REGION \
@@ -146,7 +146,7 @@ ECR_URI="$REGISTRY_ID.dkr.ecr.$REGION.amazonaws.com"
 - Follow [this guide](https://docs.aws.amazon.com/eks/latest/userguide/service_IAM_role.html#create-service-role) to create an Amazon EKS cluster role.
 - Go to the [IAM website](https://console.aws.amazon.com/iam), select `Roles` and edit the role you just created.
 - Click on `Add permissions` and select `Attach policies`.
-- Attach the `SecretsManagerReadWrite`, `AmazonEKSClusterPolicy` and `AmazonS3FullAccess` policies to the role.
+- Attach the `SecretsManagerReadWrite`, and `AmazonS3FullAccess` policies to the role.
 - Go to the [EKS website](https://console.aws.amazon.com/eks).
 - Make sure the correct region is selected on the top right.
 - Click on `Add cluster` and select `Create`.
@@ -163,13 +163,94 @@ ECR_URI="$REGISTRY_ID.dkr.ecr.$REGION.amazonaws.com"
 {% tab title="AWS CLI" %}
 
 ```shell
-VPC_ID=$(aws ec2 describe-vpcs --region=<REGION> --filters='Name=is-default,Values=true' --query='Vpcs[0].VpcId' --output=text)
+EKS_ROLE_NAME=<EKS_ROLE_NAME>
+EC2_ROLE_NAME=<EC2_ROLE_NAME>
 
-# Get subnet ids
-aws ec2 describe-subnets --region=<REGION> --filters="Name=vpc-id,Values=$VPC_ID" --query='Subnets[*].SubnetId'
+# Choose a name for your EKS cluster and node group
+EKS_CLUSTER_NAME=<EKS_CLUSTER_NAME>
+NODEGROUP_NAME=<NODEGROUP_NAME>
 
-aws eks create-cluster --region=<REGION> --name=<EKS_CLUSTER_NAME> --role-arn=<EKS_ROLE_ARN> --resources-vpc-config='subnetIds=<SUBNET_ID_0>,<SUBNET_ID_1>,<SUBNET_ID_2>'
-aws eks create-nodegroup --region=<REGION> --cluster-name=<EKS_CLUSTER_NAME> --nodegroup-name=<NODEGROUP_NAME> --node-role=<ARN> --subnets='<SUBNET_ID_0>,<SUBNET_ID_1>,<SUBNET_ID_2>'
+EKS_POLICY_JSON='{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "eks.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}'
+aws iam create-role \
+    --role-name=$EKS_ROLE_NAME \
+    --assume-role-policy-document=$EKS_POLICY_JSON
+
+aws iam attach-role-policy \
+    --policy-arn='arn:aws:iam::aws:policy/AmazonEKSClusterPolicy' \
+    --role-name=$EKS_ROLE_NAME
+
+
+EC2_POLICY_JSON='{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}'
+aws iam create-role \
+    --role-name=$EC2_ROLE_NAME \
+    --assume-role-policy-document=$EC2_POLICY_JSON
+aws iam attach-role-policy \
+    --policy-arn='arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy' \
+    --role-name=$EC2_ROLE_NAME
+aws iam attach-role-policy \
+    --policy-arn='arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly' \
+    --role-name=$EC2_ROLE_NAME
+aws iam attach-role-policy \
+    --policy-arn='arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy' \
+    --role-name=$EC2_ROLE_NAME
+aws iam attach-role-policy \
+    --policy-arn='arn:aws:iam::aws:policy/SecretsManagerReadWrite' \
+    --role-name=$EC2_ROLE_NAME
+aws iam attach-role-policy \
+    --policy-arn='arn:aws:iam::aws:policy/AmazonS3FullAccess' \
+    --role-name=$EC2_ROLE_NAME
+
+
+# Get the role ARN's
+EKS_ROLE_ARN=$(aws iam get-role --role-name=$EKS_ROLE_NAME --query='Role.Arn' --output=text)
+EC2_ROLE_ARN=$(aws iam get-role --role-name=$EC2_ROLE_NAME --query='Role.Arn' --output=text)
+
+
+# Get default VPC ID
+VPC_ID=$(aws ec2 describe-vpcs --filters='Name=is-default,Values=true' \
+    --query='Vpcs[0].VpcId' \
+    --output=text \
+    --region=$REGION)
+
+# Get subnet IDs
+SUBNET_IDS=$(aws ec2 describe-subnets --region=$REGION \
+    --filters="Name=vpc-id,Values=$VPC_ID" \
+    --query='Subnets[*].SubnetId' \
+    --output=json)
+
+aws eks create-cluster --region=$REGION \
+    --name=$EKS_CLUSTER_NAME \
+    --role-arn=$EKS_ROLE_ARN \
+    --resources-vpc-config="{\"subnetIds\": $SUBNET_IDS}"
+
+# Wait until the cluster is created and then run
+aws eks create-nodegroup --region=$REGION \
+    --cluster-name=$EKS_CLUSTER_NAME \
+    --nodegroup-name=$NODEGROUP_NAME \
+    --node-role=$EC2_ROLE_ARN \
+    --subnets=$SUBNET_IDS
 ```
 
 {% endtab %}
@@ -211,7 +292,7 @@ aws eks create-nodegroup --region=<REGION> --cluster-name=<EKS_CLUSTER_NAME> --n
 
 - Configure your `kubectl` client and register the orchestrator:
     ```shell
-    aws eks --region $REGION update-kubeconfig --name=$EKS_CLUSTER_NAME
+    aws eks --region=$REGION update-kubeconfig --name=$EKS_CLUSTER_NAME
     kubectl create namespace zenml
 
     zenml orchestrator register eks_kubernetes_orchestrator \
