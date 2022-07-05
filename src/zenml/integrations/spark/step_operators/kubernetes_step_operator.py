@@ -99,10 +99,10 @@ class KubernetesSparkStepOperator(BaseStepOperator):
         if not container_registry:
             raise RuntimeError("Missing container registry")
         registry_uri = container_registry.uri.rstrip("/")
-        image_name = f"{registry_uri}/zenml-spark:{pipeline_name}"
+        image_name = f"{registry_uri}/spark-zenml:{pipeline_name}"
 
         """Create the proper image to use for spark on k8s."""
-        base_image = f"{registry_uri}/pyspark-base:1.0"
+        base_image = f"{registry_uri}/spark-base:1.0"
 
         dockerfile_content = generate_dockerfile_contents(
             base_image=base_image, requirements=requirements
