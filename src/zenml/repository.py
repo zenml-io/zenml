@@ -82,8 +82,7 @@ class RepositoryConfiguration(FileSyncModel):
 
 
 class LegacyRepositoryConfig(BaseModel):
-    """Pydantic object used for serializing legacy repository configuration
-    options."""
+    """Pydantic object used for serializing legacy repository config options."""
 
     version: str
     active_stack_name: Optional[str]
@@ -332,8 +331,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
     def _set_active_profile(
         self, profile: "ProfileConfiguration", new_profile: bool = False
     ) -> None:
-        """Set the supplied configuration profile as the active profile for
-        this repository.
+        """Set the supplied config profile as the active profile for this repo.
 
         This method initializes the repository store associated with the
         supplied profile and also initializes it with the default stack
@@ -434,8 +432,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
     def _migrate_legacy_repository(
         config_file: str,
     ) -> Optional["ProfileConfiguration"]:
-        """Migrate a legacy repository configuration to the new format and
-        create a new Profile out of it.
+        """Migrate a legacy repo config to the new format and create a new Profile out of it.
 
         Args:
             config_file: Path to the legacy repository configuration file.
@@ -568,8 +565,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         track_analytics: bool = True,
         skip_migration: bool = False,
     ) -> "BaseZenStore":
-        """Create repository persistence back-end store from a configuration
-        profile.
+        """Create repos persistence back-end store from a configuration profile.
 
         If the configuration profile doesn't specify all necessary configuration
         options (e.g. the type or URL), a default configuration will be used.
@@ -1112,10 +1108,11 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
         Args:
             pipeline: Class or class instance of the pipeline
-            pipeline_name: DEPRECATED: Name of the pipeline.
             stack_name: If specified, pipelines in the metadata store of the
                 given stack are returned. Otherwise, pipelines in the metadata
                 store of the currently active stack are returned.
+            **kwargs: The deprecated `pipeline_name` is caught as a kwarg to
+                specify the pipeline instead of using the `pipeline` argument.
 
         Returns:
             A post-execution pipeline view for the given name or `None` if
@@ -1230,8 +1227,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             )
 
         def _find_repo_helper(path_: Path) -> Optional[Path]:
-            """Helper function to recursively search parent directories for a
-            ZenML repository.
+            """Helper function to recursively search parent directories for a ZenML repository.
 
             Args:
                 path_: The path to search.

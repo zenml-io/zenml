@@ -179,13 +179,16 @@ class PipelineRunView:
 
         Args:
             step: Class or class instance of the step
-            name: DEPRECATED: The name of the step to return.
+            **kwargs: The deprecated `name` is caught as a kwarg to
+                specify the step instead of using the `step` argument.
 
         Returns:
             A step for the given name.
 
         Raises:
             KeyError: If there is no step with the given name.
+            RuntimeError: If not step is specified either through the `step` or
+                the `name` argument.
         """
         self._ensure_steps_fetched()
         if isinstance(step, str):
@@ -258,8 +261,7 @@ class PipelineRunView:
         )
 
     def __eq__(self, other: Any) -> bool:
-        """Returns whether the other object is referring to the same pipeline
-        run.
+        """Returns whether the other object is referring to the same pipeline run.
 
         Args:
             other: The other object to compare to.
