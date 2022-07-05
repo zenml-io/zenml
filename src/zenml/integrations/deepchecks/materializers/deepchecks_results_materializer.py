@@ -22,11 +22,7 @@
 # along with Deepchecks.  If not, see <http://www.gnu.org/licenses/>.
 # ----------------------------------------------------------------------------
 #
-
-"""
-The logic of the `from_json` is contributed by the Deepchecks team and is copied
-herein with full credit to them.
-"""
+"""Implementation of Deepchecks suite results materializer."""
 
 import os
 from typing import Any, Type, Union
@@ -53,7 +49,17 @@ class DeepchecksResultMaterializer(BaseMaterializer):
     def handle_input(
         self, data_type: Type[Any]
     ) -> Union[CheckResult, SuiteResult]:
-        """Reads a deepchecks result from a serialized JSON file."""
+        """Reads a Deepchecks check or suite result from a serialized JSON file.
+
+        Args:
+            data_type: The type of the data to read.
+
+        Returns:
+            A Deepchecks CheckResult or SuiteResult.
+
+        Raises:
+            RuntimeError: if the input data type is not supported.
+        """
         super().handle_input(data_type)
         filepath = os.path.join(self.artifact.uri, RESULTS_FILENAME)
 

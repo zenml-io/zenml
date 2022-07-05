@@ -144,8 +144,9 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         Returns:
             The Great Expectations data validator registered in the active stack.
 
-        TypeError: if a Great Expectations data validator is not part of the
-            active stack.
+        Raises:
+            TypeError: if a Great Expectations data validator is not part of the
+                active stack.
         """
         repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
         data_validator = repo.active_stack.data_validator
@@ -175,10 +176,6 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         Returns:
             A Great Expectations data context managed by ZenML as configured
             through the active data validator stack component.
-
-        Raises:
-            TypeError: if a Great Expectations data validator is not part of the
-                active stack.
         """
         return cls.get_active_data_validator().data_context
 

@@ -20,14 +20,19 @@ def data_validation_pipeline(
     data_loader,
     trainer,
     data_validator,
-    post_validation,
+    model_validator,
+    data_drift_detector,
+    model_drift_detector,
 ):
     """Links all the steps together in a pipeline"""
     df_train, df_test = data_loader()
-    model = trainer(df_train)
-    validation_result = data_validator(
+    data_validator(dataset=df_train)
+    data_drift_detector(
         reference_dataset=df_train,
-        comparison_dataset=df_test,
-        model=model,
+        target_dataset=df_test,
     )
-    post_validation(validation_result)
+    model = trainer(df_train)
+    model_validator(dataset=df_train, model=model)
+    model_drift_detector(
+        reference_dataset=df_train, target_dataset=df_test, model=model
+    )

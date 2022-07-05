@@ -66,14 +66,11 @@ class BaseDataValidator(StackComponent):
                 labels, prediction probabilities, feature importance etc.).
             profile_list: Optional list identifying the categories of data
                 profiles to be generated.
-            kwargs: Implementation specific keyword arguments.
+            **kwargs: Implementation specific keyword arguments.
 
         Raises:
             NotImplementedError: if data profiling is not supported by this
                 data validator.
-
-        Returns:
-            Data profile generated from the input dataset.
         """
         raise NotImplementedError(
             f"Data profiling is not supported by the {self.__class__} data "
@@ -132,14 +129,11 @@ class BaseDataValidator(StackComponent):
                 labels, prediction probabilities, feature importance etc.).
             check_list: Optional list identifying the data validation checks to
                 be performed.
-            kwargs: Implementation specific keyword arguments.
+            **kwargs: Implementation specific keyword arguments.
 
         Raises:
             NotImplementedError: if profile-based data validation is not
                 supported by this data validator.
-
-        Returns:
-            Dataset validation results.
         """
         raise NotImplementedError(
             f"Profile-based data validation is not supported by the "
@@ -183,14 +177,11 @@ class BaseDataValidator(StackComponent):
                 labels, prediction probabilities, feature importance etc.).
             check_list: Optional list identifying the data integrity checks to
                 be performed.
-            kwargs: Implementation specific keyword arguments.
+            **kwargs: Implementation specific keyword arguments.
 
         Raises:
             NotImplementedError: if data integrity validation is not
                 supported by this data validator.
-
-        Returns:
-            Dataset integrity validation results.
         """
         raise NotImplementedError(
             f"Data validation not implemented for {self}."
@@ -228,14 +219,11 @@ class BaseDataValidator(StackComponent):
             model: Target model to be validated.
             check_list: Optional list identifying the model validation checks to
                 be performed.
-            kwargs: Implementation specific keyword arguments.
+            **kwargs: Implementation specific keyword arguments.
 
         Raises:
             NotImplementedError: if model validation is not supported by this
-            data validator.
-
-        Returns:
-            Model validation results.
+                data validator.
         """
         raise NotImplementedError(
             f"Model validation not implemented for {self}."
@@ -281,14 +269,11 @@ class BaseDataValidator(StackComponent):
                 labels, prediction probabilities, feature importance etc.).
             check_list: Optional list identifying the data comparison checks to
                 be performed.
-            kwargs: Implementation specific keyword arguments.
+            **kwargs: Implementation specific keyword arguments.
 
         Raises:
             NotImplementedError: if data comparison validation is not
                 supported by this data validator.
-
-        Returns:
-            Dataset comparison validation results.
         """
         raise NotImplementedError(
             f"Data comparison not implemented for {self}."
@@ -298,7 +283,7 @@ class BaseDataValidator(StackComponent):
         self,
         reference_dataset: Any,
         target_dataset: Any,
-        model: Any = None,
+        model: Any,
         check_list: Optional[Sequence[str]] = None,
         **kwargs: Any,
     ) -> Any:
@@ -331,14 +316,11 @@ class BaseDataValidator(StackComponent):
             model: Target model to be validated.
             check_list: Optional list identifying the model comparison checks to
                 be performed.
-            kwargs: Implementation specific keyword arguments.
+            **kwargs: Implementation specific keyword arguments.
 
         Raises:
             NotImplementedError: if model comparison validation is not
                 supported by this data validator.
-
-        Returns:
-            Model comparison validation results.
         """
         raise NotImplementedError(
             f"Model comparison not implemented for {self}."

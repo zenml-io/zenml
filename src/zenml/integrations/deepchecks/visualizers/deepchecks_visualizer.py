@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the Deepchecks visualizer."""
 
 import tempfile
 import webbrowser
@@ -38,6 +39,8 @@ class DeepchecksVisualizer(BaseStepVisualizer):
 
         Args:
             object: StepView fetched from run.get_step().
+            *args: Additional arguments (unused).
+            **kwargs: Additional keyword arguments (unused).
         """
         for artifact_view in object.outputs.values():
             # filter out anything but data analysis artifacts

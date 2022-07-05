@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of Deepchecks dataset materializer."""
 
 from typing import Any, Type
 
@@ -24,13 +25,20 @@ DEFAULT_FILENAME = "data.binary"
 
 
 class DeepchecksDatasetMaterializer(BaseMaterializer):
-    """Materializer to read data to and from Deepchecks dataset"""
+    """Materializer to read data to and from Deepchecks dataset."""
 
     ASSOCIATED_TYPES = (Dataset,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> Dataset:
-        """Reads pandas dataframes and creates deepchecks.Dataset from it."""
+        """Reads pandas dataframes and creates deepchecks.Dataset from it.
+
+        Args:
+            data_type: The type of the data to read.
+
+        Returns:
+            A Deepchecks Dataset.
+        """
         super().handle_input(data_type)
 
         # Outsource to pandas

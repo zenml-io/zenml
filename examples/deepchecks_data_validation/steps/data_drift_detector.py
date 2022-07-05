@@ -23,13 +23,15 @@ LABEL_COL = "target"
 
 
 @step
-def data_validator(
-    dataset: pd.DataFrame,
+def data_drift_detector(
+    reference_dataset: pd.DataFrame,
+    target_dataset: pd.DataFrame,
 ) -> SuiteResult:
-    """Run data integrity checks using Deepchecks"""
+    """Run data drift validation checks using Deepchecks"""
     data_validator = DeepchecksDataValidator.get_active_data_validator()
 
-    return data_validator.data_validation(
-        dataset=dataset,
+    return data_validator.data_comparison(
+        reference_dataset=reference_dataset,
+        target_dataset=target_dataset,
         dataset_kwargs=dict(label=LABEL_COL, cat_features=[]),
     )

@@ -11,13 +11,28 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import pandas as pd
 from deepchecks.core.suite import SuiteResult
-from rich import print
+from sklearn.base import ClassifierMixin
 
+from zenml.integrations.deepchecks.data_validators.deepchecks_data_validator import (
+    DeepchecksDataValidator,
+)
 from zenml.steps import step
+
+LABEL_COL = "target"
 
 
 @step
-def post_validation(result: SuiteResult) -> None:
-    """Consumes the SuiteResult."""
-    print(result)
+def model_validator(
+    dataset: pd.DataFrame,
+    model: ClassifierMixin,
+) -> SuiteResult:
+    """Run model validation checks using Deepchecks"""
+    data_validator = DeepchecksDataValidator.get_active_data_validator()
+
+    return data_validator.model_validation(
+        dataset=dataset,
+        model=model,
+        dataset_kwargs=dict(label=LABEL_COL, cat_features=[]),
+    )

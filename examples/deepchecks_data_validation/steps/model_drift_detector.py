@@ -13,6 +13,7 @@
 
 import pandas as pd
 from deepchecks.core.suite import SuiteResult
+from sklearn.base import ClassifierMixin
 
 from zenml.integrations.deepchecks.data_validators.deepchecks_data_validator import (
     DeepchecksDataValidator,
@@ -23,13 +24,17 @@ LABEL_COL = "target"
 
 
 @step
-def data_validator(
-    dataset: pd.DataFrame,
+def model_drift_detector(
+    reference_dataset: pd.DataFrame,
+    target_dataset: pd.DataFrame,
+    model: ClassifierMixin,
 ) -> SuiteResult:
-    """Run data integrity checks using Deepchecks"""
+    """Run model drift validation checks using Deepchecks"""
     data_validator = DeepchecksDataValidator.get_active_data_validator()
 
-    return data_validator.data_validation(
-        dataset=dataset,
+    return data_validator.model_comparison(
+        reference_dataset=reference_dataset,
+        target_dataset=target_dataset,
+        model=model,
         dataset_kwargs=dict(label=LABEL_COL, cat_features=[]),
     )

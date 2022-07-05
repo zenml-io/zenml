@@ -18,7 +18,6 @@ from typing import (
     Any,
     ClassVar,
     Dict,
-    List,
     Optional,
     Sequence,
     Tuple,
@@ -37,8 +36,10 @@ from deepchecks.tabular import Suite as TabularSuite
 
 # not part of deepchecks.tabular.checks
 from deepchecks.tabular.checks.data_integrity import FeatureFeatureCorrelation
+from deepchecks.tabular.suites import full_suite as full_tabular_suite
 from deepchecks.vision import Suite as VisionSuite
 from deepchecks.vision import VisionData
+from deepchecks.vision.suites import full_suite as full_vision_suite
 from sklearn.base import ClassifierMixin
 from torch.nn import Module  # type: ignore[attr-defined]
 from torch.utils.data.dataloader import DataLoader
@@ -77,7 +78,7 @@ class DeepchecksValidationCheck(StrEnum):
 
         Args:
             check_name: Identifies a builtin Deepchecks check. The identifier
-            must be formatted as `deepchecks.{tabular|vision}.checks.<...>.<class-name>`.
+                must be formatted as `deepchecks.{tabular|vision}.checks.<...>.<class-name>`.
 
         Raises:
             ValueError: If the check identifier does not follow the convention
@@ -128,8 +129,8 @@ class DeepchecksValidationCheck(StrEnum):
 
         Args:
             check_name: Identifies a builtin Deepchecks check. The identifier
-            must be formatted as `deepchecks.{tabular|vision}.checks.<class-name>`
-            and must be resolvable to a valid Deepchecks BaseCheck class.
+                must be formatted as `deepchecks.{tabular|vision}.checks.<class-name>`
+                and must be resolvable to a valid Deepchecks BaseCheck class.
 
         Returns:
             The Deepchecks check class associated with this enum value.
@@ -389,8 +390,9 @@ class DeepchecksDataValidator(BaseDataValidator):
         Returns:
             The Deepchecks data validator registered in the active stack.
 
-        TypeError: if a Deepchecks data validator is not part of the
-            active stack.
+        Raises:
+            TypeError: if a Deepchecks data validator is not part of the
+                active stack.
         """
         repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
         data_validator = repo.active_stack.data_validator
@@ -411,7 +413,7 @@ class DeepchecksDataValidator(BaseDataValidator):
         )
 
     @staticmethod
-    def split_checks(
+    def _split_checks(
         check_list: Sequence[str],
     ) -> Tuple[Sequence[str], Sequence[str]]:
         """Split a list of check identifiers in two lists, one for tabular and one for computer vision checks.
@@ -425,94 +427,85 @@ class DeepchecksDataValidator(BaseDataValidator):
         """
         tabular_checks = list(
             filter(
-                lambda check: DeepchecksDataIntegrityCheck.is_tabular_check(
-                    check
-                ),
+                lambda check: DeepchecksValidationCheck.is_tabular_check(check),
                 check_list,
             )
         )
         vision_checks = list(
             filter(
-                lambda check: DeepchecksDataIntegrityCheck.is_vision_check(
-                    check
-                ),
+                lambda check: DeepchecksValidationCheck.is_vision_check(check),
                 check_list,
             )
         )
         return tabular_checks, vision_checks
 
-    def data_validation(
-        self,
-        dataset: Union[pd.DataFrame, DataLoader[Any]],
+    # flake8: noqa: C901
+    @classmethod
+    def _create_and_run_check_suite(
+        cls,
+        check_enum: Type[DeepchecksValidationCheck],
+        reference_dataset: Union[pd.DataFrame, DataLoader[Any]],
+        target_dataset: Optional[Union[pd.DataFrame, DataLoader[Any]]] = None,
         model: Optional[Union[ClassifierMixin, Module]] = None,
         check_list: Optional[Sequence[str]] = None,
         dataset_kwargs: Dict[str, Any] = {},
-        check_kwargs: Dict[str, Any] = {},
+        check_kwargs: Dict[str, Dict[str, Any]] = {},
         run_kwargs: Dict[str, Any] = {},
-        **kwargs: Any,
     ) -> SuiteResult:
-        """Run one or more Deepchecks data integrity checks on a dataset.
+        """Create and run a Deepcheck check suite corresponding to the input parameters.
 
-        Call this method to analyze and identify potential integrity problems
-        with a single dataset (e.g. missing values, conflicting labels, mixed
-        data types etc.).
-
-        Some Deepchecks integrity checks may require that a model be present
-        during the validation process to provide or dynamically generate
-        additional information (e.g. label predictions, prediction probabilities,
-        feature importance etc.) that is otherwise missing from the input
-        dataset. Where that is the case, the method also takes in a model as
-        argument. Alternatively, the missing information can be supplied using
-        custom `run_args` keyword arguments.
-
-        The `check_list` argument may be used to specify a custom set of
-        Deepchecks data integrity checks to perform, identified by
-        `DeepchecksDataIntegrityCheck` enum values. If omitted, a suite with
-        all available data integrity checks will be performed on the input data.
-        See `DeepchecksDataIntegrityCheck` for a list of Deepchecks builtin
-        checks that are compatible with this method.
+        This method contains generic logic common to all Deepcheck data
+        validator methods that validates the input arguments and uses them to
+        generate and run a Deepchecks check suite.
 
         Args:
-            dataset: Target dataset to be validated.
-            model: Optional model to use to provide or dynamically generate
-                additional information necessary for data validation (e.g.
-                labels, prediction probabilities, feature importance etc.).
+            check_enum: ZenML enum type grouping together Deepchecks checks with
+                the same characteristics. This is used to generate a default
+                list of checks, if a custom list isn't provided via the
+                `check_list` argument.
+            reference_dataset: Primary (reference) dataset argument used during
+                validation.
+            target_dataset: Optional secondary (target) dataset argument used
+                during validation.
+            model: Optional model argument used during validation.
             check_list: Optional list of ZenML Deepchecks check identifiers
-                specifying the data integrity checks to be performed.
-                `DeepchecksDataIntegrityCheck` enum values should be used as
-                elements.
+                specifying the list of Deepchecks checks to be performed.
             dataset_kwargs: Additional keyword arguments to be passed to the
                 Deepchecks tabular.Dataset or vision.VisionData constructor.
             check_kwargs: Additional keyword arguments to be passed to the
-                Deepchecks check object constructor.
+                Deepchecks check object constructors. Arguments are grouped for
+                each check and indexed using the full check class name or
+                check enum value as dictionary keys.
             run_kwargs: Additional keyword arguments to be passed to the
                 Deepchecks Suite `run` method.
-            kwargs: Additional keyword arguments (unused).
 
         Returns:
-            A Datachecks SuiteResult with the results of the validation.
+            Deepchecks SuiteResult object with the Suite run results.
 
         Raises:
-            TypeError: If the dataset, model and check list arguments combine
-            data types and/or checks from different categories (tabular and
-            computer vision).
+            TypeError: If the datasets, model and check list arguments combine
+                data types and/or checks from different categories (tabular and
+                computer vision).
         """
         # Detect what type of check to perform (tabular or computer vision) from
-        # the argument datatypes and the check list. At the same time, validate
-        # the combination of data types used for dataset and model arguments and
-        # the check list.
+        # the dataset/model datatypes and the check list. At the same time,
+        # validate the combination of data types used for dataset and model
+        # arguments and the check list.
         is_tabular = False
         is_vision = False
-        if isinstance(dataset, pd.DataFrame):
-            is_tabular = True
-        elif isinstance(dataset, DataLoader):
-            is_vision = True
-        else:
-            raise TypeError(
-                f"Unsupported dataset data type found: {type(dataset)}. "
-                f"Supported data types are {str(pd.DataFrame)} for tabular "
-                f"data and {str(DataLoader)} for computer vision data."
-            )
+        for dataset in [reference_dataset, target_dataset]:
+            if dataset is None:
+                continue
+            if isinstance(dataset, pd.DataFrame):
+                is_tabular = True
+            elif isinstance(dataset, DataLoader):
+                is_vision = True
+            else:
+                raise TypeError(
+                    f"Unsupported dataset data type found: {type(dataset)}. "
+                    f"Supported data types are {str(pd.DataFrame)} for tabular "
+                    f"data and {str(DataLoader)} for computer vision data."
+                )
 
         if model:
             if isinstance(model, ClassifierMixin):
@@ -521,7 +514,7 @@ class DeepchecksDataValidator(BaseDataValidator):
                 is_vision = True
             else:
                 raise TypeError(
-                    f"Unsupported model data type found: {type(dataset)}. "
+                    f"Unsupported model data type found: {type(model)}. "
                     f"Supported data types are {str(ClassifierMixin)} for "
                     f"tabular data and {str(Module)} for computer vision "
                     f"data."
@@ -539,10 +532,10 @@ class DeepchecksDataValidator(BaseDataValidator):
             )
 
         if not check_list:
-            # default to executing all data integrity checks if a custom check
-            # list is not supplied
-            tabular_checks, vision_checks = self.split_checks(
-                DeepchecksDataIntegrityCheck.values()
+            # default to executing all the checks listed in the supplied
+            # checks enum type if a custom check list is not supplied
+            tabular_checks, vision_checks = cls._split_checks(
+                check_enum.values()
             )
             if is_tabular:
                 check_list = tabular_checks
@@ -551,7 +544,7 @@ class DeepchecksDataValidator(BaseDataValidator):
                 check_list = vision_checks
                 tabular_checks = []
         else:
-            tabular_checks, vision_checks = self.split_checks(check_list)
+            tabular_checks, vision_checks = cls._split_checks(check_list)
 
         if tabular_checks and vision_checks:
             raise TypeError(
@@ -577,7 +570,10 @@ class DeepchecksDataValidator(BaseDataValidator):
             )
 
         check_classes = map(
-            lambda check: DeepchecksDataIntegrityCheck.get_check_class(check),
+            lambda check: (
+                check,
+                check_enum.get_check_class(check),
+            ),
             check_list,
         )
 
@@ -594,18 +590,301 @@ class DeepchecksDataValidator(BaseDataValidator):
             suite_name = f"suite_{random_str(5)}"
 
         if is_tabular:
-            train_dataset = TabularData(dataset, **dataset_kwargs)
-            suite = TabularSuite(name=suite_name)
-            for check_class in check_classes:
-                suite.add(check_class(**check_kwargs))
-            return suite.run(
-                train_dataset=train_dataset, model=model, **run_kwargs
-            )
+            dataset_class = TabularData
+            suite_class = TabularSuite
+            full_suite = full_tabular_suite()
         else:
-            train_dataset = VisionData(dataset, **dataset_kwargs)
-            suite = VisionSuite(name=suite_name)
-            for check_class in check_classes:
+            dataset_class = VisionData
+            suite_class = VisionSuite
+            full_suite = full_vision_suite()
+
+        train_dataset = dataset_class(reference_dataset, **dataset_kwargs)
+        test_dataset = None
+        if target_dataset is not None:
+            test_dataset = dataset_class(target_dataset, **dataset_kwargs)
+        suite = suite_class(name=suite_name)
+
+        # Some Deepchecks checks require a minimum configuration such as
+        # conditions to be configured (see https://docs.deepchecks.com/stable/user-guide/general/customizations/examples/plot_configure_check_conditions.html#sphx-glr-user-guide-general-customizations-examples-plot-configure-check-conditions-py)
+        # for their execution to have meaning. For checks that don't have
+        # custom configuration attributes explicitly specified in the
+        # `check_kwargs` input parameter, we use the default check
+        # instances extracted from the full suite shipped with Deepchecks.
+        default_checks = {
+            check.__class__: check for check in full_suite.checks.values()
+        }
+        for check_name, check_class in check_classes:
+            extra_kwargs = check_kwargs.get(check_name, {})
+            default_check = default_checks.get(check_class)
+            if extra_kwargs or not default_check:
                 suite.add(check_class(**check_kwargs))
-            return suite.run(
-                train_dataset=train_dataset, model=model, **run_kwargs
-            )
+            else:
+                suite.add(default_check)
+        return suite.run(
+            train_dataset=train_dataset,
+            test_dataset=test_dataset,
+            model=model,
+            **run_kwargs,
+        )
+
+    def data_validation(
+        self,
+        dataset: Union[pd.DataFrame, DataLoader[Any]],
+        model: Optional[Union[ClassifierMixin, Module]] = None,
+        check_list: Optional[Sequence[str]] = None,
+        dataset_kwargs: Dict[str, Any] = {},
+        check_kwargs: Dict[str, Dict[str, Any]] = {},
+        run_kwargs: Dict[str, Any] = {},
+        **kwargs: Any,
+    ) -> SuiteResult:
+        """Run one or more Deepchecks data integrity checks on a dataset.
+
+        Call this method to analyze and identify potential integrity problems
+        with a single dataset (e.g. missing values, conflicting labels, mixed
+        data types etc.).
+
+        Some Deepchecks integrity checks may require that a model be present
+        during the validation process to provide or dynamically generate
+        additional information (e.g. label predictions, prediction probabilities,
+        feature importance etc.) that is otherwise missing from the input
+        dataset. Where that is the case, the method also takes in a model as
+        argument. Alternatively, the missing information can be supplied using
+        custom `dataset_kwargs`, `check_kwargs` or `run_args` keyword
+        arguments.
+
+        The `check_list` argument may be used to specify a custom set of
+        Deepchecks data integrity checks to perform, identified by
+        `DeepchecksDataIntegrityCheck` enum values. If omitted, a suite with
+        all available data integrity checks will be performed on the input data.
+        See `DeepchecksDataIntegrityCheck` for a list of Deepchecks builtin
+        checks that are compatible with this method.
+
+        Args:
+            dataset: Target dataset to be validated.
+            model: Optional model to use to provide or dynamically generate
+                additional information necessary for data validation (e.g.
+                labels, prediction probabilities, feature importance etc.).
+            check_list: Optional list of ZenML Deepchecks check identifiers
+                specifying the data integrity checks to be performed.
+                `DeepchecksDataIntegrityCheck` enum values should be used as
+                elements.
+            dataset_kwargs: Additional keyword arguments to be passed to the
+                Deepchecks tabular.Dataset or vision.VisionData constructor.
+            check_kwargs: Additional keyword arguments to be passed to the
+                Deepchecks check object constructors. Arguments are grouped for
+                each check and indexed using the full check class name or
+                check enum value as dictionary keys.
+            run_kwargs: Additional keyword arguments to be passed to the
+                Deepchecks Suite `run` method.
+            kwargs: Additional keyword arguments (unused).
+
+        Returns:
+            A Datachecks SuiteResult with the results of the validation.
+        """
+        return self._create_and_run_check_suite(
+            check_enum=DeepchecksDataIntegrityCheck,
+            reference_dataset=dataset,
+            target_dataset=None,
+            model=model,
+            check_list=check_list,
+            dataset_kwargs=dataset_kwargs,
+            check_kwargs=check_kwargs,
+            run_kwargs=run_kwargs,
+        )
+
+    def model_validation(
+        self,
+        dataset: Union[pd.DataFrame, DataLoader[Any]],
+        model: Union[ClassifierMixin, Module],
+        check_list: Optional[Sequence[str]] = None,
+        dataset_kwargs: Dict[str, Any] = {},
+        check_kwargs: Dict[str, Dict[str, Any]] = {},
+        run_kwargs: Dict[str, Any] = {},
+        **kwargs: Any,
+    ) -> Any:
+        """Run one or more Deepchecks model validation checks.
+
+        Call this method to perform model validation checks (e.g. confusion
+        matrix validation, performance reports, model error analyses, etc).
+
+        Model validation checks require that a model be present during
+        the validation process. Unlike `data_validation`, where the model
+        is only required as an alternative of providing information otherwise
+        not present in the input dataset or implementation specific keyword
+        arguments (e.g. labels, prediction probabilities, feature importance),
+        the model is a mandatory component of model validation.
+
+        The `check_list` argument may be used to specify a custom set of
+        Deepchecks model validation checks to perform, identified by
+        `DeepchecksModelValidationCheck` enum values. If omitted, a suite with
+        all available model validation checks that take a single dataset as
+        input will be performed on the input data.
+        See `DeepchecksModelValidationCheck` for a list of Deepchecks builtin
+        checks that are compatible with this method.
+
+        Args:
+            dataset: Target dataset to be validated.
+            model: Target model to be validated.
+            check_list: Optional list of ZenML Deepchecks check identifiers
+                specifying the model validation checks to be performed.
+                `DeepchecksModelValidationCheck` enum values should be used as
+                elements.
+            dataset_kwargs: Additional keyword arguments to be passed to the
+                Deepchecks tabular.Dataset or vision.VisionData constructor.
+            check_kwargs: Additional keyword arguments to be passed to the
+                Deepchecks check object constructors. Arguments are grouped for
+                each check and indexed using the full check class name or
+                check enum value as dictionary keys.
+            run_kwargs: Additional keyword arguments to be passed to the
+                Deepchecks Suite `run` method.
+            kwargs: Additional keyword arguments (unused).
+
+        Returns:
+            A Datachecks SuiteResult with the results of the validation.
+        """
+        return self._create_and_run_check_suite(
+            check_enum=DeepchecksModelValidationCheck,
+            reference_dataset=dataset,
+            target_dataset=None,
+            model=model,
+            check_list=check_list,
+            dataset_kwargs=dataset_kwargs,
+            check_kwargs=check_kwargs,
+            run_kwargs=run_kwargs,
+        )
+
+    def data_comparison(
+        self,
+        reference_dataset: Union[pd.DataFrame, DataLoader[Any]],
+        target_dataset: Union[pd.DataFrame, DataLoader[Any]],
+        model: Optional[Union[ClassifierMixin, Module]] = None,
+        check_list: Optional[Sequence[str]] = None,
+        dataset_kwargs: Dict[str, Any] = {},
+        check_kwargs: Dict[str, Dict[str, Any]] = {},
+        run_kwargs: Dict[str, Any] = {},
+        **kwargs: Any,
+    ) -> Any:
+        """Run one or more data comparison (data drift) checks.
+
+        Call this method to perform dataset comparison checks (e.g. data drift
+        checks) by comparing a target dataset to a reference dataset.
+
+        Some Deepchecks data comparison checks may require that a model be
+        present during the validation process to provide or dynamically generate
+        additional information (e.g. label predictions, prediction probabilities,
+        feature importance etc.) that is otherwise missing from the input
+        datasets. Where that is the case, the method also takes in a model as
+        argument. Alternatively, the missing information can be supplied using
+        custom `dataset_kwargs`, `check_kwargs` or `run_args` keyword
+        arguments.
+
+        The `check_list` argument may be used to specify a custom set of
+        Deepchecks data comparison checks to perform, identified by
+        `DeepchecksDataDriftCheck` enum values. If omitted, a suite with
+        all available data comparison checks that don't require a model as
+        input will be performed on the input datasets.
+        See `DeepchecksDataDriftCheck` for a list of Deepchecks builtin
+        checks that are compatible with this method.
+
+        Args:
+            reference_dataset: Reference dataset (e.g. dataset used during model
+                training).
+            target_dataset: Dataset to be validated (e.g. dataset used during
+                model validation or new data used in production).
+            model: Optional model to use to provide or dynamically generate
+                additional information necessary for data comparison (e.g.
+                labels, prediction probabilities, feature importance etc.).
+            check_list: Optional list of ZenML Deepchecks check identifiers
+                specifying the data comparison checks to be performed.
+                `DeepchecksDataDriftCheck` enum values should be used as
+                elements.
+            dataset_kwargs: Additional keyword arguments to be passed to the
+                Deepchecks tabular.Dataset or vision.VisionData constructor.
+            check_kwargs: Additional keyword arguments to be passed to the
+                Deepchecks check object constructors. Arguments are grouped for
+                each check and indexed using the full check class name or
+                check enum value as dictionary keys.
+            run_kwargs: Additional keyword arguments to be passed to the
+                Deepchecks Suite `run` method.
+            kwargs: Additional keyword arguments (unused).
+
+        Returns:
+            A Datachecks SuiteResult with the results of the validation.
+        """
+        return self._create_and_run_check_suite(
+            check_enum=DeepchecksDataDriftCheck,
+            reference_dataset=reference_dataset,
+            target_dataset=target_dataset,
+            model=model,
+            check_list=check_list,
+            dataset_kwargs=dataset_kwargs,
+            check_kwargs=check_kwargs,
+            run_kwargs=run_kwargs,
+        )
+
+    def model_comparison(
+        self,
+        reference_dataset: Union[pd.DataFrame, DataLoader[Any]],
+        target_dataset: Union[pd.DataFrame, DataLoader[Any]],
+        model: Union[ClassifierMixin, Module],
+        check_list: Optional[Sequence[str]] = None,
+        dataset_kwargs: Dict[str, Any] = {},
+        check_kwargs: Dict[str, Dict[str, Any]] = {},
+        run_kwargs: Dict[str, Any] = {},
+        **kwargs: Any,
+    ) -> Any:
+        """Validate a model using a target and a reference dataset.
+
+        This method should be implemented by data validators that support
+        identifying changes in a model performance by analyzing how it performs
+        on a target dataset in comparison to how it performs on a reference
+        dataset.
+
+        Model comparison checks require that a model be present during
+        the validation process. Unlike `data_comparison`, where the model
+        is only required as an alternative of providing information otherwise
+        not present in the input dataset or implementation specific keyword
+        arguments (e.g. labels, prediction probabilities, feature importance),
+        the model is a mandatory component of model comparison.
+
+        The `check_list` argument may be used to specify a custom set of
+        Deepchecks model comparison checks to perform, identified by
+        `DeepchecksModelDriftCheck` enum values. If omitted, a suite with
+        all available model comparison checks will be performed on the input
+        datasets and model.
+        See `DeepchecksModelDriftCheck` for a list of Deepchecks builtin
+        checks that are compatible with this method.
+
+        Args:
+            reference_dataset: Reference dataset (e.g. dataset used during model
+                training).
+            target_dataset: Dataset to be validated (e.g. dataset used during
+                model validation or new data used in production).
+            model: Target model to be validated.
+            check_list: Optional list of ZenML Deepchecks check identifiers
+                specifying the model comparison checks to be performed.
+                `DeepchecksModelDriftCheck` enum values should be used as
+                elements.
+            dataset_kwargs: Additional keyword arguments to be passed to the
+                Deepchecks tabular.Dataset or vision.VisionData constructor.
+            check_kwargs: Additional keyword arguments to be passed to the
+                Deepchecks check object constructors. Arguments are grouped for
+                each check and indexed using the full check class name or
+                check enum value as dictionary keys.
+            run_kwargs: Additional keyword arguments to be passed to the
+                Deepchecks Suite `run` method.
+            kwargs: Additional keyword arguments (unused).
+
+        Returns:
+            A Datachecks SuiteResult with the results of the validation.
+        """
+        return self._create_and_run_check_suite(
+            check_enum=DeepchecksModelDriftCheck,
+            reference_dataset=reference_dataset,
+            target_dataset=target_dataset,
+            model=model,
+            check_list=check_list,
+            dataset_kwargs=dataset_kwargs,
+            check_kwargs=check_kwargs,
+            run_kwargs=run_kwargs,
+        )
