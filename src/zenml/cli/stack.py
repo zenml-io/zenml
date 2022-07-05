@@ -400,23 +400,24 @@ def update_stack(
 ) -> None:
     """Update a stack.
 
-        Args:
-            stack_name: Name of the stack to update.
-            metadata_store_name: Name of the new metadata store for this stack.
-            artifact_store_name: Name of the new artifact store for this stack.
-            orchestrator_name: Name of the new orchestrator for this stack.
-            container_registry_name: Name of the new container registry for this
-                stack.
-            step_operator_name: Name of the new step operator for this stack.
-            secrets_manager_name: Name of the new secrets manager for this stack.
-            feature_store_name: Name of the new feature store for this stack.
-            model_deployer_name: Name of the new model deployer for this stack.
-            experiment_tracker_name: Name of the new experiment tracker for this
-                stack.
-            alerter_name: Name of the new alerter for this stack.
-            data_validator_name: Name of the new data validator for this stack.
-            reset_association: Resets the associations for artifact/metadata stores.
-    >>>>>>> origin/develop
+    Args:
+        stack_name: Name of the stack to update.
+        metadata_store_name: Name of the new metadata store for this stack.
+        artifact_store_name: Name of the new artifact store for this stack.
+        orchestrator_name: Name of the new orchestrator for this stack.
+        container_registry_name: Name of the new container registry for this
+            stack.
+        step_operator_name: Name of the new step operator for this stack.
+        secrets_manager_name: Name of the new secrets manager for this
+            stack.
+        feature_store_name: Name of the new feature store for this stack.
+        model_deployer_name: Name of the new model deployer for this stack.
+        experiment_tracker_name: Name of the new experiment tracker for this
+            stack.
+        alerter_name: Name of the new alerter for this stack.
+        data_validator_name: Name of the new data validator for this stack.
+        reset_association: Resets the associations for artifact/metadata
+            stores.
     """
     cli_utils.print_active_profile()
 
