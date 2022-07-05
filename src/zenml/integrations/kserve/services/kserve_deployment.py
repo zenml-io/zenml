@@ -62,7 +62,7 @@ class KServeDeploymentConfig(ServiceConfig):
     """
 
     model_uri: str = ""
-    model_name: str = "default"
+    model_name: str = "model"
     secret_name: Optional[str]
     predictor: str
     replicas: int = 1
@@ -509,7 +509,7 @@ class KServeDeploymentService(BaseService):
 
         model_deployer = self._get_model_deployer()
         model_name = (
-            self._get_kubernetes_labels().get("model_name") or "default"
+            self._get_kubernetes_labels().get("zenml.model_name") or "model"
         )
         return os.path.join(
             model_deployer.base_url,
