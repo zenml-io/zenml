@@ -209,6 +209,11 @@ $Env:SSL_KEY=@<SSL_KEY> # for example @/home/zen/Downloads/client-key.pem
 {% endtab %}
 {% endtabs %}
 
+{% hint style="warning" %}
+Note the **@** sign in front of these three variables. The **@** sign tells the 
+secret manager that these are file paths to be loaded from.
+{% endhint %}
+
 Finally, head on over to the `Databases` submenu and create your database and
 export its name. 
 
@@ -264,8 +269,14 @@ For this, head over to your IAM
 **<project_number>@gcp-sa-aiplatform-cc.iam.gserviceaccount.com** service
 account. 
 
-Now give this one the **Container Registry Service Agent** role.
+Now give this one the **Container Registry Service Agent** role on top of its 
+existing role.
 
+{% hint style="info" %}
+This service account might not be present in the list of service accounts. In
+that case, skip this part, and once your first pipeline run fails, return to 
+this step in order to set the appropriate role.
+{% endhint %}
 
 ## Step 9/10 Set Up `gcloud` CLI
 
