@@ -59,9 +59,8 @@ export PROJECT_NUMBER=<PROJECT_NUMBER> # for example '492014921912'
 
 Before moving on, you'll have to make sure you attach a billing account to 
 your project. In case you do not have the permissions to do so, you'll have to
-ask an organization administrator to do so. 
-[Here](https://console.cloud.google.com/billing/projects) is the relevant 
-page to do so.
+ask an organization administrator.
+[Here](https://console.cloud.google.com/billing/projects) is a relevant page.
 
 ## Step 3/10 Enable Vertex AI
 
@@ -93,7 +92,7 @@ Docker  registry
 [here](https://console.cloud.google.com/marketplace/product/google/containerregistry.googleapis.com).
 
 In order to use the container registry at a later point you will need to 
-set the container registry uri. This is how it is usually constructed:
+set the container registry URI. This is how it is usually constructed:
 `gcr.io/<PROJECT_ID>`. 
 
 
@@ -113,7 +112,7 @@ Storing of step artifacts is an important part of reproducible MLOps.
 Create a bucket [here](https://console.cloud.google.com/storage/create-bucket).
 
 Within the configuration of the newly created bucket you can find the 
-gsutil URI which you will need at a later point. Its usually going to look like 
+gsutil URI which you will need at a later point. It's usually going to look like 
 this: `gs://<bucket-name>`
 
 ```bash
@@ -142,11 +141,11 @@ export DB_PWD=<DB_PWD> # for example 'secure_root_pwd'
 
 Time to set up the connections to our database. To do this you'll need to go 
 into the `Connections` menu. Under the `Networking` tab you'll need to add 
-**0.0.0.0** to the authorized networks, thereby allowing all incoming traffic 
+**0.0.0.0/0** to the authorized networks, thereby allowing all incoming traffic 
 from everywhere. (Feel free to restrict this to your outgoing IP address)
 
 For security reasons, it is also recommended to configure your database to only 
-accept SSL connections. You'll find the relevant setting in the **Security*+ 
+accept SSL connections. You'll find the relevant setting in the **Security** 
 tab. Select **SSL Connections only** in order to encrypt all traffic with your 
 database.
 
@@ -187,7 +186,9 @@ export SERVICE_ACCOUNT=<SERVICE_ACCOUNT> # for example zenml-vertex-sa@zenml-pro
 ```
 
 On top of this we will also need to give permissions to the service account
-of the custom code workers. For this head over to your IAM 
+of the custom code workers. 
+
+For this, head over to your IAM 
 [configurations](https://console.cloud.google.com/iam-admin/iam), click on 
 **Include Google-provided role grants** on the top right and find the 
 **<project_number>@gcp-sa-aiplatform-cc.iam.gserviceaccount.com** service
@@ -196,9 +197,9 @@ account.
 Now give this one the **Container Registry Service Agent** role.
 
 
-## Step 9/10 Set Up gcloud CLI
+## Step 9/10 Set Up `gcloud` CLI
 
-Install the gcloud cli on your machine. 
+Install the `gcloud` CLI on your machine. 
 [Here](https://cloud.google.com/sdk/docs/install) is a guide on how to install 
 it.
 
