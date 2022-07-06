@@ -8,40 +8,53 @@ description: Create Steps, Build a Pipeline and Run it.
 
 Steps are the atomic components of a ZenML pipeline. Each step is defined by its
 inputs, the logic it applies and its outputs. Here is a very simple example of
-such a step:
+such a step, which uses a utility function to load the Digits dataset:
 
 ```python
-from zenml.steps import step, Output
+import numpy as np
+
+from zenml.integrations.sklearn.helpers.digits import get_digits
+from zenml.steps import Output, step
 
 
 @step
-def my_first_step() -> Output(output_int=int, output_float=float):
-    """Step that returns a pre-defined integer and float"""
-    return 7, 0.1
+def load_digits() -> Output(
+    X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
+):
+    """Loads the digits dataset as normal numpy arrays."""
+    X_train, X_test, y_train, y_test = get_digits()
+    return X_train, X_test, y_train, y_test
 ```
 
-As this step has multiple outputs, we need to use
-the `zenml.steps.step_output.Output` class to indicate the names
-of each output. These names can be used to directly access an output within the
-[post execution workflow](./post-execution-workflow.md).
+As this step has multiple outputs, we need to use the
+`zenml.steps.step_output.Output` class to indicate the names of each output. 
+These names can be used to directly access the outputs of steps after running
+a pipeline, as we will see [in a later chapter](./post-execution-workflow.md).
 
 Let's come up with a second step that consumes the output of our first step and
-performs some sort of transformation
-on it. In this case, let's double the input.
+performs some sort of transformation on it. In this case, let's train a support
+vector machine classifier on the training data using sklearn:
 
 ```python
-from zenml.steps import step, Output
+import numpy as np
+from sklearn.base import ClassifierMixin
+from sklearn.svm import SVC
+
+from zenml.steps import step
 
 
 @step
-def my_second_step(input_int: int, input_float: float
-                   ) -> Output(output_int=int, output_float=float):
-    """Step that doubles the inputs"""
-    return 2 * input_int, 2 * input_float
+def svc_trainer(
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+) -> ClassifierMixin:
+    """Train a sklearn SVC classifier."""
+    model = SVC(gamma=0.001)
+    model.fit(X_train, y_train)
+    return model
 ```
 
-Now we can go ahead and create a pipeline with our two steps to make sure they
-work.
+Next, we will combine our two steps into our first ML pipeline.
 
 {% hint style="info" %}
 In case you want to run the step function outside the context of a ZenML 
@@ -49,16 +62,15 @@ pipeline, all you need to do is call the `.entrypoint()` method with the same
 input signature. For example:
 
 ```python
-my_second_step.entrypoint(input_int=1, input_float=0.9)
+svc_trainer.entrypoint(X_train=..., y_train=...)
 ```
 {% endhint %}
 
 ## Pipeline
 
-Here we define the pipeline. This is done agnostic of implementation by simply
-routing outputs through the
-steps within the pipeline. You can think of this as a recipe for how we want
-data to flow through our steps.
+Let us now define our first ML pipeline. This is agnostic of the implementation and can be
+done by routing outputs through the steps within the pipeline. You can think of
+this as a recipe for how we want data to flow through our steps.
 
 ```python
 from zenml.pipelines import pipeline
@@ -66,82 +78,48 @@ from zenml.pipelines import pipeline
 
 @pipeline
 def first_pipeline(
-        step_1,
-        step_2
+    step_1,
+    step_2
 ):
-    output_1, output_2 = step_1()
-    step_2(output_1, output_2)
+    X_train, X_test, y_train, y_test = step_1()
+    step_2(X_train, y_train)
 ```
 
 ### Instantiate and run your Pipeline
 
 With your pipeline recipe in hand you can now specify which concrete step
-implementations are used. And with that, you
-are ready to run:
+implementations to use and then run the pipeline:
 
 ```python
-first_pipeline(step_1=my_first_step(), step_2=my_second_step()).run()
+first_pipeline_instance = first_pipeline(
+    step_1=load_digits(),
+    step_2=svc_trainer(),
+)
+
+first_pipeline_instance.run()
 ```
 
-You should see the following output on your command line:
+You should see the following output in your terminal:
 
 ```shell
 Creating run for pipeline: `first_pipeline`
 Cache disabled for pipeline `first_pipeline`
 Using stack `default` to run pipeline `first_pipeline`
-Step `my_first_step` has started.
-Step `my_first_step` has finished in 0.049s.
-Step `my_second_step` has started.
-Step `my_second_step` has finished in 0.067s.
-Pipeline run `first_pipeline-20_Apr_22-16_07_14_577771` has finished in 0.128s.
+Step `load_digits` has started.
+Step `load_digits` has finished in 0.049s.
+Step `svc_trainer` has started.
+Step `svc_trainer` has finished in 0.067s.
+Pipeline run `first_pipeline-06_Jul_22-16_10_46_255748` has finished in 0.128s.
 ```
 
-You'll learn how to inspect the finished run within the chapter on
-our [Post Execution Workflow](./post-execution-workflow.md).
-
-#### Summary in Code
-
-<details>
-    <summary>Code Example for this Section</summary>
-
-```python
-from zenml.steps import step, Output
-from zenml.pipelines import pipeline
-
-
-@step
-def my_first_step() -> Output(output_int=int, output_float=float):
-    """Step that returns a pre-defined integer and float"""
-    return 7, 0.1
-
-
-@step
-def my_second_step(input_int: int, input_float: float
-                   ) -> Output(output_int=int, output_float=float):
-    """Step that doubles the inputs"""
-    return 2 * input_int, 2 * input_float
-
-
-@pipeline
-def first_pipeline(
-        step_1,
-        step_2
-):
-    output_1, output_2 = step_1()
-    step_2(output_1, output_2)
-
-
-first_pipeline(step_1=my_first_step(), step_2=my_second_step()).run()
-```
-
-</details>
+We will dive deeper into how to inspect the finished run within the chapter on
+[Accessing Pipeline Runs](./post-execution-workflow.md).
 
 ### Give each pipeline run a name
 
 When running a pipeline by calling `my_pipeline.run()`, ZenML uses the current
-date and time as the name for the
-pipeline run. In order to change the name for a run, simply pass it as a
-parameter to the `run()` function:
+date and time as the name for the pipeline run. In order to change the name
+for a run, simply pass it as a parameter to the `run()` function:
 
 ```python
 first_pipeline_instance.run(run_name="custom_pipeline_run_name")
@@ -149,77 +127,59 @@ first_pipeline_instance.run(run_name="custom_pipeline_run_name")
 
 {% hint style="warning" %}
 Pipeline run names must be unique, so make sure to compute it dynamically if you
-plan to run your pipeline multiple
-times.
+plan to run your pipeline multiple times.
 {% endhint %}
 
-Once the pipeline run is finished we can easily access this specific run during
-our post-execution workflow:
-
-```python
-from zenml.repository import Repository
-
-repo = Repository()
-pipeline = repo.get_pipeline(pipeline_name="first_pipeline")
-run = pipeline.get_run("custom_pipeline_run_name")
-```
-
-#### Summary in Code
+## Code Summary
 
 <details>
     <summary>Code Example for this Section</summary>
 
 ```python
-from zenml.steps import step, Output, BaseStepConfig
+import numpy as np
+from sklearn.base import ClassifierMixin
+from sklearn.svm import SVC
+
+from zenml.integrations.sklearn.helpers.digits import get_digits
+from zenml.steps import Output, step
 from zenml.pipelines import pipeline
 
 
 @step
-def my_first_step() -> Output(output_int=int, output_float=float):
-    """Step that returns a pre-defined integer and float"""
-    return 7, 0.1
-
-
-class SecondStepConfig(BaseStepConfig):
-    """Trainer params"""
-    multiplier: int = 4
+def load_digits() -> Output(
+    X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
+):
+    """Loads the digits dataset as normal numpy arrays."""
+    X_train, X_test, y_train, y_test = get_digits()
+    return X_train, X_test, y_train, y_test
 
 
 @step
-def my_second_step(config: SecondStepConfig, input_int: int,
-                   input_float: float
-                   ) -> Output(output_int=int, output_float=float):
-    """Step that multiply the inputs"""
-    return config.multiplier * input_int, config.multiplier * input_float
+def svc_trainer(
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+) -> ClassifierMixin:
+    """Train a sklearn SVC classifier."""
+    model = SVC(gamma=0.001)
+    model.fit(X_train, y_train)
+    return model
 
 
 @pipeline
 def first_pipeline(
-        step_1,
-        step_2
+    step_1,
+    step_2
 ):
-    output_1, output_2 = step_1()
-    step_2(output_1, output_2)
+    X_train, X_test, y_train, y_test = step_1()
+    step_2(X_train, y_train)
 
 
-# Set configuration when executing
-first_pipeline(step_1=my_first_step(),
-               step_2=my_second_step(SecondStepConfig(multiplier=3))
-               ).run(run_name="custom_pipeline_run_name")
+first_pipeline_instance = first_pipeline(
+    step_1=load_digits(),
+    step_2=svc_trainer(),
+)
 
-# Set configuration  based on yml
-first_pipeline(step_1=my_first_step(),
-               step_2=my_second_step()
-               ).with_config("config.yml").run()
-```
-
-With config.yml looking like this
-
-```yaml
-steps:
-  step_2:
-    parameters:
-      multiplier: 3
+first_pipeline_instance.run()
 ```
 
 </details>
