@@ -73,6 +73,8 @@ aws s3api create-bucket --bucket=$S3_BUCKET_NAME \
 - Go back to your database page and click on `Modify` in the top right.
 - In the `Connectivity` section, open the `Advanced configuration` and enable public access.
 
+{% endtab %}
+
 {% tab title="AWS CLI" %}
 
 ```shell
@@ -133,6 +135,7 @@ aws ec2 authorize-security-group-ingress \
     ECR_URI=<ECR_URI>
     ```
 
+{% endtab %}
 {% tab title="AWS CLI" %}
 
 ```shell
@@ -167,6 +170,8 @@ ECR_URI="$REGISTRY_ID.dkr.ecr.$REGION.amazonaws.com"
 - After the cluster is created, select it and click on `Add node group` in the `Compute` tab.
 - Enter a name and select the **node role**.
 - Keep all other default values and create the node group.
+
+{% endtab %}
 
 {% tab title="AWS CLI" %}
 
