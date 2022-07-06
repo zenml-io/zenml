@@ -11,20 +11,23 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+import numpy as np
 from rich import print as rich_print
 
 from zenml.integrations.kserve.services import KServeDeploymentService
 from zenml.steps import step
+from zenml.steps.step_output import Output
 
 
 @step
-def predictor(
+def tensorflow_predictor(
     service: KServeDeploymentService,
-    data: str,
-) -> None:
+    data: np.ndarray,
+) -> Output(predictions=np.ndarray):
     """Run a inference request against a prediction service"""
 
     service.start(timeout=120)  # should be a NOP if already started
     prediction = service.predict(data)
+    prediction = prediction.argmax(axis=-1)
     rich_print("Prediction: ", prediction)
+    return prediction

@@ -14,22 +14,26 @@
 from typing import cast
 
 import click
-from pipelines.kserve_tensorflow_pipeline import kserve_tensorflow_pipeline
-from pipelines.tensorflow_inference_pipeline import (
+from pipelines import (
     tensorflow_inference_pipeline,
+    tensorflow_training_deployment_pipeline,
 )
 from steps.deployment_trigger import DeploymentTriggerConfig, deployment_trigger
-from steps.dynamic_importer import dynamic_importer, importer_mnist
-from steps.model_deployer import kserve_tensorflow_deployer
-from steps.normalizer import normalizer
-from steps.prediction_services_loader import (
-    KServeDeploymentLoaderStepConfig,
+from steps.prediction_service_loader import (
+    PredectionServiceLoaderStepConfig,
     prediction_service_loader,
 )
 from steps.predictor import predictor
-from steps.tf_evaluator import tf_evaluator
-from steps.tf_predict_preprocessor import tf_predict_preprocessor
-from steps.tf_trainer import TensorflowTrainerConfig, tf_trainer
+from steps.tensorflow_steps import (
+    TensorflowTrainerConfig,
+    dynamic_importer,
+    importer_mnist,
+    kserve_tensorflow_deployer,
+    normalizer,
+    tf_evaluator,
+    tf_predict_preprocessor,
+    tf_trainer,
+)
 
 from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (
     KServeModelDeployer,
@@ -85,14 +89,14 @@ def main(
     predict = config == PREDICT or config == DEPLOY_AND_PREDICT
 
     model_name = "mnist"
-    deployment_pipeline_name = "kserve_tensorflow_pipeline"
+    deployment_pipeline_name = "tensorflow_training_deployment_pipeline"
     deployer_step_name = "kserve_model_deployer_step"
 
     model_deployer = KServeModelDeployer.get_active_model_deployer()
 
     if deploy:
         # Initialize a continuous deployment pipeline run
-        deployment = kserve_tensorflow_pipeline(
+        deployment = tensorflow_training_deployment_pipeline(
             importer=importer_mnist(),
             normalizer=normalizer(),
             trainer=tf_trainer(TensorflowTrainerConfig(epochs=epochs, lr=lr)),
@@ -113,7 +117,7 @@ def main(
             dynamic_importer=dynamic_importer(),
             predict_preprocessor=tf_predict_preprocessor(),
             prediction_service_loader=prediction_service_loader(
-                KServeDeploymentLoaderStepConfig(
+                PredectionServiceLoaderStepConfig(
                     pipeline_name=deployment_pipeline_name,
                     step_name=deployer_step_name,
                     model_name=model_name,

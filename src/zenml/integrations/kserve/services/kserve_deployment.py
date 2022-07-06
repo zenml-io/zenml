@@ -16,9 +16,10 @@
 import json
 import os
 import re
-from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple, Union
 from uuid import UUID
 
+import numpy as np
 import requests
 from kserve import (
     KServeClient,
@@ -42,6 +43,8 @@ from zenml.services import (
 )
 
 if TYPE_CHECKING:
+    from numpy.typing import NDArray
+
     from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (  # noqa
         KServeModelDeployer,
     )
@@ -534,7 +537,7 @@ class KServeDeploymentService(BaseService):
         custom_domain = model_deployer.custom_domain or "example.com"
         return f"{self.crd_name}.{namespace}.{custom_domain}"
 
-    def predict(self, request: str) -> Any:
+    def predict(self, request: Union[str, "NDArray[Any]"]) -> Any:
         """Make a prediction using the service.
 
         Args:
@@ -562,7 +565,7 @@ class KServeDeploymentService(BaseService):
         headers = {"Host": self.prediction_hostname}
         if isinstance(request, str):
             request = json.loads(request)
-        else:
+        elif isinstance(request, np.ndarray):
             request = request.tolist()
         response = requests.post(
             self.prediction_url,

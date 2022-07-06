@@ -19,6 +19,7 @@ from .pytorch_inference_processor import (
 )
 from .pytorch_model_deployer import pytorch_model_deployer
 from .pytorch_trainer import PytorchTrainerConfig, pytorch_trainer
+from .pytorch_predictor import predictor
 
 __all__ = [
     "PytorchDataLoaderConfig",
@@ -29,4 +30,5 @@ __all__ = [
     "pytorch_model_deployer",
     "pytorch_inference_processor",
     "PyTorchInferenceProcessorStepConfig",
+    "predictor",
 ]
