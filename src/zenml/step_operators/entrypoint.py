@@ -150,8 +150,9 @@ def main(
     """
     # prevent running entire pipeline in user code if they would run at import
     # time (e.g. not wrapped in a function or __name__== "__main__" check)
-
     constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
+
+    stack = Repository().active_stack
 
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
     logging.getLogger().setLevel(logging.INFO)
@@ -170,7 +171,6 @@ def main(
             input_artifact_type_mapping=input_artifact_type_mapping,
         )
 
-        stack = Repository().active_stack
         execution_info = load_execution_info(execution_info_path)
         executor = configure_executor(
             executor_class, execution_info=execution_info

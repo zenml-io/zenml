@@ -127,8 +127,8 @@ class StepExecutorOperator(BaseExecutorOperator):
         # TODO [ENG-696]: Find a nice way to set this if the running version of
         #  ZenML is not an official release (e.g. on a development branch)
         # Add the current ZenML version as a requirement
-        requirements.add(f"zenml=={zenml.__version__}")
-
+        # requirements.add(f"zenml=={zenml.__version__}")
+        requirements.add(f"git+https://github.com/zenml-io/zenml.git@feature/ENG-908-distributed-processing-spark")
         return sorted(requirements)
 
     @staticmethod
