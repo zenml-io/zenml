@@ -54,6 +54,8 @@ def generate_dockerfile_contents(
         "USER root",  # required to install the requirements
         f"WORKDIR {ZENML_DIR}",
         f"COPY entrypoint.py .",
+        "RUN apt-get -y update",
+        "RUN apt-get -y install git"
     ]
 
     # Add env variables
@@ -89,8 +91,8 @@ class KubernetesSparkStepOperator(BaseStepOperator):
     # Class configuration
     FLAVOR: ClassVar[str] = SPARK_KUBERNETES_STEP_OPERATOR
 
+    @staticmethod
     def _build_docker_image(
-        self,
         pipeline_name,
         requirements,
     ):
@@ -131,7 +133,7 @@ class KubernetesSparkStepOperator(BaseStepOperator):
         command = [
             "spark-submit",
             "--master",
-            self.master,
+            f"k8s://{self.master}",
             "--deploy-mode",
             self.deploy_mode,
         ]
