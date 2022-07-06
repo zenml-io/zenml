@@ -161,9 +161,9 @@ def convert_pred_filenames_to_task_ids(
 ) -> List[Dict[str, Any]]:
     """Converts a list of predictions from local file references to task id."""
     filename_id_mapping = {
-        os.path.basename(urlparse(task["data"][filename_reference]).path): task[
-            "id"
-        ]
+        os.path.basename(
+            urlparse(task["data"][filename_reference]).path
+        ): task["id"]
         for task in tasks
     }
 
