@@ -1443,13 +1443,13 @@ class SqlZenStore(BaseZenStore):
             A list of store associations for the given artifact store.
         """
         with Session(self.engine) as session:
-            associations = session.exec(
+            existing_associations = session.exec(
                 select(StoreAssociationTable).where(
                     StoreAssociationTable.artifact_store_uuid
                     == artifact_store_uuid
                 )
             ).all()
-            return [StoreAssociation(**a.dict()) for a in associations]
+            return [StoreAssociation(**association.dict()) for association in existing_associations]
 
     def get_store_associations_for_metadata_store(
         self,
@@ -1464,13 +1464,13 @@ class SqlZenStore(BaseZenStore):
             A list of store associations for the given metadata store.
         """
         with Session(self.engine) as session:
-            associations = session.exec(
+            existing_associations = session.exec(
                 select(StoreAssociationTable).where(
                     StoreAssociationTable.metadata_store_uuid
                     == metadata_store_uuid
                 )
             ).all()
-            return [StoreAssociation(**a.dict()) for a in associations]
+            return [StoreAssociation(**association.dict()) for association in existing_associations]
 
     def get_store_associations_for_artifact_and_metadata_store(
         self,
@@ -1487,7 +1487,7 @@ class SqlZenStore(BaseZenStore):
             A list of store associations for the given combination.
         """
         with Session(self.engine) as session:
-            associations = session.exec(
+            existing_associations = session.exec(
                 select(StoreAssociationTable)
                 .where(
                     StoreAssociationTable.artifact_store_uuid
@@ -1498,7 +1498,7 @@ class SqlZenStore(BaseZenStore):
                     == metadata_store_uuid
                 )
             ).all()
-            return [StoreAssociation(**a.dict()) for a in associations]
+            return [StoreAssociation(**association.dict()) for association in existing_associations]
 
     def delete_store_association_for_artifact_and_metadata_store(
         self,

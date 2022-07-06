@@ -964,9 +964,9 @@ class LocalZenStore(BaseZenStore):
             A list of store associations for the given artifact store.
         """
         return [
-            a
-            for a in self.__store.store_associations
-            if a.artifact_store_uuid == artifact_store_uuid
+            association
+            for association in self.__store.store_associations
+            if association.artifact_store_uuid == artifact_store_uuid
         ]
 
     def get_store_associations_for_metadata_store(
@@ -982,9 +982,9 @@ class LocalZenStore(BaseZenStore):
             A list of store associations for the given metadata store.
         """
         return [
-            a
-            for a in self.__store.store_associations
-            if a.metadata_store_uuid == metadata_store_uuid
+            association
+            for association in self.__store.store_associations
+            if association.metadata_store_uuid == metadata_store_uuid
         ]
 
     def get_store_associations_for_artifact_and_metadata_store(
@@ -1002,10 +1002,10 @@ class LocalZenStore(BaseZenStore):
             A list of store associations for the given combination.
         """
         return [
-            a
-            for a in self.__store.store_associations
-            if a.artifact_store_uuid == artifact_store_uuid
-            and a.metadata_store_uuid == metadata_store_uuid
+            association
+            for association in self.__store.store_associations
+            if association.artifact_store_uuid == artifact_store_uuid
+            and association.metadata_store_uuid == metadata_store_uuid
         ]
 
     def delete_store_association_for_artifact_and_metadata_store(
@@ -1019,16 +1019,16 @@ class LocalZenStore(BaseZenStore):
             artifact_store_uuid: The UUID of the selected artifact store.
             metadata_store_uuid: The UUID of the selected metadata store.
         """
-        associations = (
+        existing_associations = (
             self.get_store_associations_for_artifact_and_metadata_store(
                 artifact_store_uuid=artifact_store_uuid,
                 metadata_store_uuid=metadata_store_uuid,
             )
         )
 
-        for a in associations:
-            self.__store.store_associations.remove(a)
-            logger.info(f"Deleted store association {a}.")
+        for association in existing_associations:
+            self.__store.store_associations.remove(association)
+            logger.info(f"Deleted store association {association}.")
 
         self.__store.write_config()
 

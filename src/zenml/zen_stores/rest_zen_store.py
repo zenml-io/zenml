@@ -843,9 +843,9 @@ class RestZenStore(BaseZenStore):
             A list of store associations for the given artifact store.
         """
         return [
-            a
-            for a in self.store_associations
-            if a.artifact_store_uuid == artifact_store_uuid
+            association
+            for association in self.store_associations
+            if association.artifact_store_uuid == artifact_store_uuid
         ]
 
     def get_store_associations_for_metadata_store(
@@ -861,9 +861,9 @@ class RestZenStore(BaseZenStore):
             A list of store associations for the given metadata store.
         """
         return [
-            a
-            for a in self.store_associations
-            if a.metadata_store_uuid == metadata_store_uuid
+            association
+            for association in self.store_associations
+            if association.metadata_store_uuid == metadata_store_uuid
         ]
 
     def get_store_associations_for_artifact_and_metadata_store(
@@ -881,10 +881,10 @@ class RestZenStore(BaseZenStore):
             A list of store associations for the given combination.
         """
         return [
-            a
-            for a in self.store_associations
-            if a.metadata_store_uuid == metadata_store_uuid
-            and a.artifact_store_uuid == artifact_store_uuid
+            association
+            for association in self.store_associations
+            if association.metadata_store_uuid == metadata_store_uuid
+            and association.artifact_store_uuid == artifact_store_uuid
         ]
 
     def delete_store_association_for_artifact_and_metadata_store(
