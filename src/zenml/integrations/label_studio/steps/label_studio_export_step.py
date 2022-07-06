@@ -24,8 +24,8 @@ from zenml.steps import BaseStepConfig, StepContext, step
 logger = get_logger(__name__)
 
 TASK_TO_FILENAME_REFERENCE_MAPPING = {
-    AnnotationTasks.IMAGE_CLASSIFICATION: "choice",
-    AnnotationTasks.OBJECT_DETECTION_BOUNDING_BOXES: "label",
+    AnnotationTasks.IMAGE_CLASSIFICATION: "image",
+    AnnotationTasks.OBJECT_DETECTION_BOUNDING_BOXES: "image",
 }
 
 
@@ -40,7 +40,7 @@ def generate_image_classification_label_config(
 
     label_config_start = f"""<View>
     <Image name="image" value="$image"/>
-    <Choices name="{TASK_TO_FILENAME_REFERENCE_MAPPING[label_config_type]}" toName="image">
+    <Choices name="choice" toName="image">
     """
     label_config_choices = "".join(
         f"<Choice value='{label}' />\n" for label in labels
@@ -64,7 +64,7 @@ def generate_basic_object_detection_bounding_boxes_label_config(
 
     label_config_start = f"""<View>
     <Image name="image" value="$image"/>
-    <RectangleLabels name="{TASK_TO_FILENAME_REFERENCE_MAPPING[label_config_type]}" toName="image">
+    <RectangleLabels name="label" toName="image">
     """
     label_config_choices = "".join(
         f"<Label value='{label}' />\n" for label in labels
@@ -79,12 +79,12 @@ def generate_basic_object_detection_bounding_boxes_label_config(
 
 class LabelStudioDatasetRegistrationConfig(BaseStepConfig):
     label_config: str
-    label_config_type: str
     dataset_name: str
 
 
 class LabelStudioDatasetSyncConfig(BaseStepConfig):
     storage_type: str
+    label_config_type: str
 
     prefix: Optional[str] = None
     regex_filter: Optional[str] = ".*"
@@ -161,9 +161,9 @@ def convert_pred_filenames_to_task_ids(
 ) -> List[Dict[str, Any]]:
     """Converts a list of predictions from local file references to task id."""
     filename_id_mapping = {
-        os.path.basename(
-            urlparse(task["data"][filename_reference]).path
-        ): task["id"]
+        os.path.basename(urlparse(task["data"][filename_reference]).path): task[
+            "id"
+        ]
         for task in tasks
     }
 
