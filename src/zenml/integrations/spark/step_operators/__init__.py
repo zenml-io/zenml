@@ -15,6 +15,3 @@
 from zenml.integrations.spark.step_operators.kubernetes_step_operator import (
     KubernetesSparkStepOperator,
 )
-from zenml.integrations.spark.step_operators.standalone_spark_step_operator import (
-    StandaloneSparkStepOperator,
-)
