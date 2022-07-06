@@ -31,6 +31,8 @@ First open up a terminal which we'll use to store some values along the way whic
     S3_BUCKET_NAME=<S3_BUCKET_NAME>
     ```
 
+{% endtab %}
+
 {% tab title="AWS CLI" %}
 
 ```shell
