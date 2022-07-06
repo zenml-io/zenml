@@ -136,10 +136,10 @@ class StackComponent(BaseModel, ABC):
         return None
 
     def prepare_pipeline_deployment(
-            self,
-            pipeline: "BasePipeline",
-            stack: "Stack",
-            runtime_configuration: "RuntimeConfiguration",
+        self,
+        pipeline: "BasePipeline",
+        stack: "Stack",
+        runtime_configuration: "RuntimeConfiguration",
     ) -> None:
         """Prepares deploying the pipeline.
 
