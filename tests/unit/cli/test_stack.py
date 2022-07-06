@@ -65,8 +65,7 @@ def test_updating_active_stack_succeeds(clean_repo) -> None:
 
     runner = CliRunner()
     result = runner.invoke(
-        update_stack,
-        ["default", "-decouple_stores", "-a", "arias_store"]
+        update_stack, ["default", "--decouple_stores", "-a", "arias_store"]
     )
     assert result.exit_code == 0
     assert clean_repo.active_stack.artifact_store == new_artifact_store

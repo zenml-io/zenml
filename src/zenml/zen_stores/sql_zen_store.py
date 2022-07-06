@@ -1449,7 +1449,10 @@ class SqlZenStore(BaseZenStore):
                     == artifact_store_uuid
                 )
             ).all()
-            return [StoreAssociation(**association.dict()) for association in existing_associations]
+            return [
+                StoreAssociation(**association.dict())
+                for association in existing_associations
+            ]
 
     def get_store_associations_for_metadata_store(
         self,
@@ -1470,7 +1473,10 @@ class SqlZenStore(BaseZenStore):
                     == metadata_store_uuid
                 )
             ).all()
-            return [StoreAssociation(**association.dict()) for association in existing_associations]
+            return [
+                StoreAssociation(**association.dict())
+                for association in existing_associations
+            ]
 
     def get_store_associations_for_artifact_and_metadata_store(
         self,
@@ -1498,7 +1504,10 @@ class SqlZenStore(BaseZenStore):
                     == metadata_store_uuid
                 )
             ).all()
-            return [StoreAssociation(**association.dict()) for association in existing_associations]
+            return [
+                StoreAssociation(**association.dict())
+                for association in existing_associations
+            ]
 
     def delete_store_association_for_artifact_and_metadata_store(
         self,

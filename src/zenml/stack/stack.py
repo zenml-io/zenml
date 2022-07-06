@@ -507,8 +507,10 @@ class Stack:
                 component.validator.validate(stack=self)
 
         repo = Repository()
-        artifact_store_associations = repo.zen_store.get_store_associations_for_artifact_store(
-            self.artifact_store.uuid
+        artifact_store_associations = (
+            repo.zen_store.get_store_associations_for_artifact_store(
+                self.artifact_store.uuid
+            )
         )
         if artifact_store_associations:
             for association in artifact_store_associations:
@@ -540,8 +542,10 @@ class Stack:
                             f"associations of these components."
                         )
 
-        m_associations = repo.zen_store.get_store_associations_for_metadata_store(
-            self.metadata_store.uuid
+        m_associations = (
+            repo.zen_store.get_store_associations_for_metadata_store(
+                self.metadata_store.uuid
+            )
         )
         if m_associations:
             for association in m_associations:
