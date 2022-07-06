@@ -71,7 +71,7 @@ def _sqlmodel_uuid() -> UUID:
 class ZenUser(SQLModel, table=True):
     """SQL Model for users."""
 
-    id: int = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    id: int = Field(primary_key=True)
     name: str
 
 
