@@ -360,7 +360,6 @@ class KServeModelDeployer(BaseModelDeployer):
         pipeline_step_name: Optional[str] = None,
         model_name: Optional[str] = None,
         model_uri: Optional[str] = None,
-        model_type: Optional[str] = None,
         predictor: Optional[str] = None,
     ) -> List[BaseService]:
         """Find one or more KServe model services that match the given criteria.
@@ -377,8 +376,6 @@ class KServeModelDeployer(BaseModelDeployer):
                 that deployed the model.
             model_name: the name of the deployed model.
             model_uri: URI of the deployed model.
-            model_type: the implementation specific type/format of the deployed
-                model.
             predictor: the name of the predictor that was used to deploy the model.
 
         Returns:

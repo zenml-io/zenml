@@ -23,7 +23,6 @@ from steps.prediction_service_loader import (
     PredectionServiceLoaderStepConfig,
     prediction_service_loader,
 )
-from steps.predictor import predictor
 from steps.tensorflow_steps import (
     TensorflowTrainerConfig,
     dynamic_importer,
@@ -32,6 +31,7 @@ from steps.tensorflow_steps import (
     normalizer,
     tf_evaluator,
     tf_predict_preprocessor,
+    tf_predictor,
     tf_trainer,
 )
 
@@ -123,7 +123,7 @@ def main(
                     model_name=model_name,
                 )
             ),
-            predictor=predictor(),
+            predictor=tf_predictor(),
         )
 
         inference.run()
