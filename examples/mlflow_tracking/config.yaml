@@ -1,0 +1,19 @@
+name: mlflow_example_pipeline
+steps:
+  importer:
+    source:
+      file: steps/loader/loader_step
+      name: loader_mnist
+  normalizer:
+    source:
+      file: steps/normalizer/normalizer_step
+      name: normalizer
+  trainer:
+    source:
+      file: steps/trainer/trainer_step
+      name: tf_trainer
+  evaluator:
+    source:
+      file: steps/evaluator/evaluator_step
+      name: tf_evaluator
+

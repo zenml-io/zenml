@@ -7,7 +7,7 @@ from google.protobuf.duration_pb2 import Duration
 # production, you can use your favorite data warehouse, such as BigQuery. See Feast documentation
 # for more info.
 driver_hourly_stats = FileSource(
-    path="./data/driver_stats.parquet",
+    path="feast_feature_repo/data/driver_stats.parquet",
     event_timestamp_column="event_timestamp",
     created_timestamp_column="created",
 )

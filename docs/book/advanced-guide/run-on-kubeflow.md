@@ -10,7 +10,7 @@ You can watch a tutorial video of an example that uses a Kubeflow Pipelines stac
 
 {% embed url="https://www.youtube.com/watch?v=b5TXRYkdL3w" %}
 
-Or you can also check out our example of this [here](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow\_pipelines\_orchestration) .
+Or you can also check out our example of this [here](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow_pipelines_orchestration) .
 
 You could also easily pull it into your local environment like this:
 

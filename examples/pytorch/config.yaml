@@ -1,0 +1,14 @@
+name: fashion_mnist_pipeline
+steps:
+  importer:
+    source:
+      file: steps/importers
+      name: importer_mnist
+  trainer:
+    source:
+      file: steps/trainers
+      name: trainer
+  evaluator:
+    source:
+      file: steps/evaluators
+      name: evaluator
