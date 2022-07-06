@@ -333,14 +333,28 @@ class LabelStudioAnnotator(BaseAnnotator):
                 f"Unable to get list of import storage sources. Client raised HTTP error {response.status_code}."
             )
 
+    def _get_gcs_import_storage_sources(
+        self, dataset_id: int
+    ) -> List[Dict[str, Any]]:
+        """Gets a list of all Google Cloud Storage import storage sources."""
+        # TODO: check if client actually is connected etc
+        ls = self._get_client()
+        query_url = f"/api/storages/gcs?project={dataset_id}"
+        response = ls.make_request(method="GET", url=query_url)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise ConnectionError(
+                f"Unable to get list of import storage sources. Client raised HTTP error {response.status_code}."
+            )
+
     def _storage_source_already_exists(
         self, uri: str, config: LabelStudioDatasetSyncConfig, dataset: Project
     ) -> bool:
         """Returns whether a storage source already exists."""
-        # TODO: check if client actually is connected etc
-        self._get_client()
+        # TODO: check we are already connected
+        dataset_id = int(dataset.get_params()["id"])
         if config.storage_type == "azure":
-            dataset_id = int(dataset.get_params()["id"])
             azure_storage_sources = self._get_azure_import_storage_sources(
                 dataset_id
             )
@@ -357,6 +371,24 @@ class LabelStudioAnnotator(BaseAnnotator):
                     and source.get("project") == dataset_id
                 ):
                     return True
+        elif config.storage_type == "gcs":
+            gcs_storage_sources = self._get_gcs_import_storage_sources(
+                dataset_id
+            )
+            for source in gcs_storage_sources:
+                if (
+                    source.get("presign") == config.presign
+                    and source.get("bucket") == uri
+                    and source.get("regex_filter") == config.regex_filter
+                    and source.get("use_blob_urls") == config.use_blob_urls
+                    and source.get("title") == dataset.get_params()["title"]
+                    and source.get("description") == config.description
+                    and source.get("presign_ttl") == config.presign_ttl
+                    and source.get("project") == dataset_id
+                ):
+                    return True
+        elif config.storage_type == "s3":
+            return NotImplementedError("Storage type not implemented.")
         else:
             return NotImplementedError("Storage type not implemented.")
         return False

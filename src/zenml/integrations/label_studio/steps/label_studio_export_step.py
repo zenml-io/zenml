@@ -14,7 +14,7 @@
 
 import os
 from typing import Any, Dict, List, Optional, Tuple
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
 from zenml.enums import AnnotationTasks
 from zenml.exceptions import StackComponentInterfaceError
@@ -154,10 +154,15 @@ def get_azure_credentials() -> Tuple[str]:
     return account_name, account_key
 
 
+def get_gcs_credentials() -> Optional[str]:
+    return os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+
+
 def convert_pred_filenames_to_task_ids(
     preds: List[Dict[str, Any]],
     tasks: List[Dict[str, Any]],
     filename_reference: str,
+    storage_type: str,
 ) -> List[Dict[str, Any]]:
     """Converts a list of predictions from local file references to task id."""
     filename_id_mapping = {
@@ -166,6 +171,14 @@ def convert_pred_filenames_to_task_ids(
         ]
         for task in tasks
     }
+
+    # GCS URL encodes filenames containing spaces, making it impossible to match
+    # filenames between local and cloud without this separate encoding step
+    if storage_type == "gcs":
+        preds = [
+            {"filename": quote(pred["filename"]), "result": pred["result"]}
+            for pred in preds
+        ]
 
     return [
         {
@@ -203,8 +216,11 @@ def sync_new_data_to_label_studio(
         # removes the initial backslash from the prefix attribute by slicing
         config.prefix = urlparse(uri).path[1:]
         base_uri = urlparse(uri).netloc
-    elif config.storage_type == "gcp":
-        return NotImplementedError("GCP storage not yet implemented.")
+    elif config.storage_type == "gcs":
+        config.google_application_credentials = get_gcs_credentials()
+        # removes the initial backslash from the prefix attribute by slicing
+        config.prefix = urlparse(uri).path[1:]
+        base_uri = urlparse(uri).netloc
     elif config.storage_type == "s3":
         return NotImplementedError("S3 storage not yet implemented.")
 
@@ -220,7 +236,10 @@ def sync_new_data_to_label_studio(
                 config.label_config_type
             ]
             preds_with_task_ids = convert_pred_filenames_to_task_ids(
-                predictions, dataset.tasks, filename_reference
+                predictions,
+                dataset.tasks,
+                filename_reference,
+                config.storage_type,
             )
             # TODO: filter out any predictions that exist + have already been
             # made (maybe?). Only pass in preds for tasks without pre-annotations.
