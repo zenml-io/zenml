@@ -146,11 +146,10 @@ def stack() -> None:
     type=click.BOOL,
 )
 @click.option(
-    "--reset-association",
-    "-r",
-    "reset_association",
+    "--decouple_stores",
+    "decouple_stores",
     is_flag=True,
-    help="Resets the associations for artifact/metadata stores.",
+    help="Decouple the given artifact/metadata store from prior associations.",
     type=click.BOOL,
 )
 def register_stack(
@@ -167,7 +166,7 @@ def register_stack(
     alerter_name: Optional[str] = None,
     data_validator_name: Optional[str] = None,
     set_stack: bool = False,
-    reset_association: bool = False,
+    decouple_stores: bool = False,
 ) -> None:
     """Register a stack.
 
@@ -185,7 +184,8 @@ def register_stack(
         alerter_name: Name of the alerter for this stack.
         data_validator_name: Name of the data validator for this stack.
         set_stack: Immediately set this stack as active.
-        reset_association: Resets the associations for artifact/metadata stores.
+        decouple_stores: Resets the previous couplings of the given
+            artifact/metadata stores and creates a new one.
     """
     cli_utils.print_active_profile()
 
@@ -271,7 +271,7 @@ def register_stack(
             name=stack_name, components=stack_components
         )
         try:
-            repo.register_stack(stack_, reset_association=reset_association)
+            repo.register_stack(stack_, decouple_stores=decouple_stores)
         except StackValidationError as e:
             cli_utils.error(e)  # type: ignore[arg-type]
 
@@ -376,11 +376,10 @@ def register_stack(
     required=False,
 )
 @click.option(
-    "--reset-association",
-    "-r",
-    "reset_association",
+    "--decouple_stores",
+    "decouple_stores",
     is_flag=True,
-    help="Resets the associations for artifact/metadata stores.",
+    help="Decouple the given artifact/metadata store from prior associations.",
     type=click.BOOL,
 )
 def update_stack(
@@ -396,7 +395,7 @@ def update_stack(
     experiment_tracker_name: Optional[str] = None,
     alerter_name: Optional[str] = None,
     data_validator_name: Optional[str] = None,
-    reset_association: bool = False,
+    decouple_stores: bool = False,
 ) -> None:
     """Update a stack.
 
@@ -416,8 +415,8 @@ def update_stack(
             stack.
         alerter_name: Name of the new alerter for this stack.
         data_validator_name: Name of the new data validator for this stack.
-        reset_association: Resets the associations for artifact/metadata
-            stores.
+        decouple_stores: Resets the previous couplings of the given
+            artifact/metadata stores and creates a new one.
     """
     cli_utils.print_active_profile()
 
@@ -528,7 +527,7 @@ def update_stack(
             repo.update_stack(
                 name=stack_name,
                 stack=stack_,
-                reset_association=reset_association,
+                decouple_stores=decouple_stores,
             )
         except StackValidationError as e:
             cli_utils.error(e)  # type: ignore[arg-type]
