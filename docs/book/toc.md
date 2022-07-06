@@ -5,6 +5,7 @@
 * [Introduction](getting_started/introduction.md)
 * [Core Concepts](getting_started/core-concepts.md)
 * [Quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart)
+
 ## Examples & Use-Cases
 
 * [Learn MLOps with ZenML (ZenBytes)](https://github.com/zenml-io/zenbytes)
@@ -27,6 +28,7 @@
 * [Managing external services](developer-guide/manage-external-services.md)
 
 ## MLOps Stacks
+
 * [Categories of MLOps Tools](mlops_stacks/categories.md)
 * [Integration Overview](mlops_stacks/integrations.md)
 * [Orchestrators](mlops_stacks/orchestrators/overview.md)
@@ -93,6 +95,7 @@
   * [How to develop a custom feature store](mlops_stacks/feature_stores/custom.md)
 
 ## Cloud Guide
+
 * [Overview: When to use which infrastructure](cloud-guide/overview.md)
 * [Execute Pipelines in the Cloud](cloud-guide/execute-pipelines-in-cloud.md)
 * [AWS](cloud-guide/aws/overview.md)
@@ -110,6 +113,7 @@
 * [Organization-Wide Collaboration with ZenServer](collaborate/zenml-server.md)
 
 ## Resources
+
 * [Join the Slack Community](https://zenml.io/slack-invite/)
 * [Community Events](https://www.eventbrite.de/o/zenml-44751230043)
 * [Blog](https://blog.zenml.io/)
