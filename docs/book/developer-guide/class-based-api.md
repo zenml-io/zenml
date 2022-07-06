@@ -17,7 +17,7 @@ entirely up to you which API to use.
 In the following, we will compare the two APIs using the code from the previous
 section on [Runtime Configuration](./runtime-configuration.md):
 
-### Creating Steps
+## Creating Steps
 
 In order to create a step with the class-based API, you will need to create a
 subclass of the `BaseStep` and implement its `entrypoint()` method, which 
@@ -27,6 +27,7 @@ contains the logic of the step.
 {% tab title="Class-based API" %}
 ```python
 from zenml.steps import BaseStep, BaseStepConfig, Output
+
 
 class SecondStepConfig(BaseStepConfig):
     multiplier: int = 4
@@ -45,6 +46,7 @@ class SecondStep(BaseStep):
 ```python
 from zenml.steps import BaseStepConfig, step, Output
 
+
 class SecondStepConfig(BaseStepConfig):
     multiplier: int = 4
 
@@ -60,7 +62,7 @@ def my_second_step(
 {% endtabs %}
 
 
-### Use decorators to enhance your BaseStep subclasses
+### Using decorators to enhance BaseStep subclasses
 
 ZenML allows you to easily add functionality like automated experiment tracking
 to your steps. Similar to the functional API, you can do this in the
@@ -71,6 +73,7 @@ class-based API by adding a decorator to your `BaseStep` subclass:
 ```python
 from zenml.steps import BaseStep
 from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
+
 
 @enable_mlflow
 class TFTrainer(BaseStep):
@@ -87,6 +90,7 @@ class TFTrainer(BaseStep):
 ```python
 from zenml.steps import step
 from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
+
 
 @enable_mlflow
 @step
@@ -105,7 +109,7 @@ Check out our [MLflow](https://github.com/zenml-io/zenml/tree/main/examples/mlfl
 [whylogs](https://github.com/zenml-io/zenml/tree/main/examples/whylogs_data_profiling) 
 examples for more information on how to use the specific decorators.
 
-### Creating Pipelines
+## Creating Pipelines
 
 Similar to creating steps, you can create a pipeline with the class-based API
 by subclassing `BasePipeline` and implementing its `connect()` method:
@@ -115,8 +119,8 @@ by subclassing `BasePipeline` and implementing its `connect()` method:
 ```python
 from zenml.pipelines import BasePipeline
 
-class FirstPipeline(BasePipeline):
 
+class FirstPipeline(BasePipeline):
     def connect(self, step_1, step_2):
         output_1, output_2 = step_1()
         step_2(output_1, output_2)
@@ -131,6 +135,7 @@ FirstPipeline(
 ```python
 from zenml.pipelines import pipeline
 
+
 @pipeline
 def first_pipeline(step_1, step_2):
     output_1, output_2 = step_1()
@@ -138,7 +143,7 @@ def first_pipeline(step_1, step_2):
 
 first_pipeline(
     step_1=my_first_step(),
-    step_2=my_second_step(SecondStepConfig(multiplier=3))
+    step_2=SecondStep(SecondStepConfig(multiplier=3))
 ).run()
 ```
 {% endtab %}
