@@ -16,6 +16,8 @@ import os
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import quote, urlparse
 
+import boto3
+
 from zenml.enums import AnnotationTasks
 from zenml.exceptions import StackComponentInterfaceError
 from zenml.logger import get_logger
@@ -158,6 +160,18 @@ def get_gcs_credentials() -> Optional[str]:
     return os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
 
 
+def get_aws_session_token() -> Optional[str]:
+    sts_client = boto3.client(
+        "sts",
+        aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
+        profile="rootuser",
+    )
+    response = sts_client.get_session_token()
+    temp_credentials = response.get("Credentials")
+    return temp_credentials.get("SessionToken")
+
+
 def convert_pred_filenames_to_task_ids(
     preds: List[Dict[str, Any]],
     tasks: List[Dict[str, Any]],
@@ -174,7 +188,7 @@ def convert_pred_filenames_to_task_ids(
 
     # GCS URL encodes filenames containing spaces, making it impossible to match
     # filenames between local and cloud without this separate encoding step
-    if storage_type == "gcs":
+    if storage_type in {"gcs", "s3"}:
         preds = [
             {"filename": quote(pred["filename"]), "result": pred["result"]}
             for pred in preds
@@ -209,20 +223,18 @@ def sync_new_data_to_label_studio(
             "ZenML only currently supports syncing data passed from other ZenML steps and via the Artifact Store."
         )
 
+    # removes the initial backslash from the prefix attribute by slicing
+    config.prefix = urlparse(uri).path[1:]
+    base_uri = urlparse(uri).netloc
+
     if config.storage_type == "azure":
         account_name, account_key = get_azure_credentials()
         config.azure_account_name = account_name
         config.azure_account_key = account_key
-        # removes the initial backslash from the prefix attribute by slicing
-        config.prefix = urlparse(uri).path[1:]
-        base_uri = urlparse(uri).netloc
     elif config.storage_type == "gcs":
         config.google_application_credentials = get_gcs_credentials()
-        # removes the initial backslash from the prefix attribute by slicing
-        config.prefix = urlparse(uri).path[1:]
-        base_uri = urlparse(uri).netloc
     elif config.storage_type == "s3":
-        return NotImplementedError("S3 storage not yet implemented.")
+        pass
 
     if annotator and annotator._connection_available():
         # TODO: get existing (CHECK!) or create the sync connection

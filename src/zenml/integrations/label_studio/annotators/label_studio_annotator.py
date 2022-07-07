@@ -348,6 +348,21 @@ class LabelStudioAnnotator(BaseAnnotator):
                 f"Unable to get list of import storage sources. Client raised HTTP error {response.status_code}."
             )
 
+    def _get_s3_import_storage_sources(
+        self, dataset_id: int
+    ) -> List[Dict[str, Any]]:
+        """Gets a list of all AWS S3 import storage sources."""
+        # TODO: check if client actually is connected etc
+        ls = self._get_client()
+        query_url = f"/api/storages/s3?project={dataset_id}"
+        response = ls.make_request(method="GET", url=query_url)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise ConnectionError(
+                f"Unable to get list of import storage sources. Client raised HTTP error {response.status_code}."
+            )
+
     def _storage_source_already_exists(
         self, uri: str, config: LabelStudioDatasetSyncConfig, dataset: Project
     ) -> bool:
@@ -355,43 +370,28 @@ class LabelStudioAnnotator(BaseAnnotator):
         # TODO: check we are already connected
         dataset_id = int(dataset.get_params()["id"])
         if config.storage_type == "azure":
-            azure_storage_sources = self._get_azure_import_storage_sources(
-                dataset_id
-            )
-
-            for source in azure_storage_sources:
-                if (
-                    source.get("presign") == config.presign
-                    and source.get("container") == uri
-                    and source.get("regex_filter") == config.regex_filter
-                    and source.get("use_blob_urls") == config.use_blob_urls
-                    and source.get("title") == dataset.get_params()["title"]
-                    and source.get("description") == config.description
-                    and source.get("presign_ttl") == config.presign_ttl
-                    and source.get("project") == dataset_id
-                ):
-                    return True
+            storage_sources = self._get_azure_import_storage_sources(dataset_id)
         elif config.storage_type == "gcs":
-            gcs_storage_sources = self._get_gcs_import_storage_sources(
-                dataset_id
-            )
-            for source in gcs_storage_sources:
-                if (
-                    source.get("presign") == config.presign
-                    and source.get("bucket") == uri
-                    and source.get("regex_filter") == config.regex_filter
-                    and source.get("use_blob_urls") == config.use_blob_urls
-                    and source.get("title") == dataset.get_params()["title"]
-                    and source.get("description") == config.description
-                    and source.get("presign_ttl") == config.presign_ttl
-                    and source.get("project") == dataset_id
-                ):
-                    return True
+            storage_sources = self._get_gcs_import_storage_sources(dataset_id)
         elif config.storage_type == "s3":
-            return NotImplementedError("Storage type not implemented.")
+            storage_sources = self._get_s3_import_storage_sources(dataset_id)
         else:
-            return NotImplementedError("Storage type not implemented.")
-        return False
+            return NotImplementedError(
+                f"Storage type '{config.storage_type}' not implemented."
+            )
+        return any(
+            (
+                source.get("presign") == config.presign
+                and source.get("bucket") == uri
+                and source.get("regex_filter") == config.regex_filter
+                and source.get("use_blob_urls") == config.use_blob_urls
+                and source.get("title") == dataset.get_params()["title"]
+                and source.get("description") == config.description
+                and source.get("presign_ttl") == config.presign_ttl
+                and source.get("project") == dataset_id
+            )
+            for source in storage_sources
+        )
 
     def get_parsed_label_config(self, dataset_id: int) -> Dict[str, Any]:
         """Returns the parsed Label Studio labeling configuration for a
@@ -447,11 +447,7 @@ class LabelStudioAnnotator(BaseAnnotator):
                 google_application_credentials=config.google_application_credentials,
             )
         elif config.storage_type == "s3":
-            if (
-                not config.aws_access_key_id
-                or not config.aws_secret_access_key
-                or not config.aws_session_token
-            ):
+            if not config.aws_access_key_id or not config.aws_secret_access_key:
                 logger.warn(
                     "Authentication credentials for AWS aren't fully provided. Please update the storage synchronization settings in the Label Studio web UI as per your needs."
                 )
@@ -476,5 +472,7 @@ class LabelStudioAnnotator(BaseAnnotator):
             )
 
         ls = self._get_client()
-        ls.sync_storage(storage_id=storage["id"], storage_type=storage["type"])
+        sync_results = ls.sync_storage(
+            storage_id=storage["id"], storage_type=storage["type"]
+        )
         return
