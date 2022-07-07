@@ -36,7 +36,18 @@ hassle.
 * A **container registry** for pushing and pulling the pipeline image.
 * Finally, the **secrets Manager** to store passwords and SSL certificates.
 
-## Step 1/10 Set up a GCP project (Optional)
+## Step 1/10 Set Up `gcloud` CLI
+
+Install the `gcloud` CLI on your machine. 
+[Here](https://cloud.google.com/sdk/docs/install) is a guide on how to install 
+it.
+
+```shell
+gcloud auth
+```
+
+
+## Step 2/10 Set up a GCP project (Optional)
 
 {% tabs %} 
 {% tab title="GCP UI" %}
@@ -47,24 +58,9 @@ a separate GCP project for your ZenML resources. However, this step is
 completely optional, and you can also move forward within an existing project. 
 If some resources already exist, feel free to skip their creation step and 
 simply note down the relevant information.
-{% endtab %}
 
-{% tab title="gcloud CLI" %}
-
-```shell
-export PARENT_ORG_ID=<PARENT_ORG_ID>
-export PROJECT_NAME=<PROJECT_NAME>
-
-gcloud projects create $PROJECT_NAME --organization=$PARENT_ORG_ID
-gcloud config set project $PROJECT_NAME
-```
-
-{% endtab %}
-{% endtabs %}
-
-For simplicity, just
-open up a terminal on the side and export relevant values as we go along. You
-will use these when we set up the ZenML stack.
+For simplicity, just open up a terminal on the side and export relevant values 
+as we go along. You will use these when we set up the ZenML stack.
 ZenML will use your project number at a later stage to connect to some 
 resources, so let's export it. You'll most probably find it right 
 [here](https://console.cloud.google.com/welcome).
@@ -73,8 +69,22 @@ resources, so let's export it. You'll most probably find it right
 export PROJECT_NUMBER=<PROJECT_NUMBER> # for example '492014921912'
 export GCP_LOCATION=<GCP_LOCATION> # for example 'europe-west3'
 ```
+{% endtab %}
 
-## Step 2/10 Enable billing
+{% tab title="gcloud CLI" %}
+```shell
+export PARENT_ORG_ID=<PARENT_ORG_ID>
+export PROJECT_NAME=<PROJECT_NAME>
+
+gcloud projects create $PROJECT_NAME --organization=$PARENT_ORG_ID
+gcloud config set project $PROJECT_NAME
+export PROJECT_NUMBER=$(gcloud projects describe $PROJECT_NAME --format="value(projectNumber)")
+```
+
+{% endtab %}
+{% endtabs %}
+
+## Step 3/10 Enable billing
 
 Before moving on, you'll have to make sure you attach a billing account to 
 your project. In case you do not have the permissions to do so, you'll have to
@@ -98,7 +108,7 @@ gcloud beta billing projects link $PROJECT_NAME --billing-account $BILLING_ACC
 {% endtab %}
 {% endtabs %}
 
-## Step 3/10 Enable Vertex AI
+## Step 4/10 Enable Vertex AI
 
 {% tabs %} 
 {% tab title="GCP UI" %}
@@ -115,7 +125,7 @@ gcloud services enable aiplatform.googleapis.com
 {% endtab %}
 {% endtabs %}
 
-## Step 4/10 Enable Secrets Manager
+## Step 5/10 Enable Secrets Manager
 
 The Secrets Manager will be needed so that the orchestrator will have secure
 access to the other resources. 
@@ -133,7 +143,7 @@ gcloud services enable secretmanager.googleapis.com
 {% endtab %}
 {% endtabs %}
 
-## Step 5/10 Enable Container Registry
+## Step 6/10 Enable Container Registry
 
 The Vertex AI orchestrator uses Docker Images containing your pipeline code
 for pipeline orchestration. 
@@ -142,14 +152,6 @@ for pipeline orchestration.
 {% tab title="GCP UI" %}
 For this to work you'll need to enable the GCP Docker registry 
 [here](https://console.cloud.google.com/marketplace/product/google/containerregistry.googleapis.com).
-{% endtab %}
-
-{% tab title="gcloud CLI" %}
-```shell
-gcloud services enable secretmanager.googleapis.com
-```
-{% endtab %}
-{% endtabs %}
 
 In order to use the container registry at a later point you will need to 
 set the container registry URI. This is how it is usually constructed:
@@ -163,8 +165,17 @@ or `asia.gcr.io`. Choose the one appropriate for you.
 ```bash
 export CONTAINER_REGISTRY_URI=<CONTAINER_REGISTRY_URI> # for example 'eu.gcr.io/zenml-project'
 ```
+{% endtab %}
 
-## Step 6/10 Set up Cloud Storage as Artifact Store
+{% tab title="gcloud CLI" %}
+```shell
+gcloud services enable containerregistry.googleapis.com
+export CONTAINER_REGISTRY_URI=$CONTAINER_REGISTRY_REGION"gcr.io/"$PROJECT_NAME
+```
+{% endtab %}
+{% endtabs %}
+
+## Step 7/10 Set up Cloud Storage as Artifact Store
 
 Storing of step artifacts is an important part of reproducible MLOps. 
 
@@ -189,7 +200,7 @@ gsutil mb -p $PROJECT_NAME $GSUTIL_URI
 {% endtab %}
 {% endtabs %}
 
-## Step 7/10 Set up a Cloud SQL instance as Metadata Store
+## Step 8/10 Set up a Cloud SQL instance as Metadata Store
 
 One of the most complex resources that you'll need to manage is the MySQL
 database. 
@@ -205,7 +216,7 @@ creation of the instance is the root password. The default port for MySQL is
 3306. 
 
 ```bash
-export DB_HOST_IP=<DB_HOST_IP> # for example '35.137.24.15'
+export DB_HOST=<DB_HOST> # for example '35.137.24.15'
 export DB_PORT=<DB_PORT> # usually by default '3306'
 export DB_USER=<DB_USER> # 'root' if you don't set up a separate user
 export DB_PWD=<DB_PWD> # for example 'secure_root_pwd'
@@ -225,9 +236,9 @@ Now **Create Client Certificate** and download all three files. Export the paths
 to these three files as follows with a leading **@**.
 
 ```bash
-export SSL_CA=@<SSL_CA> # for example @/home/zen/Downloads/server-ca.pem
-export SSL_CERT=@<SSL_CERT> # for example @/home/zen/Downloads/client-cert.pem
-export SSL_KEY=@<SSL_KEY> # for example @/home/zen/Downloads/client-key.pem
+export SSL_CA=<SSL_CA> # for example /home/zen/Downloads/server-ca.pem
+export SSL_CERT=<SSL_CERT> # for example /home/zen/Downloads/client-cert.pem
+export SSL_KEY=<SSL_KEY> # for example /home/zen/Downloads/client-key.pem
 ```
 
 {% hint style="warning" %}
@@ -248,27 +259,33 @@ export DB_NAME=<DB_NAME> # for example zenml_db
 export DB_NAME=zenml-metadata-store-db
 export DB_INSTANCE=zenml-inst
 export CERT_NAME=zenml-cert
+export CLIENT_KEY_PATH=$PROJECT_NAME"client-key.pem"
+export CLIENT_CERT_PATH=$PROJECT_NAME"client-cert.pem"
+export SERVER_CERT_PATH=$PROJECT_NAME"server-ca.pem"```
 ```
-
 ```shell
+# Enable the sql api for database creation
 gcloud services enable sqladmin.googleapis.com
 
-gcloud sql instances create $DB_INSTANCE --tier=db-f1-micro --region=GCP_LOCATION --authorized-networks 0.0.0.0/0
-gcloud sql users set-password root --host=% --instance $DB_INSTANCE --password $DB_PASSWORD
-gcloud sql instances patch $DB_INSTANCE --require-ssl
+# Create the db instance
+gcloud sql instances create $DB_INSTANCE --tier=db-f1-micro --region=$GCP_LOCATION --authorized-networks 0.0.0.0/0
+
+export DB_HOST=$(gcloud sql instances describe $DB_INSTANCE --format='get(ipAddresses[0].ipAddress)')
+gcloud sql users set-password root --host=$DB_HOST --instance $DB_INSTANCE --password $DB_PASSWORD
 
 # Create Client certificate and download all three 
-gcloud sql ssl client-certs create $CERT_NAME client-key.pem --instance $DB_INSTANCE
-gcloud sql ssl client-certs describe $CERT_NAME --instance=$DB_INSTANCE --format="value(cert)" > client-cert.pem
-gcloud sql ssl client-certs describe $CERT_NAME --instance=$DB_INSTANCE --format="value(serverCaCert.cert)" > server-ca.pem
+gcloud sql instances patch $DB_INSTANCE --require-ssl
+gcloud sql ssl client-certs create $CERT_NAME $CLIENT_KEY_PATH --instance $DB_INSTANCE
+gcloud sql ssl client-certs describe $CERT_NAME --instance=$DB_INSTANCE --format="value(cert)" > $CLIENT_CERT_PATH
+gcloud sql instances describe $DB_INSTANCE --format="value(serverCaCert.cert)" > $SERVER_CERT_PATH
 
-# Create the database to be used as metadata store
-gcloud sql databases create $DATABASE_NAME --instance=$DB_INSTANCE
+gcloud sql databases create $DB_NAME --instance=$DB_INSTANCE --collation=utf8_general_ci --charset=utf8
+
 ```
 {% endtab %}
 {% endtabs %}
 
-## Step 8/10 - Create a Service Account
+## Step 9/10 - Create a Service Account
 
 All the resources are created. Now we need to make sure the instance performing 
 the compute engine (Vertex AI) needs to have the relevant permissions to access 
@@ -333,25 +350,6 @@ This service account might not be present in the list of service accounts. In
 that case, skip this part, and once your first pipeline run fails, return to 
 this step in order to set the appropriate role.
 {% endhint %}
-
-## Step 9/10 Set Up `gcloud` CLI
-
-Install the `gcloud` CLI on your machine. 
-[Here](https://cloud.google.com/sdk/docs/install) is a guide on how to install 
-it.
-
-You will then also need to set the GCP project that you want to communicate 
-with:
-
-```bash
-gcloud config set project $PROJECT_NUMBER
-```
-
-Additionally, you will need to configure Docker  with the following command:
-
-```bash
-gcloud auth configure-docker
-```
 
 ## Step 10/10 ZenML Stack
 
