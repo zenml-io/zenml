@@ -1,6 +1,14 @@
 # Getting started with AWS
 
-This step-by-step guide explains how to set up and configure all the infrastructure necessary to run a ZenML pipeline on AWS.
+To get started using ZenML on the cloud, you need some basic infrastructure up 
+and running which ZenML can use to run your pipelines.
+This step-by-step guide explains how to set up a simple cloud stack on AWS.
+
+{% hint style="info" %}
+This guide represents **one** of many ways to create a cloud stack on AWS. 
+You can customize this by adding additional components of replacing one of the 
+components described in this guide.
+{% endhint %}
 
 ## Prerequisites
 
