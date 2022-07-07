@@ -17,14 +17,15 @@
 
 * [Installation](developer-guide/installation.md)
 * [Steps & Pipelines](developer-guide/steps-and-pipelines.md)
-* [Runtime Configuration](developer-guide/runtime-configuration.md)
-* [Functional vs. Class-Based API](developer-guide/class-based-api.md)
+  * [Runtime Configuration](developer-guide/runtime-configuration.md)
+  * [Functional vs. Class-Based API](developer-guide/class-based-api.md)
+  * [Caching](developer-guide/caching.md)
 * [Stacks, Profiles, Repositories](developer-guide/stacks_profiles_repositories.md)
-* [Accessing pipeline runs](developer-guide/post-execution-workflow.md)
-* [Caching pipeline runs](developer-guide/caching.md)
-* [Passing custom objects through steps with Materializers](developer-guide/materializer.md)
-* [Fetching historic runs with Step Fixtures](developer-guide/fetching-historic-runs.md)
-* [Managing external services](developer-guide/manage-external-services.md)
+  * [Accessing pipeline runs](developer-guide/post-execution-workflow.md)
+* [Advanced Usage](developer-guide/advanced.md)
+  * [Passing custom objects through steps with Materializers](developer-guide/materializer.md)
+  * [Fetching historic runs with Step Fixtures](developer-guide/fetching-historic-runs.md)
+  * [Managing external services](developer-guide/manage-external-services.md)
 
 ## MLOps Stacks
 
