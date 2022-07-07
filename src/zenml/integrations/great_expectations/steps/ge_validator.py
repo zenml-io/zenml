@@ -81,9 +81,9 @@ class GreatExpectationsValidatorStep(BaseStep):
             GreatExpectationsDataValidator.get_active_data_validator()
         )
 
-        results = data_validator.data_profile_validation(
+        results = data_validator.data_validation(
             dataset,
-            profile=config.expectation_suite_name,
+            expectation_suite_name=config.expectation_suite_name,
             data_asset_name=config.data_asset_name,
             action_list=config.action_list,
         )

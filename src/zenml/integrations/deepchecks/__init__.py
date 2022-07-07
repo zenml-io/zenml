@@ -36,7 +36,7 @@ class DeepchecksIntegration(Integration):
     """Definition of [Deepchecks](https://github.com/deepchecks/deepchecks) integration for ZenML."""
 
     NAME = DEEPCHECKS
-    REQUIREMENTS = ["deepchecks>=0.6.3", "torch", "torchvision"]
+    REQUIREMENTS = ["deepchecks[vision]==0.8.0", "torchvision==0.11.2"]
 
     @staticmethod
     def activate() -> None:

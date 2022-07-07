@@ -630,8 +630,8 @@ class DeepchecksDataValidator(BaseDataValidator):
     def data_validation(
         self,
         dataset: Union[pd.DataFrame, DataLoader[Any]],
-        model: Optional[Union[ClassifierMixin, Module]] = None,
         check_list: Optional[Sequence[str]] = None,
+        model: Optional[Union[ClassifierMixin, Module]] = None,
         dataset_kwargs: Dict[str, Any] = {},
         check_kwargs: Dict[str, Dict[str, Any]] = {},
         run_kwargs: Dict[str, Any] = {},
@@ -643,6 +643,13 @@ class DeepchecksDataValidator(BaseDataValidator):
         with a single dataset (e.g. missing values, conflicting labels, mixed
         data types etc.).
 
+        The `check_list` argument may be used to specify a custom set of
+        Deepchecks data integrity checks to perform, identified by
+        `DeepchecksDataIntegrityCheck` enum values. If omitted, a suite with
+        all available data integrity checks will be performed on the input data.
+        See `DeepchecksDataIntegrityCheck` for a list of Deepchecks builtin
+        checks that are compatible with this method.
+
         Some Deepchecks integrity checks may require that a model be present
         during the validation process to provide or dynamically generate
         additional information (e.g. label predictions, prediction probabilities,
@@ -652,22 +659,15 @@ class DeepchecksDataValidator(BaseDataValidator):
         custom `dataset_kwargs`, `check_kwargs` or `run_args` keyword
         arguments.
 
-        The `check_list` argument may be used to specify a custom set of
-        Deepchecks data integrity checks to perform, identified by
-        `DeepchecksDataIntegrityCheck` enum values. If omitted, a suite with
-        all available data integrity checks will be performed on the input data.
-        See `DeepchecksDataIntegrityCheck` for a list of Deepchecks builtin
-        checks that are compatible with this method.
-
         Args:
             dataset: Target dataset to be validated.
-            model: Optional model to use to provide or dynamically generate
-                additional information necessary for data validation (e.g.
-                labels, prediction probabilities, feature importance etc.).
             check_list: Optional list of ZenML Deepchecks check identifiers
                 specifying the data integrity checks to be performed.
                 `DeepchecksDataIntegrityCheck` enum values should be used as
                 elements.
+            model: Optional model to use to provide or dynamically generate
+                additional information necessary for data validation (e.g.
+                labels, prediction probabilities, feature importance etc.).
             dataset_kwargs: Additional keyword arguments to be passed to the
                 Deepchecks tabular.Dataset or vision.VisionData constructor.
             check_kwargs: Additional keyword arguments to be passed to the
@@ -706,13 +706,6 @@ class DeepchecksDataValidator(BaseDataValidator):
 
         Call this method to perform model validation checks (e.g. confusion
         matrix validation, performance reports, model error analyses, etc).
-
-        Model validation checks require that a model be present during
-        the validation process. Unlike `data_validation`, where the model
-        is only required as an alternative of providing information otherwise
-        not present in the input dataset or implementation specific keyword
-        arguments (e.g. labels, prediction probabilities, feature importance),
-        the model is a mandatory component of model validation.
 
         The `check_list` argument may be used to specify a custom set of
         Deepchecks model validation checks to perform, identified by
@@ -757,8 +750,8 @@ class DeepchecksDataValidator(BaseDataValidator):
         self,
         reference_dataset: Union[pd.DataFrame, DataLoader[Any]],
         target_dataset: Union[pd.DataFrame, DataLoader[Any]],
-        model: Optional[Union[ClassifierMixin, Module]] = None,
         check_list: Optional[Sequence[str]] = None,
+        model: Optional[Union[ClassifierMixin, Module]] = None,
         dataset_kwargs: Dict[str, Any] = {},
         check_kwargs: Dict[str, Dict[str, Any]] = {},
         run_kwargs: Dict[str, Any] = {},
@@ -769,6 +762,14 @@ class DeepchecksDataValidator(BaseDataValidator):
         Call this method to perform dataset comparison checks (e.g. data drift
         checks) by comparing a target dataset to a reference dataset.
 
+        The `check_list` argument may be used to specify a custom set of
+        Deepchecks data comparison checks to perform, identified by
+        `DeepchecksDataDriftCheck` enum values. If omitted, a suite with
+        all available data comparison checks that don't require a model as
+        input will be performed on the input datasets.
+        See `DeepchecksDataDriftCheck` for a list of Deepchecks builtin
+        checks that are compatible with this method.
+
         Some Deepchecks data comparison checks may require that a model be
         present during the validation process to provide or dynamically generate
         additional information (e.g. label predictions, prediction probabilities,
@@ -778,26 +779,18 @@ class DeepchecksDataValidator(BaseDataValidator):
         custom `dataset_kwargs`, `check_kwargs` or `run_args` keyword
         arguments.
 
-        The `check_list` argument may be used to specify a custom set of
-        Deepchecks data comparison checks to perform, identified by
-        `DeepchecksDataDriftCheck` enum values. If omitted, a suite with
-        all available data comparison checks that don't require a model as
-        input will be performed on the input datasets.
-        See `DeepchecksDataDriftCheck` for a list of Deepchecks builtin
-        checks that are compatible with this method.
-
         Args:
             reference_dataset: Reference dataset (e.g. dataset used during model
                 training).
             target_dataset: Dataset to be validated (e.g. dataset used during
                 model validation or new data used in production).
-            model: Optional model to use to provide or dynamically generate
-                additional information necessary for data comparison (e.g.
-                labels, prediction probabilities, feature importance etc.).
             check_list: Optional list of ZenML Deepchecks check identifiers
                 specifying the data comparison checks to be performed.
                 `DeepchecksDataDriftCheck` enum values should be used as
                 elements.
+            model: Optional model to use to provide or dynamically generate
+                additional information necessary for data comparison (e.g.
+                labels, prediction probabilities, feature importance etc.).
             dataset_kwargs: Additional keyword arguments to be passed to the
                 Deepchecks tabular.Dataset or vision.VisionData constructor.
             check_kwargs: Additional keyword arguments to be passed to the
@@ -839,13 +832,6 @@ class DeepchecksDataValidator(BaseDataValidator):
         identifying changes in a model performance by analyzing how it performs
         on a target dataset in comparison to how it performs on a reference
         dataset.
-
-        Model comparison checks require that a model be present during
-        the validation process. Unlike `data_comparison`, where the model
-        is only required as an alternative of providing information otherwise
-        not present in the input dataset or implementation specific keyword
-        arguments (e.g. labels, prediction probabilities, feature importance),
-        the model is a mandatory component of model comparison.
 
         The `check_list` argument may be used to specify a custom set of
         Deepchecks model comparison checks to perform, identified by

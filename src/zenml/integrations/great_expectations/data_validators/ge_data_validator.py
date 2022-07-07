@@ -364,7 +364,6 @@ class GreatExpectationsDataValidator(BaseDataValidator):
     def data_profiling(
         self,
         dataset: pd.DataFrame,
-        model: Optional[Any] = None,
         profile_list: Optional[Sequence[str]] = None,
         expectation_suite_name: Optional[str] = None,
         data_asset_name: Optional[str] = None,
@@ -382,10 +381,6 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         Args:
             dataset: The dataset from which the expectation suite will be
                 inferred.
-            model: Optional model to use to provide or dynamically generate
-                additional information necessary for data profiling (e.g.
-                labels, prediction probabilities, feature importance etc.).
-                Not required by the Great Expectations data validator.
             profile_list: Optional list identifying the categories of data
                 profiles to be generated. Not supported by the Great Expectation
                 data validator.
@@ -471,34 +466,29 @@ class GreatExpectationsDataValidator(BaseDataValidator):
 
         return suite
 
-    def data_profile_validation(
+    def data_validation(
         self,
         dataset: pd.DataFrame,
-        profile: str,
-        model: Optional[Any] = None,
         check_list: Optional[Sequence[str]] = None,
+        expectation_suite_name: Optional[str] = None,
         data_asset_name: Optional[str] = None,
         action_list: Optional[List[Dict[str, Any]]] = None,
         **kwargs: Any,
     ) -> CheckpointResult:
         """Great Expectations data validation.
 
-        This Great Expectations specific data profile validation method
+        This Great Expectations specific data validation method
         implementation validates an input dataset against an Expectation Suite
         (the GE definition of a profile) [as covered in the official GE
         documentation](https://docs.greatexpectations.io/docs/guides/validation/how_to_validate_data_by_running_a_checkpoint).
 
         Args:
             dataset: The dataset to validate.
-            profile: The name of the expectation suite to use to validate the
-                dataset.
-            model: Optional model to use to provide or dynamically generate
-                additional information necessary for data validation (e.g.
-                labels, prediction probabilities, feature importance etc.).
-                Not required by the Great Expectations data validator.
             check_list: Optional list identifying the data validation checks to
                 be performed. Not supported by the Great Expectations data
                 validator.
+            expectation_suite_name: The name of the expectation suite to use to
+                validate the dataset. A value must be provided.
             data_asset_name: The name of the data asset to use to identify the
                 dataset in the Great Expectations docs.
             action_list: A list of additional Great Expectations actions to run after
@@ -507,7 +497,13 @@ class GreatExpectationsDataValidator(BaseDataValidator):
 
         Returns:
             The Great Expectations validation (checkpoint) result.
+
+        Raises:
+            ValueError: if the `expectation_suite_name` argument is omitted.
         """
+        if not expectation_suite_name:
+            raise RuntimeError("Missing expectation_suite_name argument value.")
+
         try:
             # get pipeline name, step name and run id
             step_env = cast(
@@ -546,7 +542,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
             "run_name_template": f"{run_id}",
             "config_version": 1,
             "class_name": "Checkpoint",
-            "expectation_suite_name": profile,
+            "expectation_suite_name": expectation_suite_name,
             "action_list": action_list,
         }
         context.add_checkpoint(**checkpoint_config)
