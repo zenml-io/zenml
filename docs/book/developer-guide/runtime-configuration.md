@@ -5,193 +5,232 @@ description: Configure Step and Pipeline Parameters for Each Run.
 # Runtime Configuration
 
 A ZenML pipeline clearly separates business logic from parameter configuration.
-Business logic is what defines
-a step and the pipeline. Step and pipeline configurations are used to
-dynamically set parameters at runtime.
+Business logic is what defines a step or a pipeline. 
+Parameter configurations are used to dynamically set parameters of your steps 
+and pipelines at runtime.
 
 You can configure your pipelines at runtime in the following ways:
 
-* Configure from within the code: Do this when you are quickly iterating on your code 
-and don't want to change your actual step code. This is useful in the development phase.
-* Configure from the CLI and a YAML config: Do this when you want to launch pipeline runs 
-without modifying the code at all. This is most useful in production scenarios.
+* [Configuring from within code](#configuring-from-within-code): 
+Do this when you are quickly iterating on your code and don't want to change
+your actual step code. This is useful in the development phase.
+* [Configuring with YAML config files](#configuring-from-the-cli-and-a-yaml-config-file): 
+Do this when you want to launch pipeline runs without modifying the code at all.
+This is the recommended way for production scenarios.
 
 ## Configuring from within code
 
 You can easily add a configuration to a step by creating your configuration as a
-subclass to the BaseStepConfig.
-When such a config object is passed to a step, it is not treated like other
-artifacts. Instead, it gets passed
-into the step when the pipeline is instantiated.
+subclass of the `BaseStepConfig`. When such a config object is passed to a step,
+it is not treated like other artifacts. Instead, it gets passed into the step
+when the pipeline is instantiated.
 
 ```python
-from zenml.steps import step, Output, BaseStepConfig
+import numpy as np
+from sklearn.base import ClassifierMixin
+from sklearn.svm import SVC
+
+from zenml.steps import step, BaseStepConfig
 
 
-class SecondStepConfig(BaseStepConfig):
+class SVCTrainerStepConfig(BaseStepConfig):
     """Trainer params"""
-    multiplier: int = 4
+    gamma: float = 0.001
 
 
 @step
-def my_second_step(config: SecondStepConfig, input_int: int, input_float: float
-                   ) -> Output(output_int=int, output_float=float):
-    """Step that multiply the inputs"""
-    return config.multiplier * input_int, config.multiplier * input_float
+def svc_trainer(
+    config: SVCTrainerStepConfig,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+) -> ClassifierMixin:
+    """Train a sklearn SVC classifier."""
+    model = SVC(gamma=config.gamma)
+    model.fit(X_train, y_train)
+    return model
 ```
 
-The default value for the multiplier is set to 4. However, when the pipeline is
-instantiated you can
-override the default like this:
+The default value for the `gamma` parameter is set to `0.001`. However, when
+the pipeline is instantiated you can override the default like this:
 
 ```python
-first_pipeline(step_1=my_first_step(),
-               step_2=my_second_step(SecondStepConfig(multiplier=3))
-               ).run()
+first_pipeline_instance = first_pipeline(
+    step_1=load_digits(),
+    step_2=svc_trainer(SVCTrainerStepConfig(gamma=0.01)),
+)
+
+first_pipeline_instance.run()
 ```
 
-This functionality is based on [Step Fixtures](./step-fixtures.md) which you will
-learn more about below.
-
-### Setting step parameters using a config file
+## Configuring with YAML config files
 
 In addition to setting parameters for your pipeline steps in code as seen above,
-ZenML also allows you to use a
-configuration [YAML](https://yaml.org) file. This configuration file must follow
-the following structure:
+ZenML also allows you to use a configuration [YAML](https://yaml.org) file.
+
+There are two ways how YAML config files can be used:
+- [Defining step parameters only](#defining-step-parameters-only) and setting
+the path to the config with `pipeline.with_config()` before calling
+`pipeline.run()`,
+- [Configuring the entire pipeline at runtime](#configuring-the-entire-pipeline-at-runtime)
+and executing it with `zenml pipeline run`.
+
+### Defining step parameters only
+
+If you only want to configure step parameters as above, you can do so with a
+minimalistic configuration YAML file, which you use to configure a pipleline
+before running it using the `with_config()` method, e.g.:
+
+```python
+first_pipeline_instance = first_pipeline(
+    step_1=load_digits(),
+    step_2=svc_trainer(),
+)
+
+first_pipeline_instance.with_config("path_to_config.yaml").run()
+```
+
+The `path_to_config.yaml` needs to have the following structure:
 
 ```yaml
 steps:
-  step_name:
+  <STEP_NAME_IN_PIPELINE>:
     parameters:
-      parameter_name: parameter_value
-      some_other_parameter_name: 2
-  some_other_step_name:
+      <PARAMETER_NAME>: <PARAMETER_VALUE>
+      ...
     ...
 ```
 
-For our example from above this results in the following configuration
-yaml.&#x20;
+For our example from above, we could use the following configuration file:
 
 ```yaml
 steps:
   step_2:
     parameters:
-      multiplier: 3
+      gamma: 0.01
 ```
 
-Use the configuration file by calling the pipeline method `with_config(...)`:
+{% hint style="info" %}
+Note that `svc_trainer()` still has to be defined to have a
+`config: SVCTrainerStepConfig` argument. The difference here is only that we
+provide `gamma` via a config file before running the pipeline, instead of
+explicitly passing a `SVCTrainerStepConfig` object during the step creation.
+{% endhint %}
 
-```python
-first_pipeline(step_1=my_first_step(),
-               step_2=my_second_step()
-               ).with_config("path_to_config.yaml").run()
-```
+### Configuring the entire pipeline at runtime
 
-## Configuring from the CLI and a YAML config file
+For production settings, you might want to use config files not only for your
+parameters, but even for choosing what code gets executed.
+This way, you can define entire pipeline runs without changing the code.
 
-In case you want to have control to configure and run your pipeline from outside
-your code. For this you can use the
-ZenML command line argument:
+To run pipelines in this way, you can use the `zenml pipeline run` command with
+`-c` argument:
 
 ```shell
-zenml pipeline run <NAME-OF-PYTHONFILE> -c <NAME-OF-CONFIG-YAML-FILE>
+zenml pipeline run <PATH_TO_PIPELINE_PYTHON_FILE> -c <PATH_TO_CONFIG_YAML_FILE>
 ```
+
+`<PATH_TO_PIPELINE_PYTHON_FILE>` should point to the Python file where your
+pipeline function or class is defined. Your steps can also be in that file,
+but they do not need to. If your steps are defined in separate code files, you
+can simply specify that in the YAML, as we will see below.
 
 {% hint style="warning" %}
 Do **not** instantiate and run your pipeline within the python file that you
-want to run using the CLI, else your
-pipeline will be run twice, possibly with different configurations.
+want to run using the CLI, else your pipeline will be run twice, possibly with 
+different configurations.
 {% endhint %}
 
-This will require a config file with a bit more information than how it is
-described above.
+If you want to dynamically configure the entire pipeline, your config file will
+need a bit more information:
+- The name of the function or class of your pipeline in 
+`<PATH_TO_PIPELINE_PYTHON_FILE>`,
+- The name of the function or class of each step, optionally with additional
+path to the the code file where it is defined (if it is not in 
+`<PATH_TO_PIPELINE_PYTHON_FILE>`),
+- Optionally, the name of each materializer (about which you will learn
+later in the section on [Accessing Pipeline Runs](materializer.md)).
 
-### Define the name of the pipeline definition
-
-You will need to define which pipeline to run by it's name.
-
-```yaml
-name: <name_of_your_pipeline>
-...
-```
-
-In case you defined your pipeline using decorators this name is the name of the
-decorated function. If you used the
-[Class Based API](./class-based-api.md), it will be the name of your class.
-
-```python
-from zenml.pipelines import pipeline, BasePipeline
-
-
-@pipeline
-def name_of_your_pipeline(...):
-    ...
-
-
-class ClassBasedPipelineName(BasePipeline):
-    ...
-```
-
-### Supply the names of the step functions (and materializers)
-
-In total the step functions can be supplied with 3 arguments here:
-
-* source:
-    * name of the step
-      *(Optional) file of the step (file contains the step)
+Overall, the required structure of such a YAML should look like this:
 
 ```yaml
-  steps:
-    step_1:
-      source:
-        name: <step_name>
-        file: <relative/filepath>  
-```
-
-* parameters - list of parameters for the StepConfig
-* materializers - dict of output_name and corresponding Materializer name and
-  file
-
-{% hint style="info" %}
-Materializers are responsible for reading and writing. You can learn more about
-Materializers in the
-[materializer section](./materializer.md).
-{% endhint %}
-
-```yaml
-...
+name: <PIPELINE_CLASS_OR_FUNCTION_NAME>
 steps:
-  ...
-  step_2:
+  <STEP_NAME_IN_PIPELINE>:
     source:
-      name: <step_name>
-    parameters:
-      multiplier: 3
-    materializers:
-      output_obj:
-        name: <MaterializerName>
-        file: <relative/filepath>
-```
-
-Again the step name corresponds to the function or class name of your step. The
-materializer name refers to the class name of your materializer.
-
-```python
-from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.steps import step
-
-
-class MaterializerName(BaseMaterializer):
-    ...
-
-
-@step
-def step_name(...):
+      name: <STEP_CLASS_OR_FUNCTION_NAME>
+      file: <PATH_TO_STEP_PYTHON_FILE>  # (optional)
+    parameters:  # (optional)
+      <PARAMETER_NAME>: <PARAMETER_VALUE>
+      <SOME_OTHER_PARAMETER>: ...
+    materializers:  # (optional)
+      <NAME_OF_OUTPUT_OF_STEP>:
+        file: <relative/filepath_to_materializer_code.py>
+        name: <MATERIALIZER_CLASS_NAME>
+      <SOME_OTHER_OUTPUT>:
+        ...
+  <SOME_OTHER_STEP>:
     ...
 ```
 
-### When you put it all together you would have something that looks like this:
+This might seem daunting at first, so let us go over it one by one:
+
+### Defining which pipeline to use
+
+```yaml
+name: <PIPELINE_CLASS_OR_FUNCTION_NAME>
+```
+
+The first line of the YAML defines which pipeline code to use.
+In case you defined your pipeline using decorators, this name is the name of the
+decorated function. If you used the [Class Based API](./class-based-api.md), 
+it will be the name of your class.
+
+For example, if you have defined a pipeline `my_pipeline_a` in
+`pipelines/my_pipelines.py`, then you would:
+- Set `name: my_pipeline_a` in the YAML,
+- Use `pipelines/my_pipelines.py` as `<PATH_TO_PIPELINE_PYTHON_FILE>`.
+
+### Defining which steps to use
+
+For each step, you can define which source code to use via the `source` field:
+
+```yaml
+steps:
+  <STEP_NAME_IN_PIPELINE>:
+    source:
+      name: <STEP_CLASS_OR_FUNCTION_NAME>
+      file: <PATH_TO_STEP_PYTHON_FILE>  # (optional)
+```
+
+For example, if you have defined a step `my_step_1` in `steps/my_steps.py` that
+you want to use as `step_1` of your pipeline `my_pipeline_a`, then you would
+define that in your YAML like this:
+
+```yaml
+name: my_pipeline_a
+steps:
+  step_1:
+    source:
+      name: my_step_1
+      file: steps/my_steps.py
+```
+
+If your step is defined in the same file as your pipeline, you can omit the
+last `file: ...` line.
+
+### Defining materializer source codes
+
+The `materializers` field of a step can be used to specify custom materializers
+of your step outputs and inputs.
+
+Materializers are responsible for saving and loading artifacts within each step.
+See the [Accessing pipeline runs](./materializer.md) for more information on
+materializers and how to configure them in YAML config files.
+
+### Code Summary
+
+Putting it all together, we can configure our entire example pipeline run like
+this in the CLI:
 
 {% tabs %}
 {% tab title="CLI Command" %}
@@ -208,99 +247,73 @@ name: first_pipeline
 steps:
   step_1:
     source:
-      name: my_first_step
+      name: load_digits
   step_2:
     source:
-      name: my_second_step
+      name: svc_trainer
     parameters:
-      multiplier: 3
-    materializers:
-      output_obj:
-        name: MyMaterializer
+      gamma: 0.01
 ```
 
 {% endtab %}
 {% tab title="run.py" %}
 
 ```python
-import os
-from typing import Type
+import numpy as np
+from sklearn.base import ClassifierMixin
+from sklearn.svm import SVC
 
-from zenml.artifacts import DataArtifact
-from zenml.io import fileio
-from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.steps import step, Output, BaseStepConfig
+from zenml.integrations.sklearn.helpers.digits import get_digits
+from zenml.steps import BaseStepConfig, Output, step
 from zenml.pipelines import pipeline
 
 
-class MyObj:
-    def __init__(self, name: str):
-        self.name = name
-
-
-class MyMaterializer(BaseMaterializer):
-    ASSOCIATED_TYPES = (MyObj,)
-    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
-
-    def handle_input(self, data_type: Type[MyObj]) -> MyObj:
-        """Read from artifact store"""
-        super().handle_input(data_type)
-        with fileio.open(os.path.join(self.artifact.uri, 'data.txt'),
-                         'r') as f:
-            name = f.read()
-        return MyObj(name=name)
-
-    def handle_return(self, my_obj: MyObj) -> None:
-        """Write to artifact store"""
-        super().handle_return(my_obj)
-        with fileio.open(os.path.join(self.artifact.uri, 'data.txt'),
-                         'w') as f:
-            f.write(my_obj.name)
-
-
 @step
-def my_first_step() -> Output(output_int=int, output_float=float):
-    """Step that returns a pre-defined integer and float"""
-    return 7, 0.1
-
-
-class SecondStepConfig(BaseStepConfig):
-    """Trainer params"""
-    multiplier: int = 4
-
-
-@step
-def my_second_step(config: SecondStepConfig, input_int: int,
-                   input_float: float
-                   ) -> Output(output_int=int,
-                               output_float=float,
-                               output_obj=MyObj):
-    """Step that multiply the inputs"""
-    return (config.multiplier * input_int,
-            config.multiplier * input_float,
-            MyObj("Custom-Object"))
-
-
-@pipeline(enable_cache=False)
-def first_pipeline(
-        step_1,
-        step_2
+def load_digits() -> Output(
+    X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
 ):
-    output_1, output_2 = step_1()
-    step_2(output_1, output_2)
+    """Loads the digits dataset as normal numpy arrays."""
+    X_train, X_test, y_train, y_test = get_digits()
+    return X_train, X_test, y_train, y_test
+
+
+class SVCTrainerStepConfig(BaseStepConfig):
+    """Trainer params"""
+    gamma: float = 0.001
+
+
+@step
+def svc_trainer(
+    config: SVCTrainerStepConfig,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+) -> ClassifierMixin:
+    """Train a sklearn SVC classifier."""
+    model = SVC(gamma=config.gamma)
+    model.fit(X_train, y_train)
+    return model
+
+
+@pipeline
+def first_pipeline(
+    step_1,
+    step_2
+):
+    X_train, X_test, y_train, y_test = step_1()
+    step_2(X_train, y_train)
 ```
 
 {% endtab %}
 {% tab title="Equivalent run from python" %}
-This is what the same pipeline run would look like if triggered from within
-python.
+This is what the same pipeline run would look like if triggered from within python.
 
 ```python
-first_pipeline(
-    step_1=my_first_step(),
-    step_2=(my_second_step(SecondStepConfig(multiplier=3))
-            .with_return_materializers({"output_obj": MyMaterializer}))
-).run()
+first_pipeline_instance = first_pipeline(
+    step_1=load_digits(),
+    step_2=svc_trainer(SVCTrainerStepConfig(gamma=0.01)),
+)
+
+first_pipeline_instance.run()
 ```
 
 {% endtab %}
@@ -308,9 +321,6 @@ first_pipeline(
 
 {% hint style="info" %}
 Pro-Tip: You can easily use this to configure and run your pipeline from within
-your
-[github action](https://docs.github.com/en/actions) (or comparable tools). This
-way you ensure each run is directly
-associated with an associated code version.
+your [github action](https://docs.github.com/en/actions) (or comparable tools).
+This way you ensure each run is directly associated with a code version.
 {% endhint %}
-
