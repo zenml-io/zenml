@@ -22,10 +22,10 @@
   * [Caching](developer-guide/caching.md)
 * [Stacks, Profiles, Repositories](developer-guide/stacks_profiles_repositories.md)
   * [Accessing pipeline runs](developer-guide/post-execution-workflow.md)
-* [Advanced Usage](developer-guide/advanced.md)
-  * [Passing custom objects through steps with Materializers](developer-guide/materializer.md)
-  * [Fetching historic runs with Step Fixtures](developer-guide/fetching-historic-runs.md)
-  * [Managing external services](developer-guide/manage-external-services.md)
+* [Advanced Concepts](developer-guide/advanced.md)
+  * [Materializers](developer-guide/materializer.md)
+  * [Step Fixtures](developer-guide/fetching-historic-runs.md)
+  * [Services](developer-guide/manage-external-services.md)
 
 ## MLOps Stacks
 
