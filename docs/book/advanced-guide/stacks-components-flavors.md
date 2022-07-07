@@ -180,6 +180,10 @@ zenml stack register STACK_NAME -o <name-of-your-orchestrator> \
                                 ...
 ```
 
+{% hint style="warning" %}
+When you register a stack, the corresponding artifact- and metadata store gets coupled, which means that these instances can not be use in different pairings. This is an intended behaviour to avoid mismatches between the two stores. In order get more information about this interaction, please refer to our [our CLI docs](https://apidocs.zenml.io/latest/cli/).. 
+{% endhint %}
+
 Keep in mind that any ZenML repository that you created through `zenml init` already comes with an initial active `default` stack, which features a local artifact store, a local metadata store, and a local orchestrator. You can see all of your stacks with the following command:
 
 ```shell
