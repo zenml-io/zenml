@@ -36,10 +36,10 @@ First open up a terminal which we'll use to store some values along the way whic
 {% tab title="AWS CLI" %}
 
 ```shell
-# Replace the <PLACEHOLDERS> with a name for your bucket and the AWS region for your resources
+# Set a name for your bucket and the AWS region for your resources
 # Select one of the region codes for <REGION>: https://docs.aws.amazon.com/general/latest/gr/rande.html#regional-endpoints
 REGION=<REGION>  
-S3_BUCKET_NAME=<S3_BUCKET_NAME>
+S3_BUCKET_NAME=zenml-artifact-store
 
 aws s3api create-bucket --bucket=$S3_BUCKET_NAME \
     --region=$REGION \
@@ -78,9 +78,9 @@ aws s3api create-bucket --bucket=$S3_BUCKET_NAME \
 {% tab title="AWS CLI" %}
 
 ```shell
-# Set values for your database id and username/password to access it
-MYSQL_DATABASE_ID=<MYSQL_DATABASE_ID>
-RDS_MYSQL_USERNAME=<RDS_MYSQL_USERNAME>
+# Set values for the database identifier and username/password to access it
+MYSQL_DATABASE_ID=zenml-metadata-store
+RDS_MYSQL_USERNAME=admin
 RDS_MYSQL_PASSWORD=<RDS_MYSQL_PASSWORD>
 
 aws rds create-db-instance --engine=mysql \
@@ -176,12 +176,11 @@ ECR_URI="$REGISTRY_ID.dkr.ecr.$REGION.amazonaws.com"
 {% tab title="AWS CLI" %}
 
 ```shell
-# Choose names for your EKS cluster role and EC2 node role
-EKS_ROLE_NAME=<EKS_ROLE_NAME>
-EC2_ROLE_NAME=<EC2_ROLE_NAME>
-# Choose names for your EKS cluster and node group
-EKS_CLUSTER_NAME=<EKS_CLUSTER_NAME>
-NODEGROUP_NAME=<NODEGROUP_NAME>
+# Choose names for your EKS cluster, node group and their respective roles
+EKS_CLUSTER_NAME=zenml-eks-cluster
+NODEGROUP_NAME=zenml-eks-cluster-nodes
+EKS_ROLE_NAME=ZenMLEKSRole
+EC2_ROLE_NAME=ZenMLEKSNodeRole
 
 EKS_POLICY_JSON='{
   "Version": "2012-10-17",
