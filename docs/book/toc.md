@@ -110,7 +110,7 @@
 
 * [Collaborate with ZenML](collaborate/collaborate-with-zenml.md)
 * [Export/Import Stacks](collaborate/stack-export-import.md)
-* [Share Stacks via Profiles and Stores](collaborate/share-with-profiles.md)
+* [Share Stacks and Profiles via ZenStores](collaborate/share-with-profiles.md)
 * [Organization-Wide Collaboration with ZenServer](collaborate/zenml-server.md)
 
 ## Resources
