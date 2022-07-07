@@ -148,7 +148,7 @@ mkdir zenserver
 docker run -it -d -p 8080:8000 \
     -v $PWD/zenserver:/zenserver \
     -e ZENML_CONFIG_PATH=/zenserver \
-    zenmldocker/zenml \
+    zenmldocker/zenml-server \
     uvicorn zenml.zen_server.zen_server_api:app --host 0.0.0.0
 ```
 
