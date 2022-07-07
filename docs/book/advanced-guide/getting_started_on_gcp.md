@@ -38,12 +38,29 @@ hassle.
 
 ## Step 1/10 Set up a GCP project (Optional)
 
+{% tabs %} 
+{% tab title="GCP UI" %}
+
 As a first step it might make sense to 
 [create](https://console.cloud.google.com/projectcreate) 
 a separate GCP project for your ZenML resources. However, this step is 
 completely optional, and you can also move forward within an existing project. 
 If some resources already exist, feel free to skip their creation step and 
-simply note down the relevant information. 
+simply note down the relevant information.
+{% endtab %}
+
+{% tab title="gcloud CLI" %}
+
+```shell
+export PARENT_ORG_ID=<PARENT_ORG_ID>
+export PROJECT_NAME=<PROJECT_NAME>
+
+gcloud projects create $PROJECT_NAME --organization=$PARENT_ORG_ID
+gcloud config set project $PROJECT_NAME
+```
+
+{% endtab %}
+{% endtabs %}
 
 For simplicity, just
 open up a terminal on the side and export relevant values as we go along. You
@@ -52,8 +69,9 @@ ZenML will use your project number at a later stage to connect to some
 resources, so let's export it. You'll most probably find it right 
 [here](https://console.cloud.google.com/welcome).
 
-```bash
+```shell
 export PROJECT_NUMBER=<PROJECT_NUMBER> # for example '492014921912'
+export GCP_LOCATION=<GCP_LOCATION> # for example 'europe-west3'
 ```
 
 ## Step 2/10 Enable billing
@@ -61,28 +79,38 @@ export PROJECT_NUMBER=<PROJECT_NUMBER> # for example '492014921912'
 Before moving on, you'll have to make sure you attach a billing account to 
 your project. In case you do not have the permissions to do so, you'll have to
 ask an organization administrator.
+{% tabs %} 
+{% tab title="GCP UI" %}
 [Here](https://console.cloud.google.com/billing/projects) is a relevant page.
+{% endtab %}
+
+{% tab title="gcloud CLI" %}
+
+```shell
+export BILLING_ACC=<BILLING_ACC>
+export PROJECT_NAME=<PROJECT_NAME>
+```
+
+```shell
+gcloud beta billing projects link $PROJECT_NAME --billing-account $BILLING_ACC
+```
+
+{% endtab %}
+{% endtabs %}
 
 ## Step 3/10 Enable Vertex AI
 
+{% tabs %} 
+{% tab title="GCP UI" %}
 Vertex AI pipelines is at the heart of our GCP stack. As the orchestrator 
 Vertex AI will run your pipelines and use all the other stack components. 
 All you'll need to do at this stage is enable Vertex AI
 [here](https://console.cloud.google.com/vertex-ai).
-
-Once it is enabled you will see a drop-down with all the regions where 
-Vertex AI is available. At this point it might make sense to make this 
-decision for your ZenML Stack and export the full region name.
-
-{% tabs %}
-{% tab title="Unix Shell" %}
-```shell
-export GCP_LOCATION=<GCP_LOCATION> # for example 'europe-west3'
-```
 {% endtab %}
-{% tab title="Windows Powershell" %}
+
+{% tab title="gcloud CLI" %}
 ```shell
-$Env:GCP_LOCATION=<GCP_LOCATION> # for example 'europe-west3'
+gcloud services enable aiplatform.googleapis.com
 ```
 {% endtab %}
 {% endtabs %}
@@ -91,58 +119,72 @@ $Env:GCP_LOCATION=<GCP_LOCATION> # for example 'europe-west3'
 
 The Secrets Manager will be needed so that the orchestrator will have secure
 access to the other resources. 
+
+{% tabs %} 
+{% tab title="GCP UI" %}
 [Here](https://console.cloud.google.com/marketplace/product/google/secretmanager.googleapis.com)
 is where you'll be able to enable the secrets manager.
+{% endtab %}
+
+{% tab title="gcloud CLI" %}
+```shell
+gcloud services enable secretmanager.googleapis.com
+```
+{% endtab %}
+{% endtabs %}
 
 ## Step 5/10 Enable Container Registry
 
 The Vertex AI orchestrator uses Docker Images containing your pipeline code
-for pipeline orchestration. For this to work you'll need to enable the GCP
-Docker  registry 
+for pipeline orchestration. 
+
+{% tabs %} 
+{% tab title="GCP UI" %}
+For this to work you'll need to enable the GCP Docker registry 
 [here](https://console.cloud.google.com/marketplace/product/google/containerregistry.googleapis.com).
+{% endtab %}
+
+{% tab title="gcloud CLI" %}
+```shell
+gcloud services enable secretmanager.googleapis.com
+```
+{% endtab %}
+{% endtabs %}
 
 In order to use the container registry at a later point you will need to 
 set the container registry URI. This is how it is usually constructed:
 `gcr.io/<PROJECT_ID>`. 
-
 
 {% hint style="info" %}
 The container registry has four options: `gcr.io` , `us.gcr.io`, `eu.gcr.io `, 
 or `asia.gcr.io`. Choose the one appropriate for you. 
 {% endhint %}
 
-
-{% tabs %}
-{% tab title="Unix Shell" %}
 ```bash
 export CONTAINER_REGISTRY_URI=<CONTAINER_REGISTRY_URI> # for example 'eu.gcr.io/zenml-project'
 ```
-{% endtab %}
-{% tab title="Windows Powershell" %}
-```shell
-$Env:CONTAINER_REGISTRY_URI=<CONTAINER_REGISTRY_URI> # for example 'eu.gcr.io/zenml-project'
-```
-{% endtab %}
-{% endtabs %}
 
 ## Step 6/10 Set up Cloud Storage as Artifact Store
 
 Storing of step artifacts is an important part of reproducible MLOps. 
+
+{% tabs %} 
+{% tab title="GCP UI" %}
 Create a bucket [here](https://console.cloud.google.com/storage/create-bucket).
 
 Within the configuration of the newly created bucket you can find the 
 gsutil URI which you will need at a later point. It's usually going to look like 
 this: `gs://<bucket-name>`
 
-{% tabs %}
-{% tab title="Unix Shell" %}
 ```bash
 export GSUTIL_URI=<GSUTIL_URI> # for example 'gs://zenml_vertex_storage'
 ```
 {% endtab %}
-{% tab title="Windows Powershell" %}
+
+{% tab title="gcloud CLI" %}
 ```shell
-$Env:GSUTIL_URI=<GSUTIL_URI> # for example 'gs://zenml_vertex_storage'
+export GSUTIL_URI=gs://<BUCKET-NAME>
+gsutil mb -p $PROJECT_NAME $GSUTIL_URI
 ```
 {% endtab %}
 {% endtabs %}
@@ -152,6 +194,8 @@ $Env:GSUTIL_URI=<GSUTIL_URI> # for example 'gs://zenml_vertex_storage'
 One of the most complex resources that you'll need to manage is the MySQL
 database. 
 
+{% tabs %} 
+{% tab title="GCP UI" %}
 To start, we [create](https://console.cloud.google.com/sql/instances/create;engine=MySQLe)
 a MySQL database. Once created, it will take some time for the database to be 
 set up. 
@@ -160,24 +204,12 @@ Once it is set up you can find the IP-address. The password you set during
 creation of the instance is the root password. The default port for MySQL is 
 3306. 
 
-{% tabs %}
-{% tab title="Unix Shell" %}
 ```bash
 export DB_HOST_IP=<DB_HOST_IP> # for example '35.137.24.15'
 export DB_PORT=<DB_PORT> # usually by default '3306'
 export DB_USER=<DB_USER> # 'root' if you don't set up a separate user
 export DB_PWD=<DB_PWD> # for example 'secure_root_pwd'
 ```
-{% endtab %}
-{% tab title="Windows Powershell" %}
-```shell
-$Env:DB_HOST_IP=<DB_HOST_IP> # for example '35.137.24.15'
-$Env:DB_PORT=<DB_PORT> # usually by default '3306'
-$Env:DB_USER=<DB_USER> # 'root' if you don't set up a separate user
-$Env:DB_PWD=<DB_PWD> # for example 'secure_root_pwd'
-```
-{% endtab %}
-{% endtabs %}
 
 Time to set up the connections to our database. To do this you'll need to go 
 into the `Connections` menu. Under the `Networking` tab you'll need to add 
@@ -192,22 +224,11 @@ database.
 Now **Create Client Certificate** and download all three files. Export the paths 
 to these three files as follows with a leading **@**.
 
-{% tabs %}
-{% tab title="Unix Shell" %}
 ```bash
 export SSL_CA=@<SSL_CA> # for example @/home/zen/Downloads/server-ca.pem
 export SSL_CERT=@<SSL_CERT> # for example @/home/zen/Downloads/client-cert.pem
 export SSL_KEY=@<SSL_KEY> # for example @/home/zen/Downloads/client-key.pem
 ```
-{% endtab %}
-{% tab title="Windows Powershell" %}
-```shell
-$Env:SSL_CA=@<SSL_CA> # for example @/home/zen/Downloads/server-ca.pem
-$Env:SSL_CERT=@<SSL_CERT> # for example @/home/zen/Downloads/client-cert.pem
-$Env:SSL_KEY=@<SSL_KEY> # for example @/home/zen/Downloads/client-key.pem
-```
-{% endtab %}
-{% endtabs %}
 
 {% hint style="warning" %}
 Note the **@** sign in front of these three variables. The **@** sign tells the 
@@ -217,15 +238,32 @@ secret manager that these are file paths to be loaded from.
 Finally, head on over to the `Databases` submenu and create your database and
 export its name. 
 
-{% tabs %}
-{% tab title="Unix Shell" %}
 ```bash
 export DB_NAME=<DB_NAME> # for example zenml_db
 ```
 {% endtab %}
-{% tab title="Windows Powershell" %}
+
+{% tab title="gcloud CLI" %}
 ```shell
-$Env:DB_NAME=<DB_NAME> # for example zenml_db
+export DB_NAME=zenml-metadata-store-db
+export DB_INSTANCE=zenml-inst
+export CERT_NAME=zenml-cert
+```
+
+```shell
+gcloud services enable sqladmin.googleapis.com
+
+gcloud sql instances create $DB_INSTANCE --tier=db-f1-micro --region=GCP_LOCATION --authorized-networks 0.0.0.0/0
+gcloud sql users set-password root --host=% --instance $DB_INSTANCE --password $DB_PASSWORD
+gcloud sql instances patch $DB_INSTANCE --require-ssl
+
+# Create Client certificate and download all three 
+gcloud sql ssl client-certs create $CERT_NAME client-key.pem --instance $DB_INSTANCE
+gcloud sql ssl client-certs describe $CERT_NAME --instance=$DB_INSTANCE --format="value(cert)" > client-cert.pem
+gcloud sql ssl client-certs describe $CERT_NAME --instance=$DB_INSTANCE --format="value(serverCaCert.cert)" > server-ca.pem
+
+# Create the database to be used as metadata store
+gcloud sql databases create $DATABASE_NAME --instance=$DB_INSTANCE
 ```
 {% endtab %}
 {% endtabs %}
@@ -235,6 +273,8 @@ $Env:DB_NAME=<DB_NAME> # for example zenml_db
 All the resources are created. Now we need to make sure the instance performing 
 the compute engine (Vertex AI) needs to have the relevant permissions to access 
 the other resources. For this you'll need to go
+{% tabs %} 
+{% tab title="GCP UI" %}
 [here](https://console.cloud.google.com/iam-admin/serviceaccounts/create) to 
 create a service account. Give it a relevant name and allow access to the
 following roles:
@@ -247,15 +287,31 @@ following roles:
 Also give your user access to the service account. This is the service account 
 that will be used by the Vertex AI compute engine.
 
-{% tabs %}
-{% tab title="Unix Shell" %}
 ```bash
 export SERVICE_ACCOUNT=<SERVICE_ACCOUNT> # for example zenml-vertex-sa@zenml-project.iam.gserviceaccount.com
 ```
 {% endtab %}
-{% tab title="Windows Powershell" %}
+
+{% tab title="gcloud CLI" %}
 ```shell
-$Env:SERVICE_ACCOUNT=<SERVICE_ACCOUNT> # for example zenml-vertex-sa@zenml-project.iam.gserviceaccount.com
+export SERVICE_ACCOUNT_ID=zenml-vertex-sa
+export USER_EMAIL=<USER_EMAIL> # for example user@zenml.io
+export SERVICE_ACCOUNT=${SERVICE_ACCOUNT_ID}"@"${PROJECT_NAME}".iam.gserviceaccount.com"
+```
+
+```shell
+gcloud iam service-accounts create $SERVICE_ACCOUNT_ID --display-name="zenml-vertex-sa" \
+    --description="Service account for running Vertex Ai workflows from ZenML." 
+gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/aiplatform.customCodeServiceAgent" \
+    --member="serviceAccount:"${SERVICE_ACCOUNT}
+gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/aiplatform.serviceAgent" \
+    --member="serviceAccount:"${SERVICE_ACCOUNT}
+gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/containerregistry.ServiceAgent" \
+    --member="serviceAccount:"${SERVICE_ACCOUNT}
+gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/secretmanager.admin" \
+    --member="serviceAccount:"${SERVICE_ACCOUNT}
+gcloud iam service-accounts add-iam-policy-binding  $SERVICE_ACCOUNT \
+    --member="user:"${USER_EMAIL} --role="roles/iam.serviceAccountUser"
 ```
 {% endtab %}
 {% endtabs %}
@@ -372,3 +428,13 @@ orchestrator. For more guides on different cloud set-ups, check out the
 [Kubeflow](https://docs.zenml.io/advanced-guide/execute-pipelines-in-cloud) and 
 [Kubernetes](https://blog.zenml.io/k8s-orchestrator/) orchestrators 
 respectively and find out if these are a better fit for you.
+
+
+## One Shot Setup
+<details>
+    <summary>Quick setup commands</summary>
+
+```shell
+
+```
+</details>
