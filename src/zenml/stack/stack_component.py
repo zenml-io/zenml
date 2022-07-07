@@ -39,7 +39,7 @@ def uuid_factory() -> UUID:
     #   to the zen_store.sql_zen_store.SQLZenStore. Since the UUID for
     #   stack components get created upon the creation of the
     #   pydantic instance, the same logic must apply here in order to
-    #   save the corresponding UUID's within the ZenStore.
+    #   save it within the ZenStore.
     # SQLModel crashes when a UUID hex string starts with '0'
     # (see: https://github.com/tiangolo/sqlmodel/issues/25)
     uuid = uuid4()
