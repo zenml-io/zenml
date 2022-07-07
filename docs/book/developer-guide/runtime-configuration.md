@@ -164,8 +164,8 @@ steps:
       <SOME_OTHER_PARAMETER>: ...
     materializers:  # (optional)
       <NAME_OF_OUTPUT_OF_STEP>:
-        file: <relative/filepath_to_materializer_code.py>
         name: <MATERIALIZER_CLASS_NAME>
+        file: <PATH_TO_MATERIALIZER_PYTHON_FILE>
       <SOME_OTHER_OUTPUT>:
         ...
   <SOME_OTHER_STEP>:
@@ -181,9 +181,10 @@ name: <PIPELINE_CLASS_OR_FUNCTION_NAME>
 ```
 
 The first line of the YAML defines which pipeline code to use.
-In case you defined your pipeline using decorators, this name is the name of the
-decorated function. If you used the [Class Based API](./class-based-api.md), 
-it will be the name of your class.
+In case you defined your pipeline as Python function with `@pipeline` decorator, 
+this name is the name of the decorated function. 
+If you used the [Class Based API](./class-based-api.md) (which you will learn 
+about in the next section), it will be the name of the class.
 
 For example, if you have defined a pipeline `my_pipeline_a` in
 `pipelines/my_pipelines.py`, then you would:
@@ -224,8 +225,8 @@ The `materializers` field of a step can be used to specify custom materializers
 of your step outputs and inputs.
 
 Materializers are responsible for saving and loading artifacts within each step.
-See the [Accessing pipeline runs](./materializer.md) for more information on
-materializers and how to configure them in YAML config files.
+You will learn about materializers (and how to configure them in YAML config 
+files) later in the [Accessing pipeline runs](./materializer.md) section.
 
 ### Code Summary
 
@@ -237,22 +238,6 @@ this in the CLI:
 
 ```shell
 zenml pipeline run run.py -c config.yaml
-```
-
-{% endtab %}
-{% tab title="config.yaml" %}
-
-```yaml
-name: first_pipeline
-steps:
-  step_1:
-    source:
-      name: load_digits
-  step_2:
-    source:
-      name: svc_trainer
-    parameters:
-      gamma: 0.01
 ```
 
 {% endtab %}
@@ -301,6 +286,22 @@ def first_pipeline(
 ):
     X_train, X_test, y_train, y_test = step_1()
     step_2(X_train, y_train)
+```
+
+{% endtab %}
+{% tab title="config.yaml" %}
+
+```yaml
+name: first_pipeline
+steps:
+  step_1:
+    source:
+      name: load_digits
+  step_2:
+    source:
+      name: svc_trainer
+    parameters:
+      gamma: 0.01
 ```
 
 {% endtab %}
