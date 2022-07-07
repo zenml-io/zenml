@@ -4,17 +4,20 @@ description: What is the global ZenML config?
 
 # The Global Config
 
-ZenML has two main locations where it stores information on the machine where it
-is used. These are the _Global Config_ and the _Repository_
-(also see [this docs page](../developer-guide/stacks_profiles_repositories.md)
-for more information).
+ZenML has two main locations where it stores information on the local machine.
+These are the _Global Config_ and the _Repository_ (see 
+[here](../developer-guide/stacks_profiles_repositories.md#repositories)
+for more information on the repository).
 
 Most of the information stored by ZenML on a machine, such as the global
-settings, the configured [ZenML Profiles](../collaborate/share-with-profiles.md) and even
-the configured Stacks and Stack Components, is kept in a folder commonly
-referred to as the _ZenML Global Config Directory_ or the _ZenML Config Path_.
-The location of this folder depends on the operating system type and the current
-system user, but is usually located in the following locations:
+settings, the configured 
+[Profiles](../developer-guide/stacks_profiles_repositories.md#profiles),
+and even the configured 
+[Stacks and Stack Components](../developer-guide/stacks_profiles_repositories.md#stacks), 
+is kept in a folder commonly referred to as the _ZenML Global Config Directory_
+or the _ZenML Config Path_. The location of this folder depends on the 
+operating system type and the current system user, but is usually located in 
+the following locations:
 
 * Linux: `~/.config/zenml`
 * Mac: `~/Library/Application Support/ZenML`
@@ -145,6 +148,35 @@ the _Global Config Directory_, depending on what you do with ZenML:
 the pulled ZenML examples are stored.
 * `kubeflow` - this is where the Kubeflow orchestrators that are part of a Stack
 store some of their configuration and logs.
+
+## Accessing the global configuration in Python
+
+You can access the global ZenML configuration from within Python using the
+`zenml.config.global_config.GlobalConfiguration` class:
+
+```python
+from zenml.config.global_config import GlobalConfiguration
+config = GlobalConfiguration()
+```
+
+This can be used to manage your profiles and other global settings from within
+Python. For instance, we can use it to create and activate a new profile:
+
+```python
+from zenml.repository import Repository
+from zenml.config.global_config import GlobalConfiguration
+from zenml.config.profile_config import ProfileConfiguration
+
+repo = Repository()
+config = GlobalConfiguration()
+
+# Create a new profile called "local"
+profile = ProfileConfiguration(name="local")
+config.add_or_update_profile(profile)
+
+# Set the profile as active profile of the repository
+repo.activate_profile("local")
+```
 
 To explore all possible operations that can be performed via the 
 `GlobalConfiguration`, please consult the API docs sections on 

@@ -115,6 +115,7 @@ def first_pipeline(step_1, step_2):
     X_train, X_test, y_train, y_test = step_1()
     step_2(X_train, y_train)
 
+
 first_pipeline_instance = first_pipeline(
     step_1=load_digits(),
     step_2=svc_trainer()
