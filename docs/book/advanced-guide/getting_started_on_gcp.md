@@ -59,26 +59,27 @@ completely optional, and you can also move forward within an existing project.
 If some resources already exist, feel free to skip their creation step and 
 simply note down the relevant information.
 
-For simplicity, just open up a terminal on the side and export relevant values 
+For simplicity, just open up a terminal on the side and save relevant values 
 as we go along. You will use these when we set up the ZenML stack.
 ZenML will use your project number at a later stage to connect to some 
-resources, so let's export it. You'll most probably find it right 
+resources, so let's it. You'll most probably find it right 
 [here](https://console.cloud.google.com/welcome).
 
 ```shell
-export PROJECT_NUMBER=<PROJECT_NUMBER> # for example '492014921912'
-export GCP_LOCATION=<GCP_LOCATION> # for example 'europe-west3'
+PROJECT_NUMBER=<PROJECT_NUMBER> # for example '492014921912'
+GCP_LOCATION=<GCP_LOCATION> # for example 'europe-west3'
 ```
 {% endtab %}
 
 {% tab title="gcloud CLI" %}
 ```shell
-export PARENT_ORG_ID=<PARENT_ORG_ID>
-export PROJECT_NAME=<PROJECT_NAME>
+PARENT_ORG_ID=<PARENT_ORG_ID> # for example 3928562984638
+PROJECT_NAME=<PROJECT_NAME> # for example zenml-vertex-prj
+GCP_LOCATION=<GCP_LOCATION> # for example 'europe-west3'
 
 gcloud projects create $PROJECT_NAME --organization=$PARENT_ORG_ID
 gcloud config set project $PROJECT_NAME
-export PROJECT_NUMBER=$(gcloud projects describe $PROJECT_NAME --format="value(projectNumber)")
+PROJECT_NUMBER=$(gcloud projects describe $PROJECT_NAME --format="value(projectNumber)")
 ```
 
 {% endtab %}
@@ -97,8 +98,7 @@ ask an organization administrator.
 {% tab title="gcloud CLI" %}
 
 ```shell
-export BILLING_ACC=<BILLING_ACC>
-export PROJECT_NAME=<PROJECT_NAME>
+BILLING_ACC=<BILLING_ACC>
 ```
 
 ```shell
@@ -163,14 +163,15 @@ or `asia.gcr.io`. Choose the one appropriate for you.
 {% endhint %}
 
 ```bash
-export CONTAINER_REGISTRY_URI=<CONTAINER_REGISTRY_URI> # for example 'eu.gcr.io/zenml-project'
+CONTAINER_REGISTRY_URI=<CONTAINER_REGISTRY_URI> # for example 'eu.gcr.io/zenml-project'
 ```
 {% endtab %}
 
 {% tab title="gcloud CLI" %}
 ```shell
+CONTAINER_REGISTRY_REGION=<CONTAINER_REGISTRY_REGION> # can be 'eu', 'us', 'asia'
 gcloud services enable containerregistry.googleapis.com
-export CONTAINER_REGISTRY_URI=$CONTAINER_REGISTRY_REGION"gcr.io/"$PROJECT_NAME
+CONTAINER_REGISTRY_URI=$CONTAINER_REGISTRY_REGION".gcr.io/"$PROJECT_NAME
 ```
 {% endtab %}
 {% endtabs %}
@@ -188,13 +189,13 @@ gsutil URI which you will need at a later point. It's usually going to look like
 this: `gs://<bucket-name>`
 
 ```bash
-export GSUTIL_URI=<GSUTIL_URI> # for example 'gs://zenml_vertex_storage'
+GSUTIL_URI=<GSUTIL_URI> # for example 'gs://zenml_vertex_storage'
 ```
 {% endtab %}
 
 {% tab title="gcloud CLI" %}
 ```shell
-export GSUTIL_URI=gs://<BUCKET-NAME>
+GSUTIL_URI=gs://<BUCKET-NAME>
 gsutil mb -p $PROJECT_NAME $GSUTIL_URI
 ```
 {% endtab %}
@@ -216,10 +217,8 @@ creation of the instance is the root password. The default port for MySQL is
 3306. 
 
 ```bash
-export DB_HOST=<DB_HOST> # for example '35.137.24.15'
-export DB_PORT=<DB_PORT> # usually by default '3306'
-export DB_USER=<DB_USER> # 'root' if you don't set up a separate user
-export DB_PWD=<DB_PWD> # for example 'secure_root_pwd'
+DB_HOST=<DB_HOST> # for example '35.137.24.15'
+DB_PWD=<DB_PWD> # for example 'secure_root_pwd'
 ```
 
 Time to set up the connections to our database. To do this you'll need to go 
@@ -232,13 +231,13 @@ accept SSL connections. You'll find the relevant setting in the **Security**
 tab. Select **SSL Connections only** in order to encrypt all traffic with your 
 database.
 
-Now **Create Client Certificate** and download all three files. Export the paths 
-to these three files as follows with a leading **@**.
+Now **Create Client Certificate** and download all three files. Save the paths 
+to these three files as follows.
 
 ```bash
-export SSL_CA=<SSL_CA> # for example /home/zen/Downloads/server-ca.pem
-export SSL_CERT=<SSL_CERT> # for example /home/zen/Downloads/client-cert.pem
-export SSL_KEY=<SSL_KEY> # for example /home/zen/Downloads/client-key.pem
+SSL_CA=<SSL_CA> # for example /home/zen/Downloads/server-ca.pem
+SSL_CERT=<SSL_CERT> # for example /home/zen/Downloads/client-cert.pem
+SSL_KEY=<SSL_KEY> # for example /home/zen/Downloads/client-key.pem
 ```
 
 {% hint style="warning" %}
@@ -247,22 +246,26 @@ secret manager that these are file paths to be loaded from.
 {% endhint %}
 
 Finally, head on over to the `Databases` submenu and create your database and
-export its name. 
+save its name. 
 
 ```bash
-export DB_NAME=<DB_NAME> # for example zenml_db
+DB_NAME=<DB_NAME> # for example zenml_db
 ```
 {% endtab %}
 
 {% tab title="gcloud CLI" %}
+
+We have set some sensible defaults here, feel free to replace these with
+names of your own.
 ```shell
-export DB_NAME=zenml-metadata-store-db
-export DB_INSTANCE=zenml-inst
-export CERT_NAME=zenml-cert
-export CLIENT_KEY_PATH=$PROJECT_NAME"client-key.pem"
-export CLIENT_CERT_PATH=$PROJECT_NAME"client-cert.pem"
-export SERVER_CERT_PATH=$PROJECT_NAME"server-ca.pem"```
+DB_INSTANCE=zenml-inst
+DB_NAME=zenml-metadata-store-db
+CERT_NAME=zenml-cert
+CLIENT_KEY_PATH=$PROJECT_NAME"client-key.pem"
+CLIENT_CERT_PATH=$PROJECT_NAME"client-cert.pem"
+SERVER_CERT_PATH=$PROJECT_NAME"server-ca.pem"```
 ```
+
 ```shell
 # Enable the sql api for database creation
 gcloud services enable sqladmin.googleapis.com
@@ -270,7 +273,7 @@ gcloud services enable sqladmin.googleapis.com
 # Create the db instance
 gcloud sql instances create $DB_INSTANCE --tier=db-f1-micro --region=$GCP_LOCATION --authorized-networks 0.0.0.0/0
 
-export DB_HOST=$(gcloud sql instances describe $DB_INSTANCE --format='get(ipAddresses[0].ipAddress)')
+DB_HOST=$(gcloud sql instances describe $DB_INSTANCE --format='get(ipAddresses[0].ipAddress)')
 gcloud sql users set-password root --host=$DB_HOST --instance $DB_INSTANCE --password $DB_PASSWORD
 
 # Create Client certificate and download all three 
@@ -280,7 +283,6 @@ gcloud sql ssl client-certs describe $CERT_NAME --instance=$DB_INSTANCE --format
 gcloud sql instances describe $DB_INSTANCE --format="value(serverCaCert.cert)" > $SERVER_CERT_PATH
 
 gcloud sql databases create $DB_NAME --instance=$DB_INSTANCE --collation=utf8_general_ci --charset=utf8
-
 ```
 {% endtab %}
 {% endtabs %}
@@ -305,15 +307,15 @@ Also give your user access to the service account. This is the service account
 that will be used by the Vertex AI compute engine.
 
 ```bash
-export SERVICE_ACCOUNT=<SERVICE_ACCOUNT> # for example zenml-vertex-sa@zenml-project.iam.gserviceaccount.com
+SERVICE_ACCOUNT=<SERVICE_ACCOUNT> # for example zenml-vertex-sa@zenml-project.iam.gserviceaccount.com
 ```
 {% endtab %}
 
 {% tab title="gcloud CLI" %}
 ```shell
-export SERVICE_ACCOUNT_ID=zenml-vertex-sa
-export USER_EMAIL=<USER_EMAIL> # for example user@zenml.io
-export SERVICE_ACCOUNT=${SERVICE_ACCOUNT_ID}"@"${PROJECT_NAME}".iam.gserviceaccount.com"
+SERVICE_ACCOUNT_ID=zenml-vertex-sa
+USER_EMAIL=<USER_EMAIL> # for example user@zenml.io
+SERVICE_ACCOUNT=${SERVICE_ACCOUNT_ID}"@"${PROJECT_NAME}".iam.gserviceaccount.com"
 ```
 
 ```shell
@@ -327,8 +329,13 @@ gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/containerre
     --member="serviceAccount:"${SERVICE_ACCOUNT}
 gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/secretmanager.admin" \
     --member="serviceAccount:"${SERVICE_ACCOUNT}
-gcloud iam service-accounts add-iam-policy-binding  $SERVICE_ACCOUNT \
+gcloud iam service-accounts add-iam-policy-binding $SERVICE_ACCOUNT \
     --member="user:"${USER_EMAIL} --role="roles/iam.serviceAccountUser"
+    
+gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/aiplatform.customCodeServiceAgent" \
+    --member="serviceAccount:service-"${PROJECT_NUMBER}"@gcp-sa-aiplatform-cc.iam.gserviceaccount.com"
+gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/containerregistry.ServiceAgent" \
+    --member="serviceAccount:service-"${PROJECT_NUMBER}"@gcp-sa-aiplatform-cc.iam.gserviceaccount.com"
 ```
 {% endtab %}
 {% endtabs %}
@@ -433,6 +440,110 @@ respectively and find out if these are a better fit for you.
     <summary>Quick setup commands</summary>
 
 ```shell
+USER_EMAIL=<USER_EMAIL>  # for example user@zenml.io
+PARENT_ORG_ID=<PARENT_ORG_ID> # for example 294710374920
+BILLING_ACC=<BILLING_ACC> # for example 20CIW7-183916-8GA18Z
+PROJECT_NAME=<PROJECT_NAME>
+CONTAINER_REGISTRY_REGION=eu # can be 'eu', 'us', 'asia'
+GCP_LOCATION=<GCP_LOCATION> # for example europe-west3 
+DB_PASSWORD=<DB_PASSWORD> # for example auk(/194
 
+# Create a project and attach it to the specified billing account
+gcloud projects create $PROJECT_NAME --organization=$PARENT_ORG_ID
+gcloud config set project $PROJECT_NAME
+gcloud beta billing projects link $PROJECT_NAME --billing-account $BILLING_ACC
+PROJECT_NUMBER=$(gcloud projects describe $PROJECT_NAME --format="value(projectNumber)")
+
+# Enable the three APIs for vertex ai, the container registry and the 
+gcloud services enable aiplatform.googleapis.com
+gcloud services enable secretmanager.googleapis.com
+gcloud services enable containerregistry.googleapis.com
+
+CONTAINER_REGISTRY_URI=$CONTAINER_REGISTRY_REGION".gcr.io/"$PROJECT_NAME
+
+# Create a storage bucket
+GSUTIL_URI=gs://${PROJECT_NAME}-bucket
+gsutil mb -p $PROJECT_NAME $GSUTIL_URI
+
+# Enable the sql api for database creation
+gcloud services enable sqladmin.googleapis.com
+
+# Create the db instance
+DB_INSTANCE=zenml-inst
+gcloud sql instances create $DB_INSTANCE --tier=db-f1-micro --region=$GCP_LOCATION --authorized-networks 0.0.0.0/0
+
+DB_HOST=$(gcloud sql instances describe $DB_INSTANCE --format='get(ipAddresses[0].ipAddress)')
+gcloud sql users set-password root --host=$DB_HOST --instance $DB_INSTANCE --password $DB_PASSWORD
+
+# Create Client certificate and download all three 
+CERT_NAME=zenml-cert
+CLIENT_KEY_PATH=$PROJECT_NAME"client-key.pem"
+CLIENT_CERT_PATH=$PROJECT_NAME"client-cert.pem"
+SERVER_CERT_PATH=$PROJECT_NAME"server-ca.pem"
+gcloud sql instances patch $DB_INSTANCE --require-ssl
+gcloud sql ssl client-certs create $CERT_NAME $CLIENT_KEY_PATH --instance $DB_INSTANCE
+gcloud sql ssl client-certs describe $CERT_NAME --instance=$DB_INSTANCE --format="value(cert)" > $CLIENT_CERT_PATH
+gcloud sql instances describe $DB_INSTANCE --format="value(serverCaCert.cert)" > $SERVER_CERT_PATH
+
+DB_NAME=zenml-metadata-store-db
+gcloud sql databases create $DB_NAME --instance=$DB_INSTANCE --collation=utf8_general_ci --charset=utf8
+
+# Configure the service accounts
+SERVICE_ACCOUNT_ID=zenml-vertex-sa
+SERVICE_ACCOUNT=${SERVICE_ACCOUNT_ID}"@"${PROJECT_NAME}".iam.gserviceaccount.com"
+
+gcloud iam service-accounts create $SERVICE_ACCOUNT_ID --display-name="zenml-vertex-sa" \
+    --description="Service account for running Vertex Ai workflows from ZenML." 
+gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/aiplatform.customCodeServiceAgent" \
+    --member="serviceAccount:"${SERVICE_ACCOUNT}
+gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/aiplatform.serviceAgent" \
+    --member="serviceAccount:"${SERVICE_ACCOUNT}
+gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/containerregistry.ServiceAgent" \
+    --member="serviceAccount:"${SERVICE_ACCOUNT}
+gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/secretmanager.admin" \
+    --member="serviceAccount:"${SERVICE_ACCOUNT}
+gcloud iam service-accounts add-iam-policy-binding $SERVICE_ACCOUNT \
+    --member="user:"${USER_EMAIL} --role="roles/iam.serviceAccountUser"
+    
+gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/aiplatform.customCodeServiceAgent" \
+    --member="serviceAccount:service-"${PROJECT_NUMBER}"@gcp-sa-aiplatform-cc.iam.gserviceaccount.com"
+gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/containerregistry.ServiceAgent" \
+    --member="serviceAccount:service-"${PROJECT_NUMBER}"@gcp-sa-aiplatform-cc.iam.gserviceaccount.com"
+
+
+ORCHESTRATOR_NAME=$PROJECT_NAME"-gcp_vo"
+ARTIFACT_STORE_NAME=$PROJECT_NAME"-gcp_as"
+METADATA_STORE_NAME=$PROJECT_NAME"-gcp_ms"
+CONTAINER_REGISTRY_NAME=$PROJECT_NAME"-gcp_cr"
+SECRET_MANAGER_NAME=$PROJECT_NAME"-gcp_sm"
+STACK_NAME=$PROJECT_NAME"-gcp_stack"
+
+zenml orchestrator delete $ORCHESTRATOR_NAME
+zenml artifact-store delete $ARTIFACT_STORE_NAME
+zenml metadata-store delete $METADATA_STORE_NAME
+zenml container-registry delete $CONTAINER_REGISTRY_NAME
+zenml secrets-manager delete $SECRET_MANAGER_NAME
+
+zenml orchestrator register $ORCHESTRATOR_NAME --flavor=vertex \
+      --project=$PROJECT_NUMBER --location=$GCP_LOCATION \
+      --workload_service_account=$SERVICE_ACCOUNT
+zenml container-registry register $CONTAINER_REGISTRY_NAME --flavor=gcp \
+      --uri=$CONTAINER_REGISTRY_URI
+zenml secrets-manager register $SECRET_MANAGER_NAME \
+      --flavor=gcp_secrets_manager --project_id=$PROJECT_NUMBER
+zenml artifact-store register $ARTIFACT_STORE_NAME --flavor=gcp \
+      --path=$GSUTIL_URI
+zenml metadata-store register $METADATA_STORE_NAME --flavor=mysql \
+      --host=$DB_HOST --port=3306 --database=$DB_NAME \
+      --secret=mysql_secret
+      
+zenml stack register $STACK_NAME -o $ORCHESTRATOR_NAME \
+      -c $CONTAINER_REGISTRY_NAME -x $SECRET_MANAGER_NAME \
+      -a $ARTIFACT_STORE_NAME -m $METADATA_STORE_NAME --set
+      
+zenml secret register mysql_secret --schema=mysql \
+      --user=root --password=$DB_PASSWORD \
+      --ssl_ca="@"$SERVER_CERT_PATH --ssl_cert="@"$CLIENT_CERT_PATH --ssl_key="@"$CLIENT_KEY_PATH
+ 
 ```
 </details>
