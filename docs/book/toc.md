@@ -29,7 +29,6 @@
 
 ## MLOps Stacks
 
-* [Stacks, Components, Flavors](mlops_stacks/stacks-components-flavors.md)
 * [Categories of MLOps Tools](mlops_stacks/categories.md)
 * [Integration Overview](mlops_stacks/integrations.md)
 * [Orchestrators](mlops_stacks/orchestrators/overview.md)
