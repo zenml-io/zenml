@@ -4,6 +4,13 @@ description: Create Steps, Build a Pipeline and Run it.
 
 # Steps & Pipelines
 
+{% hint style="info" %}
+If you are new to MLOps and would like to learn more about ML pipelines in 
+general, checkout [ZenBytes](https://github.com/zenml-io/zenbytes), our lesson
+series on practical MLOps, where we introduce ML pipelines in more detail in
+[ZenBytes lesson 1.1](https://github.com/zenml-io/zenbytes/blob/main/1-2_Artifact_Lineage.ipynb).
+{% endhint %}
+
 ## Step
 
 Steps are the atomic components of a ZenML pipeline. Each step is defined by its
