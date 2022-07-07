@@ -32,7 +32,7 @@ Currently, the
 [SlackAlerter](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.slack.steps.slack_alerter_ask_step.slack_alerter_post_step)
 is the only available alerter integration, but it is straightforward to 
 extend ZenML and build an alerter for other chat services, as shown 
-[here](https://docs.zenml.io/extending-zenml/alerter).
+[here](https://docs.zenml.io/extending-zenml/alerters).
 
 ## Send alerts in your pipelines
 

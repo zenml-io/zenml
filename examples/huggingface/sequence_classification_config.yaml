@@ -1,0 +1,40 @@
+name: seq_classifier_train_eval_pipeline
+steps:
+  importer:
+    source:
+      file: steps/data_importer/data_importer_step
+      name: data_importer
+    parameters:
+      dataset_name: imdb
+  load_tokenizer:
+    source:
+      file: steps/load_tokenizer/load_tokenizer_step
+      name: load_tokenizer
+    parameters:
+      pretrained_model: distilbert-base-uncased
+  tokenization:
+    source:
+      file: steps/tokenization/sequence_classifier_tokenization_step
+      name: sequence_classifier_tokenization
+    parameters:
+      text_column: text
+      label_column: label
+      max_seq_length: 128
+  trainer:
+    source:
+      file: steps/training/sequence_training_step
+      name: sequence_trainer
+    parameters:
+      label_column: label
+      pretrained_model: distilbert-base-uncased
+      batch_size: 16
+      epochs: 1
+      init_lr: 0.00002
+      weight_decay_rate: 0.01
+      dummy_run: True
+  evaluator:
+    source:
+      file: steps/evaluation/sequence_evaluation_step
+      name: sequence_evaluator
+    parameters:
+      batch_size: 16

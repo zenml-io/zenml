@@ -1,0 +1,14 @@
+name: facets_pipeline
+steps:
+  importer:
+    source:
+      file: steps/importer/importer_step
+      name: importer
+  trainer:
+    source:
+      file: steps/trainer/trainer_step
+      name: trainer
+  evaluator:
+    source:
+      file: steps/evaluator/evaluator_step
+      name: evaluator

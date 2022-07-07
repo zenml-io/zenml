@@ -1,0 +1,22 @@
+name: wandb_example_pipeline
+steps:
+  importer:
+    source:
+      file: steps/importer/importer_step
+      name: importer_mnist
+  normalizer:
+    source:
+      file: steps/normalizer/normalizer_step
+      name: normalizer
+  trainer:
+    source:
+      file: steps/trainer/trainer_step
+      name: tf_trainer
+      parameters:
+        epochs: 5
+        lr: 0.0003
+  evaluator:
+    source:
+      file: steps/evaluator/evaluator_step
+      name: tf_evaluator
+

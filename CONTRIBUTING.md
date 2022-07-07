@@ -126,6 +126,8 @@ integrations for `mypy` checks:
 
 ```
 zenml integration install -f
+zenml integration install -y -i feast
+pip install click~=8.0.3
 mypy --install-types
 ```
 
@@ -141,6 +143,8 @@ poetry run bash scripts/format.sh
 poetry run bash scripts/lint.sh
 poetry run bash scripts/check-spelling.sh
 ```
+
+If the spell checker catches errors, you will have to add the words to `.pyspelling-ignore-words`. (Note that if you wish to run the spellchecks manually on your local machine, first install `aspell` (using `brew` or `apt-get` or whatever package manager Windows uses).)
 
 Tests can be run as follows:
 
@@ -212,7 +216,7 @@ for detailed step-by-step instructions.
 [Examples README](examples/README.md) 
 to find out what to do.
 3. All integrations deserve to be documented. Make sure to pay a visit to the
-[Integrations Page](docs/book/advanced-guide/integrations/integrations.md)
+[Integrations Page](https://docs.zenml.io/advanced-guide/integrations)
 in the docs and add the integration. 
 
 ## 🆘 Getting Help
