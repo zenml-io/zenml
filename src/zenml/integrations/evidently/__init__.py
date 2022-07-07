@@ -30,7 +30,7 @@ class EvidentlyIntegration(Integration):
     """[Evidently](https://github.com/evidentlyai/evidently) integration for ZenML."""
 
     NAME = EVIDENTLY
-    REQUIREMENTS = ["evidently==v0.1.41.dev0"]
+    REQUIREMENTS = ["evidently==0.1.51.dev0"]
 
 
 EvidentlyIntegration.check_installation()
