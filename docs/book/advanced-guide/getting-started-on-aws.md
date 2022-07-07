@@ -339,3 +339,201 @@ aws eks wait nodegroup-active --cluster-name=$EKS_CLUSTER_NAME \
     ```
 
 After all of this setup, you're now ready to run any ZenML pipeline on AWS!
+
+## Quick setup
+
+If you're looking for a way to get started quickly, we've combined all the commands so you can simply copy-paste them and execute them in a single go. You'll only need to set values for the `<REGION>` and `<RDS_MYSQL_PASSWORD>` right at the beginning before executing the rest.
+
+<details>
+    <summary>Quick setup commands</summary>
+
+```shell
+# Select one of the region codes for <REGION>: https://docs.aws.amazon.com/general/latest/gr/rande.html#regional-endpoints
+REGION=<REGION>  
+# Choose a secure password for your database admin account. Make sure it includes:
+# - at least 8 printable ASCII characters
+# - no slash, single or double quotes or @ signs
+RDS_MYSQL_PASSWORD=<RDS_MYSQL_PASSWORD>
+
+# Other parameters (we've set some defaults for these but feel free to change them):
+S3_BUCKET_NAME=zenml-artifact-store
+MYSQL_DATABASE_ID=zenml-metadata-store
+RDS_MYSQL_USERNAME=admin
+EKS_CLUSTER_NAME=zenml-eks-cluster
+NODEGROUP_NAME=zenml-eks-cluster-nodes
+EKS_ROLE_NAME=ZenMLEKSRole
+EC2_ROLE_NAME=ZenMLEKSNodeRole
+
+
+aws s3api create-bucket --bucket=$S3_BUCKET_NAME \
+    --region=$REGION \
+    --create-bucket-configuration=LocationConstraint=$REGION
+
+aws rds create-db-instance --engine=mysql \
+    --db-instance-class=db.t3.micro \
+    --allocated-storage=20 \
+    --publicly-accessible \
+    --db-instance-identifier=$MYSQL_DATABASE_ID \
+    --region=$REGION \
+    --master-username=$RDS_MYSQL_USERNAME \
+    --master-user-password=$RDS_MYSQL_PASSWORD
+
+# Wait until the database is created
+aws rds wait db-instance-available --db-instance-identifier=$MYSQL_DATABASE_ID \
+    --region=$REGION
+
+# Fetch the endpoint
+RDS_MYSQL_ENDPOINT=$(aws rds describe-db-instances --query='DBInstances[0].Endpoint.Address' \
+    --output=text \
+    --db-instance-identifier=$MYSQL_DATABASE_ID \
+    --region=$REGION)
+
+# Fetch the security group id
+SECURITY_GROUP_ID=$(aws rds describe-db-instances --query='DBInstances[0].VpcSecurityGroups[0].VpcSecurityGroupId' \
+    --output=text
+    --db-instance-identifier=$MYSQL_DATABASE_ID \
+    --region=$REGION)
+
+aws ec2 authorize-security-group-ingress \
+    --protocol=tcp \
+    --port=3306 \
+    --cidr=0.0.0.0/0 \
+    --group-id=$SECURITY_GROUP_ID \
+    --region=$REGION
+
+aws ecr create-repository --repository-name=zenml-kubernetes --region=$REGION
+
+REGISTRY_ID=$(aws ecr describe-registry --region=$REGION --query=registryId --output=text)
+ECR_URI="$REGISTRY_ID.dkr.ecr.$REGION.amazonaws.com"
+
+EKS_POLICY_JSON='{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "eks.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}'
+aws iam create-role \
+    --role-name=$EKS_ROLE_NAME \
+    --assume-role-policy-document="$EKS_POLICY_JSON"
+aws iam attach-role-policy \
+    --policy-arn='arn:aws:iam::aws:policy/AmazonEKSClusterPolicy' \
+    --role-name=$EKS_ROLE_NAME
+
+
+EC2_POLICY_JSON='{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}'
+aws iam create-role \
+    --role-name=$EC2_ROLE_NAME \
+    --assume-role-policy-document="$EC2_POLICY_JSON"
+aws iam attach-role-policy \
+    --policy-arn='arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy' \
+    --role-name=$EC2_ROLE_NAME
+aws iam attach-role-policy \
+    --policy-arn='arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly' \
+    --role-name=$EC2_ROLE_NAME
+aws iam attach-role-policy \
+    --policy-arn='arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy' \
+    --role-name=$EC2_ROLE_NAME
+aws iam attach-role-policy \
+    --policy-arn='arn:aws:iam::aws:policy/SecretsManagerReadWrite' \
+    --role-name=$EC2_ROLE_NAME
+aws iam attach-role-policy \
+    --policy-arn='arn:aws:iam::aws:policy/AmazonS3FullAccess' \
+    --role-name=$EC2_ROLE_NAME
+
+
+# Get the role ARN's
+EKS_ROLE_ARN=$(aws iam get-role --role-name=$EKS_ROLE_NAME --query='Role.Arn' --output=text)
+EC2_ROLE_ARN=$(aws iam get-role --role-name=$EC2_ROLE_NAME --query='Role.Arn' --output=text)
+
+
+# Get default VPC ID
+VPC_ID=$(aws ec2 describe-vpcs --filters='Name=is-default,Values=true' \
+    --query='Vpcs[0].VpcId' \
+    --output=text \
+    --region=$REGION)
+
+# Get subnet IDs
+SUBNET_IDS=$(aws ec2 describe-subnets --region=$REGION \
+    --filters="Name=vpc-id,Values=$VPC_ID" \
+    --query='Subnets[*].SubnetId' \
+    --output=json)
+
+aws eks create-cluster --region=$REGION \
+    --name=$EKS_CLUSTER_NAME \
+    --role-arn=$EKS_ROLE_ARN \
+    --resources-vpc-config="{\"subnetIds\": $SUBNET_IDS}"
+
+# Wait until the cluster is active
+aws eks wait cluster-active --name=$EKS_CLUSTER_NAME \
+    --region=$REGION
+
+aws eks create-nodegroup --region=$REGION \
+    --cluster-name=$EKS_CLUSTER_NAME \
+    --nodegroup-name=$NODEGROUP_NAME \
+    --node-role=$EC2_ROLE_ARN \
+    --subnets="$SUBNET_IDS"
+
+# Wait until the node group is active
+aws eks wait nodegroup-active --cluster-name=$EKS_CLUSTER_NAME \
+    --nodegroup-name=$NODEGROUP_NAME \
+    --region=$REGION
+
+# ZenML stack setup
+zenml artifact-store register s3_store \
+    --flavor=s3 \
+    --path=s3://$S3_BUCKET_NAME
+
+zenml container-registry register ecr_registry \
+    --flavor=aws \
+    --uri=$ECR_URI
+
+aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ECR_URI
+
+zenml metadata-store register rds_mysql \
+    --flavor=mysql \
+    --database=zenml \
+    --secret=rds_authentication \
+    --host=$RDS_MYSQL_ENDPOINT
+
+zenml secrets-manager register aws_secrets_manager \
+    --flavor=aws \
+    --region_name=$REGION
+
+aws eks --region=$REGION update-kubeconfig --name=$EKS_CLUSTER_NAME
+kubectl create namespace zenml
+
+zenml orchestrator register eks_kubernetes_orchestrator \
+    --flavor=kubernetes \
+    --kubernetes_context=$(kubectl config current-context)
+
+zenml stack register kubernetes_stack \
+        -o eks_kubernetes_orchestrator \
+        -a s3_store \
+        -m rds_mysql \
+        -c ecr_registry \
+        -x aws_secrets_manager \
+        --set
+
+zenml secret register rds_authentication \
+        --schema=mysql \
+        --user=$RDS_MYSQL_USERNAME \
+        --password=$RDS_MYSQL_PASSWORD
+```
+</details>
