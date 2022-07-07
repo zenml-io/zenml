@@ -280,10 +280,7 @@ def svc_trainer(
 
 
 @pipeline
-def first_pipeline(
-    step_1,
-    step_2
-):
+def first_pipeline(step_1, step_2):
     X_train, X_test, y_train, y_test = step_1()
     step_2(X_train, y_train)
 ```
