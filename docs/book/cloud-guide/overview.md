@@ -2,14 +2,16 @@
 description: An overview of when to use which infrastructure for your ML workflows
 ---
 
-There can be many motivations behind taking your ML application setup to a cloud environment, from neeeding specialized compute 💪 for training jobs to having a 24x7 load-balanced deployment of your trained model, serving user requests 🚀. 
+There can be many motivations behind taking your ML application setup to a cloud environment, from needing specialized compute 💪 for training jobs to having a 24x7 load-balanced deployment of your trained model, serving user requests 🚀. 
 Whatever your reasons may be, we believe that the process of infrastructure setup should be as simple as possible to allow you to focus more on building your ML solution and less on battling irrelevant cloud woes.
 
-This cloud guide aims to list out different scenarios that you may find yourself in and helps you navigate between the available choices. 
+This cloud guide has a collection of an increasing number of tutorials 📝 that you can follow to set up some common stacks to run your ZenML pipelines on. It has three sections as of now, one for each of the major cloud providers. 
+
+Before you dive into the tutorials however, save yourself some time and frustration by reading the following section to know what deployment option would be best-suited for you!
 
 ## Options for setting up your infrastructure
 
-Subject to your background, you may relate to one of the situations listed below. Read along and find out what works best for you!
+This section aims to list out different scenarios that you may find yourself in (subject to your background) and helps you to navigate between the available choices.
 
 ### 👷 I'm experienced in operations and prefer having the knowledge of every cloud resource that is being set up, intimately.
 
@@ -34,7 +36,3 @@ ZenML recommends the use of the stack recipes inside the `mlops-stacks` reposito
 - Comprehensive clean-up: `terraform destroy` completely deletes any resources that the module had created anywhere in your cloud. Thus, you can be sure that there are no extra bills that you will tragically discover going forward 😉.
 
 More recipes are always coming up! If you feel there's one missing, raise an issue and feel free to create a PR too; we are here for the support.
-
-
-
-# WIP: Overview of cloud guide entries; when to use which infrastructure
