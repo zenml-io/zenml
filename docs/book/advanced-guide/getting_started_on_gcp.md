@@ -36,7 +36,7 @@ hassle.
 * A **container registry** for pushing and pulling the pipeline image.
 * Finally, the **secrets Manager** to store passwords and SSL certificates.
 
-## Step 1/10 Set Up `gcloud` CLI
+## Set Up `gcloud` CLI
 
 Install the `gcloud` CLI on your machine. 
 [Here](https://cloud.google.com/sdk/docs/install) is a guide on how to install 
@@ -46,8 +46,7 @@ it.
 gcloud auth
 ```
 
-
-## Step 2/10 Set up a GCP project (Optional)
+## Set up a GCP project (Optional)
 
 {% tabs %} 
 {% tab title="GCP UI" %}
@@ -85,7 +84,7 @@ PROJECT_NUMBER=$(gcloud projects describe $PROJECT_NAME --format="value(projectN
 {% endtab %}
 {% endtabs %}
 
-## Step 3/10 Enable billing
+## Enable billing
 
 Before moving on, you'll have to make sure you attach a billing account to 
 your project. In case you do not have the permissions to do so, you'll have to
@@ -111,12 +110,12 @@ gcloud beta billing projects link $PROJECT_NAME --billing-account $BILLING_ACC
 {% endtab %}
 {% endtabs %}
 
-## Step 4/10 Enable Vertex AI
-
-{% tabs %} 
-{% tab title="GCP UI" %}
+## Enable Vertex AI
 Vertex AI pipelines is at the heart of our GCP stack. As the orchestrator 
 Vertex AI will run your pipelines and use all the other stack components. 
+
+{% tabs %}
+{% tab title="GCP UI" %}
 All you'll need to do at this stage is enable Vertex AI
 [here](https://console.cloud.google.com/vertex-ai).
 {% endtab %}
@@ -128,7 +127,7 @@ gcloud services enable aiplatform.googleapis.com
 {% endtab %}
 {% endtabs %}
 
-## Step 5/10 Enable Secrets Manager
+## Enable Secrets Manager
 
 The Secrets Manager will be needed so that the orchestrator will have secure
 access to the other resources. 
@@ -146,7 +145,7 @@ gcloud services enable secretmanager.googleapis.com
 {% endtab %}
 {% endtabs %}
 
-## Step 6/10 Enable Container Registry
+## Enable Container Registry
 
 The Vertex AI orchestrator uses Docker Images containing your pipeline code
 for pipeline orchestration. 
@@ -179,7 +178,7 @@ CONTAINER_REGISTRY_URI=$CONTAINER_REGISTRY_REGION".gcr.io/"$PROJECT_NAME
 {% endtab %}
 {% endtabs %}
 
-## Step 7/10 Set up Cloud Storage as Artifact Store
+## Set up Cloud Storage as Artifact Store
 
 Storing of step artifacts is an important part of reproducible MLOps. 
 
@@ -204,7 +203,7 @@ gsutil mb -p $PROJECT_NAME $GSUTIL_URI
 {% endtab %}
 {% endtabs %}
 
-## Step 8/10 Set up a Cloud SQL instance as Metadata Store
+## Set up a Cloud SQL instance as Metadata Store
 
 One of the most complex resources that you'll need to manage is the MySQL
 database. 
@@ -271,15 +270,22 @@ SERVER_CERT_PATH=$PROJECT_NAME"server-ca.pem"
 ```shell
 # Enable the sql api for database creation
 gcloud services enable sqladmin.googleapis.com
-
 # Create the db instance
 gcloud sql instances create $DB_INSTANCE --tier=db-f1-micro --region=$GCP_LOCATION --authorized-networks 0.0.0.0/0
+```
+Make sure the instance is fully set up before continuing.
 
+```shell
 DB_HOST=$(gcloud sql instances describe $DB_INSTANCE --format='get(ipAddresses[0].ipAddress)')
-gcloud sql users set-password root --host=%--instance $DB_INSTANCE --password $DB_PASSWORD
+gcloud sql users set-password root --host=% --instance $DB_INSTANCE --password $DB_PASSWORD
 
 # Create Client certificate and download all three 
 gcloud sql instances patch $DB_INSTANCE --require-ssl
+```
+
+This might take some time to finish again.
+
+```shell
 gcloud sql ssl client-certs create $CERT_NAME $CLIENT_KEY_PATH --instance $DB_INSTANCE
 gcloud sql ssl client-certs describe $CERT_NAME --instance=$DB_INSTANCE --format="value(cert)" > $CLIENT_CERT_PATH
 gcloud sql instances describe $DB_INSTANCE --format="value(serverCaCert.cert)" > $SERVER_CERT_PATH
@@ -289,7 +295,7 @@ gcloud sql databases create $DB_NAME --instance=$DB_INSTANCE --collation=utf8_ge
 {% endtab %}
 {% endtabs %}
 
-## Step 9/10 - Create a Service Account
+## Create a Service Account
 
 All the resources are created. Now we need to make sure the instance performing 
 the compute engine (Vertex AI) needs to have the relevant permissions to access 
@@ -333,34 +339,11 @@ gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/secretmanag
     --member="serviceAccount:"${SERVICE_ACCOUNT}
 gcloud iam service-accounts add-iam-policy-binding $SERVICE_ACCOUNT \
     --member="user:"${USER_EMAIL} --role="roles/iam.serviceAccountUser"
-    
-gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/aiplatform.customCodeServiceAgent" \
-    --member="serviceAccount:service-"${PROJECT_NUMBER}"@gcp-sa-aiplatform-cc.iam.gserviceaccount.com"
-gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/containerregistry.ServiceAgent" \
-    --member="serviceAccount:service-"${PROJECT_NUMBER}"@gcp-sa-aiplatform-cc.iam.gserviceaccount.com"
 ```
 {% endtab %}
 {% endtabs %}
 
-On top of this we will also need to give permissions to the service account
-of the custom code workers. 
-
-For this, head over to your IAM 
-[configurations](https://console.cloud.google.com/iam-admin/iam), click on 
-**Include Google-provided role grants** on the top right and find the 
-**<project_number>@gcp-sa-aiplatform-cc.iam.gserviceaccount.com** service
-account. 
-
-Now give this one the **Container Registry Service Agent** role on top of its 
-existing role.
-
-{% hint style="info" %}
-This service account might not be present in the list of service accounts. In
-that case, skip this part, and once your first pipeline run fails, return to 
-this step in order to set the appropriate role.
-{% endhint %}
-
-## Step 10/10 ZenML Stack
+## ZenML Stack
 
 Everything on the GCP side is set up, you're ready to set up the ZenML stack 
 components now. 
@@ -369,7 +352,7 @@ Copy-paste this into your terminal and press enter.
 
 ```bash
 zenml orchestrator register vertex_orchestrator --flavor=vertex \
-      --project=$$PROJECT_NUMBER --location=$GCP_LOCATION \
+      --project=$PROJECT_NUMBER --location=$GCP_LOCATION \
       --workload_service_account=$SERVICE_ACCOUNT
 zenml secrets-manager register gcp_secrets_manager \
       --flavor=gcp_secrets_manager --project_id=$PROJECT_NUMBER
@@ -378,14 +361,15 @@ zenml container-registry register gcp_registry --flavor=gcp \
 zenml artifact-store register gcp_artifact_store --flavor=gcp \
       --path=$GSUTIL_URI
 zenml metadata-store register gcp_metadata_store --flavor=mysql \
-      --host=$DB_HOST_IP --port=$DB_PORT --database=$DB_NAME \
+      --host=$DB_HOST_IP --port=3306 --database=$DB_NAME \
       --secret=mysql_secret
 zenml stack register gcp_vertex_stack -m gcp_metadata_store \
       -a gcp_artifact_store -o vertex_orchestrator -c gcp_registry \
       -x gcp_secrets_manager --set
 zenml secret register mysql_secret --schema=mysql \
-      --user=$DB_USER --password=$DB_PWD \
-      --ssl_ca=$SSL_CA --ssl_cert=$SSL_CERT --ssl_key=$SSL_KEY
+      --user=root --password=$DB_PASSWORD \
+      --ssl_ca="@"$SERVER_CERT_PATH --ssl_cert="@"$CLIENT_CERT_PATH --ssl_key="@"$CLIENT_KEY_PATH
+ 
 ```
 
 This is where your ZenML stack is created and connected to the GCP cloud 
@@ -422,11 +406,53 @@ cd zenml_examples/vertex_ai_orchestration/
 python run.py
 ```
 
+{% hint style="info" %}
+Your first run might fail as one of the service accounts is only created once 
+vertex is run for the first time. This service account will need to be given
+appropriate rights after the first run fails.
+{% endhint %}
+
 At the end of the logs you should be seeing a link to the Vertex AI dashboard. 
 It should look something like this:
 
 ![Finished Run](../assets/VertexAiRun.png)
 
+In case you get an error message like this:
+```shell
+Failed to create pipeline job. Error: Vertex AI Service Agent 
+'service-...@gcp-sa-aiplatform-cc.iam.gserviceaccount.com' should be 
+granted access to the image eu.gcr.io/...
+```
+
+You will need to follow these instructions:
+
+{% tabs %} 
+{% tab title="GCP UI" %}
+
+On the IAM page you will need to give permissions to the service account
+of the custom code workers. 
+
+For this, head over to your IAM 
+[configurations](https://console.cloud.google.com/iam-admin/iam), click on 
+**Include Google-provided role grants** on the top right and find the 
+**<project_number>@gcp-sa-aiplatform-cc.iam.gserviceaccount.com** service
+account. 
+
+Now give this one the **Container Registry Service Agent** role on top of its 
+existing role.
+{% endtab %}
+
+{% tab title="gcloud CLI" %}
+```shell
+gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/aiplatform.customCodeServiceAgent" \
+    --member="serviceAccount:service-"${PROJECT_NUMBER}"@gcp-sa-aiplatform-cc.iam.gserviceaccount.com"
+gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/containerregistry.ServiceAgent" \
+    --member="serviceAccount:service-"${PROJECT_NUMBER}"@gcp-sa-aiplatform-cc.iam.gserviceaccount.com"
+```
+{% endtab %}
+{% endtabs %}
+
+Now rerun your pipeline, it should work now.
 
 ## Conclusion
 
@@ -506,12 +532,6 @@ gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/secretmanag
     --member="serviceAccount:"${SERVICE_ACCOUNT}
 gcloud iam service-accounts add-iam-policy-binding $SERVICE_ACCOUNT \
     --member="user:"${USER_EMAIL} --role="roles/iam.serviceAccountUser"
-    
-gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/aiplatform.customCodeServiceAgent" \
-    --member="serviceAccount:service-"${PROJECT_NUMBER}"@gcp-sa-aiplatform-cc.iam.gserviceaccount.com"
-gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/containerregistry.ServiceAgent" \
-    --member="serviceAccount:service-"${PROJECT_NUMBER}"@gcp-sa-aiplatform-cc.iam.gserviceaccount.com"
-
 
 ORCHESTRATOR_NAME=$PROJECT_NAME"-gcp_vo"
 ARTIFACT_STORE_NAME=$PROJECT_NAME"-gcp_as"
@@ -546,6 +566,13 @@ zenml stack register $STACK_NAME -o $ORCHESTRATOR_NAME \
 zenml secret register mysql_secret --schema=mysql \
       --user=root --password=$DB_PASSWORD \
       --ssl_ca="@"$SERVER_CERT_PATH --ssl_cert="@"$CLIENT_CERT_PATH --ssl_key="@"$CLIENT_KEY_PATH
- 
+```
+If the first pipeline run fails:
+```shell
+    
+gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/aiplatform.customCodeServiceAgent" \
+    --member="serviceAccount:service-"${PROJECT_NUMBER}"@gcp-sa-aiplatform-cc.iam.gserviceaccount.com"
+gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/containerregistry.ServiceAgent" \
+    --member="serviceAccount:service-"${PROJECT_NUMBER}"@gcp-sa-aiplatform-cc.iam.gserviceaccount.com"
 ```
 </details>
