@@ -1458,6 +1458,7 @@ def register_annotator_subcommands() -> None:
             cli_utils.error(
                 "Currently unable to delete datasets. Awaiting updated version from Label Studio."
             )
+            # TODO: Add this back when Label Studio release a new version
             # cli_utils.declare(f"Deleting your dataset '{name}'")
             # if all:
             #     datasets = annotator.get_datasets()
