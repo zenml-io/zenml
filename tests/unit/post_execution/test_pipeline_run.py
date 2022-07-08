@@ -53,7 +53,9 @@ def sample_pipeline_run_view(sample_stepview: StepView) -> PipelineRunView:
 
 
 def test_get_step_returns_stepview(
-    sample_step: "BaseStep", sample_stepview: StepView, sample_pipeline_run_view
+    sample_step: "BaseStep",
+    sample_stepview: StepView,
+    sample_pipeline_run_view: PipelineRunView
 ):
     """Test that the `get_step` method returns the correct step_view"""
 
@@ -71,9 +73,9 @@ def test_get_step_returns_stepview(
 
 
 def test_get_step_raises_exception(
-    sample_step: "BaseStep", sample_stepview: StepView, sample_pipeline_run_view
+        sample_pipeline_run_view: PipelineRunView
 ):
-    """Test that the `get_step` method returns the correct step_view"""
+    """Test that the `get_step` method raises runtime error with wrong step."""
 
     class NonStep:
         pass

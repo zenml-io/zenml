@@ -504,8 +504,7 @@ def test_get_pipeline_forwards_to_metadata_store(clean_repo, mocker):
 
 
 def test_get_pipeline_raises_exception(clean_repo, mocker):
-    """Tests that getting post-execution pipelines forwards calls to the
-    metadata store of the (active) stack."""
+    """Tests that get_pipeline raises a runtime error."""
     # register a stack with a mysql metadata store
 
     mocker.patch.object(SQLiteMetadataStore, "get_pipeline", return_value=None)

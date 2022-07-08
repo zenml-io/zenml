@@ -252,6 +252,5 @@ def get_apidocs_link(caller_path: str) -> str:
         Link to the api docs for the given caller_path
     """
     return (
-        f"https://apidocs.zenml.io/{zenml.__version__}/api_docs/"
-        f"repository/#{caller_path}"
+        f"https://apidocs.zenml.io/{zenml.__version__}/api_docs/#{caller_path}"
     )
