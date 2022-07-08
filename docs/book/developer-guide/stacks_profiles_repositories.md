@@ -646,23 +646,19 @@ sub-folders.
 ### Registering a Repository
 
 You can register your current working directory as a ZenML
-Repository by running `zenml init`, e.g.:
+Repository by running:
 
-```shell
-stefan@aspyre2:/tmp/zenml$ zenml init
-ZenML repository initialized at /tmp/zenml.
+```bash
+zenml init
 ```
 
-This will create a `/tmp/zenml/.zen` directory, which contains a single
+This will create a `.zen` directory, which contains a single
 `config.yaml` file that stores the local settings:
 
 ```yaml
 active_profile_name: default
 active_stack_name: default
 ```
-
-To unregister the repository, simply delete the `.zen` directory in the
-respective location, e.g., via `rm -rf /tmp/zenml/.zen`.
 
 {% hint style="info" %}
 It is recommended to use the `zenml init` command to initialize a ZenML
@@ -686,7 +682,7 @@ Running with active profile: 'default' (global)
 ```
 {% endhint %}
 
-## Managing stacks in Python via the Repository
+### Using the Repository in Python
 
 You can access your repository in Python using the `zenml.repository.Repository`
 class:
@@ -698,73 +694,15 @@ from zenml.repository import Repository
 repo = Repository()
 ```
 
-This allows you to access and manage your stack and stack components from
-within Python:
+This allows you to perform various repository operations directly in Python, 
+such as [Inspecting Finished Pipeline Runs](post-execution-workflow.md) or
+[Managing Stacks in Python](python-stack-management.md).
 
-### Accessing the Active Stack
+### Unregistering a Repository
 
-The following code snippet shows how you can retrieve or modify information
-of your stack and stack components in Python:
+To unregister a repository, simply delete the `.zen` directory in the
+respective location, e.g., via 
 
-```python
-from zenml.repository import Repository
-
-
-repo = Repository()
-active_stack = repo.active_stack
-print(active_stack.name)
-print(active_stack.orchestrator.name)
-print(active_stack.artifact_store.name)
-print(active_stack.artifact_store.path)
-print(active_stack.metadata_store.name)
-print(active_stack.metadata_store.uri)
+```bash
+rm -rf .zen
 ```
-
-### Registering and Changing Stacks
-
-In the following we use the repository to register a new ZenML stack called
-`local` and to set it as the active stack of the repository:
-
-```python
-from zenml.repository import Repository
-from zenml.artifact_stores import LocalArtifactStore
-from zenml.metadata_stores import SQLiteMetadataStore
-from zenml.orchestrators import LocalOrchestrator
-from zenml.stack import Stack
-
-
-repo = Repository()
-
-# Create a new orchestrator
-orchestrator = LocalOrchestrator(name="local")
-
-# Create a new metadata store
-metadata_store = SQLiteMetadataStore(
-    name="local",
-    uri="/tmp/zenml/zenml.db",
-)
-
-# Create a new artifact store
-artifact_store = LocalArtifactStore(
-    name="local",
-    path="/tmp/zenml/artifacts",
-)
-
-# Create a new stack with the new components
-stack = Stack(
-    name="local",
-    orchestrator=orchestrator,
-    metadata_store=metadata_store,
-    artifact_store=artifact_store,
-)
-
-# Register the new stack in the currently active profile
-repo.register_stack(stack)
-
-# Set the stack as the active stack of the repository
-repo.activate_stack(stack.name)
-```
-
-To explore all possible operations that can be performed via the
-`Repository`, please consult the API docs section on
-[Repository](https://apidocs.zenml.io/latest/api_docs/repository/#zenml.repository.Repository).
