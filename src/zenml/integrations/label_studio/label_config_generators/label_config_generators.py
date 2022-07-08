@@ -31,7 +31,7 @@ def generate_image_classification_label_config(
 ) -> Tuple[str, str]:
     """Generates a Label Studio label config for image classification.
 
-    This is based on the basig config example shown at https://labelstud.io/templates/image_classification.html.
+    This is based on the basic config example shown at https://labelstud.io/templates/image_classification.html.
     """
     label_config_type = AnnotationTasks.IMAGE_CLASSIFICATION
 
