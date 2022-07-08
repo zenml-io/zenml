@@ -313,7 +313,7 @@ class LabelStudioAnnotator(BaseAnnotator):
             dataset = ls.get_project(self.get_id_from_name(config.dataset_name))
         else:
             dataset = self.add_dataset(
-                title=config.dataset_name,
+                name=config.dataset_name,
                 label_config=config.label_config,
             )
 
