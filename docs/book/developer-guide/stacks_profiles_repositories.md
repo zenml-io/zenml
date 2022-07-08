@@ -277,16 +277,11 @@ to suspend and deprovision it.
 ## Profiles
 
 ZenML implicitly stores all the information about the configured Stacks, Stack
-Components, and Stack Component Flavors in [a central location](../developer-guide/repo-and-config.md)
-on the filesystem of the machine where it is installed. The details of how ZenML
-stores this persistent data, where it is located, and how it is accessed can be
-controlled through the ZenML **Profile** configuration.
-
-Profiles are global ZenML management contexts that form the foundation of
-ZenML's collaboration features. This guide walks you through the various ways in
-which Profiles allow you to manage ZenML in multi-user and multi-host
-use-cases of increasing complexity. Continue reading to learn more about ZenML
-Profiles and how they can be configured to match your organizational needs:
+Components, and Stack Component Flavors in the 
+[Global Configuration](../resources/global_config.md) on the filesystem of the
+machine where it is installed. The details of how ZenML stores this persistent
+data, where it is located, and how it is accessed can be configured via the 
+ZenML **Profile**.
 
 * [The default Profile](#the-default-profile) comes pre-installed with ZenML
 and only offers the most basic functionality.
@@ -297,8 +292,10 @@ configurations available to multiple users and multiple hosts.
 
 ### The default Profile
 
-A `default` Profile is created automatically and set as the active Profile the
-first time ZenML runs on a machine:
+The first time you run any `zenml` CLI command on a machine, a `default` 
+Profile is automatically created and set as active. Unless otherwise
+configured, this `default` profile will contain all stacks and stack components
+that you create on your machine.
 
 ```
 $ zenml profile list
@@ -319,21 +316,39 @@ Running with active profile: 'default' (global)
 ┗━━━━━━━━┷━━━━━━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
 ```
 
-Unless otherwise configured, this is the factory default ZenML setting in which
-all Stacks and associated configurations are visible and shared by all ZenML
-users and projects present on a machine. Configuring additional Profiles or
-replacing the default Profile can unlock more possibilities for collaboration in
-the context of the same host or even across multiple hosts.
-
-### Multi-Instance ZenML
+### Creating and Changing Profiles
 
 Multiple Profiles can be created on the same machine to simulate the experience
 of using several independent ZenML instances completely isolated from each
 other. The same or even different users can then manage their projects in the
-context of different Profiles on the same host without having to worry
-about overwriting each other's configuration.
+context of different Profiles on the same machine without having to worry
+about overwriting existing configurations.
 
-To create a new local Profile, simply run `zenml profile create`:
+To create a new profile, run
+```
+zenml profile create <NEW_PROFILE_NAME>
+```
+
+To set an existing profile as active, run
+```
+zenml profile set <PROFILE_NAME>
+```
+
+{% hint style="info" %}
+The active Profile determines the Stacks and Stack Components that are
+available for use by ZenML pipelines. New Stacks and Stack Components
+registered via the CLI are only added to the active Profile and are available
+only as long as that Profile is active.
+{% endhint %}
+
+#### Detailed Example
+
+<details>
+<summary>Detailed usage example of multiple profiles</summary>
+
+The following example creates a new Profile named `zenml`, sets it as active,
+and then shows how the `default` Profile is unaffected by the operations
+performed while the `zenml` Profile is active:
 
 ```
 $ zenml profile create zenml
@@ -356,19 +371,7 @@ Running with active profile: 'default' (global)
 ┃   👉   │ default      │ local      │ file:///home/stefan/.c… │ default      ┃
 ┃        │ zenml        │ local      │ file:///home/stefan/.c… │ default      ┃
 ┗━━━━━━━━┷━━━━━━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
-```
 
-A Profile can be set as the active Profile by running `zenml profile set`.
-The active Profile determines the Stacks and Stack Components that are
-available for use by ZenML pipelines. New Stacks and Stack Components
-registered via the CLI are only added to the active Profile and are available
-only as long as that Profile is active.
-
-The following example creates a new Profile named `zenml`, sets it as active
-and then shows how the `default` Profile is unaffected by the operations
-performed while the `zenml` Profile is active:
-
-```
 $ zenml profile set zenml
 Running without an active repository root.
 Running with active profile: 'default' (global)
@@ -434,6 +437,8 @@ From the above example, you may have also noticed that _the active Profile_ and
 _the active Stack_ are global settings that affect all other user sessions open
 on the same machine. It is however possible to set the active Profile and active
 Stack individually for each user session or project. Keep reading to learn more.
+
+</details>
 
 ## Repositories
 
