@@ -177,7 +177,7 @@ def generate_docs(
     index_file_str = '\n'.join(index_file_contents)
     to_md_file(
         index_file_str,
-        'introduction.md',
+        'index.md',
         out_path=output_path,
     )
 

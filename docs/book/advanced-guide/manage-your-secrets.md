@@ -254,7 +254,7 @@ register your secrets manager in the following way:
 
 ```shell
 zenml integration install gcp_secrets_manager
-zenml secrets-manager register GCP_SECRETS_MANAGER_NAME -t gcp \ 
+zenml secrets-manager register GCP_SECRETS_MANAGER_NAME -f gcp \ 
     --project_id=<ID_OF_YOUR_PROJECT>
 ```
 
