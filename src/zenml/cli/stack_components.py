@@ -1400,7 +1400,7 @@ def register_annotator_subcommands() -> None:
                 dataset.get_params()["title"]
                 for dataset in annotator.get_datasets()
             ]
-            cli_utils.declare(dataset_names)
+            cli_utils.print_list_items(dataset_names)
 
         @dataset.command(
             "stats", context_settings={"ignore_unknown_options": True}

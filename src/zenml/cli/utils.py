@@ -664,11 +664,11 @@ def pretty_print_secret(
     print_table(stack_dicts)
 
 
-def print_secrets(secrets: List[str]) -> None:
+def print_list_items(list_items: List[str]) -> None:
     """Prints the configuration options of a stack.
 
     Args:
-        secrets: List of secrets
+        list_items: List of items
     """
     rich_table = table.Table(
         box=box.HEAVY_EDGE,
@@ -676,8 +676,8 @@ def print_secrets(secrets: List[str]) -> None:
         show_lines=True,
     )
     rich_table.add_column("SECRET_NAME", overflow="fold")
-    secrets.sort()
-    for item in secrets:
+    list_items.sort()
+    for item in list_items:
         rich_table.add_row(item)
 
     console.print(rich_table)
