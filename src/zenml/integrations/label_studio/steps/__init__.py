@@ -14,7 +14,6 @@
 from zenml.integrations.label_studio.steps.label_studio_standard_steps import (
     LabelStudioDatasetRegistrationConfig,
     LabelStudioDatasetSyncConfig,
-    generate_image_classification_label_config,
     get_labeled_data,
     get_or_create_dataset,
     sync_new_data_to_label_studio,
