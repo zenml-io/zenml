@@ -30,7 +30,17 @@
 """Implementation of the VertexAI orchestrator."""
 
 import os
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Union,
+    Literal,
+)
 
 import kfp
 from google.api_core import exceptions as google_exceptions
@@ -134,6 +144,20 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
     workload_service_account: Optional[str] = None
     network: Optional[str] = None
     synchronous: bool = False
+
+    cpu_limit: Union[int, str, None] = None
+    memory_limit: Optional[str] = None
+    node_selector_constraint: Optional[
+        Literal[
+            "NVIDIA_TESLA_A100",
+            "NVIDIA_TESLA_K80",
+            "NVIDIA_TESLA_P4",
+            "NVIDIA_TESLA_P100",
+            "NVIDIA_TESLA_T4",
+            "NVIDIA_TESLA_V100",
+        ]
+    ] = None
+    gpu_limit: Optional[int] = None
 
     _pipeline_root: str
 
@@ -413,6 +437,23 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                         upstream_step_name
                     ]
                     container_op.after(upstream_container_op)
+
+                # Set optional CPU, RAM and GPU constraints for the pipeline
+                if self.cpu_limit is not None:
+                    container_op = container_op.set_cpu_limit(self.cpu_limit)
+
+                if self.memory_limit is not None:
+                    container_op = container_op.set_memory_limit(
+                        self.memory_limit
+                    )
+
+                if self.node_selector_constraint is not None:
+                    container_op = container_op.add_node_selector_constraint(
+                        self.node_selector_constraint
+                    )
+
+                if self.gpu_limit is not None:
+                    container_op = container_op.set_gpu_limit(self.gpu_limit)
 
                 step_name_to_container_op[step.name] = container_op
 
