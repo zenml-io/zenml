@@ -12,71 +12,23 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import os
-from typing import Any, Dict, List, Optional, Tuple
-from urllib.parse import quote, urlparse
+from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse
 
-import boto3
-
-from zenml.enums import AnnotationTasks
 from zenml.exceptions import StackComponentInterfaceError
+from zenml.integrations.label_studio.label_config_generators import (
+    TASK_TO_FILENAME_REFERENCE_MAPPING,
+)
+from zenml.integrations.label_studio.label_studio_utils import (
+    convert_pred_filenames_to_task_ids,
+    get_azure_credentials,
+    get_gcs_credentials,
+    get_s3_credentials,
+)
 from zenml.logger import get_logger
 from zenml.steps import BaseStepConfig, StepContext, step
 
 logger = get_logger(__name__)
-
-TASK_TO_FILENAME_REFERENCE_MAPPING = {
-    AnnotationTasks.IMAGE_CLASSIFICATION: "image",
-    AnnotationTasks.OBJECT_DETECTION_BOUNDING_BOXES: "image",
-}
-
-
-def generate_image_classification_label_config(
-    labels: List[str],
-) -> Tuple[str, str]:
-    """Generates a Label Studio label config for image classification.
-
-    This is based on the basig config example shown at https://labelstud.io/templates/image_classification.html.
-    """
-    label_config_type = AnnotationTasks.IMAGE_CLASSIFICATION
-
-    label_config_start = f"""<View>
-    <Image name="image" value="$image"/>
-    <Choices name="choice" toName="image">
-    """
-    label_config_choices = "".join(
-        f"<Choice value='{label}' />\n" for label in labels
-    )
-    label_config_end = "</Choices>\n</View>"
-
-    return (
-        label_config_start + label_config_choices + label_config_end,
-        label_config_type,
-    )
-
-
-def generate_basic_object_detection_bounding_boxes_label_config(
-    labels: List[str],
-) -> Tuple[str, str]:
-    """Generates a Label Studio config for object detection with bounding boxes.
-
-    This is based on the basic config example shown at https://labelstud.io/templates/image_bbox.html.
-    """
-    label_config_type = AnnotationTasks.OBJECT_DETECTION_BOUNDING_BOXES
-
-    label_config_start = f"""<View>
-    <Image name="image" value="$image"/>
-    <RectangleLabels name="label" toName="image">
-    """
-    label_config_choices = "".join(
-        f"<Label value='{label}' />\n" for label in labels
-    )
-    label_config_end = "</RectangleLabels>\n</View>"
-
-    return (
-        label_config_start + label_config_choices + label_config_end,
-        label_config_type,
-    )
 
 
 class LabelStudioDatasetRegistrationConfig(BaseStepConfig):
@@ -149,62 +101,6 @@ def get_labeled_data(dataset_id: int, context: StepContext) -> List:
         raise StackComponentInterfaceError("No active annotator.")
 
 
-def get_azure_credentials() -> Tuple[str]:
-    # TODO: add other ways to get credentials
-    account_key = os.environ.get("AZURE_STORAGE_ACCOUNT_KEY")
-    account_name = os.environ.get("AZURE_STORAGE_ACCOUNT_NAME")
-    return account_name, account_key
-
-
-def get_gcs_credentials() -> Optional[str]:
-    return os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
-
-
-def get_aws_session_token() -> Optional[str]:
-    sts_client = boto3.client(
-        "sts",
-        aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
-        aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
-        profile="rootuser",
-    )
-    response = sts_client.get_session_token()
-    temp_credentials = response.get("Credentials")
-    return temp_credentials.get("SessionToken")
-
-
-def convert_pred_filenames_to_task_ids(
-    preds: List[Dict[str, Any]],
-    tasks: List[Dict[str, Any]],
-    filename_reference: str,
-    storage_type: str,
-) -> List[Dict[str, Any]]:
-    """Converts a list of predictions from local file references to task id."""
-    filename_id_mapping = {
-        os.path.basename(urlparse(task["data"][filename_reference]).path): task[
-            "id"
-        ]
-        for task in tasks
-    }
-
-    # GCS URL encodes filenames containing spaces, making it impossible to match
-    # filenames between local and cloud without this separate encoding step
-    if storage_type in {"gcs", "s3"}:
-        preds = [
-            {"filename": quote(pred["filename"]), "result": pred["result"]}
-            for pred in preds
-        ]
-
-    return [
-        {
-            "task": int(
-                filename_id_mapping[os.path.basename(pred["filename"])]
-            ),
-            "result": pred["result"],
-        }
-        for pred in preds
-    ]
-
-
 @step(enable_cache=False)
 def sync_new_data_to_label_studio(
     uri: str,
@@ -234,7 +130,11 @@ def sync_new_data_to_label_studio(
     elif config.storage_type == "gcs":
         config.google_application_credentials = get_gcs_credentials()
     elif config.storage_type == "s3":
-        pass
+        (
+            config.aws_access_key_id,
+            config.aws_secret_access_key,
+            config.aws_session_token,
+        ) = get_s3_credentials()
 
     if annotator and annotator._connection_available():
         # TODO: get existing (CHECK!) or create the sync connection

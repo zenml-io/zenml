@@ -11,11 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.integrations.label_studio.steps.label_studio_standard_steps import (
-    LabelStudioDatasetRegistrationConfig,
-    LabelStudioDatasetSyncConfig,
+
+from zenml.integrations.label_studio.label_config_generators import (
+    generate_basic_object_detection_bounding_boxes_label_config,
     generate_image_classification_label_config,
-    get_labeled_data,
-    get_or_create_dataset,
-    sync_new_data_to_label_studio,
 )

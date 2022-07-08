@@ -24,7 +24,7 @@ from label_studio_sdk import Client, Project
 from zenml.annotators.base_annotator import BaseAnnotator
 from zenml.exceptions import ProvisioningError
 from zenml.integrations.label_studio import LABEL_STUDIO_ANNOTATOR_FLAVOR
-from zenml.integrations.label_studio.steps.label_studio_export_step import (
+from zenml.integrations.label_studio.steps.label_studio_standard_steps import (
     LabelStudioDatasetRegistrationConfig,
     LabelStudioDatasetSyncConfig,
 )
