@@ -1451,8 +1451,12 @@ def register_annotator_subcommands() -> None:
         )
         @click.pass_obj
         def dataset_delete(annotator: "BaseAnnotator", name: str) -> None:
-            # TODO: implement this once the new commands are released
+            cli_utils.error(
+                "Currently unable to delete datasets. Awaiting updated version from Label Studio."
+            )
             cli_utils.declare(f"Deleting your dataset '{name}'")
+            annotator.delete_dataset(dataset_name=name)
+            cli_utils.declare(f"Dataset '{name}' has now been deleted.")
 
         @dataset.command(
             "annotate", context_settings={"ignore_unknown_options": True}
