@@ -466,6 +466,7 @@ respectively and find out if these are a better fit for you.
 ## One Shot Setup
 <details>
     <summary>Quick setup commands</summary>
+Set these parameters:
 
 ```shell
 USER_EMAIL=<USER_EMAIL>  # for example user@zenml.io
@@ -475,7 +476,10 @@ PROJECT_NAME=<PROJECT_NAME>
 CONTAINER_REGISTRY_REGION=eu # can be 'eu', 'us', 'asia'
 GCP_LOCATION=<GCP_LOCATION> # for example europe-west3 
 DB_PASSWORD=<DB_PASSWORD> # for example auk(/194
+```
 
+And run this (make sure all the commands worked):
+```shell
 # Create a project and attach it to the specified billing account
 gcloud projects create $PROJECT_NAME --organization=$PARENT_ORG_ID
 gcloud config set project $PROJECT_NAME
@@ -569,7 +573,6 @@ zenml secret register mysql_secret --schema=mysql \
 ```
 If the first pipeline run fails:
 ```shell
-    
 gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/aiplatform.customCodeServiceAgent" \
     --member="serviceAccount:service-"${PROJECT_NUMBER}"@gcp-sa-aiplatform-cc.iam.gserviceaccount.com"
 gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/containerregistry.ServiceAgent" \
