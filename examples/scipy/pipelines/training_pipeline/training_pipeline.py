@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,6 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from .training_pipeline.training_pipeline import xgboost_pipeline
+from zenml.integrations.constants import SKLEARN
+from zenml.pipelines import pipeline
 
-__all__ = ["xgboost_pipeline"]
+
+@pipeline(required_integrations=[SKLEARN])
+def scipy_example_pipeline(importer, vectorizer, trainer, predictor):
+    X_train, X_test, y_train, y_test = importer()
+    vec_transformer, X_train_vec, X_test_vec = vectorizer(X_train, X_test)
+    model = trainer(X_train_vec, y_train)
+    predictor(vec_transformer, model, X_test)

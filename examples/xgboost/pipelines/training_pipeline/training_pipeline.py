@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,6 +11,17 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from .training_pipeline.training_pipeline import xgboost_pipeline
+from zenml.integrations.constants import XGBOOST
+from zenml.pipelines import pipeline
 
-__all__ = ["xgboost_pipeline"]
+
+@pipeline(enable_cache=True, required_integrations=[XGBOOST])
+def xgboost_pipeline(
+    data_loader,
+    trainer,
+    predictor,
+):
+    """Links all the steps together in a pipeline"""
+    mat_train, mat_test = data_loader()
+    model = trainer(mat_train)
+    predictor(model, mat_test)

@@ -27,19 +27,32 @@ the orchestrator of your stack as soon as your full setup is ready.
 
 In this example, we will build a simple, four-step pipeline and orchestrate it
 in a Kubernetes cluster running in the cloud.
+To do so, we will use an AWS cloud stack, consisting of an EKS cluster,
+an ECR container registry, and a S3 bucket for artifact storage.
+
+![Kubernetes AWS Stack Overview](assets/zenml_kubernetes_aws_stack_overview.png)
 
 ## :heavy_check_mark: Requirements
 
-In this example, we will use an AWS cloud stack, consisting of an EKS cluster,
-an ECR container registry, and a S3 bucket for artifact storage.
-
 If you want to follow this example line by line, you need to spin up each of
-the corresponding AWS services first.
-Alternatively, you can can also use any other cloud provider and adjust all
-`zenml ... register` commands below accordingly.
+the corresponding AWS resources first.
+You can either provision these resources manually by following the
+[ZenML cloud guide](https://docs.zenml.io/advanced-guide/execute-pipelines-in-cloud)
+or you can use our `eks-s3-seldon-mlflow` Terraform recipe from our 
+[mlops-stacks repository](https://github.com/zenml-io/mlops-stacks).
+For detailed instructions, see our
+[Kubernetes orchestrator blog post](https://blog.zenml.io/k8s-orchestrator/).
 
-Regardless of your cloud provider choice, you will also need to have kubectl
-and Docker installed locally.
+Alternatively, you can also use any other cloud provider, spin up the
+respective resources there, and adjust all `zenml ... register` commands below
+accordingly.
+
+Regardless of your cloud provider choice, you will also need to have the
+following additional software installed on your local machine:
+
+* [Docker](https://www.docker.com/)
+* [kubectl](https://kubernetes.io/docs/tasks/tools/)
+* [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
 
 ### Setup and Register Kubernetes Orchestrator
 After spinning up your Kubernetes cluster in the cloud, you will first need
@@ -64,6 +77,7 @@ context:
 zenml orchestrator register k8s_orchestrator
     --flavor=kubernetes
     --kubernetes_context=<KUBE_CONTEXT>
+    --kubernetes_namespace=zenml
     --synchronous=True
 ```
 
@@ -80,8 +94,7 @@ zenml metadata-store register k8s_store
     --flavor=kubernetes
     --kubernetes_context==<KUBE_CONTEXT>
     --kubernetes_namespace=zenml
-    --deployment_name=mysql 
-    --storage_capacity=10Gi
+    --deployment_name=mysql
 ```
 
 ### Register Container Registry
@@ -126,12 +139,29 @@ zenml stack register k8s_stack
     -a s3_store 
     -o k8s_orchestrator 
     -c ecr_registry
+```
+
+Let's set this stack as active, so we use it by default for the remainder of
+this example:
+
+```bash
 zenml stack set k8s_stack
 ```
 
-Next, call `zenml stack up` to provision and start the metadata store.
+Next, provision and start the metadata store with the following command:
 
-## :computer: Run Pipeline Locally
+```bash
+zenml stack up
+```
+
+This will also create a connection from your local machine to the metadata
+store so that you can access it locally.
+If everything went well, you should see log messages similar to the following
+in your terminal:
+
+![zenml stack up output](assets/zenml_stack_up_output.png)
+
+## :computer: Run Pipeline
 Now that our stack is set up, all of our ML code will automatically be executed
 on the Kubernetes cluster in the cloud. Let's run the example pipeline:
 
@@ -142,35 +172,17 @@ python run.py
 If all went well, you should now see the logs of all Kubernetes pods in your
 terminal, similar to what is shown below.
 
-For the output below, note that the `skew_comparison` and `svc_trainer` steps
-are run in parallel, so the order of messages might differ when you run it
-yourself.
+![python run.py output](assets/python_run_output.png)
 
-```
-Using stack k8s_stack to run pipeline kubernetes_example_pipeline...
-Waiting for Kubernetes orchestrator pod...
-Kubernetes orchestrator pod started.
-Waiting for pod of step importer to start...
-Step importer has started.
-Step importer has finished in 8.501s.
-Pod of step importer completed.
-Waiting for pod of step svc_trainer to start...
-Waiting for pod of step skew_comparison to start...
-Step skew_comparison has started.
-Step svc_trainer has started.
-Step svc_trainer has finished in 5.178s.
-Pod of step svc_trainer completed.
-Step skew_comparison has finished in 7.154s.
-Waiting for pod of step evaluator to start...
-Pod of step skew_comparison completed.
-Step evaluator has started.
-Test accuracy: 0.9688542825361512
-Step evaluator has finished in 6.219s.
-Pod of step evaluator completed.
-Orchestration pod completed.
-Pipeline run finished.
-Pipeline run kubernetes_example_pipeline-07_Jun_22-14_26_14_450641 has finished in 1m57s.
-```
+Additionally, a window should have opened in your local browser where you can
+see a training-serving skew analysis in Facets like the following:
+
+![Facets Analysis](assets/facets_analysis_output.png)
+
+When running `kubectl get pods -n zenml`, you should now also be able to see
+that a pod was created in your cluster for each pipeline step:
+
+![kubectl get_pods() output](assets/kubectl_get_pods_output.png)
 
 ### Interacting with pods via kubectl
 
@@ -184,14 +196,17 @@ E.g., you can use these labels to get a list of all pods related to the
 pipeline used in this example by running the following:
 
 ```
-kubectl get pods -l pipeline=kubernetes_example_pipeline
+kubectl get pods -n zenml -l pipeline=kubernetes_example_pipeline
 ```
 
 ## :sponge: Clean Up
 
 ### Delete Run Pods
+If you just want to delete the pods created by the example run, execute the
+following command:
+
 ```bash
-kubectl delete pod -l pipeline=kubernetes_example_pipeline
+kubectl delete pod -n zenml -l pipeline=kubernetes_example_pipeline
 ```
 
 ### Deprovision Stack
@@ -199,6 +214,19 @@ kubectl delete pod -l pipeline=kubernetes_example_pipeline
 **WARNING**: This will permanently delete your metadata store, so all metadata
 will be lost. Never do this for production settings!
 
+If you also want to delete the MySQL metadata store, run:
+
 ```bash
 zenml stack down --force
+```
+
+### Delete Infrastructure Resources
+Lastly, if needed, spin down the infrastructure you created.
+How to do this depends on which cloud provider you were using to run this
+example.
+
+If you have used our Terraform script to spin up the resources, simply run
+
+```bash
+terraform destroy
 ```

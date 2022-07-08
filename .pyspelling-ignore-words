@@ -388,6 +388,7 @@ TODO
 TempPathFactory
 TensorBoard
 TensorBoardInfo
+Terraform
 TheMatrix
 Tokenize
 Tokenizer
@@ -739,6 +740,7 @@ mkdir
 mkdocs
 mlflow
 mlmd
+mlops
 mlserver
 mnist
 mnist
@@ -892,6 +894,7 @@ sys
 syspath
 tensorboard
 tensorflow
+terraform
 tf
 tfx
 thinknum
