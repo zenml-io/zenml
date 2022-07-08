@@ -2,7 +2,7 @@
 description: How to migrate legacy stacks from zenml<0.7?
 ---
 
-# Migrating Stacks from Legacy Repositories to ZenML Profiles
+# Migrating Legacy Stacks to ZenML Profiles
 
 Traditionally, Stack configurations were stored locally in the Repository root
 directory - i.e. the local `.zen` folder that is created by the `zenml init`

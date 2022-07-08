@@ -435,53 +435,95 @@ _the active Stack_ are global settings that affect all other user sessions open
 on the same machine. It is however possible to set the active Profile and active
 Stack individually for each user session or project. Keep reading to learn more.
 
-#### Session Level Settings with Environment Variables
+## Repositories
 
-The global active Profile and global active Stack can be overridden by using the
-environment variables `ZENML_ACTIVATED_PROFILE` and `ZENML_ACTIVATED_STACK`,
-as shown in the following example:
+ZenML has two main locations where it stores information on the local machine.
+These are the [Global Configuration](../resources/global_config.md) and the 
+_Repository_. The latter is also referred to as the _.zen folder_.
 
+The ZenML **Repository** related to a pipeline run is the folder that contains 
+all the files needed to execute the run, such as the respective Python scripts
+and modules where the pipeline is defined, or other associated files.
+The repository plays a double role in ZenML:
+
+* It is used by ZenML to identify which files must be copied into Docker images 
+in order to execute pipeline steps remotely, e.g., when orchestrating pipelines
+with [KubeFlow](../mlops_stacks/orchestrators/kubeflow.md).
+* It defines the local active [Profile](#profiles) and active [Stack](#stacks)
+that will be used when running pipelines from the repository root or one of its
+sub-folders, as shown [below](#setting-local-active-profile-and-stack).
+
+### Registering a Repository
+
+You can register your current working directory as a ZenML
+Repository by running:
+
+```bash
+zenml init
 ```
-$ zenml profile list
+
+This will create a `.zen` directory, which contains a single
+`config.yaml` file that stores the local settings:
+
+```yaml
+active_profile_name: default
+active_stack_name: default
+```
+
+{% hint style="info" %}
+It is recommended to use the `zenml init` command to initialize a ZenML
+_Repository_ in the same location of your custom Python source tree where you
+would normally point PYTHONPATH, especially if your Python code relies on a
+hierarchy of modules spread out across multiple sub-folders.
+
+ZenML CLI commands and ZenML code will display a warning if they are not running
+in the context of a ZenML _Repository_, e.g.:
+
+```shell
+stefan@aspyre2:/tmp$ zenml stack list
+Unable to find ZenML repository in your current working directory (/tmp) or any parent directories. If you want to use an existing repository which is in a different location, set the environment variable 'ZENML_REPOSITORY_PATH'. If you want to create a new repository, run zenml init.
 Running without an active repository root.
 Running with active profile: 'default' (global)
-┏━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃ ACTIVE │ PROFILE NAME │ STORE TYPE │ URL                     │ ACTIVE STACK ┃
-┠────────┼──────────────┼────────────┼─────────────────────────┼──────────────┨
-┃   👉   │ default      │ local      │ file:///home/stefan/.c… │ default      ┃
-┃        │ zenml        │ local      │ file:///home/stefan/.c… │ custom       ┃
-┗━━━━━━━━┷━━━━━━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
-
-$ export ZENML_ACTIVATED_PROFILE=zenml
-$ export ZENML_ACTIVATED_STACK=default
-
-$ zenml profile list
-Running without an active repository root.
-Running with active profile: 'zenml' (global)
-┏━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃ ACTIVE │ PROFILE NAME │ STORE TYPE │ URL                     │ ACTIVE STACK ┃
-┠────────┼──────────────┼────────────┼─────────────────────────┼──────────────┨
-┃        │ default      │ local      │ file:///home/stefan/.c… │ default      ┃
-┃   👉   │ zenml        │ local      │ file:///home/stefan/.c… │ default      ┃
-┗━━━━━━━━┷━━━━━━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
-
-$ zenml stack list
-Running without an active repository root.
-Running with active profile: 'zenml' (global)
 ┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
 ┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ METADATA_STORE │ ORCHESTRATOR ┃
 ┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
 ┃   👉   │ default    │ default        │ default        │ default      ┃
-┃        │ custom     │ default        │ default        │ default      ┃
 ┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
 ```
+{% endhint %}
 
-#### Project Level Settings with ZenML Repositories
+### Setting Local Active Profile and Stack
 
-When running inside an initialized [ZenML Repository](../developer-guide/repo-and-config.md),
-the active Profile and active Stack can also be configured locally,
-independently of the global settings, just for that particular Repository. The
-following example shows how the active Profile and active Stack can be
+One of the most useful features of repositories is that you can configure a
+different active profile and stack for each of your projects. This is great if
+you want to use ZenML for multiple projects on the same machine. Whenever you
+create a new ML project, we recommend you run `zenml init` to create a separate
+repository, then create and activate a new profile, and then use it to define
+your stacks:
+
+```bash
+zenml init
+zenml profile create <NEW_PROFILE_NAME>
+zenml profile set <NEW_PROFILE_NAME>
+zenml stack register ...
+zenml stack set ...
+```
+
+If you do this, the correct profile and stack will automatically
+get activated whenever you change directory into a different project.
+
+{% hint style="info" %}
+Note that the Stacks and Stack Components are still stored globally, even when
+running from inside a ZenML Repository. It is only the active Profile and active
+Stack settings that can be configured locally.
+{% endhint %}
+
+#### Detailed Example
+
+<details>
+<summary>Detailed usage example of local stacks and profiles</summary>
+
+The following example shows how the active Profile and active Stack can be
 configured locally for a project without impacting the global settings:
 
 ```
@@ -547,69 +589,19 @@ Running with active profile: 'default' (global)
 ┃   👉   │ default      │ local      │ file:///home/stefan/.c… │ default      ┃
 ┃        │ zenml        │ local      │ file:///home/stefan/.c… │ custom       ┃
 ┗━━━━━━━━┷━━━━━━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
-```
 
-Note that the Stacks and Stack Components are still stored globally, even when
-running from inside a ZenML Repository. It is only the active Profile and active
-Stack settings that can be configured locally.
-
-## Repositories
-
-ZenML has two main locations where it stores information on the local machine.
-These are the _Global Config_ 
-(see [Global Configuration](../resources/global_config.md)) and the 
-_Repository_. The latter is also referred to as the _.zen folder_.
-
-The ZenML **Repository** related to a pipeline run is the folder that contains 
-all the files needed to execute the run, such as the respective Python scripts
-and modules where the pipeline is defined, or other associated files.
-The repository plays a double role in ZenML:
-
-* It is used by ZenML to identify which files must be copied into Docker images 
-in order to execute pipeline steps remotely, e.g., when orchestrating pipelines
-with [KubeFlow](../mlops_stacks/orchestrators/kubeflow.md).
-* It defines the local active [Profile](#profiles) and active [Stack](#stacks)
-that will be used when running pipelines from the repository root or one of its
-sub-folders.
-
-### Registering a Repository
-
-You can register your current working directory as a ZenML
-Repository by running:
-
-```bash
-zenml init
-```
-
-This will create a `.zen` directory, which contains a single
-`config.yaml` file that stores the local settings:
-
-```yaml
-active_profile_name: default
-active_stack_name: default
-```
-
-{% hint style="info" %}
-It is recommended to use the `zenml init` command to initialize a ZenML
-_Repository_ in the same location of your custom Python source tree where you
-would normally point PYTHONPATH, especially if your Python code relies on a
-hierarchy of modules spread out across multiple sub-folders.
-
-ZenML CLI commands and ZenML code will display a warning if they are not running
-in the context of a ZenML _Repository_, e.g.:
-
-```shell
-stefan@aspyre2:/tmp$ zenml stack list
-Unable to find ZenML repository in your current working directory (/tmp) or any parent directories. If you want to use an existing repository which is in a different location, set the environment variable 'ZENML_REPOSITORY_PATH'. If you want to create a new repository, run zenml init.
-Running without an active repository root.
-Running with active profile: 'default' (global)
+/tmp$ cd zenml
+/tmp/zenml$ zenml stack list
+Running with active profile: 'zenml' (local)
 ┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
 ┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ METADATA_STORE │ ORCHESTRATOR ┃
 ┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
 ┃   👉   │ default    │ default        │ default        │ default      ┃
+┃        │ custom     │ default        │ default        │ default      ┃
 ┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
 ```
-{% endhint %}
+
+</details>
 
 ### Using the Repository in Python
 
