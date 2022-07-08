@@ -127,27 +127,6 @@ def test_non_existing_col() -> None:
         )
 
 
-# def test_duplicate_features() -> None:
-#     """Tests ignore cols parameter for duplicate
-#     features and raises Error"""
-
-#     col_list = ["target"]
-#     clmn_map = ColumnMapping(*col_list)
-#     profile_config = EvidentlyProfileConfig(
-#         profile_sections=["datadrift"], column_mapping=clmn_map
-#     )
-
-#     profile_step = EvidentlyProfileStep()
-
-#     with pytest.raises(ValueError):
-#         drift_obj, dash_obj = profile_step.entrypoint(
-#             reference_dataset=ref,
-#             comparison_dataset=comp,
-#             config=profile_config,
-#             ignored_columns=["var_A", "var_A", "var_B"],
-#         )
-
-
 def test_incorrect_datatype() -> None:
     """Tests ignore cols parameter for incorrect datatype
     and raises Error"""
