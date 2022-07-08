@@ -124,9 +124,10 @@ def sync_new_data_to_label_studio(
     base_uri = urlparse(uri).netloc
 
     if config.storage_type == "azure":
-        account_name, account_key = get_azure_credentials()
-        config.azure_account_name = account_name
-        config.azure_account_key = account_key
+        (
+            config.azure_account_name,
+            config.azure_account_key,
+        ) = get_azure_credentials()
     elif config.storage_type == "gcs":
         config.google_application_credentials = get_gcs_credentials()
     elif config.storage_type == "s3":
@@ -158,38 +159,3 @@ def sync_new_data_to_label_studio(
             dataset.create_predictions(preds_with_task_ids)
     else:
         raise StackComponentInterfaceError("No active annotator.")
-
-
-# def get_new_tasks(tasks_before_sync, tasks_after_sync) -> List[Dict]:
-#     """Returns a list of tasks that are new since the last sync."""
-#     return [task for task in tasks_after_sync if task not in tasks_before_sync]
-
-
-# def get_filename(url: str) -> str:
-#     """Returns the filename of a url."""
-#     return urlparse(url).path.split("/")[-1]
-
-
-# def get_transformed_azure_url(url: str, scheme: str) -> str:
-#     """Returns the transformed url for Azure."""
-#     new_scheme_url = url.replace(scheme, "azure-blob")
-#     return f"{urlparse(new_scheme_url).scheme}://{urlparse(new_scheme_url).netloc}{urlparse(new_scheme_url).path}"
-
-
-# def switch_local_urls_for_cloud_urls(
-#     predictions: List[Dict], new_tasks: List[Dict]
-# ) -> List[Dict]:
-#     """Switches local urls for cloud urls."""
-#     if new_tasks:
-#         uri_prefix = urlparse(new_tasks[0]["data"]["image"]).scheme
-#     image_name_mapping = {
-#         get_filename(task["data"]["image"]): get_transformed_azure_url(
-#             task["data"]["image"], uri_prefix
-#         )
-#         for task in new_tasks
-#     }
-#     for prediction in predictions:
-#         prediction["data"]["image"] = image_name_mapping[
-#             os.path.basename(prediction["data"]["image"])
-#         ]
-#     return predictions

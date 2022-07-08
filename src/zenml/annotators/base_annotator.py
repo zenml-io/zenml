@@ -14,7 +14,7 @@
 """Base class for ZenML annotator stack components."""
 
 from abc import ABC, abstractmethod
-from typing import ClassVar, List
+from typing import Any, ClassVar, List
 
 from zenml.enums import StackComponentType
 from zenml.stack import StackComponent
@@ -46,33 +46,21 @@ class BaseAnnotator(StackComponent, ABC):
         """Launches the annotation interface."""
 
     @abstractmethod
-    def add_dataset(self, dataset_name: str) -> None:
+    def add_dataset(self, *args, **kwargs) -> Any:
         """Registers a dataset for annotation."""
 
     @abstractmethod
-    def delete_dataset(self, dataset_name: str) -> None:
-        """Deletes a dataset from the annotation interface."""
-
-    @abstractmethod
-    def get_dataset(self, dataset_name: str) -> None:
+    def get_dataset(self, *args, **kwargs) -> Any:
         """Gets the dataset with the given name."""
 
     @abstractmethod
-    def get_annotations(self, dataset_name: str) -> None:
-        """Gets the annotations for the given dataset."""
+    def delete_dataset(self, *args, **kwargs) -> None:
+        """Deletes a dataset from the annotation interface."""
 
     @abstractmethod
-    def tag_dataset(self, dataset_name: str, tag: str) -> None:
-        """Tags the dataset with the given name with the given tag."""
-
-    @abstractmethod
-    def untag_dataset(self, dataset_name: str, tag: str) -> None:
-        """Untags the dataset with the given name with the given tag."""
-
-    @abstractmethod
-    def get_labeled_data(self, dataset_name: str) -> None:
+    def get_labeled_data(self, *args, **kwargs) -> Any:
         """Gets the labeled data for the given dataset."""
 
     @abstractmethod
-    def get_unlabeled_data(self, dataset_name: str) -> None:
+    def get_unlabeled_data(self, *args, **kwargs) -> Any:
         """Gets the unlabeled data for the given dataset."""

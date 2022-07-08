@@ -249,26 +249,27 @@ class LabelStudioAnnotator(BaseAnnotator):
             )
             return False
 
-    def add_dataset(self, dataset_name: str) -> None:
+    def add_dataset(self, *args, name: str, label_config, **kwargs) -> Any:
         """Registers a dataset for annotation."""
+        ls = self._get_client()
+        return ls.start_project(
+            title=name,
+            label_config=label_config,
+        )
 
-    def delete_dataset(self, dataset_name: str) -> None:
+    def delete_dataset(self, *args, dataset_name: str, **kwargs) -> None:
         """Deletes a dataset from the annotation interface."""
+        # TODO: Awaiting a new Label Studio version to be released with this method
+        ls = self._get_client()
+        dataset_id = self.get_id_from_name(dataset_name)
+        ls.delete_project(dataset_id)
 
-    def get_dataset(self, dataset_id: int) -> None:
+    def get_dataset(self, *args, dataset_name: str, **kwargs) -> Any:
         """Gets the dataset with the given name."""
         # TODO: check for and raise error if client unavailable
         ls = self._get_client()
+        dataset_id = self.get_id_from_name(dataset_name)
         return ls.get_project(dataset_id)
-
-    def get_annotations(self, dataset_name: str) -> None:
-        """Gets the annotations for the given dataset."""
-
-    def tag_dataset(self, dataset_name: str, tag: str) -> None:
-        """Tags the dataset with the given name with the given tag."""
-
-    def untag_dataset(self, dataset_name: str, tag: str) -> None:
-        """Untags the dataset with the given name with the given tag."""
 
     def _dataset_name_to_project(self, dataset_name: str) -> Optional[Project]:
         """Finds the project id for a specific dataset name."""
@@ -281,12 +282,6 @@ class LabelStudioAnnotator(BaseAnnotator):
         ]
         return current_project[0]
 
-    def get_labeled_data(self, dataset_name: str) -> None:
-        """Gets the labeled data for the given dataset."""
-
-    def get_unlabeled_data(self, dataset_name: str) -> None:
-        """Gets the unlabeled data for the given dataset."""
-
     def get_converted_dataset(
         self, dataset_id: int, output_format: str
     ) -> Dict[Any, Any]:
@@ -295,14 +290,20 @@ class LabelStudioAnnotator(BaseAnnotator):
         project = self.get_dataset(dataset_id)
         return project.export_tasks(export_type=output_format)
 
-    def get_unlabeled_data(self, dataset_id: int) -> Optional[Dict[Any, Any]]:
-        """Some docstring goes here"""
+    def get_labeled_data(self, *args, dataset_name: str, **kwargs) -> Any:
+        """Gets the labeled data for the given dataset."""
         ls = self._get_client()
+        dataset_id = self.get_id_from_name(dataset_name)
+        return ls.get_project(dataset_id).get_labeled_tasks()
+
+    def get_unlabeled_data(self, *args, dataset_name: str, **kwargs) -> Any:
+        """Gets the unlabeled data for the given dataset."""
+        ls = self._get_client()
+        dataset_id = self.get_id_from_name(dataset_name)
         return ls.get_project(dataset_id).get_unlabeled_tasks()
 
     def register_dataset_for_annotation(
         self,
-        # data: List[str],
         config: LabelStudioDatasetRegistrationConfig,
     ) -> int:
         """Registers a dataset for annotation."""
@@ -311,7 +312,7 @@ class LabelStudioAnnotator(BaseAnnotator):
         if self.get_id_from_name(config.dataset_name):
             dataset = ls.get_project(self.get_id_from_name(config.dataset_name))
         else:
-            dataset = ls.start_project(
+            dataset = self.add_dataset(
                 title=config.dataset_name,
                 label_config=config.label_config,
             )
@@ -449,7 +450,7 @@ class LabelStudioAnnotator(BaseAnnotator):
         elif config.storage_type == "s3":
             if not config.aws_access_key_id or not config.aws_secret_access_key:
                 logger.warn(
-                    "Authentication credentials for AWS aren't fully provided. Please update the storage synchronization settings in the Label Studio web UI as per your needs."
+                    "Authentication credentials for S3 aren't fully provided. Please update the storage synchronization settings in the Label Studio web UI as per your needs."
                 )
             storage = dataset.connect_s3_import_storage(
                 bucket=uri,
