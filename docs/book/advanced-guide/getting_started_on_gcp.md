@@ -371,7 +371,7 @@ zenml container-registry register gcp_registry --flavor=gcp \
 zenml artifact-store register gcp_artifact_store --flavor=gcp \
       --path=$GSUTIL_URI
 zenml metadata-store register gcp_metadata_store --flavor=mysql \
-      --host=$DB_HOST_IP --port=3306 --database=$DB_NAME \
+      --host=$DB_HOST --port=3306 --database=$DB_NAME \
       --secret=mysql_secret
 zenml stack register gcp_vertex_stack -m gcp_metadata_store \
       -a gcp_artifact_store -o vertex_orchestrator -c gcp_registry \
