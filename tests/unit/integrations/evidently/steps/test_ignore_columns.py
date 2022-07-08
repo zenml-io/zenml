@@ -54,8 +54,9 @@ def test_ignore_features() -> None:
         reference_dataset=ref,
         comparison_dataset=comp,
         config=profile_config,
-        ignored_columns=["ignore_col", "var_B"],
+        ignored_columns=("ignore_col", "var_B"),
     )
+
     target = [drift_obj["data_drift"]["data"]["utility_columns"]["target"]]
     prediction = [
         drift_obj["data_drift"]["data"]["utility_columns"]["prediction"]
@@ -88,7 +89,7 @@ def test_default_ignore_cols() -> None:
         reference_dataset=ref,
         comparison_dataset=comp,
         config=profile_config,
-        ignored_columns=None,
+        ignored_columns=(),
     )
     target = [drift_obj["data_drift"]["data"]["utility_columns"]["target"]]
     prediction = [
@@ -122,29 +123,29 @@ def test_non_existing_col() -> None:
             reference_dataset=ref,
             comparison_dataset=comp,
             config=profile_config,
-            ignored_columns=["var_A", "test_1"],
+            ignored_columns=("var_A", "test_1"),
         )
 
 
-def test_duplicate_features() -> None:
-    """Tests ignore cols parameter for duplicate
-    features and raises Error"""
+# def test_duplicate_features() -> None:
+#     """Tests ignore cols parameter for duplicate
+#     features and raises Error"""
 
-    col_list = ["target"]
-    clmn_map = ColumnMapping(*col_list)
-    profile_config = EvidentlyProfileConfig(
-        profile_sections=["datadrift"], column_mapping=clmn_map
-    )
+#     col_list = ["target"]
+#     clmn_map = ColumnMapping(*col_list)
+#     profile_config = EvidentlyProfileConfig(
+#         profile_sections=["datadrift"], column_mapping=clmn_map
+#     )
 
-    profile_step = EvidentlyProfileStep()
+#     profile_step = EvidentlyProfileStep()
 
-    with pytest.raises(ValueError):
-        drift_obj, dash_obj = profile_step.entrypoint(
-            reference_dataset=ref,
-            comparison_dataset=comp,
-            config=profile_config,
-            ignored_columns=["var_A", "var_A", "var_B"],
-        )
+#     with pytest.raises(ValueError):
+#         drift_obj, dash_obj = profile_step.entrypoint(
+#             reference_dataset=ref,
+#             comparison_dataset=comp,
+#             config=profile_config,
+#             ignored_columns=["var_A", "var_A", "var_B"],
+#         )
 
 
 def test_incorrect_datatype() -> None:
@@ -159,7 +160,7 @@ def test_incorrect_datatype() -> None:
 
     profile_step = EvidentlyProfileStep()
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         drift_obj, dash_obj = profile_step.entrypoint(
             reference_dataset=ref,
             comparison_dataset=comp,
@@ -168,8 +169,8 @@ def test_incorrect_datatype() -> None:
         )
 
 
-def test_empty_list() -> None:
-    """Tests ignore cols parameter for empty list
+def test_ignored_cols_elements() -> None:
+    """Tests ignore cols parameter for type of its elements
     and raises Error"""
 
     col_list = ["target"]
@@ -180,10 +181,10 @@ def test_empty_list() -> None:
 
     profile_step = EvidentlyProfileStep()
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         drift_obj, dash_obj = profile_step.entrypoint(
             reference_dataset=ref,
             comparison_dataset=comp,
             config=profile_config,
-            ignored_columns=[],
+            ignored_columns=("Housing", "Region", 25, True),
         )

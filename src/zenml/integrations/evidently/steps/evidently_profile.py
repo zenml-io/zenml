@@ -127,7 +127,7 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
         reference_dataset: pd.DataFrame,
         comparison_dataset: pd.DataFrame,
         config: EvidentlyProfileConfig,
-        ignored_columns: List[str] = None,
+        ignored_columns: Tuple[str] = (),
     ) -> Output(  # type:ignore[valid-type]
         profile=dict, dashboard=str
     ):
@@ -138,7 +138,7 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
             comparison_dataset: a Pandas DataFrame of new data you wish to
                 compare against the reference data
             config: the configuration for the step
-            ignored_columns: columns to ignore while drift detection
+            ignored_columns: columns to ignore when creating evidently profile
 
         Raises:
             ValueError: If ignore cols is of incorrect type or emptylist
@@ -151,35 +151,30 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
             dashboard: HTML report extracted from an Evidently Dashboard
               generated for the data drift
         """
-        if ignored_columns is not None:
-            if not (isinstance(ignored_columns, list)):
-                raise ValueError(
-                    f"Expects a list of features but got type {type(ignored_columns)}"
-                )
-
-            if len(ignored_columns) == 0:
-                raise ValueError(
-                    "Expects a list of features or None but got empty list"
-                )
-
-            if sorted(set(ignored_columns)) != sorted(ignored_columns):
-                raise ValueError("Duplicate features found")
-
-            if not (
-                set(ignored_columns).issubset(set(reference_dataset.columns))
-            ) or not (
-                set(ignored_columns).issubset(set(comparison_dataset.columns))
-            ):
-                raise ValueError(
-                    "Feature not found in reference/comparison datasets"
-                )
-
+        if not (isinstance(ignored_columns, tuple)):
+            raise TypeError(
+                f"Expects a tuple of columns but got type {type(ignored_columns)}"
+            )
+        elif not (all((isinstance(ele, str) for ele in ignored_columns))):
+            raise TypeError(
+                "One or more columns to be ignored are not type string"
+            )
+        elif not (
+            set(ignored_columns).issubset(set(reference_dataset.columns))
+        ) or not (
+            set(ignored_columns).issubset(set(comparison_dataset.columns))
+        ):
+            raise ValueError(
+                "Column name is not found in reference/comparison datasets"
+            )
+        elif len(ignored_columns) != 0:
             reference_dataset = reference_dataset.drop(
-                labels=ignored_columns, axis=1
+                labels=list(ignored_columns), axis=1
             )
             comparison_dataset = comparison_dataset.drop(
-                labels=ignored_columns, axis=1
+                labels=list(ignored_columns), axis=1
             )
+
         sections, tabs = config.get_profile_sections_and_tabs()
         data_drift_dashboard = Dashboard(tabs=tabs)
         data_drift_dashboard.calculate(
