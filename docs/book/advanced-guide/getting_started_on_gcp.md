@@ -271,7 +271,8 @@ SERVER_CERT_PATH=$PROJECT_NAME"server-ca.pem"
 # Enable the sql api for database creation
 gcloud services enable sqladmin.googleapis.com
 # Create the db instance
-gcloud sql instances create $DB_INSTANCE --tier=db-f1-micro --region=$GCP_LOCATION --authorized-networks 0.0.0.0/0
+gcloud sql instances create $DB_INSTANCE --tier=db-f1-micro \
+    --region=$GCP_LOCATION --authorized-networks 0.0.0.0/0
 ```
 Make sure the instance is fully set up before continuing.
 
@@ -286,11 +287,15 @@ gcloud sql instances patch $DB_INSTANCE --require-ssl
 This might take some time to finish again.
 
 ```shell
-gcloud sql ssl client-certs create $CERT_NAME $CLIENT_KEY_PATH --instance $DB_INSTANCE
-gcloud sql ssl client-certs describe $CERT_NAME --instance=$DB_INSTANCE --format="value(cert)" > $CLIENT_CERT_PATH
-gcloud sql instances describe $DB_INSTANCE --format="value(serverCaCert.cert)" > $SERVER_CERT_PATH
+gcloud sql ssl client-certs create $CERT_NAME $CLIENT_KEY_PATH \
+    --instance $DB_INSTANCE
+gcloud sql ssl client-certs describe $CERT_NAME --instance=$DB_INSTANCE \
+    --format="value(cert)" > $CLIENT_CERT_PATH
+gcloud sql instances describe $DB_INSTANCE \
+    --format="value(serverCaCert.cert)" > $SERVER_CERT_PATH
 
-gcloud sql databases create $DB_NAME --instance=$DB_INSTANCE --collation=utf8_general_ci --charset=utf8
+gcloud sql databases create $DB_NAME --instance=$DB_INSTANCE \
+    --collation=utf8_general_ci --charset=utf8
 ```
 {% endtab %}
 {% endtabs %}
@@ -327,15 +332,20 @@ SERVICE_ACCOUNT=${SERVICE_ACCOUNT_ID}"@"${PROJECT_NAME}".iam.gserviceaccount.com
 ```
 
 ```shell
-gcloud iam service-accounts create $SERVICE_ACCOUNT_ID --display-name="zenml-vertex-sa" \
+gcloud iam service-accounts create $SERVICE_ACCOUNT_ID \
+    --display-name="zenml-vertex-sa" \
     --description="Service account for running Vertex Ai workflows from ZenML." 
-gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/aiplatform.customCodeServiceAgent" \
+gcloud projects add-iam-policy-binding ${PROJECT_NAME} \
+    --role="roles/aiplatform.customCodeServiceAgent" \
     --member="serviceAccount:"${SERVICE_ACCOUNT}
-gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/aiplatform.serviceAgent" \
+gcloud projects add-iam-policy-binding ${PROJECT_NAME} \
+    --role="roles/aiplatform.serviceAgent" \
     --member="serviceAccount:"${SERVICE_ACCOUNT}
-gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/containerregistry.ServiceAgent" \
+gcloud projects add-iam-policy-binding ${PROJECT_NAME} \
+    --role="roles/containerregistry.ServiceAgent" \
     --member="serviceAccount:"${SERVICE_ACCOUNT}
-gcloud projects add-iam-policy-binding ${PROJECT_NAME} --role="roles/secretmanager.admin" \
+gcloud projects add-iam-policy-binding ${PROJECT_NAME} \
+    --role="roles/secretmanager.admin" \
     --member="serviceAccount:"${SERVICE_ACCOUNT}
 gcloud iam service-accounts add-iam-policy-binding $SERVICE_ACCOUNT \
     --member="user:"${USER_EMAIL} --role="roles/iam.serviceAccountUser"
@@ -368,8 +378,8 @@ zenml stack register gcp_vertex_stack -m gcp_metadata_store \
       -x gcp_secrets_manager --set
 zenml secret register mysql_secret --schema=mysql \
       --user=root --password=$DB_PASSWORD \
-      --ssl_ca="@"$SERVER_CERT_PATH --ssl_cert="@"$CLIENT_CERT_PATH --ssl_key="@"$CLIENT_KEY_PATH
- 
+      --ssl_ca="@"$SERVER_CERT_PATH --ssl_cert="@"$CLIENT_CERT_PATH \
+      --ssl_key="@"$CLIENT_KEY_PATH
 ```
 
 This is where your ZenML stack is created and connected to the GCP cloud 
