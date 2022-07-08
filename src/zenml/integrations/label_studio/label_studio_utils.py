@@ -49,8 +49,8 @@ def convert_pred_filenames_to_task_ids(
         for task in tasks
     }
 
-    # GCS and S3 URL encodes filenames containing spaces, making it impossible to match
-    # filenames between local and cloud without this separate encoding step
+    # GCS and S3 URL encodes filenames containing spaces, requiring this
+    # separate encoding step
     if storage_type in {"gcs", "s3"}:
         preds = [
             {"filename": quote(pred["filename"]), "result": pred["result"]}

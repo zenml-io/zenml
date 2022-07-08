@@ -55,7 +55,7 @@ class BaseAnnotator(StackComponent, ABC):
 
     @abstractmethod
     def delete_dataset(self, *args, **kwargs) -> None:
-        """Deletes a dataset from the annotation interface."""
+        """Deletes a dataset."""
 
     @abstractmethod
     def get_labeled_data(self, *args, **kwargs) -> Any:

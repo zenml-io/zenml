@@ -410,7 +410,7 @@ class LabelStudioAnnotator(BaseAnnotator):
         uri: str,
         config: LabelStudioDatasetSyncConfig,
         dataset: Project,
-    ) -> None:
+    ) -> Dict[str, Any]:
         """Syncs the external storage for the given project."""
         if self._storage_source_already_exists(uri, config, dataset):
             return
@@ -473,7 +473,6 @@ class LabelStudioAnnotator(BaseAnnotator):
             )
 
         ls = self._get_client()
-        sync_results = ls.sync_storage(
+        return ls.sync_storage(
             storage_id=storage["id"], storage_type=storage["type"]
         )
-        return
