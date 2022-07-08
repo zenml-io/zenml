@@ -20,7 +20,8 @@ Artifact Store, nor do they have to be. How artifacts are serialized and
 deserialized and where their contents are stored is determined by the particular
 implementation of the [Materializer](../../developer-guide/materializer.md)
 associated with the artifact data type. The majority of Materializers shipped
-with ZenML use the Artifact Store as the location where artifacts are kept.
+with ZenML use the Artifact Store that is part of the active Stack as the
+location where artifacts are kept.
 
 If you need to store a particular type of pipeline artifacts in a different
 medium (e.g. use an external model registry to store model artifacts, or an
@@ -130,7 +131,7 @@ and then use it as a base path for artifact URIs, e.g.:
 ```python
 import os
 from zenml.repository import Repository
-from zenml.io.fileio import fileio
+from zenml.io import fileio
 
 root_path = Repository().active_stack.artifact_store.path
 
@@ -150,19 +151,83 @@ for an example).
 The following are some code examples showing how to use the Artifact Store API
 for various operations:
 
-* copying an object from the artifact store to the local filesystem
+* creating folders, writing and reading data directly to/from an artifact store
+object
 
-* copying an object from the local filesystem to the artifact store
+```python
+import os
+from zenml.utils import io_utils
+from zenml.io import fileio
 
-* creating folders in the artifact store
+from zenml.repository import Repository
 
-* moving objects within the artifact store
+root_path = Repository().active_stack.artifact_store.path
 
-* deleting an object in the artifact store
+artifact_contents = "example artifact"
+artifact_path = os.path.join(root_path, "artifacts", "examples")
+artifact_uri = os.path.join(artifact_path, "test.txt")
+fileio.makedirs(artifact_path)
+io_utils.write_file_contents_as_string(artifact_uri, artifact_contents)
+```
 
-* writing and reading data directly to/from an artifact store object
+```python
+import os
+from zenml.utils import io_utils
 
-* using a temporary local file/folder to copy artifacts to/from the artifact
-store (heavily used to transfer information between the Artifact Store and 
-external libraries)
+from zenml.repository import Repository
 
+root_path = Repository().active_stack.artifact_store.path
+
+artifact_path = os.path.join(root_path, "artifacts", "examples")
+artifact_uri = os.path.join(artifact_path, "test.txt")
+artifact_contents = io_utils.read_file_contents_as_string(artifact_uri)
+```
+
+* copying objects between the artifact store and the local filesystem, using a
+temporary local file/folder to serialize and copy in-memory objects
+to/from the artifact store (heavily used in Materializers to transfer
+information between the Artifact Store and external libraries that don't
+support writing/reading to/from the artifact store backend):
+
+```python
+import os
+import tempfile
+import external_lib
+
+root_path = Repository().active_stack.artifact_store.path
+
+artifact_path = os.path.join(root_path, "artifacts", "examples")
+artifact_uri = os.path.join(artifact_path, "test.json")
+fileio.makedirs(artifact_path)
+
+with tempfile.NamedTemporaryFile(
+    mode="w", suffix=".json", delete=False
+) as f:
+    external_lib.external_object.save_to_file(f.name)
+    # Copy it into artifact store
+    fileio.copy(f.name, artifact_uri)
+
+# Remove the temporary file
+fileio.remove(f.name)
+```
+
+```python
+import os
+import tempfile
+import external_lib
+
+root_path = Repository().active_stack.artifact_store.path
+
+artifact_path = os.path.join(root_path, "artifacts", "examples")
+artifact_uri = os.path.join(artifact_path, "test.json")
+
+with tempfile.NamedTemporaryFile(
+    mode="w", suffix=".json", delete=False
+) as f:
+    # Copy the serialized object from the artifact store
+    fileio.copy(artifact_uri, f.name)
+    external_lib.external_object.load_from_file(f.name)
+
+# Remove the temporary file
+fileio.remove(f.name)
+```
