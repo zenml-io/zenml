@@ -63,7 +63,6 @@ class AzureSecretsManager(BaseSecretsManager):
 
         Raises:
             SecretExistsError: if the secret already exists
-            ValueError: if the secret name contains an underscore.
         """
         self._ensure_client_connected(self.key_vault_name)
 
