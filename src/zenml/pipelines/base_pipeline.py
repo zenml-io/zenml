@@ -464,8 +464,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         # the airflow orchestrator so it knows which file to copy into the DAG
         # directory
         dag_filepath = io_utils.resolve_relative_path(
-            inspect.currentframe().f_back.f_code.co_filename
-            # type: ignore[union-attr]
+            inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr]
         )
         runtime_configuration = RuntimeConfiguration(
             run_name=run_name,
