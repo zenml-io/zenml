@@ -97,6 +97,9 @@ ask an organization administrator.
 
 {% tab title="gcloud CLI" %}
 
+In case you don't have permissions on your companies billing account you might 
+need to ask your admin to do this for you.
+
 ```shell
 BILLING_ACC=<BILLING_ACC>
 ```
@@ -254,16 +257,15 @@ DB_NAME=<DB_NAME> # for example zenml_db
 {% endtab %}
 
 {% tab title="gcloud CLI" %}
-
 We have set some sensible defaults here, feel free to replace these with
 names of your own.
 ```shell
 DB_INSTANCE=zenml-inst
-DB_NAME=zenml-metadata-store-db
+DB_NAME=zenml_metadata_store_db # make sure this contains no '-'
 CERT_NAME=zenml-cert
 CLIENT_KEY_PATH=$PROJECT_NAME"client-key.pem"
 CLIENT_CERT_PATH=$PROJECT_NAME"client-cert.pem"
-SERVER_CERT_PATH=$PROJECT_NAME"server-ca.pem"```
+SERVER_CERT_PATH=$PROJECT_NAME"server-ca.pem"
 ```
 
 ```shell
@@ -274,7 +276,7 @@ gcloud services enable sqladmin.googleapis.com
 gcloud sql instances create $DB_INSTANCE --tier=db-f1-micro --region=$GCP_LOCATION --authorized-networks 0.0.0.0/0
 
 DB_HOST=$(gcloud sql instances describe $DB_INSTANCE --format='get(ipAddresses[0].ipAddress)')
-gcloud sql users set-password root --host=$DB_HOST --instance $DB_INSTANCE --password $DB_PASSWORD
+gcloud sql users set-password root --host=%--instance $DB_INSTANCE --password $DB_PASSWORD
 
 # Create Client certificate and download all three 
 gcloud sql instances patch $DB_INSTANCE --require-ssl
@@ -451,7 +453,7 @@ DB_PASSWORD=<DB_PASSWORD> # for example auk(/194
 # Create a project and attach it to the specified billing account
 gcloud projects create $PROJECT_NAME --organization=$PARENT_ORG_ID
 gcloud config set project $PROJECT_NAME
-gcloud beta billing projects link $PROJECT_NAME --billing-account $BILLING_ACC
+gcloud beta billing projects link $PROJECT_NAME --billing-account $BILLING_ACC 
 PROJECT_NUMBER=$(gcloud projects describe $PROJECT_NAME --format="value(projectNumber)")
 
 # Enable the three APIs for vertex ai, the container registry and the 
@@ -473,19 +475,19 @@ DB_INSTANCE=zenml-inst
 gcloud sql instances create $DB_INSTANCE --tier=db-f1-micro --region=$GCP_LOCATION --authorized-networks 0.0.0.0/0
 
 DB_HOST=$(gcloud sql instances describe $DB_INSTANCE --format='get(ipAddresses[0].ipAddress)')
-gcloud sql users set-password root --host=$DB_HOST --instance $DB_INSTANCE --password $DB_PASSWORD
+gcloud sql users set-password root --host=% --instance $DB_INSTANCE --password $DB_PASSWORD
 
 # Create Client certificate and download all three 
 CERT_NAME=zenml-cert
 CLIENT_KEY_PATH=$PROJECT_NAME"client-key.pem"
 CLIENT_CERT_PATH=$PROJECT_NAME"client-cert.pem"
 SERVER_CERT_PATH=$PROJECT_NAME"server-ca.pem"
-gcloud sql instances patch $DB_INSTANCE --require-ssl
+gcloud sql instances patch $DB_ISTANCE --require-ssl
 gcloud sql ssl client-certs create $CERT_NAME $CLIENT_KEY_PATH --instance $DB_INSTANCE
 gcloud sql ssl client-certs describe $CERT_NAME --instance=$DB_INSTANCE --format="value(cert)" > $CLIENT_CERT_PATH
 gcloud sql instances describe $DB_INSTANCE --format="value(serverCaCert.cert)" > $SERVER_CERT_PATH
 
-DB_NAME=zenml-metadata-store-db
+DB_NAME=zenml_metadata_store_db # make sure this contains no '-' as this will fail
 gcloud sql databases create $DB_NAME --instance=$DB_INSTANCE --collation=utf8_general_ci --charset=utf8
 
 # Configure the service accounts
