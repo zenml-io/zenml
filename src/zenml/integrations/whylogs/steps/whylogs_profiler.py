@@ -14,13 +14,16 @@
 """Implementation of the whylogs profiler step."""
 
 import datetime
-from typing import Dict, Optional, cast
+from typing import Dict, Optional, Type, cast
 
 import pandas as pd
-from whylogs import DatasetProfile  # type: ignore
+from whylogs.core import DatasetProfileView  # type: ignore
+from zenml.integrations.whylogs.data_validators.whylogs_data_validator import (
+    WhylogsDataValidator,
+)
+from zenml.integrations.whylogs.whylabs_step_decorator import enable_whylabs
+from zenml.steps.base_step import BaseStep
 
-from zenml.integrations.whylogs.whylogs_context import WhylogsContext
-from zenml.steps.step_context import StepContext
 from zenml.steps.step_interfaces.base_analyzer_step import (
     BaseAnalyzerConfig,
     BaseAnalyzerStep,
@@ -29,6 +32,7 @@ from zenml.steps.utils import (
     INSTANCE_CONFIGURATION,
     PARAM_CREATED_BY_FUNCTIONAL_API,
     PARAM_ENABLE_CACHE,
+    clone_step,
 )
 
 
@@ -36,96 +40,71 @@ class WhylogsProfilerConfig(BaseAnalyzerConfig):
     """Config class for the WhylogsProfiler step.
 
     Attributes:
-        dataset_name: the name of the dataset (Optional). If not specified,
-            the pipeline step name is used
         dataset_timestamp: timestamp to associate with the generated
             dataset profile (Optional). The current time is used if not
             supplied.
-        tags: custom metadata tags associated with the whylogs profile
-
-    Also see `WhylogsContext.log_dataframe`.
     """
 
-    dataset_name: Optional[str] = None
     dataset_timestamp: Optional[datetime.datetime]
-    tags: Optional[Dict[str, str]] = None
 
 
 class WhylogsProfilerStep(BaseAnalyzerStep):
     """Generates a whylogs data profile from a given pd.DataFrame."""
 
+    @staticmethod
     def entrypoint(  # type: ignore[override]
-        self,
         dataset: pd.DataFrame,
         config: WhylogsProfilerConfig,
-        context: StepContext,
-    ) -> DatasetProfile:
+    ) -> DatasetProfileView:
         """Main entrypoint function for the whylogs profiler.
 
         Args:
             dataset: pd.DataFrame, the given dataset
             config: the configuration of the step
-            context: the context of the step
 
         Returns:
             whylogs profile with statistics generated for the input dataset
         """
-        whylogs_context = WhylogsContext(context)
-        profile = whylogs_context.profile_dataframe(
-            dataset, dataset_name=config.dataset_name, tags=config.tags
+        data_validator = cast(
+            WhylogsDataValidator,
+            WhylogsDataValidator.get_active_data_validator(),
         )
-        return profile
+        return data_validator.data_profiling(
+            dataset, dataset_timestamp=config.dataset_timestamp
+        )
 
 
 def whylogs_profiler_step(
     step_name: str,
-    enable_cache: Optional[bool] = None,
-    dataset_name: Optional[str] = None,
     dataset_timestamp: Optional[datetime.datetime] = None,
-    tags: Optional[Dict[str, str]] = None,
-) -> WhylogsProfilerStep:
+    log_to_whylabs: bool = False,
+    dataset_id: Optional[str] = None,
+) -> BaseStep:
     """Shortcut function to create a new instance of the WhylogsProfilerStep step.
 
     The returned WhylogsProfilerStep can be used in a pipeline to generate a
-    whylogs DatasetProfile from a given pd.DataFrame and save it as an artifact.
+    whylogs DatasetProfileView from a given pd.DataFrame and save it as an
+    artifact.
 
     Args:
         step_name: The name of the step
-        enable_cache: Specify whether caching is enabled for this step. If no
-            value is passed, caching is enabled by default
-        dataset_name: the dataset name to be used for the whylogs profile
-            (Optional). If not specified, the step name is used
-        dataset_timestamp: timestamp to associate with the generated
+        dataset_timestamp: Timestamp to associate with the generated
             dataset profile (Optional). The current time is used if not
             supplied.
-        tags: custom metadata tags associated with the whylogs profile
+        log_to_whylabs: Set to True to enable logging to Whylabs. This is the
+            same as adding the `enable_whylabs` decorator to your step.
+        dataset_id: Optional dataset ID to use to upload the profile to Whylabs.
 
     Returns:
         a WhylogsProfilerStep step instance
     """
-    # enable cache explicitly to compensate for the fact that this step
-    # takes in a context object
-    if enable_cache is None:
-        enable_cache = True
+    step: Type[BaseStep] = clone_step(WhylogsProfilerStep, step_name)
 
-    step_type = type(
-        step_name,
-        (WhylogsProfilerStep,),
-        {
-            INSTANCE_CONFIGURATION: {
-                PARAM_ENABLE_CACHE: enable_cache,
-                PARAM_CREATED_BY_FUNCTIONAL_API: True,
-            },
-        },
-    )
+    if log_to_whylabs:
+        step = enable_whylabs(dataset_id=dataset_id)(step)
 
-    return cast(
-        WhylogsProfilerStep,
-        step_type(
-            WhylogsProfilerConfig(
-                dataset_name=dataset_name,
-                dataset_timestamp=dataset_timestamp,
-                tags=tags,
-            )
-        ),
+    return step(
+        config=WhylogsProfilerConfig(
+            dataset_timestamp=dataset_timestamp,
+        )
     )

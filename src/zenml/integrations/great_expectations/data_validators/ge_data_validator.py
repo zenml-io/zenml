@@ -138,35 +138,6 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         return values
 
     @classmethod
-    def get_active_data_validator(cls) -> "GreatExpectationsDataValidator":
-        """Get the Great Expectations data validator registered in the active stack.
-
-        Returns:
-            The Great Expectations data validator registered in the active stack.
-
-        Raises:
-            TypeError: if a Great Expectations data validator is not part of the
-                active stack.
-        """
-        repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
-        data_validator = repo.active_stack.data_validator
-        if data_validator and isinstance(data_validator, cls):
-            return data_validator
-
-        raise TypeError(
-            f"The active stack needs to have a Great Expectations data "
-            f"validator component registered to be able to run data validation "
-            f"actions with Great Expectations. You can create a new stack with "
-            f"a Great Expectations data validator component or update your "
-            f"existing stack to add this component, e.g.:\n\n"
-            f"  `zenml data-validator register great_expectations "
-            f"--flavor={cls.FLAVOR} ...`\n"
-            f"  `zenml stack register stack-name -dv great_expectations ...`\n"
-            f"  or:\n"
-            f"  `zenml stack update -dv great_expectations`\n\n"
-        )
-
-    @classmethod
     def get_data_context(cls) -> BaseDataContext:
         """Get the Great Expectations data context managed by ZenML.
 
@@ -177,7 +148,10 @@ class GreatExpectationsDataValidator(BaseDataValidator):
             A Great Expectations data context managed by ZenML as configured
             through the active data validator stack component.
         """
-        return cls.get_active_data_validator().data_context
+        data_validator = cast(
+            "GreatExpectationsDataValidator", cls.get_active_data_validator()
+        )
+        return data_validator.data_context
 
     @property
     def local_path(self) -> Optional[str]:
@@ -364,6 +338,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
     def data_profiling(
         self,
         dataset: pd.DataFrame,
+        comparison_dataset: Optional[Any] = None,
         profile_list: Optional[Sequence[str]] = None,
         expectation_suite_name: Optional[str] = None,
         data_asset_name: Optional[str] = None,
@@ -381,6 +356,9 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         Args:
             dataset: The dataset from which the expectation suite will be
                 inferred.
+            comparison_dataset: Optional dataset used to generate data
+                comparison (i.e. data drift) profiles. Not supported by the
+                Great Expectation data validator.
             profile_list: Optional list identifying the categories of data
                 profiles to be generated. Not supported by the Great Expectation
                 data validator.
@@ -469,6 +447,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
     def data_validation(
         self,
         dataset: pd.DataFrame,
+        comparison_dataset: Optional[Any] = None,
         check_list: Optional[Sequence[str]] = None,
         expectation_suite_name: Optional[str] = None,
         data_asset_name: Optional[str] = None,
@@ -484,6 +463,9 @@ class GreatExpectationsDataValidator(BaseDataValidator):
 
         Args:
             dataset: The dataset to validate.
+            comparison_dataset: Optional dataset used to run data
+                comparison (i.e. data drift) checks. Not supported by the
+                Great Expectation data validator.
             check_list: Optional list identifying the data validation checks to
                 be performed. Not supported by the Great Expectations data
                 validator.

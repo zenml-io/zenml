@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,15 +13,103 @@
 #  permissions and limitations under the License.
 """Implementation of the Evidently data validator."""
 
-import os
-from typing import Any, ClassVar, Dict, List, Optional, Sequence, cast
+from evidently.dashboard import Dashboard  # type: ignore
+from evidently.dashboard.tabs import (  # type: ignore
+    CatTargetDriftTab,
+    ClassificationPerformanceTab,
+    DataDriftTab,
+    DataQualityTab,
+    NumTargetDriftTab,
+    ProbClassificationPerformanceTab,
+    RegressionPerformanceTab,
+)
+from evidently.dashboard.tabs.base_tab import Tab  # type: ignore
+from evidently.model_profile import Profile  # type: ignore
+from evidently.model_profile.sections import (  # type: ignore
+    CatTargetDriftProfileSection,
+    ClassificationPerformanceProfileSection,
+    DataDriftProfileSection,
+    DataQualityProfileSection,
+    NumTargetDriftProfileSection,
+    ProbClassificationPerformanceProfileSection,
+    RegressionPerformanceProfileSection,
+)
+from evidently.model_profile.sections.base_profile_section import (  # type: ignore
+    ProfileSection,
+)
+from evidently.pipeline.column_mapping import ColumnMapping  # type: ignore
+from evidently.test_suite import TestSuite
+from evidently.tests import *
+from evidently.test_preset import (
+    NoTargetPerformance,
+    DataQuality,
+    DataStability,
+    DataDrift,
+)
+
+from typing import Any, ClassVar, Dict, List, Optional, Sequence, Tuple, cast
 
 import pandas as pd
 
 from zenml.data_validators import BaseDataValidator
+from zenml.integrations.evidently import EVIDENTLY_DATA_VALIDATOR_FLAVOR
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+profile_mapper = {
+    "datadrift": DataDriftProfileSection,
+    "categoricaltargetdrift": CatTargetDriftProfileSection,
+    "numericaltargetdrift": NumTargetDriftProfileSection,
+    "dataquality": DataQualityProfileSection,
+    "classificationmodelperformance": ClassificationPerformanceProfileSection,
+    "regressionmodelperformance": RegressionPerformanceProfileSection,
+    "probabilisticmodelperformance": ProbClassificationPerformanceProfileSection,
+}
+
+dashboard_mapper = {
+    "dataquality": DataQualityTab,
+    "datadrift": DataDriftTab,
+    "categoricaltargetdrift": CatTargetDriftTab,
+    "numericaltargetdrift": NumTargetDriftTab,
+    "classificationmodelperformance": ClassificationPerformanceTab,
+    "regressionmodelperformance": RegressionPerformanceTab,
+    "probabilisticmodelperformance": ProbClassificationPerformanceTab,
+}
+
+
+def get_profile_sections_and_tabs(
+    profile_list: Optional[Sequence[str]],
+    verbose_level: int,
+) -> Tuple[List[ProfileSection], List[Tab]]:
+    """Get the profile sections and dashboard tabs for a profile list.
+
+    Args:
+        profile_list: List of identifiers for Evidently profiles.
+
+    Returns:
+        A tuple of two lists of profile sections and tabs.
+
+    Raises:
+        ValueError: if the profile_section is not supported.
+    """
+    profile_list = profile_list or list(profile_mapper.keys())
+    try:
+        return (
+            [profile_mapper[profile]() for profile in profile_list],
+            [
+                dashboard_mapper[profile](verbose_level=verbose_level)
+                for profile in profile_list
+            ],
+        )
+    except KeyError as e:
+        nl = "\n"
+        raise ValueError(
+            f"Invalid profile sections: {profile_list} \n\n"
+            f"Valid and supported options are: {nl}- "
+            f'{f"{nl}- ".join(list(profile_mapper.keys()))}'
+        ) from e
 
 
 class EvidentlyDataValidator(BaseDataValidator):
@@ -29,71 +117,80 @@ class EvidentlyDataValidator(BaseDataValidator):
 
     # Class Configuration
     FLAVOR: ClassVar[str] = EVIDENTLY_DATA_VALIDATOR_FLAVOR
+    NAME: ClassVar[str] = "Evidently"
 
-
-    def data_comparison(
+    def data_profiling(
         self,
-        reference_dataset: pd.DataFrame,
-        target_dataset: pd.DataFrame,
-        model: Optional[Any] = None,
-        check_list: Optional[Sequence[str]] = None,
-        column_mapping: Optional[ColumnMapping],
+        dataset: pd.DataFrame,
+        comparison_dataset: Optional[pd.DataFrame] = None,
+        profile_list: Optional[Sequence[str]] = None,
+        column_mapping: Optional[ColumnMapping] = None,
+        verbose_level: int = 1,
         **kwargs: Any,
-    ) -> Any:
-        """Run one or more data comparison (data drift) checks.
-
-        Call this method to perform dataset comparison checks (e.g. data drift
-        checks) by comparing a target dataset to a reference dataset.
-
-        Some Deepchecks data comparison checks may require that a model be
-        present during the validation process to provide or dynamically generate
-        additional information (e.g. label predictions, prediction probabilities,
-        feature importance etc.) that is otherwise missing from the input
-        datasets. Where that is the case, the method also takes in a model as
-        argument. Alternatively, the missing information can be supplied using
-        custom `dataset_kwargs`, `check_kwargs` or `run_args` keyword
-        arguments.
-
-        The `check_list` argument may be used to specify a custom set of
-        Deepchecks data comparison checks to perform, identified by
-        `DeepchecksDataDriftCheck` enum values. If omitted, a suite with
-        all available data comparison checks that don't require a model as
-        input will be performed on the input datasets.
-        See `DeepchecksDataDriftCheck` for a list of Deepchecks builtin
-        checks that are compatible with this method.
+    ) -> Tuple[Profile, Dashboard]:
+        """Analyze a dataset and generate a data profile with Evidently.
 
         Args:
-            reference_dataset: Reference dataset (e.g. dataset used during model
-                training).
-            target_dataset: Dataset to be validated (e.g. dataset used during
-                model validation or new data used in production).
-            model: Optional model to use to provide or dynamically generate
-                additional information necessary for data comparison (e.g.
-                labels, prediction probabilities, feature importance etc.).
-            check_list: Optional list of ZenML Deepchecks check identifiers
-                specifying the data comparison checks to be performed.
-                `DeepchecksDataDriftCheck` enum values should be used as
-                elements.
-            dataset_kwargs: Additional keyword arguments to be passed to the
-                Deepchecks tabular.Dataset or vision.VisionData constructor.
-            check_kwargs: Additional keyword arguments to be passed to the
-                Deepchecks check object constructors. Arguments are grouped for
-                each check and indexed using the full check class name or
-                check enum value as dictionary keys.
-            run_kwargs: Additional keyword arguments to be passed to the
-                Deepchecks Suite `run` method.
-            kwargs: Additional keyword arguments (unused).
+            dataset: Target dataset to be profiled.
+            comparison_dataset: Optional dataset to be used for data profiles
+                that require a baseline for comparison (e.g data drift profiles).
+            profile_list: Optional list identifying the categories of Evidently
+                data profiles to be generated.
+            verbose_level: Level of verbosity for the Evidently dashboards.
+            **kwargs: Extra keyword arguments (unused).
 
         Returns:
-            A Datachecks SuiteResult with the results of the validation.
+            The Evidently Profile and Dashboard objects corresponding to the set
+            of generated profiles.
         """
-        return self._create_and_run_check_suite(
-            check_enum=DeepchecksDataDriftCheck,
-            reference_dataset=reference_dataset,
-            target_dataset=target_dataset,
-            model=model,
-            check_list=check_list,
-            dataset_kwargs=dataset_kwargs,
-            check_kwargs=check_kwargs,
-            run_kwargs=run_kwargs,
+        sections, tabs = get_profile_sections_and_tabs(
+            profile_list, verbose_level
         )
+        dashboard = Dashboard(tabs=tabs)
+        dashboard.calculate(
+            reference_data=dataset,
+            current_data=comparison_dataset,
+            column_mapping=column_mapping,
+        )
+        profile = Profile(sections=sections)
+        profile.calculate(
+            reference_data=dataset,
+            current_data=comparison_dataset,
+            column_mapping=column_mapping,
+        )
+        return profile, dashboard
+
+    def data_validation(
+        self,
+        dataset: pd.DataFrame,
+        comparison_dataset: Optional[pd.DataFrame] = None,
+        check_list: Optional[Sequence[str]] = None,
+        **kwargs: Any,
+    ) -> TestSuite:
+        """Run Evidently data validation checks on a dataset.
+
+        Args:
+            dataset: Target dataset to be validated.
+            comparison_dataset: Optional second dataset to be used for data
+                comparison checks (e.g data drift checks).
+            check_list: Optional list identifying the data checks to
+                be performed.
+            **kwargs: Implementation specific keyword arguments.
+
+        Raises:
+            NotImplementedError: if data validation is not
+                supported by this data validator.
+        """
+        data_drift_suite = TestSuite(
+            tests=[
+                TestShareOfDriftedFeatures(),
+                TestNumberOfDriftedFeatures(),
+            ]
+        )
+
+        data_drift_suite.run(
+            reference_data=dataset,
+            current_data=comparison_dataset,
+            column_mapping=ColumnMapping(),
+        )
+        return TestSuite

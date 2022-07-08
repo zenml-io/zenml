@@ -14,7 +14,7 @@ from zenml.integrations.constants import EVIDENTLY, SKLEARN
 from zenml.pipelines import pipeline
 
 
-@pipeline(required_integrations=[EVIDENTLY, SKLEARN])
+@pipeline(enable_cache=False, required_integrations=[EVIDENTLY, SKLEARN])
 def drift_detection_pipeline(
     data_loader,
     data_splitter,

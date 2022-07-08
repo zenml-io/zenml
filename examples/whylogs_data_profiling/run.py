@@ -18,7 +18,6 @@ from steps import (
     test_data_profiler,
     train_data_profiler,
 )
-from whylogs import DatasetProfile  # type: ignore
 
 from zenml.integrations.whylogs.visualizers import WhylogsVisualizer
 from zenml.logger import get_logger

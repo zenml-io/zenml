@@ -11,10 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the Great Expectations data validator for ZenML."""
+"""Initialization of the Evidently data validator for ZenML."""
 
-from zenml.integrations.great_expectations.data_validators.ge_data_validator import (
-    GreatExpectationsDataValidator,
+from zenml.integrations.evidently.data_validators.evidently_data_validator import (
+    EvidentlyDataValidator,
 )
 
-__all__ = ["GreatExpectationsDataValidator"]
+__all__ = ["EvidentlyDataValidator"]

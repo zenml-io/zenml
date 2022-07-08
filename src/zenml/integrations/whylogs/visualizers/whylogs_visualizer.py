@@ -15,9 +15,10 @@
 
 import tempfile
 from typing import Any, List, Optional
+import webbrowser
 
-from whylogs import DatasetProfile  # type: ignore
-from whylogs.viz import ProfileVisualizer, profile_viewer  # type: ignore
+from whylogs.core import DatasetProfileView  # type: ignore
+from whylogs.viz import NotebookProfileVisualizer
 
 from zenml.environment import Environment
 from zenml.logger import get_logger
@@ -63,7 +64,7 @@ class WhylogsVisualizer(BaseStepVisualizer):
                 method
         """
         whylogs_artifact_datatype = (
-            f"{DatasetProfile.__module__}.{DatasetProfile.__name__}"
+            f"{DatasetProfileView.__module__}.{DatasetProfileView.__name__}"
         )
         for artifact_name, artifact_view in object.outputs.items():
             # filter out anything but whylogs dataset profile artifacts
@@ -74,40 +75,40 @@ class WhylogsVisualizer(BaseStepVisualizer):
                 # separate viewers for now
                 self.visualize_profile(artifact_name, profile, plots)
 
-    @staticmethod
-    def _get_plot_method(
-        visualizer: ProfileVisualizer, plot: WhylogsPlots
-    ) -> Any:
-        """Get the Whylogs ProfileVisualizer plot method.
+    # @staticmethod
+    # def _get_plot_method(
+    #     visualizer: ProfileVisualizer, plot: WhylogsPlots
+    # ) -> Any:
+    #     """Get the Whylogs ProfileVisualizer plot method.
 
-        This will be the one corresponding to a WhylogsPlots enum value.
+    #     This will be the one corresponding to a WhylogsPlots enum value.
 
-        Args:
-            visualizer: a ProfileVisualizer instance
-            plot: a WhylogsPlots enum value
+    #     Args:
+    #         visualizer: a ProfileVisualizer instance
+    #         plot: a WhylogsPlots enum value
 
-        Raises:
-            ValueError: if the supplied WhylogsPlots enum value does not
-                correspond to a valid ProfileVisualizer plot method
+    #     Raises:
+    #         ValueError: if the supplied WhylogsPlots enum value does not
+    #             correspond to a valid ProfileVisualizer plot method
 
-        Returns:
-            The ProfileVisualizer plot method corresponding to the input
-            WhylogsPlots enum value
-        """
-        plot_method = getattr(visualizer, plot, None)
-        if plot_method is None:
-            nl = "\n"
-            raise ValueError(
-                f"Invalid whylogs plot type: {plot} \n\n"
-                f"Valid and supported options are: {nl}- "
-                f'{f"{nl}- ".join(WhylogsPlots.names())}'
-            )
-        return plot_method
+    #     Returns:
+    #         The ProfileVisualizer plot method corresponding to the input
+    #         WhylogsPlots enum value
+    #     """
+    #     plot_method = getattr(visualizer, plot, None)
+    #     if plot_method is None:
+    #         nl = "\n"
+    #         raise ValueError(
+    #             f"Invalid whylogs plot type: {plot} \n\n"
+    #             f"Valid and supported options are: {nl}- "
+    #             f'{f"{nl}- ".join(WhylogsPlots.names())}'
+    #         )
+    #     return plot_method
 
     def visualize_profile(
         self,
         name: str,
-        profile: DatasetProfile,
+        profile: DatasetProfileView,
         plots: Optional[List[WhylogsPlots]] = None,
     ) -> None:
         """Generate a visualization of a whylogs dataset profile.
@@ -119,25 +120,31 @@ class WhylogsVisualizer(BaseStepVisualizer):
             plots: optional list of whylogs plots to visualize. Defaults to
                 using all available plot types if not set
         """
+        visualization = NotebookProfileVisualizer()
+        visualization.set_profiles(target_profile_view=profile, reference_profile_view=profile)
+        rendered_html = visualization.summary_drift_report()
+
         if Environment.in_notebook():
-            from IPython.core.display import display
+            rendered_html
 
-            if not plots:
-                # default to using all plots if none are supplied
-                plots = list(WhylogsPlots)
+            # if not plots:
+            #     # default to using all plots if none are supplied
+            #     plots = list(WhylogsPlots)
 
-            for column in sorted(profile.columns):
-                for plot in plots:
-                    visualizer = ProfileVisualizer()
-                    visualizer.set_profiles([profile])
-                    plot_method = self._get_plot_method(visualizer, plot)
-                    display(plot_method(column))
+            # for column in sorted(list(profile.get_columns().keys())):
+            #     for plot in plots:
+            #         visualizer = ProfileVisualizer()
+            #         visualizer.set_profiles([profile])
+            #         plot_method = self._get_plot_method(visualizer, plot)
+            #         display(plot_method(column))
         else:
             logger.warning(
                 "The magic functions are only usable in a Jupyter notebook."
             )
             with tempfile.NamedTemporaryFile(
-                delete=False, suffix=f"-{name}.html"
+                mode="w", delete=False, suffix=".html", encoding="utf-8"
             ) as f:
-                logger.info("Opening %s in a new browser.." % f.name)
-                profile_viewer([profile], output_path=f.name)
+                f.write(rendered_html.data)
+                url = f"file:///{f.name}"
+            logger.info("Opening %s in a new browser.." % f.name)
+            webbrowser.open(url, new=2)

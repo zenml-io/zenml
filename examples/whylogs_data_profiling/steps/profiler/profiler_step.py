@@ -13,14 +13,18 @@
 #  permissions and limitations under the License.
 from zenml.integrations.whylogs.steps import whylogs_profiler_step
 
-# Another quick way of enhancing your pipeline with whylogs profiling features
+# A quick way of enhancing your pipeline with whylogs profiling features
 # is with the `whylogs_profiler_step` function, which creates a step that runs
 # whylogs data profiling on an input dataframe and returns the generated
 # profile as an output artifact.
 
 train_data_profiler = whylogs_profiler_step(
-    "train_data_profiler", dataset_name="train", tags={"datasetId": "model-15"}
+    step_name="train_data_profiler",
+    log_to_whylabs=True,
+    dataset_id="model-2",
 )
 test_data_profiler = whylogs_profiler_step(
-    "test_data_profiler", dataset_name="test", tags={"datasetId": "model-16"}
+    step_name="test_data_profiler",
+    log_to_whylabs=True,
+    dataset_id="model-3",
 )
