@@ -62,7 +62,7 @@ class LabelStudioDatasetSyncConfig(BaseStepConfig):
 def get_or_create_dataset(
     config: LabelStudioDatasetRegistrationConfig,
     context: StepContext,
-) -> int:
+) -> str:
     """Gets preexisting dataset or creates a new one."""
     annotator = context.stack.annotator
     if annotator and annotator._connection_available():
@@ -80,22 +80,22 @@ def get_or_create_dataset(
                 config
             )
         elif preexisting_dataset_list:
-            return preexisting_dataset_list[0].get_params()["id"]
+            return preexisting_dataset_list[0].get_params()["title"]
         else:
             raise StackComponentInterfaceError("No active annotator.")
 
-        return registered_dataset.get_params()["id"]
+        return registered_dataset.get_params()["title"]
     else:
         raise StackComponentInterfaceError("No active annotator.")
 
 
 @step
-def get_labeled_data(dataset_id: int, context: StepContext) -> List:
+def get_labeled_data(dataset_name: str, context: StepContext) -> List:
     """Gets labeled data from the dataset."""
     # TODO: have this check for new data *since the last time this step ran*
     annotator = context.stack.annotator
     if annotator and annotator._connection_available():
-        dataset = annotator.get_dataset(dataset_id)
+        dataset = annotator.get_dataset(dataset_name=dataset_name)
         return dataset.get_labeled_tasks()
     else:
         raise StackComponentInterfaceError("No active annotator.")
@@ -104,7 +104,7 @@ def get_labeled_data(dataset_id: int, context: StepContext) -> List:
 @step(enable_cache=False)
 def sync_new_data_to_label_studio(
     uri: str,
-    dataset_id: int,
+    dataset_name: str,
     predictions: List[Dict[str, Any]],
     config: LabelStudioDatasetSyncConfig,
     context: StepContext,
@@ -112,7 +112,7 @@ def sync_new_data_to_label_studio(
     """Syncs new data to Label Studio."""
     annotator = context.stack.annotator
     # TODO: check that annotator is connected before querying it
-    dataset = annotator.get_dataset(dataset_id)
+    dataset = annotator.get_dataset(dataset_name=dataset_name)
     artifact_store = context.stack.artifact_store
     if not uri.startswith(artifact_store.path):
         raise ValueError(

@@ -1400,7 +1400,9 @@ def register_annotator_subcommands() -> None:
                 dataset.get_params()["title"]
                 for dataset in annotator.get_datasets()
             ]
-            cli_utils.print_list_items(dataset_names)
+            cli_utils.print_list_items(
+                list_items=dataset_names, column_title="DATASETS"
+            )
 
         @dataset.command(
             "stats", context_settings={"ignore_unknown_options": True}
@@ -1450,13 +1452,21 @@ def register_annotator_subcommands() -> None:
             type=click.BOOL,
         )
         @click.pass_obj
-        def dataset_delete(annotator: "BaseAnnotator", name: str) -> None:
+        def dataset_delete(
+            annotator: "BaseAnnotator", name: str, all: bool
+        ) -> None:
             cli_utils.error(
                 "Currently unable to delete datasets. Awaiting updated version from Label Studio."
             )
-            cli_utils.declare(f"Deleting your dataset '{name}'")
-            annotator.delete_dataset(dataset_name=name)
-            cli_utils.declare(f"Dataset '{name}' has now been deleted.")
+            # cli_utils.declare(f"Deleting your dataset '{name}'")
+            # if all:
+            #     datasets = annotator.get_datasets()
+            #     for dataset in datasets:
+            #         dataset_name = dataset.get_params()["title"]
+            #         annotator.delete_dataset(dataset_name=dataset_name)
+            # else:
+            #     annotator.delete_dataset(dataset_name=name)
+            # cli_utils.declare(f"Dataset '{name}' has now been deleted.")
 
         @dataset.command(
             "annotate", context_settings={"ignore_unknown_options": True}

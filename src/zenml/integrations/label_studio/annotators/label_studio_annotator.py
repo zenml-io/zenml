@@ -75,7 +75,7 @@ class LabelStudioAnnotator(BaseAnnotator):
             return None
         return project.get_params()["id"]
 
-    def get_datasets(self) -> List[str]:
+    def get_datasets(self) -> List[Any]:
         """Gets the datasets currently available for annotation."""
         ls = self._get_client()
         return ls.get_projects()
