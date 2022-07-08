@@ -201,14 +201,11 @@ artifact_uri = os.path.join(artifact_path, "test.json")
 fileio.makedirs(artifact_path)
 
 with tempfile.NamedTemporaryFile(
-    mode="w", suffix=".json", delete=False
+    mode="w", suffix=".json", delete=True
 ) as f:
     external_lib.external_object.save_to_file(f.name)
     # Copy it into artifact store
     fileio.copy(f.name, artifact_uri)
-
-# Remove the temporary file
-fileio.remove(f.name)
 ```
 
 ```python
@@ -222,12 +219,9 @@ artifact_path = os.path.join(root_path, "artifacts", "examples")
 artifact_uri = os.path.join(artifact_path, "test.json")
 
 with tempfile.NamedTemporaryFile(
-    mode="w", suffix=".json", delete=False
+    mode="w", suffix=".json", delete=True
 ) as f:
     # Copy the serialized object from the artifact store
     fileio.copy(artifact_uri, f.name)
     external_lib.external_object.load_from_file(f.name)
-
-# Remove the temporary file
-fileio.remove(f.name)
 ```
