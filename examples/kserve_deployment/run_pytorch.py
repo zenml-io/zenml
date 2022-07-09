@@ -99,7 +99,7 @@ def main(
     deploy = config == DEPLOY or config == DEPLOY_AND_PREDICT
     predict = config == PREDICT or config == DEPLOY_AND_PREDICT
 
-    model_name = "mnist"
+    model_name = "mnist-pytorch"
     deployment_pipeline_name = "pytorch_training_deployment_pipeline"
     deployer_step_name = "kserve_model_deployer_step"
 

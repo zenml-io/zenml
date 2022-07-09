@@ -16,10 +16,9 @@
 import json
 import os
 import re
-from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple
 from uuid import UUID
 
-import numpy as np
 import requests
 from kserve import (
     KServeClient,
@@ -43,7 +42,7 @@ from zenml.services import (
 )
 
 if TYPE_CHECKING:
-    from numpy.typing import NDArray
+    pass
 
     from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (  # noqa
         KServeModelDeployer,
@@ -65,7 +64,7 @@ class KServeDeploymentConfig(ServiceConfig):
     """
 
     model_uri: str = ""
-    model_name: str = "model"
+    model_name: str
     secret_name: Optional[str]
     predictor: str
     replicas: int = 1
@@ -284,7 +283,10 @@ class KServeDeploymentService(BaseService):
         Returns:
             The name of the KServe inference service CRD.
         """
-        return f"zenml-{str(self.uuid)[:8]}"
+        return (
+            self._get_kubernetes_labels().get("zenml.model_name")
+            or f"zenml-{str(self.uuid)[:8]}"
+        )
 
     def _get_kubernetes_labels(self) -> Dict[str, str]:
         """Generate the labels for the KServe inference service CRD from the service configuration.
@@ -511,13 +513,10 @@ class KServeDeploymentService(BaseService):
             return None
 
         model_deployer = self._get_model_deployer()
-        model_name = (
-            self._get_kubernetes_labels().get("zenml.model_name") or "model"
-        )
         return os.path.join(
             model_deployer.base_url,
             "v1/models",
-            f"{model_name}:predict",
+            f"{self.crd_name}:predict",
         )
 
     @property
@@ -537,7 +536,7 @@ class KServeDeploymentService(BaseService):
         custom_domain = model_deployer.custom_domain or "example.com"
         return f"{self.crd_name}.{namespace}.{custom_domain}"
 
-    def predict(self, request: Union[str, "NDArray[Any]"]) -> Any:
+    def predict(self, request: str) -> Any:
         """Make a prediction using the service.
 
         Args:
@@ -565,8 +564,8 @@ class KServeDeploymentService(BaseService):
         headers = {"Host": self.prediction_hostname}
         if isinstance(request, str):
             request = json.loads(request)
-        elif isinstance(request, np.ndarray):
-            request = request.tolist()
+        else:
+            raise ValueError("Request must be a json string.")
         response = requests.post(
             self.prediction_url,
             headers=headers,

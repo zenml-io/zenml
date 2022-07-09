@@ -33,15 +33,17 @@ def tensorflow_training_deployment_pipeline(
     model_deployer(deployment_decision, model)
 
 
-@pipeline(enable_cache=True, required_integrations=[KSERVE, TENSORFLOW])
+@pipeline(
+    enable_cache=True,
+    required_integrations=[KSERVE, TENSORFLOW],
+    requirements=["opencv-python"],
+)
 def tensorflow_inference_pipeline(
-    dynamic_importer,
     predict_preprocessor,
     prediction_service_loader,
     predictor,
 ):
     # Link all the steps artifacts together
-    batch_data = dynamic_importer()
-    inference_data = predict_preprocessor(batch_data)
+    inference_data = predict_preprocessor()
     model_deployment_service = prediction_service_loader()
     predictor(model_deployment_service, inference_data)

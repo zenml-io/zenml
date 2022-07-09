@@ -66,6 +66,12 @@ def prepare_service_config(
         # the TensorFlow server expects model artifacts to be
         # stored in numbered subdirectories, each representing a model
         # version
+        served_model_uri = os.path.join(
+            served_model_uri,
+            config.service_config.predictor,
+            config.service_config.model_name,
+        )
+        fileio.makedirs(served_model_uri)
         io_utils.copy_dir(model_uri, os.path.join(served_model_uri, "1"))
     elif config.service_config.predictor == "sklearn":
         # the sklearn server expects model artifacts to be
@@ -76,12 +82,24 @@ def prepare_service_config(
                 f"Expected sklearn model artifact was not found at "
                 f"{model_uri}"
             )
+        served_model_uri = os.path.join(
+            served_model_uri,
+            config.service_config.predictor,
+            config.service_config.model_name,
+        )
+        fileio.makedirs(served_model_uri)
         fileio.copy(model_uri, os.path.join(served_model_uri, "model.joblib"))
     else:
         # default treatment for all other server implementations is to
         # simply reuse the model from the artifact store path where it
         # is originally stored
-        served_model_uri = model_uri
+        served_model_uri = os.path.join(
+            served_model_uri,
+            config.service_config.predictor,
+            config.service_config.model_name,
+        )
+        fileio.makedirs(served_model_uri)
+        fileio.copy(model_uri, served_model_uri)
 
     service_config = config.service_config.copy()
     service_config.model_uri = served_model_uri

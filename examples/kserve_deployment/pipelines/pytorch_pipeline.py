@@ -18,7 +18,7 @@ from zenml.pipelines import pipeline
 
 
 @pipeline(
-    enable_cache=False,
+    enable_cache=True,
     requirements=["torchvision"],
     required_integrations=[KSERVE, PYTORCH],
 )
@@ -37,7 +37,7 @@ def pytorch_training_deployment_pipeline(
 
 
 @pipeline(
-    enable_cache=False,
+    enable_cache=True,
     required_integrations=[KSERVE, PYTORCH],
     requirements=["torchvision"],
 )

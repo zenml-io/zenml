@@ -19,7 +19,7 @@ from zenml.integrations.kserve.steps import (
     kserve_model_deployer_step,
 )
 
-MODEL_NAME = "mnist"
+MODEL_NAME = "mnist-pytorch"
 
 pytorch_model_deployer = kserve_model_deployer_step(
     config=KServeDeployerStepConfig(

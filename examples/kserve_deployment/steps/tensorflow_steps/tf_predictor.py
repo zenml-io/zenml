@@ -21,11 +21,11 @@ from zenml.steps import step
 @step
 def tf_predictor(
     service: KServeDeploymentService,
-    data: np.ndarray,
+    data: str,
 ) -> None:
     """Run a inference request against a prediction service"""
 
     service.start(timeout=120)  # should be a NOP if already started
     prediction = service.predict(data)
-    prediction = prediction.argmax(axis=-1)
+    prediction = np.argmax(prediction, axis=1)
     rich_print("Prediction: ", prediction)

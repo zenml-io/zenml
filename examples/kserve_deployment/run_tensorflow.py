@@ -25,7 +25,6 @@ from steps.prediction_service_loader import (
 )
 from steps.tensorflow_steps import (
     TensorflowTrainerConfig,
-    dynamic_importer,
     importer_mnist,
     kserve_tensorflow_deployer,
     normalizer,
@@ -88,7 +87,7 @@ def main(
     deploy = config == DEPLOY or config == DEPLOY_AND_PREDICT
     predict = config == PREDICT or config == DEPLOY_AND_PREDICT
 
-    model_name = "mnist"
+    model_name = "mnist-tensorflow"
     deployment_pipeline_name = "tensorflow_training_deployment_pipeline"
     deployer_step_name = "kserve_model_deployer_step"
 
@@ -114,7 +113,6 @@ def main(
     if predict:
         # Initialize an inference pipeline run
         inference = tensorflow_inference_pipeline(
-            dynamic_importer=dynamic_importer(),
             predict_preprocessor=tf_predict_preprocessor(),
             prediction_service_loader=prediction_service_loader(
                 PredectionServiceLoaderStepConfig(
