@@ -2,6 +2,65 @@
 description: Control how data is persisted between steps.
 ---
 
+```python
+class MyObj:
+    def __init__(self, name: str):
+        self.name = name
+
+
+class MyMaterializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (MyObj,)
+    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
+
+    def handle_input(self, data_type: Type[MyObj]) -> MyObj:
+        """Read from artifact store"""
+        super().handle_input(data_type)
+        with fileio.open(os.path.join(self.artifact.uri, 'data.txt'),
+                         'r') as f:
+            name = f.read()
+        return MyObj(name=name)
+
+    def handle_return(self, my_obj: MyObj) -> None:
+        """Write to artifact store"""
+        super().handle_return(my_obj)
+        with fileio.open(os.path.join(self.artifact.uri, 'data.txt'),
+                         'w') as f:
+            f.write(my_obj.name)
+```
+
+For each input or output of your steps, you can define custom materializers to
+handle the loading and saving. You can configure them like this in the config:
+
+```yaml
+...
+steps:
+  step_1:
+    ...
+    materializers:
+      output_1:
+        name: <MaterializerName>
+        file: <relative/filepath>
+```
+
+Again the step name corresponds to the function or class name of your step. The
+materializer name refers to the class name of your materializer:
+
+```python
+from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.steps import step
+
+
+class MaterializerName(BaseMaterializer):
+    ...
+
+
+@step
+def step_name(...):
+    ...
+```
+
+
+
 A ZenML pipeline is built in a data-centric way. The outputs and inputs of steps
 define how steps are connected and the order in which they are executed. Each
 step should be considered as its very own process that reads and writes its
