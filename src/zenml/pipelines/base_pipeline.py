@@ -596,16 +596,16 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     )
 
     @classmethod
-    def get_runs(self) -> List["PipelineRunView"]:
+    def get_runs(cls) -> List["PipelineRunView"]:
         """Get all past runs from the associated PipelineView.
 
         Returns:
             A list of all past PipelineRunViews.
         """
-        return Repository().get_pipeline(self).runs
+        return Repository().get_pipeline(cls).runs
 
     @classmethod
-    def get_run(self, run_name: str) -> "PipelineRunView":
+    def get_run(cls, run_name: str) -> "PipelineRunView":
         """Get a specific past run from the associated PipelineView.
 
         Args:
@@ -614,4 +614,4 @@ class BasePipeline(metaclass=BasePipelineMeta):
         Returns:
             The PipelineRunView of the specific pipeline run.
         """
-        return Repository().get_pipeline(self).get_run(run_name)
+        return Repository().get_pipeline(cls).get_run(run_name)
