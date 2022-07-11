@@ -1,6 +1,6 @@
 # 🏷 Continuous Annotation with Label Studio
 
-Data annotation / labelling is a core part of MLOps that is frequently left out
+Data annotation / labeling is a core part of MLOps that is frequently left out
 of the conversation. ZenML offers a way to build continuous annotation (combining
 training and annotation into a loop) with Label Studio. This uses a combination
 of user-defined steps as well as some built-in steps that ZenML provides.
@@ -70,7 +70,7 @@ python run.py
 
 Once the pipeline has run, you can go to
 [http://localhost:8093/](http://localhost:8093/) and view the project. You can
-do some labelling there and any annotations you make will be imported and used the next
+do some labeling there and any annotations you make will be imported and used the next
 time you run the pipeline.
 
 
