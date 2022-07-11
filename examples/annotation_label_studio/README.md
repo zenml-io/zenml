@@ -5,6 +5,69 @@ of the conversation. ZenML offers a way to build continuous annotation (combinin
 training and annotation into a loop) with Label Studio. This uses a combination
 of user-defined steps as well as some built-in steps that ZenML provides.
 
+## Basic guide to running this example
+
+Running this example on Azure is the quickest way to get going. You can use the
+`annotationartifactstore` storage account and its
+`annotationartifactstoretesting` blob container as a test artifact store.
+
+Make sure to set the following two environment variables prior to running this
+pipeline:
+
+```shell
+export AZURE_STORAGE_ACCOUNT_KEY=<your_azure_account_key>
+export AZURE_STORAGE_ACCOUNT_NAME=<your_azure_account_name>
+```
+
+Then make sure you've installed the relevant integrations and dependencies:
+
+```shell
+zenml integration install label_studio -y
+pip install fastai huggingface_hub -Uqq
+```
+
+Setup your user credentials:
+
+```shell
+label-studio reset_password
+# follow the prompts and add a username + password combination
+label-studio start -p 8094
+```
+
+Then visit
+[http://localhost:8094/](http://localhost:8094/) to log in, then visit [http://localhost:8094/user/account](http://localhost:8094/user/account) and get
+your Label Studio API key (from the upper right hand corner). You will need it
+for the next step.
+
+Register your annotator with ZenML:
+
+```shell
+zenml annotator register label_studio --flavor label_studio --api_key="<your_label_studio_api_key_goes_here>"
+```
+
+Set up your (Azure) stack as follows:
+
+```shell
+# using the pre-built blob storage mentioned above
+zenml artifact-store register azure_artifact_store --flavor=azure --path="az://annotationartifactstoretesting"
+zenml stack copy default annotation
+zenml stack update annotation -a azure_artifact_store -an label_studio
+zenml stack set annotation
+zenml stack up
+```
+
+Run the pipeline with:
+
+```shell
+python run.py
+```
+
+(There are more elaborate steps required if you want to run this on AWS or GCP.)
+
+
+
+
+
 ## 🗺 Overview
 
 The example pipeline is simple as can be. In our one and only step we access the
