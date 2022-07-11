@@ -225,8 +225,9 @@ The `materializers` field of a step can be used to specify custom materializers
 of your step outputs and inputs.
 
 Materializers are responsible for saving and loading artifacts within each step.
-You will learn about materializers (and how to configure them in YAML config 
-files) later in the [Accessing pipeline runs](./materializer.md) section.
+For more details on materializers and how to configure them in YAML config
+files, see the [Materializers](../advanced-concepts/materializer.md#runtime-configuration.md)
+section in the list of advanced concepts.
 
 ### Code Summary
 
