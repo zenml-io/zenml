@@ -113,8 +113,10 @@ ExampleSecretSchema
 ExamplesRepo
 ExecutionStatus
 ExperimentTracker
+FASTAI
 FacetStatisticsVisualizer
 FastAPI
+FastaiLearnerMaterializer
 FeastFeatureStore
 FeastHistoricalFeaturesConfig
 FileExistsError
@@ -459,6 +461,7 @@ alerter
 alerters
 americas
 analytics
+annotationartifactstoretesting
 anonymized
 apache
 api
@@ -608,6 +611,7 @@ explainers
 extensibility
 fSDFfjklsdfj
 faq
+fastai
 fcdb
 fce
 fd
