@@ -28,6 +28,7 @@ stack component, please check the links below:
 | [Experiment Tracker](experiment-trackers.md) | Tracking your ML experiments                                      |
 | [Alerter](alerters.md)                       | Sending alerts through specified channels                         |
 
+Keep in mind that each pipeline run that you execute with ZenML will require a **stack** and each **stack** will be required to include at least an orchestrator, an artifact store, and a metadata store. The rest of the **stack components** are optional, and you can use them as you see fit.
 
 {% hint style="info" %}
 Keep in mind that ZenML is an open-source project. We appreciate and thrive on 

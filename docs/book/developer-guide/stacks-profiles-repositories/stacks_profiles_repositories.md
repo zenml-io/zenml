@@ -4,275 +4,181 @@ description: What are stacks, profiles, and repositories in ZenML?
 
 # Stacks, Profiles, Repositories
 
-## Stacks
-
 Machine learning in production is not just about designing and training models. It is a fractured space consisting of a wide variety of tasks ranging from experiment tracking to orchestration, from model deployment to monitoring, from drift detection to feature stores and much, much more than that. Even though there are already some seemingly well-established solutions for these tasks, it can become increasingly difficult to establish a running production system in a reliable and modular manner once all these solutions are brought together.
 
-This is a problem which is especially critical when switching from a research setting to a production setting. For instance, due to a lack of standards, the time and resources invested in a small PoC-like project can completely to waste, if the initial system can not be transferred to a production-grade setting.
+This is a problem which is especially critical when switching from a research setting to a production setting. 
+Due to a lack of standards, the time and resources invested in PoCs frequently go completely to waste, because the initial system can not easily be transferred to a production-grade setting.
 
-At **ZenML**, we believe that this is one of the most important and challenging problems in the field of MLOps, and it can be solved with a set of standards and well-structured abstractions. Owing to the nature of MLOps, it is essential that these abstractions not only cover concepts such as pipelines, steps and materializers which we covered in the previous guides but also the infrastructure elements that on which the pipelines run.
+At **ZenML**, we believe that this is one of the most important and challenging problems in the field of MLOps, and it can be solved with a set of standards and well-structured abstractions. Owing to the nature of MLOps, it is essential that these abstractions not only cover concepts such as pipelines and steps but also the infrastructure elements on which the pipelines run.
 
-Taking this into consideration, we will introduce three major concepts that ZenML is based on: **Stacks**, **Stack Components** and **Flavors**.
+Taking this into consideration, ZenML provides additional abstractions that
+help you simplify infrastructure configuration and management:
+- [Stacks](#stacks) represent different configurations of MLOps tools and 
+infrastructure; Each stack consists of multiple
+**Stack Components** that each come in several **Flavors**,
+- [Profiles](#profiles) manage these stacks and enable having various different
+ZenML configurations on the same machine,
+- [Repositories](#repositories) link stacks to the pipeline and step code of 
+your ML projects.
 
-### Stacks
+## Stacks
 
-In ZenML, a **stack** essentially represents a set of configurations for the infrastructure of your MLOps platform.
+In ZenML, a **Stack** represents a set of configurations for your MLOps tools
+and infrastructure. For instance, let's say you want to
 
-This is achieved by bringing together different types of **stack components**, that are responsible for specific tasks within your ML workflow. We will look at the base abstraction for the **stack components** in more detail in the next section. However, before we get there, let's first take a look at the list of all the stack component types that you can use within your **stack** in the table below:
+- Orchestrate your ML workflows with [KubeFlow](../mlops_stacks/orchestrators/kubeflow.md),
+- Save ML artifacts in an [Amazon S3](../mlops_stacks/artifact_stores/amazon_s3.md) bucket,
+- Track ML metadata in a managed [MySQL](../mlops_stacks/metadata_stores/mysql.md) database,
+- Monitor your models for data drift using [Evidently](../mlops_stacks/data_validators/evidently.md).
 
-| **Type of Stack Component**                        | **Description**                                                   |
-| -------------------------------------------------- | ----------------------------------------------------------------- |
-| [**Orchestrator (required)**](../extending-zenml/orchestrators.md)     | Orchestrating the runs of your pipeline                           |
-| [**Artifact Store (required)**](../extending-zenml/artifact-stores.md) | Storage for the artifacts created by your pipelines               |
-| [**Metadata Store (required)**](../extending-zenml/metadata-stores.md) | Tracking the execution of your pipelines/steps                    |
-| [Container Registry](../extending-zenml/container-registries.md)        | Store for your containers                                         |
-| [Secrets Manager](../extending-zenml/secrets-managers.md)              | Centralized location for the storage of your secrets              |
-| [Step Operator](../extending-zenml/step-operators.md)                  | Execution of individual steps in specialized runtime environments |
-| [Model Deployer](../extending-zenml/model-deployers.md)                | Services/platforms responsible for online model serving           |
-| [Feature Store](../extending-zenml/feature-stores.md)                  | Management of your data/features                                  |
-| [Experiment Tracker](../extending-zenml/experiment-trackers.md)        | Tracking your ML experiments                                      |
-| [Alerter](../extending-zenml/alerters.md)                              | Sending alerts through specified channels                         |
+In ZenML, each of those tools are associated to a specific **Stack Component**,
+which is responsible for one specific task of your ML workflow. For instance,
+each ZenML stack features an *Artifact Store* which is responsible for storing
+the artifacts generated by your pipelines, or an *Orchestrator* which is
+responsible for the execution of the steps within your pipeline. The specific
+tool you are using is then called a **Flavor** of this stack component. E.g.,
+*KubeFlow* is a flavor of the *Orchestrator* stack component.
+Out-of-the-box, ZenML already comes with a wide variety of flavors, which are
+either built-in or enabled through the installation of specific integrations.
+For a detailed overview of all stack commponents and available flavors, 
+check out the [MLOps Stacks](../mlops_stacks/categories.md) docs chapter.
 
-Keep in mind that each pipeline run that you execute with ZenML will require a **stack** and each **stack** will be required to include at least an orchestrator, an artifact store, and a metadata store. The rest of the **stack components** are optional, and you can use them as you see fit.
+Any such combination of stack component flavors can be registered as a separate
+stack in ZenML. Since ZenML code is tooling-independent, you can switch
+between stacks with a single command and then automatically execute your ML
+workflows on the desired stack without having to modify your code.
 
-### Base abstractions
+### The default Stack
 
-As **stacks** represent the entire configuration of your infrastructure, **stack components** represent the configuration of individual layers within your **stack** which conduct specific self-contained tasks. For instance, each ZenML **stack** features an artifact store which is responsible for storing the artifacts generated by your pipelines, or an orchestrator which is responsible for the execution of the steps within your pipeline.
+By default, ZenML itself and every [Repository](#repositories) that you create
+already come with an initial active `default` stack, which features a local 
+artifact store, a local metadata store, and a local orchestrator. 
 
-Speaking from structural standpoint, these **stack components** are built on top of base abstractions and in their core you will find the `StackComponent` class:
+If you followed the code examples in the 
+[Steps and Pipelines](steps-and-pipelines.md) section, then you have already
+used this stack implicitly to run all of your pipelines.
 
-```python
-from abc import ABC
-from pydantic import BaseModel, Field
-from typing import ClassVar
-from uuid import UUID, uuid4
+### Listing Stacks, Stack Components, and Flavors
 
-from zenml.enums import StackComponentType
-
-class StackComponent(BaseModel, ABC):
-    """Abstract class for all components of a ZenML stack."""
-
-    # Instance configuration
-    name: str
-    uuid: UUID = Field(default_factory=uuid4)
-
-    # Class parameters
-    TYPE: ClassVar[StackComponentType]
-    FLAVOR: ClassVar[str]
-
-    ...
-```
-
-There are a few things to unpack here. Let's talk about Pydantic first. Pydantic is a library for [data validation and settings management](https://pydantic-docs.helpmanual.io/). Using their `BaseModel` is helping us to configure and serialize these components while allowing us to add a validation layer to each stack component instance/implementation.
-
-You can already see how that comes into play here within the base `StackComponent` implementation. As you can see, each instance of a `StackComponent` needs to include a `name` and an auto-generated `uuid`. These variables will be tracked when we serialize the stack component object. (You can exclude an instance configuration parameter from the serialization by giving it a name which starts with `_`.)
-
-Moreover, you can use class variables by denoting them with the `ClassVar[..]`, which are also excluded from the serialization. Each `StackComponent` implementation features two important class variables called the `TYPE` and the `FLAVOR`. The `TYPE` is utilized when we set up the base implementation for a specific type of stack component whereas the `FLAVOR` parameter is used to denote different flavors (which we will cover in the next section).
-
-With these considerations, we can take a look at the `BaseArtifactStore` as an example:
-
-```python
-from typing import ClassVar, Set
-
-from zenml.enums import StackComponentType
-from zenml.stack import StackComponent
-
-
-class BaseArtifactStore(StackComponent):
-    """Abstract class for all ZenML artifact stores."""
-
-    # Instance configuration
-    path: str
-
-    # Class parameters
-    TYPE: ClassVar[StackComponentType] = StackComponentType.ARTIFACT_STORE
-    SUPPORTED_SCHEMES: ClassVar[Set[str]]
-
-    ...
-```
-
-As you can see, the `BaseArtifactStore` sets the correct `TYPE`, while introducing a new instance variable called `path` and class variable called `SUPPORTED_SCHEMES`, which will be used by all the subclasses of this base implementation.
-
-### Flavors
-
-Now that we have taken a look at the base abstraction of **stack components**, it is time to introduce the concept of **flavors**. In ZenML, a **flavor** represents an implementation of a specific type of **stack component** on top of its base abstraction. As an example, we can take a look at the `LocalArtifactStore`:
-
-```python
-from typing import ClassVar, Set
-
-from zenml.artifact_stores import BaseArtifactStore
-
-
-class LocalArtifactStore(BaseArtifactStore):
-    """Artifact Store for local artifacts."""
-
-    # Class configuration
-    FLAVOR: ClassVar[str] = "local"
-    SUPPORTED_SCHEMES: ClassVar[Set[str]] = {""}
-
-    ...
-```
-
-As you can see from the example above, the `LocalArtifactStore` inherits from the corresponding base abstraction `BaseArtifactStore` and implements a local version. While creating this class, it is critical to set the `FLAVOR` class variable, as we will use it as a reference when we create an instance of this stack component.
-
-Out-of-the-box, ZenML comes with a wide variety of **flavors**. These **flavors** are either built-in to the base ZenML library or enabled through the installation of specific integrations. In order to see all the available flavors for a specific type of stack component, you can use the CLI as:
-
-```shell
-zenml artifact-store flavor list
-```
-
-Through the base abstractions, ZenML also enables you to create your own flavors for any type of stack component. In order to achieve this, you can use the corresponding base abstraction, create your own implementation, and register it through the CLI:
-
-```python
-from typing import ClassVar, Set
-
-from zenml.artifact_stores import BaseArtifactStore
-
-
-class MyCustomArtifactStore(BaseArtifactStore):
-    """Custom artifact store implementation."""
-
-    # Class configuration
-    FLAVOR: ClassVar[str] = "custom"
-    SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"custom://"}
-
-    ...
-```
-
-followed by:
-
-```shell
-zenml artifact-store flavor register path.to.MyCustomArtifacStore
-```
-
-Once you register your new flavor, you can see it in the CLI with:
-
-```shell
-zenml artifact-store flavor list
-```
-
-### Stack components
-
-Following the flavors, we can take a look at how we can actually create, use and manage actual **stack components** through the CLI. For this purpose, we can keep using the artifact stores as an example.
-
-First, you can start by listing the artifact store instances. If you are using a fresh repository, you should see the default local artifact store.
-
-```shell
-zenml artifact-store list
-```
-
-Now, if you want to create a new instance of a stack component with a specific flavor, you can use the `register` command. When using this command, you need to provide a `NAME` for the instance and the required instance configuration parameters as `--param=value`.
-
-```shell
-zenml artifact-store register NAME --flavor=local --path=/path/to/your/store
-```
-
-{% hint style="info" %}
-Our CLI features a wide variety of commands that let you easily manage/use your flavors. If you would like to learn more, please do: "`zenml <stack-component-type> --help`" or visit [our CLI docs](https://apidocs.zenml.io/latest/cli/).
-{% endhint %}
-
-### Bringing it together
-
-Now that you know how to set up your stack components, let us dive into how you can use these instances to simply generate a stack:
-
-```shell
-zenml stack register STACK_NAME -o <name-of-your-orchestrator> \
-                                -a <name-of-your-artifact-store> \
-                                -m <name-of-your-metadata-store> \
-                                ...
-```
-
-Keep in mind that any ZenML repository that you created through `zenml init` already comes with an initial active `default` stack, which features a local artifact store, a local metadata store, and a local orchestrator. You can see all of your stacks with the following command:
+You can see a list of all your *registered* stacks with the following command:
 
 ```shell
 zenml stack list
 ```
 
-As mentioned before, each pipeline run in ZenML requires an **active stack**. In order to set one of your stack as active, you can use:
+Similarly, you can see all *registered* stack components of a specific type using:
 
 ```shell
-zenml stack set <name-of-your-stack>
+zenml <STACK_COMPONENT> list
 ```
 
-Once your stack is activated, you are ready to run the pipeline with the selected stack.
+In order to see all the *available* flavors for a specific stack component, use:
+
+```shell
+zenml <STACK_COMPONENT> flavor list
+```
 
 {% hint style="info" %}
 Our CLI features a wide variety of commands that let you easily manage/use your stacks. If you would like to learn more, please do: "`zenml stack --help`" or visit [our CLI docs](https://apidocs.zenml.io/latest/cli/).
 {% endhint %}
 
-### Runtime configuration
+### Registering New Stacks
 
-On top of the configuration through the instance parameters, you can also provide an additional runtime configuration to the stack components for your pipeline run. In order to achieve this, you need to provide these configuration parameters as key-value pairs when you run the pipeline:
+You can register and use a combination of tools and infrastructure as a ZenML
+stack as follows:
 
-```python
-pipeline.run(runtime_param_1=3, another_param='luna')
-```
+1. [Register a stack component](#registering-stack-components) for each tool 
+using `zenml <STACK_COMPONENT> register`,
+2. [Register a stack](#registering-a-stack) to bring all tools together using
+`zenml stack register`,
+3. [Activate the stack](#activating-a-stack) using `zenml stack set`. Now all
+your code is automatically executed using the desired tools / infrastructure.
 
-The provided parameters will be passed to the `prepare_pipeline_deployment` method of each stack component, and you can use this method as an entrypoint to configure your stack components even further.
+#### Registering Stack Components
 
-### Managing the state
+First, you need to create a new instance of the respective stack component
+with the desired flavor using `zenml <STACK_COMPONENT> register <NAME> --flavor=<FLAVOR>`. 
+Most flavors require further parameters that you can pass as additional arguments as `--param=value`, similar
+to how we passed the flavor.
 
-Through a set of properties and methods, the base interface of the `StackComponent` also allows you to control the state of your stack component:
-
-```python
-from abc import ABC
-from pydantic import BaseModel
-
-
-class StackComponent(BaseModel, ABC):
-    """Abstract class for all components of a ZenML stack."""
-    ...
-    
-    @property
-    def is_provisioned(self) -> bool:
-        """If the component provisioned resources to run."""
-        return True
-
-    @property
-    def is_running(self) -> bool:
-        """If the component is running."""
-        return True
-
-    def provision(self) -> None:
-        """Provisions resources to run the component."""
-
-    def deprovision(self) -> None:
-        """Deprovisions all resources of the component."""
-        
-    def resume(self) -> None:
-        """Resumes the provisioned resources of the component."""
-
-    def suspend(self) -> None:
-        """Suspends the provisioned resources of the component."""
-
-    ...
-```
-
-By default, each stack component is assumed to be in a provisioned and running state. However, if you are dealing with a component which requires you to manage its state, you can overwrite these methods. Once your implementation is complete, you can use either:
+E.g., to register a *local* artifact store, we could use the following command:
 
 ```shell
-zenml stack up
+zenml artifact-store register <ARTIFACT_STORE_NAME> --flavor=local --path=/path/to/your/store
 ```
 
-or
+Afterwards, you should be able to see the new artifact store in the
+list of registered artifact stores, which you can access using the following command:
 
 ```shell
-zenml artifact-store up NAME
+zenml artifact-store list
 ```
 
-to provision and resume your stack component(s) and
+{% hint style="info" %}
+Our CLI features a wide variety of commands that let you easily manage/use your
+stack components and flavors. If you would like to learn more, please run
+`zenml <STACK_COMPONENT> --help` or visit [our CLI docs](https://apidocs.zenml.io/latest/cli/).
+{% endhint %}
+
+#### Registering a Stack
+
+After registering each tool as the respective stack component, you can combine
+all of them into one stack using the `zenml stack register` command:
 
 ```shell
-zenml stack down 
+zenml stack register <STACK_NAME> --orchestrator <ORCHESTRATOR_NAME> \
+                                  --artifact-store <ARTIFACT_STORE_NAME> \
+                                  --metadata-store <METADATA_STORE_NAME> \
+                                  ...
 ```
 
-or
+{% hint style="info" %}
+You can use `zenml stack register --help` to see a list of all possible 
+arguments to the `zenml stack register` command, including a list of which 
+option to use for which stack component.
+{% endhint %}
+
+#### Activating a Stack
+
+Finally, to start using the stack you just registered, simply execute
 
 ```shell
-zenml artifact-store down NAME
+zenml stack set <STACK_NAME>
+```
+Now all your code is automatically executed using this stack.
+
+{% hint style="info" %}
+Some advanced stack component flavors might require infrastructure provisioning
+prior to running code on the stack. This can be done using `zenml stack up`.
+See the [Managing Stack States](stack-state-management.md) section for more details.
+{% endhint %}
+
+### Changing Stacks
+
+If you have multiple stacks configured, you can switch between them using the
+`zenml stack set` command, similar to how you [activate a stack](#activating-a-stack).
+
+### Unregistering Stacks
+
+To unregister (delete) a stack and all of its components, run
+
+```shell
+zenml stack delete <STACK_NAME>
 ```
 
-to suspend and deprovision it.
+to delete the stack itself, followed by
+
+```shell
+zenml <STACK_COMPONENT> delete <STACK_COMPONENT_NAME>
+```
+
+to delete each of the individual stack components.
+
+{% hint style="warning" %}
+If you provisioned infrastructure related to the stack, make sure to
+deprovision it using `zenml stack down --force` before unregistering the stack.
+See the [Managing Stack States](stack-state-management.md) section for more details.
+{% endhint %}
 
 ## Profiles
 
@@ -282,13 +188,6 @@ Components, and Stack Component Flavors in the
 machine where it is installed. The details of how ZenML stores this persistent
 data, where it is located, and how it is accessed can be configured via the 
 ZenML **Profile**.
-
-* [The default Profile](#the-default-profile) comes pre-installed with ZenML
-and only offers the most basic functionality.
-* Create additional local Profiles to manage [multiple ZenML instances on a single host](#multi-instance-zenml).
-* Use a different [store driver for your Profile](#shared-zenml-stores)
-to store ZenML information in a remote shared location and make Stack
-configurations available to multiple users and multiple hosts.
 
 ### The default Profile
 
