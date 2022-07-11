@@ -36,10 +36,10 @@ from typing import (
     ClassVar,
     Dict,
     List,
+    Literal,
     Optional,
     Tuple,
     Union,
-    Literal,
 )
 
 import kfp
