@@ -44,7 +44,7 @@ def download_image(url: str, destination: str) -> None:
     fileio.copy(full_url, f"{destination}/{filename}")
 
 
-def get_azure_credentials() -> Tuple[str]:
+def get_azure_credentials() -> Tuple[Optional[str], Optional[str]]:
     """Returns access credentials for Azure from the environment.
 
     Returns:
@@ -64,7 +64,7 @@ def get_gcs_credentials() -> Optional[str]:
     return os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
 
 
-def get_s3_credentials() -> Optional[str]:
+def get_s3_credentials() -> Tuple[Optional[str], Optional[str], Optional[str]]:
     """Returns access credentials for S3 from the environment.
 
     Returns:

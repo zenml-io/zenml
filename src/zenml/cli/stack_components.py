@@ -1367,7 +1367,7 @@ def register_annotator_subcommands() -> None:
     annotator_group = cli.commands.get("annotator")
     if annotator_group:
 
-        @annotator_group.group(
+        @annotator_group.group(  # type: ignore[attr-defined]
             cls=TagGroup,
             help="Commands for interacting with annotation datasets.",
         )

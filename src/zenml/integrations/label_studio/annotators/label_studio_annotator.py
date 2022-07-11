@@ -641,6 +641,6 @@ class LabelStudioAnnotator(BaseAnnotator):
             )
 
         ls = self._get_client()
-        return ls.sync_storage(
+        return ls.sync_storage(  # type: ignore[no-any-return]
             storage_id=storage["id"], storage_type=storage["type"]
         )
