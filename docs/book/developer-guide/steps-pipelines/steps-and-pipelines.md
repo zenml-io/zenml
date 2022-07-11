@@ -4,6 +4,10 @@ description: Create Steps, Build a Pipeline and Run it.
 
 # Steps & Pipelines
 
+ZenML helps you standardize your ML workflows as ML **Pipelines** consisting of
+decoupled, modular **Steps**. This enables you to write portable code that can be
+moved from experimentation to production in seconds.
+
 {% hint style="info" %}
 If you are new to MLOps and would like to learn more about ML pipelines in 
 general, checkout [ZenBytes](https://github.com/zenml-io/zenbytes), our lesson
