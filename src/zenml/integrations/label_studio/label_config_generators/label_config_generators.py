@@ -22,8 +22,8 @@ logger = get_logger(__name__)
 
 
 TASK_TO_FILENAME_REFERENCE_MAPPING = {
-    AnnotationTasks.IMAGE_CLASSIFICATION: "image",
-    AnnotationTasks.OBJECT_DETECTION_BOUNDING_BOXES: "image",
+    str(AnnotationTasks.IMAGE_CLASSIFICATION): "image",
+    str(AnnotationTasks.OBJECT_DETECTION_BOUNDING_BOXES): "image",
 }
 
 

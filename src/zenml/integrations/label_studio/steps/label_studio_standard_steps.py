@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of standard steps for the Label Studio annotator integration."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 from urllib.parse import urlparse
 
 from zenml.exceptions import StackComponentInterfaceError
@@ -130,11 +130,11 @@ def get_or_create_dataset(
                 config
             )
         elif preexisting_dataset_list:
-            return preexisting_dataset_list[0].get_params()["title"]
+            return cast(str, preexisting_dataset_list[0].get_params()["title"])
         else:
             raise StackComponentInterfaceError("No active annotator.")
 
-        return registered_dataset.get_params()["title"]
+        return cast(str, registered_dataset.get_params()["title"])
     else:
         raise StackComponentInterfaceError("No active annotator.")
 

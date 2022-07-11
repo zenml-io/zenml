@@ -17,9 +17,9 @@ import os
 import subprocess
 import sys
 import webbrowser
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional, cast
 
-from label_studio_sdk import Client, Project
+from label_studio_sdk import Client, Project  # type: ignore[import]
 
 from zenml.annotators.base_annotator import BaseAnnotator
 from zenml.exceptions import ProvisioningError
@@ -251,7 +251,7 @@ class LabelStudioAnnotator(BaseAnnotator):
                 daemon.stop_daemon(self._pid_file_path)
                 fileio.remove(self._pid_file_path)
 
-    def launch(self, url: str) -> None:
+    def launch(self, url: Optional[str]) -> None:
         """Launches the annotation interface.
 
         Args:
@@ -443,7 +443,7 @@ class LabelStudioAnnotator(BaseAnnotator):
         query_url = f"/api/storages/azure?project={dataset_id}"
         response = ls.make_request(method="GET", url=query_url)
         if response.status_code == 200:
-            return response.json()
+            return cast(List[Dict[str, Any]], response.json())
         else:
             raise ConnectionError(
                 f"Unable to get list of import storage sources. Client raised HTTP error {response.status_code}."
@@ -468,7 +468,7 @@ class LabelStudioAnnotator(BaseAnnotator):
         query_url = f"/api/storages/gcs?project={dataset_id}"
         response = ls.make_request(method="GET", url=query_url)
         if response.status_code == 200:
-            return response.json()
+            return cast(List[Dict[str, Any]], response.json())
         else:
             raise ConnectionError(
                 f"Unable to get list of import storage sources. Client raised HTTP error {response.status_code}."
@@ -493,7 +493,7 @@ class LabelStudioAnnotator(BaseAnnotator):
         query_url = f"/api/storages/s3?project={dataset_id}"
         response = ls.make_request(method="GET", url=query_url)
         if response.status_code == 200:
-            return response.json()
+            return cast(List[Dict[str, Any]], response.json())
         else:
             raise ConnectionError(
                 f"Unable to get list of import storage sources. Client raised HTTP error {response.status_code}."
@@ -557,7 +557,7 @@ class LabelStudioAnnotator(BaseAnnotator):
         ls = self._get_client()
         dataset = ls.get_project(dataset_id)
         if dataset:
-            return dataset.parsed_label_config
+            return cast(Dict[str, Any], dataset.parsed_label_config)
         else:
             raise ValueError("No dataset found for the given id.")
 
@@ -566,7 +566,7 @@ class LabelStudioAnnotator(BaseAnnotator):
         uri: str,
         config: LabelStudioDatasetSyncConfig,
         dataset: Project,
-    ) -> Dict[str, Any]:
+    ) -> Optional[Dict[str, Any]]:
         """Syncs the external storage for the given project.
 
         Args:
@@ -581,7 +581,7 @@ class LabelStudioAnnotator(BaseAnnotator):
             ValueError: If the storage type is not supported.
         """
         if self._storage_source_already_exists(uri, config, dataset):
-            return
+            return None
         if config.storage_type == "azure":
             if not config.azure_account_name or not config.azure_account_key:
                 logger.warn(
@@ -641,6 +641,9 @@ class LabelStudioAnnotator(BaseAnnotator):
             )
 
         ls = self._get_client()
-        return ls.sync_storage(  # type: ignore[no-any-return]
-            storage_id=storage["id"], storage_type=storage["type"]
+        return cast(
+            Dict[str, Any],
+            ls.sync_storage(
+                storage_id=storage["id"], storage_type=storage["type"]
+            ),
         )
