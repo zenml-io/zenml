@@ -141,9 +141,10 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
             ignored_columns: columns to ignore when creating evidently profile
 
         Raises:
-            ValueError: If ignore cols is of incorrect type or emptylist
-                or has duplicate features or if one or more features is not found
-                in either reference/comparison datasets
+            TypeError: If ignore cols is of incorrect type
+                or if list elements are not of type string.
+            ValueError: If column is not found in reference or comparison
+                dataset
 
         Returns:
             profile: dictionary report extracted from an Evidently Profile
@@ -165,7 +166,7 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
             set(ignored_columns).issubset(set(comparison_dataset.columns))
         ):
             raise ValueError(
-                "Column name is not found in reference/comparison datasets"
+                "Column name is not found in reference or comparison datasets"
             )
         elif len(ignored_columns) != 0:
             reference_dataset = reference_dataset.drop(
