@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of label config generators for Label Studio."""
 
 from typing import List, Tuple
 
@@ -31,7 +32,14 @@ def generate_image_classification_label_config(
 ) -> Tuple[str, str]:
     """Generates a Label Studio label config for image classification.
 
-    This is based on the basic config example shown at https://labelstud.io/templates/image_classification.html.
+    This is based on the basic config example shown at
+    https://labelstud.io/templates/image_classification.html.
+
+    Args:
+        labels: A list of labels to be used in the label config.
+
+    Returns:
+        A tuple of the generated label config and the label config type.
     """
     label_config_type = AnnotationTasks.IMAGE_CLASSIFICATION
 
@@ -55,7 +63,14 @@ def generate_basic_object_detection_bounding_boxes_label_config(
 ) -> Tuple[str, str]:
     """Generates a Label Studio config for object detection with bounding boxes.
 
-    This is based on the basic config example shown at https://labelstud.io/templates/image_bbox.html.
+    This is based on the basic config example shown at
+    https://labelstud.io/templates/image_bbox.html.
+
+    Args:
+        labels: A list of labels to be used in the label config.
+
+    Returns:
+        A tuple of the generated label config and the label config type.
     """
     label_config_type = AnnotationTasks.OBJECT_DETECTION_BOUNDING_BOXES
 

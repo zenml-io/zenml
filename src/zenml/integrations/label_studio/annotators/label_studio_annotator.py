@@ -395,8 +395,7 @@ class LabelStudioAnnotator(BaseAnnotator):
         )
 
     def get_parsed_label_config(self, dataset_id: int) -> Dict[str, Any]:
-        """Returns the parsed Label Studio labeling configuration for a
-        dataset."""
+        """Returns the parsed Label Studio label config for a dataset."""
         # TODO: check if client actually is connected etc
         ls = self._get_client()
         dataset = ls.get_project(dataset_id)

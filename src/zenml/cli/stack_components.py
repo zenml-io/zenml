@@ -1373,7 +1373,7 @@ def register_annotator_subcommands() -> None:
         )
         @click.pass_context
         def dataset(ctx: click.Context) -> None:
-            """Do something"""
+            """Interact with ZenML annotator datasets."""
             repo = Repository()
             active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
             annotator_wrapper = active_stack.get_component_wrapper(
@@ -1395,7 +1395,11 @@ def register_annotator_subcommands() -> None:
         )
         @click.pass_obj
         def dataset_list(annotator: "BaseAnnotator") -> None:
-            """List the available datasets."""
+            """List the available datasets.
+
+            Args:
+                annotator: The annotator stack component.
+            """
             dataset_names = [
                 dataset.get_params()["title"]
                 for dataset in annotator.get_datasets()
@@ -1413,6 +1417,12 @@ def register_annotator_subcommands() -> None:
         )
         @click.pass_obj
         def dataset_stats(annotator: "BaseAnnotator", name: str) -> None:
+            """Display statistics about a dataset.
+
+            Args:
+                annotator: The annotator stack component.
+                name: The name of the dataset.
+            """
             projects = annotator.get_datasets()
             # TODO: make it impossible to create new datasets with same name
             try:
@@ -1455,6 +1465,15 @@ def register_annotator_subcommands() -> None:
         def dataset_delete(
             annotator: "BaseAnnotator", name: str, all: bool
         ) -> None:
+            """Delete a dataset.
+
+            If the --all flag is used, all datasets will be deleted.
+
+            Args:
+                annotator: The annotator stack component.
+                name: Name of the dataset to delete.
+                all: Whether to delete all datasets.
+            """
             cli_utils.error(
                 "Currently unable to delete datasets. Awaiting updated version from Label Studio."
             )
@@ -1478,6 +1497,12 @@ def register_annotator_subcommands() -> None:
         )
         @click.pass_obj
         def dataset_annotate(annotator: "BaseAnnotator", name: str) -> None:
+            """Command to launch the annotation interface for a dataset.
+
+            Args:
+                annotator: The annotator stack component.
+                name: Name of the dataset
+            """
             cli_utils.declare(
                 f"Launching the annotation interface for dataset '{name}'."
             )

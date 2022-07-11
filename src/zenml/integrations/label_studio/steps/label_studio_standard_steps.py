@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of standard steps for the Label Studio annotator integration."""
 
 from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
@@ -32,11 +33,49 @@ logger = get_logger(__name__)
 
 
 class LabelStudioDatasetRegistrationConfig(BaseStepConfig):
+    """Step config  when registering a dataset with Label Studio.
+
+    Attributes:
+        label_config: The label config to use for the annotation interface.
+        dataset_name: Name of the dataset to register.
+    """
+
     label_config: str
     dataset_name: str
 
 
 class LabelStudioDatasetSyncConfig(BaseStepConfig):
+    """Step config when syncing data to Label Studio.
+
+    Attributes:
+        storage_type: The type of storage to sync to.
+        label_config_type: The type of label config to use.
+
+        prefix: Specify the prefix within the cloud store to import your data
+            from.
+        regex_filter: Specify a regex filter to filter the files to import.
+        use_blob_urls: Specify whether your data is raw image or video data, or
+            JSON tasks.
+        presign: Specify whether or not to create presigned URLs.
+        presign_ttl: Specify how long to keep presigned URLs active.
+        description: Specify a description for the dataset.
+
+        azure_account_name: Specify the Azure account name to use for the
+            storage.
+        azure_account_key: Specify the Azure account key to use for the
+            storage.
+        google_application_credentials: Specify the Google application
+            credentials to use for the storage.
+        aws_access_key_id: Specify the AWS access key ID to use for the
+            storage.
+        aws_secret_access_key: Specify the AWS secret access key to use for the
+            storage.
+        aws_session_token: Specify the AWS session token to use for the
+            storage.
+        region_name: Specify the S3 region name to use for the storage.
+        s3_endpoint: Specify the S3 endpoint to use for the storage.
+    """
+
     storage_type: str
     label_config_type: str
 
@@ -63,7 +102,18 @@ def get_or_create_dataset(
     config: LabelStudioDatasetRegistrationConfig,
     context: StepContext,
 ) -> str:
-    """Gets preexisting dataset or creates a new one."""
+    """Gets preexisting dataset or creates a new one.
+
+    Args:
+        config: Step config.
+        context: Step context.
+
+    Returns:
+        The dataset name.
+
+    Raises:
+        StackComponentInterfaceError: If no active annotator could be found.
+    """
     annotator = context.stack.annotator
     if annotator and annotator._connection_available():
         preexisting_dataset_list = [
@@ -91,7 +141,18 @@ def get_or_create_dataset(
 
 @step
 def get_labeled_data(dataset_name: str, context: StepContext) -> List:
-    """Gets labeled data from the dataset."""
+    """Gets labeled data from the dataset.
+
+    Args:
+        dataset_name: Name of the dataset.
+        context: The StepContext.
+
+    Returns:
+        List of labeled data.
+
+    Raises:
+        StackComponentInterfaceError: If no active annotator could be found.
+    """
     # TODO: have this check for new data *since the last time this step ran*
     annotator = context.stack.annotator
     if annotator and annotator._connection_available():
@@ -109,7 +170,19 @@ def sync_new_data_to_label_studio(
     config: LabelStudioDatasetSyncConfig,
     context: StepContext,
 ) -> None:
-    """Syncs new data to Label Studio."""
+    """Syncs new data to Label Studio.
+
+    Args:
+        uri: The URI of the data to sync.
+        dataset_name: The name of the dataset to sync to.
+        predictions: The predictions to sync.
+        config: The config for the sync.
+        context: The StepContext.
+
+    Raises:
+        ValueError: if you are trying to sync from outside ZenML.
+        StackComponentInterfaceError: If no active annotator could be found.
+    """
     annotator = context.stack.annotator
     # TODO: check that annotator is connected before querying it
     dataset = annotator.get_dataset(dataset_name=dataset_name)

@@ -669,6 +669,7 @@ def print_list_items(list_items: List[str], column_title: str) -> None:
 
     Args:
         list_items: List of items
+        column_title: Title of the column
     """
     rich_table = table.Table(
         box=box.HEAVY_EDGE,
