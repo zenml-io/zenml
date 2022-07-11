@@ -46,6 +46,7 @@ from zenml.integrations.registry import integration_registry
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.pipelines.schedule import Schedule
+from zenml.post_execution import PipelineRunView
 from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.steps import BaseStep
@@ -595,7 +596,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     )
 
     @classmethod
-    def get_runs(self):
+    def get_runs(self) -> List["PipelineRunView"]:
         """Get all past runs from the associated PipelineView.
 
         Returns:
@@ -604,7 +605,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         return Repository().get_pipeline(self).runs
 
     @classmethod
-    def get_run(self, run_name: str):
+    def get_run(self, run_name: str) -> "PipelineRunView":
         """Get a specific past run from the associated PipelineView.
 
         Args:
