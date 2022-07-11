@@ -35,6 +35,7 @@
 
 * [Categories of MLOps Tools](mlops_stacks/categories.md)
 * [Integration Overview](mlops_stacks/integrations.md)
+* [Extending ZenML](mlops_stacks/extending.md)
 * [Orchestrators](mlops_stacks/orchestrators/overview.md)
   * [Local Orchestrator](mlops_stacks/orchestrators/local.md)
   * [Airflow Orchestrator](mlops_stacks/orchestrators/airflow.md)
