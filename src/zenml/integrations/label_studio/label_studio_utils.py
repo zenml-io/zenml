@@ -16,6 +16,20 @@ import os
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import quote, urlparse
 
+from zenml.io import fileio
+
+
+def parse_azure_url(url: str) -> Tuple[str, str]:
+    """Converts Azure Label Studio URL to path for fileio."""
+    pth = urlparse(url).path
+    return f"az://{pth}", pth.split("/")[-1]
+
+
+def download_image(url: str, destination: str) -> None:
+    """Downloads an image using fileio."""
+    full_url, filename = parse_azure_url(url)
+    fileio.copy(full_url, f"{destination}/{filename}")
+
 
 def get_azure_credentials() -> Tuple[str]:
     # TODO: add other ways to get credentials
