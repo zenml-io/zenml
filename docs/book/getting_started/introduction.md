@@ -2,7 +2,13 @@
 description: Start here with the ZenML Docs.
 ---
 
-# ZenML
+# Introduction
+
+Are you a machine learning engineer or data scientist wanting to deploy models to production?
+Do you struggle with versioning data, code, and models in your projects?
+Have you had trouble replicating production pipelines?
+
+If you answered yes to any of the questions, **ZenML** is here to help with all that, and more. 
 
 **ZenML** is an extensible, open-source MLOps framework for creating 
 portable, production-ready MLOps pipelines. Built 
@@ -18,11 +24,23 @@ common ML development tasks. ZenML is not here to replace the great tools that
 solve these individual problems. Rather, it offers an **extensible framework** and a
 standard abstraction to write and build your workflows.
 
+## Why ZenML
+
+ZenML pipelines are designed to be written early in the development lifecycle. Data scientists can explore their pipelines as they develop towards production, switching stacks from local to cloud deployments with ease. You can read more about why we started building ZenML on our blog. By using ZenML in the early stages of your project, you get the following benefits:
+
++ Extensible so you can build out the framework to suit your specific needs.
++ Reproducibility of training and inference workflows.
++ A simple and clear way to represent the steps of your pipeline in code.
++ Batteries-included integrations: bring all your favorite tools together.
++ Easy switch between local and cloud stacks.
++ Painless deployment and configuration of infrastructure.
+
+
 ## **Pipelining** - Take your first ZenML Steps
 
 Every journey has to start somewhere, if you are new to ZenML, you might want to
 get acquainted with the [core concepts](core-concepts.md) first, 
-to understand what makes ZenML so special. Afterwards, you could jump right 
+to understand what makes ZenML so special. Afterward, you could jump right 
 into our [developer guide](developer-guide/installation.md) that will 
 take you from zero to hero in no time and explain the necessary knowledge of 
 **how to use ZenML**.
@@ -49,5 +67,5 @@ in our section on [collaboration](collaborate/collaborate-with-zenml.md).
 
 ## **Resources** - Learn ZenML with tutorials, examples, and guides
 
-The ZenML team and community has put together many more resources other than the 
+The ZenML team and community have put together many more resources other than the 
 documentation to learn about the framework. Learn more in our section on [resources](resources/index.md).
