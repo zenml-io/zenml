@@ -41,8 +41,8 @@ class LabelStudioAnnotator(BaseAnnotator):
     """Class to interact with the Label Studio annotation interface.
 
     Attributes:
-        api_key: The API key to use for authentication.
         port: The port to use for the annotation interface.
+        api_key: The API key to use for authentication.
         project_name: The name of the project to interact with.
     """
 
@@ -53,16 +53,34 @@ class LabelStudioAnnotator(BaseAnnotator):
     FLAVOR: ClassVar[str] = LABEL_STUDIO_ANNOTATOR_FLAVOR
 
     def get_url(self) -> str:
-        """Gets the URL of the annotation interface."""
+        """Gets the top-level URL of the annotation interface.
+
+        Returns:
+            The URL of the annotation interface.
+        """
         return f"http://localhost:{self.port}"
 
     def get_annotation_url(self, name: str) -> str:
-        """Gets the URL of the annotation interface."""
+        """Gets the URL of the annotation interface for the given dataset.
+
+        Args:
+            name: The name of the dataset.
+
+        Returns:
+            The URL of the annotation interface.
+        """
         project_id = self.get_id_from_name(name)
         return f"{self.get_url()}/projects/{project_id}/"
 
     def get_id_from_name(self, name: str) -> Optional[int]:
-        """Gets the ID of the given dataset."""
+        """Gets the ID of the given dataset.
+
+        Args:
+            name: The name of the dataset.
+
+        Returns:
+            The ID of the dataset.
+        """
         ls = self._get_client()
         projects = ls.get_projects()
         try:
@@ -76,7 +94,11 @@ class LabelStudioAnnotator(BaseAnnotator):
         return project.get_params()["id"]
 
     def get_datasets(self) -> List[Any]:
-        """Gets the datasets currently available for annotation."""
+        """Gets the datasets currently available for annotation.
+
+        Returns:
+            A list of datasets.
+        """
         ls = self._get_client()
         return ls.get_projects()
 
