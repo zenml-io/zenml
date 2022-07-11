@@ -10,7 +10,7 @@ Machine learning in production is not just about designing and training models. 
 
 This is a problem which is especially critical when switching from a research setting to a production setting. For instance, due to a lack of standards, the time and resources invested in a small PoC-like project can completely to waste, if the initial system can not be transferred to a production-grade setting.
 
-At **ZenML**, we believe that this is one of the most important and challenging problems in the field of MLOps, and it can be solved with a set of standards and well-structured abstractions. Owing to the nature of MLOps, it is essential that these abstractions not only cover concepts such as pipelines, steps and materializers which we covered in the previous guides but also the infrastructure elements that on which the pipelines run.
+At **ZenML**, we believe that this is one of the most important and challenging problems in the field of MLOps, and it can be solved with a set of standards and well-structured abstractions. Owing to the nature of MLOps, it is essential that these abstractions not only cover concepts such as pipelines and steps which we covered in the previous sections but also the infrastructure elements that on which the pipelines run.
 
 Taking this into consideration, we will introduce three major concepts that ZenML is based on: **Stacks**, **Stack Components** and **Flavors**.
 
@@ -210,70 +210,6 @@ pipeline.run(runtime_param_1=3, another_param='luna')
 
 The provided parameters will be passed to the `prepare_pipeline_deployment` method of each stack component, and you can use this method as an entrypoint to configure your stack components even further.
 
-### Managing the state
-
-Through a set of properties and methods, the base interface of the `StackComponent` also allows you to control the state of your stack component:
-
-```python
-from abc import ABC
-from pydantic import BaseModel
-
-
-class StackComponent(BaseModel, ABC):
-    """Abstract class for all components of a ZenML stack."""
-    ...
-    
-    @property
-    def is_provisioned(self) -> bool:
-        """If the component provisioned resources to run."""
-        return True
-
-    @property
-    def is_running(self) -> bool:
-        """If the component is running."""
-        return True
-
-    def provision(self) -> None:
-        """Provisions resources to run the component."""
-
-    def deprovision(self) -> None:
-        """Deprovisions all resources of the component."""
-        
-    def resume(self) -> None:
-        """Resumes the provisioned resources of the component."""
-
-    def suspend(self) -> None:
-        """Suspends the provisioned resources of the component."""
-
-    ...
-```
-
-By default, each stack component is assumed to be in a provisioned and running state. However, if you are dealing with a component which requires you to manage its state, you can overwrite these methods. Once your implementation is complete, you can use either:
-
-```shell
-zenml stack up
-```
-
-or
-
-```shell
-zenml artifact-store up NAME
-```
-
-to provision and resume your stack component(s) and
-
-```shell
-zenml stack down 
-```
-
-or
-
-```shell
-zenml artifact-store down NAME
-```
-
-to suspend and deprovision it.
-
 ## Profiles
 
 ZenML implicitly stores all the information about the configured Stacks, Stack
@@ -282,13 +218,6 @@ Components, and Stack Component Flavors in the
 machine where it is installed. The details of how ZenML stores this persistent
 data, where it is located, and how it is accessed can be configured via the 
 ZenML **Profile**.
-
-* [The default Profile](#the-default-profile) comes pre-installed with ZenML
-and only offers the most basic functionality.
-* Create additional local Profiles to manage [multiple ZenML instances on a single host](#multi-instance-zenml).
-* Use a different [store driver for your Profile](#shared-zenml-stores)
-to store ZenML information in a remote shared location and make Stack
-configurations available to multiple users and multiple hosts.
 
 ### The default Profile
 
