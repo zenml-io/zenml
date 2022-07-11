@@ -1373,7 +1373,11 @@ def register_annotator_subcommands() -> None:
         )
         @click.pass_context
         def dataset(ctx: click.Context) -> None:
-            """Interact with ZenML annotator datasets."""
+            """Interact with ZenML annotator datasets.
+
+            Args:
+                ctx: The click Context object.
+            """
             repo = Repository()
             active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
             annotator_wrapper = active_stack.get_component_wrapper(

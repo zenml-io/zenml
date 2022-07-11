@@ -35,11 +35,19 @@ class BaseAnnotator(StackComponent, ABC):
 
     @abstractmethod
     def get_url(self) -> str:
-        """Gets the URL of the annotation interface."""
+        """Gets the URL of the annotation interface.
+
+        Returns:
+            The URL of the annotation interface.
+        """
 
     @abstractmethod
     def get_datasets(self) -> List[Any]:
-        """Gets the datasets currently available for annotation."""
+        """Gets the datasets currently available for annotation.
+
+        Returns:
+            The datasets currently available for annotation.
+        """
 
     @abstractmethod
     def launch(self) -> None:
@@ -47,20 +55,57 @@ class BaseAnnotator(StackComponent, ABC):
 
     @abstractmethod
     def add_dataset(self, *args, **kwargs) -> Any:
-        """Registers a dataset for annotation."""
+        """Registers a dataset for annotation.
+
+        Args:
+            *args: positional arguments.
+            **kwargs: keyword arguments.
+
+        Returns:
+            The dataset or confirmation object on adding the dataset.
+        """
 
     @abstractmethod
     def get_dataset(self, *args, **kwargs) -> Any:
-        """Gets the dataset with the given name."""
+        """Gets the dataset with the given name.
+
+        Args:
+            *args: positional arguments.
+            **kwargs: keyword arguments.
+
+        Returns:
+            The dataset with the given name.
+        """
 
     @abstractmethod
     def delete_dataset(self, *args, **kwargs) -> None:
-        """Deletes a dataset."""
+        """Deletes a dataset.
+
+        Args:
+            *args: positional arguments.
+            **kwargs: keyword arguments.
+        """
 
     @abstractmethod
     def get_labeled_data(self, *args, **kwargs) -> Any:
-        """Gets the labeled data for the given dataset."""
+        """Gets the labeled data for the given dataset.
+
+        Args:
+            *args: positional arguments.
+            **kwargs: keyword arguments.
+
+        Returns:
+            The labeled data for the given dataset.
+        """
 
     @abstractmethod
     def get_unlabeled_data(self, *args, **kwargs) -> Any:
-        """Gets the unlabeled data for the given dataset."""
+        """Gets the unlabeled data for the given dataset.
+
+        Args:
+            *args: positional arguments.
+            **kwargs: keyword arguments.
+
+        Returns:
+            The unlabeled data for the given dataset.
+        """

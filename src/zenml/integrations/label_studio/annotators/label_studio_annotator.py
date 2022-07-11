@@ -295,7 +295,8 @@ class LabelStudioAnnotator(BaseAnnotator):
         Args:
             name: Name of the dataset.
             label_config: Label configuration.
-            **kwargs: Additional arguments to pass to the Label Studio client.
+            *args: Additional arguments to pass to the underlying client.
+            **kwargs: Additional keyword arguments to pass to the Label Studio client.
 
         Returns:
             A Label Studio Project object.
@@ -311,7 +312,8 @@ class LabelStudioAnnotator(BaseAnnotator):
 
         Args:
             dataset_name: Name of the dataset.
-            **kwargs: Additional arguments to pass to the Label Studio client.
+            *args: Additional arguments to pass to the Label Studio client.
+            **kwargs: Additional keyword arguments to pass to the Label Studio client.
         """
         # TODO: Awaiting a new Label Studio version to be released with this method
         ls = self._get_client()
@@ -323,7 +325,8 @@ class LabelStudioAnnotator(BaseAnnotator):
 
         Args:
             dataset_name: Name of the dataset.
-            **kwargs: Additional arguments to pass to the Label Studio client.
+            *args: Additional arguments to pass to the Label Studio client.
+            **kwargs: Additional keyword arguments to pass to the Label Studio client.
 
         Returns:
             The LabelStudio Dataset object (a 'Project') for the given name.
@@ -372,7 +375,8 @@ class LabelStudioAnnotator(BaseAnnotator):
 
         Args:
             dataset_name: Name of the dataset.
-            **kwargs: Additional arguments to pass to the Label Studio client.
+            *args: Additional arguments to pass to the Label Studio client.
+            **kwargs: Additional keyword arguments to pass to the Label Studio client.
 
         Returns:
             A dictionary containing the labeled data.
@@ -386,7 +390,8 @@ class LabelStudioAnnotator(BaseAnnotator):
 
         Args:
             dataset_name: Name of the dataset.
-            **kwargs: Additional arguments to pass to the Label Studio client.
+            *args: Additional arguments to pass to the Label Studio client.
+            **kwargs: Additional keyword arguments to pass to the Label Studio client.
 
         Returns:
             A dictionary containing the unlabeled data.
@@ -508,7 +513,7 @@ class LabelStudioAnnotator(BaseAnnotator):
             True if the storage source already exists, False otherwise.
 
         Raises:
-            NotImplementError: If the storage source type is not supported.
+            NotImplementedError: If the storage source type is not supported.
         """
         # TODO: check we are already connected
         dataset_id = int(dataset.get_params()["id"])
@@ -519,7 +524,7 @@ class LabelStudioAnnotator(BaseAnnotator):
         elif config.storage_type == "s3":
             storage_sources = self._get_s3_import_storage_sources(dataset_id)
         else:
-            return NotImplementedError(
+            raise NotImplementedError(
                 f"Storage type '{config.storage_type}' not implemented."
             )
         return any(
