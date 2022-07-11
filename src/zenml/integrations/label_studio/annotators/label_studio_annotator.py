@@ -188,7 +188,12 @@ class LabelStudioAnnotator(BaseAnnotator):
         self.stop_annotator_daemon()
 
     def start_annotator_daemon(self) -> None:
-        """Starts the annotation server backend."""
+        """Starts the annotation server backend.
+
+        Raises:
+            ProvisioningError: If the annotation server backend is already
+                running or the port is already occupied.
+        """
         command = [
             "label-studio",
             "start",
@@ -247,7 +252,11 @@ class LabelStudioAnnotator(BaseAnnotator):
                 fileio.remove(self._pid_file_path)
 
     def launch(self, url: str) -> None:
-        """Launches the annotation interface."""
+        """Launches the annotation interface.
+
+        Args:
+            url: The URL of the annotation interface.
+        """
         if self._connection_available():
             webbrowser.open(url, new=1, autoraise=True)
         else:
@@ -257,10 +266,19 @@ class LabelStudioAnnotator(BaseAnnotator):
             )
 
     def _get_client(self) -> Client:
-        """Gets Label Studio client."""
+        """Gets Label Studio client.
+
+        Returns:
+            Label Studio client.
+        """
         return Client(url=self.get_url(), api_key=self.api_key)
 
     def _connection_available(self) -> bool:
+        """Checks if the connection to the annotation server is available.
+
+        Returns:
+            True if the connection is available, False otherwise.
+        """
         ls = self._get_client()
         try:
             result = ls.check_connection()
@@ -272,7 +290,16 @@ class LabelStudioAnnotator(BaseAnnotator):
             return False
 
     def add_dataset(self, *args, name: str, label_config, **kwargs) -> Any:
-        """Registers a dataset for annotation."""
+        """Registers a dataset for annotation.
+
+        Args:
+            name: Name of the dataset.
+            label_config: Label configuration.
+            **kwargs: Additional arguments to pass to the Label Studio client.
+
+        Returns:
+            A Label Studio Project object.
+        """
         ls = self._get_client()
         return ls.start_project(
             title=name,
@@ -280,21 +307,41 @@ class LabelStudioAnnotator(BaseAnnotator):
         )
 
     def delete_dataset(self, *args, dataset_name: str, **kwargs) -> None:
-        """Deletes a dataset from the annotation interface."""
+        """Deletes a dataset from the annotation interface.
+
+        Args:
+            dataset_name: Name of the dataset.
+            **kwargs: Additional arguments to pass to the Label Studio client.
+        """
         # TODO: Awaiting a new Label Studio version to be released with this method
         ls = self._get_client()
         dataset_id = self.get_id_from_name(dataset_name)
         ls.delete_project(dataset_id)
 
     def get_dataset(self, *args, dataset_name: str, **kwargs) -> Any:
-        """Gets the dataset with the given name."""
+        """Gets the dataset with the given name.
+
+        Args:
+            dataset_name: Name of the dataset.
+            **kwargs: Additional arguments to pass to the Label Studio client.
+
+        Returns:
+            The LabelStudio Dataset object (a 'Project') for the given name.
+        """
         # TODO: check for and raise error if client unavailable
         ls = self._get_client()
         dataset_id = self.get_id_from_name(dataset_name)
         return ls.get_project(dataset_id)
 
     def _dataset_name_to_project(self, dataset_name: str) -> Optional[Project]:
-        """Finds the project id for a specific dataset name."""
+        """Finds the project id for a specific dataset name.
+
+        Args:
+            dataset_name: Name of the dataset.
+
+        Returns:
+            The LabelStudio Dataset object (a 'Project') for the given name.
+        """
         ls = self._get_client()
         projects = ls.get_projects()
         current_project = [
@@ -307,19 +354,43 @@ class LabelStudioAnnotator(BaseAnnotator):
     def get_converted_dataset(
         self, dataset_id: int, output_format: str
     ) -> Dict[Any, Any]:
-        """Extract annotated tasks in a specific converted format."""
+        """Extract annotated tasks in a specific converted format.
+
+        Args:
+            dataset_id: Id of the dataset.
+            output_format: Output format.
+
+        Returns:
+            A dictionary containing the converted dataset.
+        """
         # project = self._dataset_name_to_project(dataset_name)
         project = self.get_dataset(dataset_id)
         return project.export_tasks(export_type=output_format)
 
     def get_labeled_data(self, *args, dataset_name: str, **kwargs) -> Any:
-        """Gets the labeled data for the given dataset."""
+        """Gets the labeled data for the given dataset.
+
+        Args:
+            dataset_name: Name of the dataset.
+            **kwargs: Additional arguments to pass to the Label Studio client.
+
+        Returns:
+            A dictionary containing the labeled data.
+        """
         ls = self._get_client()
         dataset_id = self.get_id_from_name(dataset_name)
         return ls.get_project(dataset_id).get_labeled_tasks()
 
     def get_unlabeled_data(self, *args, dataset_name: str, **kwargs) -> Any:
-        """Gets the unlabeled data for the given dataset."""
+        """Gets the unlabeled data for the given dataset.
+
+        Args:
+            dataset_name: Name of the dataset.
+            **kwargs: Additional arguments to pass to the Label Studio client.
+
+        Returns:
+            A dictionary containing the unlabeled data.
+        """
         ls = self._get_client()
         dataset_id = self.get_id_from_name(dataset_name)
         return ls.get_project(dataset_id).get_unlabeled_tasks()
@@ -327,8 +398,15 @@ class LabelStudioAnnotator(BaseAnnotator):
     def register_dataset_for_annotation(
         self,
         config: LabelStudioDatasetRegistrationConfig,
-    ) -> int:
-        """Registers a dataset for annotation."""
+    ) -> Any:
+        """Registers a dataset for annotation.
+
+        Args:
+            config: Configuration for the dataset.
+
+        Returns:
+            A Label Studio Project object.
+        """
         ls = self._get_client()
 
         if self.get_id_from_name(config.dataset_name):
@@ -344,7 +422,17 @@ class LabelStudioAnnotator(BaseAnnotator):
     def _get_azure_import_storage_sources(
         self, dataset_id: int
     ) -> List[Dict[str, Any]]:
-        """Gets a list of all Azure import storage sources."""
+        """Gets a list of all Azure import storage sources.
+
+        Args:
+            dataset_id: Id of the dataset.
+
+        Returns:
+            A list of Azure import storage sources.
+
+        Raises:
+            ConnectionError: If the connection to the Label Studio backend is unavailable.
+        """
         # TODO: check if client actually is connected etc
         ls = self._get_client()
         query_url = f"/api/storages/azure?project={dataset_id}"
@@ -359,7 +447,17 @@ class LabelStudioAnnotator(BaseAnnotator):
     def _get_gcs_import_storage_sources(
         self, dataset_id: int
     ) -> List[Dict[str, Any]]:
-        """Gets a list of all Google Cloud Storage import storage sources."""
+        """Gets a list of all Google Cloud Storage import storage sources.
+
+        Args:
+            dataset_id: Id of the dataset.
+
+        Returns:
+            A list of Google Cloud Storage import storage sources.
+
+        Raises:
+            ConnectionError: If the connection to the Label Studio backend is unavailable.
+        """
         # TODO: check if client actually is connected etc
         ls = self._get_client()
         query_url = f"/api/storages/gcs?project={dataset_id}"
@@ -374,7 +472,17 @@ class LabelStudioAnnotator(BaseAnnotator):
     def _get_s3_import_storage_sources(
         self, dataset_id: int
     ) -> List[Dict[str, Any]]:
-        """Gets a list of all AWS S3 import storage sources."""
+        """Gets a list of all AWS S3 import storage sources.
+
+        Args:
+            dataset_id: Id of the dataset.
+
+        Returns:
+            A list of AWS S3 import storage sources.
+
+        Raises:
+            ConnectionError: If the connection to the Label Studio backend is unavailable.
+        """
         # TODO: check if client actually is connected etc
         ls = self._get_client()
         query_url = f"/api/storages/s3?project={dataset_id}"
@@ -389,7 +497,19 @@ class LabelStudioAnnotator(BaseAnnotator):
     def _storage_source_already_exists(
         self, uri: str, config: LabelStudioDatasetSyncConfig, dataset: Project
     ) -> bool:
-        """Returns whether a storage source already exists."""
+        """Returns whether a storage source already exists.
+
+        Args:
+            uri: URI of the storage source.
+            config: Configuration for the dataset.
+            dataset: Label Studio dataset.
+
+        Returns:
+            True if the storage source already exists, False otherwise.
+
+        Raises:
+            NotImplementError: If the storage source type is not supported.
+        """
         # TODO: check we are already connected
         dataset_id = int(dataset.get_params()["id"])
         if config.storage_type == "azure":
@@ -417,7 +537,17 @@ class LabelStudioAnnotator(BaseAnnotator):
         )
 
     def get_parsed_label_config(self, dataset_id: int) -> Dict[str, Any]:
-        """Returns the parsed Label Studio label config for a dataset."""
+        """Returns the parsed Label Studio label config for a dataset.
+
+        Args:
+            dataset_id: Id of the dataset.
+
+        Returns:
+            A dictionary containing the parsed label config.
+
+        Raises:
+            ValueError: If no dataset is found for the given id.
+        """
         # TODO: check if client actually is connected etc
         ls = self._get_client()
         dataset = ls.get_project(dataset_id)
@@ -432,7 +562,19 @@ class LabelStudioAnnotator(BaseAnnotator):
         config: LabelStudioDatasetSyncConfig,
         dataset: Project,
     ) -> Dict[str, Any]:
-        """Syncs the external storage for the given project."""
+        """Syncs the external storage for the given project.
+
+        Args:
+            uri: URI of the storage source.
+            config: Configuration for the dataset.
+            dataset: Label Studio dataset.
+
+        Returns:
+            A dictionary containing the sync result.
+
+        Raises:
+            ValueError: If the storage type is not supported.
+        """
         if self._storage_source_already_exists(uri, config, dataset):
             return
         if config.storage_type == "azure":
