@@ -638,7 +638,7 @@ def remove_stack_component(
         feature_store_flag: To remove the feature store from this stack.
         model_deployer_flag: To remove the model deployer from this stack.
         experiment_tracker_flag: To remove the experiment tracker from this
-        stack.
+            stack.
         alerter_flag: To remove the alerter from this stack.
         annotator_flag: To remove the annotator from this stack.
         data_validator_flag: To remove the data validator from this stack.
