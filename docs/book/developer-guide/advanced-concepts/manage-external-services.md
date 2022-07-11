@@ -1,26 +1,19 @@
 ---
-description: ZenML pipelines are fully aware of external, longer-lived services.
+description: How to manage external, longer-lived services.
 ---
 
-# Interact with external services
+# Services
 
 ZenML interacts with external systems (e.g. prediction services, monitoring
-systems, visualization services) with a
-so-called `Service` abstraction.
+systems, visualization services) with a so-called `Service` abstraction.
 The concrete implementation of this abstraction deals with functionality
-concerning the life-cycle management and
-tracking of an external service (e.g. process, container,
-Kubernetes deployment etc.).
+concerning the life-cycle management and tracking of an external service 
+(e.g. process, container, Kubernetes deployment etc.).
 
-One concrete example of a `Service` is the built-in `LocalDaemonService`, a
-service represented by a local daemon
-process. This extends the base service class with functionality concerning the
-life-cycle management and tracking
-of external services implemented as local daemon processes.
+## Using Services in Steps
 
-Services can be passed through steps like any other object, and used to interact
-with the external systems that
-they represent:
+Services can be passed through steps like any other object, and used to 
+interact with the external systems that they represent:
 
 ```python
 from zenml.steps import step
@@ -33,21 +26,17 @@ def my_step(my_service: MyService) -> ...:
     my_service.stop()  # stops service
 ```
 
-You can see full examples of using services here:
+## Examples
 
-* Visualizing training with tensorboard with the
-[Kubeflow tensorboard example](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow_pipelines_orchestration).
-* Continuous training and continuous deployment setting with 
-the [MLflow deployment example](https://github.com/zenml-io/zenml/tree/main/examples/mlflow_deployment).
-* Continuous training and continuous deployment setting with 
-the [Seldon deployment example](https://github.com/zenml-io/zenml/tree/main/examples/seldon_deployment).
+One concrete example of a `Service` is the built-in `LocalDaemonService`, a
+service represented by a local daemon process. This extends the base service 
+class with functionality concerning the life-cycle management and tracking
+of external services implemented as local daemon processes.
 
-## Example services
-
-One concrete example of a `Service` implementation is the `TensorboardService`.
+Another example is the `TensorboardService`.
 It enables visualizing [TensorBoard](https://www.tensorflow.org/tensorboard)
-logs easily by managing a local TensorBoard
-server.
+logs easily by managing a local TensorBoard server, which couples nicely with
+the `TensorboardVisualizer` to visualize Tensorboard logs.
 
 ```python
 from zenml.integrations.tensorflow.services.tensorboard_service import (
@@ -68,9 +57,11 @@ service.start(timeout=20)
 service.stop()
 ```
 
-This couples nicely with the `TensorboardVisualizer` to visualize Tensorboard
-logs.
+You can find full examples of using services here:
 
-Other examples of Services can be found in
-the [continuous training and deployment
-guide](continuous-training-and-deployment.md).
+* Visualizing training with TensorBoard in the
+[Kubeflow TensorBoard example](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow_pipelines_orchestration).
+* Interacting with the services of deployed models in the
+[MLflow deployment example](https://github.com/zenml-io/zenml/tree/main/examples/mlflow_deployment).
+* Interacting with the services of deployed models in the
+[Seldon deployment example](https://github.com/zenml-io/zenml/tree/main/examples/seldon_deployment).

@@ -28,8 +28,8 @@
   * [Migrating Legacy Stacks to ZenML Profiles](developer-guide/stacks-profiles-repositories/migrating-legacy-stacks.md)
 * [Advanced Concepts](developer-guide/advanced-concepts/overview.md)
   * [Materializers](developer-guide/advanced-concepts/materializer.md)
-  * [Step Fixtures](developer-guide/advanced-concepts/fetching-historic-runs.md)
   * [Services](developer-guide/advanced-concepts/manage-external-services.md)
+  * [Step Contexts and Step Fixtures](developer-guide/advanced-concepts/fetching-historic-runs.md)
 
 ## MLOps Stacks
 
