@@ -27,7 +27,6 @@ from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 
 logger = get_logger(__name__)
 
-DEFAULT_AWS_REGION = "us-east-1"
 ZENML_SCHEMA_NAME = "zenml_schema_name"
 
 
@@ -52,7 +51,7 @@ def jsonify_secret_contents(secret: BaseSecretSchema) -> str:
 class AWSSecretsManager(BaseSecretsManager):
     """Class to interact with the AWS secrets manager."""
 
-    region_name: str = DEFAULT_AWS_REGION
+    region_name: str
 
     # Class configuration
     FLAVOR: ClassVar[str] = AWS_SECRET_MANAGER_FLAVOR
