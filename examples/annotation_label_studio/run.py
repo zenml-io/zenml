@@ -224,9 +224,3 @@ if __name__ == "__main__":
     )
 
     ct_pipeline.run()
-    # repo = Repository()
-    # pipeline = repo.get_pipeline("continuous_training_pipeline")
-    # last_run = pipeline.runs[-1]
-    # importer_step = last_run.get_step(name="annotation_importer")
-    # labeled_data = importer_step.output.read()
-    # console.print(labeled_data)
