@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,14 +13,11 @@
 #  permissions and limitations under the License.
 
 import click
-from pipeline import (
-    TrainerConfig,
-    evaluator,
-    importer,
-    mnist_pipeline,
-    normalizer,
-    trainer,
-)
+from pipelines.mnist_pipeline import mnist_pipeline
+from steps.evaluators import evaluator
+from steps.importers import importer
+from steps.normalizers import normalizer
+from steps.trainers import TrainerConfig, trainer
 
 from zenml.integrations.tensorflow.visualizers import (
     stop_tensorboard_server,

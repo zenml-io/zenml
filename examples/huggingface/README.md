@@ -139,9 +139,21 @@ Now we're ready. Execute one of the below lines to run the respective nlp tasks.
 python run.py --nlp_task=sequence-classification --pretrained_model=distilbert-base-uncased --epochs=1 --batch_size=16 --dataset_name=imdb --text_column=text --label_column=label
 ```
 
+Alternatively, if you want to run based on the config.yaml you can run with:
+
+```bash
+zenml pipeline run pipelines/sequence_classifier_pipeline/sequence_classifier_pipeline.py -c sequence_classification_config.yaml
+```
+
 ```shell
 # token-classification
 python run.py --nlp_task=token-classification --pretrained_model=distilbert-base-uncased --epochs=1 --batch_size=16 --dataset_name=conll2003 --text_column=tokens --label_column=ner_tags
+```
+
+Alternatively, if you want to run based on the config.yaml you can run with:
+
+```bash
+zenml pipeline run pipelines/token_classifier_pipeline/token_classifier_pipeline.py -c token_classification_config.yaml
 ```
 
 By default, these will run on a very small subset of their datasets in order to quickly see the complete pipeline in 

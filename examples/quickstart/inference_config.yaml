@@ -1,0 +1,26 @@
+name: inference_pipeline
+steps:
+  inference_data_loader:
+    source:
+      file: steps/data_loaders
+      name: inference_data_loader
+  prediction_service_loader:
+    source:
+      file: steps/prediction_steps
+      name: prediction_service_loader
+  predictor:
+    source:
+      file: steps/prediction_steps
+      name: predictor
+  training_data_loader:
+    source:
+      file: steps/data_loaders
+      name: training_data_loader
+  skew_comparison:
+    source:
+      file: steps/skew_comparisons
+      name: skew_comparison
+  drift_detector:
+    source:
+      file: steps/skew_comparisons
+      name: drift_detector

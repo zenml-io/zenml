@@ -1,21 +1,27 @@
 ---
-description: Inspect a Finished Pipeline Run.
+description: How to inspect a finished pipeline run.
 ---
 
-# Post Execution Workflow
+# Inspecting finished pipeline runs
 
-After executing a pipeline, the user needs to be able to fetch it from history and perform certain tasks. This page 
-captures these workflows at an orbital level.
+Once a pipeline run has completed, we can access it using the
+[ZenML Repository](stacks_profiles_repositories.md), about which you will find
+more details in a later section.
 
-## Accessing past pipeline runs
+Each pipeline can have multiple runs associated with it, and for each run there
+might be several outputs for each step. Thus, to inspect a specific output, we
+first need to access the respective pipeline, then fetch the respective run, 
+and then choose the step output of that specific run.
 
-In the context of a post-execution workflow, there is an implied hierarchy of some basic ZenML components:
+The overall hierarchy looks like this:
 
 ```shell
 repository -> pipelines -> runs -> steps -> outputs
 
 # where -> implies a 1-many relationship.
 ```
+
+Let us investigate how to traverse this hierarchy level by level:
 
 ### Repository
 
@@ -24,50 +30,48 @@ The highest level `Repository` object is where to start from.
 ```python
 from zenml.repository import Repository
 
+
 repo = Repository()
 ```
 
 ### Pipelines
 
-The repository contains a collection of all created pipelines with at least one run sorted by the time of their first 
-run from oldest to newest.
+The repository contains a collection of all created pipelines with at least one
+run sorted by the time of their first run from oldest to newest.
+
+You can either access this collection via the `get_pipelines()` method or query
+a specific pipeline by name using `get_pipeline(pipeline_name=...)`:
 
 ```python
 # get all pipelines from all stacks
 pipelines = repo.get_pipelines()  
 
 # now you can get pipelines by index
-pipeline_x = pipelines[-1]
+pipeline_with_latest_initial_run_time = pipelines[-1]
 
 # or get one pipeline by name and/or stack key
 pipeline_x = repo.get_pipeline(pipeline_name=..., stack_key=...)
 ```
 
-The pipeline name is the name of the decorated function (or the Pipeline class in case of the 
-[Class Based API](class-based-api.md)).
-
-```python
-from zenml.pipelines import pipeline
-
-@pipeline()
-def this_is_the_pipeline_name():
-    ...
-```
-
 {% hint style="info" %}
-Be careful when accessing pipelines by index. Even if you just ran a pipeline it might not be at index `-1`, due to the 
-fact that the pipelines are sorted by time of `first` run. As such it is recommended to access the pipeline by its name
+Be careful when accessing pipelines by index. Even if you just ran a pipeline 
+it might not be at index `-1`, due to the fact that the pipelines are sorted 
+by time of *first* run. As such it is recommended to access the pipeline by its
+name using `get_pipeline(pipeline_name=...)`.
 {% endhint %}
 
 ### Runs
 
-Each pipeline can be executed many times. You can easily get a list of all runs like this
+Each pipeline can be executed many times. You can get a list of all runs using
+the `runs` attribute of a pipeline. Or, you can query a specific run by run
+name using the `get_run(run_name=...)` method:
 
 ```python
-runs = pipeline_x.runs  # all runs of a pipeline chronologically ordered
+# get all runs of a pipeline chronologically ordered
+runs = pipeline_x.runs 
 
 # get the last run by index, runs are ordered by execution time in ascending order
-run = runs[-1]
+last_run = runs[-1]
 
 # or get a specific run by name
 run = pipeline_x.get_run(run_name=...)
@@ -75,55 +79,73 @@ run = pipeline_x.get_run(run_name=...)
 
 ### Steps
 
-Within a given pipeline run you can now zoom in further on the individual steps.
+Within a given pipeline run you can now further zoom in on individual steps
+using the `steps` attribute or by querying a specific step using the
+`get_step(name=...)` method.
 
 ```python
-steps = run.steps  # all steps of a pipeline
-step = steps[0]
-print(step.entrypoint_name)
+# get all steps of a pipeline for a given run
+steps = run.steps
+
+# get the step that was executed first
+first_step = steps[0]
+
+# or get a specific step by name
+step = run.get_step(name=...)
 ```
 
+{% hint style="info" %}
 The steps are ordered by time of execution. Depending on the 
-[orchestrator](../core-concepts.md#orchestrator), steps can be run in parallel. As such, accessing steps by 
-index can be unreliable across different runs. Instead, it makes sense to access steps by their name.
-
-```python
-run.get_step(name=...)
-```
-
-The step name is the name of the decorated function (or the `Step` class in case of the 
-[class-based API](class-based-api.md)).
-
-```python
-from zenml.steps import step
-
-@step
-def this_is_the_step_name():
-    ...
-```
+[orchestrator](../mlops_stacks/orchestrators/overview.md), steps can be run in 
+parallel. As such, accessing steps by index can be unreliable across different
+runs. Therefore, it is recommended to access steps by their name using
+`get_step(name=...)`.
+{% endhint %}
 
 ### Outputs
 
-Most of your steps will probably create outputs. You'll be able to inspect these outputs like this:
+Finally, this is how you can inspect the output of a step:
+- If there only is a single output, use the `output` attribute
+- If there are multiple outputs, use the `outputs` attribute, which is a
+dictionary that can be indexed using the name of an output:
 
 ```python
 # The outputs of a step
 # if there are multiple outputs they are accessible by name
 output = step.outputs["output_name"]
 
-# if one output, use the `.output` property instead 
+# if there is only one output, use the `.output` property instead 
 output = step.output 
 
-# will read the value into memory
+# read the value into memory
 output.read()  
 ```
 
-The names of the outputs can be found in the `Output` typing for your steps:
+{% hint style="info" %}
+The names of the outputs can be found in the `Output` typing of your steps:
 
 ```python
 from zenml.steps import step, Output
 
+
 @step
 def some_step() -> Output(output_name=int):
     ...
+```
+{% endhint %}
+
+## Code Example
+
+Putting it all together, this is how we can access the output of the last step
+of our example pipeline from the previous sections:
+
+```python
+from zenml.repository import Repository
+
+
+repo = Repository()
+pipeline = repo.get_pipeline(pipeline_name="first_pipeline")
+last_run = pipeline.runs[-1]
+last_step = last_run.steps[-1]
+model = last_step.output.read()
 ```
