@@ -59,6 +59,7 @@ zenml stack up
 Run the pipeline with:
 
 ```shell
+cd examples/annotation_label_studio/
 python run.py
 ```
 

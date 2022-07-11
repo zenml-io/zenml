@@ -12,19 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from examples.annotation_label_studio.materializers import (
-    FastaiLearnerMaterializer,
-    PillowImageMaterializer,
-)
-from examples.annotation_label_studio.pipelines import (
-    continuous_training_pipeline,
-)
-from examples.annotation_label_studio.steps import (
+from materializers import FastaiLearnerMaterializer, PillowImageMaterializer
+from pipelines import continuous_training_pipeline
+from steps import (
     batch_inference,
     convert_annotation,
     load_image_data,
     model_loader,
 )
+
 from zenml.integrations.label_studio.label_config_generators import (
     generate_image_classification_label_config,
 )

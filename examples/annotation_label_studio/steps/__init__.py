@@ -11,18 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from examples.annotation_label_studio.steps.batch_inference_step import (
-    batch_inference,
-)
-from examples.annotation_label_studio.steps.convert_annotation_step import (
-    convert_annotation,
-)
-from examples.annotation_label_studio.steps.fine_tuning_step import (
-    fine_tuning_step,
-)
-from examples.annotation_label_studio.steps.load_image_data_step import (
-    load_image_data,
-)
-from examples.annotation_label_studio.steps.model_loader_step import (
-    model_loader,
-)
+from steps.batch_inference_step import batch_inference
+from steps.convert_annotation_step import convert_annotation
+from steps.fine_tuning_step import fine_tuning_step
+from steps.load_image_data_step import load_image_data
+from steps.model_loader_step import model_loader
