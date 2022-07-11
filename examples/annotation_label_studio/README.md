@@ -29,17 +29,19 @@ pip install fastai huggingface_hub -Uqq
 Setup your user credentials:
 
 ```shell
-label-studio reset_password
-# follow the prompts and add a username + password combination
+# choose a username and password for your label-studio account
+label-studio reset_password --username <username> --password <password>
+# start a temporary / one-off label-studio instance to get your API key
 label-studio start -p 8094
 ```
 
 Then visit
 [http://localhost:8094/](http://localhost:8094/) to log in, then visit [http://localhost:8094/user/account](http://localhost:8094/user/account) and get
 your Label Studio API key (from the upper right hand corner). You will need it
-for the next step.
+for the next step. `Ctrl-c` out of the Label Studio server that is running on
+the terminal.
 
-Register your annotator with ZenML:
+Then register your annotator with ZenML:
 
 ```shell
 zenml annotator register label_studio --flavor label_studio --api_key="<your_label_studio_api_key_goes_here>"
@@ -56,6 +58,9 @@ zenml stack set annotation
 zenml stack up
 ```
 
+This will initialize the daemon server which Label Studio requires, albeit
+running on a default port of 8093.
+
 Run the pipeline with:
 
 ```shell
@@ -63,9 +68,26 @@ cd examples/annotation_label_studio/
 python run.py
 ```
 
+Once the pipeline has run, you can go to
+[http://localhost:8093/](http://localhost:8093/) and view the project. You can
+do some labelling there and any annotations you make will be imported and used the next
+time you run the pipeline.
+
+
 (There are more elaborate steps required if you want to run this on AWS or GCP.)
 
+## CLI Commands for the Label Studio Integration
 
+Once you've run the pipeline for the first time, you'll be able to use some of
+the ZenML CLI commands to interact with your Label Studio annotations and the
+dataset:
+
+```shell
+# the obvious ones to try
+zenml annotator describe
+zenml annotator dataset list
+zenml annotator dataset stats
+```
 
 
 
