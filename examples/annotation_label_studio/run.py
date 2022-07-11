@@ -60,7 +60,7 @@ zenml_s3_artifact_store_sync_config = LabelStudioDatasetSyncConfig(
     storage_type="s3",
     label_config_type=label_config_type,
     regex_filter=IMAGE_REGEX_FILTER,
-    region_name="eu-west-1",
+    region_name="eu-west-1",  # change this to your closest region
 )
 
 
@@ -72,7 +72,6 @@ get_or_create_the_dataset = get_or_create_dataset(
 @step(enable_cache=True)
 def load_image_data(context: StepContext) -> Output(images=Dict, uri=str):
     """Gets images from a cloud artifact store directory."""
-    # get all images from the LOCAL_IMAGE_FILES directory
     image_files = glob.glob(f"{LOCAL_IMAGE_FILES}/*.jpeg")
     return {
         os.path.basename(image_file): Image.open(image_file)
@@ -114,6 +113,7 @@ def convert_annotation(
 
 
 def is_cat(x):
+    # NEEDED FOR FASTAI MODEL IMPORT (when / if we use it)
     # return labels[x] == "cat"
     return True
 
@@ -155,6 +155,8 @@ def batch_inference(image_dict: Dict, model: Learner) -> List:
 
     Returns a list of predictions compatible with Label Studio.
     """
+    # TODO: Actually implement the batch inference step
+    # below are just dummy values
     return [
         {
             "filename": image_name,
@@ -195,7 +197,7 @@ def continuous_training_pipeline(
     # new_model = fine_tuner(model, training_images, training_annotations)
     # model = compare_and_validate(model, new_model)
 
-    # TODO: SPLIT PIPELINE HERE INTO NEW PIPELINE??
+    # TODO: POSSIBLY SPLIT PIPELINE HERE INTO NEW PIPELINE??
     # uploads some new local images to the ZenML artifact store
     new_images_dict, new_images_uri = images_loader()
 
