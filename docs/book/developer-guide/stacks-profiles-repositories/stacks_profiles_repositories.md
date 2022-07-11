@@ -9,7 +9,7 @@ Machine learning in production is not just about designing and training models. 
 This is a problem which is especially critical when switching from a research setting to a production setting. 
 Due to a lack of standards, the time and resources invested in PoCs frequently go completely to waste, because the initial system can not easily be transferred to a production-grade setting.
 
-At **ZenML**, we believe that this is one of the most important and challenging problems in the field of MLOps, and it can be solved with a set of standards and well-structured abstractions. Owing to the nature of MLOps, it is essential that these abstractions not only cover concepts such as pipelines and steps which we covered in the previous sections but also the infrastructure elements on which the pipelines run.
+At **ZenML**, we believe that this is one of the most important and challenging problems in the field of MLOps, and it can be solved with a set of standards and well-structured abstractions. Owing to the nature of MLOps, it is essential that these abstractions not only cover concepts such as pipelines and steps but also the infrastructure elements on which the pipelines run.
 
 Taking this into consideration, ZenML provides additional abstractions that
 help you simplify infrastructure configuration and management:
