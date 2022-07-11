@@ -143,10 +143,10 @@ class AzureSecretsManager(BaseSecretsManager):
         self._ensure_client_connected(self.key_vault_name)
 
         for key, value in secret.content.items():
-            encoded_name = base64.b64encode(
+            encoded_key = base64.b64encode(
                 f"{secret.name}-{key}".encode()
             ).hex()
-            azure_secret_name = f"zenml-{encoded_name}"
+            azure_secret_name = f"zenml-{encoded_key}"
 
             self.CLIENT.set_secret(azure_secret_name, value)
             self.CLIENT.update_secret_properties(
