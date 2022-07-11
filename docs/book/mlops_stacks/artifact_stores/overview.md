@@ -21,11 +21,14 @@ associated with the artifact data type. The majority of Materializers shipped
 with ZenML use the Artifact Store that is part of the active Stack as the
 location where artifacts are kept.
 
-If you need to store a particular type of pipeline artifacts in a different
+If you need to store _a particular type of pipeline artifacts_ in a different
 medium (e.g. use an external model registry to store model artifacts, or an
 external data lake or data warehouse to store dataset artifacts), you can write
 your own [Materializer](../../developer-guide/materializer.md) to implement the
-custom logic required for it.
+custom logic required for it. In contrast, if you need to use an entirely
+different storage backend to store artifacts, one that isn't already covered
+by one of the ZenML integrations, you can [extend the Artifact Store abstraction](./custom.md)
+to provide your own Artifact Store implementation.
 {% endhint %}
 
 In addition to pipeline artifacts, the Artifact Store may also be used as a
@@ -53,7 +56,7 @@ The Artifact Store is a mandatory component in the ZenML stack. It is used
 to store all artifacts produced by pipeline runs and you are required to
 configure it in all of your stacks.
 
-## Artifact Store Flavors
+### Artifact Store Flavors
 
 Out of the box, ZenML comes with a `local` artifact store already part of the
 default stack that stores artifacts on your local filesystem. Additional
@@ -66,6 +69,7 @@ Artifact Stores are provided by integrations:
 | [Google Cloud Storage](./gcloud_gcs.md) | `gcp` | `gcp` | `gs://`  | Uses Google Cloud Storage as an object store backend |
 | [Azure](./azure_blob_storage.md) | `azure` | `azure` | `abfs://`, `az://`  | Uses Azure Blob Storage as an object store backend |
 | [Custom Implementation](./custom.md) | _custom_ |  | _custom_ | Extend the Artifact Store abstraction and provide your own implementation |
+
 
 {% hint style="info" %}
 Every Artifact Store has a `path` attribute that must be configured when it is
