@@ -1,10 +1,13 @@
 ---
-description: Setting up the storage for your artifacts
+description: Extend ZenML to implement a custom Artifact Store
 ---
 
-In ZenML, all the inputs and outputs which go through a step are treated as 
-artifacts and as its name suggests, an `ArtifactStore` is a place where these
-artifacts get stored.
+ZenML comes equipped with [a few Artifact Store implementations](./overview.md#artifact-store-flavors)
+that you can use to store artifacts on a local filesystem or in the managed AWS,
+GCP or Azure cloud object storage services. However, if you need to use a
+different type of object storage service as a backend for your ZenML Artifact
+Store, you can easily extend ZenML to provide your own custom Artifact Store
+implementation.
 
 {% hint style="warning" %}
 Before reading this chapter, make sure that you are familiar with the 
@@ -13,7 +16,7 @@ concept of [stacks, stack components and their flavors](../advanced-guide/stacks
 
 ## Base Abstraction
 
-The artifact store establishes one of the main components in every ZenML stack.
+The Artifact Store establishes one of the main components in every ZenML stack.
 Now, let us take a deeper dive into the fundamentals behind its abstraction,
 namely the `BaseArtifactStore`:
 
@@ -164,7 +167,7 @@ If you want to create your own custom flavor for an artifact store, you can
 follow the following steps:
 
 1. Create a class which inherits from the `BaseArtifactStore`.
-2. Define the `FLAVOR` class variable.
+2. Define the `FLAVOR` and `SUPPORTED_SCHEMES` class variables.
 3. Implement the `abstactmethod`s based on your desired filesystem.
 
 Once you are done with the implementation, you can register it through the CLI 

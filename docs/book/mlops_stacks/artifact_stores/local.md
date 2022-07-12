@@ -97,8 +97,8 @@ Other local stack components rely on the default path to correctly set up
 local Artifact Stores for access in their configuration.
 {% endhint %}
 
-For more, up-to-date information on the Artifact Store implementation, you can
-have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/artifact_stores/#zenml.artifact_stores.local_artifact_store). 
+For more, up-to-date information on the Artifact Store implementation and its
+configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/artifact_stores/#zenml.artifact_stores.local_artifact_store). 
 
 ## How do you use it?
 
