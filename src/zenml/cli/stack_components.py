@@ -1502,6 +1502,9 @@ def register_annotator_subcommands() -> None:
             Args:
                 annotator: The annotator stack component.
                 dataset_name: Name of the dataset
+
+            Raises:
+                ValueError: If the dataset does not exist.
             """
             cli_utils.declare(
                 f"Launching the annotation interface for dataset '{dataset_name}'."

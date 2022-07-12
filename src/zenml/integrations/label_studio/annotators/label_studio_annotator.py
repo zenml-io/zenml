@@ -103,7 +103,7 @@ class LabelStudioAnnotator(BaseAnnotator):
         """Gets the URL of the annotation interface for the given dataset.
 
         Args:
-            name: The name of the dataset.
+            dataset_name: The name of the dataset.
 
         Returns:
             The URL of the annotation interface.
@@ -115,7 +115,7 @@ class LabelStudioAnnotator(BaseAnnotator):
         """Gets the ID of the given dataset.
 
         Args:
-            name: The name of the dataset.
+            dataset_name: The name of the dataset.
 
         Returns:
             The ID of the dataset.
@@ -159,6 +159,9 @@ class LabelStudioAnnotator(BaseAnnotator):
 
         Returns:
             A dictionary containing the statistics of the dataset.
+
+        Raises:
+            IndexError: If the dataset does not exist.
         """
         projects = self.get_datasets()
 
@@ -169,8 +172,8 @@ class LabelStudioAnnotator(BaseAnnotator):
                 )
             )[0]
         except IndexError as e:
-            raise e(
-                f"Dataset {name} not found. Please use `zenml annotator dataset list` to list all available datasets."
+            raise IndexError(
+                f"Dataset {dataset_name} not found. Please use `zenml annotator dataset list` to list all available datasets."
             ) from e
 
         labeled_task_count = len(project.get_labeled_tasks())
@@ -374,6 +377,9 @@ class LabelStudioAnnotator(BaseAnnotator):
 
         Returns:
             A Label Studio Project object.
+
+        Raises:
+            ValueError: if 'dataset_name' and 'label_config' aren't provided.
         """
         ls = self._get_client()
         dataset_name = kwargs.get("dataset_name")
@@ -398,7 +404,7 @@ class LabelStudioAnnotator(BaseAnnotator):
 
         Args:
             **kwargs: Additional keyword arguments to pass to the Label Studio
-            client.
+                client.
 
         Raises:
             NotImplementedError: If the deletion of a dataset is not supported.
@@ -425,6 +431,10 @@ class LabelStudioAnnotator(BaseAnnotator):
 
         Returns:
             The LabelStudio Dataset object (a 'Project') for the given name.
+
+        Raises:
+            ValueError: If the dataset name is not provided or if the dataset
+                does not exist.
         """
         # TODO: check for and raise error if client unavailable
         ls = self._get_client()
@@ -463,7 +473,7 @@ class LabelStudioAnnotator(BaseAnnotator):
         """Extract annotated tasks in a specific converted format.
 
         Args:
-            dataset_id: Id of the dataset.
+            dataset_name: Id of the dataset.
             output_format: Output format.
 
         Returns:
@@ -479,12 +489,14 @@ class LabelStudioAnnotator(BaseAnnotator):
         """Gets the labeled data for the given dataset.
 
         Args:
-            dataset_name: Name of the dataset.
-            *args: Additional arguments to pass to the Label Studio client.
             **kwargs: Additional keyword arguments to pass to the Label Studio client.
 
         Returns:
-            A dictionary containing the labeled data.
+            The labeled data.
+
+        Raises:
+            ValueError: If the dataset name is not provided or if the dataset
+                does not exist.
         """
         ls = self._get_client()
         dataset_name = kwargs.get("dataset_name")
@@ -505,7 +517,10 @@ class LabelStudioAnnotator(BaseAnnotator):
             **kwargs: Additional keyword arguments to pass to the Label Studio client.
 
         Returns:
-            A dictionary containing the unlabeled data.
+            The unlabeled data.
+
+        Raises:
+            ValueError: If the dataset name is not provided.
         """
         ls = self._get_client()
         dataset_name = kwargs.get("dataset_name")

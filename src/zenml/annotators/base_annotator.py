@@ -45,6 +45,9 @@ class BaseAnnotator(StackComponent, ABC):
     def get_annotation_url(self, dataset_name: str) -> str:
         """Gets the URL of the annotation interface for a specific dataset.
 
+        Args:
+            dataset_name: name of the dataset.
+
         Returns:
             The URL of the dataset annotation interface.
         """
@@ -69,6 +72,9 @@ class BaseAnnotator(StackComponent, ABC):
     def get_dataset_stats(self, dataset_name: str) -> Dict[str, int]:
         """Gets the statistics of a dataset.
 
+        Args:
+            dataset_name: name of the dataset.
+
         Returns:
             The statistics of a dataset.
         """
@@ -86,7 +92,6 @@ class BaseAnnotator(StackComponent, ABC):
         """Registers a dataset for annotation.
 
         Args:
-            *args: positional arguments.
             **kwargs: keyword arguments.
 
         Returns:
@@ -98,7 +103,6 @@ class BaseAnnotator(StackComponent, ABC):
         """Gets the dataset with the given name.
 
         Args:
-            *args: positional arguments.
             **kwargs: keyword arguments.
 
         Returns:
@@ -110,7 +114,6 @@ class BaseAnnotator(StackComponent, ABC):
         """Deletes a dataset.
 
         Args:
-            *args: positional arguments.
             **kwargs: keyword arguments.
         """
 

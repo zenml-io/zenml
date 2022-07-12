@@ -115,6 +115,8 @@ def get_or_create_dataset(
         The dataset name.
 
     Raises:
+        TypeError: If you are trying to use it with an annotator that is not
+            Label Studio.
         StackComponentInterfaceError: If no active annotator could be found.
     """
     annotator = context.stack.annotator  # type: ignore[union-attr]
@@ -159,6 +161,8 @@ def get_labeled_data(dataset_name: str, context: StepContext) -> List[Any]:
         List of labeled data.
 
     Raises:
+        TypeError: If you are trying to use it with an annotator that is not
+            Label Studio.
         StackComponentInterfaceError: If no active annotator could be found.
     """
     # TODO [MEDIUM]: have this check for new data *since the last time this step ran*
@@ -196,6 +200,8 @@ def sync_new_data_to_label_studio(
         context: The StepContext.
 
     Raises:
+        TypeError: If you are trying to use it with an annotator that is not
+            Label Studio.
         ValueError: if you are trying to sync from outside ZenML.
         StackComponentInterfaceError: If no active annotator could be found.
     """
