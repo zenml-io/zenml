@@ -397,13 +397,13 @@ def generate_stack_component_register_command(
             return
 
         try:
-            # with console.status(f"Registering {display_name} '{name}'...\n"):
-            _register_stack_component(
-                component_type=component_type,
-                component_name=name,
-                component_flavor=flavor,
-                **parsed_args,
-            )
+            with console.status(f"Registering {display_name} '{name}'...\n"):
+                _register_stack_component(
+                    component_type=component_type,
+                    component_name=name,
+                    component_flavor=flavor,
+                    **parsed_args,
+                )
         except ValidationError as e:
             if not interactive:
                 cli_utils.error(
