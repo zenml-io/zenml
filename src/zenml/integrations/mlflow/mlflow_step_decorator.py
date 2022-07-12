@@ -148,7 +148,7 @@ def enable_mlflow(
         return inner_decorator(_step)
 
 
-def mlflow_step_entrypoint(nested: Optional[bool] = False) -> Callable[[F], F]:
+def mlflow_step_entrypoint(nested: bool = False) -> Callable[[F], F]:
     """Decorator for a step entrypoint to enable mlflow.
 
     Args:
