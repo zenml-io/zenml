@@ -1448,7 +1448,7 @@ def register_annotator_subcommands() -> None:
 
         @dataset.command("delete")
         @click.argument(
-            "name",
+            "dataset_name",
             type=click.STRING,
         )
         @click.option(
@@ -1461,7 +1461,7 @@ def register_annotator_subcommands() -> None:
         )
         @click.pass_obj
         def dataset_delete(
-            annotator: "BaseAnnotator", name: str, all: bool
+            annotator: "BaseAnnotator", dataset_name: str, all: bool
         ) -> None:
             """Delete a dataset.
 
@@ -1472,19 +1472,19 @@ def register_annotator_subcommands() -> None:
                 name: Name of the dataset to delete.
                 all: Whether to delete all datasets.
             """
-            cli_utils.error(
-                "Currently unable to delete datasets. Awaiting updated version from Label Studio."
-            )
-            # TODO: Add this back when Label Studio release a new version
-            # cli_utils.declare(f"Deleting your dataset '{name}'")
-            # if all:
-            #     datasets = annotator.get_datasets()
-            #     for dataset in datasets:
-            #         dataset_name = dataset.get_params()["title"]
-            #         annotator.delete_dataset(dataset_name=dataset_name)
-            # else:
-            #     annotator.delete_dataset(dataset_name=name)
-            # cli_utils.declare(f"Dataset '{name}' has now been deleted.")
+            cli_utils.declare(f"Deleting your dataset '{dataset_name}'")
+            if all:
+                dataset_names = annotator.get_dataset_names()
+                for dataset_name in dataset_names:
+                    annotator.delete_dataset(dataset_name=dataset_name)
+                    cli_utils.declare(
+                        f"Dataset '{dataset_name}' has now been deleted."
+                    )
+            else:
+                annotator.delete_dataset(dataset_name=dataset_name)
+                cli_utils.declare(
+                    f"Dataset '{dataset_name}' has now been deleted."
+                )
 
         @dataset.command(
             "annotate", context_settings={"ignore_unknown_options": True}
