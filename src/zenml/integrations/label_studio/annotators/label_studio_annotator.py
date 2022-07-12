@@ -257,6 +257,8 @@ class LabelStudioAnnotator(BaseAnnotator):
         Args:
             url: The URL of the annotation interface.
         """
+        if not url:
+            url = self.get_url()
         if self._connection_available():
             webbrowser.open(url, new=1, autoraise=True)
         else:

@@ -51,7 +51,11 @@ class BaseAnnotator(StackComponent, ABC):
 
     @abstractmethod
     def launch(self, url: Optional[str]) -> None:
-        """Launches the annotation interface."""
+        """Launches the annotation interface.
+
+        Args:
+            url: The URL of the annotation interface.
+        """
 
     @abstractmethod
     def add_dataset(self, *args: Any, **kwargs: Any) -> Any:
