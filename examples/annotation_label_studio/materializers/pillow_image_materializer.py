@@ -14,6 +14,12 @@ logger = get_logger(__name__)
 
 
 class PillowImageMaterializer(BaseMaterializer):
+    """Materializer for PIL.Image objects.
+
+    This materializer takes a dictionary of files and returns a dictionary of
+    PIL image objects.
+    """
+
     ASSOCIATED_TYPES = (dict,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
