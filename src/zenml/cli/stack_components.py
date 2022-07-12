@@ -1411,7 +1411,7 @@ def register_annotator_subcommands() -> None:
 
         @dataset.command("stats")
         @click.argument(
-            "name",
+            "dataset_name",
             type=click.STRING,
         )
         @click.pass_obj

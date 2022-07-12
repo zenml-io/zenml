@@ -121,8 +121,7 @@ class LabelStudioAnnotator(BaseAnnotator):
         Returns:
             A dictionary containing the statistics of the dataset.
         """
-        ls = self._get_client()
-        projects = ls.get_datasets()
+        projects = self.get_datasets()
 
         try:
             project = list(
