@@ -661,7 +661,7 @@ class LabelStudioAnnotator(BaseAnnotator):
             return None
         if config.storage_type == "azure":
             if not config.azure_account_name or not config.azure_account_key:
-                logger.warn(
+                logger.warning(
                     "Authentication credentials for Azure aren't fully "
                     "provided. Please update the storage synchronization "
                     "settings in the Label Studio web UI as per your needs."
@@ -680,7 +680,7 @@ class LabelStudioAnnotator(BaseAnnotator):
             )
         elif config.storage_type == "gcs":
             if not config.google_application_credentials:
-                logger.warn(
+                logger.warning(
                     "Authentication credentials for Google Cloud Storage "
                     "aren't fully provided. Please update the storage "
                     "synchronization settings in the Label Studio web UI as "
@@ -699,7 +699,7 @@ class LabelStudioAnnotator(BaseAnnotator):
             )
         elif config.storage_type == "s3":
             if not config.aws_access_key_id or not config.aws_secret_access_key:
-                logger.warn(
+                logger.warning(
                     "Authentication credentials for S3 aren't fully provided."
                     "Please update the storage synchronization settings in the "
                     " Label Studio web UI as per your needs."
