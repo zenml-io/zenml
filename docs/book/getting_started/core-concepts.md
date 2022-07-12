@@ -30,7 +30,7 @@ At its core, ZenML follows a pipeline-based workflow for your data projects.
 Pipelines consist of a series of steps, organized in whatever order makes sense
 for your particular use case.
 
-![The most basic ZenML pipeline](assets/core_concepts/concepts-1.png)
+![The most basic ZenML pipeline](../assets/core_concepts/concepts-1.png)
 
 Here you can see three steps, each running one after another. Your set of steps
 might have dependencies between them, with one step using the output of a
@@ -53,7 +53,7 @@ A Stack represents the infrastructure needed to run your pipeline as well as
 some of the extra requirements needed for ML pipelines. ZenML comes with a
 default stack that runs locally, as seen in the following diagram:
 
-![ZenML pipelines run on stacks](assets/core_concepts/concepts-2.png)
+![ZenML pipelines run on stacks](../assets/core_concepts/concepts-2.png)
 
 A Stack is the configuration of the underlying infrastructure and choices around
 how your pipeline will be run. There are three Stack Components which are
@@ -105,7 +105,7 @@ stays the same, but it gets run in whatever cloud infrastructure you've set up
 in your custom stack; all you change is the stack you're using and your pipeline
 code gets run someplace different.
 
-![Running your pipeline in the cloud](assets/core_concepts/concepts-3.png)
+![Running your pipeline in the cloud](../assets/core_concepts/concepts-3.png)
 
 Running workflows in the cloud often requires certain custom behaviors, so ZenML
 offers a number of extra Stack Components that handle these common use cases.
