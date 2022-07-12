@@ -92,7 +92,3 @@ jobs:
         run: |
           source $VENV
           pytest tests/integration/test_examples.py -s --on-kubeflow --use-virtualenv
-
-      - name: Setup tmate session 2
-        if: always()
-        uses: mxschmitt/action-tmate@v3
