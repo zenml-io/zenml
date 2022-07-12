@@ -4,11 +4,13 @@ description: Start here with the ZenML Docs.
 
 # Introduction
 
-Are you a machine learning engineer or data scientist wanting to deploy models to production?
+Are you an ML engineer or data scientist shipping models to production and jumbling a plethora of tools to use?
 Do you struggle with versioning data, code, and models in your projects?
-Have you had trouble replicating production pipelines?
+Have you had trouble replicating production pipelines and monitoring models in production?
 
-If you answered yes to any of the questions, **ZenML** is here to help with all that, and more. 
+If you answered yes to any, **ZenML** is here to help with all that, and more. 
+
+![Zenml](assets/oss-header.svg)
 
 **ZenML** is an extensible, open-source MLOps framework for creating 
 portable, production-ready MLOps pipelines. Built 
