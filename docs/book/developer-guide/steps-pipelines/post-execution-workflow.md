@@ -2,16 +2,11 @@
 description: How to inspect a finished pipeline run.
 ---
 
-# Inspecting finished pipeline runs
+# Inspecting Finished Pipeline Runs
 
-Once a pipeline run has completed, we can access it using the
-[ZenML Repository](stacks_profiles_repositories.md), about which you will find
-more details in a later section.
+Once a pipeline run has completed, we can access it using the [ZenML Repository](../stacks-profiles-repositories/stacks\_profiles\_repositories.md), about which you will find more details in a later section.
 
-Each pipeline can have multiple runs associated with it, and for each run there
-might be several outputs for each step. Thus, to inspect a specific output, we
-first need to access the respective pipeline, then fetch the respective run, 
-and then choose the step output of that specific run.
+Each pipeline can have multiple runs associated with it, and for each run there might be several outputs for each step. Thus, to inspect a specific output, we first need to access the respective pipeline, then fetch the respective run, and then choose the step output of that specific run.
 
 The overall hierarchy looks like this:
 
@@ -36,11 +31,9 @@ repo = Repository()
 
 ### Pipelines
 
-The repository contains a collection of all created pipelines with at least one
-run sorted by the time of their first run from oldest to newest.
+The repository contains a collection of all created pipelines with at least one run sorted by the time of their first run from oldest to newest.
 
-You can either access this collection via the `get_pipelines()` method or query
-a specific pipeline by name using `get_pipeline(pipeline_name=...)`:
+You can either access this collection via the `get_pipelines()` method or query a specific pipeline by name using `get_pipeline(pipeline_name=...)`:
 
 ```python
 # get all pipelines from all stacks
@@ -54,17 +47,12 @@ pipeline_x = repo.get_pipeline(pipeline_name=..., stack_key=...)
 ```
 
 {% hint style="info" %}
-Be careful when accessing pipelines by index. Even if you just ran a pipeline 
-it might not be at index `-1`, due to the fact that the pipelines are sorted 
-by time of *first* run. As such it is recommended to access the pipeline by its
-name using `get_pipeline(pipeline_name=...)`.
+Be careful when accessing pipelines by index. Even if you just ran a pipeline it might not be at index `-1`, due to the fact that the pipelines are sorted by time of _first_ run. As such it is recommended to access the pipeline by its name using `get_pipeline(pipeline_name=...)`.
 {% endhint %}
 
 ### Runs
 
-Each pipeline can be executed many times. You can get a list of all runs using
-the `runs` attribute of a pipeline. Or, you can query a specific run by run
-name using the `get_run(run_name=...)` method:
+Each pipeline can be executed many times. You can get a list of all runs using the `runs` attribute of a pipeline. Or, you can query a specific run by run name using the `get_run(run_name=...)` method:
 
 ```python
 # get all runs of a pipeline chronologically ordered
@@ -79,9 +67,7 @@ run = pipeline_x.get_run(run_name=...)
 
 ### Steps
 
-Within a given pipeline run you can now further zoom in on individual steps
-using the `steps` attribute or by querying a specific step using the
-`get_step(name=...)` method.
+Within a given pipeline run you can now further zoom in on individual steps using the `steps` attribute or by querying a specific step using the `get_step(name=...)` method.
 
 ```python
 # get all steps of a pipeline for a given run
@@ -95,19 +81,15 @@ step = run.get_step(name=...)
 ```
 
 {% hint style="info" %}
-The steps are ordered by time of execution. Depending on the 
-[orchestrator](../mlops_stacks/orchestrators/overview.md), steps can be run in 
-parallel. As such, accessing steps by index can be unreliable across different
-runs. Therefore, it is recommended to access steps by their name using
-`get_step(name=...)`.
+The steps are ordered by time of execution. Depending on the [orchestrator](../../mlops\_stacks/orchestrators/overview.md), steps can be run in parallel. As such, accessing steps by index can be unreliable across different runs. Therefore, it is recommended to access steps by their name using `get_step(name=...)`.
 {% endhint %}
 
 ### Outputs
 
 Finally, this is how you can inspect the output of a step:
-- If there only is a single output, use the `output` attribute
-- If there are multiple outputs, use the `outputs` attribute, which is a
-dictionary that can be indexed using the name of an output:
+
+* If there only is a single output, use the `output` attribute
+* If there are multiple outputs, use the `outputs` attribute, which is a dictionary that can be indexed using the name of an output:
 
 ```python
 # The outputs of a step
@@ -136,8 +118,7 @@ def some_step() -> Output(output_name=int):
 
 ## Code Example
 
-Putting it all together, this is how we can access the output of the last step
-of our example pipeline from the previous sections:
+Putting it all together, this is how we can access the output of the last step of our example pipeline from the previous sections:
 
 ```python
 from zenml.repository import Repository
