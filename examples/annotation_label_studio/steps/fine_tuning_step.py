@@ -18,7 +18,9 @@ from typing import Dict, List
 from fastai.learner import Learner
 from fastai.vision.all import *
 
-from zenml.integrations.label_studio.label_studio_utils import download_image
+from zenml.integrations.label_studio.label_studio_utils import (
+    download_azure_image,
+)
 from zenml.logger import get_logger
 from zenml.steps import step
 from zenml.steps.step_context import StepContext
@@ -37,7 +39,7 @@ def fine_tuning_step(
 ) -> Learner:
     with tempfile.TemporaryDirectory() as temp_dir:
         for url in training_images:
-            download_image(url, temp_dir.name)
+            download_azure_image(url, temp_dir.name)
 
         training_images = glob.glob(f"{temp_dir.name}/*{IMAGE_REGEX_FILTER}")
 
