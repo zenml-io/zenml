@@ -33,7 +33,7 @@ def parse_azure_url(url: str) -> Tuple[str, str]:
     return f"az://{pth}", pth.split("/")[-1]
 
 
-def download_image(url: str, destination: str) -> None:
+def download_azure_image(url: str, destination: str) -> None:
     """Downloads an image using fileio.
 
     Args:

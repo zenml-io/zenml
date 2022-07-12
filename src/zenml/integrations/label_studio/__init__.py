@@ -29,11 +29,6 @@ class LabelStudioIntegration(Integration):
     REQUIREMENTS = ["label-studio", "label-studio-sdk"]
 
     @classmethod
-    def activate(cls) -> None:
-        """Activates the integration."""
-        from zenml.integrations.label_studio import annotators  # noqa
-
-    @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
         """Declare the stack component flavors for the Label Studio integration.
 
