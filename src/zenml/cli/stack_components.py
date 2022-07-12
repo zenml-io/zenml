@@ -1469,7 +1469,7 @@ def register_annotator_subcommands() -> None:
 
             Args:
                 annotator: The annotator stack component.
-                name: Name of the dataset to delete.
+                dataset_name: Name of the dataset to delete.
                 all: Whether to delete all datasets.
             """
             cli_utils.declare(f"Deleting your dataset '{dataset_name}'")
@@ -1501,7 +1501,7 @@ def register_annotator_subcommands() -> None:
 
             Args:
                 annotator: The annotator stack component.
-                name: Name of the dataset
+                dataset_name: Name of the dataset
             """
             cli_utils.declare(
                 f"Launching the annotation interface for dataset '{dataset_name}'."
