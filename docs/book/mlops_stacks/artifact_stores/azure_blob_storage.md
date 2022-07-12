@@ -123,9 +123,9 @@ Store to load served models
 
 These remote stack components can still use the implicit authentication method:
 if they are also running within the Azure Kubenetes Service, you can configure
-your cluster to use [Azure Managed Identities](https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/overview). This mechanism allows Azure
-workloads like AKS pods to access other Azure services without requiring
-explicit credentials.
+your cluster to use [Azure Managed Identities](https://docs.microsoft.com/en-us/azure/aks/use-managed-identity).
+This mechanism allows Azure workloads like AKS pods to access other Azure
+services without requiring explicit credentials.
 
 If you have remote stack components that are not running in AKS, or if
 you are unsure how to configure them to use Managed Identities, you should use
