@@ -43,12 +43,10 @@ class LabelStudioAnnotator(BaseAnnotator):
     Attributes:
         port: The port to use for the annotation interface.
         api_key: The API key to use for authentication.
-        project_name: The name of the project to interact with.
     """
 
     port: int = DEFAULT_LABEL_STUDIO_PORT
     api_key: str
-    project_name: Optional[str]
 
     FLAVOR: ClassVar[str] = LABEL_STUDIO_ANNOTATOR_FLAVOR
 
@@ -401,7 +399,7 @@ class LabelStudioAnnotator(BaseAnnotator):
         return ls.get_project(dataset_id)
 
     def _dataset_name_to_project(self, dataset_name: str) -> Optional[Project]:
-        """Finds the project id for a specific dataset name.
+        """Finds the project for a specific dataset name.
 
         Args:
             dataset_name: Name of the dataset.

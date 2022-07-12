@@ -95,9 +95,9 @@ def convert_pred_filenames_to_task_ids(
         List of predictions using task ids as reference.
     """
     filename_id_mapping = {
-        os.path.basename(
-            urlparse(task["data"][filename_reference]).path
-        ): task["id"]
+        os.path.basename(urlparse(task["data"][filename_reference]).path): task[
+            "id"
+        ]
         for task in tasks
     }
 
