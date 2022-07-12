@@ -124,7 +124,6 @@ def get_or_create_dataset(
         raise TypeError(
             "This step can only be used with the Label Studio annotator."
         )
-    # type: ignore[union-attr]
     if annotator and annotator._connection_available():
         preexisting_dataset_list = [
             dataset
@@ -134,9 +133,9 @@ def get_or_create_dataset(
         if (
             not preexisting_dataset_list
             and annotator
-            and annotator._connection_available()  # type: ignore[union-attr]
+            and annotator._connection_available()
         ):
-            registered_dataset = annotator.register_dataset_for_annotation(  # type: ignore[union-attr]
+            registered_dataset = annotator.register_dataset_for_annotation(
                 config
             )
         elif preexisting_dataset_list:
@@ -173,7 +172,7 @@ def get_labeled_data(dataset_name: str, context: StepContext) -> List[Any]:
         raise TypeError(
             "This step can only be used with the Label Studio annotator."
         )
-    if annotator._connection_available():  # type: ignore[union-attr]
+    if annotator._connection_available():
         dataset = annotator.get_dataset(dataset_name=dataset_name)
         return dataset.get_labeled_tasks()  # type: ignore[no-any-return]
     else:
@@ -240,10 +239,9 @@ def sync_new_data_to_label_studio(
             config.aws_session_token,
         ) = get_s3_credentials()
 
-    # type: ignore[union-attr]
     if annotator and annotator._connection_available():
         # TODO: get existing (CHECK!) or create the sync connection
-        annotator.connect_and_sync_external_storage(  # type: ignore[union-attr]
+        annotator.connect_and_sync_external_storage(
             uri=base_uri,
             config=config,
             dataset=dataset,
