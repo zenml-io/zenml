@@ -24,6 +24,7 @@ from typing import (
     Sequence,
     Tuple,
     Type,
+    cast,
 )
 
 import click
@@ -1364,10 +1365,10 @@ def register_single_stack_component_cli_commands(
 
 def register_annotator_subcommands() -> None:
     """Registers CLI subcommands for the annotator."""
-    annotator_group = cli.commands.get("annotator")
+    annotator_group = cast(TagGroup, cli.commands.get("annotator"))
     if annotator_group:
 
-        @annotator_group.group(  # type: ignore[attr-defined]
+        @annotator_group.group(
             cls=TagGroup,
             help="Commands for interacting with annotation datasets.",
         )
