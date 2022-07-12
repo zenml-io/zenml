@@ -13,7 +13,17 @@
 #  permissions and limitations under the License.
 
 
+import json
+
+from zenml.constants import (
+    MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME,
+    MLMD_CONTEXT_STACK_PROPERTY_NAME,
+    ZENML_MLMD_CONTEXT_TYPE,
+)
 from zenml.orchestrators.utils import get_cache_status
+from zenml.pipelines import pipeline
+from zenml.repository import Repository
+from zenml.steps import step
 
 
 def test_get_cache_status_raises_no_error_when_none_passed():
@@ -63,3 +73,35 @@ def test_get_cache_status_works_when_running_pipeline_twice(clean_repo, mocker):
     )
     pipeline.run()
     mock.assert_called_once()
+
+
+def test_pipeline_storing_context_in_the_metadata_store():
+    """Tests that storing the ZenML context in the metadata store works."""
+
+    @step
+    def some_step_1() -> int:
+        return 3
+
+    @pipeline(requirements=["test==0.1.2"])
+    def p(step_):
+        step_()
+
+    pipeline_ = p(some_step_1())
+    pipeline_.run()
+
+    repo = Repository()
+    contexts = repo.active_stack.metadata_store.store.get_contexts_by_type(
+        ZENML_MLMD_CONTEXT_TYPE
+    )
+
+    assert len(contexts) == 1
+
+    assert contexts[0].custom_properties[
+        MLMD_CONTEXT_STACK_PROPERTY_NAME
+    ].string_value == json.dumps(repo.active_stack.dict(), sort_keys=True)
+    assert (
+        contexts[0]
+        .custom_properties[MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME]
+        .string_value
+        == "test==0.1.2"
+    )
