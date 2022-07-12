@@ -96,14 +96,25 @@ def first_pipeline(step_1, step_2):
 ### Instantiate and run your Pipeline
 
 With your pipeline recipe in hand you can now specify which concrete step
-implementations to use and then run the pipeline:
+implementations to use when instantiating the pipeline:
 
 ```python
 first_pipeline_instance = first_pipeline(
     step_1=load_digits(),
     step_2=svc_trainer(),
 )
+```
 
+{% hint style="info" %}
+Currently, you cannot use the same step twice in a pipeline because step names
+must be unique. If you would like to reuse a step, use the `clone_step()` 
+utility function from `zenml.steps.utils` to create a copy of the step with a
+new name.
+{% endhint %}
+
+You can then execute your pipeline instance with the `.run()` method:
+
+```python
 first_pipeline_instance.run()
 ```
 
