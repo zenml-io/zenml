@@ -7,6 +7,7 @@ of user-defined steps as well as some built-in steps that ZenML provides.
 
 ## Basic guide to running this example
 
+<!-- # TODO: CHANGE THIS FOR FRESH USER -->
 Running this example on Azure is the quickest way to get going. You can use the
 `annotationartifactstore` storage account and its
 `annotationartifactstoretesting` blob container as a test artifact store.
@@ -63,6 +64,7 @@ running on a default port of 8093.
 
 Run the pipeline with:
 
+<!-- # TODO: FIX THIS TO WORK WITH ZENML EXAMPLE PULL -->
 ```shell
 cd examples/annotation_label_studio/
 python run.py
