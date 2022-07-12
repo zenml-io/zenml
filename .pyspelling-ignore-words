@@ -193,6 +193,7 @@ Kubernetes
 KubernetesMetadataStore
 KubernetesOrchestrator
 LLC
+LabelStudio
 LegacyVersion
 LightGBM
 LocalArtifactStore
@@ -260,6 +261,7 @@ OpenAPI
 OpenML
 Orchestrators
 PID
+PIL
 PNS
 PWD
 PWD
@@ -798,6 +800,8 @@ prepending
 prepends
 preprocessing
 preprocessor
+presign
+presigned
 pretrained
 prettyprint
 prevalidator
@@ -914,6 +918,7 @@ tokenizers
 topdown
 touchpoint
 traceback
+ttl
 txt
 ui
 uncomment
@@ -931,6 +936,7 @@ uptime
 upvote
 uri
 url
+urls
 usageMetrics
 usecase
 usecases
