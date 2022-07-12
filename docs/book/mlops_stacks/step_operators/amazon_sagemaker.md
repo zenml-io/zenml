@@ -38,6 +38,7 @@ See [here](https://docs.aws.amazon.com/sagemaker/latest/dg/notebooks-available-i
 for a list of available instance types.
 * (Optional) An experiment which is used to group Sagemaker runs. Check [this guide](https://docs.aws.amazon.com/sagemaker/latest/dg/experiments-create.html) to see how to create an experiment.
 
+We can then register the step operator and use it in our active stack:
 ```shell
 zenml step-operator register <NAME> \
     --flavor=sagemaker \

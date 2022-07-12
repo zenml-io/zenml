@@ -1,23 +1,6 @@
 ---
-description: Setting up the storage for your containers.
+description: Implement a custom container registry.
 ---
-
-A container registry is a store for (Docker) containers. A ZenML workflow 
-involving a container registry would automatically containerize your code to 
-be transported across stacks running remotely. As part of the deployment to the
-cluster, the ZenML base image would be downloaded (from a cloud container 
-registry) and used as the basis for the deployed 'run'.
-
-For instance, when you are running a local container-based stack, you would 
-therefore have a local container registry which stores the container images 
-you create that bundle up your pipeline code. You could also use a remote 
-container registry like the Elastic Container Registry at AWS in a  production 
-setting.
-
-{% hint style="warning" %}
-Before reading this chapter, make sure that you are familiar with the concept of 
-[stacks, stack components and their flavors](../advanced-guide/stacks-components-flavors.md).  
-{% endhint %}
 
 ## Base Abstraction
 
@@ -63,25 +46,6 @@ This is a slimmed-down version of the base implementation which aims to
 highlight the abstraction layer. In order to see the full implementation 
 and get the complete docstrings, please check the [API docs](https://apidocs.zenml.io/latest/api_docs/container_registries/#zenml.container_registries.base_container_registry.BaseContainerRegistry).
 {% endhint %}
-
-## List of available container registry
-
-ZenML comes built-in with several flavors for container registries:
-
-|                            | Flavor    | Integration    |
-|----------------------------|-----------|----------------|
-| DefaultContainerRegistry   | default   | `built-in`     |
-| DockerHubContainerRegistry | dockerhub | `built-in`     |
-| GCPContainerRegistry       | gcp       | `built-in`     |
-| AzureContainerRegistry     | azure     | `built-in`     |
-| AWSContainerRegistry       | aws       | aws            |
-
-If you would like to see the available flavors for container registries, you can 
-use the command:
-
-```shell
-zenml container-registry flavor list
-```
 
 ## Building your own container registry
 
