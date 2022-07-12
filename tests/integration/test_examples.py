@@ -146,57 +146,57 @@ EXAMPLES = [
         runs_on_windows=False,
         step_count=3,
     ),
-    ExampleConfiguration(
-        name="mlflow_tracking",
-        pipeline_path="pipelines/training_pipeline/training_pipeline.py",
-        pipeline_name="mlflow_example_pipeline",
-        runs_on_windows=True,
-        required_stack_components=[
-            MLFlowExperimentTracker(
-                name="mlflow_tracker",
-                tracking_uri=MLFLOW_TRACKING_URI,
-                tracking_username=MLFLOW_TRACKING_USERNAME,
-                tracking_password=MLFLOW_TRACKING_PASSWORD,
-                tracking_insecure_tls=True
-            )
-        ],
-        validation_function=mlflow_tracking_example_validation,
-    ),
-    ExampleConfiguration(
-        name="neural_prophet",
-        pipeline_path="pipelines/neural_prophet_pipeline/"
-                      "neural_prophet_pipeline.py",
-        pipeline_name="neural_prophet_pipeline",
-        runs_on_windows=False,
-        step_count=3,
-    ),
-    ExampleConfiguration(
-        name="scipy",
-        pipeline_path="pipelines/scipy_example_pipeline/"
-                      "scipy_example_pipeline.py",
-        pipeline_name="scipy_example_pipeline",
-        runs_on_windows=True,
-        step_count=4,
-    ),
-    ExampleConfiguration(
-        name="slack_alert",
-        pipeline_path="pipelines/post_pipeline.py",
-        pipeline_name="post_pipeline",
-        runs_on_windows=True,
-        required_stack_components=[
-            SlackAlerter(
-                name="test_slack_alerter",
-                slack_token=SLACK_TOKEN,
-                default_slack_channel_id=SLACK_CHANNEL_ID)
-        ],
-        step_count=5),
-    ExampleConfiguration(
-        name="xgboost",
-        pipeline_path="pipelines/xgboost_pipeline/xgboost_pipeline.py",
-        pipeline_name="xgboost_pipeline",
-        runs_on_windows=False,
-        step_count=3,
-    ),
+    # ExampleConfiguration(
+    #     name="mlflow_tracking",
+    #     pipeline_path="pipelines/training_pipeline/training_pipeline.py",
+    #     pipeline_name="mlflow_example_pipeline",
+    #     runs_on_windows=True,
+    #     required_stack_components=[
+    #         MLFlowExperimentTracker(
+    #             name="mlflow_tracker",
+    #             tracking_uri=MLFLOW_TRACKING_URI,
+    #             tracking_username=MLFLOW_TRACKING_USERNAME,
+    #             tracking_password=MLFLOW_TRACKING_PASSWORD,
+    #             tracking_insecure_tls=True
+    #         )
+    #     ],
+    #     validation_function=mlflow_tracking_example_validation,
+    # ),
+    # ExampleConfiguration(
+    #     name="neural_prophet",
+    #     pipeline_path="pipelines/neural_prophet_pipeline/"
+    #                   "neural_prophet_pipeline.py",
+    #     pipeline_name="neural_prophet_pipeline",
+    #     runs_on_windows=False,
+    #     step_count=3,
+    # ),
+    # ExampleConfiguration(
+    #     name="scipy",
+    #     pipeline_path="pipelines/scipy_example_pipeline/"
+    #                   "scipy_example_pipeline.py",
+    #     pipeline_name="scipy_example_pipeline",
+    #     runs_on_windows=True,
+    #     step_count=4,
+    # ),
+    # ExampleConfiguration(
+    #     name="slack_alert",
+    #     pipeline_path="pipelines/post_pipeline.py",
+    #     pipeline_name="post_pipeline",
+    #     runs_on_windows=True,
+    #     required_stack_components=[
+    #         SlackAlerter(
+    #             name="test_slack_alerter",
+    #             slack_token=SLACK_TOKEN,
+    #             default_slack_channel_id=SLACK_CHANNEL_ID)
+    #     ],
+    #     step_count=5),
+    # ExampleConfiguration(
+    #     name="xgboost",
+    #     pipeline_path="pipelines/xgboost_pipeline/xgboost_pipeline.py",
+    #     pipeline_name="xgboost_pipeline",
+    #     runs_on_windows=False,
+    #     step_count=3,
+    # ),
 ]
 
 
