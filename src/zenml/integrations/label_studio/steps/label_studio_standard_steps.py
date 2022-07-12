@@ -97,7 +97,7 @@ class LabelStudioDatasetSyncConfig(BaseStepConfig):
     s3_endpoint: Optional[str]
 
 
-@step
+@step(enable_cache=False)
 def get_or_create_dataset(
     config: LabelStudioDatasetRegistrationConfig,
     context: StepContext,
@@ -139,7 +139,7 @@ def get_or_create_dataset(
         raise StackComponentInterfaceError("No active annotator.")
 
 
-@step
+@step(enable_cache=False)
 def get_labeled_data(dataset_name: str, context: StepContext) -> List[Any]:
     """Gets labeled data from the dataset.
 

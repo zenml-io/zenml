@@ -23,7 +23,6 @@ from zenml.logger import get_logger
 from zenml.steps import step
 from zenml.steps.step_context import StepContext
 
-LOCAL_IMAGE_FILES = "./assets/images/"
 IMAGE_REGEX_FILTER = ".*(jpe?g|png)"
 
 logger = get_logger(__name__)

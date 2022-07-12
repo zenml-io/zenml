@@ -18,9 +18,6 @@ from huggingface_hub import from_pretrained_fastai
 from zenml.logger import get_logger
 from zenml.steps import step
 
-LOCAL_IMAGE_FILES = "./assets/images/"
-IMAGE_REGEX_FILTER = ".*(jpe?g|png)"
-
 logger = get_logger(__name__)
 
 
