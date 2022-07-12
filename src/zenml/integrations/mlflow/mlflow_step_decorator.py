@@ -50,7 +50,7 @@ def enable_mlflow() -> Callable[[S], S]:
 
 
 def enable_mlflow(
-    _step: Optional[S] = None, nested: Optional[bool] = False
+    _step: Optional[S] = None, nested: bool = False
 ) -> Union[S, Callable[[S], S]]:
     """Decorator to enable mlflow for a step function.
 
