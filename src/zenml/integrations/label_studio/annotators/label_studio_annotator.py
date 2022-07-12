@@ -17,7 +17,7 @@ import os
 import subprocess
 import sys
 import webbrowser
-from typing import Any, ClassVar, Dict, List, Optional, cast
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, cast
 
 from label_studio_sdk import Client, Project  # type: ignore[import]
 
@@ -111,6 +111,33 @@ class LabelStudioAnnotator(BaseAnnotator):
         return [
             dataset.get_params()["title"] for dataset in self.get_datasets()
         ]
+
+    def get_dataset_stats(self, dataset_name: str) -> Tuple[int, int]:
+        """Gets the statistics of the given dataset.
+
+        Args:
+            dataset_name: The name of the dataset.
+
+        Returns:
+            A dictionary containing the statistics of the dataset.
+        """
+        ls = self._get_client()
+        projects = ls.get_datasets()
+
+        try:
+            project = list(
+                filter(
+                    lambda x: dataset_name in x.get_params()["title"], projects
+                )
+            )[0]
+        except IndexError as e:
+            raise e(
+                f"Dataset {name} not found. Please use `zenml annotator dataset list` to list all available datasets."
+            ) from e
+
+        labeled_task_count = len(project.get_labeled_tasks())
+        unlabeled_task_count = len(project.get_unlabeled_tasks())
+        return (labeled_task_count, unlabeled_task_count)
 
     @property
     def root_directory(self) -> str:

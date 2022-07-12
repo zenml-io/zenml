@@ -1409,37 +1409,36 @@ def register_annotator_subcommands() -> None:
                 column_title="DATASETS",
             )
 
-        @dataset.command(
-            "stats", context_settings={"ignore_unknown_options": True}
-        )
+        @dataset.command("stats")
         @click.argument(
             "name",
             type=click.STRING,
         )
         @click.pass_obj
-        def dataset_stats(annotator: "BaseAnnotator", name: str) -> None:
+        def dataset_stats(
+            annotator: "BaseAnnotator", dataset_name: str
+        ) -> None:
             """Display statistics about a dataset.
 
             Args:
                 annotator: The annotator stack component.
-                name: The name of the dataset.
+                dataset_name: The name of the dataset.
             """
-            projects = annotator.get_datasets()
-            # TODO: make it impossible to create new datasets with same name
             try:
-                project = list(
-                    filter(lambda x: name in x.get_params()["title"], projects)
-                )[0]
+                (
+                    labeled_task_count,
+                    unlabeled_task_count,
+                ) = annotator.get_dataset_stats(dataset_name)
             except IndexError:
                 cli_utils.error(
-                    f"Dataset {name} not found. Please use `zenml annotator "
-                    f"dataset list` to list all available datasets."
+                    f"Dataset {dataset_name} does not exist. Please use `zenml annotator dataset list` to "
+                    f"list the available datasets."
                 )
-            unlabeled_task_count = len(project.get_unlabeled_tasks())
-            labeled_task_count = len(project.get_labeled_tasks())
+                return
+
             total_task_count = unlabeled_task_count + labeled_task_count
             cli_utils.declare(
-                f"Annotation stats for '{name}' dataset:", bold=True
+                f"Annotation stats for '{dataset_name}' dataset:", bold=True
             )
             cli_utils.declare(f"Total annotation tasks: {total_task_count}")
             cli_utils.declare(f"Labeled annotation tasks: {labeled_task_count}")
@@ -1447,9 +1446,7 @@ def register_annotator_subcommands() -> None:
                 f"Unlabeled annotation tasks: {unlabeled_task_count}"
             )
 
-        @dataset.command(
-            "delete", context_settings={"ignore_unknown_options": True}
-        )
+        @dataset.command("delete")
         @click.argument(
             "name",
             type=click.STRING,

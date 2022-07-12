@@ -14,7 +14,7 @@
 """Base class for ZenML annotator stack components."""
 
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 from zenml.enums import StackComponentType
 from zenml.stack import StackComponent
@@ -63,6 +63,14 @@ class BaseAnnotator(StackComponent, ABC):
 
         Returns:
             The names of the datasets currently available for annotation.
+        """
+
+    @abstractmethod
+    def get_dataset_stats(self, dataset_name: str) -> Dict[str, int]:
+        """Gets the statistics of a dataset.
+
+        Returns:
+            The statistics of a dataset.
         """
 
     @abstractmethod
