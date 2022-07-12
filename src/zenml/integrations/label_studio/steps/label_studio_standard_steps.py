@@ -17,6 +17,9 @@ from typing import Any, Dict, List, Optional, cast
 from urllib.parse import urlparse
 
 from zenml.exceptions import StackComponentInterfaceError
+from zenml.integrations.label_studio.annotators.label_studio_annotator import (
+    LabelStudioAnnotator,
+)
 from zenml.integrations.label_studio.label_config_generators import (
     TASK_TO_FILENAME_REFERENCE_MAPPING,
 )
@@ -115,7 +118,12 @@ def get_or_create_dataset(
         StackComponentInterfaceError: If no active annotator could be found.
     """
     annotator = context.stack.annotator  # type: ignore[union-attr]
-    if annotator and annotator._connection_available():  # type: ignore[union-attr]
+    if not isinstance(annotator, LabelStudioAnnotator):
+        raise TypeError(
+            "This step can only be used with the Label Studio annotator."
+        )
+    # type: ignore[union-attr]
+    if annotator and annotator._connection_available():
         preexisting_dataset_list = [
             dataset
             for dataset in annotator.get_datasets()
@@ -157,6 +165,10 @@ def get_labeled_data(dataset_name: str, context: StepContext) -> List[Any]:
     annotator = context.stack.annotator  # type: ignore[union-attr]
     if not annotator:
         raise StackComponentInterfaceError("No active annotator.")
+    if not isinstance(annotator, LabelStudioAnnotator):
+        raise TypeError(
+            "This step can only be used with the Label Studio annotator."
+        )
     if annotator._connection_available():  # type: ignore[union-attr]
         dataset = annotator.get_dataset(dataset_name=dataset_name)
         return dataset.get_labeled_tasks()  # type: ignore[no-any-return]
@@ -193,6 +205,10 @@ def sync_new_data_to_label_studio(
         raise StackComponentInterfaceError(
             "An active annotator and artifact store are required to run this step."
         )
+    if not isinstance(annotator, LabelStudioAnnotator):
+        raise TypeError(
+            "This step can only be used with the Label Studio annotator."
+        )
     # TODO: check that annotator is connected before querying it
     dataset = annotator.get_dataset(dataset_name=dataset_name)
     if not uri.startswith(artifact_store.path):
@@ -218,7 +234,8 @@ def sync_new_data_to_label_studio(
             config.aws_session_token,
         ) = get_s3_credentials()
 
-    if annotator and annotator._connection_available():  # type: ignore[union-attr]
+    # type: ignore[union-attr]
+    if annotator and annotator._connection_available():
         # TODO: get existing (CHECK!) or create the sync connection
         annotator.connect_and_sync_external_storage(  # type: ignore[union-attr]
             uri=base_uri,

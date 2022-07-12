@@ -17,20 +17,37 @@ import os
 import subprocess
 import sys
 import webbrowser
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    cast,
+)
 
 from label_studio_sdk import Client, Project  # type: ignore[import]
 
 from zenml.annotators.base_annotator import BaseAnnotator
+from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError
+from zenml.integrations.azure import AZURE_ARTIFACT_STORE_FLAVOR
+from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
 from zenml.integrations.label_studio import LABEL_STUDIO_ANNOTATOR_FLAVOR
 from zenml.integrations.label_studio.steps.label_studio_standard_steps import (
     LabelStudioDatasetRegistrationConfig,
     LabelStudioDatasetSyncConfig,
 )
+from zenml.integrations.s3 import S3_ARTIFACT_STORE_FLAVOR
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.stack import Stack
 from zenml.utils import io_utils, networking_utils
+
+if TYPE_CHECKING:
+    from zenml.stack import StackValidator
 
 logger = get_logger(__name__)
 
@@ -49,6 +66,30 @@ class LabelStudioAnnotator(BaseAnnotator):
     api_key: str
 
     FLAVOR: ClassVar[str] = LABEL_STUDIO_ANNOTATOR_FLAVOR
+
+    def validator(self) -> Optional["StackValidator"]:
+        """Validates that the stack contains a cloud artifact store.
+
+        Returns:
+            StackValidator: Validator for the stack.
+        """
+
+        def _ensure_cloud_artifact_stores(stack: Stack) -> Tuple[bool, str]:
+            # For now this only works on cloud artifact stores.
+            return (
+                stack.artifact_store.FLAVOR
+                in [
+                    AZURE_ARTIFACT_STORE_FLAVOR,
+                    GCP_ARTIFACT_STORE_FLAVOR,
+                    S3_ARTIFACT_STORE_FLAVOR,
+                ],
+                "Only cloud artifact stores are currently supported",
+            )
+
+        return StackValidator(
+            required_components={StackComponentType.SECRETS_MANAGER},
+            custom_validation_function=_ensure_cloud_artifact_stores,
+        )
 
     def get_url(self) -> str:
         """Gets the top-level URL of the annotation interface.
