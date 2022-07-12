@@ -4,18 +4,9 @@ description: How to migrate legacy stacks from zenml<0.7?
 
 # Migrating Legacy Stacks to ZenML Profiles
 
-Traditionally, Stack configurations were stored locally in the Repository root
-directory - i.e. the local `.zen` folder that is created by the `zenml init`
-command. The ZenML 0.7.0 release moves Stacks outside of Repository root
-folders into the [Global Configuration](../resources/global_config.md).
-The Profile concept was also introduced to replace the Repository as the
-concept that manages and stores the Stack configurations.
+Traditionally, Stack configurations were stored locally in the Repository root directory - i.e. the local `.zen` folder that is created by the `zenml init` command. The ZenML 0.7.0 release moves Stacks outside of Repository root folders into the [Global Configuration](../../resources/global\_config.md). The Profile concept was also introduced to replace the Repository as the concept that manages and stores the Stack configurations.
 
-To ensure a seamless transition from the traditional Repository root storage
-to Profiles, ZenML automatically detects and migrates the Stacks from an
-already initialized Repository root to a newly created Profile. This happens
-automatically the first time ZenML is launched from within a legacy initialized
-Repository, as demonstrated below:
+To ensure a seamless transition from the traditional Repository root storage to Profiles, ZenML automatically detects and migrates the Stacks from an already initialized Repository root to a newly created Profile. This happens automatically the first time ZenML is launched from within a legacy initialized Repository, as demonstrated below:
 
 ```
 /tmp/zenml$ zenml profile list
