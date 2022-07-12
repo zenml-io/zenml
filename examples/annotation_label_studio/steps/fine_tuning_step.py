@@ -15,8 +15,12 @@ import glob
 import tempfile
 from typing import Dict, List
 
+from fastai.data.transforms import get_image_files
 from fastai.learner import Learner
-from fastai.vision.all import *
+from fastai.metrics import error_rate
+from fastai.vision.augment import Resize
+from fastai.vision.data import ImageDataLoaders
+from fastai.vision.learner import vision_learner
 
 from zenml.integrations.label_studio.label_studio_utils import (
     download_azure_image,
@@ -28,6 +32,12 @@ from zenml.steps.step_context import StepContext
 IMAGE_REGEX_FILTER = ".*(jpe?g|png)"
 
 logger = get_logger(__name__)
+
+
+def is_cat(x):
+    # NEEDED FOR FASTAI MODEL IMPORT (when / if we use it)
+    # return labels[x] == "cat"
+    return True
 
 
 @step

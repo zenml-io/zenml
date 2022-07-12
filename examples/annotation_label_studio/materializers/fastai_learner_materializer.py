@@ -2,8 +2,7 @@ import os
 import tempfile
 from typing import Type
 
-from fastai.learner import Learner
-from fastai.vision.all import *
+from fastai.learner import Learner, load_learner
 
 from zenml.artifacts import ModelArtifact
 from zenml.io import fileio

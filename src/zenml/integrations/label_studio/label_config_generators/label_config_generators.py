@@ -43,7 +43,7 @@ def generate_image_classification_label_config(
     """
     label_config_type = AnnotationTasks.IMAGE_CLASSIFICATION
 
-    label_config_start = f"""<View>
+    label_config_start = """<View>
     <Image name="image" value="$image"/>
     <Choices name="choice" toName="image">
     """
@@ -74,7 +74,7 @@ def generate_basic_object_detection_bounding_boxes_label_config(
     """
     label_config_type = AnnotationTasks.OBJECT_DETECTION_BOUNDING_BOXES
 
-    label_config_start = f"""<View>
+    label_config_start = """<View>
     <Image name="image" value="$image"/>
     <RectangleLabels name="label" toName="image">
     """
