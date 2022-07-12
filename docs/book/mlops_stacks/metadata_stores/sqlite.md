@@ -2,25 +2,42 @@
 description: Store metadata on your local filesystem
 ---
 
-# SQLite Metadata Store
+The SQLite Metadata Store is a built-in ZenML [Metadata Store](./overview.md)
+flavor that uses a SQLite database file on your local filesystem to store
+ML metadata information.
 
-The SQLite Metadata Store is a built-in ZenML [Metadata Store](overview.md) flavor that uses a SQLite database file on your local filesystem to store ML metadata information.
+## When would you want to use it?
 
-### When would you want to use it?
-
-The SQLite Metadata Store is a great way to get started with ZenML, as it doesn't require you to provision additional local resources, or to deploy and manage external database services, like a Kubeflow metadata service or a MySQL database. All you need is the local filesystem. You should use the local Metadata Store if you're just evaluating or getting started with ZenML, or if you are still in the experimental phase and don't need to share your pipeline run results with others.
+The SQLite Metadata Store is a great way to get started with ZenML, as it doesn't
+require you to provision additional local resources, or to deploy and manage
+external database services, like a Kubeflow metadata service or a MySQL
+database. All you need is the local filesystem. You should use the local
+Metadata Store if you're just evaluating or getting started with ZenML, or if
+you are still in the experimental phase and don't need to share your pipeline
+run results with others.
 
 {% hint style="warning" %}
-The local Metadata Store is not meant to be utilized in production. The local filesystem cannot be shared across your team and doesn't cover services like high-availability, scalability, backup and restore and other features that are expected from a production grade MLOps system.
+The local Metadata Store is not meant to be utilized in production. The local
+filesystem cannot be shared across your team and doesn't cover services like
+high-availability, scalability, backup and restore and other features that are
+expected from a production grade MLOps system.
 
-The fact that it stores information on your local filesystem also means that not all [Orchestrators](../orchestrators/overview.md) can be used in the same stack as a local Metadata Store. Only Orchestrators running on the local machine, such as the [local Orchestrator](../model\_deployers/seldon.md), a [local Kubeflow Orchestrator](../model\_deployers/kserve.md), or a [local Kubernetes Orchestrator](../data\_validators/deepchecks.md) can be combined with a local Metadata Store
+The fact that it stores information on your local filesystem also means that not
+all [Orchestrators](../orchestrators/overview.md) can be used in the same stack
+as a local Metadata Store. Only Orchestrators running on the local machine, such
+as the [local Orchestrator](../orchestrators/local.md), a [local Kubeflow Orchestrator](../orchestrators/kubeflow.md),
+or a [local Kubernetes Orchestrator](../orchestrators/kubernetes.md) can be
+combined with a local Metadata Store
 
-As you transition to a team setting or a production setting, you can replace the local Metadata Store in your stack with one of the other flavors that are better suited for these purposes, with no changes required in your code.
+As you transition to a team setting or a production setting, you can replace the
+local Metadata Store in your stack with one of the other flavors that are
+better suited for these purposes, with no changes required in your code.
 {% endhint %}
 
-### How do you deploy it?
+## How do you deploy it?
 
-The `default` stack that comes pre-configured with ZenML already contains a SQLite Metadata Store:
+The `default` stack that comes pre-configured with ZenML already contains a
+SQLite Metadata Store:
 
 ```
 $ zenml stack list
@@ -55,9 +72,11 @@ No component name given; using `default` from active stack.
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 
-As shown by the `URI` value in the `zenml metadata-store describe` output, the Metadata Store uses a database file on your local filesystem.
+As shown by the `URI` value in the `zenml metadata-store describe` output, the
+Metadata Store uses a database file on your local filesystem.
 
-You can create additional instances of SQLite Metadata Stores and use them in your stacks as you see fit, e.g.:
+You can create additional instances of SQLite Metadata Stores and use them in
+your stacks as you see fit, e.g.:
 
 ```
 zenml metadata-store register custom_local --flavor sqlite
@@ -65,11 +84,17 @@ zenml stack register custom_stack -o default -m default -a custom_local --set
 ```
 
 {% hint style="warning" %}
-The SQLite Metadata Store takes in a `uri` configuration parameter that can be set during registration to point to a custom path on your machine. However, it is highly recommended that you rely on the default `uri` value, otherwise it may lead to unexpected results. Other local stack components rely on the default path to be able to access the local Metadata Store.
+The SQLite Metadata Store takes in a `uri` configuration parameter that can be
+set during registration to point to a custom path on your machine. However, it
+is highly recommended that you rely on the default `uri` value, otherwise it may
+lead to unexpected results. Other local stack components rely on the default
+path to be able to access the local Metadata Store.
 {% endhint %}
 
-For more, up-to-date information on the SQLite Metadata Store implementation and its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api\_docs/metadata\_stores/#zenml.metadata\_stores.mysql\_metadata\_store).
+For more, up-to-date information on the SQLite Metadata Store implementation and
+its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/metadata_stores/#zenml.metadata_stores.mysql_metadata_store).
 
-### How do you use it?
+## How do you use it?
 
-Aside from the fact that the metadata information is stored locally, using the SQLite Metadata Store is no different than [using any other flavor of Metadata Store](overview.md#how-to-use-it).
+Aside from the fact that the metadata information is stored locally, using the
+SQLite Metadata Store is no different than [using any other flavor of Metadata Store](./overview.md#how-to-use-it).
