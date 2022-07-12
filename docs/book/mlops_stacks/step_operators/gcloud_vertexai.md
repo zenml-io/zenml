@@ -24,7 +24,10 @@ to the container registry (`roles/storage.admin`).
 ## How to use it?
 
 To use the Vertex step operator, we need:
-* The ZenML `gcp` integration installed. If you haven't done so, run `zenml integration install gcp`.
+* The ZenML `gcp` integration installed. If you haven't done so, run 
+    ```shell
+    zenml integration install gcp
+    ```
 * Vertex AI enabled and a service account file. See the [deployment section](#how-do-you-deploy-it)
 for detailed instructions.
 * A [GCR container registry](../container_registries/gcloud_gcr.md) as part of our stack.

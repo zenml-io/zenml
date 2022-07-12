@@ -23,7 +23,10 @@ policies applied. Check [here](https://docs.aws.amazon.com/sagemaker/latest/dg/s
 ## How to use it?
 
 To use the Sagemaker step operator, we need:
-* The ZenML `aws` integration installed. If you haven't done so, run `zenml integration install aws`.
+* The ZenML `aws` integration installed. If you haven't done so, run 
+    ```shell
+    zenml integration install aws
+    ```
 * An IAM role with the correct permissions. See the [deployment section](#how-do-you-deploy-it)
 for detailed instructions.
 * An [AWS container registry](../container_registries/amazon_ecr.md) as part of our stack.

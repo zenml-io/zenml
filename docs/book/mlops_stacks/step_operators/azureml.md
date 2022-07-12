@@ -25,7 +25,10 @@ with a remote orchestrator.
 ## How to use it?
 
 To use the AzureML step operator, we need:
-* The ZenML `azure` integration installed. If you haven't done so, run `zenml integration install azure`.
+* The ZenML `azure` integration installed. If you haven't done so, run 
+    ```shell
+    zenml integration install azure
+    ```
 * An AzureML compute cluster and environment. See the [deployment section](#how-do-you-deploy-it)
 for detailed instructions.
 

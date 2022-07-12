@@ -27,7 +27,9 @@ or [AzureML](./azureml.md) to execute the training step with a GPU.
 
 ## Step Operator Flavors
 
-ZenML com
+Step operators to execute steps on one of the big cloud providers are provided
+by the following ZenML integrations:
+
 | Step Operator | Flavor | Integration | Notes             |
 |----------------|--------|-------------|-------------------|
 | [Sagemaker](./amazon_sagemaker.md) | `sagemaker` | `aws` | Uses Sagemaker to execute steps |
