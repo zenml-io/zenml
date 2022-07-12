@@ -14,6 +14,7 @@
 
 import glob
 import os
+from pathlib import Path
 from typing import Dict
 
 from PIL import Image
@@ -21,7 +22,7 @@ from PIL import Image
 from zenml.steps import Output, step
 from zenml.steps.step_context import StepContext
 
-LOCAL_IMAGE_FILES = "./assets/images/"
+LOCAL_IMAGE_FILES = Path(__file__).parent.absolute() / "assets/images"
 
 
 @step(enable_cache=True)
