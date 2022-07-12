@@ -99,12 +99,11 @@ class BaseAnnotator(StackComponent, ABC):
         """
 
     @abstractmethod
-    def get_unlabeled_data(self, *args: Any, **kwargs: Any) -> Any:
+    def get_unlabeled_data(self, **kwargs: str) -> Any:
         """Gets the unlabeled data for the given dataset.
 
         Args:
-            *args: positional arguments.
-            **kwargs: keyword arguments.
+            **kwargs: Additional keyword arguments to pass to the Label Studio client.
 
         Returns:
             The unlabeled data for the given dataset.

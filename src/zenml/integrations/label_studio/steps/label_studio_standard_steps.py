@@ -153,7 +153,7 @@ def get_labeled_data(dataset_name: str, context: StepContext) -> List:
     Raises:
         StackComponentInterfaceError: If no active annotator could be found.
     """
-    # TODO: have this check for new data *since the last time this step ran*
+    # TODO [MEDIUM]: have this check for new data *since the last time this step ran*
     annotator = context.stack.annotator
     if annotator and annotator._connection_available():
         dataset = annotator.get_dataset(dataset_name=dataset_name)

@@ -34,7 +34,7 @@ from zenml.utils import io_utils, networking_utils
 
 logger = get_logger(__name__)
 
-DEFAULT_LABEL_STUDIO_PORT = "8093"
+DEFAULT_LABEL_STUDIO_PORT = 8093
 
 
 class LabelStudioAnnotator(BaseAnnotator):
@@ -91,7 +91,7 @@ class LabelStudioAnnotator(BaseAnnotator):
             ][0]
         except IndexError:
             return None
-        return project.get_params()["id"]
+        return cast(int, project.get_params()["id"])
 
     def get_datasets(self) -> List[Any]:
         """Gets the datasets currently available for annotation.
@@ -289,7 +289,9 @@ class LabelStudioAnnotator(BaseAnnotator):
             )
             return False
 
-    def add_dataset(self, *args, name: str, label_config, **kwargs) -> Any:
+    def add_dataset(
+        self, *args: Any, name: str, label_config, **kwargs: Any
+    ) -> Any:
         """Registers a dataset for annotation.
 
         Args:
@@ -307,7 +309,9 @@ class LabelStudioAnnotator(BaseAnnotator):
             label_config=label_config,
         )
 
-    def delete_dataset(self, *args, dataset_name: str, **kwargs) -> None:
+    def delete_dataset(
+        self, *args: Any, dataset_name: str, **kwargs: Any
+    ) -> None:
         """Deletes a dataset from the annotation interface.
 
         Args:
@@ -320,7 +324,7 @@ class LabelStudioAnnotator(BaseAnnotator):
         dataset_id = self.get_id_from_name(dataset_name)
         ls.delete_project(dataset_id)
 
-    def get_dataset(self, *args, dataset_name: str, **kwargs) -> Any:
+    def get_dataset(self, *args: Any, dataset_name: str, **kwargs: Any) -> Any:
         """Gets the dataset with the given name.
 
         Args:
@@ -370,7 +374,9 @@ class LabelStudioAnnotator(BaseAnnotator):
         project = self.get_dataset(dataset_id)
         return project.export_tasks(export_type=output_format)
 
-    def get_labeled_data(self, *args, dataset_name: str, **kwargs) -> Any:
+    def get_labeled_data(
+        self, *args: Any, dataset_name: str, **kwargs: Any
+    ) -> Any:
         """Gets the labeled data for the given dataset.
 
         Args:
@@ -385,18 +391,17 @@ class LabelStudioAnnotator(BaseAnnotator):
         dataset_id = self.get_id_from_name(dataset_name)
         return ls.get_project(dataset_id).get_labeled_tasks()
 
-    def get_unlabeled_data(self, *args, dataset_name: str, **kwargs) -> Any:
+    def get_unlabeled_data(self, **kwargs: str) -> Any:
         """Gets the unlabeled data for the given dataset.
 
         Args:
-            dataset_name: Name of the dataset.
-            *args: Additional arguments to pass to the Label Studio client.
             **kwargs: Additional keyword arguments to pass to the Label Studio client.
 
         Returns:
             A dictionary containing the unlabeled data.
         """
         ls = self._get_client()
+        dataset_name = kwargs.get("dataset_name")
         dataset_id = self.get_id_from_name(dataset_name)
         return ls.get_project(dataset_id).get_unlabeled_tasks()
 
@@ -585,7 +590,9 @@ class LabelStudioAnnotator(BaseAnnotator):
         if config.storage_type == "azure":
             if not config.azure_account_name or not config.azure_account_key:
                 logger.warn(
-                    "Authentication credentials for Azure aren't fully provided. Please update the storage synchronization settings in the Label Studio web UI as per your needs."
+                    "Authentication credentials for Azure aren't fully "
+                    "provided. Please update the storage synchronization "
+                    "settings in the Label Studio web UI as per your needs."
                 )
             storage = dataset.connect_azure_import_storage(
                 container=uri,
@@ -602,7 +609,10 @@ class LabelStudioAnnotator(BaseAnnotator):
         elif config.storage_type == "gcs":
             if not config.google_application_credentials:
                 logger.warn(
-                    "Authentication credentials for Google Cloud Storage aren't fully provided. Please update the storage synchronization settings in the Label Studio web UI as per your needs."
+                    "Authentication credentials for Google Cloud Storage "
+                    "aren't fully provided. Please update the storage "
+                    "synchronization settings in the Label Studio web UI as "
+                    "per your needs."
                 )
             storage = dataset.connect_google_import_storage(
                 bucket=uri,
@@ -618,7 +628,9 @@ class LabelStudioAnnotator(BaseAnnotator):
         elif config.storage_type == "s3":
             if not config.aws_access_key_id or not config.aws_secret_access_key:
                 logger.warn(
-                    "Authentication credentials for S3 aren't fully provided. Please update the storage synchronization settings in the Label Studio web UI as per your needs."
+                    "Authentication credentials for S3 aren't fully provided."
+                    "Please update the storage synchronization settings in the "
+                    " Label Studio web UI as per your needs."
                 )
             storage = dataset.connect_s3_import_storage(
                 bucket=uri,
