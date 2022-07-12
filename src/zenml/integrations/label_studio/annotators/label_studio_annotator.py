@@ -291,29 +291,34 @@ class LabelStudioAnnotator(BaseAnnotator):
             )
             return False
 
-    def add_dataset(
-        self, *args: Any, name: str, label_config, **kwargs: Any
-    ) -> Any:
+    def add_dataset(self, **kwargs: Any) -> Any:
         """Registers a dataset for annotation.
 
         Args:
-            name: Name of the dataset.
-            label_config: Label configuration.
-            *args: Additional arguments to pass to the underlying client.
             **kwargs: Additional keyword arguments to pass to the Label Studio client.
 
         Returns:
             A Label Studio Project object.
         """
         ls = self._get_client()
+        dataset_name = kwargs.get("dataset_name")
+        label_config = kwargs.get("label_config")
+        if not dataset_name:
+            raise ValueError("`dataset_name` keyword argument is required.")
+        elif not label_config:
+            raise ValueError("`label_config` keyword argument is required.")
+
+        dataset_id = self.get_id_from_name(dataset_name)
+        if not dataset_id:
+            raise ValueError(
+                f"Dataset name '{dataset_name}' has no corresponding `dataset_id` in Label Studio."
+            )
         return ls.start_project(
-            title=name,
+            title=dataset_name,
             label_config=label_config,
         )
 
-    def delete_dataset(
-        self, *args: Any, dataset_name: str, **kwargs: Any
-    ) -> None:
+    def delete_dataset(self, **kwargs: Any) -> None:
         """Deletes a dataset from the annotation interface.
 
         Args:
@@ -323,15 +328,21 @@ class LabelStudioAnnotator(BaseAnnotator):
         """
         # TODO: Awaiting a new Label Studio version to be released with this method
         ls = self._get_client()
+        dataset_name = kwargs.get("dataset_name")
+        if not dataset_name:
+            raise ValueError("`dataset_name` keyword argument is required.")
+
         dataset_id = self.get_id_from_name(dataset_name)
+        if not dataset_id:
+            raise ValueError(
+                f"Dataset name '{dataset_name}' has no corresponding `dataset_id` in Label Studio."
+            )
         ls.delete_project(dataset_id)
 
-    def get_dataset(self, *args: Any, dataset_name: str, **kwargs: Any) -> Any:
+    def get_dataset(self, **kwargs: Any) -> Any:
         """Gets the dataset with the given name.
 
         Args:
-            dataset_name: Name of the dataset.
-            *args: Additional arguments to pass to the Label Studio client.
             **kwargs: Additional keyword arguments to pass to the Label Studio client.
 
         Returns:
@@ -339,7 +350,15 @@ class LabelStudioAnnotator(BaseAnnotator):
         """
         # TODO: check for and raise error if client unavailable
         ls = self._get_client()
+        dataset_name = kwargs.get("dataset_name")
+        if not dataset_name:
+            raise ValueError("`dataset_name` keyword argument is required.")
+
         dataset_id = self.get_id_from_name(dataset_name)
+        if not dataset_id:
+            raise ValueError(
+                f"Dataset name '{dataset_name}' has no corresponding `dataset_id` in Label Studio."
+            )
         return ls.get_project(dataset_id)
 
     def _dataset_name_to_project(self, dataset_name: str) -> Optional[Project]:
@@ -361,7 +380,7 @@ class LabelStudioAnnotator(BaseAnnotator):
         return current_project[0]
 
     def get_converted_dataset(
-        self, dataset_id: int, output_format: str
+        self, dataset_name: str, output_format: str
     ) -> Dict[Any, Any]:
         """Extract annotated tasks in a specific converted format.
 
@@ -373,12 +392,11 @@ class LabelStudioAnnotator(BaseAnnotator):
             A dictionary containing the converted dataset.
         """
         # project = self._dataset_name_to_project(dataset_name)
-        project = self.get_dataset(dataset_id)
-        return project.export_tasks(export_type=output_format)
+        self._get_client()
+        project = self.get_dataset(dataset_name=dataset_name)
+        return project.export_tasks(export_type=output_format)  # type: ignore[no-any-return]
 
-    def get_labeled_data(
-        self, *args: Any, dataset_name: str, **kwargs: Any
-    ) -> Any:
+    def get_labeled_data(self, **kwargs: Any) -> Any:
         """Gets the labeled data for the given dataset.
 
         Args:
@@ -390,7 +408,15 @@ class LabelStudioAnnotator(BaseAnnotator):
             A dictionary containing the labeled data.
         """
         ls = self._get_client()
+        dataset_name = kwargs.get("dataset_name")
+        if not dataset_name:
+            raise ValueError("`dataset_name` keyword argument is required.")
+
         dataset_id = self.get_id_from_name(dataset_name)
+        if not dataset_id:
+            raise ValueError(
+                f"Dataset name '{dataset_name}' has no corresponding `dataset_id` in Label Studio."
+            )
         return ls.get_project(dataset_id).get_labeled_tasks()
 
     def get_unlabeled_data(self, **kwargs: str) -> Any:
@@ -404,7 +430,14 @@ class LabelStudioAnnotator(BaseAnnotator):
         """
         ls = self._get_client()
         dataset_name = kwargs.get("dataset_name")
+        if not dataset_name:
+            raise ValueError("`dataset_name` keyword argument is required.")
+
         dataset_id = self.get_id_from_name(dataset_name)
+        if not dataset_id:
+            raise ValueError(
+                f"Dataset name '{dataset_name}' has no corresponding `dataset_id` in Label Studio."
+            )
         return ls.get_project(dataset_id).get_unlabeled_tasks()
 
     def register_dataset_for_annotation(
@@ -425,7 +458,7 @@ class LabelStudioAnnotator(BaseAnnotator):
             dataset = ls.get_project(self.get_id_from_name(config.dataset_name))
         else:
             dataset = self.add_dataset(
-                name=config.dataset_name,
+                dataset_name=config.dataset_name,
                 label_config=config.label_config,
             )
 

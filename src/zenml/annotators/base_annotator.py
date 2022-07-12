@@ -58,7 +58,7 @@ class BaseAnnotator(StackComponent, ABC):
         """
 
     @abstractmethod
-    def add_dataset(self, *args: Any, **kwargs: Any) -> Any:
+    def add_dataset(self, **kwargs: Any) -> Any:
         """Registers a dataset for annotation.
 
         Args:
@@ -70,7 +70,7 @@ class BaseAnnotator(StackComponent, ABC):
         """
 
     @abstractmethod
-    def get_dataset(self, *args: Any, **kwargs: Any) -> Any:
+    def get_dataset(self, **kwargs: Any) -> Any:
         """Gets the dataset with the given name.
 
         Args:
@@ -82,7 +82,7 @@ class BaseAnnotator(StackComponent, ABC):
         """
 
     @abstractmethod
-    def delete_dataset(self, *args: Any, **kwargs: Any) -> None:
+    def delete_dataset(self, **kwargs: Any) -> None:
         """Deletes a dataset.
 
         Args:
@@ -91,11 +91,10 @@ class BaseAnnotator(StackComponent, ABC):
         """
 
     @abstractmethod
-    def get_labeled_data(self, *args: Any, **kwargs: Any) -> Any:
+    def get_labeled_data(self, **kwargs: Any) -> Any:
         """Gets the labeled data for the given dataset.
 
         Args:
-            *args: positional arguments.
             **kwargs: keyword arguments.
 
         Returns:
