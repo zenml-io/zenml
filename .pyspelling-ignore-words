@@ -169,6 +169,7 @@ IOError
 IPython
 ISTIO
 ImportError
+IndexError
 InitializationException
 Initializations
 IntegrationError
