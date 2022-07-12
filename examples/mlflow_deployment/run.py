@@ -14,24 +14,26 @@
 from typing import cast
 
 import click
-from pipeline import (
-    DeploymentTriggerConfig,
-    MLFlowDeploymentLoaderStepConfig,
-    TrainerConfig,
-    continuous_deployment_pipeline,
-    deployment_trigger,
-    dynamic_importer,
-    importer_mnist,
-    inference_pipeline,
-    model_deployer,
-    normalizer,
-    prediction_service_loader,
-    predictor,
-    tf_evaluator,
-    tf_predict_preprocessor,
-    tf_trainer,
-)
+from pipelines import continuous_deployment_pipeline, inference_pipeline
 from rich import print
+from steps.deployment_trigger.deployment_trigger_step import (
+    DeploymentTriggerConfig,
+    deployment_trigger,
+)
+from steps.dynamic_importer.dynamic_importer_step import dynamic_importer
+from steps.importer.importer_step import importer_mnist
+from steps.normalizer.normalizer_step import normalizer
+from steps.prediction_service_loader.prediction_service_loader_step import (
+    MLFlowDeploymentLoaderStepConfig,
+    model_deployer,
+    prediction_service_loader,
+)
+from steps.predictor.predictor_step import predictor
+from steps.tf_evaluator.tf_evaluator_step import tf_evaluator
+from steps.tf_predict_preprocessor.tf_predict_preprocessor_step import (
+    tf_predict_preprocessor,
+)
+from steps.tf_trainer.tf_trainer_step import TrainerConfig, tf_trainer
 
 from zenml.integrations.mlflow.mlflow_utils import get_tracking_uri
 from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
