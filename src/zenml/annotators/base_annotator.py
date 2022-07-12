@@ -58,6 +58,14 @@ class BaseAnnotator(StackComponent, ABC):
         """
 
     @abstractmethod
+    def get_dataset_names(self) -> List[str]:
+        """Gets the names of the datasets currently available for annotation.
+
+        Returns:
+            The names of the datasets currently available for annotation.
+        """
+
+    @abstractmethod
     def launch(self, url: Optional[str]) -> None:
         """Launches the annotation interface.
 

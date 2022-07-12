@@ -1395,7 +1395,6 @@ def register_annotator_subcommands() -> None:
 
         @dataset.command(
             "list",
-            context_settings={"ignore_unknown_options": True},
             help="List the available datasets.",
         )
         @click.pass_obj
@@ -1405,12 +1404,9 @@ def register_annotator_subcommands() -> None:
             Args:
                 annotator: The annotator stack component.
             """
-            dataset_names = [
-                dataset.get_params()["title"]
-                for dataset in annotator.get_datasets()
-            ]
             cli_utils.print_list_items(
-                list_items=dataset_names, column_title="DATASETS"
+                list_items=annotator.get_dataset_names(),
+                column_title="DATASETS",
             )
 
         @dataset.command(

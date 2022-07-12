@@ -102,6 +102,16 @@ class LabelStudioAnnotator(BaseAnnotator):
         ls = self._get_client()
         return cast(List[Any], ls.get_projects())
 
+    def get_dataset_names(self) -> List[str]:
+        """Gets the names of the datasets.
+
+        Returns:
+            A list of dataset names.
+        """
+        return [
+            dataset.get_params()["title"] for dataset in self.get_datasets()
+        ]
+
     @property
     def root_directory(self) -> str:
         """Returns path to the root directory.
