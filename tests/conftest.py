@@ -433,6 +433,7 @@ def virtualenv(
             )
         execfile(str(activate_this_f), dict(__file__=str(activate_this_f)))
 
+        shutil.rmtree(tmp_path)
     else:
         yield ""
 
