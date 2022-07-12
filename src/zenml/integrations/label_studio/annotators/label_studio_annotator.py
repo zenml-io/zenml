@@ -431,7 +431,8 @@ class LabelStudioAnnotator(BaseAnnotator):
         # project = self._dataset_name_to_project(dataset_name)
         self._get_client()
         project = self.get_dataset(dataset_name=dataset_name)
-        return project.export_tasks(export_type=output_format)  # type: ignore[no-any-return]
+        # type: ignore[no-any-return]
+        return project.export_tasks(export_type=output_format)
 
     def get_labeled_data(self, **kwargs: Any) -> Any:
         """Gets the labeled data for the given dataset.
@@ -659,6 +660,16 @@ class LabelStudioAnnotator(BaseAnnotator):
         """
         if self._storage_source_already_exists(uri, config, dataset):
             return None
+
+        storage_connection_args = {
+            "prefix": config.prefix,
+            "regex_filter": config.regex_filter,
+            "use_blob_urls": config.use_blob_urls,
+            "presign": config.presign,
+            "presign_ttl": config.presign_ttl,
+            "title": dataset.get_params()["title"],
+            "description": config.description,
+        }
         if config.storage_type == "azure":
             if not config.azure_account_name or not config.azure_account_key:
                 logger.warning(
@@ -668,15 +679,9 @@ class LabelStudioAnnotator(BaseAnnotator):
                 )
             storage = dataset.connect_azure_import_storage(
                 container=uri,
-                prefix=config.prefix,
-                regex_filter=config.regex_filter,
-                use_blob_urls=config.use_blob_urls,
-                presign=config.presign,
-                presign_ttl=config.presign_ttl,
-                title=dataset.get_params()["title"],
-                description=config.description,
                 account_name=config.azure_account_name,
                 account_key=config.azure_account_key,
+                **storage_connection_args,
             )
         elif config.storage_type == "gcs":
             if not config.google_application_credentials:
@@ -688,14 +693,8 @@ class LabelStudioAnnotator(BaseAnnotator):
                 )
             storage = dataset.connect_google_import_storage(
                 bucket=uri,
-                prefix=config.prefix,
-                regex_filter=config.regex_filter,
-                use_blob_urls=config.use_blob_urls,
-                presign=config.presign,
-                presign_ttl=config.presign_ttl,
-                title=dataset.get_params()["title"],
-                description=config.description,
                 google_application_credentials=config.google_application_credentials,
+                **storage_connection_args,
             )
         elif config.storage_type == "s3":
             if not config.aws_access_key_id or not config.aws_secret_access_key:
@@ -706,18 +705,12 @@ class LabelStudioAnnotator(BaseAnnotator):
                 )
             storage = dataset.connect_s3_import_storage(
                 bucket=uri,
-                prefix=config.prefix,
-                regex_filter=config.regex_filter,
-                use_blob_urls=config.use_blob_urls,
-                presign=config.presign,
-                presign_ttl=config.presign_ttl,
-                title=dataset.get_params()["title"],
-                description=config.description,
                 aws_access_key_id=config.aws_access_key_id,
                 aws_secret_access_key=config.aws_secret_access_key,
                 aws_session_token=config.aws_session_token,
                 region_name=config.region_name,
                 s3_endpoint=config.s3_endpoint,
+                **storage_connection_args,
             )
         else:
             raise ValueError(
