@@ -162,22 +162,22 @@ EXAMPLES = [
     #     ],
     #     validation_function=mlflow_tracking_example_validation,
     # ),
-    # ExampleConfiguration(
-    #     name="neural_prophet",
-    #     pipeline_path="pipelines/neural_prophet_pipeline/"
-    #                   "neural_prophet_pipeline.py",
-    #     pipeline_name="neural_prophet_pipeline",
-    #     runs_on_windows=False,
-    #     step_count=3,
-    # ),
-    # ExampleConfiguration(
-    #     name="scipy",
-    #     pipeline_path="pipelines/scipy_example_pipeline/"
-    #                   "scipy_example_pipeline.py",
-    #     pipeline_name="scipy_example_pipeline",
-    #     runs_on_windows=True,
-    #     step_count=4,
-    # ),
+    ExampleConfiguration(
+        name="neural_prophet",
+        pipeline_path="pipelines/neural_prophet_pipeline/"
+                      "neural_prophet_pipeline.py",
+        pipeline_name="neural_prophet_pipeline",
+        runs_on_windows=False,
+        step_count=3,
+    ),
+    ExampleConfiguration(
+        name="scipy",
+        pipeline_path="pipelines/scipy_example_pipeline/"
+                      "scipy_example_pipeline.py",
+        pipeline_name="scipy_example_pipeline",
+        runs_on_windows=True,
+        step_count=4,
+    ),
     # ExampleConfiguration(
     #     name="slack_alert",
     #     pipeline_path="pipelines/post_pipeline.py",
