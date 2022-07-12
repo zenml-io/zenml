@@ -10,7 +10,7 @@ Have you had trouble replicating production pipelines and monitoring models in p
 
 If you answered yes to any, **ZenML** is here to help with all that, and more. 
 
-![Zenml](assets/oss-header.svg)
+![Zenml](../assets/oss-header.svg)
 
 **ZenML** is an extensible, open-source MLOps framework for creating portable, production-ready MLOps pipelines. 
 It's built for data scientists, ML Engineers, and MLOps Developers to collaborate as they develop to production.

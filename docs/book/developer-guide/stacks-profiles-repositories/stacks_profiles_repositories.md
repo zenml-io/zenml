@@ -238,6 +238,11 @@ The active Profile determines the Stacks and Stack Components that are
 available for use by ZenML pipelines. New Stacks and Stack Components
 registered via the CLI are only added to the active Profile and are available
 only as long as that Profile is active.
+
+If you want to reuse stacks from other profiles, you can use the 
+`zenml stack copy` CLI command to copy stacks between profiles. For more
+information, run `zenml stack copy --help` or visit our
+[CLI docs](https://apidocs.zenml.io/latest/cli/).
 {% endhint %}
 
 #### Detailed Example

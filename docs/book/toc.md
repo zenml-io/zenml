@@ -28,8 +28,9 @@
   * [Migrating Legacy Stacks to ZenML Profiles](developer-guide/stacks-profiles-repositories/migrating-legacy-stacks.md)
 * [Advanced Concepts](developer-guide/advanced-concepts/overview.md)
   * [Materializers](developer-guide/advanced-concepts/materializer.md)
-  * [Step Fixtures](developer-guide/advanced-concepts/fetching-historic-runs.md)
   * [Services](developer-guide/advanced-concepts/manage-external-services.md)
+  * [Step Contexts and Step Fixtures](developer-guide/advanced-concepts/step-fixtures.md)
+  * [Docker Image Management](developer-guide/advanced-concepts/docker.md)
 
 ## MLOps Stacks
 
@@ -126,6 +127,7 @@
 * [Newsletter](https://zenml.substack.com/)
 * [Roadmap](https://zenml.io/roadmap)
 * [Contribution Guide](resources/contributing.md)
+* [External Integration Guide](resources/integrating.md)
 * [Best Practices](resources/best-practices.md)
 * [Global Configuration](resources/global_config.md)
 * [System Environmental Variables](resources/system-environmental-variables.md)

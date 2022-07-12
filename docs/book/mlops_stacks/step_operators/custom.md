@@ -1,17 +1,6 @@
 ---
-description: Running individual steps in specialized environments.
+description: Implement a custom step operator.
 ---
-
-Step operators allow you to run individual steps in a custom environment
-different from the default one used by your active orchestrator. One example
-use-case is to run a training step of your pipeline in an environment with GPUs
-available.
-
-{% hint style="warning" %}
-Before reading this chapter, make sure that you are familiar with the 
-concept of [stacks, stack components and their flavors](../advanced-guide/stacks-components-flavors.md).  
-{% endhint %}
-
 ## Base Abstraction
 
 The `BaseStepOperator` is the abstract base class that needs to be subclassed 
@@ -64,26 +53,8 @@ class BaseStepOperator(StackComponent, ABC):
 {% hint style="info" %}
 This is a slimmed-down version of the base implementation which aims to 
 highlight the abstraction layer. In order to see the full implementation 
-and get the complete docstrings, please check the [API docs](https://apidocs.zenml.io/0.7.3/api_docs/step_operators/#zenml.step_operators.base_step_operator.BaseStepOperator).
+and get the complete docstrings, please check the [API docs](https://apidocs.zenml.io/latest/api_docs/step_operators/#zenml.step_operators.base_step_operator.BaseStepOperator).
 {% endhint %}
-
-## List of available step operators
-
-You can find step operator implementations for the three big cloud providers in 
-the `azureml`, `sagemaker` and `vertex` integrations.
-
-|                                                                                                                                                                     | Flavor    | Integration |
-|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------|-------------|
-| [AzureMLStepOperator](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.azure.step_operators.azureml_step_operator.AzureMLStepOperator)     | azureml   | azure       |
-| [SagemakerStepOperator](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.aws.step_operators.sagemaker_step_operator.SagemakerStepOperator) | sagemaker | aws         |
-| [VertexStepOperator](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.gcp.step_operators.vertex_step_operator.VertexStepOperator)          | vertex    | gcp         |
-
-If you would like to see the available flavors for step operators, you can 
-use the command:
-
-```shell
-zenml step-operator flavor list
-```
 
 ## Building your own custom step operator
 
