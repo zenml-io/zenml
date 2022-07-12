@@ -22,10 +22,10 @@ from PIL import Image
 from zenml.steps import Output, step
 from zenml.steps.step_context import StepContext
 
-LOCAL_IMAGE_FILES = Path(__file__).parent.absolute() / "assets/images"
+LOCAL_IMAGE_FILES = str(Path(__file__).parent.absolute() / "assets/images")
 
 
-@step(enable_cache=True)
+@step(enable_cache=False)
 def load_image_data(context: StepContext) -> Output(images=Dict, uri=str):
     """Gets images from a cloud artifact store directory."""
     image_files = glob.glob(f"{LOCAL_IMAGE_FILES}/*.jpeg")

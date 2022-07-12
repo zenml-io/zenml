@@ -21,6 +21,6 @@ from zenml.steps import step
 logger = get_logger(__name__)
 
 
-@step(enable_cache=True)
+@step
 def model_loader() -> Learner:
     return from_pretrained_fastai("fastai/cat_or_dog")

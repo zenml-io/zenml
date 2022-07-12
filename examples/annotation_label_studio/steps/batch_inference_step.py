@@ -27,7 +27,7 @@ def batch_inference(image_dict: Dict, model: Learner) -> List:
 
     Returns a list of predictions compatible with Label Studio.
     """
-    # TODO: Actually implement the batch inference step
+    # TODO: [HIGH] Actually implement the batch inference step
     # below are just dummy values
     return [
         {
