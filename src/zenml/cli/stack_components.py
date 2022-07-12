@@ -1490,11 +1490,13 @@ def register_annotator_subcommands() -> None:
             "annotate", context_settings={"ignore_unknown_options": True}
         )
         @click.argument(
-            "name",
+            "dataset_name",
             type=click.STRING,
         )
         @click.pass_obj
-        def dataset_annotate(annotator: "BaseAnnotator", name: str) -> None:
+        def dataset_annotate(
+            annotator: "BaseAnnotator", dataset_name: str
+        ) -> None:
             """Command to launch the annotation interface for a dataset.
 
             Args:
@@ -1502,9 +1504,13 @@ def register_annotator_subcommands() -> None:
                 name: Name of the dataset
             """
             cli_utils.declare(
-                f"Launching the annotation interface for dataset '{name}'."
+                f"Launching the annotation interface for dataset '{dataset_name}'."
             )
-            annotator.launch(url=annotator.get_annotation_url(name))
+            try:
+                annotator.get_dataset(dataset_name=dataset_name)
+                annotator.launch(url=annotator.get_annotation_url(dataset_name))
+            except ValueError as e:
+                raise ValueError("Dataset does not exist.") from e
 
 
 def register_all_stack_component_cli_commands() -> None:
