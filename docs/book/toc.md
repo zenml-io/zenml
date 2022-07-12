@@ -21,15 +21,19 @@
   * [Functional vs. Class-Based API](developer-guide/steps-pipelines/class-based-api.md)
   * [Caching Pipeline Runs](developer-guide/steps-pipelines/caching.md)
   * [Inspecting Finished Pipeline Runs](developer-guide/steps-pipelines/post-execution-workflow.md)
+  * [Duplicating Steps](developer-guide/steps-pipelines/duplicating-steps.md)
+  * [Defining Pipeline Requirements](developer-guide/steps-pipelines/pipeline-requirements.md)
 * [Stacks, Profiles, Repositories](developer-guide/stacks-profiles-repositories/stacks_profiles_repositories.md)
   * [Managing Stacks in Python](developer-guide/stacks-profiles-repositories/python-stack-management.md)
   * [Managing Stack Component States](developer-guide/stacks-profiles-repositories/stack-state-management.md)
+  * [Copying Stacks](developer-guide/stacks-profiles-repositories/copying-stacks.md)
   * [Setting Stacks and Profiles with Environment Variables](developer-guide/stacks-profiles-repositories/stack-profile-environment-variables.md)
   * [Migrating Legacy Stacks to ZenML Profiles](developer-guide/stacks-profiles-repositories/migrating-legacy-stacks.md)
 * [Advanced Concepts](developer-guide/advanced-concepts/overview.md)
   * [Materializers](developer-guide/advanced-concepts/materializer.md)
   * [Services](developer-guide/advanced-concepts/manage-external-services.md)
   * [Step Contexts and Step Fixtures](developer-guide/advanced-concepts/fetching-historic-runs.md)
+  * [Docker Image Management](developer-guide/advanced-concepts/docker.md)
 
 ## MLOps Stacks
 
@@ -126,6 +130,7 @@
 * [Newsletter](https://zenml.substack.com/)
 * [Roadmap](https://zenml.io/roadmap)
 * [Contribution Guide](resources/contributing.md)
+* [External Integration Guide](resources/integrating.md)
 * [Best Practices](resources/best-practices.md)
 * [Global Configuration](resources/global_config.md)
 * [System Environmental Variables](resources/system-environmental-variables.md)
