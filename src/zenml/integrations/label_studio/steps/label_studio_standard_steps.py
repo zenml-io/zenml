@@ -114,8 +114,8 @@ def get_or_create_dataset(
     Raises:
         StackComponentInterfaceError: If no active annotator could be found.
     """
-    annotator = context.stack.annotator
-    if annotator and annotator._connection_available():
+    annotator = context.stack.annotator  # type: ignore[union-attr]
+    if annotator and annotator._connection_available():  # type: ignore[union-attr]
         preexisting_dataset_list = [
             dataset
             for dataset in annotator.get_datasets()
@@ -124,9 +124,9 @@ def get_or_create_dataset(
         if (
             not preexisting_dataset_list
             and annotator
-            and annotator._connection_available()
+            and annotator._connection_available()  # type: ignore[union-attr]
         ):
-            registered_dataset = annotator.register_dataset_for_annotation(
+            registered_dataset = annotator.register_dataset_for_annotation(  # type: ignore[union-attr]
                 config
             )
         elif preexisting_dataset_list:
@@ -140,7 +140,7 @@ def get_or_create_dataset(
 
 
 @step
-def get_labeled_data(dataset_name: str, context: StepContext) -> List:
+def get_labeled_data(dataset_name: str, context: StepContext) -> List[Any]:
     """Gets labeled data from the dataset.
 
     Args:
@@ -154,12 +154,16 @@ def get_labeled_data(dataset_name: str, context: StepContext) -> List:
         StackComponentInterfaceError: If no active annotator could be found.
     """
     # TODO [MEDIUM]: have this check for new data *since the last time this step ran*
-    annotator = context.stack.annotator
-    if annotator and annotator._connection_available():
-        dataset = annotator.get_dataset(dataset_name=dataset_name)
-        return dataset.get_labeled_tasks()
-    else:
+    annotator = context.stack.annotator  # type: ignore[union-attr]
+    if not annotator:
         raise StackComponentInterfaceError("No active annotator.")
+    if annotator._connection_available():  # type: ignore[union-attr]
+        dataset = annotator.get_dataset(dataset_name=dataset_name)
+        return dataset.get_labeled_tasks()  # type: ignore[no-any-return]
+    else:
+        raise StackComponentInterfaceError(
+            "Unable to connect to annotator stack component."
+        )
 
 
 @step(enable_cache=False)
@@ -183,10 +187,14 @@ def sync_new_data_to_label_studio(
         ValueError: if you are trying to sync from outside ZenML.
         StackComponentInterfaceError: If no active annotator could be found.
     """
-    annotator = context.stack.annotator
+    annotator = context.stack.annotator  # type: ignore[union-attr]
+    artifact_store = context.stack.artifact_store  # type: ignore[union-attr]
+    if not annotator or not artifact_store:
+        raise StackComponentInterfaceError(
+            "An active annotator and artifact store are required to run this step."
+        )
     # TODO: check that annotator is connected before querying it
     dataset = annotator.get_dataset(dataset_name=dataset_name)
-    artifact_store = context.stack.artifact_store
     if not uri.startswith(artifact_store.path):
         raise ValueError(
             "ZenML only currently supports syncing data passed from other ZenML steps and via the Artifact Store."
@@ -210,9 +218,9 @@ def sync_new_data_to_label_studio(
             config.aws_session_token,
         ) = get_s3_credentials()
 
-    if annotator and annotator._connection_available():
+    if annotator and annotator._connection_available():  # type: ignore[union-attr]
         # TODO: get existing (CHECK!) or create the sync connection
-        annotator.connect_and_sync_external_storage(
+        annotator.connect_and_sync_external_storage(  # type: ignore[union-attr]
             uri=base_uri,
             config=config,
             dataset=dataset,

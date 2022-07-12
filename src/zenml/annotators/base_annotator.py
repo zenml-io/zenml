@@ -42,6 +42,14 @@ class BaseAnnotator(StackComponent, ABC):
         """
 
     @abstractmethod
+    def get_annotation_url(self, dataset_name: str) -> str:
+        """Gets the URL of the annotation interface for a specific dataset.
+
+        Returns:
+            The URL of the dataset annotation interface.
+        """
+
+    @abstractmethod
     def get_datasets(self) -> List[Any]:
         """Gets the datasets currently available for annotation.
 

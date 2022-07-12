@@ -60,7 +60,7 @@ class LabelStudioAnnotator(BaseAnnotator):
         """
         return f"http://localhost:{self.port}"
 
-    def get_annotation_url(self, name: str) -> str:
+    def get_annotation_url(self, dataset_name: str) -> str:
         """Gets the URL of the annotation interface for the given dataset.
 
         Args:
@@ -69,10 +69,10 @@ class LabelStudioAnnotator(BaseAnnotator):
         Returns:
             The URL of the annotation interface.
         """
-        project_id = self.get_id_from_name(name)
+        project_id = self.get_id_from_name(dataset_name)
         return f"{self.get_url()}/projects/{project_id}/"
 
-    def get_id_from_name(self, name: str) -> Optional[int]:
+    def get_id_from_name(self, dataset_name: str) -> Optional[int]:
         """Gets the ID of the given dataset.
 
         Args:
@@ -87,7 +87,7 @@ class LabelStudioAnnotator(BaseAnnotator):
             project = [
                 project
                 for project in projects
-                if project.get_params()["title"] == name
+                if project.get_params()["title"] == dataset_name
             ][0]
         except IndexError:
             return None
@@ -100,7 +100,7 @@ class LabelStudioAnnotator(BaseAnnotator):
             A list of datasets.
         """
         ls = self._get_client()
-        return ls.get_projects()
+        return cast(List[Any], ls.get_projects())
 
     @property
     def root_directory(self) -> str:
@@ -284,7 +284,7 @@ class LabelStudioAnnotator(BaseAnnotator):
         ls = self._get_client()
         try:
             result = ls.check_connection()
-            return result.get("status") == "UP"
+            return result.get("status") == "UP"  # type: ignore[no-any-return]
         except Exception:
             logger.error(
                 "Connection error: No connection was able to be established to the Label Studio backend."
