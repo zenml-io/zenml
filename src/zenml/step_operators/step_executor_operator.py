@@ -30,6 +30,10 @@ from tfx.proto.orchestration import (
 
 import zenml
 import zenml.constants
+from zenml.constants import (
+    MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME,
+    ZENML_MLMD_CONTEXT_TYPE,
+)
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.repository import Repository
@@ -117,9 +121,9 @@ class StepExecutorOperator(BaseExecutorOperator):
 
         # Add pipeline requirements from the corresponding node context
         for context in pipeline_node.contexts.contexts:
-            if context.type.name == "pipeline_requirements":
+            if context.type.name == ZENML_MLMD_CONTEXT_TYPE:
                 pipeline_requirements = context.properties[
-                    "pipeline_requirements"
+                    MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME
                 ].field_value.string_value.split(" ")
                 requirements.update(pipeline_requirements)
                 break

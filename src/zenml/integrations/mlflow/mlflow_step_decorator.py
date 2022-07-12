@@ -50,15 +50,17 @@ def enable_mlflow() -> Callable[[S], S]:
 
 
 def enable_mlflow(
-    _step: Optional[S] = None,
+    _step: Optional[S] = None, nested: bool = False
 ) -> Union[S, Callable[[S], S]]:
     """Decorator to enable mlflow for a step function.
 
     Apply this decorator to a ZenML pipeline step to enable MLflow experiment
     tracking. The MLflow tracking configuration (tracking URI, experiment name,
     run name) will be automatically configured before the step code is executed,
-    so the step can simply use the `mlflow` module to log metrics and artifacts,
-    like so:
+    so the step can simply use the `mlflow` module to log metrics and artifacts.
+
+    The simple usage will log metrics into a run created for the pipeline, like
+    so:
 
     ```python
     @enable_mlflow
@@ -72,7 +74,23 @@ def enable_mlflow(
         mlflow.log_metric("val_accuracy", test_acc)
         return test_acc
     ```
+    You can also log parameters, metrics and artifacts into nested runs, which
+    will be children of the pipeline run. You only need to add the parameter
+    `nested=True` to the decorator, like so:
 
+    ```python
+    @enable_mlflow(nested=True)
+    @step
+    def tf_evaluator(
+        x_test: np.ndarray,
+        y_test: np.ndarray,
+        model: tf.keras.Model,
+    ) -> float:
+        _, test_acc = model.evaluate(x_test, y_test, verbose=2)
+        mlflow.log_param("some_param", 2)
+        mlflow.log_metric("val_accuracy", test_acc)
+        return test_acc
+    ```
     You can also use this decorator with our class-based API like so:
 
     ```
@@ -95,9 +113,12 @@ def enable_mlflow(
 
     Args:
         _step: The decorated step class.
+        nested: Controls whether to create a run as a child of pipeline run.
+            All the the mlflow logging functions using during a step with
+            `nested=True` will be logged into the child run.
 
     Returns:
-        The inner decorator which enhaces the input step class with mlflow
+        The inner decorator which enhances the input step class with mlflow
         tracking functionality
     """
 
@@ -112,7 +133,7 @@ def enable_mlflow(
                 "`step` decorated function or a BaseStep subclass."
             )
         source_fn = getattr(_step, STEP_INNER_FUNC_NAME)
-        new_entrypoint = mlflow_step_entrypoint()(source_fn)
+        new_entrypoint = mlflow_step_entrypoint(nested=nested)(source_fn)
         if _step._created_by_functional_api():
             # If the step was created by the functional API, the old entrypoint
             # was a static method -> make sure the new one is as well
@@ -127,8 +148,13 @@ def enable_mlflow(
         return inner_decorator(_step)
 
 
-def mlflow_step_entrypoint() -> Callable[[F], F]:
+def mlflow_step_entrypoint(nested: bool = False) -> Callable[[F], F]:
     """Decorator for a step entrypoint to enable mlflow.
+
+    Args:
+        nested: Controls whether to create a run as a child of pipeline run.
+            All the the mlflow logging functions using during a step with
+            `nested=True` will be logged into the child run.
 
     Returns:
         the input function enhanced with mlflow profiling functionality
@@ -154,12 +180,27 @@ def mlflow_step_entrypoint() -> Callable[[F], F]:
             if not isinstance(experiment_tracker, MLFlowExperimentTracker):
                 raise get_missing_mlflow_experiment_tracker_error()
 
+            # Check if there is an active run to nest the run
             active_run = experiment_tracker.active_run
             if not active_run:
                 raise RuntimeError("No active mlflow run configured.")
 
-            with active_run:
-                return func(*args, **kwargs)
+            if nested:
+                active_nested_run = experiment_tracker.active_nested_run
+                # At this point active_nested_run can never be `None` as this
+                # would mean that there is not parent active_run, in which case
+                # the previous runtime error would have been raised. The following
+                # test is to avoid pylint errors
+                if not active_nested_run:
+                    raise RuntimeError(
+                        "No active mlflow run configured to create a nested run."
+                    )
+                with active_run:
+                    with active_nested_run:
+                        return func(*args, **kwargs)
+            else:
+                with active_run:
+                    return func(*args, **kwargs)
 
         return cast(F, wrapper)
 
