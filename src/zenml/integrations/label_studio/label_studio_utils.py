@@ -41,7 +41,8 @@ def download_azure_image(url: str, destination: str) -> None:
         destination: Path to the destination file.
     """
     full_url, filename = parse_azure_url(url)
-    fileio.copy(full_url, f"{destination}/{filename}")
+    destination_path = os.path.join(destination, filename)
+    fileio.copy(full_url, destination_path)
 
 
 def get_azure_credentials() -> Tuple[Optional[str], Optional[str]]:
@@ -94,9 +95,9 @@ def convert_pred_filenames_to_task_ids(
         List of predictions using task ids as reference.
     """
     filename_id_mapping = {
-        os.path.basename(urlparse(task["data"][filename_reference]).path): task[
-            "id"
-        ]
+        os.path.basename(
+            urlparse(task["data"][filename_reference]).path
+        ): task["id"]
         for task in tasks
     }
 
