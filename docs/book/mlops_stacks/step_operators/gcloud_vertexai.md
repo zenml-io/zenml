@@ -36,7 +36,7 @@ Take a look [here](TODO) for a guide on how to set that up.
 See [here](https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types)
 for a list of available machine types.
 
-
+We can then register the step operator and use it in our active stack:
 ```shell
 zenml step-operator register <NAME> \
     --flavor=vertex \

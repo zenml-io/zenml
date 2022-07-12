@@ -32,6 +32,7 @@ To use the AzureML step operator, we need:
 * An AzureML compute cluster and environment. See the [deployment section](#how-do-you-deploy-it)
 for detailed instructions.
 
+We can then register the step operator and use it in our active stack:
 ```shell
 zenml step-operator register <NAME> \
     --flavor=azureml \
