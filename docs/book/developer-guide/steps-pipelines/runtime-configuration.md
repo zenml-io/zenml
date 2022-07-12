@@ -62,6 +62,14 @@ first_pipeline_instance = first_pipeline(
 first_pipeline_instance.run()
 ```
 
+{% hint style="info" %}
+Behind the scenes, `BaseStepConfig` is implemented as a 
+[Pydantic BaseModel](https://pydantic-docs.helpmanual.io/usage/models/).
+Therefore, any type that 
+[Pydantic supports](https://pydantic-docs.helpmanual.io/usage/types/)
+is also supported as an attribute type in the `BaseStepConfig`.
+{% endhint %}
+
 ## Configuring with YAML config files
 
 In addition to setting parameters for your pipeline steps in code as seen above,
