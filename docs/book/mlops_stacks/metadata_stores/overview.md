@@ -54,9 +54,9 @@ general, we suggest to use the `mysql` flavor for most use cases:
 | Metadata Store | Flavor | Integration | Notes             |
 |----------------|--------|-------------|--------------------|
 | [SQLite](./sqlite.md) | `sqlite` | _built-in_ | This is the default Metadata Store. It stores metadata information in a SQLite file on your local filesystem. Should be used only for running ZenML locally. |
-| [MySQL](./mysql.md) | `mysql` | _built-in_ | Connects to a MySQL compatible database service to store metadata information. Suitable and recommended for most other production settings. |
+| [MySQL](./mysql.md) | `mysql` | _built-in_ | Connects to a MySQL compatible database service to store metadata information. Suitable and recommended for most production settings. |
 | [Kubeflow](./kubeflow.md) | `kubeflow` | `kubeflow` | Kubeflow deployments include an internal metadata store, which ZenML can leverage. This flavor of Metadata Store can only to be used in combination with the [Kubeflow Orchestrator](../orchestrators/kubeflow.md). |
-| [Kubernetes](./kubernetes.md) | `kubernetes` | `kubernetes` | Use this Metadata Store flavor if you have a Kubernetes cluster to automatically deploy a MySQL database as a Kubernetes workload and use it as a backend. Not recommended for production settings. |
+| [Kubernetes](./kubernetes.md) | `kubernetes` | `kubernetes` | Use this Metadata Store flavor to automatically deploy a MySQL database as a Kubernetes workload and use it as a Metadata Store backend. Not recommended for production settings. |
 | [Custom Implementation](./custom.md) | _custom_ |  | _custom_ | Extend the Metadata Store abstraction and provide your own implementation. |
 
 If you would like to see the available flavors of Metadata Stores, you can 

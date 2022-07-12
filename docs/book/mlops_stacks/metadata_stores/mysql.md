@@ -2,48 +2,76 @@
 description: WIP
 ---
 
-# WIP Stack Component Flavor
+The MySQL Metadata Store is a built-in ZenML [Metadata Store](./overview.md)
+flavor that connects to a MySQL compatible service to store metadata
+information.
 
-## `What is it?`
-## `When would you want to use it?`
-## `How do you use it? → link to examples`
-## `(If applicable) How to deploy it (link to cloud guide?)`
-## `Link to API Docs for detailed params`
+## When would you want to use it?
 
----
-description: Use a MySQL database to track your metadata non-locally 
----
+Running ZenML pipelines with [the default SQLite Metadata Store](./sqlite.md) is
+usually sufficient if you just want to evaluate ZenML or get started quickly
+without incurring the trouble and the cost of managing additional services like
+a self-hosted MySQL database or one of the managed cloud SQL database services.
+However, the local SQLite Metadata Store becomes insufficient or unsuitable if
+you have more elaborate needs for your project:
 
-- `What is it, what does it do`
-- `Why would you want to use it`
-- `When should you start adding this to your stack`
-- `Overview of flavors, tradeoffs, when to use which flavor (table)`
+* if you want to share your pipeline run results with other team members or
+stakeholders inside or outside your organization
+* if you have other components in your stack that are running remotely (e.g. a
+Kubeflow or Kubernetes Orchestrator running in public cloud).
+* if you are running pipelines at scale and need a Metadata Store that can
+handle the demands of production grade MLOps
 
-# Track your Metadata in the Cloud
+In all these cases, you need a Metadata Store that is backed by a form of
+public cloud or self-hosted MySQL database service.
 
-While the local SQLite-based Metadata Store is a great default to get you 
-started quickly, you will eventually need to move towards a deployed, shared 
-and scalable database, for example once you switch to remote orchestration. 
-This database will ideally be accessible both from your local machine, your 
-orchestrator and the individual worker nodes of your orchestrator. 
-A deployed MySQL Database can tick all these boxes. 
+You should use the MySQL Metadata Store when you need a shared, scalable and
+performant Metadata Store and if you have access to a MySQL database service.
+The database should ideally be accessible both from your local machine and the 
+[Orchestrator](../orchestrators/overview.md) that you use in your ZenML stack. 
+You should consider one of the other [Metadata Store flavors](./overview.md#metadata-store-flavors)
+if you don't have access to a MySQL compatible database service.
 
-## Registering the MySQL Metadata Store
+## How do you deploy it?
 
-For the purpose of these docs it is assumed that the MySQL database is set up 
-already. In order to connect to your MySQL instance there are a few parameters
-that you will need to register a Metadata Store stack component.
+Using the MySQL Metadata Store in your stack assumes that you already have
+access to a MySQL database service. This can be an on-premise MySQL database
+that you deployed explicitly for ZenML, or that you share with other services
+in your team or organization. It can also be a managed MySQL compatible database
+service deployed in the cloud.
 
-In all cases you will need to set these three fields:
+{% hint style="info" %}
+Configuring and deploying a managed MySQL database cloud service to use with
+ZenML can be a complex and error prone process, especially if you plan on using
+it alongside other stack components running in the cloud. You might consider
+referring to the [ZenML Cloud Guide](../../cloud-guide/overview.md)
+for a more holistic approach to configuring full cloud stacks for ZenML.
+{% endhint %}
 
-* host - The host IP address is the public IP address of your MySQL instance
-* port - The port at which to reach the MySQL instance (default is 3306)
-* database - The name of the database that will be used
+In order to connect to your MySQL instance, there are a few parameters that you
+will need to configure and register a MySQL Metadata Store stack component. In
+all cases you will need to set the following fields:
 
-For authentication, you'll have the choice of setting username and password 
-directly to a stack component (not recommended for production setting), or 
-you'll be able to register a secret in your secrets manager that allows you to 
-also supply SSL certificates for more secure connections.
+* `host` - The hostname or public IP address of your MySQL instance. This needs
+to be reachable from your Orchestrator and, ideally, also from your local
+machine.
+* `port` - The port at which to reach the MySQL instance (default is 3306)
+* `database` - The name of the database that will be used by ZenML to store
+metadata information
+
+Additional authentication related parameters need to be configured differently
+depending on the chosen authentication method.
+
+### Authentication Methods
+
+For authentication, you have the following choices:
+
+* configure the username and password directly as stack component attributes.
+This option does not support securing the database connection with SSL and is
+overall not recommended for production settings.
+* include a [Secrets Manager](../secrets_managers/overview.md) in your stack and
+configure a ZenML secret to store the username and password. This also allows
+you to configure SSL certificates for more secure connections.
 
 {% tabs %}
 {% tab title="Basic Authentication" %}
@@ -55,10 +83,10 @@ is unencrypted.
 {% endhint %}
 
 ```shell
-# Register the mysql-metadata-store
+# Register the mysql metadata store
 zenml metadata-store register mysql_metadata_store --flavor=mysql \ 
-    --host=`<DB_HOST_IP>` --port=`<DB_PORT>` --database=`<DB_NAME>` \
-    --username=`<DB_USERNAME>` --password`<DB_PASSWORD>`
+    --host=<database-host> --port=<port> --database=<database-name> \
+    --username=<database-user> --password=<database-password>
 
 # Register and set a stack with the new metadata store
 zenml stack register cloud_stack -m mysql_metadata_store ... --set
@@ -67,38 +95,47 @@ zenml stack register cloud_stack -m mysql_metadata_store ... --set
 
 {% tab title="Advanced Authentication" %}
 
-For this option you will need to make sure to create and download all three
-SSL certificates so that you can add them to a secret within the secrets 
-manager of the stack that the MySQL Metadata Store is a part of.
+This option uses a ZenML secret to store the username and password credentials
+securely. It is strongly recommended to also enable the use of SSL connections
+in your database service. For SSL connections, you need to also configure SSL
+related parameters:
+
+* `ssl_ca` - The SSL CA server certificate associated with your MySQL server.
+* `ssl_cert` and `ssl_key` - SSL client certificate and private key. Only
+required if you set up client certificates for the MySQL service.
+
+The MySQL credentials are configured as a ZenML secret that is referenced in the
+Metadata Store configuration, e.g.:
 
 ```shell
-# Register the mysql-metadata-store
+# Register the MySQL metadata store
 zenml metadata-store register mysql_metadata_store --flavor=mysql \
-    --host=`<DB_HOST_IP>` --port=`<DB_PORT>` --database=`<DB_NAME>` \
+    --host=<database-host> --port=<port> --database=<database-name> \
     --secret=mysql_secret
 
-# Register a Secrets Manager
-zenml secrets-manager register cloud_secrets_manager \
-    --flavor=`<FLAVOR_OF_YOUR_CHOIC>` ...
+# Register a secrets manager
+zenml secrets-manager register secrets_manager \
+    --flavor=<FLAVOR_OF_YOUR_CHOICE> ...
     
 # Register and set a stack with the new metadata store and secret manager
-zenml stack register cloud_stack -m mysql_metadata_store ... \
-    -x cloud_secrets_manager --set
-    
-zenml secret register mysql_secret --schema=mysql \ 
-    --user=`<DB_USERNAME>` --password=`<DB_PASSWORD>` \
-    --ssl_ca=@`</PATH/TO/DOWNLOADED/SERVER-CA>` \
-    --ssl_cert=@`</PATH/TO/DOWNLOADED/CLIENT-CERT>` \
-    --ssl_key=@`</PATH/TO/DOWNLOADED/CLIENT-KEY>`
-```
+zenml stack register custom_stack -m mysql_metadata_store ... \
+    -x secrets_manager --set
 
-{% hint style="info" %}
-Depending on the cloud provider that you are running on, you will need to make 
-sure the different stack components have the correct permissions and roles to 
-access one another. The orchestrator in particular will need to have access to
-the secrets manager.
-{% endhint %}
+# Create the secret referenced in the metadata store
+zenml secret register mysql_secret --schema=mysql \ 
+    --user=<database-user> --password=<database-password> \
+    --ssl_ca=@path/to/server/ca/certificate \
+    --ssl_cert=@path/to/client/certificate \
+    --ssl_key=@path/to/client/certificate/key
+```
 
 {% endtab %}
 {% endtabs %}
 
+For more, up-to-date information on the MySQL Metadata Store implementation and its
+configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/metadata_stores/#zenml.metadata_stores.mysql_metadata_store).
+
+## How do you use it?
+
+Aside from the fact that the metadata information is stored in a MySQL database,
+using the MySQL Metadata Store is no different than [using any other flavor of Metadata Store](./overview.md#how-to-use-it).

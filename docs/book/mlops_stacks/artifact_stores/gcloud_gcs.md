@@ -52,7 +52,11 @@ With the URI to your GCS bucket known, registering an GCS Artifact Store can be
 as simple as:
 
 ```shell
+# Register the GCS artifact store
 zenml artifact-store register gs_store -f gcp --path=gs://bucket-name
+
+# Register and set a stack with the new artifact store
+zenml stack register custom_stack -a gs_store ... --set
 ```
 
 Depending on your use-case, however, you may also need to provide additional
@@ -71,10 +75,11 @@ for a more holistic approach to configuring full GCP-based stacks for ZenML.
 Integrating and using a GCS Artifact Store in your pipelines is not
 possible without employing some form of authentication. ZenML currently provides
 two options for configuring GCP credentials, the recommended one being to use
-a [Secrets Manager](#secrets-manager-recommended) in your stack to store the
+a [Secrets Manager](../secrets_managers/overview.md) in your stack to store the
 sensitive information in a secure location.
 
-#### Implicit Authentication
+{% tabs %}
+{% tab title="Implicit Authentication" %}
 
 This method uses the implicit GCP authentication available _in the environment
 where the ZenML code is running_. On your local machine, this is the quickest
@@ -112,7 +117,9 @@ you are unsure how to configure them to use Service Accounts or Workload
 Identity, you should use one of the other authentication methods.
 {% endhint %}
 
-#### Secrets Manager (Recommended)
+{% endtab %}
+
+{% tab title="Secrets Manager (Recommended)" %}
 
 This method requires using a [Secrets Manager](../secrets_managers/overview.md)
 in your stack to store the sensitive GCP authentication information in a secure
@@ -126,12 +133,25 @@ The GCP credentials are configured as a ZenML secret that is referenced in the
 Artifact Store configuration, e.g.:
 
 ```shell
-zenml secret register gcp_secret -s gcp \
-    --token=@path/to/token/file.json
+# Register the GCS artifact store
 zenml artifact-store register gcs_store -f gcp \
     --path='gs://your-bucket' \
     --authentication_secret=gcp_secret
+
+# Register a secrets manager
+zenml secrets-manager register secrets_manager \
+    --flavor=<FLAVOR_OF_YOUR_CHOICE> ...
+
+# Register and set a stack with the new artifact store and secrets manager
+zenml stack register custom_stack -a gs_store -x secrets_manager ... --set
+
+# Create the secret referenced in the artifact store
+zenml secret register gcp_secret -s gcp \
+    --token=@path/to/token/file.json
 ```
+
+{% endtab %}
+{% endtabs %}
 
 For more, up-to-date information on the GCS Artifact Store implementation and its
 configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.gcp.artifact_stores.gcp_artifact_store).
