@@ -34,7 +34,7 @@ from zenml.integrations.label_studio.steps.label_studio_standard_steps import (
 from zenml.integrations.s3 import S3_ARTIFACT_STORE_FLAVOR
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.secret.arbitrary_secret_schema import ARBITRARY_SECRET_SCHEMA_TYPE
+from zenml.secret.arbitrary_secret_schema import ArbitrarySecretSchema
 from zenml.stack import Stack, StackValidator
 from zenml.stack.authentication_mixin import AuthenticationMixin
 from zenml.utils import io_utils, networking_utils
@@ -342,9 +342,14 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         Returns:
             Label Studio client.
         """
-        secret = self.get_authentication_secret(ARBITRARY_SECRET_SCHEMA_TYPE)
-        api_key = secret.content.label_studio_api_key
-        return Client(url=self.get_url(), api_key=api_key)
+        secret = self.get_authentication_secret(ArbitrarySecretSchema)
+        if secret:
+            api_key = secret.content.label_studio_api_key
+            return Client(url=self.get_url(), api_key=api_key)
+        else:
+            raise ValueError(
+                "Unable to access authentication secret to access Label Studio API key."
+            )
 
     def _connection_available(self) -> bool:
         """Checks if the connection to the annotation server is available.
@@ -470,8 +475,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         # project = self._dataset_name_to_project(dataset_name)
         self._get_client()
         project = self.get_dataset(dataset_name=dataset_name)
-        # type: ignore[no-any-return]
-        return project.export_tasks(export_type=output_format)
+        return project.export_tasks(export_type=output_format)  # type: ignore[no-any-return]
 
     def get_labeled_data(self, **kwargs: Any) -> Any:
         """Gets the labeled data for the given dataset.

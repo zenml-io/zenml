@@ -147,8 +147,7 @@ def get_or_create_dataset(
 
 
 @step(enable_cache=False)
-# type: ignore[type-arg]
-def get_labeled_data(dataset_name: str, context: StepContext) -> List:
+def get_labeled_data(dataset_name: str, context: StepContext) -> List:  # type: ignore[type-arg]
     """Gets labeled data from the dataset.
 
     Args:
@@ -236,26 +235,26 @@ def sync_new_data_to_label_studio(
     base_uri = urlparse(uri).netloc
 
     # gets the secret used for authentication
-    authentication_secret_name = artifact_store.authentication_secret
+    authentication_secret_name = artifact_store.authentication_secret  # type: ignore[union-attr]
     if config.storage_type == "azure":
-        config.azure_account_name = secrets_manager.get_secret(
+        config.azure_account_name = secrets_manager.get_secret(  # type: ignore[union-attr]
             authentication_secret_name
         ).account_name
-        config.azure_account_key = secrets_manager.get_secret(
+        config.azure_account_key = secrets_manager.get_secret(  # type: ignore[union-attr]
             authentication_secret_name
         ).account_key
     elif config.storage_type == "gcs":
-        config.google_application_credentials = secrets_manager.get_secret(
+        config.google_application_credentials = secrets_manager.get_secret(  # type: ignore[union-attr]
             authentication_secret_name
         ).token
     elif config.storage_type == "s3":
-        config.aws_access_key_id = secrets_manager.get_secret(
+        config.aws_access_key_id = secrets_manager.get_secret(  # type: ignore[union-attr]
             authentication_secret_name
         ).aws_access_key_id
-        config.aws_secret_access_key = secrets_manager.get_secret(
+        config.aws_secret_access_key = secrets_manager.get_secret(  # type: ignore[union-attr]
             authentication_secret_name
         ).aws_secret_access_key
-        config.aws_session_token = secrets_manager.get_secret(
+        config.aws_session_token = secrets_manager.get_secret(  # type: ignore[union-attr]
             authentication_secret_name
         ).aws_session_token
 
