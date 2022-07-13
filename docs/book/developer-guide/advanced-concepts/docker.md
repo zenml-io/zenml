@@ -45,8 +45,6 @@ following two ways:
 * Have a file called `.dockerignore` in your source root directory explained above.
 * Explicitly specify a `.dockerignore` file that you want to use:
     ```python
-    from zenml.pipelines import pipeline
-
     @pipeline(dockerignore_file="/path/to/.dockerignore")
     def my_pipeline(...):
         ...
