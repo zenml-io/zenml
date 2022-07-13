@@ -32,12 +32,14 @@ In order to execute your pipeline code inside the Docker image, ZenML needs to
 copy all your source code files that are necessary to execute the steps of your
 pipeline.
 ZenML will try to determine the root directory of your source files in the following order:
-* If you've created a [ZenML repository] for your project, the repository directory will be used.
+* If you've created a 
+[ZenML repository](../stacks-profiles-repositories/stacks_profiles_repositories.md#repositories)
+for your project, the repository directory will be used.
 * Otherwise, the parent directory of the python file you're executing will be the source root.
 For example, running `python /path/to/file.py`, the source root would be `/path/to`.
 
 By default, ZenML will copy all contents of this root directory into the Docker image.
-If you want to exclude files to keep the image smaller, you can do so using a [`.dockerignore`
+If you want to exclude files to keep the image smaller, you can do so using a [.dockerignore
 file](https://docs.docker.com/engine/reference/builder/#dockerignore-file) in either of the 
 following two ways:
 * Have a file called `.dockerignore` in your source root directory explained above.
