@@ -43,7 +43,7 @@ from zenml.integrations.label_studio.steps.label_studio_standard_steps import (
 from zenml.integrations.s3 import S3_ARTIFACT_STORE_FLAVOR
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.stack import Stack
+from zenml.stack import Stack, StackValidator
 from zenml.utils import io_utils, networking_utils
 
 if TYPE_CHECKING:
@@ -67,6 +67,7 @@ class LabelStudioAnnotator(BaseAnnotator):
 
     FLAVOR: ClassVar[str] = LABEL_STUDIO_ANNOTATOR_FLAVOR
 
+    @property
     def validator(self) -> Optional["StackValidator"]:
         """Validates that the stack contains a cloud artifact store.
 
@@ -482,7 +483,8 @@ class LabelStudioAnnotator(BaseAnnotator):
         # project = self._dataset_name_to_project(dataset_name)
         self._get_client()
         project = self.get_dataset(dataset_name=dataset_name)
-        return project.export_tasks(export_type=output_format)  # type: ignore[no-any-return]
+        # type: ignore[no-any-return]
+        return project.export_tasks(export_type=output_format)
 
     def get_labeled_data(self, **kwargs: Any) -> Any:
         """Gets the labeled data for the given dataset.
