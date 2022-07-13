@@ -1,28 +1,44 @@
 ---
-description: Tracking your ML experiments.
+description: Extend ZenML to implement a custom Experiment Tracker
 ---
-
-Experiment trackers let you track your ML experiments by logging the parameters
-and allowing you to compare between runs. In the ZenML world, every pipeline
-run is considered an experiment, and ZenML facilitates the storage of experiment
-results through ExperimentTracker stack components. This establishes a clear
-link between pipeline runs and experiments.
 
 {% hint style="warning" %}
 **Base abstraction in progress!**
 
-We are actively working on the base abstraction for the experiment trackers, 
-which will be available soon. As a result, their extension is not possible at 
-the moment. If you would like to use an experiment tracker in your stack, 
-please check the list of already-implemented experiment trackers down below.
+We are actively working on the base abstraction for the Experiment Tracker,
+which  will be available soon. As a result, their extension is not recommended at
+the moment. When you are selecting n Experiment Tracker for your stack, you can
+use  one of [the existing flavors](./overview.md#experiment-tracker-flavors).
+
+If you need to implement your own Experiment Tracker flavor, you can still do so,
+but keep in mind that you may have to refactor it when the base abstraction
+is released.
 {% endhint %}
 
-## List of available experiment trackers
+{% hint style="warning" %}
+Before reading this chapter, make sure that you are familiar with the 
+concept of [stacks, stack components and their flavors](../advanced-guide/stacks-components-flavors.md).  
+{% endhint %}
 
-In its current version, ZenML comes with two integrations which feature 
-experiment trackers as stack components, namely the `MLFlowExperimentTracker`
-and the `WandbExperimentTracker`. In order to get more information about these 
-experiment trackers, please visit the API docs linked down below.
+## Build your own custom experiment tracker
+
+If you want to implement your own custom Experiment Tracker, you can follow the
+following steps:
+
+1. Create a class which inherits from [the `BaseExperimentTracker` class](https://apidocs.zenml.io/latest/api_docs/experiment_trackers/#zenml.experiment_trackers.base_experiment_tracker.BaseExperimentTracker).
+2. Define the `FLAVOR` class variable.
+
+Once you are done with the implementation, you can register it through the CLI 
+as:
+
+```shell
+zenml experiment-tracker flavor register <THE-SOURCE-PATH-OF-YOUR-EXPERIMENT-TRACKER>
+```
+
+ZenML includes a range of Experiment Tracker implementations provided by
+specific integration modules. You can use them as examples of how you can extend
+the [base Experiment Tracker class](https://apidocs.zenml.io/latest/api_docs/experiment_trackers/#zenml.experiment_trackers.base_experiment_tracker.BaseExperimentTracker)
+to implement your own custom Experiment Tracker:
 
 |                                                                                                                                                                                   | Flavor   | Integration |
 |-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|-------------|

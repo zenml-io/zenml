@@ -11,7 +11,7 @@ pipelines in the Artifact Store: datasets, models, data profiles, data and model
 validation reports and generally any object that is returned by a pipeline step.
 This is coupled with tracking information saved in the [Metadata Store](../metadata_stores/overview.md)
 to provide extremely useful features such as caching and provenance/lineage
-tracking.
+tracking and pipeline reproducibility.
 
 {% hint style="info" %}
 Not all objects returned by pipeline steps are physically stored in the
@@ -65,7 +65,7 @@ Artifact Stores are provided by integrations:
 
 | Artifact Store | Flavor | Integration | URI Schema(s) | Notes             |
 |----------------|--------|-------------|------------|-------------------|
-| [Local](./local.md) | `local` | _built-in_ | None | Stores artifacts on your local filesystem |
+| [Local](./local.md) | `local` | _built-in_ | None | This is the default Artifact Store. It stores artifacts on your local filesystem. Should be used only for running ZenML locally. |
 | [Amazon S3](./amazon_s3.md) | `s3` | `s3` | `s3://`  | Uses AWS S3 as an object store backend |
 | [Google Cloud Storage](./gcloud_gcs.md) | `gcp` | `gcp` | `gs://`  | Uses Google Cloud Storage as an object store backend |
 | [Azure](./azure_blob_storage.md) | `azure` | `azure` | `abfs://`, `az://`  | Uses Azure Blob Storage as an object store backend |

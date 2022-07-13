@@ -21,8 +21,8 @@ recorded in the Metadata Store: the pipeline configuration, the pipeline steps
 and their configuration, as well as the types of artifacts produced by pipeline
 step runs and the location in the Artifact Store where they are kept. This is
 coupled with saving the artifact contents themselves in the [Artifact Store](../artifact_stores/overview.md)
-to provide extremely useful features such as caching and provenance/lineage
-tracking.
+to provide extremely useful features such as caching, provenance/lineage
+tracking and pipeline reproducibility.
 
 Related concepts:
 

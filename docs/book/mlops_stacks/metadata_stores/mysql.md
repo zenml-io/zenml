@@ -1,5 +1,5 @@
 ---
-description: WIP
+description: Use a MySQL database service to store ML metadata 
 ---
 
 The MySQL Metadata Store is a built-in ZenML [Metadata Store](./overview.md)
@@ -64,17 +64,11 @@ depending on the chosen authentication method.
 
 ### Authentication Methods
 
-For authentication, you have the following choices:
-
-* configure the username and password directly as stack component attributes.
-This option does not support securing the database connection with SSL and is
-overall not recommended for production settings.
-* include a [Secrets Manager](../secrets_managers/overview.md) in your stack and
-configure a ZenML secret to store the username and password. This also allows
-you to configure SSL certificates for more secure connections.
-
 {% tabs %}
 {% tab title="Basic Authentication" %}
+
+This option configures the username and password directly as stack component
+attributes.
 
 {% hint style="warning" %}
 This is not recommended for production settings as the password is easily 
@@ -89,16 +83,18 @@ zenml metadata-store register mysql_metadata_store --flavor=mysql \
     --username=<database-user> --password=<database-password>
 
 # Register and set a stack with the new metadata store
-zenml stack register cloud_stack -m mysql_metadata_store ... --set
+zenml stack register custom_stack -m mysql_metadata_store ... --set
 ```
 {% endtab %}
 
-{% tab title="Advanced Authentication" %}
+{% tab title="Secrets Manager (Recommended)" %}
 
-This option uses a ZenML secret to store the username and password credentials
-securely. It is strongly recommended to also enable the use of SSL connections
-in your database service. For SSL connections, you need to also configure SSL
-related parameters:
+This method requires you to include a [Secrets Manager](../secrets_managers/overview.md)
+in your stack and configure a ZenML secret to store the username and password
+credentials securely.
+
+It is strongly recommended to also enable the use of SSL connections
+in your database service and configure SSL related parameters:
 
 * `ssl_ca` - The SSL CA server certificate associated with your MySQL server.
 * `ssl_cert` and `ssl_key` - SSL client certificate and private key. Only
