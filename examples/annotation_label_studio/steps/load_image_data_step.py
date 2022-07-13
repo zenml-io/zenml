@@ -22,7 +22,7 @@ from PIL import Image
 from zenml.steps import Output, step
 from zenml.steps.step_context import StepContext
 
-LOCAL_IMAGE_FILES = str(Path(__file__).parent.absolute() / "assets/images")
+LOCAL_IMAGE_FILES = str(Path(__file__).parent.absolute() / "assets" / "images")
 
 
 @step(enable_cache=False)

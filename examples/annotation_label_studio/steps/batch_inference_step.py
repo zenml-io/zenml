@@ -26,6 +26,8 @@ def batch_inference(image_dict: Dict, model: Learner) -> List:
     """Execute batch inference on some images.
 
     Returns a list of predictions compatible with Label Studio.
+
+    # TODO: [HIGH] Add a link to LS docs to explain LS annotation format
     """
     # TODO: [HIGH] Actually implement the batch inference step
     # below are just dummy values

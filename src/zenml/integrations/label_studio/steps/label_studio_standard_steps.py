@@ -221,8 +221,8 @@ def sync_new_data_to_label_studio(
             "ZenML only currently supports syncing data passed from other ZenML steps and via the Artifact Store."
         )
 
-    # removes the initial backslash from the prefix attribute by slicing
-    config.prefix = urlparse(uri).path[1:]
+    # removes the initial forward slash from the prefix attribute by slicing
+    config.prefix = urlparse(uri).path.lstrip("/")
     base_uri = urlparse(uri).netloc
 
     if config.storage_type == "azure":
