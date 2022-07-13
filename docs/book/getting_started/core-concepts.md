@@ -4,26 +4,14 @@ description: A good place to start before diving further into the docs.
 
 # Core Concepts
 
-ZenML consists of a few components. This guide walks through the various pieces you'll encounter when using ZenML, starting with the basics to things you'll only encounter when deploying to the cloud. 
+ZenML consists of a few components. This guide walks through the various pieces you'll encounter, starting with the basics to things you'll only encounter when deploying to the cloud. 
 
-Here's a high-level overview of a typical workflow using ZenML:
+Here's a high-level overview of a typical workflow:
 
-1. Writing a *pipeline* to define what happens in a workflow.
+1. Writing a *pipeline* to define what happens in your machine learning workflow.
 2. Configuring a ZenML *stack*.
 3. Switching between *stacks* depending on needs.
-4. Customize your *stack* and only use components you need.
-
-
-<!-- - You write your code as a pipeline to define what you want to happen in your machine learning workflow.
-- You configure a ZenML Stack which is the infrastructure and setup that will
-  run your machine learning code.
-- A stack consists of stack components that interact with your pipeline and its steps in various ways.
-- You can easily switch between different Stacks (i.e. infrastructure configurations) depending on your needs at any given moment.
-- You can use whatever you want as part of your Stacks as we're built as a
-  framework to be extensible. -->
-
-<!-- Let's get back to basics, though, and dive into all the core concepts that
-you'll come across when using ZenML! -->
+4. Customizing your *stack* to use components you need.
 
 So first, the basics.
 
@@ -31,24 +19,23 @@ So first, the basics.
 
 At its core, ZenML follows a pipeline-based workflow for your data projects.
 Pipelines consist of a series of steps, organized in any order that makes sense
-for your use case.
+for your use case. 
+
+Below, you can see three **steps** running one after another in a **pipeline**. 
 
 ![The most basic ZenML pipeline](../assets/core_concepts/concepts-1.png)
 
-Here you can see three steps, each running one after another. Your set of steps
-might have dependencies between them, with one step using the output of a
-previous step and thus waiting until it is able to start its work.
+The steps might have dependencies between them. 
+For example, a step might use the outputs from a previous step and thus must wait until the previous step completes before starting. This is something you can keep in mind when coding your steps.
 
-Pipelines and steps are defined in code using handy decorators to designate
+Pipelines and steps are defined in code using *decorators* to designate
 functions as being one or the other. This is where the core business logic and
 value of your work lives and you will spend most of your time defining these two
 things. (Your code lives inside a Repository, which is the main abstraction
 within which your project-specific pipelines should live.)
 
-When it comes time to run your pipeline, ZenML offers an abstraction to handle
-all the decisions around how your pipeline gets run. The different stack
-components interact in different ways depending on how you've written your
-pipeline.
+When it comes to running your pipeline, ZenML offers an abstraction to handle how your pipeline gets run. 
+The different stack components interact in different ways depending on how it's defined in the pipeline.
 
 ## Stacks, Components and Stores
 
