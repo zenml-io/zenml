@@ -11,7 +11,7 @@ Here's a high-level overview of a typical ZenML workflow:
 1. Writing a *pipeline* to define what happens in your machine learning workflow.
 2. Configuring a ZenML *stack*.
 3. Switching between *stacks* depending on needs.
-4. Customizing your *stack* to use components you need.
+4. Customizing your *stack* with different *components*.
 
 So first, the basics.
 
@@ -81,17 +81,18 @@ This is extremely helpful in troubleshooting.
 When you start working with ZenML, you'll likely spend most of your time
 here, working with the default stack on initialization. 
 
-## Other Stack Components
-We've covered the three basic stack components that you will encounter most frequently. They work well on a local machine, but is rarely enough for in a production pipeline.
+### Other Stack Components
+We've covered the three basic stack components that you will encounter most frequently. They work well on a local machine, but is rarely enough in production.
 
-At this point, you might want to scale up your stack to run elsewhere. Eg. on a cloud with powerful GPUs for training or clusters for deployment.
+At some point, you might want to scale up your stack to run elsewhere. Eg. on a cloud with powerful GPUs for training or CPUs for deployment.
 
 ZenML provides many other stack components to suit these use cases.
 Having these components in your stack supercharges your pipeline for production.
 
 For other stack components check out this [page](../mlops_stacks/categories.md).
 
-## Cloud Training, Deployment, Monitoring...
+## Cloud Training, Deployment and Monitoring
+We've seen how to run a pipeline locally. But that is rarely the case in production.
 
 When you are ready to switch out your infrastructure and the components used as
 part of your machine learning workflow, it's as simple as a four word CLI
