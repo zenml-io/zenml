@@ -27,6 +27,7 @@ To use the Sagemaker step operator, we need:
     ```shell
     zenml integration install aws
     ```
+* [Docker](https://www.docker.com) installed and running.
 * An IAM role with the correct permissions. See the [deployment section](#how-do-you-deploy-it)
 for detailed instructions.
 * An [AWS container registry](../container_registries/amazon_ecr.md) as part of our stack.

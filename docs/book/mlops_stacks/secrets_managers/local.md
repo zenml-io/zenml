@@ -1,11 +1,7 @@
 ---
-description: WIP
+description: Store secrets locally.
 ---
 
-# WIP Stack Component Flavor
-
-## `What is it?`
-## `When would you want to use it?`
-## `How do you use it? → link to examples`
-## `(If applicable) How to deploy it (link to cloud guide?)`
-## `Link to API Docs for detailed params`
+For early development purposes ZenML provides a local secrets manager which uses
+a YAML file to store base64 encoded secret. If you want to instead use the AWS
+or GCP Secrets Manager as a non-local flavor that is also possible with ZenML.

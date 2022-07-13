@@ -28,6 +28,7 @@ To use the Vertex step operator, we need:
     ```shell
     zenml integration install gcp
     ```
+* [Docker](https://www.docker.com) installed and running.
 * Vertex AI enabled and a service account file. See the [deployment section](#how-do-you-deploy-it)
 for detailed instructions.
 * A [GCR container registry](../container_registries/gcloud_gcr.md) as part of our stack.

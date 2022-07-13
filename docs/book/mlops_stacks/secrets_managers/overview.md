@@ -1,13 +1,16 @@
 ---
-description: ZenML provides functionality to store secrets locally and with AWS.
+description: Setting up storage for secrets.
 ---
 
-- `What is it, what does it do`
-- `Why would you want to use it`
-- `When should you start adding this to your stack`
-- `Overview of flavors, tradeoffs, when to use which flavor (table)`
 
-# Managing Secrets
+Most projects involving either cloud infrastructure or of a certain complexity
+will involve secrets of some kind. ZenML provides you a Secrets Manager as 
+stack component to help manage and use these secrets for your pipeline runs.
+
+{% hint style="warning" %}
+Before reading this chapter, make sure that you are familiar with the 
+concept of [stacks, stack components and their flavors](../advanced-guide/stacks-components-flavors.md).  
+{% endhint %}
 
 Most projects involving either cloud infrastructure or of a certain complexity
 will involve secrets of some kind. You use secrets, for example, when connecting
@@ -30,29 +33,19 @@ point of registration, ZenML will set the schema as `ArbitrarySecretSchema`, a
 kind of default schema where things that aren't attached to a grouping can be
 stored.
 
-## Registering a secrets manager
 
-For early development purposes ZenML provides a local secrets manager which uses
-a YAML file to store base64 encoded secret. If you want to instead use the AWS
-or GCP Secrets Manager as a non-local flavor that is also possible with ZenML.
+## Secrets Manager Flavors
 
-To register a local secrets manager, use the CLI interface:
+Out-of-the-box, ZenML comes with a `LocalSecretsManager` implementation, which 
+is a simple implementation for a local setup. This secrets manager simply saves 
+secrets into a local yaml file with base64 encoding. This implementation is
+not intended for production use.
 
-```shell
-zenml secrets-manager register SECRETS_MANAGER_NAME --flavor=local
-```
+For production use cases some more flavors can be found in specific 
+`integrations` modules, such as the `GCPSecretsManager` in the 
+`gcp` integration, the `AWSSecretsManager` in the 
+`aws` integration and the `AzureSecretsManager` in the `azure` integration.
 
-You will then need to add the secrets manager to a new stack that you register,
-for example:
-
-```shell
-zenml stack register STACK_NAME \
-    -m METADATA_STORE_NAME \
-    -a ARTIFACT_STORE_NAME \
-    -o ORCHESTRATOR_NAME \
-    -x SECRETS_MANAGER_NAME \
-    --set
-```
 
 ## Interacting with the Secrets Manager
 
@@ -201,72 +194,6 @@ def mnist_pipeline(
 Secrets are made available to steps regardless of whether you're using a local
 secret store or non-local AWS/GCP Secrets Manager.
 
-## Using the AWS Secrets Manager
-
-Amazon offers a managed secrets manager to store and use secrets for AWS
-services. If your stack is primarily running on AWS, you can use our integration
-to interact with it. Before getting started with the AWS secret manager you'll
-need to make sure to have your AWS credentials set up locally and you have
-access to a service account with read/write permissions to the secrets manager.
-[This](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/setup-credentials.html)
-guide can help you get started.
-
-With this set up, using the [AWS Secrets
-Manager](https://aws.amazon.com/secrets-manager) is just as easy as using the
-local version. Make sure that the integration is installed first, and then
-register your secrets manager in the following way:
-
-```shell
-zenml integration install aws
-zenml secrets-manager register AWS_SECRETS_MANAGER_NAME --flavor=aws
-```
-
-If you are using the [ZenML Kubeflow
-integration](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow) for
-your orchestrator, you can then access the keys and their corresponding values
-for all the secrets you imported in the pipeline definition (as mentioned
-above). The keys that you used when creating the secret will be capitalized when
-they are passed down into the images used by Kubeflow. For example, in the case
-of accessing the `aws` secret referenced above, you would get the value for the
-`aws_secret_access_key` key with the following code (within a step):
-
-```python
-import os
-
-os.environ.get('AWS_SECRET_ACCESS_KEY')
-```
-
-Note that some secrets will get used by your stack implicitly. For example, in
-the case of when you are using an AWS S3 artifact store, the environment
-variables passed down will be used to confirm access.
-
-## Using the GCP Secrets Manager
-
-Google offers a managed secret manager to store and use secrets for GCP
-services. If your stack is primarily running on GCP, you can use our integration
-to interact with it. 
-
-Before getting started with the GCP secret manager you'll need to make sure to
-have your GCP credentials set up locally, and you have access to a service
-account with read/write permissions to the secrets manager.
-[This](https://cloud.google.com/sdk/docs/install-sdk) guide can help you get
-started. 
-
-With this set up, using the [GCP Secret
-Manager](https://cloud.google.com/secret-manager) is just as easy as using the
-local version. Make sure that the integration is installed first, and then
-register your secrets manager in the following way:
-
-```shell
-zenml integration install gcp_secrets_manager
-zenml secrets-manager register GCP_SECRETS_MANAGER_NAME -f gcp \ 
-    --project_id=<ID_OF_YOUR_PROJECT>
-```
-
-The Project ID refers to the GCP project of your secrets manager.
-[This](https://support.google.com/googleapi/answer/7014113?hl=en) is how you can
-find the project ID of your project.
-
 If you are using the [ZenML Kubeflow
 integration](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow) for
 your orchestrator, you can then access the keys and their corresponding values
@@ -284,106 +211,4 @@ os.environ.get('AWS_SECRET_ACCESS_KEY')
 
 Note that some secrets will get used by your stack implicitly. For example, in
 the case of when you are using an GCP artifact store, the environment variables
-passed down will be used to confirm access.
-
-## Using the Azure Secrets Manager
-
-Azure offers [a managed secrets
-manager](https://docs.microsoft.com/en-us/azure/key-vault/general/) (known as
-'Azure Key Vault') to store and use secrets for Azure services. If your stack is
-primarily running on Microsoft's Azure cloud platform, you can use our
-integration to interact with it. 
-
-Before getting started with the Azure secret manager you'll need to make sure to
-have your Azure credentials [set up
-locally](https://docs.microsoft.com/en-us/azure/key-vault/general/quick-create-cli),
-and you have access to a service account with read/write permissions to the
-secrets manager.
-[This](https://docs.microsoft.com/en-us/azure/key-vault/general/quick-create-cli)
-guide can help you get started. You'll want to create a new key vault as
-described in the link, or use whatever vault you already have created.
-
-With this set up, using the [Azure Key
-Vault](https://docs.microsoft.com/en-us/azure/key-vault/) is just as easy as
-using the local version. Make sure that the integration is installed first, and
-then register your secrets manager in the following way:
-
-```shell
-zenml integration install azure
-zenml secrets-manager register AZURE_SECRETS_MANAGER_NAME -f azure \ 
-    --key_vault_name=<YOUR_KEY_VAULT_NAME>
-
-# update your default stack, for example
-zenml stack update default -x AZURE_SECRETS_MANAGER_NAME
-```
-
-The Key Vault name refers to the name of your Key Vault as created within Azure.
-
-If you are using the [ZenML Kubeflow
-integration](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow_pipelines_orchestration) for
-your orchestrator, you can then access the keys and their corresponding values
-for all the secrets you imported in the pipeline definition (as mentioned
-above). The keys that you used when creating the secret will be capitalized when
-they are passed down into the images used by Kubeflow. For example, in the case
-of accessing the `aws` secret referenced above, you would get the value for the
-`aws_secret_access_key` key with the following code (within a step):
-
-```python
-import os 
-
-os.environ.get('AWS_SECRET_ACCESS_KEY')
-```
-
-Note that some secrets will get used by your stack implicitly. For example, in
-the case of when you are using an AWS S3 artifact store, the environment
-variables passed down will be used to confirm access.
-
-
-## Using HashiCorp Vault Secrets Manager
-
-HashiCorp offers [a secrets
-manager](https://www.vaultproject.io/) (known as
-'HashiCorp Vault') to store and use secrets for different services. If your stack is
-primarily using HashiCorp Vault to store, access, and deploy secrets across applications, 
-systems, and infrastructure, you can use our integration to interact with it.
-
-Before getting started with Vault, you'll need to make sure to have your Vault credentials, 
-set up a [Vault Server](https://www.vaultproject.io/docs/install) or use 
-[HashiCorp Cloud Platform Vault](https://cloud.hashicorp.com/docs/vault), 
-and you have enabled [KV Secrets Engine - Version 2](https://www.vaultproject.io/docs/secrets/kv/kv-v2). 
-If you are new to HashiCorp Vault, make sure to follow their [tutorials](https://learn.hashicorp.com/tutorials/vault/getting-started-intro?in=vault/getting-started). 
-
-With this set up, make sure that the integration is installed first, and then 
-register your secrets manager in the following way: 
-
-```shell
-zenml integration install vault 
-zenml secrets-manager register VAULT_SECRETS_MANAGER_NAME -f vault \
-    --url=<YOUR_VAULT_URL> --token=<YOUR_VAULT_TOKEN> --mount_point=<PATH_TO_KV_V2_ENGINE>
-
-# update your default stack, for example
-zenml stack update default -x VAULT_SECRETS_MANAGER_NAME
-```
-
---url is the URL to your Vault Server. 
---token refers to the authentication token. 
---mount_point refers to the path to your KV Secrets Engine - Version 2. 
-
-If you are using the [ZenML Kubeflow
-integration](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow_pipelines_orchestration) for
-your orchestrator, you can then access the keys and their corresponding values
-for all the secrets you imported in the pipeline definition (as mentioned
-above). The keys that you used when creating the secret will be capitalized when
-they are passed down into the images used by Kubeflow. For example, in the case
-of accessing the `aws` secret referenced above, you would get the value for the
-`aws_secret_access_key` key with the following code (within a step):
-
-```python
-import os 
-
-os.environ.get('AWS_SECRET_ACCESS_KEY')
-```
-
-Note that some secrets will get used by your stack implicitly. For example, in
-the case of when you are using an AWS S3 artifact store, the environment variables
 passed down will be used to confirm access.

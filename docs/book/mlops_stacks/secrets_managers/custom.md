@@ -1,16 +1,6 @@
 ---
 description: Using secrets across your ZenML pipeline.
 ---
-
-Most projects involving either cloud infrastructure or of a certain complexity
-will involve secrets of some kind. ZenML provides you a Secrets Manager as 
-stack component to help manage and use these secrets for your pipeline runs.
-
-{% hint style="warning" %}
-Before reading this chapter, make sure that you are familiar with the 
-concept of [stacks, stack components and their flavors](../advanced-guide/stacks-components-flavors.md).  
-{% endhint %}
-
 ## Base Abstraction
 
 The secret manager acts as the one-stop shop for all the secrets to which your 
@@ -72,33 +62,6 @@ This is a slimmed-down version of the base implementation which aims to
 highlight the abstraction layer. In order to see the full implementation 
 and get the complete docstrings, please check the [API docs](https://apidocs.zenml.io/0.7.3/api_docs/secrets_managers/#zenml.secrets_managers.base_secrets_manager.BaseSecretsManager).
 {% endhint %}
-
-## List of available secrets managers
-
-Out-of-the-box, ZenML comes with a `LocalSecretsManager` implementation, which 
-is a simple implementation for a local setup. This secrets manager simply saves 
-secrets into a local yaml file with base64 encoding. This implementation is
-not intended for production use.
-
-For production use cases some more flavors can be found in specific 
-`integrations` modules, such as the `GCPSecretsManager` in the 
-`gcp` integration, the `AWSSecretsManager` in the 
-`aws` integration and the `AzureSecretsManager` in the `azure` integration.
-
-|                                                                                                                                                                   | Flavor | Integration |
-|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|-------------|
-| [LocalSecretsManager](https://apidocs.zenml.io/latest/api_docs/secrets_managers/#zenml.secrets_managers.local.local_secrets_manager.LocalSecretsManager)          | local  | `built-in`  |
-| [AWSSecretsManager](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.aws.secrets_managers.aws_secrets_manager.AWSSecretsManager)         | aws    | aws         |
-| [GCPSecretsManager](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.gcp.secrets_managers.gcp_secrets_manager.GCPSecretsManager)         | gcp    | gcp         |
-| [AzureSecretsManager](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.azure.secrets_managers.azure_secrets_manager.AzureSecretsManager) | azure  | azure       |
-| [GitHubSecretsManager](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.github.secrets_managers.github_secrets_manager.GitHubSecretsManager) | github | github |                                                                                                                   
-
-If you would like to see the available flavors for secret managers, you can 
-use the command:
-
-```shell
-zenml secrets-manager flavor list
-```
 
 ## Build your own custom secrets manager
 

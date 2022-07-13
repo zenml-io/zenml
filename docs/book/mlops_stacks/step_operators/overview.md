@@ -7,13 +7,15 @@ specialized runtime environments that are optimized for certain workloads.
 These specialized environments can give your steps access to resources like 
 GPUs or distributed processing frameworks like [Spark](https://spark.apache.org/).
 
-Comparison to orchestrators:
+{% hint style="info" %}
+**Comparison to orchestrators:**
 The [orchestrator](../orchestrators/overview.md) is a mandatory stack component that is responsible 
 for executing all steps of a pipeline in the correct order and provide 
 additional features such as scheduling pipeline runs. The step operator 
 on the other hand is used to only execute individual steps of the pipeline 
 in a separate environment in case the environment provided by the orchestrator
 is not feasible.
+{% endhint %}
 
 ## When to use it
 

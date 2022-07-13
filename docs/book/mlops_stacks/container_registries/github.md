@@ -40,8 +40,8 @@ To use the GitHub container registry, we need:
 * The registry URI. Check out the [previous section](#uri-format) on the URI format and how
 to get the URI for your registry.
 * Our Docker client configured so it can pull and push images. Follow
-[this guide](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry) to create a PAT and
-login to the container registry.
+[this guide](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry) to create a
+personal access token and login to the container registry.
 
 We can then register the container registry and use it in our active stack:
 ```shell
