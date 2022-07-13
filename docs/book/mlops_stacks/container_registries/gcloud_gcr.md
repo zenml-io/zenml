@@ -6,14 +6,14 @@ The GCP container registry is a [container registry](./overview.md) flavor comes
 ZenML and uses the [Google Container Registry](https://cloud.google.com/container-registry)
 to store container images.
 
-## When would you want to use it?
+## When to use it
 
 You should use the GCP container registry if:
 * one or more components of your stack need to pull or push container images.
 * you have access to GCP. If you're not using GCP, take a look at the
  other [container registry flavors](./overview.md#container-registry-flavors).
 
-## How do you deploy it?
+## How to deploy it
 
 All you need to do to use the GCP container registry is enabling it [here](https://console.cloud.google.com/marketplace/product/google/containerregistry.googleapis.com).
 
@@ -41,7 +41,7 @@ To figure our the URI for your registry:
 * Use the ID of the project you want to use fill the template `gcr.io/<PROJECT_ID>` and get your URI
 (You can also use the other prefixes `<us/eu/asia>.gcr.io` as explained above if you want your images stored in a different region).
 
-## How to use it?
+## How to use it
 
 To use the Azure container registry, we need:
 * [Docker](https://www.docker.com) installed and running.

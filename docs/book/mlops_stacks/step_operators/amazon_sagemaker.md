@@ -6,7 +6,7 @@ The Sagemaker step operator is a [step operator](./overview.md) flavor provided 
 the `aws` ZenML integration that uses [Sagemaker](https://aws.amazon.com/sagemaker/)
 to execute individual steps of ZenML pipelines.
 
-## When would you want to use it?
+## When to use it
 
 You should use the Sagemaker step operator if:
 * one or more steps of your pipeline require computing resources (CPU, GPU, memory) that are
@@ -14,13 +14,13 @@ not provided by your orchestrator.
 * you have access to Sagemaker. If you're using a different cloud provider, take 
 a look at the [Vertex](./gcloud_vertexai.md) or [AzureML](./azureml.md) step operators.
 
-## How do you deploy it?
+## How to deploy it
 
 * Create a role in the IAM console that you want the jobs running in Sagemaker to assume.
 This role should at least have the `AmazonS3FullAccess` and `AmazonSageMakerFullAccess`
 policies applied. Check [here](https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-roles.html#sagemaker-roles-create-execution-role) for a guide on how to set up this role.
 
-## How to use it?
+## How to use it
 
 To use the Sagemaker step operator, we need:
 * The ZenML `aws` integration installed. If you haven't done so, run 

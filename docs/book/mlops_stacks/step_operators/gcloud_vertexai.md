@@ -6,7 +6,7 @@ The Vertex step operator is a [step operator](./overview.md) flavor provided wit
 the `gcp` ZenML integration that uses [Vertex AI](https://cloud.google.com/vertex-ai)
 to execute individual steps of ZenML pipelines.
 
-## When would you want to use it?
+## When to use it
 
 You should use the Vertex step operator if:
 * one or more steps of your pipeline require computing resources (CPU, GPU, memory) that are
@@ -14,14 +14,14 @@ not provided by your orchestrator.
 * you have access to Vertex AI. If you're using a different cloud provider, take 
 a look at the [Sagemaker](./amazon_sagemaker.md) or [AzureML](./azureml.md) step operators.
 
-## How do you deploy it?
+## How to deploy it
 
 * Enable Vertex AI [here](https://console.cloud.google.com/vertex-ai).
 * Create a [service account](https://cloud.google.com/iam/docs/service-accounts) with
 the right permissions to create Vertex AI jobs (`roles/aiplatform.admin`) and push 
 to the container registry (`roles/storage.admin`).
 
-## How to use it?
+## How to use it
 
 To use the Vertex step operator, we need:
 * The ZenML `gcp` integration installed. If you haven't done so, run 

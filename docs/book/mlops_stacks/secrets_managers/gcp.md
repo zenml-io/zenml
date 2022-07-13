@@ -6,7 +6,7 @@ The GCP secrets manager is a [secrets manager](./overview.md) flavor provided wi
 the `gcp` ZenML integration that uses [GCP](https://cloud.google.com/secret-manager)
 to store secrets.
 
-## When would you want to use it?
+## When to use it
 
 You should use the GCP secrets manager if:
 * a component of your stack requires a secret for authentication or you want 
@@ -14,12 +14,12 @@ to use secrets inside your steps.
 * you're already using GCP, especially if your orchestrator is running in GCP.
 If you're using a different cloud provider, take a look at the other [secrets manager flavors](./overview.md#secrets-manager-flavors).
 
-## How do you deploy it?
+## How to deploy it
 
 In order to use the GCP secrets manager, you need to enable it
 [here](https://console.cloud.google.com/marketplace/product/google/secretmanager.googleapis.com).
 
-## How to use it?
+## How to use it
 
 To use the GCP secrets manager, we need:
 * The ZenML `gcp` integration installed. If you haven't done so, run 

@@ -6,7 +6,7 @@ The GitHub secrets manager is a [secrets manager](./overview.md) flavor provided
 the `github` ZenML integration that uses [GitHub secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets)
 to store secrets.
 
-## When would you want to use it?
+## When to use it
 
 {% hint style="warning" %}
 The GitHub secrets manager does not allow reading secret values unless it's running inside a
@@ -14,11 +14,11 @@ GitHub Actions workflow. For this reason, this secrets manager **only** works in
 with a [GitHub Actions orchestrator](../orchestrators/github_actions.md).
 {% endhint %}
 
-## How do you deploy it?
+## How to deploy it
 
 GitHub secrets are automatically enabled when creating a GitHub repository.
 
-## How to use it?
+## How to use it
 
 To use the GitHub secrets manager, we need:
 * The ZenML `github` integration installed. If you haven't done so, run 

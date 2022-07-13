@@ -6,14 +6,14 @@ The Azure container registry is a [container registry](./overview.md) flavor com
 ZenML and uses the [Azure Container Registry](https://azure.microsoft.com/en-us/services/container-registry/)
 to store container images.
 
-## When would you want to use it?
+## When to use it
 
 You should use the Azure container registry if:
 * one or more components of your stack need to pull or push container images.
 * you have access to Azure. If you're not using Azure, take a look at the
  other [container registry flavors](./overview.md#container-registry-flavors).
 
-## How do you deploy it?
+## How to deploy it
 
 Go [here](https://portal.azure.com/#create/Microsoft.ContainerRegistry) and 
 choose a subscription, resource group, location and registry name. Then click on
@@ -35,7 +35,7 @@ To figure our the URI for your registry:
 registry you want to use. If you don't have any container registries yet, check out the 
 [deployment section](#how-do-you-deploy-it) on how to create one.
 * Use the name of your registry to fill the template `<REGISTRY_NAME>.azurecr.io` and get your URI.
-## How to use it?
+## How to use it
 
 To use the Azure container registry, we need:
 * [Docker](https://www.docker.com) installed and running.

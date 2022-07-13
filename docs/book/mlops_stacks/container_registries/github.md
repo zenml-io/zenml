@@ -6,14 +6,14 @@ The GitHub container registry is a [container registry](./overview.md) flavor co
 ZenML and uses the [GitHub Container Registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
 to store container images.
 
-## When would you want to use it?
+## When to use it
 
 You should use the GitHub container registry if:
 * one or more components of your stack need to pull or push container images.
 * you're using GitHub for your projects. If you're not using GitHub, take a look at the
  other [container registry flavors](./overview.md#container-registry-flavors).
 
-## How do you deploy it?
+## How to deploy it
 
 The GitHub container registry is enabled by default when you create a GitHub account.
 
@@ -33,7 +33,7 @@ To figure our the URI for your registry:
 * Use the GitHub user or organization name to fill the template 
 `ghcr.io/<USER_OR_ORGANIZATION_NAME>` and get your URI.
 
-## How to use it?
+## How to use it
 
 To use the GitHub container registry, we need:
 * [Docker](https://www.docker.com) installed and running.

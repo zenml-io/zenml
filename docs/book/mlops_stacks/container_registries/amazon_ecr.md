@@ -6,14 +6,14 @@ The AWS container registry is a [container registry](./overview.md) flavor provi
 the `aws` ZenML integration and uses [Amazon ECR](https://aws.amazon.com/ecr/) to store 
 container images.
 
-## When would you want to use it?
+## When to use it
 
 You should use the AWS container registry if:
 * one or more components of your stack need to pull or push container images.
 * you have access to AWS ECR. If you're not using AWS, take a look at the
  other [container registry flavors](./overview.md#container-registry-flavors).
 
-## How do you deploy it?
+## How to deploy it
 
 The ECR registry is automatically activated once you create an AWS account.
 However, you'll need to create a `Repository` in order to push container images to it:
@@ -39,7 +39,7 @@ To figure our the URI for your registry:
 * Go [here](https://docs.aws.amazon.com/general/latest/gr/rande.html#regional-endpoints) and choose the region in which you would like to store your container images. Make sure to choose a nearby region for faster access.
 * Once you have both these values, fill in the values in this template
 `<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com` to get your container registry URI.
-## How to use it?
+## How to use it
 
 To use the AWS container registry, we need:
 * The ZenML `aws` integration installed. If you haven't done so, run 

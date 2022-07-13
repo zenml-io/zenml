@@ -6,14 +6,14 @@ The DockerHub container registry is a [container registry](./overview.md)
 flavor comes built-in with ZenML and uses [DockerHub](https://hub.docker.com/)
 to store container images.
 
-## When would you want to use it?
+## When to use it
 
 You should use the DockerHub container registry if:
 * one or more components of your stack need to pull or push container images.
 * you have a DockerHub account. If you're not using DockerHub, take a look at the
  other [container registry flavors](./overview.md#container-registry-flavors).
 
-## How do you deploy it?
+## How to deploy it
 
 ...
 
@@ -35,7 +35,7 @@ docker.io/my-username
 To figure our the URI for your registry:
 * Find out the account name of your [DockerHub](https://portal.azure.com/#home) account.
 * Use the account name to fill the template `docker.io/<ACCOUNT_NAME>` and get your URI.
-## How to use it?
+## How to use it
 
 To use the Azure container registry, we need:
 * [Docker](https://www.docker.com) installed and running.

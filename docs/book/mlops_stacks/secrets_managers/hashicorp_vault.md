@@ -6,7 +6,7 @@ The HashiCorp Vault secrets manager is a [secrets manager](./overview.md) flavor
 the `vault` ZenML integration that uses [HashiCorp Vault](https://www.vaultproject.io/)
 to store secrets.
 
-## When would you want to use it?
+## When to use it
 
 You should use the HashiCorp Vault secrets manager if:
 * a component of your stack requires a secret for authentication or you want 
@@ -14,7 +14,7 @@ to use secrets inside your steps.
 * you're already using HashiCorp Vault to store your secrets or want a
 self-hosted secrets solution.
 
-## How do you deploy it?
+## How to deploy it
 
 To get started with this secrets manager, you need to either:
 * [self-host a Vault server](https://www.vaultproject.io/docs/install)
@@ -23,7 +23,7 @@ To get started with this secrets manager, you need to either:
 Once you decided and finished setting up one of the two solutions, you need to enable 
 the [KV Secrets Engine - Version 2](https://www.vaultproject.io/docs/secrets/kv/kv-v2).
 
-## How to use it?
+## How to use it
 
 To use the Vault secrets manager, we need:
 * The ZenML `vault` integration installed. If you haven't done so, run 

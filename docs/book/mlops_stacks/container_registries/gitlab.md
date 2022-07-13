@@ -6,14 +6,14 @@ The GitLab container registry is a [container registry](./overview.md) flavor co
 ZenML and uses the [GitLab Container Registry](https://docs.gitlab.com/ee/user/packages/container_registry/)
 to store container images.
 
-## When would you want to use it?
+## When to use it
 
 You should use the GitLab container registry if:
 * one or more components of your stack need to pull or push container images.
 * you have access to GitLab. If you're not using GitLab, take a look at the
  other [container registry flavors](./overview.md#container-registry-flavors).
 
-## How do you deploy it?
+## How to deploy it
 
 ...
 
@@ -27,7 +27,7 @@ The GitLab container registry URI should have the following format:
 To figure our the URI for your registry:
 * ...
 
-## How to use it?
+## How to use it
 
 To use the GitLab container registry, we need:
 * [Docker](https://www.docker.com) installed and running.

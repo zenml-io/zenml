@@ -6,7 +6,7 @@ The Default container registry is a [container registry](./overview.md)
 flavor comes built-in with ZenML and allows container registry URIs
 of any format.
 
-## When would you want to use it?
+## When to use it
 
 You should use the Default container registry if you want to use a **local**
 container registry or when using a remote container registry that is not 
@@ -24,7 +24,7 @@ localhost:8000
 localhost:9999
 ```
 
-## How to use it?
+## How to use it
 
 To use the Default container registry, we need:
 * [Docker](https://www.docker.com) installed and running.
