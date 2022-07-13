@@ -2,7 +2,7 @@
 description: Store container images in GitLab
 ---
 
-The GitLab container registry is a [container registry](./overview.md) flavor comes built-in with 
+The GitLab container registry is a [container registry](./overview.md) flavor which comes built-in with 
 ZenML and uses the [GitLab Container Registry](https://docs.gitlab.com/ee/user/packages/container_registry/)
 to store container images.
 

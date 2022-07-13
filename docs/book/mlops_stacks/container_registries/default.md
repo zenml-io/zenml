@@ -3,7 +3,7 @@ description: Store container images
 ---
 
 The Default container registry is a [container registry](./overview.md) 
-flavor comes built-in with ZenML and allows container registry URIs
+flavor which comes built-in with ZenML and allows container registry URIs
 of any format.
 
 ## When to use it

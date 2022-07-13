@@ -3,7 +3,7 @@ description: Store secrets in GCP
 ---
 
 The GCP secrets manager is a [secrets manager](./overview.md) flavor provided with
-the `gcp` ZenML integration that uses [GCP](https://cloud.google.com/secret-manager)
+the ZenML `gcp` integration that uses [GCP](https://cloud.google.com/secret-manager)
 to store secrets.
 
 ## When to use it

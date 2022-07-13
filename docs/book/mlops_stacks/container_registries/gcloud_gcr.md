@@ -2,7 +2,7 @@
 description: Store container images in GCR
 ---
 
-The GCP container registry is a [container registry](./overview.md) flavor comes built-in with 
+The GCP container registry is a [container registry](./overview.md) flavor which comes built-in with 
 ZenML and uses the [Google Container Registry](https://cloud.google.com/container-registry)
 to store container images.
 

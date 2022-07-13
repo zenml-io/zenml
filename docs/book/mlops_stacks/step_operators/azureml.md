@@ -3,7 +3,7 @@ description: Execute individual steps in AzureML
 ---
 
 The AzureML step operator is a [step operator](./overview.md) flavor provided with
-the `azure` ZenML integration that uses [AzureML](https://azure.microsoft.com/en-us/services/machine-learning/)
+the ZenML `azure` integration that uses [AzureML](https://azure.microsoft.com/en-us/services/machine-learning/)
 to execute individual steps of ZenML pipelines.
 
 ## When to use it

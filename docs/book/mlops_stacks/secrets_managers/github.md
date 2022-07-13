@@ -3,7 +3,7 @@ description: Store secrets in GitHub
 ---
 
 The GitHub secrets manager is a [secrets manager](./overview.md) flavor provided with
-the `github` ZenML integration that uses [GitHub secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets)
+the ZenML `github` integration that uses [GitHub secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets)
 to store secrets.
 
 ## When to use it

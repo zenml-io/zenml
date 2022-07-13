@@ -3,7 +3,7 @@ description: Execute individual steps in Vertex AI
 ---
 
 The Vertex step operator is a [step operator](./overview.md) flavor provided with
-the `gcp` ZenML integration that uses [Vertex AI](https://cloud.google.com/vertex-ai)
+the ZenML `gcp` integration that uses [Vertex AI](https://cloud.google.com/vertex-ai)
 to execute individual steps of ZenML pipelines.
 
 ## When to use it

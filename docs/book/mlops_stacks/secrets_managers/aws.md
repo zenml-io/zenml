@@ -3,7 +3,7 @@ description: Store secrets in AWS
 ---
 
 The AWS secrets manager is a [secrets manager](./overview.md) flavor provided with
-the `aws` ZenML integration that uses [AWS](https://aws.amazon.com/secrets-manager/)
+the ZenML `aws` integration that uses [AWS](https://aws.amazon.com/secrets-manager/)
 to store secrets.
 
 ## When to use it

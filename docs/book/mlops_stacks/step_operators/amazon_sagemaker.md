@@ -3,7 +3,7 @@ description: Execute individual steps in Sagemaker
 ---
 
 The Sagemaker step operator is a [step operator](./overview.md) flavor provided with
-the `aws` ZenML integration that uses [Sagemaker](https://aws.amazon.com/sagemaker/)
+the ZenML `aws` integration that uses [Sagemaker](https://aws.amazon.com/sagemaker/)
 to execute individual steps of ZenML pipelines.
 
 ## When to use it

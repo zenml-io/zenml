@@ -3,7 +3,7 @@ description: Store secrets in HashiCorp Vault
 ---
 
 The HashiCorp Vault secrets manager is a [secrets manager](./overview.md) flavor provided with
-the `vault` ZenML integration that uses [HashiCorp Vault](https://www.vaultproject.io/)
+the ZenML `vault` integration that uses [HashiCorp Vault](https://www.vaultproject.io/)
 to store secrets.
 
 ## When to use it
