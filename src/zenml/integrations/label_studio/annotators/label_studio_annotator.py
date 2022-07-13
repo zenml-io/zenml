@@ -390,11 +390,6 @@ class LabelStudioAnnotator(BaseAnnotator):
         elif not label_config:
             raise ValueError("`label_config` keyword argument is required.")
 
-        dataset_id = self.get_id_from_name(dataset_name)
-        if not dataset_id:
-            raise ValueError(
-                f"Dataset name '{dataset_name}' has no corresponding `dataset_id` in Label Studio."
-            )
         return ls.start_project(
             title=dataset_name,
             label_config=label_config,

@@ -12,6 +12,7 @@ Running this example on Azure is the quickest way to get going. You can use the
 `annotationartifactstore` storage account and its
 `annotationartifactstoretesting` blob container as a test artifact store.
 
+<!-- # TODO: do this all with secrets managers instead -->
 Make sure to set the following two environment variables prior to running this
 pipeline:
 
@@ -54,7 +55,8 @@ Set up your (Azure) stack as follows:
 # using the pre-built blob storage mentioned above
 zenml artifact-store register azure_artifact_store --flavor=azure --path="az://annotationartifactstoretesting"
 zenml stack copy default annotation
-zenml stack update annotation -a azure_artifact_store -an label_studio
+zenml stack update annotation -a azure_artifact_store
+zenml stack update annotation -an label_studio -x azure_secrets_manager
 zenml stack set annotation
 zenml stack up
 ```
