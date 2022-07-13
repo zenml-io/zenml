@@ -9,12 +9,12 @@ description: Orchestrate Machine Learning pipelines
 
 | Orchestrator         | Flavor    | Integration    | Notes |
 |----------------------------|-----------|----------------|-------------|
-| [LocalOrchestrator](./local.md)   | local   | _built-in_     | Runs your pipelines locally. |
-| [KubernetesOrchestrator](./kubernetes.md) | kubernetes | kubernetes     | Runs your pipelines in Kubernetes clusters. |
-| [KubeflowOrchestrator](./kubeflow.md)       | kubeflow       | kubeflow     | Runs your pipelines using Kubeflow. |
-| [VertexOrchestrator](./gcloud_vertexai.md)     | vertex     | gcp     | Runs your pipelines in Vertex AI. |
-| [AirflowOrchestrator](./airflow.md)    | airflow    | airflow     | Runs your pipelines locally using Airflow. |
-| [GitHubActionsOrchestrator](./github_actions.md)    | github    | github     | Runs your pipelines using GitHub Actions. |
+| [LocalOrchestrator](./local.md)   | `local`   | _built-in_     | Runs your pipelines locally. |
+| [KubernetesOrchestrator](./kubernetes.md) | `kubernetes` | `kubernetes`     | Runs your pipelines in Kubernetes clusters. |
+| [KubeflowOrchestrator](./kubeflow.md)       | `kubeflow`       | `kubeflow`    | Runs your pipelines using Kubeflow. |
+| [VertexOrchestrator](./gcloud_vertexai.md)     | `vertex`     | `gcp`     | Runs your pipelines in Vertex AI. |
+| [AirflowOrchestrator](./airflow.md)    | `airflow`    | `airflow`     | Runs your pipelines locally using Airflow. |
+| [GitHubActionsOrchestrator](./github_actions.md)    | `github`    | `github`     | Runs your pipelines using GitHub Actions. |
 
 If you would like to see the available flavors of orchestrators, you can 
 use the command:

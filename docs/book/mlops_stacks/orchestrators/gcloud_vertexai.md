@@ -34,7 +34,7 @@ zenml stack update -o <NAME>
 
 TODO: explain how to run a pipeline
 
-A concrete example of using the Airflow orchestrator can be found 
+A concrete example of using the Vertex orchestrator can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/vertex_ai_orchestration).
 
 For more information and a full list of configurable attributes of the Vertex orchestrator, check out the 
