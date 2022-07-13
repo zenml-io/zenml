@@ -341,15 +341,17 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
 
         Returns:
             Label Studio client.
+
+        Raises:
+            ValueError: when unable to access the Label Studio API key.
         """
         secret = self.get_authentication_secret(ArbitrarySecretSchema)
-        if secret:
-            api_key = secret.content["api_key"]
-            return Client(url=self.get_url(), api_key=api_key)
-        else:
+        if not secret:
             raise ValueError(
-                "Unable to access authentication secret to access Label Studio API key."
+                f"Unable to access predefined secret '{secret}' to access Label Studio API key."
             )
+        api_key = secret.content["api_key"]
+        return Client(url=self.get_url(), api_key=api_key)
 
     def _connection_available(self) -> bool:
         """Checks if the connection to the annotation server is available.
