@@ -150,7 +150,7 @@ def get_or_create_dataset(
 
 
 @step(enable_cache=False)
-def get_labeled_data(dataset_name: str, context: StepContext) -> List:
+def get_labeled_data(dataset_name: str, context: StepContext) -> List:  # type: ignore[type-arg]
     """Gets labeled data from the dataset.
 
     Args:

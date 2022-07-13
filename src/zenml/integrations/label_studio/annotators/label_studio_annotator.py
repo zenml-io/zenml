@@ -478,8 +478,7 @@ class LabelStudioAnnotator(BaseAnnotator):
         # project = self._dataset_name_to_project(dataset_name)
         self._get_client()
         project = self.get_dataset(dataset_name=dataset_name)
-        # type: ignore[no-any-return]
-        return project.export_tasks(export_type=output_format)
+        return project.export_tasks(export_type=output_format)  # type: ignore[no-any-return]
 
     def get_labeled_data(self, **kwargs: Any) -> Any:
         """Gets the labeled data for the given dataset.
