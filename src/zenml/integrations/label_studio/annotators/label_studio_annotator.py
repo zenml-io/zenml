@@ -344,7 +344,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         """
         secret = self.get_authentication_secret(ArbitrarySecretSchema)
         if secret:
-            api_key = secret.content.label_studio_api_key
+            api_key = secret.content["api_key"]
             return Client(url=self.get_url(), api_key=api_key)
         else:
             raise ValueError(
@@ -475,7 +475,8 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         # project = self._dataset_name_to_project(dataset_name)
         self._get_client()
         project = self.get_dataset(dataset_name=dataset_name)
-        return project.export_tasks(export_type=output_format)  # type: ignore[no-any-return]
+        # type: ignore[no-any-return]
+        return project.export_tasks(export_type=output_format)
 
     def get_labeled_data(self, **kwargs: Any) -> Any:
         """Gets the labeled data for the given dataset.
