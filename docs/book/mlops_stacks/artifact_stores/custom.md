@@ -1,10 +1,13 @@
 ---
-description: Setting up the storage for your artifacts
+description: Extend ZenML to implement a custom Artifact Store
 ---
 
-In ZenML, all the inputs and outputs which go through a step are treated as 
-artifacts and as its name suggests, an `ArtifactStore` is a place where these
-artifacts get stored.
+ZenML comes equipped with [Artifact Store implementations](./overview.md#artifact-store-flavors)
+that you can use to store artifacts on a local filesystem or in the managed AWS,
+GCP or Azure cloud object storage services. However, if you need to use a
+different type of object storage service as a backend for your ZenML Artifact
+Store, you can easily extend ZenML to provide your own custom Artifact Store
+implementation.
 
 {% hint style="warning" %}
 Before reading this chapter, make sure that you are familiar with the 
@@ -13,9 +16,9 @@ concept of [stacks, stack components and their flavors](../advanced-guide/stacks
 
 ## Base Abstraction
 
-The artifact store establishes one of the main components in every ZenML stack.
+The Artifact Store establishes one of the main components in every ZenML stack.
 Now, let us take a deeper dive into the fundamentals behind its abstraction,
-namely the `BaseArtifactStore`:
+namely [the `BaseArtifactStore` class](https://apidocs.zenml.io/latest/api_docs/artifact_stores/#zenml.artifact_stores.base_artifact_store.BaseArtifactStore):
 
 1. As it is the base class for a specific type of StackComponent,
     it inherits from the StackComponent class. This sets the `TYPE`
@@ -135,14 +138,26 @@ filepath which starts with one of the `SUPPORTED_SCHEMES` within
 your steps or materializers, it will be able to use the `open(...)` method 
 that you defined within your artifact store.
 
-## List of available artifact stores
+## Build your own custom artifact store
 
-Out of the box, ZenML comes with a `LocalArtifactStore` implementation, which 
-is a simple implementation for a local setup.
+If you want to implement your own custom Artifact Store, you can 
+follow the following steps:
 
-Moreover, additional artifact stores can be found in specific `integration`
-modules, such as the `GCPArtifactStore` in the `gcp` integration and the
-`AzureArtifactStore` in the `azure` integration.
+1. Create a class which inherits from [the `BaseArtifactStore` base class](https://apidocs.zenml.io/latest/api_docs/artifact_stores/#zenml.artifact_stores.base_artifact_store.BaseArtifactStore).
+2. Define the `FLAVOR` and `SUPPORTED_SCHEMES` class variables.
+3. Implement the `abstractmethod`s based on your desired filesystem.
+
+Once you are done with the implementation, you can register it through the CLI 
+as:
+
+```shell
+zenml artifact-store flavor register <THE-SOURCE-PATH-OF-YOUR-ARTIFACT-STORE>
+```
+
+ZenML includes a range of Artifact Store implementations, some built-in and
+other provided by specific integration modules. You can use them as examples
+of how you can extend the [base Artifact Store abstraction](#base-abstraction)
+to implement your own custom Artifact Store:
 
 |                                                                                                                                                               | Flavor | Integration |
 |---------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|-------------|
@@ -151,25 +166,3 @@ modules, such as the `GCPArtifactStore` in the `gcp` integration and the
 | [GCPArtifactStore](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.gcp.artifact_stores.gcp_artifact_store.GCPArtifactStore)         | gcp    | gcp         |
 | [AzureArtifactStore](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.azure.artifact_stores.azure_artifact_store.AzureArtifactStore) | azure  | azure       |
 
-If you would like to see the available flavors for artifact stores, you can 
-use the command:
-
-```shell
-zenml artifact-store flavor list
-```
-
-## Build your own custom artifact store
-
-If you want to create your own custom flavor for an artifact store, you can 
-follow the following steps:
-
-1. Create a class which inherits from the `BaseArtifactStore`.
-2. Define the `FLAVOR` class variable.
-3. Implement the `abstactmethod`s based on your desired filesystem.
-
-Once you are done with the implementation, you can register it through the CLI 
-as:
-
-```shell
-zenml artifact-store flavor register <THE-SOURCE-PATH-OF-YOUR-ARTIFACT-STORE>
-```

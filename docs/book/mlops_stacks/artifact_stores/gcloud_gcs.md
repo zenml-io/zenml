@@ -45,14 +45,18 @@ zenml integration install gcp -y
 
 The only configuration parameter mandatory for registering a GCS Artifact Store
 is the root path URI, which needs to point to a GCS bucket and takes the form
-`gs://bucket-name`. Please read [the GCP Cloud Storage](https://cloud.google.com/storage/docs/creating-buckets)
-documentation on how to configure a GCS bucket.
+`gs://bucket-name`. Please read [the Google Cloud Storage documentation](https://cloud.google.com/storage/docs/creating-buckets)
+on how to configure a GCS bucket.
 
 With the URI to your GCS bucket known, registering an GCS Artifact Store can be
 as simple as:
 
 ```shell
+# Register the GCS artifact store
 zenml artifact-store register gs_store -f gcp --path=gs://bucket-name
+
+# Register and set a stack with the new artifact store
+zenml stack register custom_stack -a gs_store ... --set
 ```
 
 Depending on your use-case, however, you may also need to provide additional
@@ -71,10 +75,11 @@ for a more holistic approach to configuring full GCP-based stacks for ZenML.
 Integrating and using a GCS Artifact Store in your pipelines is not
 possible without employing some form of authentication. ZenML currently provides
 two options for configuring GCP credentials, the recommended one being to use
-a [Secrets Manager](#secrets-manager-recommended) in your stack to store the
+a [Secrets Manager](../secrets_managers/overview.md) in your stack to store the
 sensitive information in a secure location.
 
-#### Implicit Authentication
+{% tabs %}
+{% tab title="Implicit Authentication" %}
 
 This method uses the implicit GCP authentication available _in the environment
 where the ZenML code is running_. On your local machine, this is the quickest
@@ -102,16 +107,19 @@ Store to load served models
 These remote stack components can still use the implicit authentication method:
 if they are also running within Google Kubernetes Engine, ZenML will try to load
 credentials from the Google compute metadata service. In order to take advantage
-of this feature, you must have configured [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity)
-when you launched your GKE cluster. This mechanism allows Google workloads like
+of this feature, you must have configured a [Service Account](https://cloud.google.com/kubernetes-engine/docs/tutorials/authenticating-to-cloud-platform)
+with the proper permissions or enabled [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity)
+when you launched your GKE cluster. These mechanisms allows Google workloads like
 GKE pods to access other Google services without requiring explicit credentials.
 
-If you have remote stack components that are not running in Google Cloud, or if
-you are unsure how to configure them to use Workload Identity, you should use
-one of the other authentication methods.
+If you have remote stack components that are not running in GKE, or if
+you are unsure how to configure them to use Service Accounts or Workload
+Identity, you should use one of the other authentication methods.
 {% endhint %}
 
-#### Secrets Manager (Recommended)
+{% endtab %}
+
+{% tab title="Secrets Manager (Recommended)" %}
 
 This method requires using a [Secrets Manager](../secrets_managers/overview.md)
 in your stack to store the sensitive GCP authentication information in a secure
@@ -125,15 +133,28 @@ The GCP credentials are configured as a ZenML secret that is referenced in the
 Artifact Store configuration, e.g.:
 
 ```shell
-zenml secret register gcp_secret -s gcp \
-    --token=@path/to/token/file.json
+# Register the GCS artifact store
 zenml artifact-store register gcs_store -f gcp \
     --path='gs://your-bucket' \
     --authentication_secret=gcp_secret
+
+# Register a secrets manager
+zenml secrets-manager register secrets_manager \
+    --flavor=<FLAVOR_OF_YOUR_CHOICE> ...
+
+# Register and set a stack with the new artifact store and secrets manager
+zenml stack register custom_stack -a gs_store -x secrets_manager ... --set
+
+# Create the secret referenced in the artifact store
+zenml secret register gcp_secret -s gcp \
+    --token=@path/to/token/file.json
 ```
 
+{% endtab %}
+{% endtabs %}
+
 For more, up-to-date information on the GCS Artifact Store implementation and its
-configuration, you can have a look at [the API docs](https://apidocs.zenml.io/0.10.0/api_docs/integrations/#zenml.integrations.gcp.artifact_stores.gcp_artifact_store).
+configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.gcp.artifact_stores.gcp_artifact_store).
 
 ## How do you use it?
 

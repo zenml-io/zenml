@@ -28,8 +28,9 @@
   * [Migrating Legacy Stacks to ZenML Profiles](developer-guide/stacks-profiles-repositories/migrating-legacy-stacks.md)
 * [Advanced Concepts](developer-guide/advanced-concepts/overview.md)
   * [Materializers](developer-guide/advanced-concepts/materializer.md)
-  * [Step Fixtures](developer-guide/advanced-concepts/fetching-historic-runs.md)
   * [Services](developer-guide/advanced-concepts/manage-external-services.md)
+  * [Step Contexts and Step Fixtures](developer-guide/advanced-concepts/step-fixtures.md)
+  * [Docker Image Management](developer-guide/advanced-concepts/docker.md)
 
 ## MLOps Stacks
 
@@ -60,8 +61,10 @@
   * [Default Container Registry](mlops_stacks/container_registries/default.md)
   * [DockerHub](mlops_stacks/container_registries/dockerhub.md)
   * [Amazon Elastic Container Registry (ECR)](mlops_stacks/container_registries/amazon_ecr.md)
-  * [Google Cloud Container Registry](mlops_stacks/container_registries/gcloud.md)
-  * [Azure  Container Registry](mlops_stacks/container_registries/azure.md)
+  * [Google Cloud Container Registry](mlops_stacks/container_registries/gcloud_gcr.md)
+  * [Azure Container Registry](mlops_stacks/container_registries/azure.md)
+  * [GitHub Container Registry](mlops_stacks/container_registries/github.md)
+  * [GitLab Container Registry](mlops_stacks/container_registries/gitlab.md)
   * [How to develop a custom container registry](mlops_stacks/container_registries/custom.md)
 * [Secrets Managers](mlops_stacks/secrets_managers/overview.md)
   * [Local Secrets Manager](mlops_stacks/secrets_managers/local.md)
@@ -101,7 +104,7 @@
 
 ## Cloud Guide
 
-* [Overview: When to use which infrastructure](cloud-guide/overview.md)
+* [Overview: Options for deploying your infrastructure](cloud-guide/overview.md)
 * [Execute Pipelines in the Cloud](cloud-guide/execute-pipelines-in-cloud.md)
 * [AWS](cloud-guide/aws/overview.md)
   * [Set up an MLOps stack with EKS, ECR, S3 on AWS](cloud-guide/aws/aws_guide.md)
@@ -126,6 +129,7 @@
 * [Newsletter](https://zenml.substack.com/)
 * [Roadmap](https://zenml.io/roadmap)
 * [Contribution Guide](resources/contributing.md)
+* [External Integration Guide](resources/integrating.md)
 * [Best Practices](resources/best-practices.md)
 * [Global Configuration](resources/global_config.md)
 * [System Environmental Variables](resources/system-environmental-variables.md)

@@ -83,8 +83,11 @@ artifacts are stored inside a folder on your local filesystem.
 You can create additional instances of local Artifact Stores and use them in
 your stacks as you see fit, e.g.:
 
-```
+```shell
+# Register the local artifact store
 zenml artifact-store register custom_local --flavor local
+
+# Register and set a stack with the new artifact store
 zenml stack register custom_stack -o default -m default -a custom_local --set
 ```
 
@@ -93,12 +96,12 @@ Same as all other Artifact Store flavors, the local Artifact Store does take in
 a `path` configuration parameter that can be set during registration to point to
 a custom path on your machine. However, it is highly recommended that you rely
 on the default `path` value, otherwise it may lead to unexpected results.
-Other local stack components rely on the default path to correctly set up
-local Artifact Stores for access in their configuration.
+Other local stack components depend on the convention used for the default path
+to be able to access the local Artifact Store.
 {% endhint %}
 
-For more, up-to-date information on the Artifact Store implementation and its
-configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/artifact_stores/#zenml.artifact_stores.local_artifact_store). 
+For more, up-to-date information on the local Artifact Store implementation and
+its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/artifact_stores/#zenml.artifact_stores.local_artifact_store). 
 
 ## How do you use it?
 

@@ -51,11 +51,15 @@ is the root path URI, which needs to point to an S3 bucket and takes the form
 that you are using on how to create an S3 bucket. For example, the AWS S3
 documentation is available [here](https://docs.aws.amazon.com/AmazonS3/latest/userguide/create-bucket-overview.html).
 
-With the URI to your S3 bucket known, registering an S3 Artifact Store can be
-as simple as:
+With the URI to your S3 bucket known, registering an S3 Artifact Store and using
+it in a stack can be as simple as:
 
 ```shell
+# Register the S3 artifact-store
 zenml artifact-store register s3_store -f s3 --path=s3://bucket-name
+
+# Register and set a stack with the new artifact store
+zenml stack register custom_stack -a s3_store ... --set
 ```
 
 Depending on your use-case, however, you may also need to provide additional
@@ -75,10 +79,11 @@ for a more holistic approach to configuring full AWS-based stacks for ZenML.
 Integrating and using an S3 compatible Artifact Store in your pipelines is not
 possible without employing some form of authentication. ZenML currently provides
 three options for configuring S3 credentials, the recommended one being to
-[use a Secrets Manager](#secrets-manager-recommended) in your stack to store the
-sensitive information in a secure location.
+use a [Secrets Manager](../secrets_managers/overview.md) in your stack to store
+the sensitive information in a secure location.
 
-#### Implicit Authentication
+{% tabs %}
+{% tab title="Implicit Authentication" %}
 
 This method uses the implicit AWS authentication available _in the environment
 where the ZenML code is running_. On your local machine, this is the quickest
@@ -118,7 +123,9 @@ are unsure how to configure them to use IAM roles, you should use one of the
 other authentication methods.
 {% endhint %}
 
-#### Explicit Credentials
+{% endtab %}
+
+{% tab title="Explicit Credentials" %}
 
 Use this method to store the S3 credentials in the Artifact Store configuration.
 When you register the S3 Artifact Store, you may include the credentials
@@ -128,14 +135,20 @@ your stack, but the credentials won't be stored securely and will be visible in
 the stack configuration:
 
 ```shell
+# Register the S3 artifact-store
 zenml artifact-store register s3_store -f s3 \
     --path='s3://your-bucket' \
     --key='your-S3-access-key-ID' \
     --secret='your-S3-secret-key' \
     --token='your-S3-token'
+
+# Register and set a stack with the new artifact store
+zenml stack register custom_stack -a s3_store ... --set
 ```
 
-#### Secrets Manager (Recommended)
+{% endtab %}
+
+{% tab title="Secrets Manager (Recommended)" %}
 
 This method requires using a [Secrets Manager](../secrets_managers/overview.md)
 in your stack to store the sensitive S3 authentication information in a secure
@@ -145,14 +158,27 @@ The S3 credentials are configured as a ZenML secret that is referenced in the
 Artifact Store configuration, e.g.:
 
 ```shell
+# Register the S3 artifact store
+zenml artifact-store register s3_store -f s3 \
+    --path='s3://your-bucket' \
+    --authentication_secret=s3_secret
+
+# Register a secrets manager
+zenml secrets-manager register secrets_manager \
+    --flavor=<FLAVOR_OF_YOUR_CHOICE> ...
+
+# Register and set a stack with the new artifact store and secrets manager
+zenml stack register custom_stack -a s3_store -x secrets_manager ... --set
+
+# Create the secret referenced in the artifact store
 zenml secret register s3_secret -s aws \
     --aws_access_key_id='your-S3-access-key-ID' \
     --aws_secret_access_key='your-S3-secret-key' \
     --aws_session_token='your-S3-token'
-zenml artifact-store register s3_store -f s3 \
-    --path='s3://your-bucket' \
-    --authentication_secret=s3_secret
 ```
+
+{% endtab %}
+{% endtabs %}
 
 ### Advanced Configuration
 
