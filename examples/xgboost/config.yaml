@@ -1,0 +1,15 @@
+name: xgboost_pipeline
+steps:
+  data_loader:
+    source:
+      file: steps
+      name: data_loader
+  trainer:
+    source:
+      file: steps
+      name: trainer
+  predictor:
+    source:
+      file: steps
+      name: predictor
+

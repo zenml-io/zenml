@@ -69,7 +69,7 @@ def drift_detection_pipeline(
     drift_analyzer(drift_report)
 ```
 
-For the full context of this code, please visit our `drift_detection` example [here](https://github.com/zenml-io/zenml/tree/main/examples/drift\_detection). The key part of the pipeline definition above is when we use the datasets derived from the `data_splitter` step (i.e. function) and pass them in as arguments to the `drift_detector` function as part of the pipeline.
+For the full context of this code, please visit our `drift_detection` example [here](https://github.com/zenml-io/zenml/tree/main/examples/evidently_drift_detection). The key part of the pipeline definition above is when we use the datasets derived from the `data_splitter` step (i.e. function) and pass them in as arguments to the `drift_detector` function as part of the pipeline.
 
 We even allow you to use the Evidently visualization tool easily to display data drift diagrams in your browser or within a Jupyter notebook:
 
