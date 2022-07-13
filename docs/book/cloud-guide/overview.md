@@ -1,5 +1,5 @@
 ---
-description: An overview of when to use which infrastructure for your ML workflows
+description: An overview of cloud infrastructure for your ML workflows
 ---
 
 There can be many motivations behind taking your ML application setup to a cloud environment, from needing specialized compute 💪 for training jobs to having a 24x7 load-balanced deployment of your trained model, serving user requests 🚀. 
