@@ -31,12 +31,11 @@ Pipelines and steps are defined in code using Python *decorators*.
 This is where the core business logic and
 value of your work lives, and you will spend most of your time defining these two things. Your code lives inside a Repository, which is the main abstraction within which your project-specific pipelines should live.
 
-When it comes to running your pipeline, ZenML offers an abstraction to handle how your pipeline gets run. 
-The different stack components interact in different ways depending on how it's defined in the pipeline.
+When it comes to running your pipeline, ZenML offers an abstraction to handle how your pipeline gets run. This is where **Stacks** come into play.
 
 ## Stacks, Components and Stores
 
-A Stack represents the infrastructure needed to run your pipeline as well as
+A **Stack** represents the infrastructure needed to run your pipeline as well as
 some of the extra requirements needed for ML pipelines. ZenML comes with a
 default stack that runs locally, as seen in the following diagram:
 
