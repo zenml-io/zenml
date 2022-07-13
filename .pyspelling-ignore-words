@@ -20,7 +20,7 @@ ArtifactStoreInterfaceError
 ArtifactView
 AssertionError
 AttributeError
-AutoTokenizer
+AutoTokenizercreds
 AzureML
 Backend
 Backpropagation
@@ -528,6 +528,7 @@ cp
 cprf
 cpu
 creationTimestamp
+creds
 cron
 cryptoKeys
 csv
