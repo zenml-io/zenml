@@ -2,7 +2,7 @@
 description: Setting up your stack on Amazon Web Services (AWS)
 ---
 
-AWS is one of the most popular cloud providers and offers a range of services that can be used while building your MLOps stacks. You can learn more machine learning at AWS on their [website](https://aws.amazon.com/machine-learning/).
+AWS is one of the most popular cloud providers and offers a range of services that can be used while building your MLOps stacks. You can learn more about machine learning at AWS on their [website](https://aws.amazon.com/machine-learning/).
 
 # Available Stack Components
 
