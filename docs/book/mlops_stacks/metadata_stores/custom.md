@@ -55,4 +55,3 @@ to implement your own custom Metadata Store:
 | [MySQLMetadataStore](https://apidocs.zenml.io/latest/api_docs/metadata_stores/#zenml.metadata_stores.mysql_metadata_store.MySQLMetadataStore)                             | mysql          | `built-in`   |
 | [KubeflowMetadataStore](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.kubeflow.metadata_stores.kubeflow_metadata_store.KubeflowMetadataStore) | kubeflow       | kubeflow     |
 | [KubernetesMetadataStore](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.kubernetes.metadata_stores.kubernetes_metadata_store.KubernetesMetadataStore) | kubernetes       | kubernetes     |
-

@@ -7,7 +7,7 @@ description: Extend ZenML to implement a custom Experiment Tracker
 
 We are actively working on the base abstraction for the Experiment Tracker,
 which  will be available soon. As a result, their extension is not recommended at
-the moment. When you are selecting n Experiment Tracker for your stack, you can
+the moment. When you are selecting an Experiment Tracker for your stack, you can
 use  one of [the existing flavors](./overview.md#experiment-tracker-flavors).
 
 If you need to implement your own Experiment Tracker flavor, you can still do so,
@@ -44,10 +44,3 @@ to implement your own custom Experiment Tracker:
 |-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|-------------|
 | [MLFlowExperimentTracker](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker.MLFlowExperimentTracker) | mlflow   | mlflow      |
 | [WandbExperimentTracker](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.wandb.experiment_trackers.wandb_experiment_tracker.WandbExperimentTracker)     | wandb    | wandb       |
-
-If you would like to see the available flavors for experiment trackers, you can 
-use the command:
-
-```shell
-zenml experiment-tracker flavor list
-```

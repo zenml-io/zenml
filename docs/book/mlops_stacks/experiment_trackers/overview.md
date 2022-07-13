@@ -42,7 +42,7 @@ tools.
 Experiment Trackers are optional stack components provided by integrations:
 
 | Experiment Tracker | Flavor | Integration | Notes             |
-|----------------|--------|-------------|------------|-------------------|
+|----------------|--------|-------------|-----------------------|
 | [MLflow](./mlflow.md) | `mlflow` | `mlflow` | Add MLflow experiment tracking and visualization capabilities to your ZenML pipelines |
 | [Wights & Biases](./wandb.md) | `wandb` | `wandb` | Add Weights & Biases experiment tracking and visualization capabilities to your ZenML pipelines |
 | [Custom Implementation](./custom.md) | _custom_ |  | _custom_ | Extend the Experiment Tracker abstraction and provide your own implementation |
