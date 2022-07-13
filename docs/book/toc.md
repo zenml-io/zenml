@@ -16,7 +16,6 @@
 ## Developer Guide
 
 * [Installation](developer-guide/installation.md)
-
 * [Steps & Pipelines](developer-guide/steps-pipelines/steps-and-pipelines.md)
   * [Runtime Configuration](developer-guide/steps-pipelines/runtime-configuration.md)
   * [Functional vs. Class-Based API](developer-guide/steps-pipelines/class-based-api.md)
