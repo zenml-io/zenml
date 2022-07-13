@@ -208,7 +208,7 @@ class PipelineRunView:
                 "pipeline runs. Learn more in our API docs: %s",
                 get_apidocs_link(
                     "post_execution",
-                    "zenml.post_execution.pipeline_run.PipelineRunView.get_step"
+                    "zenml.post_execution.pipeline_run.PipelineRunView.get_step",
                 ),
             )
 
@@ -221,7 +221,7 @@ class PipelineRunView:
                 " our API docs: %s",
                 get_apidocs_link(
                     "post_execution",
-                    "zenml.post_execution.pipeline_run.PipelineRunView.get_step"
+                    "zenml.post_execution.pipeline_run.PipelineRunView.get_step",
                 ),
             )
         try:
