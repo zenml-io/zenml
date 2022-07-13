@@ -245,6 +245,8 @@ def get_apidocs_link(docs_section: str, caller_path: str) -> str:
     """Get link to api_docs of the caller.
 
     Args:
+        docs_section: Main section of the API docs, that the caller path is
+            part of.
         caller_path: Path to the class, method or function to which the api
             doc-link should point.
 
