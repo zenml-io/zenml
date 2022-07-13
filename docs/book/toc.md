@@ -104,7 +104,7 @@
 
 ## Cloud Guide
 
-* [Overview: When to use which infrastructure](cloud-guide/overview.md)
+* [Overview: Options for deploying your infrastructure](cloud-guide/overview.md)
 * [Execute Pipelines in the Cloud](cloud-guide/execute-pipelines-in-cloud.md)
 * [AWS](cloud-guide/aws/overview.md)
   * [Set up an MLOps stack with EKS, ECR, S3 on AWS](cloud-guide/aws/aws_guide.md)
