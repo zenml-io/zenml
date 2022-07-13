@@ -43,7 +43,7 @@ from zenml.integrations.label_studio.steps.label_studio_standard_steps import (
 from zenml.integrations.s3 import S3_ARTIFACT_STORE_FLAVOR
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.stack import Stack, StackValidator
+from zenml.stack import Stack
 from zenml.utils import io_utils, networking_utils
 
 if TYPE_CHECKING:
