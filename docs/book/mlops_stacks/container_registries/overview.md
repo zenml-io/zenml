@@ -39,3 +39,10 @@ use of the additional URI validations.
 | GitHubContainerRegistry    | github    | _built-in_     | ghcr.io/zenml |
 | GitLabContainerRegistry    | gitlab    | _built-in_     | TODO |
 | AWSContainerRegistry       | aws       | aws            | 123456789.dkr.ecr.us-east-1.amazonaws.com |
+
+If you would like to see the available flavors of container registries, you can 
+use the command:
+
+```shell
+zenml container-registry flavor list
+```

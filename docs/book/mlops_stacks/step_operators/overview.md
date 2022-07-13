@@ -38,3 +38,10 @@ by the following ZenML integrations:
 | [Vertex](./gcloud_vertexai.md) | `vertex` | `gcp` |  Uses Vertex AI to execute steps |
 | [AzureML](./azureml.md) | `azureml` | `azure` |  Uses AzureML to execute steps |
 | [Custom Implementation](./custom.md) | _custom_ | | Extend the step operator abstraction and provide your own implementation |
+
+If you would like to see the available flavors of step operators, you can 
+use the command:
+
+```shell
+zenml step-operator flavor list
+```

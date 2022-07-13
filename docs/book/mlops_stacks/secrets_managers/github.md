@@ -11,7 +11,7 @@ to store secrets.
 {% hint style="warning" %}
 The GitHub secrets manager does not allow reading secret values unless it's running inside a
 GitHub Actions workflow. For this reason, this secrets manager **only** works in combination
-with a [GitHub Actions orchestrator](../orchestrators/github_actions.md)
+with a [GitHub Actions orchestrator](../orchestrators/github_actions.md).
 {% endhint %}
 
 ## How do you deploy it?
