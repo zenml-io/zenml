@@ -9,7 +9,6 @@ Do you struggle with versioning data, code, and models in your projects?
 Have you had trouble replicating production pipelines and monitoring models in production?
 
 If you answered yes to any, **ZenML** is here to help with all that, and more. 
-
 ![Zenml](../assets/oss-header.svg)
 
 **ZenML** is an extensible, open-source MLOps framework for creating portable, production-ready **MLOps pipelines**. 
@@ -27,7 +26,7 @@ solve these individual problems. Rather, it offers an **extensible framework** a
 ## Why ZenML
 
 ZenML pipelines are designed to be written early in the development lifecycle. 
-As data scientist, you can explore and tailor your pipelines as you develop towards production.
+As a data scientist, you can explore and tailor your pipelines as you develop toward production.
 Once you're satisfied, you can easily switch from local to cloud deployment with ease.
 <!-- Read more about why we started building ZenML on our [blog](https://blog.zenml.io/why-zenml/). -->
 
@@ -53,25 +52,23 @@ take you from zero to hero in no time and explain the necessary knowledge of
 
 ## **Stacking** - Customize your Stack
 
-Already ran your first pipelines and want to know about integrations and
-production use cases? Our [Advanced Guides](../mlops_stacks/integrations.md) are the 
-right place for you. You'll find some more detailed descriptions of specific
-use cases and features here. This is where you'll learn how to take your 
-MLOps stack from basic to fully loaded.
+Already ran your first pipeline and want to know about integrations and
+production use cases? Check out [MLOps Stacks](../mlops_stacks/integrations.md). You'll find detailed descriptions of specific
+use cases and features. Learn how to take your 
+MLOps stack from basic to fully-fledged.
 
 ## **Extending** - Make it your own
 
-ZenML does not natively support your favorite tool? Don't you worry! ZenML is 
+ZenML doesn't support your favorite tool? Don't worry! ZenML is 
 built from the ground up with extensibility in mind. Find out how to integrate 
-other tools or proprietary on-prem solutions for you and your team in our 
-section on [Stack Components](../mlops_stacks/extending.md). 
+other tools or proprietary on-prem solutions for you and your team in [Stack Components](../mlops_stacks/extending.md). 
 
 ## **Collaborating** - Work together with your team
 
 Share not only your code but also your ZenML stacks with your team. Find out how
-in our section on [collaboration](../collaborate/collaborate-with-zenml.md). 
+in [collaboration](../collaborate/collaborate-with-zenml.md). 
 
 ## **Resources** - Learn ZenML with tutorials, examples, and guides
 
 The ZenML team and community have put together many more resources other than the 
-documentation to learn about the framework. Learn more in our section on [resources](../resources/index.md).
+documentation to learn about the framework. Learn more in [resources](../resources/index.md).
