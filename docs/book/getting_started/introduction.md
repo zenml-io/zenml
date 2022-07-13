@@ -27,7 +27,7 @@ solve these individual problems. Rather, it offers an **extensible framework** a
 
 ZenML pipelines are designed to be written early in the development lifecycle. 
 As a data scientist, you can explore and tailor your pipelines as you develop toward production.
-Once you're satisfied, you can easily switch from local to cloud deployment with ease.
+Once you're satisfied, you can easily switch from local to cloud deployment.
 <!-- Read more about why we started building ZenML on our [blog](https://blog.zenml.io/why-zenml/). -->
 
 Here's what you get by using ZenML -
@@ -60,15 +60,16 @@ MLOps stack from basic to fully-fledged.
 ## **Extending** - Make it your own
 
 ZenML doesn't support your favorite tool? Don't worry! ZenML is 
-built from the ground up with extensibility in mind. Find out how to integrate 
-other tools or proprietary on-prem solutions for you and your team in [Stack Components](../mlops_stacks/extending.md). 
+built from the ground up with extensibility in mind. Find out how to integrate other tools or proprietary on-prem solutions for you and your team in [Stack Components](../mlops_stacks/extending.md). 
 
 ## **Collaborating** - Work together with your team
 
-Share not only your code but also your ZenML stacks with your team. Find out how
-in [collaboration](../collaborate/collaborate-with-zenml.md). 
+Share not only your code but also your ZenML stacks with your team. Find out how in [collaboration](../collaborate/collaborate-with-zenml.md). 
 
 ## **Resources** - Learn ZenML with tutorials, examples, and guides
 
-The ZenML team and community have put together many more resources other than the 
-documentation to learn about the framework. Learn more in [resources](../resources/index.md).
+The ZenML team and community have put together more resources other than the documentation to learn about the framework. Learn more in [resources](../resources/index.md).
+
+## **Community** - Be part of the ZenML family
+
+Can't really find what you want and need help? Join our [Slack group](https://zenml.io/slack-invite/). Ask questions about bugs or specific use cases and someone from the core team will respond.
