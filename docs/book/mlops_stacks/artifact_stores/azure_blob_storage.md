@@ -53,7 +53,11 @@ With the URI to your Azure Blob Storage container known, registering an Azure
 Artifact Store can be as simple as:
 
 ```shell
+# Register the Azure artifact store
 zenml artifact-store register az_store -f azure --path=az://container-name
+
+# Register and set a stack with the new artifact store
+zenml stack register custom_stack -a az_store ... --set
 ```
 
 Depending on your use-case, however, you may also need to provide additional
@@ -89,7 +93,8 @@ Account and Access Key or connection string, please refer to this
 For information on how to configure an Azure service principle, please consult
 the [Azure documentation](https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal).
 
-#### Implicit Authentication
+{% tabs %}
+{% tab title="Implicit Authentication" %}
 
 This method uses the implicit Azure authentication available _in the environment
 where the ZenML code is running_. On your local machine, this is the quickest
@@ -132,7 +137,9 @@ you are unsure how to configure them to use Managed Identities, you should use
 one of the other authentication methods.
 {% endhint %}
 
-#### Secrets Manager (Recommended)
+{% endtab %}
+
+{% tab title="Secrets Manager (Recommended)" %}
 
 This method requires using a [Secrets Manager](../secrets_managers/overview.md)
 in your stack to store the sensitive Azure authentication information in a secure
@@ -153,12 +160,25 @@ The Azure credentials are configured as a ZenML secret that is referenced in the
 Artifact Store configuration, e.g.:
 
 ```shell
-zenml secret register az_secret -s azure \
-    --connection_sting='your-Azure-connection-string'
+# Register the Azure artifact store
 zenml artifact-store register az_store -f azure \
     --path='az://your-container' \
     --authentication_secret=az_secret
+
+# Register a secrets manager
+zenml secrets-manager register secrets_manager \
+    --flavor=<FLAVOR_OF_YOUR_CHOICE> ...
+
+# Register and set a stack with the new artifact store and secrets manager
+zenml stack register custom_stack -a az_store -x secrets_manager ... --set
+
+# Create the secret referenced in the artifact store
+zenml secret register az_secret -s azure \
+    --connection_sting='your-Azure-connection-string'
 ```
+
+{% endtab %}
+{% endtabs %}
 
 For more, up-to-date information on the Azure Artifact Store implementation and
 its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.azure.artifact_stores).

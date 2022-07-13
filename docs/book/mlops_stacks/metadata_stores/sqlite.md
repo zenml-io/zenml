@@ -78,17 +78,21 @@ Metadata Store uses a database file on your local filesystem.
 You can create additional instances of SQLite Metadata Stores and use them in
 your stacks as you see fit, e.g.:
 
-```
-zenml metadata-store register custom_local --flavor sqlite
-zenml stack register custom_stack -o default -m default -a custom_local --set
+```shell
+# Register the sqlite metadata store
+zenml metadata-store register custom_sqlite --flavor sqlite
+
+# Register and set a stack with the new metadata store
+zenml stack register custom_stack -o default -a default -m custom_sqlite --set
 ```
 
 {% hint style="warning" %}
 The SQLite Metadata Store takes in a `uri` configuration parameter that can be
 set during registration to point to a custom path on your machine. However, it
 is highly recommended that you rely on the default `uri` value, otherwise it may
-lead to unexpected results. Other local stack components rely on the default
-path to be able to access the local Metadata Store.
+lead to unexpected results. Other local stack components depend on the
+convention used for the default path to be able to access the local Metadata
+Store.
 {% endhint %}
 
 For more, up-to-date information on the SQLite Metadata Store implementation and
