@@ -4,31 +4,34 @@ description: A good place to start before diving further into the docs.
 
 # Core Concepts
 
-ZenML consists of a number of components. We mostly follow industry naming
-conventions for the most part, so a lot should already be broadly
-comprehensible. This guide walks through the various pieces you'll encounter
-when using ZenML, starting with the most basic to things you'll only encounter
-when deploying your work to the cloud. At the very highest level, the workflow
-is as follows:
+ZenML consists of a few components. This guide walks through the various pieces you'll encounter when using ZenML, starting with the basics to things you'll only encounter when deploying to the cloud. 
 
-- You write your code as a pipeline to define what you want to happen in your machine learning
-  workflow
+Here's a high-level overview of a typical workflow using ZenML:
+
+1. Writing a *pipeline* to define what happens in a workflow.
+2. Configuring a ZenML *stack*.
+3. Switching between *stacks* depending on needs.
+4. Customize your *stack* and only use components you need.
+
+
+<!-- - You write your code as a pipeline to define what you want to happen in your machine learning workflow.
 - You configure a ZenML Stack which is the infrastructure and setup that will
   run your machine learning code.
 - A stack consists of stack components that interact with your pipeline and its steps in various ways.
-- You can easily switch between different Stacks (i.e. infrastructure
-  configurations) depending on your needs at any given moment.
+- You can easily switch between different Stacks (i.e. infrastructure configurations) depending on your needs at any given moment.
 - You can use whatever you want as part of your Stacks as we're built as a
-  framework to be extensible
+  framework to be extensible. -->
 
-Let's get back to basics, though, and dive into all the core concepts that
-you'll come across when using ZenML!
+<!-- Let's get back to basics, though, and dive into all the core concepts that
+you'll come across when using ZenML! -->
 
-## Basics: Steps and Pipelines
+So first, the basics.
+
+## Steps and Pipelines
 
 At its core, ZenML follows a pipeline-based workflow for your data projects.
-Pipelines consist of a series of steps, organized in whatever order makes sense
-for your particular use case.
+Pipelines consist of a series of steps, organized in any order that makes sense
+for your use case.
 
 ![The most basic ZenML pipeline](../assets/core_concepts/concepts-1.png)
 

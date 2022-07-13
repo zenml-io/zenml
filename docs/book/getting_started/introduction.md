@@ -72,4 +72,4 @@ The ZenML team and community have put together more resources other than the doc
 
 ## **Community** - Be part of the ZenML family
 
-Can't really find what you want and need help? Join our [Slack group](https://zenml.io/slack-invite/). Ask questions about bugs or specific use cases and someone from the core team will respond.
+Can't really find what you want and need help? Join our [Slack group](https://zenml.io/slack-invite/). Ask questions about bugs or specific use cases and get a quick respond from the ZenML core team.
