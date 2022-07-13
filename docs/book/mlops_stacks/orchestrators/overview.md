@@ -39,7 +39,7 @@ You can watch a tutorial video of an example that uses a Kubeflow Pipelines stac
 
 Or you can also check out our example of this [here](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow_pipelines_orchestration) .
 
-You could also easily pull it into your local environment like this:
+You could also pull it into your local environment like this:
 
 ```shell
 zenml example pull kubeflow_pipelines_orchestration

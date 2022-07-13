@@ -61,7 +61,7 @@ As a first step it might make sense to
 a separate GCP project for your ZenML resources. However, this step is 
 completely optional, and you can also move forward within an existing project. 
 If some resources already exist, feel free to skip their creation step and 
-simply note down the relevant information.
+just note down the relevant information.
 
 For simplicity, just open up a terminal on the side and save relevant values 
 as we go along. You will use these when we set up the ZenML stack.
