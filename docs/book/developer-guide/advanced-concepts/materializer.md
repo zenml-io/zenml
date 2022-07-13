@@ -226,7 +226,7 @@ For more information, visit https://docs.zenml.io/guides/common-usecases/custom-
 
 The error message basically says that ZenML does not know how to persist the
 object of type `MyObj` (how could it? We just created this!). Therefore, we
-have to create our own materializer. To do this you can simply extend the
+have to create our own materializer. To do this, you can extend the
 `BaseMaterializer` by sub-classing it, listing `MyObj` in `ASSOCIATED_TYPES`,
 and overwriting `handle_input()` and `handle_return()`:
 
@@ -374,7 +374,7 @@ exact path to your where your artifact is stored.
 
 A non-materialized artifact is a `BaseArtifact` (or any of its subclasses) and
 has a property `uri` that points to the unique path in the artifact store where
-the artifact is stored. One can use a non-materialized artifact by simply 
+the artifact is stored. One can use a non-materialized artifact by 
 specifying it as the type in the step:
 
 ```python

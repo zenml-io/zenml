@@ -71,7 +71,7 @@ This option configures the username and password directly as stack component
 attributes.
 
 {% hint style="warning" %}
-This is not recommended for production settings as the password is easily 
+This is not recommended for production settings as the password is clearly 
 accessible on your machine in clear text and communication with the database 
 is unencrypted.
 {% endhint %}

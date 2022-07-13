@@ -27,15 +27,18 @@ This is useful to force a complete rerun of a pipeline.
 
 ## Disabling caching for the entire pipeline
 
-On a pipeline level the caching policy can easily be set as a parameter within the decorator. If caching is explicitly 
-turned off on a pipeline level, all steps are run without caching, even if caching is set to true for single 
-steps.
+On a pipeline level the caching policy can be set as a parameter within the decorator. 
 
 ```python
 @pipeline(enable_cache=False)
 def first_pipeline(....):
     """Pipeline with cache disabled"""
 ```
+
+{% hint style="info" %}
+If caching is explicitly turned off on a pipeline level, all steps are run 
+without caching, even if caching is set to true for single steps.
+{% endhint %}
 
 ## Disabling caching for individual steps
 

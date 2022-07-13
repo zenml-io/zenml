@@ -53,7 +53,7 @@ a schema where arbitrary keys are allowed.
 {% endhint %}
 
 Note that there are two ways you can register or update your secrets. If you
-wish to do so interactively, simply passing the secret name in as an argument
+wish to do so interactively, passing the secret name in as an argument
 (as in the following example) will initiate an interactive process:
 
 ```shell

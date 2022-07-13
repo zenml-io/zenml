@@ -18,7 +18,7 @@ each pipeline, or even to build human-in-the-loop ML systems.
 
 ## Overview
 
-The `alerter` component in ZenML allows teams to easily interact with their
+The `alerter` component in ZenML allows teams to interact with their
 pipelines via a chat service. 
 
 Each alerter integration comes with specific standard steps that you can
@@ -46,7 +46,7 @@ To send alerts in your pipelines, you first need to register an alerter
 component using `zenml alerter register <MY_ALERTER>` and then add it to your 
 stack with `zenml stack register ... -al <MY_ALERTER>`.
 
-Afterward, you can simply import the integrations alerter steps and use them in
+Afterward, you can import the integrations alerter steps and use them in
 your pipeline.
 
 Since these steps expect a string message as input (which needs to be the 

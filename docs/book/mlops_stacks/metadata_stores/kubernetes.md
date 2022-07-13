@@ -5,8 +5,7 @@ description: Deploy a Kubernetes MySQL database service and use it to store meta
 The Kubernetes Metadata Store is a spin off the [MySQL Metadata Store](./mysql.md)
 provided with the Kubernetes ZenML integration. In addition to functioning
 like a regular MySQL Metadata Store, it is also able to automatically provision
-a simple MySQL database service on top of a Kubernetes cluster and connect to
-it.
+a MySQL database service on top of a Kubernetes cluster and connect to it.
 
 ## When would you want to use it?
 

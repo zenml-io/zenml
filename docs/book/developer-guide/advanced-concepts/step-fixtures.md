@@ -18,7 +18,7 @@ These two types of special parameters are comparable to
 [Pytest fixtures](https://docs.pytest.org/en/6.2.x/fixture.html), hence we call
 them **Step Fixtures** at ZenML.
 
-Step fixtures are simple to use. Simply pass a parameter in with the right type
+To use step fixtures in your steps, just pass a parameter with the right type
 hint and ZenML will automatically recognize it.
 
 ```python

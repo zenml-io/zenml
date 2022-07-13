@@ -2,7 +2,7 @@
 
 To get started using ZenML on the cloud, you need some basic infrastructure up 
 and running which ZenML can use to run your pipelines.
-This step-by-step guide explains how to set up a simple cloud stack on AWS.
+This step-by-step guide explains how to set up a basic cloud stack on AWS.
 
 {% hint style="info" %}
 This guide represents **one** of many ways to create a cloud stack on AWS. 
@@ -350,7 +350,7 @@ After all of this setup, you're now ready to run any ZenML pipeline on AWS!
 
 ## Quick setup
 
-If you're looking for a way to get started quickly, we've combined all the commands so you can simply copy-paste them and execute them in a single go. You'll only need to set values for the `<REGION>` and `<RDS_MYSQL_PASSWORD>` right at the beginning before executing the rest.
+If you're looking for a way to get started quickly, we've combined all the commands so you can copy-paste them and execute them in a single go. You'll only need to set values for the `<REGION>` and `<RDS_MYSQL_PASSWORD>` right at the beginning before executing the rest.
 
 <details>
     <summary>Quick setup commands</summary>

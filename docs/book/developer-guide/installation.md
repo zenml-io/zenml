@@ -4,8 +4,7 @@ description: How to install ZenML
 
 # Installation
 
-**ZenML** comes bundled as a good old `pip` package, so installation is simple:
-
+**ZenML** is a Python package that can be installed directly via `pip`:
 ```
 pip install zenml
 ```

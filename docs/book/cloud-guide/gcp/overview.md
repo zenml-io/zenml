@@ -35,7 +35,7 @@ Container Registry is a service for storing private container images. It is bein
 
 ## Vertex AI
 
-Vertex AI brings together the Google Cloud services for building ML under one, unified UI and API. In Vertex AI, you can now easily train and compare models using AutoML or custom code training and all your models are stored in one central model repository. [Learn more here](https://cloud.google.com/vertex-ai).
+Vertex AI brings together the Google Cloud services for building ML under one, unified UI and API. In Vertex AI, you can now train and compare models using AutoML or custom code training and all your models are stored in one central model repository. [Learn more here](https://cloud.google.com/vertex-ai).
 
 * You can use [Vertex AI as a step operator](../../mlops_stacks/step_operators/gcloud_vertexai.md) to run specific steps from your pipeline using it as the backend.
 

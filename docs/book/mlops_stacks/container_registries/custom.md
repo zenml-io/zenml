@@ -9,7 +9,7 @@ concept of [stacks, stack components and their flavors](../advanced-guide/stacks
 
 ## Base Abstraction
 
-In the current version of ZenML, container registries have a rather simple base 
+In the current version of ZenML, container registries have a rather basic base 
 abstraction. In essence, each container registry features a `uri` as an 
 instance configuration and a non-abstract `prepare_image_push` method for 
 validation.

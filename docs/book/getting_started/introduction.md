@@ -27,13 +27,13 @@ solve these individual problems. Rather, it offers an **extensible framework** a
 
 ZenML pipelines are designed to be written early in the development lifecycle. 
 As a data scientist, you can explore and tailor your pipelines as you develop toward production.
-Once you're satisfied, you can easily switch from local to cloud deployment.
+Once you're satisfied, you can switch from local to cloud deployment.
 <!-- Read more about why we started building ZenML on our [blog](https://blog.zenml.io/why-zenml/). -->
 
 Here's what you get by using ZenML -
 
 + Extensibility - Build a framework to suit your specific needs.
-+ Reproducibility - Replicate training and inference workflows easily.
++ Reproducibility - Replicate training and inference workflows.
 + Clarity - Represent steps of your pipeline in code.
 + Batteries-included integrations - Bring all your favorite tools together.
 + Easily switch between local and cloud stacks.

@@ -73,7 +73,7 @@ ZenML with the server extras like this:
 pip install zenml[server]
 ```
 
-Starting a local ZenServer instance is as simple as typing
+Starting a local ZenServer instance can be done by typing
 `zenml server up`. This will start the server as a background daemon process
 accessible on your local machine, by default on port 8000:
 

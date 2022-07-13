@@ -52,7 +52,7 @@ that you are using on how to create an S3 bucket. For example, the AWS S3
 documentation is available [here](https://docs.aws.amazon.com/AmazonS3/latest/userguide/create-bucket-overview.html).
 
 With the URI to your S3 bucket known, registering an S3 Artifact Store and using
-it in a stack can be as simple as:
+it in a stack can be done as follows:
 
 ```shell
 # Register the S3 artifact-store

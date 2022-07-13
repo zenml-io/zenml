@@ -9,8 +9,8 @@ a custom tailored solution. This might not only mean that you have to write
 custom code, but also custom components for your infrastructure.
 
 That's exactly why we built ZenML in a way which is completely open to 
-extension. You can simply use our base abstractions, create your own flavors 
-and generate custom stack components.
+extension. You can extend ZenML quickly by using our base abstractions, creating your own flavors 
+and generating custom stack components.
 
 If you would like to learn more about how to achieve this with a specific 
 stack component, please check the links below:

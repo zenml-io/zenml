@@ -54,7 +54,7 @@ An **Orchestrator** is the workhorse that coordinates all the steps to run in a 
 
 Since pipelines can be set up with complex combinations of steps with various asynchronous dependencies between them, the Orchestrator is the component that decides what steps to run, when, and how to pass data between the steps.
 
-ZenML comes with a built-in *local orchestrator* designed to run on your local machine. This is useful especially during the exploration phase of your project. You don't have to rent a cloud instance just to try out simple things.
+ZenML comes with a built-in *local orchestrator* designed to run on your local machine. This is useful especially during the exploration phase of your project. You don't have to rent a cloud instance just to try out basic things.
 
 Once the pipeline is established you can switch to a full-fledged cloud stack that uses more sophisticated orchestrators like the Airflow or Kubeflow orchestrator. See the list of all orchestrators [here](../mlops_stacks/orchestrators/overview.md).
 
@@ -95,7 +95,7 @@ For other stack components check out this [page](../mlops_stacks/categories.md).
 We've seen how to run a pipeline locally. But that is rarely the case in production.
 
 When you are ready to switch out your infrastructure and the components used as
-part of your machine learning workflow, it's as simple as a four word CLI
+part of your machine learning workflow, you can do so with a single CLI
 command that switches out your stack. The code defining your steps and pipelines
 stays the same, but it gets run in whatever cloud infrastructure you've set up
 in your custom stack; all you change is the stack you're using and your pipeline
@@ -113,8 +113,8 @@ installed by using ZenML's Integration installer.
 
 It is this modular and configurable nature of the ZenML stack that offers you
 ways to get productive quickly. If we don't support some specific tool you want
-to use, our stack components are easily extensible so this shouldn't be a
-barrier for you.
+to use, our stack components are extensible and well documented so this 
+shouldn't be a barrier for you.
 
 All the stack components configured as part of the stack carry their
 configuration parameters so whether it's an AWS Sagemaker cluster you need to
@@ -139,7 +139,7 @@ encounter further down the road while using ZenML.
   AWS stacks separate from your GCP stacks, for example, or your work
   infrastructure use separate from that which you use for your personal
   projects. Profiles allow you to separate these out, and switching between them
-  is easy.
+  is effortless.
 - **Service** - A service is a longer-lived entity that extends the capabilities of
   ZenML beyond the run of a pipeline. For example, a service could be a
   prediction service that loads models for inference in a production setting.

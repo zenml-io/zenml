@@ -16,7 +16,7 @@ The local orchestrator comes with ZenML and works without any additional setup.
 
 ## How to use it
 
-To use the local orchestrator, we can simply register it and use it in our active stack:
+To use the local orchestrator, we can register it and use it in our active stack:
 ```shell
 zenml orchestrator register <NAME> --flavor=local
 

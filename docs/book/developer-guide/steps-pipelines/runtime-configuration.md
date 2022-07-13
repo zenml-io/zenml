@@ -20,7 +20,7 @@ This is the recommended way for production scenarios.
 
 ## Configuring from within code
 
-You can easily add a configuration to a step by creating your configuration as a
+You can add a configuration to a step by creating your configuration as a
 subclass of the `BaseStepConfig`. When such a config object is passed to a step,
 it is not treated like other artifacts. Instead, it gets passed into the step
 when the pipeline is instantiated.
@@ -140,7 +140,7 @@ zenml pipeline run <PATH_TO_PIPELINE_PYTHON_FILE> -c <PATH_TO_CONFIG_YAML_FILE>
 `<PATH_TO_PIPELINE_PYTHON_FILE>` should point to the Python file where your
 pipeline function or class is defined. Your steps can also be in that file,
 but they do not need to. If your steps are defined in separate code files, you
-can simply specify that in the YAML, as we will see below.
+can instead specify that in the YAML, as we will see [below](#defining-which-steps-to-use).
 
 {% hint style="warning" %}
 Do **not** instantiate and run your pipeline within the python file that you
@@ -327,7 +327,7 @@ first_pipeline_instance.run()
 {% endtabs %}
 
 {% hint style="info" %}
-Pro-Tip: You can easily use this to configure and run your pipeline from within
+Pro-Tip: You can use this to configure and run your pipeline from within
 your [github action](https://docs.github.com/en/actions) (or comparable tools).
 This way you ensure each run is directly associated with a code version.
 {% endhint %}

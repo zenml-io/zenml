@@ -4,7 +4,7 @@ description: How to use the functional and class-based APIs for ZenML steps and 
 
 In ZenML there are two different ways how you can define pipelines or steps.
 What you have seen in the previous sections is the **Functional API**,
-where steps and pipelines are defined as simple Python functions with a
+where steps and pipelines are defined as Python functions with a
 `@step` or `@pipeline` decorator respectively.
 This is the API that is used primarily throughout the ZenML docs and examples.
 
@@ -132,8 +132,10 @@ Choose whichever style feels most natural to you!
 
 ## Advanced Usage: Using decorators to enhance BaseStep subclasses
 
-As you will learn later, ZenML allows you to easily add functionality like 
-automated experiment tracking to your steps. 
+As you will learn later, ZenML has many [integrations](../../mlops_stacks/integrations.md)
+that allow you to add functionality like automated experiment tracking to your steps.
+Some of those integrations need to be initialized before they can be used, which
+ZenML wraps using special `@enable_<INTEGRATION>` decorators.
 Similar to the functional API, you can do this in the class-based API by 
 adding a decorator to your `BaseStep` subclass:
 

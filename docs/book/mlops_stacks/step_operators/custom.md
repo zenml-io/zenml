@@ -12,7 +12,7 @@ concept of [stacks, stack components and their flavors](../advanced-guide/stacks
 The `BaseStepOperator` is the abstract base class that needs to be subclassed 
 in order to run specific steps of your pipeline in a separate environment. As 
 step operators can come in many shapes and forms, the base class exposes a 
-deliberately simple and generic interface:
+deliberately basic and generic interface:
 
 1. As it is the base class for a specific type of `StackComponent`,
    it inherits from the `StackComponent` class. This sets the `TYPE`

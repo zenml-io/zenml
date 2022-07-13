@@ -6,7 +6,7 @@ ZenML comes equipped with [Artifact Store implementations](./overview.md#artifac
 that you can use to store artifacts on a local filesystem or in the managed AWS,
 GCP or Azure cloud object storage services. However, if you need to use a
 different type of object storage service as a backend for your ZenML Artifact
-Store, you can easily extend ZenML to provide your own custom Artifact Store
+Store, you can extend ZenML to provide your own custom Artifact Store
 implementation.
 
 {% hint style="warning" %}

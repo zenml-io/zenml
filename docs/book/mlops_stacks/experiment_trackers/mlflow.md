@@ -91,7 +91,7 @@ as stack component attributes.
 
 {% hint style="warning" %}
 This is not recommended for production settings as the credentials won't be
-stored securely and will be easily visible in the stack configuration.
+stored securely and will be clearly visible in the stack configuration.
 {% endhint %}
 
 ```shell
@@ -127,7 +127,7 @@ and its configuration, you can have a look at [the API docs](https://apidocs.zen
 To be able to log information from a ZenML pipeline step using the MLflow
 Experiment Tracker component in the active stack, you need to use the
 `enable_mlflow` step decorator on all pipeline steps where you plan on doing
-that. Then simply use MLFlow's logging or auto-logging capabilities as you would
+that. Then use MLFlow's logging or auto-logging capabilities as you would
 normally do, e.g.:
 
 ```python

@@ -18,7 +18,7 @@ series on practical MLOps, where we introduce ML pipelines in more detail in
 ## Step
 
 Steps are the atomic components of a ZenML pipeline. Each step is defined by its
-inputs, the logic it applies and its outputs. Here is a very simple example of
+inputs, the logic it applies and its outputs. Here is a very basic example of
 such a step, which uses a utility function to load the Digits dataset:
 
 ```python
@@ -138,7 +138,7 @@ We will dive deeper into how to inspect the finished run within the chapter on
 
 When running a pipeline by calling `my_pipeline.run()`, ZenML uses the current
 date and time as the name for the pipeline run. In order to change the name
-for a run, simply pass it as a parameter to the `run()` function:
+for a run, pass `run_name` as a parameter to the `run()` function:
 
 ```python
 first_pipeline_instance.run(run_name="custom_pipeline_run_name")

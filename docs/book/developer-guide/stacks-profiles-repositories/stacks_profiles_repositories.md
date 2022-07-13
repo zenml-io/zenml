@@ -79,7 +79,7 @@ zenml <STACK_COMPONENT> flavor list
 ```
 
 {% hint style="info" %}
-Our CLI features a wide variety of commands that let you easily manage/use your stacks. If you would like to learn more, please do: "`zenml stack --help`" or visit [our CLI docs](https://apidocs.zenml.io/latest/cli/).
+Our CLI features a wide variety of commands that let you manage and use your stacks. If you would like to learn more, please do: "`zenml stack --help`" or visit [our CLI docs](https://apidocs.zenml.io/latest/cli/).
 {% endhint %}
 
 ### Registering New Stacks
@@ -115,7 +115,7 @@ zenml artifact-store list
 ```
 
 {% hint style="info" %}
-Our CLI features a wide variety of commands that let you easily manage/use your
+Our CLI features a wide variety of commands that let you manage and use your
 stack components and flavors. If you would like to learn more, please run
 `zenml <STACK_COMPONENT> --help` or visit [our CLI docs](https://apidocs.zenml.io/latest/cli/).
 {% endhint %}
@@ -140,7 +140,7 @@ option to use for which stack component.
 
 #### Activating a Stack
 
-Finally, to start using the stack you just registered, simply execute
+Finally, to start using the stack you just registered, set it as active:
 
 ```shell
 zenml stack set <STACK_NAME>
@@ -530,7 +530,7 @@ such as [Inspecting Finished Pipeline Runs](post-execution-workflow.md) or
 
 ### Unregistering a Repository
 
-To unregister a repository, simply delete the `.zen` directory in the
+To unregister a repository, delete the `.zen` directory in the
 respective location, e.g., via 
 
 ```bash

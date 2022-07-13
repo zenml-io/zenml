@@ -16,7 +16,7 @@ For example, we currently support [Airflow](https://airflow.apache.org/) and
 [Kubeflow](https://www.kubeflow.org/) as third-party orchestrators for your ML
 pipeline code. Experiment trackers
 like [MLflow Tracking](https://www.mlflow.org/docs/latest/tracking.html) and
-[Weights & Biases](https://wandb.ai/site) can easily be added to your ZenML
+[Weights & Biases](https://wandb.ai/site) can be added to your ZenML
 pipeline. And you can seamlessly
 transition from a
 local [MLflow deployment](https://www.mlflow.org/docs/latest/python_api/mlflow.deployments.html)

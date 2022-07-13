@@ -35,7 +35,7 @@ of external services implemented as local daemon processes.
 
 Another example is the `TensorboardService`.
 It enables visualizing [TensorBoard](https://www.tensorflow.org/tensorboard)
-logs easily by managing a local TensorBoard server, which couples nicely with
+logs by managing a local TensorBoard server, which couples nicely with
 the `TensorboardVisualizer` to visualize Tensorboard logs.
 
 ```python

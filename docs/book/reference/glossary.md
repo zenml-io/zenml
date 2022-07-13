@@ -20,9 +20,9 @@ into a pipeline via an ingestion step.
 ## CLI
 
 Our command-line tool is your entry point into ZenML. You install this tool and
-use it to set up and configure your repository to work with ZenML. A simple
+use it to set up and configure your repository to work with ZenML. A single
 `init` command serves to get you started, and then you can provision the
-infrastructure that you wish to work with easily using a simple `stack register`
+infrastructure that you wish to work with using the `stack register`
 command with the relevant arguments passed in.
 
 ## Container Registry
@@ -109,7 +109,7 @@ workflow in time, so you can return to them exactly as you ran them.
 
 ## Pipeline
 
-Pipelines are designed as simple functions. They are created by using decorators
+Pipelines are designed as basic Python functions. They are created by using decorators
 appropriate to the specific use case you have. The moment it is `run`, a
 pipeline is compiled and passed directly to the orchestrator, to be run in the
 orchestrator environment.

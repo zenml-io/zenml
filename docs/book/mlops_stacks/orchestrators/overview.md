@@ -163,7 +163,7 @@ Additionally, you might also want to define a `.dockerignore` to make sure only 
 def mnist_pipeline(...)
 ```
 
-We can now run the pipeline by simply executing the Python script:
+We can now run the pipeline by executing the Python script:
 
 ```bash
 python run.py

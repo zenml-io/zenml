@@ -16,7 +16,7 @@ The local secrets manager comes with ZenML and works without any additional setu
 
 ## How to use it
 
-To use the local secrets manager, we can simply register it and use it in our active stack:
+To use the local secrets manager, we can register it and use it in our active stack:
 ```shell
 zenml secrets-manager register <NAME> --flavor=local 
 

@@ -20,7 +20,7 @@ We have a step-by-step guide for AWS and GCP that allows you to follow along and
 The guides have detailed information on every stack component along with other essential things like roles, permissions, connection settings and more. Head over to the page corresponding to your cloud provider to get started!
 
 ### 🤷 I have never worked on the infrastructure side of things before and I don't want to invest my time in it. Is there another way?
-There certainly is! You can check out our open-source repository [mlops-stacks]() that has a number of different "recipes", each of which can set up a specialized stack with the execution of just two simple commands.
+There certainly is! You can check out our open-source repository [mlops-stacks]() that has a number of different "recipes", each of which can set up a specialized stack with the execution of just two commands.
 
 The `README` file in the project lays out exactly what you need to know and what values you can customize for each recipe while creating your setup. It's also the fastest way to get ready for running your ZenML pipelines 🚀
 

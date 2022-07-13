@@ -49,7 +49,8 @@ drift_detector = EvidentlyProfileStep(
 )
 ```
 
-Here you can see that defining the step is extremely simple using our class-based interface, and then you just have to pass in the two dataframes for the comparison to take place.
+Here you can see how to define the step using our class-based interface. 
+Then you just have to pass in the two dataframes for the comparison to take place.
 
 This could be done at the point when you are defining your pipeline:
 
@@ -76,7 +77,7 @@ def drift_detection_pipeline(
 
 For the full context of this code, please visit our `drift_detection` example [here](https://github.com/zenml-io/zenml/tree/main/examples/evidently_drift_detection). The key part of the pipeline definition above is when we use the datasets derived from the `data_splitter` step (i.e. function) and pass them in as arguments to the `drift_detector` function as part of the pipeline.
 
-We even allow you to use the Evidently visualization tool easily to display data drift diagrams in your browser or within a Jupyter notebook:
+We even allow you to use the Evidently visualization tool to display data drift diagrams in your browser or within a Jupyter notebook:
 
 ![Evidently drift visualization UI](../assets/evidently/drift_visualization.png)
 

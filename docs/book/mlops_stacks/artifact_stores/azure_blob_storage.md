@@ -50,7 +50,7 @@ Please read [the Azure Blob Storage documentation](https://docs.microsoft.com/en
 on how to configure an Azure Blob Storage container.
 
 With the URI to your Azure Blob Storage container known, registering an Azure
-Artifact Store can be as simple as:
+Artifact Store can be done as follows:
 
 ```shell
 # Register the Azure artifact store

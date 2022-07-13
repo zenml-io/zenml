@@ -19,7 +19,7 @@ ZenML comes equipped with [Metadata Store implementations](./overview.md#metadat
 that you can use to store artifacts on a local filesystem, in a MySQL database
 or in the metadata service installed with Kubeflow. However, if you need to use
 a different type of service as a backend for your ZenML Metadata Store, you can
-easily extend ZenML to provide your own custom Metadata Store implementation.
+extend ZenML to provide your own custom Metadata Store implementation.
 
 {% hint style="warning" %}
 Before reading this chapter, make sure that you are familiar with the 

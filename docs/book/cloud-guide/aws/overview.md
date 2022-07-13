@@ -34,7 +34,7 @@ Amazon Elastic Container Registry (Amazon ECR) is an AWS managed container image
 
 ## Sagemaker
 
-Amazon SageMaker is a fully managed machine learning service. With SageMaker, data scientists and developers can quickly and easily build and train machine learning models, and then directly deploy them into a production-ready hosted environment. [Learn more here](https://docs.aws.amazon.com/sagemaker/latest/dg/whatis.html).
+Amazon SageMaker is a fully managed machine learning service. With SageMaker, data scientists and developers can quickly build and train machine learning models, and then directly deploy them into a production-ready hosted environment. [Learn more here](https://docs.aws.amazon.com/sagemaker/latest/dg/whatis.html).
 
 * You can use [Sagemaker as a step operator](../../mlops_stacks/step_operators/amazon_sagemaker.md) to run specific steps from your pipeline using it as the backend.
 

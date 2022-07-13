@@ -161,10 +161,10 @@ connect to your Kubeflow Pipelines deployment.
   an Amazon S3 bucket in a region of your choice.
 * Make sure that your EKS cluster is authorized to access the S3 bucket. This
   can be done in one of the following ways:
-    * A simple way is to add
+    * The simpler way is to add
       an [`AmazonS3FullAccess`](https://console.aws.amazon.com/iam/home#/policies/arn:aws:iam::aws:policy/AmazonS3FullAccess)
       policy to your cluster node group's IAM role.
-    * A complex way would be to create `ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`,
+    * The more complex way would be to create `ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`,
       and `AWS_SESSION_TOKEN` environment variables in your EKS cluster. This
       can be done by extending the `zenmldocker/zenml` image
       and [adding](https://docs.docker.com/engine/reference/builder/#env) these

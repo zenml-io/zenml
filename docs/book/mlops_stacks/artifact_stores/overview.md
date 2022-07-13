@@ -97,7 +97,7 @@ mechanisms. When you develop ZenML pipelines, you normally don't even have to be
 aware of its existence or interact with it directly. ZenML provides higher-level
 APIs that can be used as an alternative to store and access artifacts:
 
-* simply return one or more objects from your pipeline steps to have them
+* return one or more objects from your pipeline steps to have them
 automatically saved in the active Artifact Store as pipeline artifacts.
 * use [the post-execution workflow API](../../developer-guide/post-execution-workflow.md)
 to retrieve pipeline artifacts from the active Artifact Store after a pipeline

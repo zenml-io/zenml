@@ -49,7 +49,7 @@ is the root path URI, which needs to point to a GCS bucket and takes the form
 on how to configure a GCS bucket.
 
 With the URI to your GCS bucket known, registering an GCS Artifact Store can be
-as simple as:
+done as follows:
 
 ```shell
 # Register the GCS artifact store

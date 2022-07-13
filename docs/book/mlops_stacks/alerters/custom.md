@@ -14,7 +14,7 @@ concept of [stacks, stack components and their flavors](../advanced-guide/stacks
 
 ## Base Abstraction
 
-The base abstraction for alerters is very simple, as it only defines two
+The base abstraction for alerters is very basic, as it only defines two
 abstract methods that subclasses should implement:
 - `post()` takes a string, posts it to the desired chat service, and returns 
 `True` if the operation succeeded, else `False`.
@@ -67,7 +67,7 @@ zenml alerter flavor list
 
 ## Build your own custom alerter
 
-Creating your own custom alerter can be done in three simple steps:
+Creating your own custom alerter can be done in three steps:
 
 1. Create a class that inherits from the `BaseAlerter`.
 2. Define the `FLAVOR` class variable in your class (e.g., `FLAVOR="discord"`)

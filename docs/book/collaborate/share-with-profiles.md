@@ -103,7 +103,7 @@ Running with active profile: 'git_store' (local)
 Assuming the `/tmp/zenml` location used above is part of a local git
 clone that is regularly synchronized with a remote server, replicating the
 same Profile on another machine is straightforward: if the URL points to a
-location where a Profile already exists, the Profile information is simply
+location where a Profile already exists, the Profile information is
 loaded from the existing YAML files:
 
 ```

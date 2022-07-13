@@ -67,7 +67,7 @@ directly as stack component attributes.
 
 {% hint style="warning" %}
 This is not recommended for production settings as the credentials won't be
-stored securely and will be easily visible in the stack configuration.
+stored securely and will be clearly visible in the stack configuration.
 {% endhint %}
 
 ```shell
@@ -103,7 +103,7 @@ implementation and its configuration, you can have a look at [the API docs](http
 To be able to log information from a ZenML pipeline step using the Weights &
 Biases Experiment Tracker component in the active stack, you need to use the
 `enable_wandb` step decorator on all pipeline steps where you plan on doing
-that. Then simply use the Weights & Biases logging or auto-logging capabilities
+that. Then use the Weights & Biases logging or auto-logging capabilities
 as you would normally do, e.g.:
 
 ```python
