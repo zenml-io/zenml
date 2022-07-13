@@ -22,7 +22,6 @@ from zenml.integrations.label_studio.label_config_generators import (
 )
 from zenml.integrations.label_studio.label_studio_utils import (
     convert_pred_filenames_to_task_ids,
-    get_azure_credentials,
     get_gcs_credentials,
     get_s3_credentials,
 )
@@ -150,7 +149,8 @@ def get_or_create_dataset(
 
 
 @step(enable_cache=False)
-def get_labeled_data(dataset_name: str, context: StepContext) -> List:  # type: ignore[type-arg]
+# type: ignore[type-arg]
+def get_labeled_data(dataset_name: str, context: StepContext) -> List:
     """Gets labeled data from the dataset.
 
     Args:
@@ -211,10 +211,12 @@ def sync_new_data_to_label_studio(
     """
     annotator = context.stack.annotator  # type: ignore[union-attr]
     artifact_store = context.stack.artifact_store  # type: ignore[union-attr]
-    if not annotator or not artifact_store:
+    secrets_manager = context.stack.secrets_manager  # type: ignore[union-attr]
+    if not annotator or not artifact_store or not secrets_manager:
         raise StackComponentInterfaceError(
-            "An active annotator and artifact store are required to run this step."
+            "An active annotator, artifact store and secrets manager are required to run this step."
         )
+
     from zenml.integrations.label_studio.annotators.label_studio_annotator import (
         LabelStudioAnnotator,
     )
@@ -223,6 +225,7 @@ def sync_new_data_to_label_studio(
         raise TypeError(
             "This step can only be used with the Label Studio annotator."
         )
+
     # TODO: check that annotator is connected before querying it
     dataset = annotator.get_dataset(dataset_name=dataset_name)
     if not uri.startswith(artifact_store.path):
@@ -235,10 +238,12 @@ def sync_new_data_to_label_studio(
     base_uri = urlparse(uri).netloc
 
     if config.storage_type == "azure":
-        (
-            config.azure_account_name,
-            config.azure_account_key,
-        ) = get_azure_credentials()
+        config.azure_account_name = secrets_manager.get_secret(
+            "azure_creds"
+        ).account_name
+        config.azure_account_key = secrets_manager.get_secret(
+            "azure_creds"
+        ).account_key
     elif config.storage_type == "gcs":
         config.google_application_credentials = get_gcs_credentials()
     elif config.storage_type == "s3":
