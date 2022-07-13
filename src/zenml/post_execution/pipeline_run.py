@@ -207,8 +207,8 @@ class PipelineRunView:
                 "use 'step' to access a step from your past "
                 "pipeline runs. Learn more in our API docs: %s",
                 get_apidocs_link(
-                    "zenml.post_execution.pipeline_run."
-                    "PipelineRunView.get_step"
+                    "post_execution",
+                    "zenml.post_execution.pipeline_run.PipelineRunView.get_step"
                 ),
             )
 
@@ -220,9 +220,8 @@ class PipelineRunView:
                 "within the `get_step()` method. Learn more in"
                 " our API docs: %s",
                 get_apidocs_link(
-                    "zenml.post_execution"
-                    ".pipeline_run.PipelineRunView"
-                    ".get_step"
+                    "post_execution",
+                    "zenml.post_execution.pipeline_run.PipelineRunView.get_step"
                 ),
             )
         try:

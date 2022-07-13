@@ -1140,7 +1140,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 "use 'pipeline' to access a pipeline in your Repository based "
                 "on the name of the pipeline or even the class or instance "
                 "of the pipeline. Learn more in our API docs: %s",
-                get_apidocs_link("zenml.repository.Repository.get_pipeline"),
+                get_apidocs_link("repository",
+                                 "zenml.repository.Repository.get_pipeline"),
             )
 
             pipeline_name = kwargs.pop("pipeline_name")
@@ -1150,7 +1151,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 "`Repository()`. Please set a `pipeline` "
                 "within the `get_pipeline()` method. Learn more "
                 "in our API docs: %s",
-                get_apidocs_link("zenml.repository.Repository" ".get_pipeline"),
+                get_apidocs_link("repository",
+                                 "zenml.repository.Repository.get_pipeline"),
             )
 
         stack_name = stack_name or self.active_stack_name

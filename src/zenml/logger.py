@@ -241,7 +241,7 @@ def disable_logging(log_level: int) -> Iterator[None]:
         logging.disable(old_level)
 
 
-def get_apidocs_link(caller_path: str) -> str:
+def get_apidocs_link(docs_section: str, caller_path: str) -> str:
     """Get link to api_docs of the caller.
 
     Args:
@@ -252,5 +252,6 @@ def get_apidocs_link(caller_path: str) -> str:
         Link to the api docs for the given caller_path
     """
     return (
-        f"https://apidocs.zenml.io/{zenml.__version__}/api_docs/#{caller_path}"
+        f"https://apidocs.zenml.io/{zenml.__version__}/api_docs/"
+        f"{docs_section}/#{caller_path}"
     )
