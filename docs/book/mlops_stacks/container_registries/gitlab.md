@@ -1,5 +1,5 @@
 ---
-description: Store container images in GitLab.
+description: Store container images in GitLab
 ---
 
 The GitLab container registry is a [container registry](./overview.md) flavor comes built-in with 

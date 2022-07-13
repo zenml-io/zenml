@@ -1,5 +1,5 @@
 ---
-description: Store secrets in GCP.
+description: Store secrets in GCP
 ---
 
 The GCP secrets manager is a [secrets manager](./overview.md) flavor provided with

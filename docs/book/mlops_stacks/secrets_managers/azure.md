@@ -1,5 +1,5 @@
 ---
-description: Store secrets in Azure.
+description: Store secrets in Azure
 ---
 
 The Azure secrets manager is a [secrets manager](./overview.md) flavor provided with

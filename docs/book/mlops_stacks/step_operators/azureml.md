@@ -1,5 +1,5 @@
 ---
-description: Execute individual steps in AzureML.
+description: Execute individual steps in AzureML
 ---
 
 The AzureML step operator is a [step operator](./overview.md) flavor provided with

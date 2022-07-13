@@ -1,6 +1,11 @@
 ---
-description: Implement a custom container registry.
+description: Implement a custom container registry
 ---
+
+{% hint style="warning" %}
+Before reading this page, make sure that you are familiar with the
+concept of [stacks, stack components and their flavors](../advanced-guide/stacks-components-flavors.md).  
+{% endhint %}
 
 ## Base Abstraction
 

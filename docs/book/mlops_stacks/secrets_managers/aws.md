@@ -1,5 +1,5 @@
 ---
-description: Store secrets in AWS.
+description: Store secrets in AWS
 ---
 
 The AWS secrets manager is a [secrets manager](./overview.md) flavor provided with

@@ -1,5 +1,5 @@
 ---
-description: Store container images in Amazon ECR.
+description: Store container images in Amazon ECR
 ---
 
 The AWS container registry is a [container registry](./overview.md) flavor provided with

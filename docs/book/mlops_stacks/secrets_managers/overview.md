@@ -1,5 +1,5 @@
 ---
-description: Setting up storage for secrets.
+description: Setting up storage for secrets
 ---
 
 Secrets managers provide a secure way of storing confidential information

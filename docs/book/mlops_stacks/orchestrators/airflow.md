@@ -1,5 +1,5 @@
 ---
-description: WIP
+description: Orchestrate pipelines with Airflow
 ---
 
 # WIP Stack Component Flavor

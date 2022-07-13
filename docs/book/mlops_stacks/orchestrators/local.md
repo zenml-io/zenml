@@ -1,5 +1,5 @@
 ---
-description: WIP
+description: Orchestrate pipelines locally
 ---
 
 # WIP Stack Component Flavor

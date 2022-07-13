@@ -1,5 +1,5 @@
 ---
-description: WIP
+description: Orchestrate pipelines with Kubeflow
 ---
 
 # WIP Stack Component Flavor

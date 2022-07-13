@@ -1,14 +1,9 @@
 ---
-description: Orchestrating the run of pipelines
+description: Implement a custom orchestrator
 ---
 
-The orchestrator is one of the most critical components of your stack, as it
-defines where the actual pipeline job runs. It controls how and where each
-individual step within a pipeline is executed. Therefore, the orchestrator can
-be used to great effect to scale jobs into production.
-
 {% hint style="warning" %}
-Before reading this chapter, make sure that you are familiar with the
+Before reading this page, make sure that you are familiar with the
 concept of [stacks, stack components and their flavors](../advanced-guide/stacks-components-flavors.md).  
 {% endhint %}
 

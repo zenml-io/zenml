@@ -1,6 +1,12 @@
 ---
-description: Implement a custom step operator.
+description: Implement a custom step operator
 ---
+
+{% hint style="warning" %}
+Before reading this page, make sure that you are familiar with the
+concept of [stacks, stack components and their flavors](../advanced-guide/stacks-components-flavors.md).  
+{% endhint %}
+
 ## Base Abstraction
 
 The `BaseStepOperator` is the abstract base class that needs to be subclassed 

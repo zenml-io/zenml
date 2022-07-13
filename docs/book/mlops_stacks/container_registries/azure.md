@@ -1,5 +1,5 @@
 ---
-description: Store container images in Azure.
+description: Store container images in Azure
 ---
 
 The Azure container registry is a [container registry](./overview.md) flavor comes built-in with 

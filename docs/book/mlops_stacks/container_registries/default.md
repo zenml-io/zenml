@@ -1,5 +1,5 @@
 ---
-description: Store container images.
+description: Store container images
 ---
 
 The Default container registry is a [container registry](./overview.md) 

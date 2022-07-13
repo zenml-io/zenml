@@ -1,13 +1,14 @@
 ---
-description: Deploy pipelines to production.
+description: Orchestrate Machine Learning pipelines
 ---
 
-- `What is it, what does it do`
-- `Why would you want to use it`
-- `When should you start adding this to your stack`
-- `Overview of flavors, tradeoffs, when to use which flavor (table)`
+<!-- The orchestrator is one of the most critical components of your stack, as it
+defines where the actual pipeline job runs. It controls how and where each
+individual step within a pipeline is executed. Therefore, the orchestrator can
+be used to great effect to scale jobs into production. -->
 
-# Run your Pipeline on Kubeflow
+
+<!-- # Run your Pipeline on Kubeflow
 
 [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/introduction/) is a pipeline orchestrator built for machine learning workflows. When developing ML models, you probably develop [your pipelines](../extending-zenml/getting-started.md#pipeline) on your local machine initially as this allows for quicker iteration and debugging. However, at a certain point when you are finished with its design, you might want to transition to a more production-ready setting and deploy the pipeline to a more robust environment.
 
@@ -188,4 +189,4 @@ There are lot's more things you do in production that you might consider adding 
 * [Using a secrets manager](manage-your-secrets.md) to store secret keys
   for use in your pipelines.
 
-ZenML will help with all of these and more. Check out our other guides to learn more!
+ZenML will help with all of these and more. Check out our other guides to learn more! -->

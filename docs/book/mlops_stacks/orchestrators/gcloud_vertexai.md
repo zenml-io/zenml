@@ -1,5 +1,5 @@
 ---
-description: WIP
+description: Orchestrate pipelines with Vertex AI
 ---
 
 # WIP Stack Component Flavor

@@ -1,5 +1,5 @@
 ---
-description: WIP
+description: Orchestrate pipelines with GitHub Actions
 ---
 
 # WIP Stack Component Flavor

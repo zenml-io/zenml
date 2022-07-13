@@ -1,6 +1,12 @@
 ---
-description: Using secrets across your ZenML pipeline.
+description: Implement a custom secrets manager
 ---
+
+{% hint style="warning" %}
+Before reading this page, make sure that you are familiar with the
+concept of [stacks, stack components and their flavors](../advanced-guide/stacks-components-flavors.md).  
+{% endhint %}
+
 ## Base Abstraction
 
 The secret manager acts as the one-stop shop for all the secrets to which your 
@@ -95,7 +101,7 @@ working with tags can be helpful. See the `GCPSecretsManager` for inspiration.
 
 ## SecretSchemas
 
-One way the ZenML expands on the notion of secrets as dictionaries is the 
+One way that ZenML expands on the notion of secrets as dictionaries is the 
 secret schema. A secret schema allows the user to create and use a specific 
 template. A schema could, for example, require the combination of a username,
 password and token. All schemas must sub-class from the `BaseSecretSchema`.

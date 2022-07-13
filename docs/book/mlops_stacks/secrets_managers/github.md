@@ -1,5 +1,5 @@
 ---
-description: Store secrets in GitHub.
+description: Store secrets in GitHub
 ---
 
 The GitHub secrets manager is a [secrets manager](./overview.md) flavor provided with

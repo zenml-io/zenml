@@ -1,5 +1,5 @@
 ---
-description: Store container images in GitHub.
+description: Store container images in GitHub
 ---
 
 The GitHub container registry is a [container registry](./overview.md) flavor comes built-in with 

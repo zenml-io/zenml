@@ -1,5 +1,5 @@
 ---
-description: WIP
+description: Orchestrate pipelines with Kubernetes
 ---
 
 # WIP Stack Component Flavor
