@@ -1,5 +1,5 @@
 ---
-description: How to start, stop, provision, and deprovision stacks and stack components?
+description: How to start, stop, provision, and deprovision stacks and stack components.
 ---
 
 # Managing Stack Component States

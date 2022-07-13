@@ -5,7 +5,7 @@ description: How to manage external, longer-lived services.
 # Services
 
 ZenML interacts with external systems (e.g. prediction services, monitoring
-systems, visualization services) with a so-called `Service` abstraction.
+systems, visualization services) via a so-called `Service` abstraction.
 The concrete implementation of this abstraction deals with functionality
 concerning the life-cycle management and tracking of an external service 
 (e.g. process, container, Kubernetes deployment etc.).
@@ -29,14 +29,16 @@ def my_step(my_service: MyService) -> ...:
 ## Examples
 
 One concrete example of a `Service` is the built-in `LocalDaemonService`, a
-service represented by a local daemon process. This extends the base service 
+service represented by a local daemon process which extends the base `Service`
 class with functionality concerning the life-cycle management and tracking
-of external services implemented as local daemon processes.
+of local daemon processes. The `LocalDaemonService` is used by various
+integrations to connect your local machines to remote components such as a
+[Metadata Store in KubeFlow](../../mlops_stacks/metadata_stores/kubeflow.md).
 
 Another example is the `TensorboardService`.
 It enables visualizing [TensorBoard](https://www.tensorflow.org/tensorboard)
 logs by managing a local TensorBoard server, which couples nicely with
-the `TensorboardVisualizer` to visualize Tensorboard logs.
+the `TensorboardVisualizer` to visualize Tensorboard logs:
 
 ```python
 from zenml.integrations.tensorflow.services.tensorboard_service import (

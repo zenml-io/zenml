@@ -56,7 +56,7 @@ pipeline_x = repo.get_pipeline(pipeline_name=..., stack_key=...)
 {% hint style="info" %}
 Be careful when accessing pipelines by index. Even if you just ran a pipeline 
 it might not be at index `-1`, due to the fact that the pipelines are sorted 
-by time of *first* run. As such it is recommended to access the pipeline by its
+by time of *first* run. Instead, it is recommended to access the pipeline by its
 name using `get_pipeline(pipeline_name=...)`.
 {% endhint %}
 
@@ -97,9 +97,9 @@ step = run.get_step(name=...)
 {% hint style="info" %}
 The steps are ordered by time of execution. Depending on the 
 [orchestrator](../mlops_stacks/orchestrators/overview.md), steps can be run in 
-parallel. As such, accessing steps by index can be unreliable across different
-runs. Therefore, it is recommended to access steps by their name using
-`get_step(name=...)`.
+parallel. Thus, accessing steps by index can be unreliable across different
+runs and it is recommended to access steps by their name using
+`get_step(name=...)` instead.
 {% endhint %}
 
 ### Outputs

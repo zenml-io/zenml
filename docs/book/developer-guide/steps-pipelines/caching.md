@@ -1,5 +1,5 @@
 ---
-description: Discover the power of caching with ZenML.
+description: How does automatic caching work in ZenML.
 ---
 
 Machine learning pipelines are rerun many times over throughout their development lifecycle. Prototyping is often a 
@@ -37,7 +37,7 @@ def first_pipeline(....):
 
 {% hint style="info" %}
 If caching is explicitly turned off on a pipeline level, all steps are run 
-without caching, even if caching is set to true for single steps.
+without caching, even if caching is set to `True` for single steps.
 {% endhint %}
 
 ## Disabling caching for individual steps
@@ -50,10 +50,6 @@ external input (like fetching data from an API or File IO).
 def import_data_from_api(...):
     """Import most up-to-date data from public api"""
     ...
-    
-@pipeline(enable_cache=True)
-def pipeline(....):
-    """Pipeline with cache disabled"""
 ```
 
 ## Dynamically disabling caching for a pipeline run

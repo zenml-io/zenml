@@ -1,5 +1,5 @@
 ---
-description: Use Step Fixtures to Access the Stack from within a Step.
+description: How to use step fixtures to access the active ZenML stack from within a step.
 ---
 
 # Step Fixtures
@@ -12,7 +12,7 @@ pass run-time parameters to a pipeline run. It can be used to send parameters
 to a step that are not artifacts. You learned about this one already in the
 section on [Runtime Configuration](../steps-pipelines/runtime-configuration.md).
 * A [Step Context](#step-contexts) object: This object gives access to the 
-active stack materializers, and special integration-specific libraries.
+active stack, materializers, and special integration-specific libraries.
 
 These two types of special parameters are comparable to 
 [Pytest fixtures](https://docs.pytest.org/en/6.2.x/fixture.html), hence we call
@@ -33,7 +33,7 @@ class SubClassBaseStepConfig(BaseStepConfig):
 def my_step(
     config: SubClassBaseStepConfig,  # must be subclass of `BaseStepConfig`
     context: StepContext,  # must be of class `StepContext`
-    artifact: str,  # all other parameters are artifacts from upstream steps
+    artifact: str,  # other parameters are assumed to be outputs of other steps
 ):
     ...
 ```
@@ -46,7 +46,7 @@ I.e., you don't necessarily need to call your fixtures `config` or `context`.
 ## Step Contexts
 
 The `StepContext` provides additional context inside a step function. It can be
-used to access artifacts, materializers, stack components, and more directly 
+used to access artifacts, materializers, and stack components directly 
 from within the step.
 
 ### Defining Steps with Step Contexts
@@ -76,13 +76,13 @@ from zenml.steps import step, StepContext
 
 @step
 def my_step(context: StepContext):
-    context.get_output_materializer()  # Returns a materializer for a given step output.
-    context.get_output_artifact_uri()  # Returns the URI for a given step output.
+    context.get_output_materializer()  # Get materializer for a given output.
+    context.get_output_artifact_uri()  # Get URI for a given output.
     context.metadata_store  # Get access to the metadata store.
 ```
 
 {% hint style="info" %}
-See the [API reference](https://apidocs.zenml.io/latest/api_docs/steps/) for
+See the [API Docs](https://apidocs.zenml.io/latest/api_docs/steps/) for
 more information on which attributes and methods the `StepContext` provides.
 {% endhint %}
 
@@ -96,9 +96,8 @@ trained model to models trained in previous runs, or to fetch artifacts created
 in different pipelines.
 
 As an example, see the following step that uses the `StepContext` to query the
-metadata store while running a step, which we use to evaluate all models of
-past training pipeline runs and to store the current best model, which we could
-then automatically deploy or use for inference in another pipeline.
+metadata store while running a step, which we use to find out whether the
+current run produced a better model than all previous runs:
 
 ```python
 from zenml.steps import step, StepContext

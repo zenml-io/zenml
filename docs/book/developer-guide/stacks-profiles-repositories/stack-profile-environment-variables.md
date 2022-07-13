@@ -1,10 +1,11 @@
 ---
-description: How to set stacks and profiles with environment variables
+description: How to set stacks and profiles with environment variables.
 ---
 
 # Setting Stacks and Profiles with Environment Variables
 
-The global active Profile and global active Stack can be overridden by using the
+Alternatively to using [Repositories](stacks_profiles_repositories.md#repositories),
+the global active profile and global active stack can be overridden by using the
 environment variables `ZENML_ACTIVATED_PROFILE` and `ZENML_ACTIVATED_STACK`,
 as shown in the following example:
 

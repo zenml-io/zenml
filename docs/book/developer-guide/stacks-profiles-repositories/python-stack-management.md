@@ -1,5 +1,5 @@
 ---
-description: What are stacks, profiles, and repositories in ZenML?
+description: What are stacks, profiles, and repositories in ZenML.
 ---
 
 # Managing Stacks in Python

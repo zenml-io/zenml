@@ -1,5 +1,5 @@
 ---
-description: How to pass custom datatypes through steps.
+description: How to use materializers to pass custom data types through steps.
 ---
 
 # Materializers
@@ -7,15 +7,16 @@ description: How to pass custom datatypes through steps.
 A ZenML pipeline is built in a data-centric way. The outputs and inputs of steps
 define how steps are connected and the order in which they are executed. Each
 step should be considered as its very own process that reads and writes its
-inputs and outputs from and to the artifact store. This is where
-**Materializers** come into play.
+inputs and outputs from and to the
+[Artifact Store](../../mlops_stacks/artifact_stores/overview.md). 
+This is where **Materializers** come into play.
 
 A materializer dictates how a given artifact can be written to and retrieved
 from the artifact store and also contains all serialization and deserialization
 logic.
 
 Whenever you pass artifacts as outputs from one pipeline step to other steps as
-inputs, the corresponding materializer for the respective datatype defines
+inputs, the corresponding materializer for the respective data type defines
 how this artifact is first serialized and written to the artifact store, and
 then deserialized and read in the next step.
 
@@ -35,7 +36,7 @@ type.
 ### Base Implementation
 
 Before we dive into how custom materializers can be built, let us briefly
-discuss how a materializers in general is implemented. In the following, you
+discuss how materializers in general are implemented. In the following, you
 can see the implementation of the abstract base class `BaseMaterializer`, which
 defines the interface of all materializers:
 
@@ -107,7 +108,7 @@ The `handle_input()` and `handle_return()` methods define the serialization and
 deserialization of artifacts.
 
 - `handle_input()` defines how data is read from the artifact store and deserialized,
-- `handle_return()` defines hohw data is serialized and saved to the artifact store.
+- `handle_return()` defines how data is serialized and saved to the artifact store.
 
 These methods you will need to overwrite according to how you plan to serialize
 your objects. E.g., if you have custom PyTorch classes as `ASSOCIATED_TYPES`,
@@ -173,7 +174,7 @@ module where the materializer is defined.
 
 ## Basic Example
 
-Let's see how materialization work with a basic example. Let's say you have
+Let's see how materialization works with a basic example. Let's say you have
 a custom class called `MyObject` that flows between two steps in a pipeline:
 
 ```python
@@ -272,10 +273,12 @@ first_pipeline(
 ).run()
 ```
 
-{% hint style="info" %} Due to the typing of the inputs and outputs and the
-ASSOCIATED_TYPES attribute of the materializer, you won't necessarily have to add
+{% hint style="info" %}
+Due to the typing of the inputs and outputs and the
+`ASSOCIATED_TYPES` attribute of the materializer, you won't necessarily have to add
 `.with_return_materializers(MyMaterializer)` to the step. It should
-automatically be detected. It doesn't hurt to be explicit though. {% endhint %}
+automatically be detected. It doesn't hurt to be explicit though.
+{% endhint %}
 
 This will now work as expected and yield the following output:
 
@@ -370,7 +373,7 @@ is no other way to do what you want to do.
 While materializers should in most cases be used to control how artifacts are 
 returned and consumed from pipeline steps, you might sometimes need to have a 
 completely non-materialized artifact in a step, e.g., if you need to know the
-exact path to your where your artifact is stored.
+exact path to where your artifact is stored.
 
 A non-materialized artifact is a `BaseArtifact` (or any of its subclasses) and
 has a property `uri` that points to the unique path in the artifact store where
@@ -387,8 +390,8 @@ def my_step(my_artifact: DataArtifact)  # rather than pd.DataFrame
     pass
 ```
 
-The list of raw artifact types can be found in `zenml.artifacts.*` and include
-`ModelArtifact`, `DataArtifact` etc. Materializers link pythonic types to these
+The list of raw artifact types can be found in `zenml.artifacts.*` and includes
+`ModelArtifact`, `DataArtifact`, etc. Materializers link pythonic types to these
 artifact types implicitly, e.g., a `keras.model` or `torch.nn.Module` are
 pythonic types that are both linked to `ModelArtifact` implicitly via their
 materializers. When using artifacts directly, one must be aware of which type
