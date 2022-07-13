@@ -6,7 +6,7 @@ description: A good place to start before diving further into the docs.
 
 ZenML consists of a few components. This guide walks through the various pieces you'll encounter, starting from the basics to things you'll only encounter when deploying to the cloud. 
 
-Here's a high-level overview of a typical workflow:
+Here's a high-level overview of a typical ZenML workflow:
 
 1. Writing a *pipeline* to define what happens in your machine learning workflow.
 2. Configuring a ZenML *stack*.
@@ -27,6 +27,8 @@ Below, you can see three **steps** running one after another in a **pipeline**.
 The steps might have dependencies between them. 
 For example, a step might use the outputs from a previous step and thus must wait until the previous step completes before starting. This is something you can keep in mind when organizing your steps.
 
+You can have multiple pipelines for different purposes. For example, a training pipeline to train and evaluate models and an inference pipeline to serve the model.
+
 Pipelines and steps are defined in code using Python *decorators*.
 This is where the core business logic and
 value of your work lives, and you will spend most of your time defining these two things. Your code lives inside a Repository, which is the main abstraction within which your project-specific pipelines should live.
@@ -34,53 +36,60 @@ value of your work lives, and you will spend most of your time defining these tw
 When it comes to running your pipeline, ZenML offers an abstraction to handle how your pipeline gets run. This is where **Stacks** come into play.
 
 ## Stacks, Components and Stores
+A **Stack** is the configuration of the underlying infrastructure and choices around how your pipeline will be run. For example, you can choose to run your pipeline locally or on the cloud by changing the stack you use.
 
-A **Stack** represents the infrastructure needed to run your pipeline as well as
-some of the extra requirements needed for ML pipelines. ZenML comes with a
-default stack that runs locally, as seen in the following diagram:
+ZenML comes with a default stack that runs locally, as seen in the following diagram:
 
 ![ZenML pipelines run on stacks](../assets/core_concepts/concepts-2.png)
 
-A Stack is the configuration of the underlying infrastructure and choices around
-how your pipeline will be run. There are three Stack Components which are
-required in any stack:
+In any Stack, there **must** be at least three basic **Stack Components** -
 
-- An Orchestrator
+1. Orchestrator.
+2. Artifact Store.
+3. Metadata Store.
 
-This is the workhorse that runs all the steps of your pipeline. Given that
-pipelines can be set up with complex combinations of steps with various
-asynchronous dependencies between them, a special component is needed to decide
-what steps to run when, and how to pass data between the steps. ZenML comes with
-a built-in local orchestrator but we also support more fully-featured options
-like Airflow and Kubeflow.
+### Orchestrator
 
-- An Artifact Store
+An **Orchestrator** is the workhorse that coordinates all the steps to run in a pipeline.
 
-All the data that passes through your pipelines is stored in the Artifact Store.
+Since pipelines can be set up with complex combinations of steps with various asynchronous dependencies between them, the Orchestrator is the component that decides what steps to run, when, and how to pass data between the steps.
+
+ZenML comes with a built-in *local orchestrator* designed to run on your local machine. This is useful especially during the exploration phase of your project. You don't have to rent a cloud instance just to try out simple things.
+
+Once the pipeline is established you can switch to a full-fledged cloud stack that uses more sophisticated orchestrators like the Airflow or Kubeflow orchestrator. See the list of all orchestrators [here](../mlops_stacks/orchestrators/overview.md).
+
+### Artifact Store
+
+An **Artifact Store** is a component that houses all data that pass through the pipeline.
+Data in the artifact store are called *artifacts*.
+
 These artifacts may have been produced by the pipeline steps, or they may be the
-data first ingested into a pipeline via an ingestion step. An artifact store
-will store all intermediary pipeline step results, which in turn will be tracked
-in the metadata store. The fact that all your data inputs / outputs are tracked
-and versioned here in the artifact store allows for extremely useful features
-like data caching which speed up your pace of experimentation.
+data ingested into a pipeline via an importer step.
+The artifact store houses all intermediary pipeline step results, which in turn will be tracked in the metadata store.
 
-- A Metadata Store
+The fact that all your data inputs and outputs are tracked
+and versioned in the artifact store allows for extremely useful features
+like data caching which speeds up your workflow.
 
-A Metadata Store keeps track of all the bits of extraneous data regarding a
-pipeline run. It allows you to fetch specific steps from your pipeline run and
-their output artifacts in a post-execution workflow.
+### Metadata Store
 
-When you start working with ZenML, you'll likely spend most of your initial time
-here at this stage, working with the default stack provided to you on
-initialization. ZenML functions as a way of managing the pipeline workflows that
-you define, data gets cached and you are able to access your previous
-experiments through the metadata store.
+A **Metadata Store** keeps track of all the bits of extraneous data from a pipeline run. It allows you to fetch specific steps from your pipeline run and their output artifacts in a post-execution workflow.
 
-At a certain point, however, you'll want to do something that requires a bit
-more compute power - perhaps requiring GPUs for model training - or some custom
-functionality at which point you'll want to add some extra components to your
-stack. These stacks will supercharge your steps and pipelines with extra functionality 
-which you can then use in production!
+With a metadata store, you are able to access all of your previous experiments with the associated details.
+This is extremely helpful in troubleshooting.
+
+When you start working with ZenML, you'll likely spend most of your time
+here, working with the default stack on initialization. 
+
+## Other Stack Components
+We've covered the three basic stack components that you will encounter most frequently. They work well on a local machine, but is rarely enough for in a production pipeline.
+
+At this point, you might want to scale up your stack to run elsewhere. Eg. on a cloud with powerful GPUs for training or clusters for deployment.
+
+ZenML provides many other stack components to suit these use cases.
+Having these components in your stack supercharges your pipeline for production.
+
+For other stack components check out this [page](../mlops_stacks/categories.md).
 
 ## Cloud Training, Deployment, Monitoring...
 
