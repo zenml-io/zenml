@@ -18,7 +18,7 @@ from abc import ABC
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Set
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field, root_validator
+from pydantic import BaseModel, Extra, Field, root_validator
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackComponentInterfaceError
@@ -339,3 +339,5 @@ class StackComponent(BaseModel, ABC):
         # all attributes with leading underscore are private and therefore
         # are mutable and not included in serialization
         underscore_attrs_are_private = True
+        # prevent extra attributes during model initialization
+        extra = Extra.forbid
