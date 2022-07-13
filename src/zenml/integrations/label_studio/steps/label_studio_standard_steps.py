@@ -17,9 +17,6 @@ from typing import Any, Dict, List, Optional, cast
 from urllib.parse import urlparse
 
 from zenml.exceptions import StackComponentInterfaceError
-from zenml.integrations.label_studio.annotators.label_studio_annotator import (
-    LabelStudioAnnotator,
-)
 from zenml.integrations.label_studio.label_config_generators import (
     TASK_TO_FILENAME_REFERENCE_MAPPING,
 )
@@ -120,6 +117,10 @@ def get_or_create_dataset(
         StackComponentInterfaceError: If no active annotator could be found.
     """
     annotator = context.stack.annotator  # type: ignore[union-attr]
+    from zenml.integrations.label_studio.annotators.label_studio_annotator import (
+        LabelStudioAnnotator,
+    )
+
     if not isinstance(annotator, LabelStudioAnnotator):
         raise TypeError(
             "This step can only be used with the Label Studio annotator."
@@ -168,6 +169,10 @@ def get_labeled_data(dataset_name: str, context: StepContext) -> List[Any]:
     annotator = context.stack.annotator  # type: ignore[union-attr]
     if not annotator:
         raise StackComponentInterfaceError("No active annotator.")
+    from zenml.integrations.label_studio.annotators.label_studio_annotator import (
+        LabelStudioAnnotator,
+    )
+
     if not isinstance(annotator, LabelStudioAnnotator):
         raise TypeError(
             "This step can only be used with the Label Studio annotator."
@@ -210,6 +215,10 @@ def sync_new_data_to_label_studio(
         raise StackComponentInterfaceError(
             "An active annotator and artifact store are required to run this step."
         )
+    from zenml.integrations.label_studio.annotators.label_studio_annotator import (
+        LabelStudioAnnotator,
+    )
+
     if not isinstance(annotator, LabelStudioAnnotator):
         raise TypeError(
             "This step can only be used with the Label Studio annotator."
