@@ -22,8 +22,6 @@ from zenml.integrations.label_studio.label_config_generators import (
 )
 from zenml.integrations.label_studio.label_studio_utils import (
     convert_pred_filenames_to_task_ids,
-    get_gcs_credentials,
-    get_s3_credentials,
 )
 from zenml.logger import get_logger
 from zenml.steps import BaseStepConfig, StepContext, step
@@ -237,21 +235,29 @@ def sync_new_data_to_label_studio(
     config.prefix = urlparse(uri).path.lstrip("/")
     base_uri = urlparse(uri).netloc
 
+    # gets the secret used for authentication
+    authentication_secret_name = artifact_store.authentication_secret
     if config.storage_type == "azure":
         config.azure_account_name = secrets_manager.get_secret(
-            "azure_creds"
+            authentication_secret_name
         ).account_name
         config.azure_account_key = secrets_manager.get_secret(
-            "azure_creds"
+            authentication_secret_name
         ).account_key
     elif config.storage_type == "gcs":
-        config.google_application_credentials = get_gcs_credentials()
+        config.google_application_credentials = secrets_manager.get_secret(
+            authentication_secret_name
+        ).token
     elif config.storage_type == "s3":
-        (
-            config.aws_access_key_id,
-            config.aws_secret_access_key,
-            config.aws_session_token,
-        ) = get_s3_credentials()
+        config.aws_access_key_id = secrets_manager.get_secret(
+            authentication_secret_name
+        ).aws_access_key_id
+        config.aws_secret_access_key = secrets_manager.get_secret(
+            authentication_secret_name
+        ).aws_secret_access_key
+        config.aws_session_token = secrets_manager.get_secret(
+            authentication_secret_name
+        ).aws_session_token
 
     if annotator and annotator._connection_available():
         # TODO: get existing (CHECK!) or create the sync connection

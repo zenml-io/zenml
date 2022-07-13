@@ -34,7 +34,9 @@ from zenml.integrations.label_studio.steps.label_studio_standard_steps import (
 from zenml.integrations.s3 import S3_ARTIFACT_STORE_FLAVOR
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.secret.arbitrary_secret_schema import ARBITRARY_SECRET_SCHEMA_TYPE
 from zenml.stack import Stack, StackValidator
+from zenml.stack.authentication_mixin import AuthenticationMixin
 from zenml.utils import io_utils, networking_utils
 
 logger = get_logger(__name__)
@@ -42,7 +44,7 @@ logger = get_logger(__name__)
 DEFAULT_LABEL_STUDIO_PORT = 8093
 
 
-class LabelStudioAnnotator(BaseAnnotator):
+class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
     """Class to interact with the Label Studio annotation interface.
 
     Attributes:
@@ -340,7 +342,9 @@ class LabelStudioAnnotator(BaseAnnotator):
         Returns:
             Label Studio client.
         """
-        return Client(url=self.get_url(), api_key=self.api_key)
+        secret = self.get_authentication_secret(ARBITRARY_SECRET_SCHEMA_TYPE)
+        api_key = secret.content.label_studio_api_key
+        return Client(url=self.get_url(), api_key=api_key)
 
     def _connection_available(self) -> bool:
         """Checks if the connection to the annotation server is available.

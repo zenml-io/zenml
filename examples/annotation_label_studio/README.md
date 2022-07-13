@@ -51,9 +51,12 @@ zenml annotator register label_studio --flavor label_studio --api_key="<your_lab
 
 Set up your (Azure) stack as follows:
 
+<!-- Also add registration of a secret with `zenml secret register azure_creds
+--schema=azure --account_name="XXX" --account_key="XXX" -->
+
 ```shell
 # using the pre-built blob storage mentioned above
-zenml artifact-store register azure_artifact_store --flavor=azure --path="az://annotationartifactstoretesting"
+zenml artifact-store register azure_artifact_store --flavor=azure --path="az://annotationartifactstoretesting" --authentication_secret="azure_creds"
 zenml stack copy default annotation
 zenml stack update annotation -a azure_artifact_store
 zenml stack update annotation -an label_studio -x azure_secrets_manager

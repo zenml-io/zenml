@@ -45,15 +45,15 @@ def download_azure_image(url: str, destination: str) -> None:
     fileio.copy(full_url, destination_path)
 
 
-def get_azure_credentials() -> Tuple[Optional[str], Optional[str]]:
-    """Returns access credentials for Azure from the environment.
+# def get_azure_credentials() -> Tuple[Optional[str], Optional[str]]:
+#     """Returns access credentials for Azure from the environment.
 
-    Returns:
-        Tuple of (account_name, account_key).
-    """
-    account_key = os.environ.get("AZURE_STORAGE_ACCOUNT_KEY")
-    account_name = os.environ.get("AZURE_STORAGE_ACCOUNT_NAME")
-    return account_name, account_key
+#     Returns:
+#         Tuple of (account_name, account_key).
+#     """
+#     account_key = os.environ.get("AZURE_STORAGE_ACCOUNT_KEY")
+#     account_name = os.environ.get("AZURE_STORAGE_ACCOUNT_NAME")
+#     return account_name, account_key
 
 
 def get_gcs_credentials() -> Optional[str]:
@@ -65,16 +65,16 @@ def get_gcs_credentials() -> Optional[str]:
     return os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
 
 
-def get_s3_credentials() -> Tuple[Optional[str], Optional[str], Optional[str]]:
-    """Returns access credentials for S3 from the environment.
+# def get_s3_credentials() -> Tuple[Optional[str], Optional[str], Optional[str]]:
+#     """Returns access credentials for S3 from the environment.
 
-    Returns:
-        Tuple of (access_key_id, secret_access_key, session_token).
-    """
-    access_key_id = os.environ.get("AWS_ACCESS_KEY_ID")
-    secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
-    session_token = os.environ.get("AWS_SESSION_TOKEN")
-    return access_key_id, secret_access_key, session_token
+#     Returns:
+#         Tuple of (access_key_id, secret_access_key, session_token).
+#     """
+#     access_key_id = os.environ.get("AWS_ACCESS_KEY_ID")
+#     secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
+#     session_token = os.environ.get("AWS_SESSION_TOKEN")
+#     return access_key_id, secret_access_key, session_token
 
 
 def convert_pred_filenames_to_task_ids(
