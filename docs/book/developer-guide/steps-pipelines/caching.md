@@ -1,21 +1,34 @@
 ---
-description: How does automatic caching work in ZenML.
+description: How does automatic data versioning and caching work in ZenML.
 ---
 
-Machine learning pipelines are rerun many times over throughout their development lifecycle. Prototyping is often a 
-fast and iterative process that benefits a lot from caching. This makes caching a very powerful tool.
-Checkout [our caching blogpost](https://blog.zenml.io/caching-ml-pipelines/)
+Machine learning pipelines are rerun many times over throughout their
+development lifecycle. Prototyping is often a fast and iterative process that
+benefits a lot from caching. This makes caching a very powerful tool.
+Checkout this [ZenML Blogpost on Caching](https://blog.zenml.io/caching-ml-pipelines/)
 for more context on the benefits of caching and 
 [ZenBytes lesson 1.2](https://github.com/zenml-io/zenbytes/blob/main/1-2_Artifact_Lineage.ipynb)
-for a detailed example.
+for a detailed example on how to configure and visualize caching.
 
 ## Caching in ZenML
 
-ZenML comes with caching enabled by default. As long as there is no change within a step or upstream from it, the 
-cached outputs of that step will be used for the next pipeline run. This means that whenever there are code or 
-configuration changes affecting a step, the step will be rerun in the next pipeline execution. Currently, the 
-caching does not automatically detect changes within the file system or on external APIs. Make sure to set caching 
-to `False` on steps that depend on external input or if the step should run regardless of caching.
+ZenML comes with caching enabled by default. Since ZenML automatically tracks
+and versions all inputs, outputs, and parameters of steps and pipelines, ZenML
+will not re-execute steps within the same pipeline on subsequent pipeline runs
+as long as there is no change in these three.
+
+{% hint style="warning" %}
+Currently, the caching does not automatically detect changes within the file
+system or on external APIs. Make sure to set caching to `False` on steps that
+depend on external inputs or if the step should run regardless of caching.
+{% endhint %}
+
+## Configuring caching behavior of your pipelines
+
+Although caching is desirable in many circumstances, one might want to disable
+it in certain instances. For example, if you are quickly prototyping with
+changing step definitions or you have an external API state change in your
+function that ZenML does not detect.
 
 There are multiple ways to take control of when and where caching is used:
 - [Disabling caching for the entire pipeline](#disabling-caching-for-the-entire-pipeline):
@@ -25,7 +38,7 @@ This is required for certain steps that depend on external input.
 - [Dynamically disabling caching for a pipeline run](#dynamically-disabling-caching-for-a-pipeline-run):
 This is useful to force a complete rerun of a pipeline.
 
-## Disabling caching for the entire pipeline
+### Disabling caching for the entire pipeline
 
 On a pipeline level the caching policy can be set as a parameter within the decorator. 
 
@@ -40,7 +53,7 @@ If caching is explicitly turned off on a pipeline level, all steps are run
 without caching, even if caching is set to `True` for single steps.
 {% endhint %}
 
-## Disabling caching for individual steps
+### Disabling caching for individual steps
 
 Caching can also be explicitly turned off at a step level. You might want to turn off caching for steps that take 
 external input (like fetching data from an API or File IO).
@@ -57,7 +70,7 @@ You can get a graphical visualization of which steps were cached using
 [ZenML's Pipeline Run Visualization Tool](pipeline-visualization.md).
 {% endhint %}
 
-## Dynamically disabling caching for a pipeline run
+### Dynamically disabling caching for a pipeline run
 
 Sometimes you want to have control over caching at runtime instead of defaulting to the backed in configurations of 
 your pipeline and its steps. ZenML offers a way to override all caching settings of the pipeline at runtime.
@@ -66,7 +79,7 @@ your pipeline and its steps. ZenML offers a way to override all caching settings
 first_pipeline(step_1=..., step_2=...).run(enable_cache=False)
 ```
 
-## Code Example
+### Code Example
 
 The following example shows caching in action with the code example from the
 previous section on [Runtime Configuration](./runtime-configuration.md).
