@@ -4,7 +4,7 @@ description: How to visualize ZenML pipeline runs.
 
 # Visualizing Pipeline Runs
 
-ZenML's [Dash] integration provides a `PipelineRunLineageVisualizer` that can
+ZenML's **Dash** integration provides a `PipelineRunLineageVisualizer` that can
 be used to visualize pipeline runs in your local browser, as shown below:
 
 ![Pipeline Run Visualization Example](../../assets/developer-guide/pipeline-visualization/run2.png)
