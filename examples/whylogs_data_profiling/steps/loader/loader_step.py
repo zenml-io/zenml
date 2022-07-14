@@ -11,12 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import cast
 import pandas as pd
 import whylogs as why
 from sklearn import datasets
 from whylogs.core import DatasetProfileView  # type: ignore[import]
-
 
 from zenml.integrations.whylogs.whylabs_step_decorator import enable_whylabs
 from zenml.steps import Output, step

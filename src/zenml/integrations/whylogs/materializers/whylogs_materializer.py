@@ -66,7 +66,7 @@ class WhylogsMaterializer(BaseMaterializer):
         """Writes a whylogs dataset profile view.
 
         Args:
-            profile: A whylogs dataset profile view object.
+            profile_view: A whylogs dataset profile view object.
         """
         super().handle_return(profile_view)
         filepath = os.path.join(self.artifact.uri, PROFILE_FILENAME)

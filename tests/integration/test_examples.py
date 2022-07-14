@@ -26,6 +26,7 @@ from zenml.repository import Repository
 from .example_validations import (
     drift_detection_example_validation,
     generate_basic_validation_function,
+    generate_data_validator_setup_function,
     mlflow_tracking_example_validation,
     mlflow_tracking_setup,
     whylogs_example_validation,
@@ -87,6 +88,24 @@ examples = [
     ExampleIntegrationTestConfiguration(
         name="evidently_drift_detection",
         validation_function=drift_detection_example_validation,
+        setup_function=generate_data_validator_setup_function("evidently"),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="deepchecks_data_validation",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="data_validation_pipeline", step_count=6
+        ),
+        setup_function=generate_data_validator_setup_function("deepchecks"),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="great_expectations_data_validation",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="validation_pipeline", step_count=6
+        ),
+        setup_function=generate_data_validator_setup_function(
+            "great_expectations"
+        ),
+        skip_on_windows=True,
     ),
     ExampleIntegrationTestConfiguration(
         name="kubeflow_pipelines_orchestration",
@@ -112,6 +131,7 @@ examples = [
     ExampleIntegrationTestConfiguration(
         name="whylogs_data_profiling",
         validation_function=whylogs_example_validation,
+        setup_function=generate_data_validator_setup_function("whylogs"),
     ),
     ExampleIntegrationTestConfiguration(
         name="xgboost",

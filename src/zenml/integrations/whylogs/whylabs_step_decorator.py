@@ -15,16 +15,7 @@
 
 import functools
 import os
-from typing import (
-    Any,
-    Callable,
-    Optional,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-    overload,
-)
+from typing import Any, Callable, Optional, Type, TypeVar, Union, cast, overload
 
 from zenml.steps import BaseStep
 from zenml.steps.utils import STEP_INNER_FUNC_NAME

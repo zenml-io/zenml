@@ -14,8 +14,8 @@
 """Implementation of the whylogs visualizer step."""
 
 import tempfile
-from typing import Any, List, Optional, cast
 import webbrowser
+from typing import Any, Optional, cast
 
 from whylogs.core import DatasetProfileView  # type: ignore
 from whylogs.viz import NotebookProfileVisualizer  # type: ignore
@@ -33,7 +33,7 @@ class WhylogsVisualizer(BaseStepVisualizer):
 
     def visualize(
         self,
-        step_view: StepView,
+        object: StepView,
         reference_step_view: Optional[StepView] = None,
         *args: Any,
         **kwargs: Any,
@@ -41,7 +41,7 @@ class WhylogsVisualizer(BaseStepVisualizer):
         """Visualize whylogs dataset profiles present as outputs in the step view.
 
         Args:
-            step_view: StepView fetched from run.get_step().
+            object: StepView fetched from run.get_step().
             reference_step_view: second StepView fetched from run.get_step() to
                 use as a reference to visualize data drift
             *args: additional positional arguments to pass to the visualize
@@ -65,13 +65,14 @@ class WhylogsVisualizer(BaseStepVisualizer):
             whylogs_artifact_datatype = (
                 f"{DatasetProfileView.__module__}.{DatasetProfileView.__name__}"
             )
-            for artifact_name, artifact_view in step_view.outputs.items():
+            for _, artifact_view in step_view.outputs.items():
                 # filter out anything but whylogs dataset profile artifacts
                 if artifact_view.data_type == whylogs_artifact_datatype:
                     profile = artifact_view.read()
                     return cast(DatasetProfileView, profile)
+            return None
 
-        profile = extract_profile(step_view)
+        profile = extract_profile(object)
         reference_profile: Optional[DatasetProfileView] = None
         if reference_step_view:
             reference_profile = extract_profile(reference_step_view)
@@ -86,8 +87,6 @@ class WhylogsVisualizer(BaseStepVisualizer):
         """Generate a visualization of one or two whylogs dataset profile.
 
         Args:
-            name: name identifying the profile if multiple profiles are
-                displayed at the same time
             profile: whylogs DatasetProfileView to visualize
             reference_profile: second optional DatasetProfileView to use to
                 generate a data drift visualization

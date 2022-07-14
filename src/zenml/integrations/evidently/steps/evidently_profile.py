@@ -17,10 +17,11 @@ from typing import List, Literal, Optional, Sequence, Union, cast
 
 import pandas as pd
 from evidently.model_profile import Profile  # type: ignore[import]
-from evidently.pipeline.column_mapping import ColumnMapping  # type: ignore[import]
+from evidently.pipeline.column_mapping import (  # type: ignore[import]
+    ColumnMapping,
+)
 from pydantic import BaseModel
 
-from zenml.artifacts import DataAnalysisArtifact
 from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
 from zenml.steps import Output
 from zenml.steps.base_step import BaseStep
@@ -99,7 +100,8 @@ class EvidentlyProfileConfig(BaseDriftDetectionConfig):
         - "classificationmodelperformance"
         - "regressionmodelperformance"
         - "probabilisticmodelperformance"
-    verbose_level: Verbosity level for the Evidently dashboards.
+    verbose_level: Verbosity level for the Evidently dashboards. Use
+        0 for a brief dashboard, 1 for a detailed dashboard.
     """
 
     column_mapping: Optional[EvidentlyColumnMapping] = None

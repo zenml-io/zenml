@@ -14,16 +14,16 @@
 """Implementation of Evidently profile materializer."""
 
 import os
+from typing import Any, Type
+
 from evidently.model_profile import Profile  # type: ignore
 from evidently.utils import NumpyEncoder  # type: ignore
-
-from typing import Any, Type
 
 from zenml.artifacts import DataAnalysisArtifact
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import yaml_utils
-from zenml.utils.source_utils import resolve_class, import_class_by_path
+from zenml.utils.source_utils import import_class_by_path, resolve_class
 
 logger = get_logger(__name__)
 

@@ -14,9 +14,7 @@
 """Definition of the Deepchecks validation check types."""
 
 import re
-from typing import (
-    Type,
-)
+from typing import Type
 
 import deepchecks.tabular.checks as tabular_checks
 import deepchecks.vision.checks as vision_checks
@@ -24,6 +22,7 @@ from deepchecks.core.checks import BaseCheck
 
 # not part of deepchecks.tabular.checks
 from deepchecks.tabular.checks.data_integrity import FeatureFeatureCorrelation
+
 from zenml.logger import get_logger
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.source_utils import import_class_by_path, resolve_class

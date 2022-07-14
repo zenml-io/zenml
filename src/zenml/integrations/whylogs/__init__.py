@@ -14,6 +14,7 @@
 """Initialization of the whylogs integration."""
 
 from typing import List
+
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import WHYLOGS
 from zenml.integrations.integration import Integration

@@ -14,11 +14,12 @@
 """Implementation of the whylogs data validator."""
 
 import datetime
-import pandas as pd
-import whylogs as why  # type: ignore
-
 from typing import Any, ClassVar, Optional, Sequence, cast
 
+import pandas as pd
+import whylogs as why  # type: ignore
+from whylogs.api.writer.whylabs import WhyLabsWriter  # type: ignore
+from whylogs.core import DatasetProfileView  # type: ignore
 
 from zenml.data_validators import BaseDataValidator
 from zenml.environment import Environment
@@ -29,9 +30,6 @@ from zenml.integrations.whylogs.secret_schemas.whylabs_secret_schema import (
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.steps import STEP_ENVIRONMENT_NAME, StepEnvironment
-
-from whylogs.api.writer.whylabs import WhyLabsWriter  # type: ignore
-from whylogs.core import DatasetProfileView  # type: ignore
 
 logger = get_logger(__name__)
 

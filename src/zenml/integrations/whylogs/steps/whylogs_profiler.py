@@ -14,26 +14,21 @@
 """Implementation of the whylogs profiler step."""
 
 import datetime
-from typing import Dict, Optional, Type, cast
+from typing import Optional, Type, cast
 
 import pandas as pd
 from whylogs.core import DatasetProfileView  # type: ignore
+
 from zenml.integrations.whylogs.data_validators.whylogs_data_validator import (
     WhylogsDataValidator,
 )
 from zenml.integrations.whylogs.whylabs_step_decorator import enable_whylabs
 from zenml.steps.base_step import BaseStep
-
 from zenml.steps.step_interfaces.base_analyzer_step import (
     BaseAnalyzerConfig,
     BaseAnalyzerStep,
 )
-from zenml.steps.utils import (
-    INSTANCE_CONFIGURATION,
-    PARAM_CREATED_BY_FUNCTIONAL_API,
-    PARAM_ENABLE_CACHE,
-    clone_step,
-)
+from zenml.steps.utils import clone_step
 
 
 class WhylogsProfilerConfig(BaseAnalyzerConfig):

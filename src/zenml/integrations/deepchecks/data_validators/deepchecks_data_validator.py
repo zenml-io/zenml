@@ -44,17 +44,18 @@ from zenml.data_validators import BaseDataValidator
 from zenml.environment import Environment
 from zenml.integrations.deepchecks import DEEPCHECKS_DATA_VALIDATOR_FLAVOR
 from zenml.integrations.deepchecks.validation_checks import (
-    DeepchecksValidationCheck,
-    DeepchecksDataIntegrityCheck,
     DeepchecksDataDriftCheck,
-    DeepchecksModelValidationCheck,
+    DeepchecksDataIntegrityCheck,
     DeepchecksModelDriftCheck,
+    DeepchecksModelValidationCheck,
+    DeepchecksValidationCheck,
 )
 from zenml.logger import get_logger
 from zenml.steps import STEP_ENVIRONMENT_NAME, StepEnvironment
 from zenml.utils.string_utils import random_str
 
 logger = get_logger(__name__)
+
 
 class DeepchecksDataValidator(BaseDataValidator):
     """Deepchecks data validator stack component."""
@@ -103,7 +104,6 @@ class DeepchecksDataValidator(BaseDataValidator):
         check_list: Optional[Sequence[str]] = None,
         dataset_kwargs: Dict[str, Any] = {},
         check_kwargs: Dict[str, Dict[str, Any]] = {},
-        check_conditions: Dict[str, Dict[str, Dict[str, Any]]] = {},
         run_kwargs: Dict[str, Any] = {},
     ) -> SuiteResult:
         """Create and run a Deepcheck check suite corresponding to the input parameters.

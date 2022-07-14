@@ -12,6 +12,7 @@
 #  permissions and limitations under the License.
 
 from typing import Optional
+
 from pipelines import data_profiling_pipeline
 from steps import (
     data_loader,
@@ -48,7 +49,7 @@ def visualize_statistics(
         )
 
     WhylogsVisualizer().visualize(
-        step_view=whylogs_step,
+        whylogs_step,
         reference_step_view=whylogs_reference_step,
     )
 

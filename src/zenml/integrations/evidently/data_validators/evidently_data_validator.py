@@ -13,6 +13,9 @@
 #  permissions and limitations under the License.
 """Implementation of the Evidently data validator."""
 
+from typing import Any, ClassVar, List, Optional, Sequence, Tuple
+
+import pandas as pd
 from evidently.dashboard import Dashboard  # type: ignore
 from evidently.dashboard.tabs import (  # type: ignore
     CatTargetDriftTab,
@@ -38,9 +41,6 @@ from evidently.model_profile.sections.base_profile_section import (  # type: ign
     ProfileSection,
 )
 from evidently.pipeline.column_mapping import ColumnMapping  # type: ignore
-from typing import Any, ClassVar, List, Optional, Sequence, Tuple
-
-import pandas as pd
 
 from zenml.data_validators import BaseDataValidator
 from zenml.integrations.evidently import EVIDENTLY_DATA_VALIDATOR_FLAVOR
@@ -72,12 +72,14 @@ dashboard_mapper = {
 
 def get_profile_sections_and_tabs(
     profile_list: Optional[Sequence[str]],
-    verbose_level: int,
+    verbose_level: int = 1,
 ) -> Tuple[List[ProfileSection], List[Tab]]:
     """Get the profile sections and dashboard tabs for a profile list.
 
     Args:
         profile_list: List of identifiers for Evidently profiles.
+        verbose_level: Verbosity level for the rendered dashboard. Use
+            0 for a brief dashboard, 1 for a detailed dashboard.
 
     Returns:
         A tuple of two lists of profile sections and tabs.
@@ -127,7 +129,9 @@ class EvidentlyDataValidator(BaseDataValidator):
                 that require a baseline for comparison (e.g data drift profiles).
             profile_list: Optional list identifying the categories of Evidently
                 data profiles to be generated.
-            verbose_level: Level of verbosity for the Evidently dashboards.
+            column_mapping: Properties of the DataFrame columns used
+            verbose_level: Level of verbosity for the Evidently dashboards. Use
+                0 for a brief dashboard, 1 for a detailed dashboard.
             **kwargs: Extra keyword arguments (unused).
 
         Returns:

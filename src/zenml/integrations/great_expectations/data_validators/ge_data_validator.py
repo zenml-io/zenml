@@ -484,7 +484,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
             ValueError: if the `expectation_suite_name` argument is omitted.
         """
         if not expectation_suite_name:
-            raise RuntimeError("Missing expectation_suite_name argument value.")
+            raise ValueError("Missing expectation_suite_name argument value.")
 
         try:
             # get pipeline name, step name and run id

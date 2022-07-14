@@ -23,6 +23,7 @@ file.
 """
 
 from typing import List
+
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import EVIDENTLY
 from zenml.integrations.integration import Integration
@@ -58,5 +59,6 @@ class EvidentlyIntegration(Integration):
                 integration=cls.NAME,
             ),
         ]
+
 
 EvidentlyIntegration.check_installation()
