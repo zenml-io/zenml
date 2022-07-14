@@ -2,7 +2,10 @@
 description: How ZenML uses Docker images to run your pipeline
 ---
 
-Remote orchestrators and step operators build [Docker](https://www.docker.com/) images to 
+When running locally, ZenML will execute the steps of your pipeline in the
+active Python environment. When using a remote [orchestrators](../../mlops_stacks/orchestrators/)
+or [step operators](../../mlops_stacks/step_operators/overview.md) instead,
+ZenML builds [Docker](https://www.docker.com/) images to transport and
 run your pipeline code in an isolated and well-defined environment.
 For this purpose, a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated and used
 to build the image using the local Docker client. This Dockerfile consists of the following steps:
@@ -12,19 +15,9 @@ If your pipeline needs any additional requirements, check out our [guide on incl
 * **Copies your active stack configuration**. This is needed so that ZenML can execute your code on the stack that you specified.
 * **Copies your source files**. These files need to be included in the Docker image so ZenML can execute your step code. Check out [this section](#which-files-get-included) for more information on which files get included by default and how to exclude files.
 
-## Using a custom base image
-
-To have full control over the environment which is used to execute your pipelines,
-you can specify a custom base image which will be used as the starting point of the 
-Docker image that ZenML will use to execute your code. For more information on how 
-to specify a base image for the [orchestrator](../../mlops_stacks/orchestrators/overview.md)
-or [step operator](../../mlops_stacks/step_operators/overview.md) you're using, visit 
-the corresponding documentation page.
-
-{% hint style="info" %}
-If you're going to use a custom base image, you need to make sure that it has Python, pip and 
-ZenML installed for it to work.
-{% endhint %}
+This is all handled automatically by ZenML and covers most basic use cases.
+The remainder of this page covers the different ways in which you can hook into
+the Docker building process to customize the resulting image for your use case.
 
 ## Which files get included
 
@@ -51,8 +44,13 @@ following two ways:
     ```
 ## How to install additional pip dependencies
 
+{% hint style="info" %}
+You don't need to install the `zenml` pip package as well as
+any integration that is used for components of your active stack.
+{% endhint %}
+
 If you want ZenML to install additional pip dependencies on top of the base image, you
-can use any of the following three ways (or even combine them):
+can use any of the following three ways:
 * Specify a list of [ZenML integrations]() that you're using in your pipeline:
     ```python
     from zenml.integrations.constants import PYTORCH, EVIDENTLY
@@ -73,3 +71,21 @@ can use any of the following three ways (or even combine them):
     def my_pipeline(...):
         ...
     ```
+
+You can even combine these methods, but do make sure that your
+list of pip requirements [doesn't overlap](../../resources/best-practices.md#do-not-overlap-requiredintegrations-and-requirements) with the ones
+specified by your required integrations.
+
+## Using a custom base image
+
+To have full control over the environment which is used to execute your pipelines,
+you can specify a custom base image which will be used as the starting point of the 
+Docker image that ZenML will use to execute your code. For more information on how 
+to specify a base image for the [orchestrator](../../mlops_stacks/orchestrators/overview.md)
+or [step operator](../../mlops_stacks/step_operators/overview.md) you're using, visit 
+the corresponding documentation page.
+
+{% hint style="info" %}
+If you're going to use a custom base image, you need to make sure that it has Python, pip and 
+ZenML installed for it to work.
+{% endhint %}
