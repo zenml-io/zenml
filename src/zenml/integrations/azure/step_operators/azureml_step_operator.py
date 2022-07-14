@@ -14,6 +14,7 @@
 """Implementation of the ZenML AzureML Step Operator."""
 
 import os
+from pathlib import PurePosixPath
 from typing import ClassVar, List, Optional
 
 from azureml.core import (
@@ -196,9 +197,10 @@ class AzureMLStepOperator(BaseStepOperator):
             # active profile contents into the build context, to have
             # the configured stacks accessible from within the Azure ML
             # environment.
+            load_config_path = PurePosixPath(f"./{CONTAINER_ZENML_CONFIG_DIR}")
             GlobalConfiguration().copy_active_configuration(
                 config_path,
-                load_config_path=f"./{CONTAINER_ZENML_CONFIG_DIR}",
+                load_config_path=load_config_path,
             )
 
             environment = self._prepare_environment(

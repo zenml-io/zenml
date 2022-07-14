@@ -37,6 +37,7 @@ from zenml.config.config_keys import (
     PipelineConfigurationKeys,
     StepConfigurationKeys,
 )
+from zenml.environment import Environment
 from zenml.exceptions import (
     DuplicatedConfigurationError,
     PipelineConfigurationError,
@@ -455,15 +456,17 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         integration_registry.activate_integrations()
 
-        # Path of the file where pipeline.run() was called. This is needed by
-        # the airflow orchestrator so it knows which file to copy into the DAG
-        # directory
-        dag_filepath = io_utils.resolve_relative_path(
-            inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr]
-        )
+        if not Environment.in_notebook():
+            # Path of the file where pipeline.run() was called. This is needed by
+            # the airflow orchestrator so it knows which file to copy into the DAG
+            # directory
+            dag_filepath = io_utils.resolve_relative_path(
+                inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr]
+            )
+            additional_parameters.setdefault("dag_filepath", dag_filepath)
+
         runtime_configuration = RuntimeConfiguration(
             run_name=run_name,
-            dag_filepath=dag_filepath,
             schedule=schedule,
             **additional_parameters,
         )

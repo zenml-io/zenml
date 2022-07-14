@@ -138,12 +138,12 @@ GBM
 GCP
 GCS
 GCS
-Gi
 GID
 GKE
 GPUs
 GRPC
 GettingStarted
+Gi
 GitBook
 GitCommandError
 GitExamplesHandler
@@ -153,6 +153,7 @@ GlobalConfiguration
 GmbH
 Gojek
 Graphviz
+HCP
 HDQC
 HFModel
 HFTokenizer
@@ -160,6 +161,7 @@ HTMLSiteStore
 HTTPError
 HTTPException
 Hacky
+HashiCorp
 HelpFormatter
 HuggingFace
 IAM
@@ -181,6 +183,7 @@ KFP
 KFPCompiler
 KMS
 KServe
+KUBE
 Keras
 KeyError
 Kubeflow
@@ -189,7 +192,6 @@ KubeflowOrchestrator
 Kubernetes
 KubernetesMetadataStore
 KubernetesOrchestrator
-KUBE
 LLC
 LegacyVersion
 LightGBM
@@ -252,6 +254,7 @@ NotFoundError
 NotImplementedError
 NumPy
 OAuth
+OSError
 OneRing
 OpFunc
 OpenAPI
@@ -646,8 +649,6 @@ graphviz
 grey
 hasattr
 hashable
-HashiCorp
-HCP
 healthcheck
 healthchecks
 hkls
@@ -801,7 +802,6 @@ profiler
 proto
 protobuf
 pv
-PWD
 py
 pydantic
 pyenv
