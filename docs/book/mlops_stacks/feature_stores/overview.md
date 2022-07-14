@@ -1,13 +1,6 @@
 ---
-description: ZenML integrates with Feast so you can access your batch and online data via a Feature Store
+description: Access your batch and online data via a Feature Store
 ---
-
-- `What is it, what does it do`
-- `Why would you want to use it`
-- `When should you start adding this to your stack`
-- `Overview of flavors, tradeoffs, when to use which flavor (table)`
-
-# Feature Store
 
 Feature stores allow data teams to serve data via an offline store and an online
 low-latency store where data is kept in
@@ -25,117 +18,37 @@ those two
 sources of data diverge from each other.
 
 Feature stores are a relatively recent addition to commonly-used machine
-learning stacks. [Feast](https://feast.dev/) is
-a leading open-source feature store, first developed
-by [Gojek](https://www.gojek.com/en-id/) in collaboration with
-Google.
+learning stacks. 
 
-## 🗺 Features Stores & ZenML
+## When to use it
 
-There are two core functions that feature stores enable: access to data from an
-offline / batch store for training and
-access to online data at inference time. The ZenML Feast integration enables
-both of these behaviors.
+The feature store is an optional stack component in the ZenML Stack.
+The feature store as a technology should be used to store the features and
+inject them into the process in the server-side. This includes 
 
-ZenML assumes that users of the integration already have a feature store that
-they just need to connect with. The ZenML
-Feast integration currently supports your choice of offline data sources, and
-a [Redis](https://redis.com/) backend for
-your online feature serving. We encourage users to check
-out [Feast's documentation](https://docs.feast.dev/)
-and [guides](https://docs.feast.dev/how-to-guides/) on how to set up your 
-offline and online data sources via the configuration `yaml` file.
+* Productionize new features
+* Reuse existing features across multiple pipelines and models
+* Achieve consistency between training and serving data (Training Serving Skew)
+* Provide a central registry of features and feature schemas
 
-Online data retrieval is currently possible in a local setting, but we don't
-currently support using the online data
-serving in the context of a deployed model or as part of model deployment. We
-will update this documentation as we
-develop out this feature.
+### Artifact Store Flavors
 
-# Get your offline / batch data from a Feature Store
+For production use cases, some more flavors can be found in specific 
+`integrations` modules. In terms of features stores, ZenML features an 
+integration of `feast`.
 
-ZenML supports access to your feature store via a stack component that you can
-configure via the CLI tool. (
-See [here](https://apidocs.zenml.io/latest/cli/) for details on how to do that.)
+| Feature Store | Flavor | Integration | Notes             |
+|----------------|--------|-------------|-------------------|
+| [FeastFeatureStore](./feast.md) | `feast` | `feast` | Connect ZenML with already existing Feast |
 
-Getting features from a registered and active feature store is possible by
-creating your own step that interfaces into
-the feature store:
+If you would like to see the available flavors for feature stores, you can 
+use the command:
 
-```python
-from datetime import datetime
-from typing import Any, Dict, List, Union
-import pandas as pd
-
-from zenml.steps import BaseStepConfig, step, StepContext
-entity_dict = {…}  # defined in earlier code
-features = […]  # defined in earlier code
-
-class FeastHistoricalFeaturesConfig(BaseStepConfig):
-    """Feast Feature Store historical data step configuration."""
-
-    entity_dict: Union[Dict[str, Any], str]
-    features: List[str]
-    full_feature_names: bool = False
-
-    class Config:
-        arbitrary_types_allowed = True
-
-
-@step
-def get_historical_features(
-        config: FeastHistoricalFeaturesConfig,
-        context: StepContext,
-) -> pd.DataFrame:
-    """Feast Feature Store historical data step
-
-    Args:
-        config: The step configuration.
-        context: The step context.
-
-    Returns:
-        The historical features as a DataFrame.
-    """
-    if not context.stack:
-        raise DoesNotExistException(
-            "No active stack is available. Please make sure that you have registered and set a stack."
-        )
-    elif not context.stack.feature_store:
-        raise DoesNotExistException(
-            "The Feast feature store component is not available. "
-            "Please make sure that the Feast stack component is registered as part of your current active stack."
-        )
-
-    feature_store_component = context.stack.feature_store
-    config.entity_dict["event_timestamp"] = [
-        datetime.fromisoformat(val)
-        for val in config.entity_dict["event_timestamp"]
-    ]
-    entity_df = pd.DataFrame.from_dict(config.entity_dict)
-
-    return feature_store_component.get_historical_features(
-        entity_df=entity_df,
-        features=config.features,
-        full_feature_names=config.full_feature_names,
-    )
-
-
-historical_features = get_historical_features(
-    config=FeastHistoricalFeaturesConfig(
-        entity_dict=historical_entity_dict, features=features
-    ),
-)
+```shell
+zenml feature-store flavor list
 ```
 
-Note that ZenML's use of Pydantic to serialize and deserialize inputs stored in
-the ZenML metadata means that we are
-limited to basic data types. Pydantic cannot handle Pandas `DataFrame`s, for
-example, or `datetime` values, so in the
-above code you can see that we have to convert them at various points.
+## How to use it
 
-# Get your online data from a Feature Store at inference time
-
-COMING SOON: While the ZenML integration has an interface to access online
-feature store data, it currently is not
-usable in production settings with deployed models. We will update the docs when
-we enable this functionality.
+The available implementation of the feature store is built on top of the feast integration,
+which means that using a feature store is no different than what's described in the [feast page: How to use it?](./feast.md#how-to-use-it).
