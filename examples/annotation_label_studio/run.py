@@ -64,7 +64,7 @@ zenml_s3_artifact_store_sync_config = LabelStudioDatasetSyncConfig(
     storage_type="s3",
     label_config_type=label_config_type,
     regex_filter=IMAGE_REGEX_FILTER,
-    region_name="eu-west-1",  # change this to your closest region
+    s3_region_name="eu-west-1",  # change this to your closest region
 )
 
 

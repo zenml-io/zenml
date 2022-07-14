@@ -30,7 +30,7 @@ logger = get_logger(__name__)
 
 
 class LabelStudioDatasetRegistrationConfig(BaseStepConfig):
-    """Step config  when registering a dataset with Label Studio.
+    """Step config when registering a dataset with Label Studio.
 
     Attributes:
         label_config: The label config to use for the annotation interface.
@@ -69,7 +69,7 @@ class LabelStudioDatasetSyncConfig(BaseStepConfig):
             storage.
         aws_session_token: Specify the AWS session token to use for the
             storage.
-        region_name: Specify the S3 region name to use for the storage.
+        s3_region_name: Specify the S3 region name to use for the storage.
         s3_endpoint: Specify the S3 endpoint to use for the storage.
     """
 
@@ -90,7 +90,7 @@ class LabelStudioDatasetSyncConfig(BaseStepConfig):
     aws_access_key_id: Optional[str]
     aws_secret_access_key: Optional[str]
     aws_session_token: Optional[str]
-    region_name: Optional[str]
+    s3_region_name: Optional[str]
     s3_endpoint: Optional[str]
 
 
@@ -122,28 +122,38 @@ def get_or_create_dataset(
         raise TypeError(
             "This step can only be used with the Label Studio annotator."
         )
-    if annotator and annotator._connection_available():
-        preexisting_dataset_list = [
-            dataset
-            for dataset in annotator.get_datasets()
-            if dataset.get_params()["title"] == config.dataset_name
-        ]
-        if (
-            not preexisting_dataset_list
-            and annotator
-            and annotator._connection_available()
-        ):
-            registered_dataset = annotator.register_dataset_for_annotation(
-                config
-            )
-        elif preexisting_dataset_list:
-            return cast(str, preexisting_dataset_list[0].get_params()["title"])
-        else:
-            raise StackComponentInterfaceError("No active annotator.")
 
-        return cast(str, registered_dataset.get_params()["title"])
-    else:
-        raise StackComponentInterfaceError("No active annotator.")
+    if annotator and annotator._connection_available():
+        for dataset in annotator.get_datasets():
+            if dataset.get_params()["title"] == config.dataset_name:
+                return cast(str, dataset.get_params()["title"])
+
+        dataset = annotator.register_dataset_for_annotation(config)
+        return cast(str, dataset.get_params()["title"])
+
+    raise StackComponentInterfaceError("No active annotator.")
+    # if annotator and annotator._connection_available():
+    #     preexisting_dataset_list = [
+    #         dataset
+    #         for dataset in annotator.get_datasets()
+    #         if dataset.get_params()["title"] == config.dataset_name
+    #     ]
+    #     if (
+    #         not preexisting_dataset_list
+    #         and annotator
+    #         and annotator._connection_available()
+    #     ):
+    #         registered_dataset = annotator.register_dataset_for_annotation(
+    #             config
+    #         )
+    #     elif preexisting_dataset_list:
+    #         return cast(str, preexisting_dataset_list[0].get_params()["title"])
+    #     else:
+    #         raise StackComponentInterfaceError("No active annotator.")
+
+    #     return cast(str, registered_dataset.get_params()["title"])
+    # else:
+    #     raise StackComponentInterfaceError("No active annotator.")
 
 
 @step(enable_cache=False)
@@ -177,10 +187,10 @@ def get_labeled_data(dataset_name: str, context: StepContext) -> List:  # type: 
     if annotator._connection_available():
         dataset = annotator.get_dataset(dataset_name=dataset_name)
         return dataset.get_labeled_tasks()  # type: ignore[no-any-return]
-    else:
-        raise StackComponentInterfaceError(
-            "Unable to connect to annotator stack component."
-        )
+
+    raise StackComponentInterfaceError(
+        "Unable to connect to annotator stack component."
+    )
 
 
 @step(enable_cache=False)

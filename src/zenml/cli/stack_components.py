@@ -1465,14 +1465,10 @@ def register_annotator_subcommands() -> None:
                 all: Whether to delete all datasets.
             """
             cli_utils.declare(f"Deleting your dataset '{dataset_name}'")
-            if all:
-                dataset_names = annotator.get_dataset_names()
-                for dataset_name in dataset_names:
-                    annotator.delete_dataset(dataset_name=dataset_name)
-                    cli_utils.declare(
-                        f"Dataset '{dataset_name}' has now been deleted."
-                    )
-            else:
+            dataset_names = (
+                annotator.get_dataset_names() if all else [dataset_name]
+            )
+            for dataset_name in dataset_names:
                 annotator.delete_dataset(dataset_name=dataset_name)
                 cli_utils.declare(
                     f"Dataset '{dataset_name}' has now been deleted."
@@ -1481,10 +1477,7 @@ def register_annotator_subcommands() -> None:
         @dataset.command(
             "annotate", context_settings={"ignore_unknown_options": True}
         )
-        @click.argument(
-            "dataset_name",
-            type=click.STRING,
-        )
+        @click.argument("dataset_name", type=click.STRING)
         @click.pass_obj
         def dataset_annotate(
             annotator: "BaseAnnotator", dataset_name: str
