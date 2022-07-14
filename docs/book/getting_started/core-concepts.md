@@ -29,7 +29,7 @@ For example, a step might use the outputs from a previous step and thus must wai
 
 You can have multiple pipelines for different purposes. For example, a training pipeline to train and evaluate models and an inference pipeline to serve the model.
 
-Pipelines and steps are defined in code using Python *decorators*.
+Pipelines and steps are defined in code using Python *[decorators](https://www.freecodecamp.org/news/python-decorators-explained-with-examples/)* or *classes*.
 This is where the core business logic and
 value of your work lives, and you will spend most of your time defining these two things. Your code lives inside a Repository, which is the main abstraction within which your project-specific pipelines should live.
 
@@ -99,7 +99,7 @@ What's really cool with using ZenML is you can easily switch your stack from run
 The rest of the code defining your steps and pipelines stays the same, whether it's running on a local machine or a cloud infrastructure of your choice.
 The only change is in the stack and its components.
 
-Below is an illustration showing how the same pipeline on a local machine can be scaled up to run on a cloud infrastructure by switching stacks. You get all the benefits of using cloud infrastructures without any change in your code.
+Below is an illustration showing how the same pipeline on a local machine can be scaled up to run on a full-fledged cloud infrastructure by switching stacks. You get all the benefits of using cloud infrastructures with minimal changes in your code.
 
 ![Running your pipeline in the cloud](../assets/core_concepts/concepts-3.png)
 
@@ -123,7 +123,7 @@ configuration parameters so whether it's an AWS Sagemaker cluster you need to
 run your training on or an Google Cloud container registry you need to connect
 to, ZenML handles the connections between these various parts on your behalf.
 
-## Bits and Pieces
+## Other Bits and Pieces
 
 There are lots of different ways to use ZenML which will depend on your precise
 use case. The following concepts and stack components are things you'll possibly

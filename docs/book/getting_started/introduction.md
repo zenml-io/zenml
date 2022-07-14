@@ -9,12 +9,14 @@ Do you struggle with versioning data, code, and models in your projects?
 Have you had trouble replicating production pipelines and monitoring models in production?
 
 If you answered yes to any, **ZenML** is here to help with all that, and more. 
-![Zenml](../assets/oss-header.svg)
+
+![Zenml](../assets/tailor.gif)
 
 **ZenML** is an extensible, open-source MLOps framework for creating portable, production-ready **MLOps pipelines**. 
 It's built for data scientists, ML Engineers, and MLOps Developers to collaborate as they develop to production.
 **ZenML** has simple, flexible syntax, is **cloud-** and 
-**tool-agnostic**, and has interfaces/abstractions that are catered towards ML workflows.
+**tool-agnostic**, and has interfaces/abstractions that are catered towards ML workflows. 
+ZenML brings together all your favorite tools in one place so you can tailor your workflow to cater your needs.
 
 
 <!-- At its core, ZenML pipelines execute ML-specific workflows from sourcing
@@ -50,10 +52,10 @@ into our [developer guide](../developer-guide/installation.md) that will
 take you from zero to hero in no time and explain the necessary knowledge of 
 **how to use ZenML**.
 
-## **Stacking** - Customize your Stack
+## **Stacking** - Connect Your Favourite Tools
 
 Already ran your first pipeline and want to know about integrations and
-production use cases? Check out [MLOps Stacks](../mlops_stacks/integrations.md). You'll find detailed descriptions of specific
+production use cases? Check out Zenml [integrations](https://zenml.io/integrations). You'll find detailed descriptions of specific
 use cases and features. Learn how to take your 
 MLOps stack from basic to fully-fledged.
 
@@ -72,4 +74,4 @@ The ZenML team and community have put together more resources other than the doc
 
 ## **Community** - Be part of the ZenML family
 
-Can't really find what you want and need help? Join our [Slack group](https://zenml.io/slack-invite/). Ask questions about bugs or specific use cases and get a quick respond from the ZenML core team.
+Can't really find what you want and need help? Join our [Slack group](https://zenml.io/slack-invite/). Ask questions about bugs or specific use cases and get a quick response from the ZenML core team.
