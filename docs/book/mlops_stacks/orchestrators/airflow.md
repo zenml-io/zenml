@@ -51,7 +51,9 @@ all required local resources by running:
 zenml stack up
 ```
 
-This command will start up Airflow on your local machine and print a 
+This command will start up an Airflow server on your local machine
+that's running in the same Python environemnt that you used to
+provision it. When it is finished, it will print a 
 username and password which you can use to login to the Airflow UI
 [here](http://0.0.0.0:8080).
 

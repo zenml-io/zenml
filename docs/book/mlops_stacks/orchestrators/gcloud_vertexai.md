@@ -9,11 +9,17 @@ to run your pipelines.
 ## When to use it
 
 You should use the Vertex orchestrator if:
-* ...
+* you're already using GCP.
+* you're looking for a proven production-grade orchestrator.
+* you're looking for a UI in which you can track your pipeline
+runs.
+* you're looking for a managed solution for running your pipelines.
+* you're looking for a serverless solution for running your pipelines.
 
 ## How to deploy it
 
-...
+Check out our cloud guide [ZenML Cloud Guide](../../cloud-guide/overview.md)
+for information on how to set up the Vertex orchestrator.
 
 ## How to use it
 
@@ -22,17 +28,48 @@ To use the Vertex orchestrator, we need:
     ```shell
     zenml integration install gcp
     ```
+* [Docker](https://www.docker.com) installed and running.
+* [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed.
+* A [remote container registry](../container_registries/overview.md) as part of your stack.
+* The GCP project ID and location in which you want to run your Vertex AI pipelines.
 
 We can then register the orchestrator and use it in our active stack:
 ```shell
 zenml orchestrator register <NAME> \
-    --flavor=vertex
+    --flavor=vertex \
+    --project=<PROJECT_ID> \
+    --location=<GCP_LOCATION>
 
 # Add the orchestrator to the active stack
 zenml stack update -o <NAME>
 ```
 
-TODO: explain how to run a pipeline
+{% hint style="info" %}
+ZenML will build Docker images which include your code and use these
+to run your pipeline steps in Vertex AI. Check out
+[this page](../../developer-guide/advanced-concepts/docker.md)
+if you want to learn more about how ZenML builds these images and
+how you can customize them.
+
+If you decide you need the full flexibility of having a custom base image,
+you can update your existing orchestrator
+```shell
+zenml orchestrator update <NAME> \
+--custom_docker_base_image_name=<IMAGE_NAME>
+```
+or set it when registering a new Vertex orchestrator:
+```shell
+zenml orchestrator register <NAME> \
+--flavor=vertex \
+--custom_docker_base_image_name=<IMAGE_NAME> \
+...
+```
+{% endhint %}
+
+You can now run any ZenML pipeline using the Vertex orchestrator:
+```shell
+python file_that_runs_a_zenml_pipeline.py
+```
 
 A concrete example of using the Vertex orchestrator can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/vertex_ai_orchestration).

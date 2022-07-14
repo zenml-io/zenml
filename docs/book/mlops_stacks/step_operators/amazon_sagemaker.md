@@ -31,7 +31,7 @@ To use the Sagemaker step operator, we need:
 * An IAM role with the correct permissions. See the [deployment section](#how-do-you-deploy-it)
 for detailed instructions.
 * An [AWS container registry](../container_registries/amazon_ecr.md) as part of our stack.
-Take a look [here](TODO) for a guide on how to set that up.
+Take a look [here](../container_registries/amazon_ecr.md) for a guide on how to set that up.
 * The `aws` cli set up and authenticated. Make sure you have the permissions to create 
 and manage Sagemaker runs.
 * An instance type that we want to execute our steps on.
@@ -61,6 +61,29 @@ def trainer(...) -> ...:
     """Train a model."""
     # This step will be executed in Sagemaker.
 ```
+
+{% hint style="info" %}
+ZenML will build Docker images which include your code and use these
+to run your steps in Sagemaker. Check out
+[this page](../../developer-guide/advanced-concepts/docker.md)
+if you want to learn more about how ZenML builds these images and
+how you can customize them.
+
+If you decide you need the full flexibility of having a custom base image,
+you can update your existing step operator
+```shell
+zenml step-operator update <NAME> \
+--base_image=<IMAGE_NAME>
+```
+or set it when registering a new Sagemaker step operator:
+```shell
+zenml step-operator register <NAME> \
+--flavor=sagemaker \
+--base_image=<IMAGE_NAME>
+...
+```
+{% endhint %}
+
 
 A concrete example of using the Sagemaker step operator can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/step_operator_remote_training).
