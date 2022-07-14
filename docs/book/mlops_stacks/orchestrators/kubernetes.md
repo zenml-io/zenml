@@ -13,7 +13,7 @@ You should use the Kubernetes orchestrator if:
 
 ## How to deploy it
 
-...
+[ZenML Cloud Guide](../../cloud-guide/overview.md)
 
 ## How to use it
 

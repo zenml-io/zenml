@@ -7,8 +7,14 @@ ZenML and runs your pipelines locally.
 
 ## When to use it
 
-You should use the local orchestrator if:
-* ...
+The local orchestrator is part of your default stack when you're first 
+getting started with ZenML. Due to it running locally on your machine,
+it requires no additional setup and is easy to use and debug.
+
+You should use the local orchestrator if
+* you're just getting started with ZenML and want to run pipelines
+without setting up any cloud infrastructure.
+* you're writing a new pipeline and want to experiment and debug quickly
 
 ## How to deploy it
 
@@ -24,7 +30,10 @@ zenml orchestrator register <NAME> --flavor=local
 zenml stack update -o <NAME>
 ```
 
-TODO: explain how to run a pipeline
+You can now run any ZenML pipeline using the local orchestrator:
+```shell
+python file_that_runs_a_zenml_pipeline.py
+```
 
 For more information and a full list of configurable attributes of the local orchestrator, check out the 
 [API Docs](https://apidocs.zenml.io/latest/api_docs/orchestrators/#zenml.orchestrators.local.local_orchestrator.LocalOrchestrator).

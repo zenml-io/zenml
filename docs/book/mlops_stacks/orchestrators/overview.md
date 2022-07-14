@@ -2,6 +2,10 @@
 description: Orchestrate Machine Learning pipelines
 ---
 
+<!-- The orchestrator is one of the most critical components of your stack, as it
+defines where the actual pipeline job runs. It controls how and where each
+individual step within a pipeline is executed. Therefore, the orchestrator can
+be used to great effect to scale jobs into production. -->
 ## When to use it
 
 ## Orchestrator Flavors
@@ -23,33 +27,11 @@ use the command:
 zenml orchestrator flavor list
 ```
 
-<!-- The orchestrator is one of the most critical components of your stack, as it
-defines where the actual pipeline job runs. It controls how and where each
-individual step within a pipeline is executed. Therefore, the orchestrator can
-be used to great effect to scale jobs into production. -->
+
 
 
 <!-- # Run your Pipeline on Kubeflow
 
-[Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/introduction/) is a pipeline orchestrator built for machine learning workflows. When developing ML models, you probably develop [your pipelines](../extending-zenml/getting-started.md#pipeline) on your local machine initially as this allows for quicker iteration and debugging. However, at a certain point when you are finished with its design, you might want to transition to a more production-ready setting and deploy the pipeline to a more robust environment.
-
-You can watch a tutorial video of an example that uses a Kubeflow Pipelines stack [here](https://www.youtube.com/watch?v=b5TXRYkdL3w):
-
-{% embed url="https://www.youtube.com/watch?v=b5TXRYkdL3w" %}
-
-Or you can also check out our example of this [here](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow_pipelines_orchestration) .
-
-You could also pull it into your local environment like this:
-
-```shell
-zenml example pull kubeflow_pipelines_orchestration
-```
-
-If you don't want to manually set things up, feel free to run it with this command:
-
-```shell
-zenml example run kubeflow_pipelines_orchestration
-```
 
 ### Pre-requisites
 
@@ -197,17 +179,3 @@ If you made it this far, congratulations! You're one step closer to being produc
 * Transitioned to production by deploying a continuously training pipeline on newly arriving data.
 * All the while retained complete lineage and tracking over parameters, data, code, and metadata.
 
-### Keep going!
-
-There are lot's more things you do in production that you might consider adding to your workflows:
-
-* Adding a step
-  to [automatically deploy the models](../extending-zenml/model-deployers.md) to
-  a REST endpoint.
-* Setting
-  up [a drift detection and validation step](perform-drift-detection.md)
-  to test models before deploying.
-* [Using a secrets manager](manage-your-secrets.md) to store secret keys
-  for use in your pipelines.
-
-ZenML will help with all of these and more. Check out our other guides to learn more! -->
