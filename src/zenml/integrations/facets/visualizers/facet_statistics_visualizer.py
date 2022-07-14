@@ -98,7 +98,7 @@ class FacetStatisticsVisualizer(BaseStepVisualizer):
             EnvironmentError: If magic is True and not in a notebook.
         """
         if magic:
-            if not Environment.in_notebook() or Environment.in_google_colab():
+            if not (Environment.in_notebook() or Environment.in_google_colab()):
                 raise EnvironmentError(
                     "The magic functions are only usable in a Jupyter notebook."
                 )

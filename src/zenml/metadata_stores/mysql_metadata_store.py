@@ -173,7 +173,7 @@ class MySQLMetadataStore(BaseMetadataStore):
             RuntimeError: If you don't have a secrets manager as part of your stack.
         """
         if self.secret:
-            active_stack = Repository().active_stack
+            active_stack = Repository(skip_repository_check=True).active_stack  # type: ignore[call-arg]
             secret_manager = active_stack.secrets_manager
             if secret_manager is None:
                 raise RuntimeError(

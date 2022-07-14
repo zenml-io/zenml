@@ -17,6 +17,7 @@ import json
 import logging
 import os
 import uuid
+from pathlib import PurePath
 from typing import Any, Dict, Optional, cast
 
 from packaging import version
@@ -360,7 +361,7 @@ class GlobalConfiguration(
     def copy_active_configuration(
         self,
         config_path: str,
-        load_config_path: Optional[str] = None,
+        load_config_path: Optional[PurePath] = None,
     ) -> "GlobalConfiguration":
         """Create a copy of the global config, the active repository profile and the active stack using a different configuration path.
 
@@ -433,9 +434,18 @@ class GlobalConfiguration(
         # if a custom load config path is specified, use it to replace the
         # current store local path in the profile URL
         if load_config_path:
-            profile.store_url = store.url.replace(
-                str(config_copy.config_directory), load_config_path
-            )
+            store_path = store.get_path_from_url(store.url)
+            if store_path:
+                relative_store_path = PurePath(store_path).relative_to(
+                    config_copy.config_directory
+                )
+                new_store_path = str(load_config_path / relative_store_path)
+                profile.store_url = store.get_local_url(new_store_path)
+            else:
+                # the store url is not a local URL. This only happens
+                # in case of a REST ZenStore, in which case we don't
+                # want to modify the URL
+                profile.store_url = store.url
 
         config_copy._write_config()
         return config_copy
