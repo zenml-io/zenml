@@ -86,9 +86,7 @@ See the [API Docs](https://apidocs.zenml.io/latest/api_docs/steps/) for
 more information on which attributes and methods the `StepContext` provides.
 {% endhint %}
 
-
-
-## Fetching Historic Runs
+## Fetching previous runs during pipeline execution
 
 One of the most common usecases of the `StepContext` is to query the metadata store
 for a list of all previous pipeline runs, e.g., in order to compare a newly

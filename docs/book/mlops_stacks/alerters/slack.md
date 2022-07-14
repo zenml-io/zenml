@@ -33,7 +33,7 @@ Before you can use the `SlackAlerter`, you first need to install ZenML's
 `slack` integration:
 
 ```shell
-zenml integration install slack
+zenml integration install slack -y
 ```
 
 {% hint style="info" %}

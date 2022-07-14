@@ -29,3 +29,10 @@ visualization tools like TensorBoard.
 allow you to access the repository (including the stack information) from
 within a pipeline step. This can, for instance, be used to load the best 
 performing prior model to compare newly trained models against.
+* [Step Environments](environment.md) can be used to get further information 
+about the environment where the step is executed, such as the system it is
+running on, the Python version, or the name of the current step, pipeline, and
+run.
+* [Docker Image Management](docker.md) is required for some remote 
+orchestrators and step operators to run your pipeline code in an isolated and 
+well-defined environment.

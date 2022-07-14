@@ -14,7 +14,7 @@ You can configure your pipelines at runtime in the following ways:
 * [Configuring from within code](#configuring-from-within-code): 
 Do this when you are quickly iterating on your code and don't want to change
 your actual step code. This is useful in the development phase.
-* [Configuring with YAML config files](#configuring-from-the-cli-and-a-yaml-config-file): 
+* [Configuring with YAML config files](#configuring-with-yaml-config-files): 
 Do this when you want to launch pipeline runs without modifying the code at all.
 This is the recommended way for production scenarios.
 
@@ -72,17 +72,18 @@ is also supported as an attribute type in the `BaseStepConfig`.
 
 ## Configuring with YAML config files
 
-In addition to setting parameters for your pipeline steps in code as seen above,
-ZenML also allows you to use a configuration [YAML](https://yaml.org) file.
+For production scenarios where you want to launch pipeline runs without
+modifying the code at all, you can also configure your pipeline runs using 
+[YAML](https://yaml.org) config files.
 
 There are two ways how YAML config files can be used:
-- [Defining step parameters only](#defining-step-parameters-only) and setting
+- [Defining step parameters in YAML](#defining-step-parameters-in-yaml) and setting
 the path to the config with `pipeline.with_config()` before calling
 `pipeline.run()`,
-- [Configuring the entire pipeline at runtime](#configuring-the-entire-pipeline-at-runtime)
+- [Configuring the entire pipeline at runtime in YAML](#configuring-the-entire-pipeline-at-runtime-in-yaml)
 and executing it with `zenml pipeline run`.
 
-### Defining step parameters only
+### Defining step parameters in YAML
 
 If you only want to configure step parameters as above, you can do so with a
 minimalistic configuration YAML file, which you use to configure a pipleline
@@ -124,7 +125,7 @@ provide `gamma` via a config file before running the pipeline, instead of
 explicitly passing a `SVCTrainerStepConfig` object during the step creation.
 {% endhint %}
 
-### Configuring the entire pipeline at runtime
+### Configuring the entire pipeline at runtime in YAML
 
 For production settings, you might want to use config files not only for your
 parameters, but even for choosing what code gets executed.

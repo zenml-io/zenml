@@ -107,9 +107,9 @@ first_pipeline_instance = first_pipeline(
 
 {% hint style="info" %}
 Currently, you cannot use the same step twice in a pipeline because step names
-must be unique. If you would like to reuse a step, use the `clone_step()` 
-utility function from `zenml.steps.utils` to create a copy of the step with a
-new name.
+must be unique. If you would like to reuse a step, use the 
+[`clone_step()`](https://apidocs.zenml.io/0.10.0/api_docs/steps/#zenml.steps.utils.clone_step)
+utility function to create a copy of the step with a new name.
 {% endhint %}
 
 You can then execute your pipeline instance with the `.run()` method:

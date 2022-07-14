@@ -17,6 +17,18 @@ Explicit path to the ZenML repository:
 ZENML_REPOSITORY_PATH
 ```
 
+Name of the active profile, see 
+[Setting Stacks and Profiles with Environment Variables](../developer-guide/stacks-profiles-repositories/stack-profile-environment-variables.md):
+```
+ZENML_ACTIVATED_PROFILE
+```
+
+Name of the active stack, see 
+[Setting Stacks and Profiles with Environment Variables](../developer-guide/stacks-profiles-repositories/stack-profile-environment-variables.md):
+```
+ZENML_ACTIVATED_STACK
+```
+
 Setting to `false` disables analytics:
 ```
 ZENML_ANALYTICS_OPT_IN=true

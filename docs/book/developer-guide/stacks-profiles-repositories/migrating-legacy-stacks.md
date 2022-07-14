@@ -6,8 +6,10 @@ description: How to migrate legacy stacks from zenml<0.7.
 
 Traditionally, stack configurations were stored locally in the repository root
 directory - i.e. the local `.zen` folder that is created by the `zenml init`
-command. The ZenML 0.7.0 release moves stacks outside of repository root
-folders into the [Global Configuration](../resources/global_config.md).
+command. The ZenML 
+[0.7.0 release](https://github.com/zenml-io/zenml/blob/main/RELEASE_NOTES.md#070)
+moved stacks outside of repository root folders into the 
+[Global Configuration](../resources/global_config.md).
 The profile concept was also introduced to replace the repository as the
 concept that manages and stores the stack configurations.
 

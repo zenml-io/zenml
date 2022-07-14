@@ -56,7 +56,12 @@ for the next release.
 
 {% hint style="warning" %}
 As the name suggests, the new features in the `develop` branch are still under
-development and might not be as polished as the final released version. 
+development and might not be as polished as the final released version.
+
+Furthermore, you might need to build custom docker images for remote
+orchestrators like [KubeFlow](../mlops_stacks/orchestrators/kubeflow.md) when
+installing from develop. See [Docker Image Management](./advanced-concepts/docker.md)
+for more details on how to do that.
 
 Use at your own risk; no guarantees given!
 {% endhint %}

@@ -4,24 +4,30 @@ description: How to start, stop, provision, and deprovision stacks and stack com
 
 # Managing Stack Component States
 
-Some stack components
-come with built-in functionality for provisioning, deprovisioning, starting,
-or stopping the underlying infrastructure.
+Some stack components come with built-in daemons for connecting to the
+underlying remote infrastructure. These stack components expose 
+functionality for provisioning, deprovisioning, starting, or stopping the 
+corresponding daemons.
 
-For such components, you can manage the state using the 
+{% hint style="info" %}
+See the advanced section on [Services](../advanced-concepts/manage-external-services.md)
+for more information on daemons.
+{% endhint %}
+
+For such components, you can manage the daemon state using the 
 `zenml <STACK_COMPONENT> up` and `zenml <STACK_COMPONENT> down` commands.
 Alternatively, you can also use `zenml stack up` or `zenml stack down` to 
 manage the state of your entire stack:
 
 ```shell
 zenml stack up  # Provision and start all stack components
-zenml artifact-store up  # Provision and start the artifact store only
+zenml metadata-store up  # Provision and start the metadata store only
 
 zenml stack down  # Stop all stack components
-zenml artifact-store down  # Stop the artifact store only
+zenml metadata-store down  # Stop the metadata store only
 
 zenml stack down --force  # Stop and deprovision all stack components
-zenml artifact-store down --force  # Stop and deprovision the artifact store only
+zenml metadata-store down --force  # Stop and deprovision the metadata store only
 ```
 
 ## Defining States of Custom Components

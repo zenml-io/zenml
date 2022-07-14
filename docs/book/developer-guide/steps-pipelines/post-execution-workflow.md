@@ -49,8 +49,8 @@ pipelines = repo.get_pipelines()
 # now you can get pipelines by index
 pipeline_with_latest_initial_run_time = pipelines[-1]
 
-# or get one pipeline by name and/or stack key
-pipeline_x = repo.get_pipeline(pipeline_name=..., stack_key=...)
+# or get one pipeline by name
+pipeline_x = repo.get_pipeline(pipeline_name=...)
 ```
 
 {% hint style="info" %}
@@ -76,6 +76,12 @@ last_run = runs[-1]
 # or get a specific run by name
 run = pipeline_x.get_run(run_name=...)
 ```
+
+{% hint style="warning" %}
+Calling `pipeline.runs` can currently be very slow when using remote metadata
+stores as all run data need to be transfered from the cloud to the local
+machine. 
+{% endhint %}
 
 ### Steps
 

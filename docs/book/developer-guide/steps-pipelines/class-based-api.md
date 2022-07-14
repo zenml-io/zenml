@@ -130,7 +130,7 @@ first_pipeline_instance.run()
 As you saw in the example above, you can even mix and match the two APIs.
 Choose whichever style feels most natural to you!
 
-## Advanced Usage: Using decorators to enhance BaseStep subclasses
+## Advanced Usage: Using decorators to give your steps superpowers
 
 As you will learn later, ZenML has many [integrations](../../mlops_stacks/integrations.md)
 that allow you to add functionality like automated experiment tracking to your steps.
