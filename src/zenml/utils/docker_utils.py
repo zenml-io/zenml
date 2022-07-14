@@ -15,6 +15,7 @@
 
 import json
 import os
+import sys
 from typing import AbstractSet, Any, Dict, Iterable, List, Optional, cast
 
 import pkg_resources
@@ -29,7 +30,10 @@ from zenml.logger import get_logger
 from zenml.utils import string_utils
 from zenml.utils.io_utils import read_file_contents_as_string
 
-DEFAULT_BASE_IMAGE = f"zenmldocker/zenml:{zenml.__version__}"
+DEFAULT_BASE_IMAGE = (
+    f"zenmldocker/zenml:{zenml.__version__}-"
+    f"py{sys.version_info.major}.{sys.version_info.minor}"
+)
 CONTAINER_ZENML_CONFIG_DIR = ".zenconfig"
 
 logger = get_logger(__name__)

@@ -13,11 +13,11 @@
 #  permissions and limitations under the License.
 """Utility functions for the orchestrator."""
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 import tfx.orchestration.pipeline as tfx_pipeline
 from tfx.orchestration.portable import data_types
-from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
+from tfx.proto.orchestration.pipeline_pb2 import ContextSpec, PipelineNode
 
 from zenml.logger import get_logger
 from zenml.steps import BaseStep
@@ -25,6 +25,7 @@ from zenml.steps import BaseStep
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
     from zenml.stack import Stack
+
 
 logger = get_logger(__name__)
 
@@ -96,3 +97,29 @@ def get_cache_status(
         return True
     else:
         return False
+
+
+def add_context_to_node(
+    pipeline_node: PipelineNode,
+    type_: str,
+    name: str,
+    properties: Dict[str, str],
+) -> None:
+    """Adds a new context to a TFX protobuf pipeline node.
+
+    Args:
+        pipeline_node: A tfx protobuf pipeline node
+        type_: The type name for the context to be added
+        name: Unique key for the context
+        properties: dictionary of strings as properties of the context
+    """
+    # Add a new context to the pipeline
+    context: ContextSpec = pipeline_node.contexts.contexts.add()
+    # Adding the type of context
+    context.type.name = type_
+    # Setting the name of the context
+    context.name.field_value.string_value = name
+    # Setting the properties of the context depending on attribute type
+    for key, value in properties.items():
+        c_property = context.properties[key]
+        c_property.field_value.string_value = value

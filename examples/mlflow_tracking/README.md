@@ -58,7 +58,30 @@ def tf_trainer(
     
     return model
 ```
+You can also log parameters, metrics and artifacts into nested runs, which 
+will be children of the pipeline run. You only need to add the parameter 
+`nested=True` to the decorator, like so:
 
+```python
+from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
+
+@enable_mlflow(nested=True)
+@step
+def tf_trainer(
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+) -> tf.keras.Model:
+    """Train a neural net from scratch to recognize MNIST digits return our
+    model or the learner"""
+    
+    # compile model
+
+    mlflow.tensorflow.autolog()
+    
+    # train model
+    
+    return model
+```
 If you want to use this decorator with our class-based API, simply decorate your step class as follows:
 
 ```python
