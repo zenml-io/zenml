@@ -90,7 +90,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         """
         return f"http://localhost:{self.port}"
 
-    def get_annotation_url(self, dataset_name: str) -> str:
+    def get_url_for_dataset(self, dataset_name: str) -> str:
         """Gets the URL of the annotation interface for the given dataset.
 
         Args:
@@ -149,7 +149,8 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
             dataset_name: The name of the dataset.
 
         Returns:
-            A dictionary containing the statistics of the dataset.
+            A tuple containing (labeled_task_count, unlabeled_task_count) for
+                the dataset.
 
         Raises:
             IndexError: If the dataset does not exist.
@@ -477,7 +478,8 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         # project = self._dataset_name_to_project(dataset_name)
         self._get_client()
         project = self.get_dataset(dataset_name=dataset_name)
-        return project.export_tasks(export_type=output_format)  # type: ignore[no-any-return]
+        # type: ignore[no-any-return]
+        return project.export_tasks(export_type=output_format)
 
     def get_labeled_data(self, **kwargs: Any) -> Any:
         """Gets the labeled data for the given dataset.

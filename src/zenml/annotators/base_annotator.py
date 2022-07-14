@@ -42,7 +42,7 @@ class BaseAnnotator(StackComponent, ABC):
         """
 
     @abstractmethod
-    def get_annotation_url(self, dataset_name: str) -> str:
+    def get_url_for_dataset(self, dataset_name: str) -> str:
         """Gets the URL of the annotation interface for a specific dataset.
 
         Args:
@@ -76,7 +76,8 @@ class BaseAnnotator(StackComponent, ABC):
             dataset_name: name of the dataset.
 
         Returns:
-            The statistics of a dataset.
+            A tuple containing (labeled_task_count, unlabeled_task_count) for
+                the dataset.
         """
 
     @abstractmethod

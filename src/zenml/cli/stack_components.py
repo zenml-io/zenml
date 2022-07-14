@@ -1410,10 +1410,7 @@ def register_annotator_subcommands() -> None:
             )
 
         @dataset.command("stats")
-        @click.argument(
-            "dataset_name",
-            type=click.STRING,
-        )
+        @click.argument("dataset_name", type=click.STRING)
         @click.pass_obj
         def dataset_stats(
             annotator: "BaseAnnotator", dataset_name: str
@@ -1425,10 +1422,8 @@ def register_annotator_subcommands() -> None:
                 dataset_name: The name of the dataset.
             """
             try:
-                (
-                    labeled_task_count,
-                    unlabeled_task_count,
-                ) = annotator.get_dataset_stats(dataset_name)
+                stats = annotator.get_dataset_stats(dataset_name)
+                labeled_task_count, unlabeled_task_count = stats
             except IndexError:
                 cli_utils.error(
                     f"Dataset {dataset_name} does not exist. Please use `zenml annotator dataset list` to "
@@ -1447,10 +1442,7 @@ def register_annotator_subcommands() -> None:
             )
 
         @dataset.command("delete")
-        @click.argument(
-            "dataset_name",
-            type=click.STRING,
-        )
+        @click.argument("dataset_name", type=click.STRING)
         @click.option(
             "--all",
             "-a",
@@ -1511,7 +1503,9 @@ def register_annotator_subcommands() -> None:
             )
             try:
                 annotator.get_dataset(dataset_name=dataset_name)
-                annotator.launch(url=annotator.get_annotation_url(dataset_name))
+                annotator.launch(
+                    url=annotator.get_url_for_dataset(dataset_name)
+                )
             except ValueError as e:
                 raise ValueError("Dataset does not exist.") from e
 
