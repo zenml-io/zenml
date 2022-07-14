@@ -1,3 +1,8 @@
+# first run: train a model using some sample data
+
+# if there are new annotations, finetune a pretrained model
+
+
 #  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,20 +33,6 @@ from zenml.integrations.label_studio.label_studio_utils import (
 from zenml.logger import get_logger
 from zenml.steps import step
 from zenml.steps.step_context import StepContext
-
-
-from __future__ import print_function 
-from __future__ import division
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import numpy as np
-import torchvision
-from torchvision import datasets, models, transforms
-import matplotlib.pyplot as plt
-import time
-import os
-import copy
 
 IMAGE_REGEX_FILTER = ".*(jpe?g|png)"
 
@@ -78,3 +69,4 @@ def fine_tuning_step(
 
         learn = vision_learner(dls, old_model, metrics=error_rate)
         learn.fine_tune(1)
+
