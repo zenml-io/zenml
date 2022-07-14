@@ -2,8 +2,6 @@
 description: How to use step fixtures to access the active ZenML stack from within a step.
 ---
 
-# Step Fixtures
-
 In general, when defining steps, you usually can only supply inputs that have
 been output by previous steps. However, there are two exceptions:
 

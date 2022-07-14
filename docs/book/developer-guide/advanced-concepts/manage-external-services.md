@@ -2,8 +2,6 @@
 description: How to manage external, longer-lived services.
 ---
 
-# Services
-
 ZenML interacts with external systems (e.g. prediction services, monitoring
 systems, visualization services) via a so-called `Service` abstraction.
 The concrete implementation of this abstraction deals with functionality

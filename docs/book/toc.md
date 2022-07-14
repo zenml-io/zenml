@@ -27,12 +27,12 @@
   * [Managing Stack Component States](developer-guide/stacks-profiles-repositories/stack-state-management.md)
   * [Setting Stacks and Profiles with Environment Variables](developer-guide/stacks-profiles-repositories/stack-profile-environment-variables.md)
   * [Migrating Legacy Stacks to ZenML Profiles](developer-guide/stacks-profiles-repositories/migrating-legacy-stacks.md)
-* [Advanced Concepts](developer-guide/advanced-concepts/overview.md)
-  * [Materializers](developer-guide/advanced-concepts/materializer.md)
-  * [Services](developer-guide/advanced-concepts/manage-external-services.md)
-  * [Step Contexts and Step Fixtures](developer-guide/advanced-concepts/step-fixtures.md)
-  * [Step Environments](developer-guide/advanced-concepts/environment.md)
-  * [Docker Image Management](developer-guide/advanced-concepts/docker.md)
+* [Advanced Usage](developer-guide/advanced-concepts/overview.md)
+  * [Passing Custom Data Types through Steps](developer-guide/advanced-concepts/materializer.md)
+  * [Accessing the Active Stack within Steps](developer-guide/advanced-concepts/step-fixtures.md)
+  * [Accessing Global Infos within Steps](developer-guide/advanced-concepts/environment.md)
+  * [Managing External Services](developer-guide/advanced-concepts/manage-external-services.md)
+  * [Managing Docker Images](developer-guide/advanced-concepts/docker.md)
 
 ## MLOps Stacks
 
