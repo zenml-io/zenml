@@ -98,7 +98,7 @@
   * [Facets](mlops_stacks/data_validators/facets.md)
   * [How to develop a custom data validator](mlops_stacks/data_validators/custom.md)
 * [Alerters](mlops_stacks/alerters/overview.md)
-  * [Slack](mlops_stacks/alerters/slack.md)
+  * [Slack Alerter](mlops_stacks/alerters/slack.md)
   * [How to develop a custom alerter](mlops_stacks/alerters/custom.md)
 * [Feature Stores](mlops_stacks/feature_stores/overview.md)
   * [Feast](mlops_stacks/feature_stores/feast.md)
