@@ -435,13 +435,15 @@ class GlobalConfiguration(
         # current store local path in the profile URL
         if load_config_path:
             store_path = store.get_path_from_url(store.url)
-            assert store_path
-
-            relative_store_path = PurePath(store_path).relative_to(
-                config_copy.config_directory
-            )
-            new_store_path = str(load_config_path / relative_store_path)
-            profile.store_url = store.get_local_url(new_store_path)
+            if store_path:
+                relative_store_path = PurePath(store_path).relative_to(
+                    config_copy.config_directory
+                )
+                new_store_path = str(load_config_path / relative_store_path)
+                profile.store_url = store.get_local_url(new_store_path)
+            else:
+                profile.store_url = store.url
+            
 
         config_copy._write_config()
         return config_copy
