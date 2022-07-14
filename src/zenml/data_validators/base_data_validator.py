@@ -46,7 +46,7 @@ class BaseDataValidator(StackComponent):
                 "The active stack needs to have a data validator component "
                 "registered to be able to run data validation actions. You "
                 "can create a new stack with a data validator component or "
-                "update your active stack to add this component, e.g.:\n\n"
+                "update your active stack to add this component e.g.:\n\n"
                 "  `zenml data-validator register data_validator "
                 "--flavor=FLAVOR ...`\n"
                 "  `zenml stack register stack-name -dv data_validator ...`\n"
