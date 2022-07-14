@@ -30,7 +30,7 @@ from zenml.steps import step
 from zenml.steps.step_context import StepContext
 
 
-from __future__ import print_function 
+from __future__ import print_function
 from __future__ import division
 import torch
 import torch.nn as nn
@@ -42,25 +42,40 @@ import matplotlib.pyplot as plt
 import time
 import os
 import copy
+from pathlib import Path
 
 IMAGE_REGEX_FILTER = ".*(jpe?g|png)"
 
 logger = get_logger(__name__)
 
+initial_training_path = str(
+    Path(__file__).parent.absolute().parent.absolute()
+    / "assets" / "images" / "initial_training"
+)
+finetuning_path = str(
+    Path(__file__).parent.absolute().parent.absolute()
+    / "assets" / "images" / "finetuning"
+)
 
-def is_cat(x):
-    # NEEDED FOR FASTAI MODEL IMPORT (when / if we use it)
-    # return labels[x] == "cat"
-    return True
+# Top level data directory. Here we assume the format of the directory conforms
+#   to the ImageFolder structure
+data_dir = initial_training_path
+model_name = "squeezenet"
+num_classes = 2
+batch_size = 2
+num_epochs = 5
+
+# Flag for feature extracting. When False, we finetune the whole model,
+#   when True we only update the reshaped layer params
+feature_extract = True
 
 
 @step
 def fine_tuning_step(
-    old_model: Learner,
     training_images: List[str],
     labels: List[Dict[str, str]],
     context: StepContext,
-) -> Learner:
+) -> PyTorchModel:
     with tempfile.TemporaryDirectory() as temp_dir:
         for url in training_images:
             download_azure_image(url, temp_dir.name)
