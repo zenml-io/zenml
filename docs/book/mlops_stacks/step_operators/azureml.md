@@ -61,6 +61,28 @@ def trainer(...) -> ...:
     # This step will be executed in AzureML.
 ```
 
+{% hint style="info" %}
+ZenML will build Docker images which include your code and use these
+to run your steps in AzureML. Check out
+[this page](../../developer-guide/advanced-concepts/docker.md)
+if you want to learn more about how ZenML builds these images and
+how you can customize them.
+
+If you decide you need the full flexibility of having a custom base image,
+you can update your existing step operator
+```shell
+zenml step-operator update <NAME> \
+--docker_base_image=<IMAGE_NAME>
+```
+or set it when registering a new AzureML step operator:
+```shell
+zenml step-operator register <NAME> \
+--flavor=sagemaker \
+--docker_base_image=<IMAGE_NAME>
+...
+```
+{% endhint %}
+
 A concrete example of using the AzureML step operator can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/step_operator_remote_training).
 
