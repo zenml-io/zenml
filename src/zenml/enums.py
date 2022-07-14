@@ -90,7 +90,6 @@ class ContainerRegistryFlavor(StrEnum):
     DOCKERHUB = "dockerhub"
     GCP = "gcp"
     AZURE = "azure"
-    GITLAB = "gitlab"
 
 
 class CliCategories(StrEnum):

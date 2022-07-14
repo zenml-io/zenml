@@ -37,7 +37,6 @@ use of the additional URI validations.
 | [GCPContainerRegistry](./gcloud_gcr.md)       | `gcp`       | _built-in_     | gcr.io/zenml |
 | [AzureContainerRegistry](./azure.md)     | `azure`    | _built-in_     | zenml.azurecr.io |
 | [GitHubContainerRegistry](./github.md)    | `github`    | _built-in_     | ghcr.io/zenml |
-| [GitLabContainerRegistry](./gitlab.md)    | `gitlab`    | _built-in_     | TODO |
 | [AWSContainerRegistry](./amazon_ecr.md)       | `aws`       | `aws`            | 123456789.dkr.ecr.us-east-1.amazonaws.com |
 
 If you would like to see the available flavors of container registries, you can 
