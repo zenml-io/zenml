@@ -31,6 +31,7 @@
   * [Materializers](developer-guide/advanced-concepts/materializer.md)
   * [Services](developer-guide/advanced-concepts/manage-external-services.md)
   * [Step Contexts and Step Fixtures](developer-guide/advanced-concepts/step-fixtures.md)
+  * [Step Environments](developer-guide/advanced-concepts/environment.md)
   * [Docker Image Management](developer-guide/advanced-concepts/docker.md)
 
 ## MLOps Stacks
