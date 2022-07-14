@@ -1,89 +1,12 @@
 ---
-description: Implement end-to-end ML workflows with Continuous Training and Deployment.
+description: Make your ML Models available to serve real-time predictions with Model Deployers.
 ---
 
-- `What is it, what does it do`
-- `Why would you want to use it`
-- `When should you start adding this to your stack`
-- `Overview of flavors, tradeoffs, when to use which flavor (table)`
+Models Deployment is the process of making a machine learning model available to make predictions and decisions on real world data. Getting predictions from trained models can be done in different ways depending on the use-case, a batch prediction is used to generate prediction for a large amount of data at once, while a real-time prediction is used to generate predictions for a single data point at a time.
 
-# Continuous Training and Continuous Deployment (CT/CD)
+With ZenML you can achieve batch prediction by building a pipeline that generates predictions for a large amount of data at once. For the real-time prediction use-case you can use model deployers.
 
-As an organization develops across
-the [MLOps maturity model](https://docs.microsoft.com/en-us/azure/architecture/example-scenario/mlops/mlops-maturity-model)
-,
-the terms Continuous Training and Continuous Deployment (CT/CD) get more
-relevant.
-
-- Continuous Training refers to the paradigm where a team deploys training
-  pipelines that run automatically to train
-  models on
-  new (fresh) data. (e.g. every two weeks, take the latest data from an API, and
-  train a new model on it.)
-- Continuous Deployment refers to the paradigm where newly trained models are
-  automatically deployed to a prediction
-  service/server, when a criterion in production is fulfilled (e.g. if a trained
-  model has a certain accuracy, or
-  overall performs better than the previous one, deploy it in production.)
-
-ZenML allows both paradigms with [Schedules](../core-concepts.md)
-, [Model Deployers](../core-concepts.md#model-deployer)
-and [Services](../core-concepts.md#service).
-
-## Setting a pipeline schedule for Continuous Training (CT)
-
-ZenML supports running pipelines on a schedule as follows:
-
-```python
-import datetime
-from datetime import timedelta
-from zenml.pipelines import Schedule
-
-# Create a schedule to run a pipeline every minute for the next ten minutes
-schedule = Schedule(
-    start_time=datetime.now(),
-    end_time=datetime.now() + timedelta(minutes=10),
-    interval_second=60,
-)
-
-# Run the pipeline on a schedule
-my_pipeline(
-    ...  # steps
-).run(schedule=schedule)
-```
-
-The above deploys a pipeline, potentially on
-a [production stack](execute-pipelines-in-cloud.md), on a defined schedule. If the
-pipeline has a well-defined data loading/importing step, then one can deploy it
-to run and train new models on fresh
-data
-on a regular basis. This enables Continuous Training with ZenML.
-
-## Interacting with services for Continuous Deployment (CD)
-
-Continuous Training is necessary in a mature MLOps setting, but Continuous
-Deployment completes the picture. Continuous
-Deployment
-is also interesting because it involves interacting with systems that are
-longer-lived than a pipeline run.
-
-ZenML interacts with such external systems (e.g. like prediction servers)
-through
-the `Model Deployer` abstraction. The concrete implementation of this
-abstraction
-deals with functionality concerning the life-cycle management and tracking of
-external model deployment servers (e.g. processes, containers, Kubernetes
-deployments etc.), which are represented in ZenML using another
-abstraction: `Services`.
-
-The first thing needed to be able to deploy machine learning models to external
-model serving platforms with ZenML in a continuous deployment manner is to have
-a Model Deployer registered as part of your ZenML Stack. MLflow and Seldon
-Core are two examples of Model Deployers already provided by ZenML as an
-integration, with many other Model Deployers to follow. The Model
-Deployer abstraction is also meant to be straight-forward to extend by anyone
-who wishes to implement their own flavor and integrate ZenML with their model
-serving tool of choice.
+Model deployers are stack components responsible for online model serving. Online serving is the process of hosting and loading machine-learning models as part of a managed web service and providing access to the models through an API endpoint like HTTP or GRPC. Once deployed, you can send inference requests to the model through the web service's API and receive fast, low-latency responses.
 
 There are three major roles that a Model Deployer plays in a ZenML Stack:
 
@@ -276,115 +199,40 @@ of continuously deploying models to an external server and saving the Service
 configuration into the Artifact Store, where they can be loaded at a later time
 and re-create the initial conditions used to serve a particular model.
 
-You can see concrete examples of using a Model Deployer and model deployment
-builtin steps to implement a continuous training and continuous deployment
-pipeline with the
-[MLflow deployment](https://github.com/zenml-io/zenml/tree/main/examples/mlflow_deployment)
-and the
-[Seldon Core deployment](https://github.com/zenml-io/zenml/tree/main/examples/seldon_deployment)
-examples.
+## When to use it
 
-Following are some code snippets extracted from the above mentioned examples
-that
-give a quick glimpse into using the MLflow and Seldon Core standard model
-deployer steps:
+The model deployers are optional components in the ZenML stack. They are used to
+deploy machine learning models to a target environment either a development (local) 
+or a production (Kubernetes), the model deployers are mainly used to deploy models 
+for real time inference use cases. With the model deployers and other stack components,
+you can build pipelines that are continuously trained and deployed to a production.
 
-```python
-from zenml.integrations.constants import MLFLOW, TENSORFLOW
-from zenml.pipelines import pipeline
-from zenml.integrations.mlflow.steps import (
-    MLFlowDeployerConfig,
-    mlflow_model_deployer_step,
-)
+## Model Deployers Flavors
 
+ZenML comes with a `local` MLFlow model deployer which is a simple model deployer that
+deploys models to a local MLFlow server. Additional model deployers that can be used
+to deploy models on production environments are provided by integrations:
+
+| Model Deployer | Flavor | Integration | Notes             |
+|----------------|--------|-------------|-------------------|
+| [MLFlow](./mlflow.md) | `mlflow` | `mlflow` | Deploys ML Model locally |
+| [Seldon Core](./seldon.md) | `seldon` | `seldon Core` | Built on top of Kubernetes to deploy models for production grade environment |
+| [KServe](./kserve.md) | `kserve` | `kserve` | Kubernetes based model deployment framework |
+| [Custom Implementation](./custom.md) | _custom_ |  | Extend the Artifact Store abstraction and provide your own implementation |
+
+{% hint style="info" %}
+Every model deployer may have different attributes that must be configured in order to
+interact with the model serving tool, framework or platform (e.g. hostnames, URLs, references to credentials, other client related configuration parameters). The following example shows the configuration of the MLFlow 
+and Seldon Core model deployers:
+
+```shell
+# Configure MLFlow model deployer
+zenml model-deployer register mlflow --flavor=mlflow
+
+# Configure Seldon Core model deployer
+zenml model-deployer register seldon --flavor=seldon \
+--kubernetes_context=zenml-eks --kubernetes_namespace=zenml-workloads \
+--base_url=http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com
 ...
-
-
-@pipeline(required_integrations=[MLFLOW, TENSORFLOW])
-def continuous_deployment_pipeline(
-        importer,
-        normalizer,
-        trainer,
-        evaluator,
-        deployment_trigger,
-        model_deployer,
-):
-    x_train, y_train, x_test, y_test = importer()
-    x_trained_normed, x_test_normed = normalizer(x_train=x_train, x_test=x_test)
-    model = trainer(x_train=x_trained_normed, y_train=y_train)
-    accuracy = evaluator(x_test=x_test_normed, y_test=y_test, model=model)
-    deployment_decision = deployment_trigger(accuracy=accuracy)
-    model_deployer(deployment_decision, model)
-
-
-...
-
-# Initialize a continuous deployment pipeline
-deployment = continuous_deployment_pipeline(
-    ...,
-    model_deployer = mlflow_model_deployer_step(
-        config=MLFlowDeployerConfig(model_name="model", workers=3, timeout=20))
-)
-
-...
-
-deployment.run()
 ```
-
-```python
-from zenml.integrations.constants import SELDON, TENSORFLOW, SKLEARN
-from zenml.pipelines import pipeline
-from zenml.integrations.seldon.services import SeldonDeploymentConfig
-from zenml.integrations.seldon.steps import (
-    SeldonDeployerStepConfig,
-    seldon_model_deployer_step,
-)
-
-...
-
-
-@pipeline(required_integrations=[SELDON, TENSORFLOW, SKLEARN])
-def continuous_deployment_pipeline(
-    importer,
-    normalizer,
-    trainer,
-    evaluator,
-    deployment_trigger,
-    model_deployer,
-):
-    # Link all the steps artifacts together
-    x_train, y_train, x_test, y_test = importer()
-    x_trained_normed, x_test_normed = normalizer(x_train=x_train, x_test=x_test)
-    model = trainer(x_train=x_trained_normed, y_train=y_train)
-    accuracy = evaluator(x_test=x_test_normed, y_test=y_test, model=model)
-    deployment_decision = deployment_trigger(accuracy=accuracy)
-    model_deployer(deployment_decision, model)
-
-
-...
-
-# Initialize a continuous deployment pipeline run
-deployment = continuous_deployment_pipeline(
-    ...,
-    model_deployer = seldon_model_deployer_step(
-        config=SeldonDeployerStepConfig(
-            service_config=SeldonDeploymentConfig(
-                model_name="model",
-                replicas=1,
-                implementation="SKLEARN_SERVER",
-                secret_name="seldon-init-container-secret",
-            ),
-            timeout=120,
-        ))
-)
-
-deployment.run()
-```
-
-The model deployment Service can also be used to interact with a model
-prediction server with the following interface:
-
-```python
-# sends data to prediction service with a unified interface
-my_deployment_service.predict(my_data)
-```
+{% endhint %}
