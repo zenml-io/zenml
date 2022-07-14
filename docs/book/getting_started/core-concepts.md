@@ -91,17 +91,19 @@ Having these components in your stack supercharges your pipeline for production.
 
 For other stack components check out this [page](../mlops_stacks/categories.md).
 
-## Cloud Training, Deployment and Monitoring
-We've seen how to run a pipeline locally. But that is rarely the case in production.
+## Switching Stacks to Scale Up
+We've seen how to run a pipeline locally. But that is rarely enough in production machine learning which typically involves cloud infrastructure.
 
-When you are ready to switch out your infrastructure and the components used as
-part of your machine learning workflow, you can do so with a single CLI
-command that switches out your stack. The code defining your steps and pipelines
-stays the same, but it gets run in whatever cloud infrastructure you've set up
-in your custom stack; all you change is the stack you're using and your pipeline
-code gets run someplace different.
+What's really cool with using ZenML is you can easily switch your stack from running on a local machine to running on the cloud with a single CLI command.
+
+The rest of the code defining your steps and pipelines stays the same, whether it's running on a local machine or a cloud infrastructure of your choice.
+The only change is in the stack and its components.
+
+Below is an illustration showing how the same pipeline on a local machine can be scaled up to run on a cloud infrastructure by switching stacks. You get all the benefits of using cloud infrastructures without any change in your code.
 
 ![Running your pipeline in the cloud](../assets/core_concepts/concepts-3.png)
+
+## Cloud Training, Deployment and Monitoring
 
 Running workflows in the cloud often requires certain custom behaviors, so ZenML
 offers a number of extra Stack Components that handle these common use cases.

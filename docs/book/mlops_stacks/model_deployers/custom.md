@@ -1,15 +1,12 @@
 ---
-description: Managing the models deployed by your pipelines
+description: Extend ZenML to implement a custom Model Deployer
 ---
 
-Model deployers are stack components responsible for online model serving.
-Online serving is the process of hosting and loading machine-learning models 
-as part of a managed web service and providing access to the models through 
-an API endpoint like HTTP or GRPC. Once deployed, you can send inference 
-requests to the model through the web service's API and receive fast, 
-low-latency responses.
+To deploy and manage your trained machine learning models, ZenML provides a
+stack component called `Model Deployer`. This component is responsible for
+interacting with the deployment tool, framework or platform.
 
-When present in a stack, the model deployer also acts as a registry for models
+When present in a stack, the model deployer can also acts as a registry for models
 that are served with ZenML. You can use the model deployer to list all 
 models that are currently deployed for online inference or filtered according 
 to a particular pipeline run or step, or to suspend, resume or delete an 
@@ -139,26 +136,6 @@ This is a slimmed-down version of the base implementation which aims to
 highlight the abstraction layer. In order to see the full implementation 
 and get the complete docstrings, please check the [API docs](https://apidocs.zenml.io/latest/api_docs/model_deployers/#zenml.model_deployers.base_model_deployer.BaseModelDeployer).
 {% endhint %}
-
-
-## List of available model deployers
-
-In its current version, ZenML features two integrations, namely the `mlflow` 
-and the `seldon` integrations, with model deployers as stack components. In 
-order to get more information on how you can use these flavors in your stack, 
-please check the corresponding pages in the API docs linked below.
-
-|                                                                                                                                                                   | Flavor    | Integration |
-|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------|-------------|
-| [MLFlowModelDeployer](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.mlflow.model_deployers.mlflow_model_deployer.MLFlowModelDeployer) | mlflow    | mlflow      |
-| [SeldonModelDeployer](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.seldon.model_deployers.seldon_model_deployer.SeldonModelDeployer) | seldon    | seldon      |
-
-If you would like to see the available flavors for model deployers, you can 
-use the command:
-
-```shell
-zenml model-deployer flavor list
-```
 
 ## Building your own model deployers
 

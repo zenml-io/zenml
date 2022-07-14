@@ -20,7 +20,8 @@
   * [Runtime Configuration](developer-guide/steps-pipelines/runtime-configuration.md)
   * [Functional vs. Class-Based API](developer-guide/steps-pipelines/class-based-api.md)
   * [Caching Pipeline Runs](developer-guide/steps-pipelines/caching.md)
-  * [Inspecting Finished Pipeline Runs](developer-guide/steps-pipelines/post-execution-workflow.md)
+  * [Inspecting Pipeline Runs](developer-guide/steps-pipelines/post-execution-workflow.md)
+  * [Visualizing Pipeline Runs](developer-guide/steps-pipelines/pipeline-visualization.md)
 * [Stacks, Profiles, Repositories](developer-guide/stacks-profiles-repositories/stacks_profiles_repositories.md)
   * [Managing Stacks in Python](developer-guide/stacks-profiles-repositories/python-stack-management.md)
   * [Managing Stack Component States](developer-guide/stacks-profiles-repositories/stack-state-management.md)
@@ -30,6 +31,7 @@
   * [Materializers](developer-guide/advanced-concepts/materializer.md)
   * [Services](developer-guide/advanced-concepts/manage-external-services.md)
   * [Step Contexts and Step Fixtures](developer-guide/advanced-concepts/step-fixtures.md)
+  * [Step Environments](developer-guide/advanced-concepts/environment.md)
   * [Docker Image Management](developer-guide/advanced-concepts/docker.md)
 
 ## MLOps Stacks

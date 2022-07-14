@@ -1,5 +1,5 @@
 ---
-description: What are stacks, profiles, and repositories in ZenML?
+description: What are stacks, profiles, and repositories in ZenML.
 ---
 
 # Stacks, Profiles, Repositories
@@ -40,7 +40,7 @@ tool you are using is then called a **Flavor** of this stack component. E.g.,
 *KubeFlow* is a flavor of the *Orchestrator* stack component.
 Out-of-the-box, ZenML already comes with a wide variety of flavors, which are
 either built-in or enabled through the installation of specific integrations.
-For a detailed overview of all stack commponents and available flavors, 
+For a detailed overview of all stack components and available flavors, 
 check out the [MLOps Stacks](../mlops_stacks/categories.md) docs chapter.
 
 Any such combination of stack component flavors can be registered as a separate
@@ -79,13 +79,14 @@ zenml <STACK_COMPONENT> flavor list
 ```
 
 {% hint style="info" %}
-Our CLI features a wide variety of commands that let you manage and use your stacks. If you would like to learn more, please do: "`zenml stack --help`" or visit [our CLI docs](https://apidocs.zenml.io/latest/cli/).
+Our CLI features a wide variety of commands that let you manage and use your stacks.
+If you would like to learn more, please run: "`zenml stack --help`"
+or visit [our CLI docs](https://apidocs.zenml.io/latest/cli/).
 {% endhint %}
 
 ### Registering New Stacks
 
-You can register and use a combination of tools and infrastructure as a ZenML
-stack as follows:
+You can combine various MLOps tools into a ZenML stack as follows:
 
 1. [Register a stack component](#registering-stack-components) for each tool 
 using `zenml <STACK_COMPONENT> register`,
@@ -98,8 +99,8 @@ your code is automatically executed using the desired tools / infrastructure.
 
 First, you need to create a new instance of the respective stack component
 with the desired flavor using `zenml <STACK_COMPONENT> register <NAME> --flavor=<FLAVOR>`. 
-Most flavors require further parameters that you can pass as additional arguments as `--param=value`, similar
-to how we passed the flavor.
+Most flavors require further parameters that you can pass as additional
+arguments `--param=value`, similar to how we passed the flavor.
 
 E.g., to register a *local* artifact store, we could use the following command:
 
@@ -234,10 +235,10 @@ zenml profile set <PROFILE_NAME>
 ```
 
 {% hint style="info" %}
-The active Profile determines the Stacks and Stack Components that are
-available for use by ZenML pipelines. New Stacks and Stack Components
-registered via the CLI are only added to the active Profile and are available
-only as long as that Profile is active.
+The active Profile determines the stacks and stack components that are
+available for use by ZenML pipelines. New stacks and stack components
+registered via the CLI are only added to the active profile and are available
+only as long as that profile is active.
 
 If you want to reuse stacks from other profiles, you can use the 
 `zenml stack copy` CLI command to copy stacks between profiles. For more
@@ -250,9 +251,9 @@ information, run `zenml stack copy --help` or visit our
 <details>
 <summary>Detailed usage example of multiple profiles</summary>
 
-The following example creates a new Profile named `zenml`, sets it as active,
-and then shows how the `default` Profile is unaffected by the operations
-performed while the `zenml` Profile is active:
+The following example creates a new profile named `zenml`, sets it as active,
+and then shows how the `default` profile is unaffected by the operations
+performed while the `zenml` profile is active:
 
 ```
 $ zenml profile create zenml
@@ -337,10 +338,10 @@ Running with active profile: 'default' (global)
 ┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
 ```
 
-From the above example, you may have also noticed that _the active Profile_ and
-_the active Stack_ are global settings that affect all other user sessions open
-on the same machine. It is however possible to set the active Profile and active
-Stack individually for each user session or project. Keep reading to learn more.
+From the above example, you may have also noticed that the _Active Profile_ and
+the _Active Stack_ are global settings that affect all other user sessions open
+on the same machine. It is however possible to set the active profile and active
+stack individually for each user session or project. Keep reading to learn more.
 
 </details>
 
@@ -365,7 +366,7 @@ sub-folders, as shown [below](#setting-local-active-profile-and-stack).
 ### Registering a Repository
 
 You can register your current working directory as a ZenML
-Repository by running:
+repository by running:
 
 ```bash
 zenml init
@@ -382,11 +383,11 @@ active_stack_name: default
 {% hint style="info" %}
 It is recommended to use the `zenml init` command to initialize a ZenML
 _Repository_ in the same location of your custom Python source tree where you
-would normally point PYTHONPATH, especially if your Python code relies on a
+would normally point `PYTHONPATH`, especially if your Python code relies on a
 hierarchy of modules spread out across multiple sub-folders.
 
 ZenML CLI commands and ZenML code will display a warning if they are not running
-in the context of a ZenML _Repository_, e.g.:
+in the context of a ZenML repository, e.g.:
 
 ```shell
 stefan@aspyre2:/tmp$ zenml stack list
@@ -418,13 +419,13 @@ zenml stack register ...
 zenml stack set ...
 ```
 
-If you do this, the correct profile and stack will automatically
-get activated whenever you change directory into a different project.
+If you do this, the correct profile and stack will automatically get activated
+whenever you change directory from one project to another in your terminal.
 
 {% hint style="info" %}
-Note that the Stacks and Stack Components are still stored globally, even when
-running from inside a ZenML Repository. It is only the active Profile and active
-Stack settings that can be configured locally.
+Note that the stacks and stack components are still stored globally, even when
+running from inside a ZenML repository. It is only the active profile and active
+stack settings that can be configured locally.
 {% endhint %}
 
 #### Detailed Example
@@ -432,7 +433,7 @@ Stack settings that can be configured locally.
 <details>
 <summary>Detailed usage example of local stacks and profiles</summary>
 
-The following example shows how the active Profile and active Stack can be
+The following example shows how the active profile and active stack can be
 configured locally for a project without impacting the global settings:
 
 ```

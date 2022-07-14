@@ -1,5 +1,5 @@
 ---
-description: Configure Step and Pipeline Parameters for Each Run.
+description: How to configure step and pipeline parameters for each run.
 ---
 
 # Runtime Configuration
@@ -156,7 +156,7 @@ need a bit more information:
 path to the the code file where it is defined (if it is not in 
 `<PATH_TO_PIPELINE_PYTHON_FILE>`),
 - Optionally, the name of each materializer (about which you will learn
-later in the section on [Accessing Pipeline Runs](materializer.md)).
+later in the section on [Materializers](materializer.md)).
 
 Overall, the required structure of such a YAML should look like this:
 
