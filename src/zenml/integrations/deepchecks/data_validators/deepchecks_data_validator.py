@@ -106,9 +106,9 @@ class DeepchecksDataValidator(BaseDataValidator):
         check_kwargs: Dict[str, Dict[str, Any]] = {},
         run_kwargs: Dict[str, Any] = {},
     ) -> SuiteResult:
-        """Create and run a Deepcheck check suite corresponding to the input parameters.
+        """Create and run a Deepchecks check suite corresponding to the input parameters.
 
-        This method contains generic logic common to all Deepcheck data
+        This method contains generic logic common to all Deepchecks data
         validator methods that validates the input arguments and uses them to
         generate and run a Deepchecks check suite.
 
@@ -355,7 +355,7 @@ class DeepchecksDataValidator(BaseDataValidator):
             kwargs: Additional keyword arguments (unused).
 
         Returns:
-            A Datachecks SuiteResult with the results of the validation.
+            A Deepchecks SuiteResult with the results of the validation.
         """
         check_enum: Type[DeepchecksValidationCheck]
         if comparison_dataset is None:
@@ -430,7 +430,7 @@ class DeepchecksDataValidator(BaseDataValidator):
             kwargs: Additional keyword arguments (unused).
 
         Returns:
-            A Datachecks SuiteResult with the results of the validation.
+            A Deepchecks SuiteResult with the results of the validation.
         """
         check_enum: Type[DeepchecksValidationCheck]
         if comparison_dataset is None:

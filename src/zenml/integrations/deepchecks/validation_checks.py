@@ -40,9 +40,9 @@ class DeepchecksValidationCheck(StrEnum):
       * enum values represent fully formed class paths pointing to Deepchecks
       BaseCheck subclasses
       * all tabular data checks are located under the
-      `deepchecks.tabular.checks` module subtree
+      `deepchecks.tabular.checks` module sub-tree
       * all computer vision data checks are located under the
-      `deepchecks.vision.checks` module subtree
+      `deepchecks.vision.checks` module sub-tree
     """
 
     @classmethod
