@@ -20,8 +20,8 @@ However, you'll need to create a `Repository` in order to push container images 
 * Go to the [ECR website](https://console.aws.amazon.com/ecr).
 * Make sure the correct region is selected on the top right.
 * Click on `Create repository`.
-* Create a private repository called `zenml-kubernetes`, `zenml-kubeflow` or `zenml-sagemaker`
-depending on which [orchestrator](../orchestrators/overview.md) or 
+* Create a private repository. The name of the repository depends on
+the [orchestrator](../orchestrators/overview.md) or 
 [step operator](../step_operators/overview.md) you're using in your stack.
 ## URI format
 

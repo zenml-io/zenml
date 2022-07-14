@@ -15,7 +15,16 @@ You should use the DockerHub container registry if:
 
 ## How to deploy it
 
-...
+To use the DockerHub container registry, all you need to do is create
+a [DockerHub](https://hub.docker.com/) account.
+
+When this container registry is used in a ZenML stack, the Docker images
+that are built will be published in a **public** repository and everyone
+will be able to pull your images. If you want to use a **private** repository
+instead, you'll have to [create a private repository](https://docs.docker.com/docker-hub/repos/#creating-repositories)
+on the website before running the pipeline. The repository name depends on
+the remote [orchestrator](../orchestrators/overview.md) or
+[step operator](../step_operators/overview.md) that you're using in your stack.
 
 ## How to find the registry URI
 
@@ -33,7 +42,7 @@ docker.io/my-username
 ```
 
 To figure our the URI for your registry:
-* Find out the account name of your [DockerHub](https://portal.azure.com/#home) account.
+* Find out the account name of your [DockerHub](https://hub.docker.com/) account.
 * Use the account name to fill the template `docker.io/<ACCOUNT_NAME>` and get your URI.
 ## How to use it
 
@@ -52,9 +61,12 @@ zenml container-registry register <NAME> \
 zenml stack update -c <NAME>
 ```
 
-Additionally, we'll need to login to the container registry so Docker can pull and push images:
+Additionally, we'll need to login to the container registry so Docker can pull and push images.
+This will require your DockerHub account name and either your password or preferrably a
+[personal access token](https://docs.docker.com/docker-hub/access-tokens/).
+
 ```shell
-...
+docker login
 ```
 
 For more information and a full list of configurable attributes of the Azure container registry, check out the 

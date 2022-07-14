@@ -32,7 +32,7 @@ To use the Vertex step operator, we need:
 * Vertex AI enabled and a service account file. See the [deployment section](#how-do-you-deploy-it)
 for detailed instructions.
 * A [GCR container registry](../container_registries/gcloud_gcr.md) as part of our stack.
-Take a look [here](TODO) for a guide on how to set that up.
+Take a look [here](../container_registries/gcloud_gcr.md) for a guide on how to set that up.
 * (Optional) A machine type that we want to execute our steps on (this defaults to `n1-standard-4`).
 See [here](https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types)
 for a list of available machine types.
@@ -62,7 +62,7 @@ def trainer(...) -> ...:
 ```
 
 {% hint style="info" %}
-ZenML will build Docker images which include your code and use these
+ZenML will build a Docker image called `zenml-vertex` which includes your code and use it
 to run your steps in Vertex. Check out
 [this page](../../developer-guide/advanced-concepts/docker.md)
 if you want to learn more about how ZenML builds these images and
