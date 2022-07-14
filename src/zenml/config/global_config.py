@@ -442,8 +442,10 @@ class GlobalConfiguration(
                 new_store_path = str(load_config_path / relative_store_path)
                 profile.store_url = store.get_local_url(new_store_path)
             else:
+                # the store url is not a local URL. This only happens
+                # in case of a REST ZenStore, in which case we don't
+                # want to modify the URL
                 profile.store_url = store.url
-            
 
         config_copy._write_config()
         return config_copy
