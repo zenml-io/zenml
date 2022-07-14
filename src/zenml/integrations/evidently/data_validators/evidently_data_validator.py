@@ -38,16 +38,7 @@ from evidently.model_profile.sections.base_profile_section import (  # type: ign
     ProfileSection,
 )
 from evidently.pipeline.column_mapping import ColumnMapping  # type: ignore
-from evidently.test_suite import TestSuite
-from evidently.tests import *
-from evidently.test_preset import (
-    NoTargetPerformance,
-    DataQuality,
-    DataStability,
-    DataDrift,
-)
-
-from typing import Any, ClassVar, Dict, List, Optional, Sequence, Tuple, cast
+from typing import Any, ClassVar, List, Optional, Sequence, Tuple
 
 import pandas as pd
 
@@ -159,38 +150,3 @@ class EvidentlyDataValidator(BaseDataValidator):
             column_mapping=column_mapping,
         )
         return profile, dashboard
-
-    def data_validation(
-        self,
-        dataset: pd.DataFrame,
-        comparison_dataset: Optional[pd.DataFrame] = None,
-        check_list: Optional[Sequence[str]] = None,
-        **kwargs: Any,
-    ) -> TestSuite:
-        """Run Evidently data validation checks on a dataset.
-
-        Args:
-            dataset: Target dataset to be validated.
-            comparison_dataset: Optional second dataset to be used for data
-                comparison checks (e.g data drift checks).
-            check_list: Optional list identifying the data checks to
-                be performed.
-            **kwargs: Implementation specific keyword arguments.
-
-        Raises:
-            NotImplementedError: if data validation is not
-                supported by this data validator.
-        """
-        data_drift_suite = TestSuite(
-            tests=[
-                TestShareOfDriftedFeatures(),
-                TestNumberOfDriftedFeatures(),
-            ]
-        )
-
-        data_drift_suite.run(
-            reference_data=dataset,
-            current_data=comparison_dataset,
-            column_mapping=ColumnMapping(),
-        )
-        return TestSuite

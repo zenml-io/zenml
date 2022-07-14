@@ -11,27 +11,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import pandas as pd
-from deepchecks.core.suite import SuiteResult
-
-from zenml.integrations.deepchecks.data_validators.deepchecks_data_validator import (
-    DeepchecksDataValidator,
+from zenml.integrations.deepchecks.steps import (
+    DeepchecksDataDriftCheckStepConfig,
+    deepchecks_data_drift_check_step,
 )
-from zenml.steps import step
 
 LABEL_COL = "target"
 
-
-@step
-def data_drift_detector(
-    reference_dataset: pd.DataFrame,
-    target_dataset: pd.DataFrame,
-) -> SuiteResult:
-    """Run data drift validation checks using Deepchecks"""
-    data_validator = DeepchecksDataValidator.get_active_data_validator()
-
-    return data_validator.data_comparison(
-        reference_dataset=reference_dataset,
-        target_dataset=target_dataset,
+data_drift_detector = deepchecks_data_drift_check_step(
+    step_name="data_drift_detector",
+    config=DeepchecksDataDriftCheckStepConfig(
         dataset_kwargs=dict(label=LABEL_COL, cat_features=[]),
-    )
+    ),
+)

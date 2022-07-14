@@ -23,7 +23,7 @@ from zenml.steps import Output, step
 
 
 @enable_whylabs(dataset_id="model-1")
-@step(enable_cache=True)
+@step
 def data_loader() -> Output(
     data=pd.DataFrame,
     profile=DatasetProfileView,

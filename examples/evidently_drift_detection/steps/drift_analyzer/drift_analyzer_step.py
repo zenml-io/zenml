@@ -11,14 +11,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import yaml
+from evidently.model_profile import Profile  # type: ignore
 from zenml.steps import step
 
 
 @step
 def analyze_drift(
-    input: str,
+    profile: Profile,
 ) -> bool:
     """Analyze the Evidently drift report and return a true/false value
     indicating whether data drift was detected."""
-    profile = yaml.load(input)
-    return True # profile["data_drift"]["data"]["metrics"]["dataset_drift"]
+    return profile.object()["data_drift"]["data"]["metrics"]["dataset_drift"]

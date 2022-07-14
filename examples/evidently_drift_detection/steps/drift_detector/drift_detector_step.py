@@ -13,11 +13,12 @@
 from zenml.integrations.evidently.steps import (
     EvidentlyColumnMapping,
     EvidentlyProfileConfig,
-    EvidentlyProfileStep,
+    evidently_profile_step,
 )
 
-drift_detector = EvidentlyProfileStep(
-    EvidentlyProfileConfig(
+drift_detector = evidently_profile_step(
+    step_name="drift_detector",
+    config=EvidentlyProfileConfig(
         column_mapping=EvidentlyColumnMapping(
             target="class", prediction="class"
         ),
@@ -28,5 +29,5 @@ drift_detector = EvidentlyProfileStep(
             "datadrift",
         ],
         verbose_level=1,
-    )
+    ),
 )

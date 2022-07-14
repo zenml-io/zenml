@@ -83,4 +83,4 @@ class EvidentlyProfileMaterializer(BaseMaterializer):
         ]
 
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
-        yaml_utils.write_json(filepath, data, encoder=NumpyEncoder)
+        yaml_utils.write_json(filepath, contents, encoder=NumpyEncoder)

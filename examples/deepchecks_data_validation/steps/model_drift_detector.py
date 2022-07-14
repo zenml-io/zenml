@@ -11,30 +11,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import pandas as pd
-from deepchecks.core.suite import SuiteResult
-from sklearn.base import ClassifierMixin
-
-from zenml.integrations.deepchecks.data_validators.deepchecks_data_validator import (
-    DeepchecksDataValidator,
+from zenml.integrations.deepchecks.steps import (
+    DeepchecksModelDriftCheckStepConfig,
+    deepchecks_model_drift_check_step,
 )
-from zenml.steps import step
 
 LABEL_COL = "target"
 
-
-@step
-def model_drift_detector(
-    reference_dataset: pd.DataFrame,
-    target_dataset: pd.DataFrame,
-    model: ClassifierMixin,
-) -> SuiteResult:
-    """Run model drift validation checks using Deepchecks"""
-    data_validator = DeepchecksDataValidator.get_active_data_validator()
-
-    return data_validator.model_comparison(
-        reference_dataset=reference_dataset,
-        target_dataset=target_dataset,
-        model=model,
+model_drift_detector = deepchecks_model_drift_check_step(
+    step_name="model_drift_detector",
+    config=DeepchecksModelDriftCheckStepConfig(
         dataset_kwargs=dict(label=LABEL_COL, cat_features=[]),
-    )
+    ),
+)

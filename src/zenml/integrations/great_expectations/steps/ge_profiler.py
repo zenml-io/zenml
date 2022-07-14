@@ -24,6 +24,7 @@ from zenml.integrations.great_expectations.data_validators.ge_data_validator imp
 )
 from zenml.logger import get_logger
 from zenml.steps import BaseStep, BaseStepConfig
+from zenml.steps.utils import clone_step
 
 logger = get_logger(__name__)
 
@@ -78,3 +79,24 @@ class GreatExpectationsProfilerStep(BaseStep):
             profiler_kwargs=config.profiler_kwargs,
             overwrite_existing_suite=config.overwrite_existing_suite,
         )
+
+
+def great_expectations_profiler_step(
+    step_name: str,
+    config: GreatExpectationsProfilerConfig,
+) -> BaseStep:
+    """Shortcut function to create a new instance of the GreatExpectationsProfilerStep step.
+
+    The returned GreatExpectationsProfilerStep can be used in a pipeline to
+    infer data validation rules from an input pd.DataFrame datasets and return
+    them as an Expectation Suite. The Expectation Suite is also persisted in the
+    Great Expectations expectation store.
+
+    Args:
+        step_name: The name of the step
+        config: The configuration for the step
+
+    Returns:
+        a GreatExpectationsProfilerStep step instance
+    """
+    return clone_step(GreatExpectationsProfilerStep, step_name)(config=config)

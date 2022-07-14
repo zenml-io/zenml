@@ -47,7 +47,4 @@ if __name__ == "__main__":
     drift_analysis_step = last_run.get_step(name="drift_analyzer")
     print(f"Data drift detected: {drift_analysis_step.output.read()}")
 
-    drift_detection_step = last_run.get_step(name="drift_detector")
-    print(json.dumps(drift_detection_step.outputs["profile"].read(), indent=2))
-
     visualize_statistics()

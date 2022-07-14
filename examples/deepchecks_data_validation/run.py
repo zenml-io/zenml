@@ -30,10 +30,10 @@ if __name__ == "__main__":
     pipeline = data_validation_pipeline(
         data_loader=data_loader(),
         trainer=trainer(),
-        data_validator=data_validator(),
-        model_validator=model_validator(),
-        data_drift_detector=data_drift_detector(),
-        model_drift_detector=model_drift_detector(),
+        data_validator=data_validator,
+        model_validator=model_validator,
+        data_drift_detector=data_drift_detector,
+        model_drift_detector=model_drift_detector,
     )
     pipeline.run()
 

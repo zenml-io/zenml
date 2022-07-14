@@ -16,16 +16,19 @@
 from typing import List, Literal, Optional, Sequence, Union, cast
 
 import pandas as pd
-from evidently.pipeline.column_mapping import ColumnMapping
-from pydantic import BaseModel  # type: ignore
+from evidently.model_profile import Profile  # type: ignore[import]
+from evidently.pipeline.column_mapping import ColumnMapping  # type: ignore[import]
+from pydantic import BaseModel
 
 from zenml.artifacts import DataAnalysisArtifact
 from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
 from zenml.steps import Output
+from zenml.steps.base_step import BaseStep
 from zenml.steps.step_interfaces.base_drift_detection_step import (
     BaseDriftDetectionConfig,
     BaseDriftDetectionStep,
 )
+from zenml.steps.utils import clone_step
 
 
 class EvidentlyColumnMapping(BaseModel):
@@ -107,18 +110,13 @@ class EvidentlyProfileConfig(BaseDriftDetectionConfig):
 class EvidentlyProfileStep(BaseDriftDetectionStep):
     """Step implementation implementing an Evidently Profile Step."""
 
-    OUTPUT_SPEC = {
-        "profile": DataAnalysisArtifact,
-        "dashboard": DataAnalysisArtifact,
-    }
-
     def entrypoint(  # type: ignore[override]
         self,
         reference_dataset: pd.DataFrame,
         comparison_dataset: pd.DataFrame,
         config: EvidentlyProfileConfig,
     ) -> Output(  # type:ignore[valid-type]
-        profile=str, dashboard=str
+        profile=Profile, dashboard=str
     ):
         """Main entrypoint for the Evidently categorical target drift detection step.
 
@@ -129,8 +127,7 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
             config: the configuration for the step
 
         Returns:
-            profile: dictionary report extracted from an Evidently Profile
-              generated for the data drift
+            profile: Evidently Profile generated for the data drift
             dashboard: HTML report extracted from an Evidently Dashboard
               generated for the data drift
         """
@@ -148,4 +145,24 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
             column_mapping=column_mapping,
             verbose_level=config.verbose_level,
         )
-        return [profile.json(), dashboard.html()]
+        return [profile, dashboard.html()]
+
+
+def evidently_profile_step(
+    step_name: str,
+    config: EvidentlyProfileConfig,
+) -> BaseStep:
+    """Shortcut function to create a new instance of the EvidentlyProfileConfig step.
+
+    The returned EvidentlyProfileStep can be used in a pipeline to
+    run model drift analyses on two input pd.DataFrame datasets and return the
+    results as an Evidently profile object and a rendered dashboard object.
+
+    Args:
+        step_name: The name of the step
+        config: The configuration for the step
+
+    Returns:
+        a EvidentlyProfileStep step instance
+    """
+    return clone_step(EvidentlyProfileStep, step_name)(config=config)

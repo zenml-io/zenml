@@ -76,7 +76,7 @@ class WhylogsProfilerStep(BaseAnalyzerStep):
 
 def whylogs_profiler_step(
     step_name: str,
-    dataset_timestamp: Optional[datetime.datetime] = None,
+    config: WhylogsProfilerConfig,
     log_to_whylabs: bool = False,
     dataset_id: Optional[str] = None,
 ) -> BaseStep:
@@ -88,9 +88,7 @@ def whylogs_profiler_step(
 
     Args:
         step_name: The name of the step
-        dataset_timestamp: Timestamp to associate with the generated
-            dataset profile (Optional). The current time is used if not
-            supplied.
+        config: The step configuration
         log_to_whylabs: Set to True to enable logging to Whylabs. This is the
             same as adding the `enable_whylabs` decorator to your step.
         dataset_id: Optional dataset ID to use to upload the profile to Whylabs.
@@ -103,8 +101,4 @@ def whylogs_profiler_step(
     if log_to_whylabs:
         step = enable_whylabs(dataset_id=dataset_id)(step)
 
-    return step(
-        config=WhylogsProfilerConfig(
-            dataset_timestamp=dataset_timestamp,
-        )
-    )
+    return step(config=config)

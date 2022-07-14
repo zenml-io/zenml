@@ -24,6 +24,7 @@ from zenml.integrations.great_expectations.data_validators.ge_data_validator imp
     GreatExpectationsDataValidator,
 )
 from zenml.steps import BaseStep, BaseStepConfig
+from zenml.steps.utils import clone_step
 
 
 class GreatExpectationsValidatorConfig(BaseStepConfig):
@@ -96,3 +97,24 @@ class GreatExpectationsValidatorStep(BaseStep):
             )
 
         return results
+
+
+def great_expectations_validator_step(
+    step_name: str,
+    config: GreatExpectationsValidatorConfig,
+) -> BaseStep:
+    """Shortcut function to create a new instance of the GreatExpectationsValidatorStep step.
+
+    The returned GreatExpectationsValidatorStep can be used in a pipeline to
+    validate an input pd.DataFrame datasets and return the result as a Great
+    Expectations CheckpointResult object. The validation results are also
+    persisted in the Great Expectations validation store.
+
+    Args:
+        step_name: The name of the step
+        config: The configuration for the step
+
+    Returns:
+        a GreatExpectationsProfilerStep step instance
+    """
+    return clone_step(GreatExpectationsValidatorStep, step_name)(config=config)

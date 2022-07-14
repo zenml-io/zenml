@@ -11,25 +11,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import pandas as pd
-from deepchecks.core.suite import SuiteResult
-
-from zenml.integrations.deepchecks.data_validators.deepchecks_data_validator import (
-    DeepchecksDataValidator,
+from zenml.integrations.deepchecks.steps import (
+    DeepchecksDataIntegrityCheckStepConfig,
+    deepchecks_data_integrity_check_step,
 )
-from zenml.steps import step
 
 LABEL_COL = "target"
 
-
-@step
-def data_validator(
-    dataset: pd.DataFrame,
-) -> SuiteResult:
-    """Run data integrity checks using Deepchecks"""
-    data_validator = DeepchecksDataValidator.get_active_data_validator()
-
-    return data_validator.data_validation(
-        dataset=dataset,
+data_validator = deepchecks_data_integrity_check_step(
+    step_name="data_validator",
+    config=DeepchecksDataIntegrityCheckStepConfig(
         dataset_kwargs=dict(label=LABEL_COL, cat_features=[]),
-    )
+    ),
+)

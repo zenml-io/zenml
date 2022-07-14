@@ -41,21 +41,34 @@ class BaseDataValidator(StackComponent):
         """
         repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
         data_validator = repo.active_stack.data_validator
-        if data_validator and isinstance(data_validator, cls):
-            return data_validator
+        if not data_validator:
+            raise TypeError(
+                "The active stack needs to have a data validator component "
+                "registered to be able to run data validation actions. You "
+                "can create a new stack with a data validator component or "
+                "update your active stack to add this component, e.g.:\n\n"
+                "  `zenml data-validator register data_validator "
+                "--flavor=FLAVOR ...`\n"
+                "  `zenml stack register stack-name -dv data_validator ...`\n"
+                "  or:\n"
+                "  `zenml stack update -dv data_validator`\n\n"
+            )
 
-        raise TypeError(
-            f"The active stack needs to have a {cls.NAME} data "
-            f"validator component registered to be able to run data validation "
-            f"actions with {cls.NAME}. You can create a new stack with "
-            f"a {cls.NAME} data validator component or update your "
-            f"active stack to add this component, e.g.:\n\n"
-            f"  `zenml data-validator register {cls.FLAVOR} "
-            f"--flavor={cls.FLAVOR} ...`\n"
-            f"  `zenml stack register stack-name -dv {cls.FLAVOR} ...`\n"
-            f"  or:\n"
-            f"  `zenml stack update -dv {cls.FLAVOR}`\n\n"
-        )
+        if not isinstance(data_validator, cls):
+            raise TypeError(
+                f"The active stack needs to have a {cls.NAME} data "
+                f"validator component registered to be able to run data validation "
+                f"actions with {cls.NAME}. You can create a new stack with "
+                f"a {cls.NAME} data validator component or update your "
+                f"active stack to add this component, e.g.:\n\n"
+                f"  `zenml data-validator register {cls.FLAVOR} "
+                f"--flavor={cls.FLAVOR} ...`\n"
+                f"  `zenml stack register stack-name -dv {cls.FLAVOR} ...`\n"
+                f"  or:\n"
+                f"  `zenml stack update -dv {cls.FLAVOR}`\n\n"
+            )
+
+        return data_validator
 
     def data_profiling(
         self,
@@ -117,7 +130,7 @@ class BaseDataValidator(StackComponent):
         This method should be implemented by data validators that support
         running data quality checks an input dataset (e.g. data integrity
         checks, data drift checks).
-        
+
         This method also accepts an optional second dataset argument to
         accommodate different categories of data validation tests, e.g.:
 
