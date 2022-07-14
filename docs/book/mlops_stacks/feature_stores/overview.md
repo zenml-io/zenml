@@ -40,7 +40,6 @@ integration of `feast`.
 | Feature Store | Flavor | Integration | Notes             |
 |----------------|--------|-------------|-------------------|
 | [FeastFeatureStore](./feast.md) | `feast` | `feast` | Connect ZenML with already existing Feast |
-| [Custom Implementation](./custom.md) | _custom_ |  | Extend the Feature Store abstraction and provide your own implementation |
 
 If you would like to see the available flavors for feature stores, you can 
 use the command:
