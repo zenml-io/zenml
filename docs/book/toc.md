@@ -21,6 +21,7 @@
   * [Functional vs. Class-Based API](developer-guide/steps-pipelines/class-based-api.md)
   * [Caching Pipeline Runs](developer-guide/steps-pipelines/caching.md)
   * [Inspecting Finished Pipeline Runs](developer-guide/steps-pipelines/post-execution-workflow.md)
+  * [Visualizing Pipeline Runs](developer-guide/steps-pipelines/pipeline-visualization.md)
 * [Stacks, Profiles, Repositories](developer-guide/stacks-profiles-repositories/stacks_profiles_repositories.md)
   * [Managing Stacks in Python](developer-guide/stacks-profiles-repositories/python-stack-management.md)
   * [Managing Stack Component States](developer-guide/stacks-profiles-repositories/stack-state-management.md)

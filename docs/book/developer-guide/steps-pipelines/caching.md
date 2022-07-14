@@ -52,6 +52,11 @@ def import_data_from_api(...):
     ...
 ```
 
+{% hint style="info" %}
+You can get a graphical visualization of which steps were cached using
+[ZenML's Pipeline Run Visualization Tool](pipeline-visualization.md).
+{% endhint %}
+
 ## Dynamically disabling caching for a pipeline run
 
 Sometimes you want to have control over caching at runtime instead of defaulting to the backed in configurations of 
@@ -130,7 +135,7 @@ first_pipeline_instance.run()
 first_pipeline_instance.run(enable_cache=False)
 ```
 
-### Expected output:
+### Expected Output
 
 #### Run 1:
 
