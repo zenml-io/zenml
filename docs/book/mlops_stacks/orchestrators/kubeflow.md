@@ -192,7 +192,7 @@ zenml orchestrator register <NAME> \
 
 Once the orchestrator is part of the active stack, we need to run
 `zenml stack up` before running any pipelines. This command
-* forwards a port so you can view the Kubeflow UI in your browser
+* forwards a port so you can view the Kubeflow UI in your browser.
 * (in the local case) uses K3D to provision a Kubernetes cluster
 on your machine and deploys Kubeflow Pipelines on it.
 
