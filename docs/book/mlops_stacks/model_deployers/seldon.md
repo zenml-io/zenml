@@ -135,7 +135,7 @@ INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/c
 
 ## How do you use it?
 
-We can then register the model deployer and use it in our active stack:
+We can register the model deployer and use it in our active stack:
 
 ```bash
 zenml model-deployer register seldon_deployer --flavor=seldon \
@@ -146,6 +146,55 @@ zenml model-deployer register seldon_deployer --flavor=seldon \
 
 # Now we can use the model deployer in our stack
 zenml stack update seldon_stack --model-deployer=seldon_deployer
+```
+
+The following code snippet shows how to use the Seldon Core Model Deployer to deploy a model inside a ZenML pipeline step:
+
+```python
+from zenml.artifacts import ModelArtifact
+from zenml.environment import Environment
+from zenml.integrations.seldon.model_deployers import SeldonModelDeployer
+from zenml.integrations.seldon.services.seldon_deployment import (
+  SeldonDeploymentConfig,
+  SeldonDeploymentService,
+)
+from zenml.steps import (
+  STEP_ENVIRONMENT_NAME,
+  StepContext,
+  step,
+)
+
+@step(enable_cache=True)
+def seldon_model_deployer_step(
+  context: StepContext,
+  model: ModelArtifact,
+) -> SeldonDeploymentService:
+  model_deployer = SeldonModelDeployer.get_active_model_deployer()
+
+  # get pipeline name, step name and run id
+  step_env = Environment()[STEP_ENVIRONMENT_NAME]
+
+  service_config=SeldonDeploymentConfig(
+      model_uri=model.uri,
+      model_name="my-model",
+      replicas=1,
+      implementation="TENSORFLOW_SERVER",
+      secret_name="seldon-secret",
+      pipeline_name = step_env.pipeline_name,
+      pipeline_run_id = step_env.pipeline_run_id,
+      pipeline_step_name = step_env.step_name,
+  )
+
+  service = model_deployer.deploy_model(
+      service_config, replace=True, timeout=300
+  )
+
+  print(
+      f"Seldon deployment service started and reachable at:\n"
+      f"    {service.prediction_url}\n"
+  )
+
+  return service
 ```
 
 A concrete example of using the Seldon Core Model Deployer can be found
