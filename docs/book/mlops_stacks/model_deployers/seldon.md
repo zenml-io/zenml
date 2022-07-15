@@ -69,20 +69,12 @@ are provisioned and managed by ZenML. If not specified, the namespace set in the
 * base_url: the base URL of the Kubernetes ingress used to expose the Seldon Core deployment servers.
 * secret: the name of a ZenML secret containing the credentials used by Seldon Core storage initializers to authenticate to the Artifact Store
 
-We can then register the model deployer and use it in our active stack:
 
-```bash
-zenml model-deployer register seldon_deployer --flavor=seldon \
-  --kubernetes_context=zenml-eks \
-  --kubernetes_namespace=zenml-workloads \
-  --base_url=http://$INGRESS_HOST \
-  --secret=s3-store-credentials
+{% hint style="info" %}
+Configuring an Seldon Core in a Kubernetes cluster can be a complex and error prone process, so we have provided a set of of Terraform-based recipes to quickly provision popular combinations of MLOps tools. More information about these recipes can be found in the [Open Source MLOps Stack Recipes](https://github.com/zenml-io/mlops-stacks)
+{% endhint %}
 
-# Now we can use the model deployer in our stack
-zenml stack update seldon_stack --model-deployer=seldon_deployer
-```
-
-#### Managing Seldon Core Credentials
+### Managing Seldon Core Credentials
 
 The Seldon Core model servers need to access the Artifact Store in the ZenML
 stack to retrieve the model artifacts. This usually involve passing some
@@ -142,6 +134,68 @@ INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/c
 ```
 
 ## How do you use it?
+
+We can register the model deployer and use it in our active stack:
+
+```bash
+zenml model-deployer register seldon_deployer --flavor=seldon \
+  --kubernetes_context=zenml-eks \
+  --kubernetes_namespace=zenml-workloads \
+  --base_url=http://$INGRESS_HOST \
+  --secret=s3-store-credentials
+
+# Now we can use the model deployer in our stack
+zenml stack update seldon_stack --model-deployer=seldon_deployer
+```
+
+The following code snippet shows how to use the Seldon Core Model Deployer to deploy a model inside a ZenML pipeline step:
+
+```python
+from zenml.artifacts import ModelArtifact
+from zenml.environment import Environment
+from zenml.integrations.seldon.model_deployers import SeldonModelDeployer
+from zenml.integrations.seldon.services.seldon_deployment import (
+  SeldonDeploymentConfig,
+  SeldonDeploymentService,
+)
+from zenml.steps import (
+  STEP_ENVIRONMENT_NAME,
+  StepContext,
+  step,
+)
+
+@step(enable_cache=True)
+def seldon_model_deployer_step(
+  context: StepContext,
+  model: ModelArtifact,
+) -> SeldonDeploymentService:
+  model_deployer = SeldonModelDeployer.get_active_model_deployer()
+
+  # get pipeline name, step name and run id
+  step_env = Environment()[STEP_ENVIRONMENT_NAME]
+
+  service_config=SeldonDeploymentConfig(
+      model_uri=model.uri,
+      model_name="my-model",
+      replicas=1,
+      implementation="TENSORFLOW_SERVER",
+      secret_name="seldon-secret",
+      pipeline_name = step_env.pipeline_name,
+      pipeline_run_id = step_env.pipeline_run_id,
+      pipeline_step_name = step_env.step_name,
+  )
+
+  service = model_deployer.deploy_model(
+      service_config, replace=True, timeout=300
+  )
+
+  print(
+      f"Seldon deployment service started and reachable at:\n"
+      f"    {service.prediction_url}\n"
+  )
+
+  return service
+```
 
 A concrete example of using the Seldon Core Model Deployer can be found
 [here](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow_pipelines_orchestration).
