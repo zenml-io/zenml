@@ -47,6 +47,7 @@ from tfx.dsl.io.fileio import NotFoundError
 from zenml.enums import StackComponentType
 from zenml.exceptions import ArtifactStoreInterfaceError
 from zenml.stack import StackComponent
+from zenml.utils import io_utils
 
 PathType = Union[bytes, str]
 
@@ -85,6 +86,69 @@ def _catch_not_found_error(_func: Callable[..., Any]) -> Callable[..., Any]:
             return _func(*args, **kwargs)
         except FileNotFoundError as e:
             raise NotFoundError() from e
+
+    return inner_function
+
+
+def _sanitize_potential_path(potential_path: Any) -> Any:
+    """Sanitizes the input if it is a path.
+
+    If the input is a **remote** path, this function replaces backslash path
+    separators by forward slashes.
+
+    Args:
+        potential_path: Value that potentially refers to a (remote) path.
+
+    Returns:
+        The original input or a sanitized version of it in case of a remote
+        path.
+    """
+    if isinstance(potential_path, bytes):
+        path = io_utils.convert_to_str(potential_path)
+    elif isinstance(potential_path, str):
+        path = potential_path
+    else:
+        # Neither string nor bytes, this is not a path
+        return potential_path
+
+    if io_utils.is_remote(path):
+        # If we have a remote path, replace windows path separators with
+        # slashes
+        import ntpath
+        import posixpath
+
+        path = path.replace(ntpath.sep, posixpath.sep)
+
+    return path
+
+
+def _sanitize_paths(_func: Callable[..., Any]) -> Callable[..., Any]:
+    """Sanitizes path inputs before calling the original function.
+
+    Args:
+        _func: The function for which to sanitize the inputs.
+
+    Returns:
+        Function that calls the input function with sanitized path inputs.
+    """
+
+    def inner_function(*args: Any, **kwargs: Any) -> Any:
+        """Inner function.
+
+        Args:
+            *args: Positional args.
+            **kwargs: Keyword args.
+
+        Returns:
+            Output of the input function called with sanitized paths.
+        """
+        args = tuple(_sanitize_potential_path(arg) for arg in args)
+        kwargs = {
+            key: _sanitize_potential_path(value)
+            for key, value in kwargs.items()
+        }
+
+        return _func(*args, **kwargs)
 
     return inner_function
 
@@ -322,19 +386,37 @@ class BaseArtifactStore(StackComponent):
             (Filesystem,),
             {
                 "SUPPORTED_SCHEMES": self.SUPPORTED_SCHEMES,
-                "open": staticmethod(_catch_not_found_error(self.open)),
-                "copy": staticmethod(_catch_not_found_error(self.copyfile)),
-                "exists": staticmethod(self.exists),
-                "glob": staticmethod(self.glob),
-                "isdir": staticmethod(self.isdir),
-                "listdir": staticmethod(_catch_not_found_error(self.listdir)),
-                "makedirs": staticmethod(self.makedirs),
-                "mkdir": staticmethod(_catch_not_found_error(self.mkdir)),
-                "remove": staticmethod(_catch_not_found_error(self.remove)),
-                "rename": staticmethod(_catch_not_found_error(self.rename)),
-                "rmtree": staticmethod(_catch_not_found_error(self.rmtree)),
-                "stat": staticmethod(_catch_not_found_error(self.stat)),
-                "walk": staticmethod(_catch_not_found_error(self.walk)),
+                "open": staticmethod(
+                    _sanitize_paths(_catch_not_found_error(self.open))
+                ),
+                "copy": staticmethod(
+                    _sanitize_paths(_catch_not_found_error(self.copyfile))
+                ),
+                "exists": staticmethod(_sanitize_paths(self.exists)),
+                "glob": staticmethod(_sanitize_paths(self.glob)),
+                "isdir": staticmethod(_sanitize_paths(self.isdir)),
+                "listdir": staticmethod(
+                    _sanitize_paths(_catch_not_found_error(self.listdir))
+                ),
+                "makedirs": staticmethod(_sanitize_paths(self.makedirs)),
+                "mkdir": staticmethod(
+                    _sanitize_paths(_catch_not_found_error(self.mkdir))
+                ),
+                "remove": staticmethod(
+                    _sanitize_paths(_catch_not_found_error(self.remove))
+                ),
+                "rename": staticmethod(
+                    _sanitize_paths(_catch_not_found_error(self.rename))
+                ),
+                "rmtree": staticmethod(
+                    _sanitize_paths(_catch_not_found_error(self.rmtree))
+                ),
+                "stat": staticmethod(
+                    _sanitize_paths(_catch_not_found_error(self.stat))
+                ),
+                "walk": staticmethod(
+                    _sanitize_paths(_catch_not_found_error(self.walk))
+                ),
             },
         )
 
