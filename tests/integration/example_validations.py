@@ -282,7 +282,7 @@ def generate_data_validator_setup_function(
 
         # install the integration so we can import the stack component
         install.callback(
-            integrations=(integration), ignore_integration=(), force=True
+            integrations=(integration,), ignore_integration=(), force=True
         )
 
         data_validators = flavor_registry.get_flavors_by_type(
