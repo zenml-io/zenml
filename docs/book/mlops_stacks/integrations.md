@@ -1,8 +1,6 @@
 ---
-description: Use these tools out-of-the-box with ZenML.
+description: How to explore the MLOps landscape with ZenML
 ---
-
-# Integrations
 
 ZenML integrates with many different third-party tools. Once code is organized
 into a ZenML pipeline, you can supercharge your ML workflows with the
@@ -12,28 +10,27 @@ There are lots of moving parts for all the MLOps tooling and infrastructure you
 require for ML in production and ZenML brings them all together and enables you
 to manage them in one place.
 
-For example, we currently support [Airflow](https://airflow.apache.org/) and
-[Kubeflow](https://www.kubeflow.org/) as third-party orchestrators for your ML
-pipeline code. Experiment trackers
-like [MLflow Tracking](https://www.mlflow.org/docs/latest/tracking.html) and
-[Weights & Biases](https://wandb.ai/site) can be added to your ZenML
-pipeline. And you can seamlessly
-transition from a
-local [MLflow deployment](https://www.mlflow.org/docs/latest/python_api/mlflow.deployments.html)
-to
-a deployed model on Kubernetes using [Seldon Core](https://www.seldon.io/).
+For example, you can orchestrate your ML pipeline workflows using
+[Airflow](./orchestrators/airflow.md) or [Kubeflow](./orchestrators/kubeflow.md/),
+track experiments using [MLflow Tracking](./experiment_trackers/mlflow.md) or
+[Weights & Biases](./experiment_trackers/wandb.md), and transition seamlessly
+from a local [MLflow deployment](model_deployers/mlflow.md) to a deployed model
+on Kubernetes using [Seldon Core](model_deployers/seldon.md).
 
-All of this allows you to write your code now and add the right tool for the job
-as soon as the need arises.
+This also allows you to delay the decision of which MLOps tool to use in your
+stack as you have no vendor lock-in with ZenML and can easily switch out tools
+as soon as your requirements change.
 
 ![ZenML is the glue](../assets/zenml-is-the-glue.jpeg)
 
+## Available Integrations
+
 These are the third-party integrations that ZenML currently supports:
 
-| Integration               | Status | Type                   | Implementation Notes                                                                          | Example                                                                                                                                                  |
-|---------------------------|--------|------------------------|-----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Integration | Status | Type | Implementation Notes | Example |
+|-|-|-|-|-|
 | Apache Airflow            | ✅      | Orchestrator           | Works for local environment.                                                                  | [airflow_orchestration](https://github.com/zenml-io/zenml/tree/main/examples/airflow_orchestration)                                                                      |
-| Apache Beam               | ✅      | Distributed Processing |                                                                                               |                                                                                                                                                          |
+| Apache Beam               | ⛏      | Distributed Processing |                                                                                               |                                                                                                                                                          |
 | AWS                       | ✅      | Container Registry     | Use the AWS container registry to store your containers.                                      |                                                                                                                                                          |
 | AWS                       | ✅      | Secrets Manager        | Use AWS as a secrets manager.                                                                 | [cloud_secrets_manager](https://github.com/zenml-io/zenml/tree/develop/examples/cloud_secrets_manager)                                                   |
 | AWS                       | ✅      | Step Operator          | Sagemaker as a ZenML step operator.                                                           | [sagemaker_step_operator](https://github.com/zenml-io/zenml/tree/main/examples/step_operator_remote_training)                                            |
@@ -78,10 +75,33 @@ These are the third-party integrations that ZenML currently supports:
 ✅ means the integration is already implemented.
 ⛏ means we are looking to implement the integration soon.
 
+## Installing ZenML Integrations
+
+Before you can use integrations, you first need to install them using 
+`zenml integration install`, e.g., you can install
+[Kubeflow](./orchestrators/kubeflow.md/),
+[MLflow Tracking](./experiment_trackers/mlflow.md), 
+and [Seldon Core](model_deployers/seldon.md), using:
+
+```
+zenml integration install kubeflow mlflow seldon -y
+```
+
+Under the hood, this simply installs the correct versions of all integrations
+using pip.
+
+{% hint style="info" %}
+The `-y` flag confirms all `pip install` commands without asking you for
+confirmation for every package first. 
+
+You can run `zenml integration --help` to see a full list of CLI commands that
+ZenML provides for interacting with integrations.
+{% endhint %}
+
 ## Help us with integrations!
 
-There are many tools in the ML / MLOps field. We have made an initial
+There are countless tools in the ML / MLOps field. We have made an initial
 prioritization of which tools to support with integrations, but we also welcome
-community contributions. Check our
-[Contributing Guide](../../../CONTRIBUTING.md) for more details on how best to
-contribute.
+community contributions. Check our [Contribution Guide](../resources/contributing.md)
+and [External Integration Guide](../resources/integrating.md) for more details
+on how to best contribute new integrations.
