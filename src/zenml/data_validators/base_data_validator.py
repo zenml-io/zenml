@@ -47,11 +47,11 @@ class BaseDataValidator(StackComponent):
                 "registered to be able to run data validation actions. You "
                 "can create a new stack with a data validator component or "
                 "update your active stack to add this component e.g.:\n\n"
-                "  `zenml data-validator register data_validator "
+                "  `zenml data-validator register <DV-NAME> "
                 "--flavor=FLAVOR ...`\n"
-                "  `zenml stack register stack-name -dv data_validator ...`\n"
+                "  `zenml stack register <STACK-NAME> -dv <DV-NAME> ...`\n"
                 "  or:\n"
-                "  `zenml stack update -dv data_validator`\n\n"
+                "  `zenml stack update -dv <DV-NAME>`\n\n"
             )
 
         if not isinstance(data_validator, cls):
@@ -63,7 +63,7 @@ class BaseDataValidator(StackComponent):
                 f"active stack to add this component, e.g.:\n\n"
                 f"  `zenml data-validator register {cls.FLAVOR} "
                 f"--flavor={cls.FLAVOR} ...`\n"
-                f"  `zenml stack register stack-name -dv {cls.FLAVOR} ...`\n"
+                f"  `zenml stack register <STACK-NAME> -dv {cls.FLAVOR} ...`\n"
                 f"  or:\n"
                 f"  `zenml stack update -dv {cls.FLAVOR}`\n\n"
             )
