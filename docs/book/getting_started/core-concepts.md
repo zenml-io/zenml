@@ -119,7 +119,7 @@ to use, our stack components are extensible and well documented so this
 shouldn't be a barrier for you.
 
 All the stack components configured as part of the stack carry their
-configuration parameters so whether it's an AWS Sagemaker cluster you need to
+configuration parameters so whether it's an AWS SageMaker cluster you need to
 run your training on or an Google Cloud container registry you need to connect
 to, ZenML handles the connections between these various parts on your behalf.
 

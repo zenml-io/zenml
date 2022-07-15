@@ -13,7 +13,7 @@ You should use the Kubernetes orchestrator if:
 * you don't need a UI to list all your pipelines runs.
 * you're not willing to maintain [Kubeflow Pipelines](./kubeflow.md)
 on your Kubernetes cluster.
-* you're not intereseted in paying for managed solutions like [Vertex](./gcloud_vertexai.md).
+* you're not interested in paying for managed solutions like [Vertex](./gcloud_vertexai.md).
 
 ## How to deploy it
 
