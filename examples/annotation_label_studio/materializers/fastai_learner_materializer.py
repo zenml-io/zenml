@@ -1,5 +1,6 @@
 import os
 import tempfile
+from pathlib import Path
 from typing import Type
 
 from fastai.learner import Learner, load_learner
@@ -9,7 +10,7 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 
-DEFAULT_MODEL_FILENAME = "model.pkl"
+DEFAULT_MODEL_FILENAME = "export.pth"
 
 logger = get_logger(__name__)
 
@@ -31,12 +32,12 @@ class FastaiLearnerMaterializer(BaseMaterializer):
         """
         super().handle_input(data_type)
 
-        with tempfile.TemporaryDirectory() as d:
+        with tempfile.TemporaryDirectory() as td:
             fileio.copy(
                 os.path.join(self.artifact.uri, DEFAULT_MODEL_FILENAME),
-                os.path.join(d, DEFAULT_MODEL_FILENAME),
+                os.path.join(td, DEFAULT_MODEL_FILENAME),
             )
-            return load_learner(os.path.join(d, DEFAULT_MODEL_FILENAME))
+            return load_learner(os.path.join(td, DEFAULT_MODEL_FILENAME))
 
     def handle_return(self, model: Learner) -> None:
         """Writes a fastai model along with its optimizer state.
@@ -47,9 +48,10 @@ class FastaiLearnerMaterializer(BaseMaterializer):
         super().handle_return(model)
 
         # Save entire model to artifact directory
-        with tempfile.TemporaryDirectory() as d:
-            model.export(os.path.join(d, DEFAULT_MODEL_FILENAME))
+        with tempfile.TemporaryDirectory() as td:
+            # breakpoint()
+            model.save(Path(td) / "export")
             fileio.copy(
-                os.path.join(d, DEFAULT_MODEL_FILENAME),
+                os.path.join(td, DEFAULT_MODEL_FILENAME),
                 os.path.join(self.artifact.uri, DEFAULT_MODEL_FILENAME),
             )
