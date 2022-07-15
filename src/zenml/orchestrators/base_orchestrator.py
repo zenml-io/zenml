@@ -103,7 +103,7 @@ def _patched_remove_stateful_working_dir(stateful_working_dir: str) -> None:
     try:
         fileio.rmtree(stateful_working_dir)
     except NotFoundError:
-        logger.warning(
+        logger.debug(
             "Unable to find stateful working directory '%s'.",
             stateful_working_dir,
         )
