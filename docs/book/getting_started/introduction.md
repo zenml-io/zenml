@@ -26,12 +26,27 @@ common ML development tasks. ZenML is not here to replace the great tools that
 solve these individual problems. Rather, it offers an **extensible framework** and a standard abstraction to write and build your workflows. -->
 
 ## Why ZenML
+Everyone loves to train ML models, but few talks about shipping them into production, and even fewer can do it well.
+It's no wonder that 85% of ML models fail and 53% don't make it into production, according to a Gartner survey.
 
-ZenML pipelines are designed to be written early in the development lifecycle. 
+![Zenml](../assets/1-pipeline-hard-reproduce.png)
+
+At ZenML, we believe developing models to production doesn't need to be painful.
+With ZenML data scientists can concentrate on what they do best - developing ML models, and not worry about infrastructure or deployment tools.
+Using ZenML allows data scientists to own the entire pipeline - from experimentation to production.
+
+This is why we built ZenML.
+
+![Zenml](../assets/sam-side-by-side-full-text.png)
+
+
+
+
+<!-- ZenML pipelines are designed to be written early in the development lifecycle. 
 As a data scientist, you can explore and tailor your pipelines as you develop toward production.
-Once you're satisfied, you can switch from local to cloud deployment.
+Once you're satisfied, you can switch from local to cloud deployment. -->
 <!-- Read more about why we started building ZenML on our [blog](https://blog.zenml.io/why-zenml/). -->
-
+<!-- 
 Here's what you get by using ZenML -
 
 + Extensibility - Build a framework to suit your specific needs.
@@ -39,7 +54,7 @@ Here's what you get by using ZenML -
 + Clarity - Represent steps of your pipeline in code.
 + Batteries-included integrations - Bring all your favorite tools together.
 + Easily switch between local and cloud stacks.
-+ Painless deployment and infrastructure configuration.
++ Painless deployment and infrastructure configuration. -->
 
 Eager to get started? We recommend the following to start using **ZenML** right away!
 
