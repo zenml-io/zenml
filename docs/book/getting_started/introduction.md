@@ -24,9 +24,11 @@ It's no wonder that 85% of ML models fail and 53% don't make it into production,
 
 ![Zenml](../assets/1-pipeline-hard-reproduce.png)
 
-At ZenML, we believe developing models to production doesn't need to be painful.
-With ZenML data scientists can concentrate on what they do best - developing ML models, and not worry about infrastructure or deployment tools.
-Using ZenML allows data scientists to own the entire pipeline - from experimentation to production.
+At ZenML, we believe the journey from model development to production doesn't need to be long and meandering.
+
+With ZenML, you as a data scientist can concentrate on what you do best - developing ML models, and not worry about infrastructure or deployment tools.
+If you come from unstructured notebooks or scripts with lots of manual processes, ZenML will make the path to production easier and faster for you and your team.
+Using ZenML allows data scientists like you to own the entire pipeline - from experimentation to production.
 
 This is why we built ZenML.
 
