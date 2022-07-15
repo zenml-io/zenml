@@ -102,9 +102,11 @@ automatically saved in the active Artifact Store as pipeline artifacts.
 * use [the post-execution workflow API](../../developer-guide/post-execution-workflow.md)
 to retrieve pipeline artifacts from the active Artifact Store after a pipeline
 run is complete.
+<!---
 * use ZenML [Visualizers](../../developer-guide/visualizer.md) to load pipeline
 artifacts from the Artifact Store and display them as notebook widgets or HTML
 pages.
+-->
 
 You will probably need to interact with the [low-level Artifact Store API](#the-artifact-store-api)
 directly:
