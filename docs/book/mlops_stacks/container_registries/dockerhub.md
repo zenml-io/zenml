@@ -1,5 +1,5 @@
 ---
-description: Store container images in Dockerhub
+description: Store container images in DockerHub
 ---
 
 The DockerHub container registry is a [container registry](./overview.md) 
@@ -62,7 +62,7 @@ zenml stack update -c <NAME>
 ```
 
 Additionally, we'll need to login to the container registry so Docker can pull and push images.
-This will require your DockerHub account name and either your password or preferrably a
+This will require your DockerHub account name and either your password or preferably a
 [personal access token](https://docs.docker.com/docker-hub/access-tokens/).
 
 ```shell

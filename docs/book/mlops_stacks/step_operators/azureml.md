@@ -20,8 +20,8 @@ a look at the [Sagemaker](./amazon_sagemaker.md) or [Vertex](./gcloud_vertexai.m
 * Once your resource is created, you can head over to the `Azure Machine Learning Studio`
 and [create a compute cluster](https://docs.microsoft.com/en-us/azure/machine-learning/quickstart-create-resources#cluster) to run your pipelines.
 * Create an `environment` for your pipelines. Follow [this guide](https://docs.microsoft.com/en-us/azure/machine-learning/how-to-manage-environments-in-studio) to set one up.
-* (Optional) Create a [Service Principal](https://docs.microsoft.com/en-us/azure/developer/java/sdk/identity-service-principal-auth) for authentication. This is required if you inted to run your pipelines
-with a remote orchestrator.
+* (Optional) Create a [Service Principal](https://docs.microsoft.com/en-us/azure/developer/java/sdk/identity-service-principal-auth) for authentication. This is required if
+you intend to run your pipelines with a remote orchestrator.
 ## How to use it
 
 To use the AzureML step operator, we need:

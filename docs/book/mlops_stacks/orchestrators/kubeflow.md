@@ -22,7 +22,7 @@ on your cluster.
 
 The Kubeflow orchestrator supports two different modes: `Local` and `remote`.
 In case you want to run the orchestrator on a local Kubernetes cluster running
-on your machine, there is no additional infrastrucuture setup necessary.
+on your machine, there is no additional infrastructure setup necessary.
 
 If you want to run your pipelines on a remote cluster instead, you'll need to
 set up a Kubernetes cluster and deploy Kubeflow Pipelines:

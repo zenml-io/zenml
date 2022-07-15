@@ -16,7 +16,7 @@ runs.
 * your pipeline steps don't require much resources to run. The GitHub
 Actions orchestrator uses GitHub Actions runners to run your
 pipelines. These runner have access to limited hardware resources and
-are not able to run computationally intesive tasks.
+are not able to run computationally intensive tasks.
 
 ## How to deploy it
 

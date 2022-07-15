@@ -24,7 +24,7 @@ that are not available in the runtime environments provided by the [orchestrator
 An example would be a step that trains a computer vision model and requires a GPU to
 run in reasonable time, combined with a [Kubeflow orchestrator](../orchestrators/kubeflow.md) running on a kubernetes 
 cluster which does not contain any GPU nodes. In that case it makes sense to include a 
-step operator like [Sagemaker](./amazon_sagemaker.md), [Vertex](./gcloud_vertexai.md) 
+step operator like [SageMaker](./amazon_sagemaker.md), [Vertex](./gcloud_vertexai.md) 
 or [AzureML](./azureml.md) to execute the training step with a GPU.
 
 ## Step Operator Flavors
@@ -34,7 +34,7 @@ by the following ZenML integrations:
 
 | Step Operator | Flavor | Integration | Notes             |
 |----------------|--------|-------------|-------------------|
-| [Sagemaker](./amazon_sagemaker.md) | `sagemaker` | `aws` | Uses Sagemaker to execute steps |
+| [SageMaker](./amazon_sagemaker.md) | `sagemaker` | `aws` | Uses SageMaker to execute steps |
 | [Vertex](./gcloud_vertexai.md) | `vertex` | `gcp` |  Uses Vertex AI to execute steps |
 | [AzureML](./azureml.md) | `azureml` | `azure` |  Uses AzureML to execute steps |
 | [Custom Implementation](./custom.md) | _custom_ | | Extend the step operator abstraction and provide your own implementation |
