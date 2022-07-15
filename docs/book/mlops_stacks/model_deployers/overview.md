@@ -14,7 +14,7 @@ Batch inference or offline inference is the process of making a machine learning
 * Pre-processing is the process of transforming the data before it is passed to the machine learning model.
 * Post-processing is the process of transforming the data after it is returned from the machine learning model and before it is returned to the user.
 
-The both pre- and post-processing are very issential to the model deployment process, since majority of the models require specific input format which requires transforming the data before it is passed to the model and after it is returned from the model. ZenML is allowing you to define your own pre- and post-processing 
+Both pre- and post-processing are very issential to the model deployment process, since majority of the models require specific input format which requires transforming the data before it is passed to the model and after it is returned from the model. ZenML is allowing you to define your own pre- and post-processing 
 within a pipeline level by defining a custom steps before and after the predict step.
 
 {% hint style="warning" %}
@@ -62,10 +62,7 @@ zenml model-deployer register seldon --flavor=seldon \
 
 ### The role Model Deployer plays in a ZenML Stack
 
-
-There are three major roles that a Model Deployer plays in a ZenML Stack:
-
-1. it holds all the stack related configuration attributes required to
+1. Holds all the stack related configuration attributes required to
    interact with the remote model serving tool, service or platform (e.g.
    hostnames, URLs, references to credentials, other client related
    configuration parameters). The following are examples of configuring the
@@ -87,7 +84,7 @@ There are three major roles that a Model Deployer plays in a ZenML Stack:
     zenml stack register seldon_stack -m default -a aws -o default -d seldon
     ```
 
-2. it implements the continuous deployment logic necessary to deploy models
+2. Implements the continuous deployment logic necessary to deploy models
    in a way that updates an existing model server that is already serving a
    previous version of the same model instead of creating a new model server
    for every new model version. Every model server that the Model Deployer
@@ -145,7 +142,7 @@ There are three major roles that a Model Deployer plays in a ZenML Stack:
       return service
     ```
 
-3. the Model Deployer acts as a registry for all Services that represent remote
+3. Acts as a registry for all Services that represent remote
    model servers. External model deployment servers can be listed and filtered
    using
    a variety of criteria, such as the name of the model or the names of the
