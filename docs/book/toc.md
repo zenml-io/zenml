@@ -4,6 +4,7 @@
 
 * [Introduction](getting_started/introduction.md)
 * [Core Concepts](getting_started/core-concepts.md)
+* [Installation](getting_started/installation.md)
 * [Quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart)
 
 ## Examples & Use-Cases
@@ -11,29 +12,27 @@
 * [Learn MLOps with ZenML (ZenBytes)](https://github.com/zenml-io/zenbytes)
 * [Full ZenML Examples (ZenFiles)](https://github.com/zenml-io/zenfiles)
 * [Integration Examples](https://github.com/zenml-io/zenml/tree/main/examples)
-* [Learn more on YouTube](https://www.youtube.com/channel/UCi79n61eV2sVyYxJOqk\_bMw)
 
 ## Developer Guide
 
-* [Installation](developer-guide/installation.md)
 * [Steps & Pipelines](developer-guide/steps-pipelines/steps-and-pipelines.md)
   * [Runtime Configuration](developer-guide/steps-pipelines/runtime-configuration.md)
   * [Functional vs. Class-Based API](developer-guide/steps-pipelines/class-based-api.md)
   * [Inspecting Pipeline Runs](developer-guide/steps-pipelines/post-execution-workflow.md)
-  * [Data Versioning and Caching](developer-guide/steps-pipelines/caching.md)
+  * [Automated Caching](developer-guide/steps-pipelines/caching.md)
   * [Data Lineage Visualization](developer-guide/steps-pipelines/pipeline-visualization.md)
 * [Stacks, Profiles, Repositories](developer-guide/stacks-profiles-repositories/stacks_profiles_repositories.md)
   * [Managing Stacks in Python](developer-guide/stacks-profiles-repositories/python-stack-management.md)
-  * [Managing Stack Component States](developer-guide/stacks-profiles-repositories/stack-state-management.md)
-  * [Setting Stacks and Profiles with Environment Variables](developer-guide/stacks-profiles-repositories/stack-profile-environment-variables.md)
-  * [Migrating Legacy Stacks to ZenML Profiles](developer-guide/stacks-profiles-repositories/migrating-legacy-stacks.md)
 * [Advanced Usage](developer-guide/advanced-concepts/overview.md)
   * [Writing Custom Stack Component Flavors](developer-guide/advanced-concepts/custom-flavors.md)
+  * [Managing Stack Component States](developer-guide/advanced-concepts/stack-state-management.md)
   * [Passing Custom Data Types through Steps](developer-guide/advanced-concepts/materializer.md)
   * [Accessing the Active Stack within Steps](developer-guide/advanced-concepts/step-fixtures.md)
   * [Accessing Global Infos within Steps](developer-guide/advanced-concepts/environment.md)
   * [Managing External Services](developer-guide/advanced-concepts/manage-external-services.md)
   * [Managing Docker Images](developer-guide/advanced-concepts/docker.md)
+  * [Setting Stacks and Profiles with Environment Variables](developer-guide/advanced-concepts/stack-profile-environment-variables.md)
+  * [Migrating Legacy Stacks to ZenML Profiles](developer-guide/advanced-concepts/migrating-legacy-stacks.md)
 
 ## MLOps Stacks
 
@@ -127,6 +126,7 @@
 * [Community Events](https://www.eventbrite.de/o/zenml-44751230043)
 * [Blog](https://blog.zenml.io/)
 * [Podcast](https://podcast.zenml.io/)
+* [YouTube](https://www.youtube.com/channel/UCi79n61eV2sVyYxJOqk\_bMw)
 * [Newsletter](https://zenml.substack.com/)
 * [Roadmap](https://zenml.io/roadmap)
 * [Contribution Guide](resources/contributing.md)
