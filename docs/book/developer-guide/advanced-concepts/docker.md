@@ -15,15 +15,8 @@ If your pipeline needs any additional requirements, check out our [guide on incl
 * **Copies your active stack configuration**. This is needed so that ZenML can execute your code on the stack that you specified.
 * **Copies your source files**. These files need to be included in the Docker image so ZenML can execute your step code. Check out [this section](#which-files-get-included) for more information on which files get included by default and how to exclude files.
 
-This is all handled automatically by ZenML and covers most basic use cases.
-The remainder of this page covers the different ways in which you can hook into
-the Docker building process to customize the resulting image for your use case.
+### Which files get included
 
-## Which files get included
-
-In order to execute your pipeline code inside the Docker image, ZenML needs to 
-copy all your source code files that are necessary to execute the steps of your
-pipeline.
 ZenML will try to determine the root directory of your source files in the following order:
 * If you've created a 
 [ZenML repository](../stacks-profiles-repositories/stacks_profiles_repositories.md#repositories)
@@ -42,6 +35,12 @@ following two ways:
     def my_pipeline(...):
         ...
     ```
+## Customizing the build process
+
+This process explained above is all done automatically by ZenML and covers most basic use cases.
+This section covers all the different ways in which you can hook into the Docker building
+process to customize the resulting image to your needs.
+
 ## How to install additional pip dependencies
 
 {% hint style="info" %}
