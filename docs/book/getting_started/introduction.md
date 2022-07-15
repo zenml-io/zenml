@@ -10,7 +10,7 @@ Have you had trouble replicating production pipelines and monitoring models in p
 
 If you answered yes to any, **ZenML** is here to help with all that, and more. 
 
-![Zenml](../assets/tailor.gif)
+![Extensible open-source framework.](../assets/tailor.gif)
 
 **ZenML** is an extensible, open-source MLOps framework for creating portable, production-ready **MLOps pipelines**. 
 It's built for data scientists, ML Engineers, and MLOps Developers to collaborate as they develop to production.
@@ -22,7 +22,7 @@ ZenML brings together all your favorite tools in one place so you can tailor you
 Everyone loves to train ML models, but few talks about shipping them into production, and even fewer can do it well.
 It's no wonder that 85% of ML models fail and 53% don't make it into production, according to a Gartner survey.
 
-![Zenml](../assets/1-pipeline-hard-reproduce.png)
+![The long journey from experimentation to production.](../assets/1-pipeline-hard-reproduce.png)
 
 At ZenML, we believe the journey from model development to production doesn't need to be long and meandering.
 
@@ -32,7 +32,7 @@ Using ZenML allows data scientists like you to own the entire pipeline - from ex
 
 This is why we built ZenML.
 
-![Zenml](../assets/sam-side-by-side-full-text.png)
+![ZenML unifies all your tools in one place.](../assets/sam-side-by-side-full-text.png)
 
 
 Eager to get started? We recommend the following to start using **ZenML** right away!
