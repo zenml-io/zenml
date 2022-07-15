@@ -128,3 +128,9 @@ limited to basic data types. Pydantic cannot handle Pandas `DataFrame`s, for
 example, or `datetime` values, so in the
 above code you can see that we have to convert them at various points.
 {% endhint %}
+
+A concrete example of using the Feast feature store can be found 
+[here](https://github.com/zenml-io/zenml/tree/main/examples/feast_feature_store).
+
+For more information and a full list of configurable attributes of the Kubeflow orchestrator, check out the 
+[API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.feast.feature_stores.feast_feature_store.FeastFeatureStore).

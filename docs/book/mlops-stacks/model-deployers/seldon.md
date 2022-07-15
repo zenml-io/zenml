@@ -198,7 +198,7 @@ def seldon_model_deployer_step(
 ```
 
 A concrete example of using the Seldon Core Model Deployer can be found
-[here](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow_pipelines_orchestration).
+[here](https://github.com/zenml-io/zenml/tree/main/examples/seldon_deployment).
 
 For more information and a full list of configurable attributes of the Seldon Core Model Deployer, check out the 
 [API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.seldon.model_deployers).
