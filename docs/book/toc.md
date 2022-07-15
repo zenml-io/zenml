@@ -107,11 +107,11 @@
 * [Overview: Options for deploying your infrastructure](cloud-guide/overview.md)
 * [Execute Pipelines in the Cloud](cloud-guide/execute-pipelines-in-cloud.md)
 * [AWS](cloud-guide/aws/overview.md)
-  * [Set up an MLOps stack with EKS, ECR, S3 on AWS](cloud-guide/aws/aws_guide.md)
+  * [Set up a minimal MLOps stack on AWS](cloud-guide/aws/aws_guide.md)
 * [GCP](cloud-guide/gcp/overview.md)
-  * [Set up an MLOps stack with ... on GCP](cloud-guide/gcp/gcp_guide.md)
+  * [Set up a minimal MLOps stack on GCP](cloud-guide/gcp/gcp_guide.md)
 * [Azure](cloud-guide/aws/overview.md)
-  * [Set up an MLOps stack with ... on Azure](cloud-guide/azure/azure_guide.md)
+  * [Set up a minimal MLOps stack on Azure](cloud-guide/azure/azure_guide.md)
 
 ## Collaborate
 
