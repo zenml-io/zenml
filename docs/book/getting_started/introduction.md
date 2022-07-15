@@ -18,13 +18,6 @@ It's built for data scientists, ML Engineers, and MLOps Developers to collaborat
 **tool-agnostic**, and has interfaces/abstractions that are catered towards ML workflows. 
 ZenML brings together all your favorite tools in one place so you can tailor your workflow to cater your needs.
 
-
-<!-- At its core, ZenML pipelines execute ML-specific workflows from sourcing
-data to splitting, preprocessing, training, all the way to serving and monitoring 
-ML models in production. There are many built-in features to support
-common ML development tasks. ZenML is not here to replace the great tools that
-solve these individual problems. Rather, it offers an **extensible framework** and a standard abstraction to write and build your workflows. -->
-
 ## Why ZenML
 Everyone loves to train ML models, but few talks about shipping them into production, and even fewer can do it well.
 It's no wonder that 85% of ML models fail and 53% don't make it into production, according to a Gartner survey.
@@ -40,43 +33,24 @@ This is why we built ZenML.
 ![Zenml](../assets/sam-side-by-side-full-text.png)
 
 
-
-
-<!-- ZenML pipelines are designed to be written early in the development lifecycle. 
-As a data scientist, you can explore and tailor your pipelines as you develop toward production.
-Once you're satisfied, you can switch from local to cloud deployment. -->
-<!-- Read more about why we started building ZenML on our [blog](https://blog.zenml.io/why-zenml/). -->
-<!-- 
-Here's what you get by using ZenML -
-
-+ Extensibility - Build a framework to suit your specific needs.
-+ Reproducibility - Replicate training and inference workflows.
-+ Clarity - Represent steps of your pipeline in code.
-+ Batteries-included integrations - Bring all your favorite tools together.
-+ Easily switch between local and cloud stacks.
-+ Painless deployment and infrastructure configuration. -->
-
 Eager to get started? We recommend the following to start using **ZenML** right away!
 
 ## **Pipelining** - Take your first ZenML Steps
 
-If you are new to ZenML, you might want to
-get acquainted with the [core concepts](core-concepts.md) first 
-to understand what makes ZenML so special. Next, jump right 
-into our [developer guide](../developer-guide/installation.md) that will 
-take you from zero to hero in no time and explain the necessary knowledge of 
-**how to use ZenML**.
+New to ZenML? Get acquainted with the [core concepts](core-concepts.md) first 
+to understand what makes ZenML so special. 
+Next, jump right into [developer guide](../developer-guide/installation.md) to go from zero to hero in no time.
 
 ## **Stacking** - Connect Your Favourite Tools
 
 Already ran your first pipeline and want to know about integrations and
-production use cases? Check out Zenml [integrations](https://zenml.io/integrations). You'll find detailed descriptions of specific
+production use cases? Check out ZenML [integrations](https://zenml.io/integrations). You'll find detailed descriptions of specific
 use cases and features. Learn how to take your 
 MLOps stack from basic to fully-fledged.
 
 ## **Extending** - Make it your own
 
-ZenML doesn't support your favorite tool? Don't worry! ZenML is 
+ZenML doesn't support your favorite tool? Worry not! ZenML is 
 built from the ground up with extensibility in mind. Find out how to integrate other tools or proprietary on-prem solutions for you and your team in [Stack Components](../mlops_stacks/extending.md). 
 
 ## **Collaborating** - Work together with your team
@@ -85,7 +59,7 @@ Share not only your code but also your ZenML stacks with your team. Find out how
 
 ## **Resources** - Learn ZenML with tutorials, examples, and guides
 
-The ZenML team and community have put together more resources other than the documentation to learn about the framework. Learn more in [resources](../resources/index.md).
+The ZenML team and community have put together resources to learn about the framework. Learn more in [resources](../resources/index.md).
 
 ## **Community** - Be part of the ZenML family
 
