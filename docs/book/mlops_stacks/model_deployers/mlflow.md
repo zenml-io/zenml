@@ -7,7 +7,7 @@ stack component. Provided with the MLflow integration it can be used to deploy
 and manage [MLflow models](https://www.mlflow.org/docs/latest/python_api/mlflow.deployments.html) on a local running MLflow server.
 
 {% hint style="warning" %}
-The MLFLow Model Deployer is not yet available for use in production. This is a work in progress and will be available soon. At the moment it is only available for use in a local development environment.
+The MLflow Model Deployer is not yet available for use in production. This is a work in progress and will be available soon. At the moment it is only available for use in a local development environment.
 {% endhint %}
 
 ## When would you want to use it?

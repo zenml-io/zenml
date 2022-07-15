@@ -14,7 +14,7 @@ Batch inference or offline inference is the process of making a machine learning
 * Pre-processing is the process of transforming the data before it is passed to the machine learning model.
 * Post-processing is the process of transforming the data after it is returned from the machine learning model and before it is returned to the user.
 
-Both pre- and post-processing are very issential to the model deployment process, since majority of the models require specific input format which requires transforming the data before it is passed to the model and after it is returned from the model. ZenML is allowing you to define your own pre- and post-processing 
+Both pre- and post-processing are very essential to the model deployment process, since majority of the models require specific input format which requires transforming the data before it is passed to the model and after it is returned from the model. ZenML is allowing you to define your own pre- and post-processing 
 within a pipeline level by defining a custom steps before and after the predict step.
 
 {% hint style="warning" %}
@@ -32,24 +32,24 @@ you can build pipelines that are continuously trained and deployed to a producti
 
 ### Model Deployers Flavors
 
-ZenML comes with a `local` MLFlow model deployer which is a simple model deployer that
-deploys models to a local MLFlow server. Additional model deployers that can be used
+ZenML comes with a `local` MLflow model deployer which is a simple model deployer that
+deploys models to a local MLflow server. Additional model deployers that can be used
 to deploy models on production environments are provided by integrations:
 
 | Model Deployer | Flavor | Integration | Notes             |
 |----------------|--------|-------------|-------------------|
-| [MLFlow](./mlflow.md) | `mlflow` | `mlflow` | Deploys ML Model locally |
+| [MLflow](./mlflow.md) | `mlflow` | `mlflow` | Deploys ML Model locally |
 | [Seldon Core](./seldon.md) | `seldon` | `seldon Core` | Built on top of Kubernetes to deploy models for production grade environment |
 | [KServe](./kserve.md) | `kserve` | `kserve` | Kubernetes based model deployment framework |
 | [Custom Implementation](./custom.md) | _custom_ |  | Extend the Artifact Store abstraction and provide your own implementation |
 
 {% hint style="info" %}
 Every model deployer may have different attributes that must be configured in order to
-interact with the model serving tool, framework or platform (e.g. hostnames, URLs, references to credentials, other client related configuration parameters). The following example shows the configuration of the MLFlow 
+interact with the model serving tool, framework or platform (e.g. hostnames, URLs, references to credentials, other client related configuration parameters). The following example shows the configuration of the MLflow 
 and Seldon Core model deployers:
 
 ```shell
-# Configure MLFlow model deployer
+# Configure MLflow model deployer
 zenml model-deployer register mlflow --flavor=mlflow
 
 # Configure Seldon Core model deployer

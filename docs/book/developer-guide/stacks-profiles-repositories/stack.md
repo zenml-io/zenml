@@ -49,7 +49,7 @@ component that defines how and where each pipeline step is executed when
 calling `pipeline.run()`. By [default](../../mlops_stacks/orchestrators/local.md),
 all runs are executed locally, but by configuring a different orchestrator you
 can, e.g., automatically execute your ML workflows on 
-[KubeFlow](../../mlops_stacks/orchestrators/kubeflow.md) instead.
+[Kubeflow](../../mlops_stacks/orchestrators/kubeflow.md) instead.
 
 ### Artifact Stores
 
