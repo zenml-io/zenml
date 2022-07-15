@@ -28,6 +28,7 @@
   * [Setting Stacks and Profiles with Environment Variables](developer-guide/stacks-profiles-repositories/stack-profile-environment-variables.md)
   * [Migrating Legacy Stacks to ZenML Profiles](developer-guide/stacks-profiles-repositories/migrating-legacy-stacks.md)
 * [Advanced Usage](developer-guide/advanced-concepts/overview.md)
+  * [Writing Custom Stack Component Flavors](developer-guide/advanced-concepts/custom-flavors.md)
   * [Passing Custom Data Types through Steps](developer-guide/advanced-concepts/materializer.md)
   * [Accessing the Active Stack within Steps](developer-guide/advanced-concepts/step-fixtures.md)
   * [Accessing Global Infos within Steps](developer-guide/advanced-concepts/environment.md)
@@ -38,7 +39,6 @@
 
 * [Categories of MLOps Tools](mlops_stacks/categories.md)
 * [Integration Overview](mlops_stacks/integrations.md)
-* [Extending ZenML](mlops_stacks/extending.md)
 * [Orchestrators](mlops_stacks/orchestrators/overview.md)
   * [Local Orchestrator](mlops_stacks/orchestrators/local.md)
   * [Airflow Orchestrator](mlops_stacks/orchestrators/airflow.md)
