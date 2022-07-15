@@ -110,7 +110,7 @@
   * [Set up a minimal MLOps stack on AWS](cloud-guide/aws/aws_guide.md)
 * [GCP](cloud-guide/gcp/overview.md)
   * [Set up a minimal MLOps stack on GCP](cloud-guide/gcp/gcp_guide.md)
-* [Azure](cloud-guide/aws/overview.md)
+* [Azure](cloud-guide/azure/overview.md)
   * [Set up a minimal MLOps stack on Azure](cloud-guide/azure/azure_guide.md)
 
 ## Collaborate
