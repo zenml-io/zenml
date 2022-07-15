@@ -114,7 +114,9 @@ arguments `--param=value`, similar to how we passed the flavor.
 E.g., to register a *local* artifact store, we could use the following command:
 
 ```shell
-zenml artifact-store register <ARTIFACT_STORE_NAME> --flavor=local --path=/path/to/your/store
+zenml artifact-store register <ARTIFACT_STORE_NAME> \
+    --flavor=local \
+    --path=/path/to/your/store
 ```
 
 Afterwards, you should be able to see the new artifact store in the
@@ -136,10 +138,11 @@ After registering each tool as the respective stack component, you can combine
 all of them into one stack using the `zenml stack register` command:
 
 ```shell
-zenml stack register <STACK_NAME> --orchestrator <ORCHESTRATOR_NAME> \
-                                  --artifact-store <ARTIFACT_STORE_NAME> \
-                                  --metadata-store <METADATA_STORE_NAME> \
-                                  ...
+zenml stack register <STACK_NAME> \
+    --orchestrator <ORCHESTRATOR_NAME> \
+    --artifact-store <ARTIFACT_STORE_NAME> \
+    --metadata-store <METADATA_STORE_NAME> \
+    ...
 ```
 
 {% hint style="info" %}
