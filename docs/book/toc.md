@@ -63,7 +63,7 @@
   * [Default Container Registry](mlops_stacks/container_registries/default.md)
   * [DockerHub](mlops_stacks/container_registries/dockerhub.md)
   * [Amazon Elastic Container Registry (ECR)](mlops_stacks/container_registries/amazon_ecr.md)
-  * [Google Cloud Container Registry](mlops_stacks/container_registries/gcloud_gcr.md)
+  * [Google Cloud Container Registry](mlops_stacks/container_registries/gcloud.md)
   * [Azure Container Registry](mlops_stacks/container_registries/azure.md)
   * [GitHub Container Registry](mlops_stacks/container_registries/github.md)
   * [How to develop a custom container registry](mlops_stacks/container_registries/custom.md)

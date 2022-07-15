@@ -31,7 +31,7 @@ Cloud Storage is a service for storing your objects in Google Cloud. An object i
 
 Container Registry is a service for storing private container images. It is being deprecated in favour of Artifact Registry, support for which will be coming soon to ZenML!
 
-* A [GCR registry can be used as a container registry](../../mlops_stacks/container_registries/gcloud_gcr.md) stack component to host images of your pipelines. 
+* A [GCR registry can be used as a container registry](../../mlops_stacks/container_registries/gcloud.md) stack component to host images of your pipelines. 
 
 ## Vertex AI
 
