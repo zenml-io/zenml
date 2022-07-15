@@ -13,7 +13,7 @@ training-serving skew.
 
 ## 🗺 Overview
 This example uses [Deepchecks](https://github.com/deepchecks/deepchecks), a
-feature rich data validation open-source library to painlessly do data validation.
+feature-rich data validation open-source library to painlessly do data validation.
 Deepchecks can do a variety of data validation tasks, from data integrity checks
 that work with a single dataset to data+model evaluation to data drift analyses.
 All this can be done with minimal configuration input from the user, or
