@@ -281,6 +281,7 @@ NotFoundError
 NotImplementedError
 NumPy
 OAuth
+OSError
 OneRing
 OpFunc
 OpenAPI

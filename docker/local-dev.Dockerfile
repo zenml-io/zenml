@@ -1,8 +1,5 @@
 FROM ubuntu:20.04
 
-WORKDIR /zenml
-
-# python
 ENV PYTHONFAULTHANDLER=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONHASHSEED=random \
@@ -29,9 +26,7 @@ RUN apt-get update && \
   apt-get autoremove --purge
 
 RUN curl -sSL https://install.python-poetry.org | python
-
-# copy project requirement files here to ensure they will be cached.
-COPY pyproject.toml /zenml
+RUN pip install --no-cache-dir --upgrade --pre pip
 
 ENV ZENML_DEBUG=true
 ENV ZENML_ANALYTICS_OPT_IN=false
@@ -39,13 +34,14 @@ ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="$VIRTUAL_ENV/bin:$POETRY_HOME/bin:$PATH"
 RUN python -m venv $VIRTUAL_ENV
 
-RUN pip install --no-cache-dir --upgrade --pre pip
+WORKDIR /zenml
 
-# install dependencies but don't install zenml yet
-# this improves caching as the dependencies don't have to be reinstalled everytime a src file changes
-RUN poetry install --no-root
+# Copy all necessary files for the installation
+COPY README.md pyproject.toml poetry.lock* ./
+# The existence of this __init__.py file allows the poetry install before actually 
+# copying our source files which would invalidate caching
+COPY src/zenml/__init__.py ./src/zenml/
 
-COPY . /zenml
+RUN poetry install
 
-# install zenml
-RUN poetry update && poetry install
+COPY src src
