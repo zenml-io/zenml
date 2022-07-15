@@ -2,11 +2,66 @@
 description: Make your ML Models available to serve real-time predictions with Model Deployers.
 ---
 
-Models Deployment is the process of making a machine learning model available to make predictions and decisions on real world data. Getting predictions from trained models can be done in different ways depending on the use-case, a batch prediction is used to generate prediction for a large amount of data at once, while a real-time prediction is used to generate predictions for a single data point at a time.
+Model Deployment is the process of making a machine learning model available to make predictions and decisions on real world data. Getting predictions from trained models can be done in different ways depending on the use-case, a batch prediction is used to generate prediction for a large amount of data at once, while a real-time prediction is used to generate predictions for a single data point at a time.
 
-With ZenML you can achieve batch prediction by building a pipeline that generates predictions for a large amount of data at once. For the real-time prediction use-case you can use model deployers.
+Model deployers are stack components responsible for serving models on a real-time or batch basis.
 
-Model deployers are stack components responsible for online model serving. Online serving is the process of hosting and loading machine-learning models as part of a managed web service and providing access to the models through an API endpoint like HTTP or GRPC. Once deployed, you can send inference requests to the model through the web service's API and receive fast, low-latency responses.
+Online serving is the process of hosting and loading machine-learning models as part of a managed web service and providing access to the models through an API endpoint like HTTP or GRPC. Once deployed, model inference can be triggered at any time and you can send inference requests to the model through the web service's API and receive fast, low-latency responses.
+
+Batch inference or offline inference is the process of making a machine learning model make predictions on a batch observations. This is useful for generating predictions for a large amount of data at once. The predictions are usually stored as files or in a database for end users or business applications.
+#### Custom pre-processing and post-processing
+
+* Pre-processing is the process of transforming the data before it is passed to the machine learning model.
+* Post-processing is the process of transforming the data after it is returned from the machine learning model and before it is returned to the user.
+
+The both pre- and post-processing are very issential to the model deployment process, since majority of the models require specific input format which requires transforming the data before it is passed to the model and after it is returned from the model. ZenML is allowing you to define your own pre- and post-processing 
+within a pipeline level by defining a custom steps before and after the predict step.
+
+{% hint style="warning" %}
+The support for custom pre- and post-processing at the model deployment level is not yet available for use. This is a work in progress and will be available soon.
+You can find more information about the custom deployment [here](https://github.com/zenml-io/zenml/pull/522)
+{% endhint %}
+
+## When to use it?
+
+The model deployers are optional components in the ZenML stack. They are used to
+deploy machine learning models to a target environment either a development (local) 
+or a production (Kubernetes), the model deployers are mainly used to deploy models 
+for real time inference use cases. With the model deployers and other stack components,
+you can build pipelines that are continuously trained and deployed to a production.
+
+### Model Deployers Flavors
+
+ZenML comes with a `local` MLFlow model deployer which is a simple model deployer that
+deploys models to a local MLFlow server. Additional model deployers that can be used
+to deploy models on production environments are provided by integrations:
+
+| Model Deployer | Flavor | Integration | Notes             |
+|----------------|--------|-------------|-------------------|
+| [MLFlow](./mlflow.md) | `mlflow` | `mlflow` | Deploys ML Model locally |
+| [Seldon Core](./seldon.md) | `seldon` | `seldon Core` | Built on top of Kubernetes to deploy models for production grade environment |
+| [KServe](./kserve.md) | `kserve` | `kserve` | Kubernetes based model deployment framework |
+| [Custom Implementation](./custom.md) | _custom_ |  | Extend the Artifact Store abstraction and provide your own implementation |
+
+{% hint style="info" %}
+Every model deployer may have different attributes that must be configured in order to
+interact with the model serving tool, framework or platform (e.g. hostnames, URLs, references to credentials, other client related configuration parameters). The following example shows the configuration of the MLFlow 
+and Seldon Core model deployers:
+
+```shell
+# Configure MLFlow model deployer
+zenml model-deployer register mlflow --flavor=mlflow
+
+# Configure Seldon Core model deployer
+zenml model-deployer register seldon --flavor=seldon \
+--kubernetes_context=zenml-eks --kubernetes_namespace=zenml-workloads \
+--base_url=http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com
+...
+```
+{% endhint %}
+
+### The role Model Deployer plays in a ZenML Stack
+
 
 There are three major roles that a Model Deployer plays in a ZenML Stack:
 
@@ -131,6 +186,7 @@ There are three major roles that a Model Deployer plays in a ZenML Stack:
         # delete the service
         model_deployer.delete_service(services[0].uuid, timeout=100, force=False)
     ```
+### How to Interact with model deployer after deployment?
 
 When a Model Deployer is part of the active ZenML Stack, it is also possible to
 interact with it from the CLI to list, start, stop or delete the model servers
@@ -198,41 +254,3 @@ a continuous model deployment workflow. These steps take care of all the aspects
 of continuously deploying models to an external server and saving the Service
 configuration into the Artifact Store, where they can be loaded at a later time
 and re-create the initial conditions used to serve a particular model.
-
-## When to use it
-
-The model deployers are optional components in the ZenML stack. They are used to
-deploy machine learning models to a target environment either a development (local) 
-or a production (Kubernetes), the model deployers are mainly used to deploy models 
-for real time inference use cases. With the model deployers and other stack components,
-you can build pipelines that are continuously trained and deployed to a production.
-
-## Model Deployers Flavors
-
-ZenML comes with a `local` MLFlow model deployer which is a simple model deployer that
-deploys models to a local MLFlow server. Additional model deployers that can be used
-to deploy models on production environments are provided by integrations:
-
-| Model Deployer | Flavor | Integration | Notes             |
-|----------------|--------|-------------|-------------------|
-| [MLFlow](./mlflow.md) | `mlflow` | `mlflow` | Deploys ML Model locally |
-| [Seldon Core](./seldon.md) | `seldon` | `seldon Core` | Built on top of Kubernetes to deploy models for production grade environment |
-| [KServe](./kserve.md) | `kserve` | `kserve` | Kubernetes based model deployment framework |
-| [Custom Implementation](./custom.md) | _custom_ |  | Extend the Artifact Store abstraction and provide your own implementation |
-
-{% hint style="info" %}
-Every model deployer may have different attributes that must be configured in order to
-interact with the model serving tool, framework or platform (e.g. hostnames, URLs, references to credentials, other client related configuration parameters). The following example shows the configuration of the MLFlow 
-and Seldon Core model deployers:
-
-```shell
-# Configure MLFlow model deployer
-zenml model-deployer register mlflow --flavor=mlflow
-
-# Configure Seldon Core model deployer
-zenml model-deployer register seldon --flavor=seldon \
---kubernetes_context=zenml-eks --kubernetes_namespace=zenml-workloads \
---base_url=http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com
-...
-```
-{% endhint %}
