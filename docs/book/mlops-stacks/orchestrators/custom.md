@@ -198,7 +198,7 @@ class StepEntrypointConfiguration(ABC):
 {% hint style="info" %}
 This is a slimmed-down version of the base implementation which aims to 
 highlight the abstraction layer. In order to see the full implementation 
-and get the complete docstrings, please check the [API docs](https://apidocs.zenml.io/0.7.3/api_docs/orchestrators/#zenml.orchestrators.base_orchestrator.BaseOrchestrator).
+and get the complete docstrings, please check the [API docs](https://apidocs.zenml.io/latest/api_docs/orchestrators/#zenml.orchestrators.base_orchestrator.BaseOrchestrator).
 {% endhint %}
 
 ## Build your own Step Entrypoint Configuration
