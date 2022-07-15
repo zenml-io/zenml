@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+
 import glob
 import tempfile
 from pathlib import Path
@@ -24,12 +25,25 @@ from fastai.vision.augment import Resize
 from fastai.vision.data import ImageDataLoaders
 from fastai.vision.learner import vision_learner
 
+
+from fastai.data.transforms import get_image_files
+from fastai.learner import Learner
+from fastai.metrics import error_rate
+from fastai.vision.augment import Resize
+from fastai.vision.data import ImageDataLoaders
+from fastai.vision.learner import vision_learner
+from fastai.vision.models import squeezenet1_1
 from zenml.integrations.label_studio.label_studio_utils import (
     download_azure_image,
 )
 from zenml.logger import get_logger
 from zenml.steps import step
 from zenml.steps.step_context import StepContext
+
+from pathlib import Path
+
+from zenml.logger import get_logger
+from zenml.steps import step
 
 IMAGE_REGEX_FILTER = ".*(jpe?g|png)"
 
@@ -54,7 +68,7 @@ def is_aria(x: str) -> bool:
 
 
 @step
-def fine_tuning_step(
+def model_trainer(
     image_urls: List[str],
     labels: List[Dict[str, str]],
     context: StepContext,
@@ -62,8 +76,6 @@ def fine_tuning_step(
     with tempfile.TemporaryDirectory() as temp_dir:
         for url in image_urls:
             download_azure_image(url, temp_dir.name)
-
-        # training_images = glob.glob(f"{temp_dir.name}/*{IMAGE_REGEX_FILTER}")
 
         dls = ImageDataLoaders.from_name_func(
             temp_dir,
@@ -74,5 +86,5 @@ def fine_tuning_step(
             item_tfms=Resize(224),
         )
 
-        learn = vision_learner(dls, "squeezenet1_1", metrics=error_rate)
+        learn = vision_learner(dls, squeezenet1_1, metrics=error_rate)
         learn.fine_tune(1)

@@ -2,6 +2,7 @@ import os
 import tempfile
 from typing import Type
 
+
 from fastai.learner import Learner, load_learner
 
 from zenml.artifacts import ModelArtifact
@@ -31,8 +32,7 @@ class FastaiLearnerMaterializer(BaseMaterializer):
         """
         super().handle_input(data_type)
 
-        def is_cat(x):
-            return True
+        from steps.model_trainer_step import is_aria
 
         with tempfile.TemporaryDirectory() as d:
             fileio.copy(
@@ -49,8 +49,7 @@ class FastaiLearnerMaterializer(BaseMaterializer):
         """
         super().handle_return(model)
 
-        def is_cat(x):
-            return True
+        from steps.model_trainer_step import is_aria
 
         # Save entire model to artifact directory
         with tempfile.TemporaryDirectory() as d:

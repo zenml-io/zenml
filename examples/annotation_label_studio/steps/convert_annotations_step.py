@@ -20,7 +20,7 @@ logger = get_logger(__name__)
 
 
 @step
-def convert_annotation(
+def convert_annotations(
     label_studio_annotations: List[Dict[Any, Any]]
 ) -> Output(image_urls=List, image_labels=List,):
     """Converts the annotation from Label Studio to a dictionary."""

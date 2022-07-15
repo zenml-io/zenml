@@ -40,16 +40,19 @@ def continuous_training_pipeline(
     # Use an option to pass in filters (or use the 'meta' field)
     new_annotations = get_labeled_data(dataset_name)
 
+    # add a trigger step here?
+
     training_images, training_annotations = annotation_converter(
         new_annotations
     )
     model = get_model()
-    # new_model = fine_tuner(model, training_images, training_annotations)
-    # model = compare_and_validate(model, new_model)
+    new_model = fine_tuner(model, training_images, training_annotations)
+    model = compare_and_validate(model, new_model)
 
     # TODO: POSSIBLY SPLIT PIPELINE HERE INTO NEW PIPELINE??
     # uploads some new local images to the ZenML artifact store
     new_images_dict, new_images_uri = images_loader()
+    model = get_inference_model()  # from hfhub or training step
 
     preds = batch_inference(new_images_dict, model)
 

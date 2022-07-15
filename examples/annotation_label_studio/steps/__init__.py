@@ -12,7 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from steps.batch_inference_step import batch_inference
-from steps.convert_annotation_step import convert_annotation
+from steps.convert_annotations_step import convert_annotations
 from steps.fine_tuning_step import fine_tuning_step
 from steps.load_image_data_step import load_image_data
 from steps.model_loader_step import model_loader
+from steps.model_trainer_step import model_trainer
