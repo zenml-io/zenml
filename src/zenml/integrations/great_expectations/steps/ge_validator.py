@@ -106,7 +106,7 @@ def great_expectations_validator_step(
     """Shortcut function to create a new instance of the GreatExpectationsValidatorStep step.
 
     The returned GreatExpectationsValidatorStep can be used in a pipeline to
-    validate an input pd.DataFrame datasets and return the result as a Great
+    validate an input pd.DataFrame dataset and return the result as a Great
     Expectations CheckpointResult object. The validation results are also
     persisted in the Great Expectations validation store.
 

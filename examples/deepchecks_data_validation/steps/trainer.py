@@ -22,7 +22,6 @@ LABEL_COL = "target"
 
 @step
 def trainer(df_train: pd.DataFrame) -> ClassifierMixin:
-    # Train Model
     rf_clf = RandomForestClassifier(random_state=0)
     rf_clf.fit(df_train.drop(LABEL_COL, axis=1), df_train[LABEL_COL])
     return rf_clf

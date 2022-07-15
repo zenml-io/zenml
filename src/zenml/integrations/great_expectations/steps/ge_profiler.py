@@ -88,7 +88,7 @@ def great_expectations_profiler_step(
     """Shortcut function to create a new instance of the GreatExpectationsProfilerStep step.
 
     The returned GreatExpectationsProfilerStep can be used in a pipeline to
-    infer data validation rules from an input pd.DataFrame datasets and return
+    infer data validation rules from an input pd.DataFrame dataset and return
     them as an Expectation Suite. The Expectation Suite is also persisted in the
     Great Expectations expectation store.
 
