@@ -129,7 +129,7 @@ zenml secret register mysql_secret --schema=mysql \
 {% endtabs %}
 
 For more, up-to-date information on the MySQL Metadata Store implementation and its
-configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/metadata_stores/#zenml.metadata_stores.mysql_metadata_store).
+configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/metadata_stores/#zenml.metadata_stores.mysql_metadata_store.MySQLMetadataStore).
 
 ## How do you use it?
 

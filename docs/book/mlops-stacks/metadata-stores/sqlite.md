@@ -96,7 +96,7 @@ Store.
 {% endhint %}
 
 For more, up-to-date information on the SQLite Metadata Store implementation and
-its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/metadata_stores/#zenml.metadata_stores.mysql_metadata_store).
+its configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/metadata_stores/#zenml.metadata_stores.sqlite_metadata_store.SQLiteMetadataStore).
 
 ## How do you use it?
 
