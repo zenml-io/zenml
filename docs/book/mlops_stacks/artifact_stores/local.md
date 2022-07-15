@@ -30,7 +30,7 @@ a [local Kubeflow Orchestrator](../orchestrators/kubeflow.md), or a
 [local Kubernetes Orchestrator](../orchestrators/kubernetes.md) can be combined
 with a local Artifact Store
 * only [Model Deployers](../model_deployers/overview.md) that are running
-locally, such as the [MLFlow Model Deployer](../model_deployers/mlflow.md)
+locally, such as the [MLflow Model Deployer](../model_deployers/mlflow.md)
 can only be used in combination with a local Artifact Store
 * [Step Operators](../step_operators/): none of the Step Operators can be used
 in the same stack as a local Artifact Store, given that their very purpose is

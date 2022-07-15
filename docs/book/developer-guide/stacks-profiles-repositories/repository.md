@@ -13,7 +13,7 @@ The repository plays a double role in ZenML:
 
 * It is used by ZenML to identify which files must be copied into Docker images 
 in order to execute pipeline steps remotely, e.g., when orchestrating pipelines
-with [KubeFlow](../mlops_stacks/orchestrators/kubeflow.md).
+with [Kubeflow](../mlops_stacks/orchestrators/kubeflow.md).
 * It defines the local active [Profile](#profiles) and active [Stack](#stacks)
 that will be used when running pipelines from the repository root or one of its
 sub-folders, as shown [below](#setting-local-active-profile-and-stack).

@@ -83,7 +83,7 @@ You will need the following information to configure Azure credentials for
 ZenML, depending on which type of Azure credentials you want to use:
 
 * an Azure connection string
-* an Azure acount key
+* an Azure account key
 * the client ID, client secret and tenant ID of the Azure service principle
 
 For more information on how to retrieve information about your Azure Storage
@@ -127,7 +127,7 @@ Store to manage step level artifacts
 Store to load served models
 
 These remote stack components can still use the implicit authentication method:
-if they are also running within the Azure Kubenetes Service, you can configure
+if they are also running within the Azure Kubernetes Service, you can configure
 your cluster to use [Azure Managed Identities](https://docs.microsoft.com/en-us/azure/aks/use-managed-identity).
 This mechanism allows Azure workloads like AKS pods to access other Azure
 services without requiring explicit credentials.

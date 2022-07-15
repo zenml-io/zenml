@@ -79,7 +79,7 @@ run = pipeline_x.get_run(run_name=...)
 
 {% hint style="warning" %}
 Calling `pipeline.runs` can currently be very slow when using remote metadata
-stores as all run data need to be transfered from the cloud to the local
+stores as all run data need to be transferred from the cloud to the local
 machine. 
 {% endhint %}
 

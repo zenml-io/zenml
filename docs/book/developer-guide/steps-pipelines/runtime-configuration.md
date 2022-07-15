@@ -86,7 +86,7 @@ and executing it with `zenml pipeline run`.
 ### Defining step parameters in YAML
 
 If you only want to configure step parameters as above, you can do so with a
-minimalistic configuration YAML file, which you use to configure a pipleline
+minimalistic configuration YAML file, which you use to configure a pipeline
 before running it using the `with_config()` method, e.g.:
 
 ```python

@@ -32,7 +32,7 @@ However, these ZenML mechanisms are meant to be used programmatically and can be
 more difficult to work with without a visual interface.
 
 Experiment Trackers on the other hand are tools designed with usability in mind.
-They include extensive UIs providing users with an interactive and intuitive
+They include extensive UI's providing users with an interactive and intuitive
 interface that allows them to browse and visualize the information logged during
 the ML pipeline runs.
 

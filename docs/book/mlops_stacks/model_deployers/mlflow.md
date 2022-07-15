@@ -1,16 +1,16 @@
 ---
-description: Deploy and Test your models locally with MLFlow
+description: Deploy and Test your models locally with MLflow
 ---
 
-The MLFLow Model Deployer is one of the available flavors of the [Model Deployer](./overview.md) 
-stack component. Provided with the MLFLow integration it can be used to deploy
-and manage [MLFlow models](https://www.mlflow.org/docs/latest/python_api/mlflow.deployments.html) on a local running MLFlow server.
+The MLflow Model Deployer is one of the available flavors of the [Model Deployer](./overview.md) 
+stack component. Provided with the MLflow integration it can be used to deploy
+and manage [MLflow models](https://www.mlflow.org/docs/latest/python_api/mlflow.deployments.html) on a local running MLflow server.
 
 ## When would you want to use it?
 
-MLFlow is a popular open source platform for machine learning. It's a great tool for
+MLflow is a popular open source platform for machine learning. It's a great tool for
 managing the entire lifecycle of your machine learning. One of the most important features
-of MLFlow is the ability to package your model and its dependencies into a single artifact
+of MLflow is the ability to package your model and its dependencies into a single artifact
 that can be deployed to a variety of deployment targets.
 
 You should use the MLflow Model Deployer:
@@ -31,7 +31,7 @@ The MLflow Model Deployer flavor is provided by the MLflow ZenML integration, yo
 zenml integration install mlflow -y
 ```
 
-To register the MLFlow model deployer with ZenML you need to run the following command:
+To register the MLflow model deployer with ZenML you need to run the following command:
 
 ```bash
 zenml model-deployer register mlflow_deployer --flavor=mlflow
@@ -41,7 +41,7 @@ The ZenML integration will provision a local MLflow deployment server as a daemo
 
 ## How do you use it?
 
-The first step to be able to deploy and use your MLflow model is to create Service deployment from code, this is done by setting the different paramters that mlflow deployment step requires.
+The first step to be able to deploy and use your MLflow model is to create Service deployment from code, this is done by setting the different parameters that the MLflow deployment step requires.
 
 ```python
 from zenml.steps import BaseStepConfig
@@ -139,9 +139,9 @@ inference = inference_pipeline(
 )
 ```
 
-You can check the MLFlow deployment example for more details.
+You can check the MLflow deployment example for more details.
 
 - [Model Deployer with MLflow](https://github.com/zenml-io/zenml/tree/main/examples/mlflow_deployment)
 
-For more information and a full list of configurable attributes of the MLFlow Model Deployer, check out the 
+For more information and a full list of configurable attributes of the MLflow Model Deployer, check out the 
 [API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.mlflow.model_deployers).

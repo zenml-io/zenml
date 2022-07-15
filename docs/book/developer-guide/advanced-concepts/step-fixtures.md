@@ -124,8 +124,8 @@ def find_best_model(context: StepContext, test_acc: float) -> bool:
         print(f"This run produced the highest test accuracy: {test_acc}.")
         return True
     print(
-        f"This run produced test accuracy {test_acc}, which is not the highest."
-        f"\nThe highest previous test accuracy was {highest_acc}."
+        f"This run produced test accuracy {test_acc}, which is not the highest. "
+        f"The highest previous test accuracy was {highest_acc}."
     )
     return False
 ```

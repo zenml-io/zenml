@@ -209,8 +209,8 @@ you can build pipelines that are continuously trained and deployed to a producti
 
 ## Model Deployers Flavors
 
-ZenML comes with a `local` MLFlow model deployer which is a simple model deployer that
-deploys models to a local MLFlow server. Additional model deployers that can be used
+ZenML comes with a `local` MLflow model deployer which is a simple model deployer that
+deploys models to a local MLflow server. Additional model deployers that can be used
 to deploy models on production environments are provided by integrations:
 
 | Model Deployer | Flavor | Integration | Notes             |
@@ -222,11 +222,11 @@ to deploy models on production environments are provided by integrations:
 
 {% hint style="info" %}
 Every model deployer may have different attributes that must be configured in order to
-interact with the model serving tool, framework or platform (e.g. hostnames, URLs, references to credentials, other client related configuration parameters). The following example shows the configuration of the MLFlow 
+interact with the model serving tool, framework or platform (e.g. hostnames, URLs, references to credentials, other client related configuration parameters). The following example shows the configuration of the MLflow 
 and Seldon Core model deployers:
 
 ```shell
-# Configure MLFlow model deployer
+# Configure MLflow model deployer
 zenml model-deployer register mlflow --flavor=mlflow
 
 # Configure Seldon Core model deployer

@@ -26,7 +26,7 @@ The feature store is an optional stack component in the ZenML Stack.
 The feature store as a technology should be used to store the features and
 inject them into the process in the server-side. This includes 
 
-* Productionize new features
+* Productionalize new features
 * Reuse existing features across multiple pipelines and models
 * Achieve consistency between training and serving data (Training Serving Skew)
 * Provide a central registry of features and feature schemas
