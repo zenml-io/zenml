@@ -66,7 +66,6 @@
   * [Google Cloud Container Registry](mlops_stacks/container_registries/gcloud_gcr.md)
   * [Azure Container Registry](mlops_stacks/container_registries/azure.md)
   * [GitHub Container Registry](mlops_stacks/container_registries/github.md)
-  * [GitLab Container Registry](mlops_stacks/container_registries/gitlab.md)
   * [How to develop a custom container registry](mlops_stacks/container_registries/custom.md)
 * [Secrets Managers](mlops_stacks/secrets_managers/overview.md)
   * [Local Secrets Manager](mlops_stacks/secrets_managers/local.md)
