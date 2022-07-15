@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import click
+from materializers.fastai_learner_materializer import FastaiLearnerMaterializer
 from pipelines import training_pipeline
 from steps import convert_annotations, model_trainer
 
@@ -101,7 +102,9 @@ def main(pipeline):
             get_or_create_dataset=get_or_create_the_dataset,
             get_labeled_data=get_labeled_data(),
             convert_annotations=convert_annotations(),
-            model_trainer=model_trainer(),
+            model_trainer=model_trainer().with_return_materializers(
+                FastaiLearnerMaterializer
+            ),
         ).run()
     elif pipeline == "inference":
         # inference_pipeline()
