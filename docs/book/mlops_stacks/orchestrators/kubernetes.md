@@ -32,6 +32,11 @@ To use the Kubernetes orchestrator, we need:
     ```
 * [Docker](https://www.docker.com) installed and running.
 * [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed.
+* A [remote artifact store](../artifact_stores/overview.md) as part of your stack.
+* A [remote metadata store](../metadata_stores/overview.md) as part of your stack.
+If you want to use a MySQL database deployed in your Kubernetes cluster, you can use
+the [Kubernetes metadata store](../metadata_stores/kubernetes.md). For a more 
+production-ready setup we suggest using a [MySQL metatadata store](../metadata_stores/mysql.md) instead.
 * A [remote container registry](../container_registries/overview.md) as part of your stack.
 * A Kubernetes cluster [deployed](#how-to-deploy-it) and the name
 of your Kubernetes context which points to this cluster. Run 
@@ -54,7 +59,8 @@ which includes your code and use it to run your pipeline steps in Kubernetes. Ch
 if you want to learn more about how ZenML builds these images and
 how you can customize them.
 
-If you decide you need the full flexibility of having a custom base image,
+If you decide you need the full flexibility of having a
+[custom base image](../../developer-guide/advanced-concepts/docker.md#using-a-custom-base-image),
 you can update your existing orchestrator
 ```shell
 zenml orchestrator update <NAME> \

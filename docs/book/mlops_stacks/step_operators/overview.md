@@ -45,3 +45,19 @@ use the command:
 ```shell
 zenml step-operator flavor list
 ```
+
+## How to use it
+
+You don't need to directly interact with any ZenML step operator in your code.
+As long as the step operator that you want to use is part of your active 
+[ZenML stack](../../developer-guide/stacks-profiles-repositories/stacks_profiles_repositories.md#stacks),
+you can simply specify it in the `@step `decorator of your
+[step](../../developer-guide/steps-pipelines/steps-and-pipelines.md#step):
+
+```python
+from zenml.steps import step
+
+@step(custom_step_operator=<STEP_OPERATOR_NAME>)
+def my_step(...) -> ...:
+    ...
+```

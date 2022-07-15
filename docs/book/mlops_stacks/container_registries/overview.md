@@ -34,7 +34,7 @@ use of the additional URI validations.
 |----------------------------|-----------|----------------|-------------|
 | [DefaultContainerRegistry](./default.md)   | `default`   | _built-in_     | - |
 | [DockerHubContainerRegistry](./dockerhub.md) | `dockerhub` | _built-in_     | docker.io/zenml |
-| [GCPContainerRegistry](./gcloud_gcr.md)       | `gcp`       | _built-in_     | gcr.io/zenml |
+| [GCPContainerRegistry](./gcloud.md)       | `gcp`       | _built-in_     | gcr.io/zenml |
 | [AzureContainerRegistry](./azure.md)     | `azure`    | _built-in_     | zenml.azurecr.io |
 | [GitHubContainerRegistry](./github.md)    | `github`    | _built-in_     | ghcr.io/zenml |
 | [AWSContainerRegistry](./amazon_ecr.md)       | `aws`       | `aws`            | 123456789.dkr.ecr.us-east-1.amazonaws.com |

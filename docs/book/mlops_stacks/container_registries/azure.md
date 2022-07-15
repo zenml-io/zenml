@@ -40,7 +40,7 @@ registry you want to use. If you don't have any container registries yet, check 
 To use the Azure container registry, we need:
 * [Docker](https://www.docker.com) installed and running.
 * The [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) installed and authenticated.
-* The registry URI. Check out the [previous section](#uri-format) on the URI format and how
+* The registry URI. Check out the [previous section](#how-to-find-the-registry-uri) on the URI format and how
 to get the URI for your registry.
 
 We can then register the container registry and use it in our active stack:
