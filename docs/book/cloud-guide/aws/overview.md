@@ -32,11 +32,11 @@ Amazon Elastic Container Registry (Amazon ECR) is an AWS managed container image
 
 * An [ECS registry can be used as a container registry](../../mlops_stacks/container_registries/amazon_ecr.md) stack component to host images of your pipelines. 
 
-## Sagemaker
+## SageMaker
 
 Amazon SageMaker is a fully managed machine learning service. With SageMaker, data scientists and developers can quickly build and train machine learning models, and then directly deploy them into a production-ready hosted environment. [Learn more here](https://docs.aws.amazon.com/sagemaker/latest/dg/whatis.html).
 
-* You can use [Sagemaker as a step operator](../../mlops_stacks/step_operators/amazon_sagemaker.md) to run specific steps from your pipeline using it as the backend.
+* You can use [SageMaker as a step operator](../../mlops_stacks/step_operators/amazon_sagemaker.md) to run specific steps from your pipeline using it as the backend.
 
 ## Relational Database Service (RDS)
 

@@ -12,7 +12,7 @@ You should use the AzureML step operator if:
 * one or more steps of your pipeline require computing resources (CPU, GPU, memory) that are
 not provided by your orchestrator.
 * you have access to AzureML. If you're using a different cloud provider, take 
-a look at the [Sagemaker](./amazon_sagemaker.md) or [Vertex](./gcloud_vertexai.md) step operators.
+a look at the [SageMaker](./amazon_sagemaker.md) or [Vertex](./gcloud_vertexai.md) step operators.
 
 ## How to deploy it
 
