@@ -13,9 +13,8 @@
 #  permissions and limitations under the License.
 
 import click
-from materializers.fastai_learner_materializer import FastaiLearnerMaterializer
 from pipelines import training_pipeline
-from steps import convert_annotations, model_trainer
+from steps import convert_annotations, pytorch_model_trainer
 
 from zenml.integrations.label_studio.label_config_generators import (
     generate_image_classification_label_config,
@@ -102,9 +101,7 @@ def main(pipeline):
             get_or_create_dataset=get_or_create_the_dataset,
             get_labeled_data=get_labeled_data(),
             convert_annotations=convert_annotations(),
-            model_trainer=model_trainer().with_return_materializers(
-                FastaiLearnerMaterializer
-            ),
+            model_trainer=pytorch_model_trainer(),
         ).run()
     elif pipeline == "inference":
         # inference_pipeline()
