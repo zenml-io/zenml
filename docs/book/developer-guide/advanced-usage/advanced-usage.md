@@ -28,7 +28,7 @@ prior model to compare newly trained models against.
 via the **Environment** can be useful to get system information, the Python
 version, or the name of the current step, pipeline, and run.
 * [Managing External Services](manage-external-services.md)
-might be required for deploying custom models or for the UIs of some visualization
+might be required for deploying custom models or for the UI's of some visualization
 tools like TensorBoard. These services are usually long-lived external
 processes that persist beyond the execution of your pipeline runs.
 * [Managing Docker Images](advanced-concepts/docker.md)

@@ -122,7 +122,7 @@ my_pipeline(
 ```
 
 For complete code examples of both Slack alerter steps, see the 
-[slack alterter example](https://github.com/zenml-io/zenml/tree/main/examples/slack_alert),
+[slack alerter example](https://github.com/zenml-io/zenml/tree/main/examples/slack_alert),
 where we first send the test accuracy of a model to Slack and then wait with
 model deployment until a user approves it in Slack.
 
