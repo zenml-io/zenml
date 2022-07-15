@@ -32,7 +32,7 @@ of that components role in the MLOps process:
 | [Experiment Tracker](experiment-trackers/overview.md) | Tracking your ML experiments                                      |
 | [Alerter](alerters/overview.md)                       | Sending alerts through specified channels                         |
 
-Ech pipeline run that you execute with ZenML will require a **stack** and each **stack** will be required to include at least an orchestrator, an artifact store, and a metadata store. Apart from these three, the other components are optional and to be added as your pipeline evolves in 
+Each pipeline run that you execute with ZenML will require a **stack** and each **stack** will be required to include at least an orchestrator, an artifact store, and a metadata store. Apart from these three, the other components are optional and to be added as your pipeline evolves in 
 MLOps maturity.
 
 In the upcoming sections, you will learn about each stack component, its role in further detail, and how to use them in 

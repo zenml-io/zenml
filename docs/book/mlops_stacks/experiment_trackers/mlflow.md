@@ -21,7 +21,7 @@ project and would like to continue doing so as you are incorporating MLOps
 workflows and best practices in your project through ZenML.
 * if you are looking for a more visually interactive way of navigating the
 results produced from your ZenML pipeline runs (e.g. models, metrics, datasets)
-* if you or your team already have a shared MLFlow Tracking service deployed
+* if you or your team already have a shared MLflow Tracking service deployed
 somewhere on-premise or in the cloud, and you would like to connect ZenML to it
 to share the artifacts and metrics logged by your pipelines
 
@@ -127,7 +127,7 @@ and its configuration, you can have a look at [the API docs](https://apidocs.zen
 To be able to log information from a ZenML pipeline step using the MLflow
 Experiment Tracker component in the active stack, you need to use the
 `enable_mlflow` step decorator on all pipeline steps where you plan on doing
-that. Then use MLFlow's logging or auto-logging capabilities as you would
+that. Then use MLflow's logging or auto-logging capabilities as you would
 normally do, e.g.:
 
 ```python

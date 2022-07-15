@@ -84,7 +84,7 @@ here, working with the default stack on initialization.
 ### Other Stack Components
 We've covered the three basic stack components that you will encounter most frequently. They work well on a local machine, but is rarely enough in production.
 
-At some point, you might want to scale up your stack to run elsewhere. Eg. on a cloud with powerful GPUs for training or CPUs for deployment.
+At some point, you might want to scale up your stack to run elsewhere, for example on a cloud with powerful GPUs for training or CPU's for deployment.
 
 ZenML provides many other stack components to suit these use cases.
 Having these components in your stack supercharges your pipeline for production.

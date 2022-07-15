@@ -3,7 +3,7 @@ description: How to deploy models to Kubernetes with Seldon Core
 ---
 
 The Seldon Core Model Deployer is one of the available flavors of the [Model Deployer](./overview.md) 
-stack component. Provided with the MLFLow integration it can be used to deploy
+stack component. Provided with the MLflow integration it can be used to deploy
 and manage models on a inference server running on top of a Kubernetes cluster.
 
 ## How do you deploy it?

@@ -24,7 +24,7 @@ or other data types, for which materialization is not defined by ZenML itself.
 * [Accessing the Active Stack within Steps](step-fixtures.md)
 via **Step Fixtures** can, for instance, be used to load the best performing
 prior model to compare newly trained models against.
-* [Accessing Global Infos within Steps](environment.md)
+* [Accessing Global Info within Steps](environment.md)
 via the **Environment** can be useful to get system information, the Python
 version, or the name of the current step, pipeline, and run.
 * [Managing External Services](manage-external-services.md)

@@ -5,7 +5,7 @@ description: How to configure MLOps tooling and infrastructure with stacks
 In ZenML, a **Stack** represents a set of configurations for your MLOps tools
 and infrastructure. For instance, you might want to:
 
-- Orchestrate your ML workflows with [KubeFlow](../../mlops_stacks/orchestrators/kubeflow.md),
+- Orchestrate your ML workflows with [Kubeflow](../../mlops_stacks/orchestrators/kubeflow.md),
 - Save ML artifacts in an [Amazon S3](../../mlops_stacks/artifact_stores/amazon_s3.md) bucket,
 - Track ML metadata in a managed [MySQL](../../mlops_stacks/metadata_stores/mysql.md) database,
 - Track your experiments with [Weights & Biases](../../mlops_stacks/experiment_trackers/wandb.md),
@@ -49,7 +49,7 @@ component that defines how and where each pipeline step is executed when
 calling `pipeline.run()`. By [default](../../mlops_stacks/orchestrators/local.md),
 all runs are executed locally, but by configuring a different orchestrator you
 can, e.g., automatically execute your ML workflows on 
-[KubeFlow](../../mlops_stacks/orchestrators/kubeflow.md) instead.
+[Kubeflow](../../mlops_stacks/orchestrators/kubeflow.md) instead.
 
 ### Artifact Stores
 
@@ -72,7 +72,7 @@ database deployed in the cloud.
 ## Stack Component Flavors
 
 The specific tool you are using is called a **Flavor** of the stack component. 
-E.g., *KubeFlow* is a flavor of the *Orchestrator* stack component.
+E.g., *Kubeflow* is a flavor of the *Orchestrator* stack component.
 
 Out-of-the-box, ZenML already comes with a wide variety of flavors, which are
 either built-in or enabled through the installation of specific

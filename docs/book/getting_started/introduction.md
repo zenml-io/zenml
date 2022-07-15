@@ -41,7 +41,7 @@ New to ZenML? Get acquainted with the [core concepts](core-concepts.md) first
 to understand what makes ZenML so special. 
 Next, jump right into [developer guide](../developer-guide/installation.md) to go from zero to hero in no time.
 
-## **Stacking** - Connect Your Favourite Tools
+## **Stacking** - Connect Your Favorite Tools
 
 Already ran your first pipeline and want to know about integrations and
 production use cases? Check out ZenML [integrations](https://zenml.io/integrations). You'll find detailed descriptions of specific

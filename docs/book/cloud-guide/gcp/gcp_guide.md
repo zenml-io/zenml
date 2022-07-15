@@ -6,7 +6,7 @@ description: How to set up a minimal stack on Google Cloud Platform (GCP)
 
 To get started using ZenML on the cloud, you need some basic infrastructure up 
 and running that you can then make more complicated depending on your use-case. 
-This guide sets up the easiest MLOPs stack that we can run on GCP with ZenML. 
+This guide sets up the easiest MLOps stack that we can run on GCP with ZenML. 
 
 {% hint style="info" %}
 This guide represents **one** of many ways to create a cloud stack on GCP. 
@@ -527,7 +527,7 @@ CERT_NAME=zenml-cert
 CLIENT_KEY_PATH=$PROJECT_NAME"client-key.pem"
 CLIENT_CERT_PATH=$PROJECT_NAME"client-cert.pem"
 SERVER_CERT_PATH=$PROJECT_NAME"server-ca.pem"
-gcloud sql instances patch $DB_ISTANCE --require-ssl
+gcloud sql instances patch $DB_INSTANCE --require-ssl
 gcloud sql ssl client-certs create $CERT_NAME $CLIENT_KEY_PATH --instance $DB_INSTANCE
 gcloud sql ssl client-certs describe $CERT_NAME --instance=$DB_INSTANCE --format="value(cert)" > $CLIENT_CERT_PATH
 gcloud sql instances describe $DB_INSTANCE --format="value(serverCaCert.cert)" > $SERVER_CERT_PATH

@@ -46,7 +46,7 @@ If you don't have an Azure account yet, go to [https://azure.microsoft.com/en-gb
 >https://docs.microsoft.com/en-us/azure/azure-resource-manager/resource-group-overview
 
 {% tabs %}
-{% tab title="AWS UI" %}
+{% tab title="Azure UI" %}
 
 - Go to [the Azure portal](https://portal.azure.com/#home), click the hamburger button in the top left to open up the portal menu. Then, hover over the `Resource groups` section until a popup appears and click on the `+ Create` button.
 
@@ -62,7 +62,7 @@ If you don't have an Azure account yet, go to [https://azure.microsoft.com/en-gb
 
 {% endtab %}
 
-{% tab title="AWS CLI" %}
+{% tab title="Azure CLI" %}
 
 ```shell
 RESOURCE_GROUP=<RESOURCE_GROUP_NAME>
@@ -79,7 +79,7 @@ az group create --name $RESOURCE_GROUP --location $RG_LOCATION
 An [Azure storage account](https://docs.microsoft.com/en-us/azure/storage/common/storage-account-create?tabs=azure-portal) is a grouping of Azure data storage objects which also provides a namespace and authentication options to access them. We'll need a storage account to hold the blob storage container we'll create in the next step.
 
 {% tabs %}
-{% tab title="AWS UI" %}
+{% tab title="Azure UI" %}
 
 - Open up the portal menu again, but this time hover over the `Storage accounts` section and click on the `+ Create` button in the popup once it appears: 
 
@@ -105,11 +105,10 @@ An [Azure storage account](https://docs.microsoft.com/en-us/azure/storage/common
 
 {% endtab %}
 
-{% tab title="AWS CLI" %}
+{% tab title="Azure CLI" %}
 
 ```shell
-# Set a name for your bucket and the AWS region for your resources
-# Select one of the region codes for <REGION>: https://docs.aws.amazon.com/general/latest/gr/rande.html#regional-endpoints
+# Set a name for your bucket and the Azure region for your resources
 REGION=<REGION>  
 STORAGE_ACCOUNT_NAME=<STORAGE_ACCOUNT_NAME>
 
@@ -127,7 +126,7 @@ STORAGE_ACCOUNT_KEY=$(az storage account keys list -g $RESOURCE_GROUP -n $STORAG
 Next, we're going to create an [Azure Blob Storage Container](https://docs.microsoft.com/en-us/azure/storage/blobs/). It will be used by ZenML to store the output artifacts of all our pipeline steps.
 
 {% tabs %}
-{% tab title="AWS UI" %}
+{% tab title="Azure UI" %}
 
 - To do so, select `Containers` in the Data storage section of the storage account:
 
@@ -145,7 +144,7 @@ Next, we're going to create an [Azure Blob Storage Container](https://docs.micro
 
 {% endtab %}
 
-{% tab title="AWS CLI" %}
+{% tab title="Azure CLI" %}
 
 ```shell
 BLOB_STORAGE_CONTAINER_NAME=<BLOB_STORAGE_CONTAINER_NAME> 
@@ -160,7 +159,7 @@ az storage container create --$BLOB_STORAGE_CONTAINER_NAME
 Now let's set up a managed MySQL database. This will act as ZenML's metadata store and store metadata regarding our pipeline runs which will enable features like caching and establish a consistent lineage between our pipeline steps.
 
 {% tabs %}
-{% tab title="AWS UI" %}
+{% tab title="Azure UI" %}
 
 - Open up the portal menu and click on `+ Create a resource`.
 
@@ -192,7 +191,7 @@ Now let's set up a managed MySQL database. This will act as ZenML's metadata sto
 
 {% endtab %}
 
-{% tab title="AWS CLI" %}
+{% tab title="Azure CLI" %}
 
 ```shell
 
@@ -216,7 +215,7 @@ wget --no-check-certificate https://dl.cacerts.digicert.com/DigiCertGlobalRootCA
 ### Container Registry
 
 {% tabs %}
-{% tab title="AWS UI" %}
+{% tab title="Azure UI" %}
 
 * [Set up](https://azure.microsoft.com/en-in/services/container-registry/#get-started)
   an Azure Container Registry (ACR).
@@ -230,7 +229,7 @@ wget --no-check-certificate https://dl.cacerts.digicert.com/DigiCertGlobalRootCA
 
 {% endtab %}
 
-{% tab title="AWS CLI" %}
+{% tab title="Azure CLI" %}
 
 ```shell
 REGISTRY_NAME=<REGISTRY_NAME>  # should be <some-name>.azurecr.io
@@ -244,7 +243,7 @@ az acr create -n $REGISTRY_NAME -g $RESOURCE_GROUP
 ### Orchestrator (Azure Kubernetes Service)
 
 {% tabs %}
-{% tab title="AWS UI" %}
+{% tab title="Azure UI" %}
 
 - On the Azure portal menu or from the Home page, select Create a resource. Select `Containers` > `Kubernetes Service`.
 
@@ -256,7 +255,7 @@ az acr create -n $REGISTRY_NAME -g $RESOURCE_GROUP
     - Ensure the the Preset configuration is Standard ($$). For more details on preset configurations, see Cluster configuration presets in the Azure portal.
     - Enter a Kubernetes cluster name. We will use it later as <AKS_CLUSTER_NAME>
 - Enter your `Region` for the AKS cluster, and leave the default value selected for Kubernetes version.
-- Keep the deafult values for all other sections and click on `Review + Create`.
+- Keep the default values for all other sections and click on `Review + Create`.
 - Set the following variable in your shell.
     ```shell
     AKS_CLUSTER_NAME=<AKS_CLUSTER_NAME> 
@@ -265,7 +264,7 @@ az acr create -n $REGISTRY_NAME -g $RESOURCE_GROUP
 
 {% endtab %}
 
-{% tab title="AWS CLI" %}
+{% tab title="Azure CLI" %}
 
 ```shell
 AKS_CLUSTER_NAME=<AKS_CLUSTER_NAME> 
@@ -377,7 +376,7 @@ STORAGE_ACCOUNT_KEY=$(az storage account keys list -g $RESOURCE_GROUP -n $STORAG
 
 az storage container create --$BLOB_STORAGE_CONTAINER_NAME
 
-# MySQl database
+# MySQL database
 az mysql flexible-server create -l $REGION -g $RESOURCE_GROUP \
  -n $MYSQL_SERVER_INSTANCE_NAME -u $MYSQL_USERNAME -p $MYSQL_PASSWORD \
  --public-access 0.0.0.0-255.255.255.255
