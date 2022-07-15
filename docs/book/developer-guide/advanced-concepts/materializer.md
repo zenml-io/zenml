@@ -87,10 +87,16 @@ link the materializer to that data type.
 ### What Type of Artifact to Generate
 
 Each materializer also has an `ASSOCIATED_ARTIFACT_TYPES` attribute, which
-defines what types of artifacts are being stored, such as `DataArtifact`,
-`StatisticsArtifact`, `DriftArtifact`, etc. This is not too important for you,
-as it is only used as a tag to query certain artifact types in the
-[Post Execution Workflow](../steps-pipelines/post-execution-workflow.md).
+defines what types of artifacts are being stored.
+
+In most cases, you should choose either `DataArtifact` or `ModelArtifact` here.
+If you are unsure, just use `DataArtifact`. The exact choice is not too 
+important, as the artifact type is only used as a tag in the visualization tools of some certain integrations like Facets.
+
+{% hint style="info" %} 
+You can find a full list of available artifact types in the 
+[API Docs](https://apidocs.zenml.io/0.8.1/api_docs/artifacts/).
+{% endhint %}
 
 ### Where to Store the Artifact
 
@@ -388,14 +394,19 @@ def my_step(my_artifact: DataArtifact)  # rather than pd.DataFrame
     pass
 ```
 
-The list of raw artifact types can be found in `zenml.artifacts.*` and includes
-`ModelArtifact`, `DataArtifact`, etc. Materializers link pythonic types to these
-artifact types implicitly, e.g., a `keras.model` or `torch.nn.Module` are
-pythonic types that are both linked to `ModelArtifact` implicitly via their
-materializers. When using artifacts directly, one must be aware of which type
-they are by looking at the previous step's materializer: if the previous step
-produces a `ModelArtifact` then you should specify `ModelArtifact` in a
-non-materialized step.
+When using artifacts directly, one must be aware of which type they are by 
+looking at the previous step's materializer: if the previous step produces a 
+`ModelArtifact` then you should specify `ModelArtifact` in a non-materialized
+step.
+
+{% hint style="info" %} 
+Materializers link pythonic types to artifact types implicitly. E.g., a
+`keras.model` or `torch.nn.Module` are pythonic types that are both linked to 
+`ModelArtifact` implicitly via their materializers.
+
+You can find a full list of available artifact types in the 
+[API Docs](https://apidocs.zenml.io/0.8.1/api_docs/artifacts/).
+{% endhint %}
 
 ### Example
 
@@ -443,7 +454,7 @@ def step_4(dict_: DataArtifact, list_: ModelArtifact) -> None:
 
 
 @pipeline
-def example_pipeline(step_1, step_2, sstep_3, step_4):
+def example_pipeline(step_1, step_2, step_3, step_4):
     step_3(*step_1())
     step_4(*step_2())
 

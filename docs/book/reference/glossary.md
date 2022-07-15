@@ -196,6 +196,8 @@ A step is a single piece or stage of a ZenML pipeline. Think of each step as
 being one of the nodes of the DAG. Steps are responsible for one aspect of
 processing or interacting with the data / artifacts in the pipeline.
 
+<!---
 ## Visualizer
 
 A visualizer contains logic to create visualizations within the ZenML ecosystem.
+-->
