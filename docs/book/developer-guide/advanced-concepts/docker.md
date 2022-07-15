@@ -37,9 +37,9 @@ following two ways:
     ```
 ## Customizing the build process
 
-This basic process explained above is all done automatically by ZenML and covers most basic use cases.
+This process explained above is all done automatically by ZenML and covers most basic use cases.
 This section covers all the different ways in which you can hook into the Docker building
-process to customize the resulting image for your use case.
+process to customize the resulting image to your needs.
 
 ## How to install additional pip dependencies
 
