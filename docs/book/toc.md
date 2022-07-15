@@ -24,7 +24,7 @@
 * [Stacks, Profiles, Repositories](developer-guide/stacks-profiles-repositories/stacks_profiles_repositories.md)
   * [Stacks: Configure MLOps Tooling and Infrastructure](developer-guide/stacks-profiles-repositories/stack.md)
   * [Profiles: Manage Stack Configurations](developer-guide/stacks-profiles-repositories/profile.md)
-  * [Repositories: Link Stacks to Code](developer-guide/stacks-profiles-repositories/stack.md)
+  * [Repositories: Link Stacks to Code](developer-guide/stacks-profiles-repositories/repository.md)
 * [Advanced Usage](developer-guide/advanced-concepts/overview.md)
   * [Writing Custom Stack Component Flavors](developer-guide/advanced-concepts/custom-flavors.md)
   * [Managing Stack Component States](developer-guide/advanced-concepts/stack-state-management.md)
