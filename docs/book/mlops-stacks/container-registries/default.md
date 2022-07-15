@@ -2,7 +2,7 @@
 description: How to store container images
 ---
 
-The Default container registry is a [container registry](./overview.md) 
+The Default container registry is a [container registry](./container-registries.md) 
 flavor which comes built-in with ZenML and allows container registry URIs
 of any format.
 
@@ -10,7 +10,7 @@ of any format.
 
 You should use the Default container registry if you want to use a **local**
 container registry or when using a remote container registry that is not 
-covered by other [container registry flavors](./overview.md#container-registry-flavors).
+covered by other [container registry flavors](./container-registries.md#container-registry-flavors).
 
 ## Local registry URI format
 

@@ -2,7 +2,7 @@
 description: How to access run names and other global data from within a step
 ---
 
-In addition to [Step Fixtures](step-fixtures.md), ZenML provides another
+In addition to [Step Fixtures](./step-fixtures.md), ZenML provides another
 interface where ZenML data can be accessed from within a step, the
 `Environment`, which can be used to get further information about the
 environment where the step is executed, such as the system it is running on,

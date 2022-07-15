@@ -2,7 +2,7 @@
 description: How to orchestrate pipelines with Airflow
 ---
 
-The Airflow orchestrator is an [orchestrator](./overview.md) flavor provided with
+The Airflow orchestrator is an [orchestrator](./orchestrators.md) flavor provided with
 the ZenML `airflow` integration that uses [Airflow](https://airflow.apache.org/)
 to run your pipelines.
 
@@ -14,7 +14,7 @@ You should use the Airflow orchestrator if
 than the [local orchestrator](./local.md)
 
 If you're looking to run your pipelines in the cloud, take a look at other
-[orchestrator flavors](./overview.md#orchestrator-flavors).
+[orchestrator flavors](./orchestrators.md#orchestrator-flavors).
 
 {% hint style="info" %}
 

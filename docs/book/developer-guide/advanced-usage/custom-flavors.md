@@ -135,7 +135,7 @@ zenml stack register <STACK_NAME> \
 
 {% hint style="info" %}
 If your custom stack component flavor requires special setup before it can be
-used, check out the [Managing Stack Component States](stack-state-management.md)
+used, check out the [Managing Stack Component States](./stack-state-management.md)
 section for more details.
 {% endhint %}
 
@@ -146,13 +146,13 @@ flavor for a specific stack component, please check the links below:
 
 | **Type of Stack Component**                 | **Description**                                                                               |
 |---------------------------------------------|-----------------------------------------------------------------------------------------------|
-| [Orchestrator](../../mlops_stacks/orchestrators/custom.md)              | Orchestrating the runs of your pipeline                           |
-| [Artifact Store](../../mlops_stacks/artifact_stores/custom.md)          | Storage for the artifacts created by your pipelines               |
-| [Metadata Store](../../mlops_stacks/metadata_stores/custom.md)          | Tracking the execution of your pipelines/steps                    |
-| [Container Registry](../../mlops_stacks/container_registries/custom.md) | Store for your containers                                         |
-| [Secrets Manager](../../mlops_stacks/secrets_managers/custom.md)        | Centralized location for the storage of your secrets              |
-| [Step Operator](../../mlops_stacks/step_operators/custom.md)            | Execution of individual steps in specialized runtime environments |
-| [Model Deployer](../../mlops_stacks/model_deployers/custom.md)          | Services/platforms responsible for online model serving           |
-| [Feature Store](../../mlops_stacks/feature_stores/custom.md)            | Management of your data/features                                  |
-| [Experiment Tracker](../../mlops_stacks/experiment_trackers/custom.md)  | Tracking your ML experiments                                      |
-| [Alerter](../../mlops_stacks/alerters/custom.md)                        | Sending alerts through specified channels                         |
+| [Orchestrator](../../mlops-stacks/orchestrators/custom.md)              | Orchestrating the runs of your pipeline                           |
+| [Artifact Store](../../mlops-stacks/artifact-stores/custom.md)          | Storage for the artifacts created by your pipelines               |
+| [Metadata Store](../../mlops-stacks/metadata-stores/custom.md)          | Tracking the execution of your pipelines/steps                    |
+| [Container Registry](../../mlops-stacks/container-registries/custom.md) | Store for your containers                                         |
+| [Secrets Manager](../../mlops-stacks/secrets-managers/custom.md)        | Centralized location for the storage of your secrets              |
+| [Step Operator](../../mlops-stacks/step-operators/custom.md)            | Execution of individual steps in specialized runtime environments |
+| [Model Deployer](../../mlops-stacks/model-deployers/custom.md)          | Services/platforms responsible for online model serving           |
+| [Feature Store](../../mlops-stacks/feature-stores/custom.md)            | Management of your data/features                                  |
+| [Experiment Tracker](../../mlops-stacks/experiment-trackers/custom.md)  | Tracking your ML experiments                                      |
+| [Alerter](../../mlops-stacks/alerters/custom.md)                        | Sending alerts through specified channels                         |

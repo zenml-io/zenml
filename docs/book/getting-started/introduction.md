@@ -37,9 +37,9 @@ Eager to get started? We recommend the following to start using **ZenML** right 
 
 ## **Pipelining** - Take Your First ZenML Steps
 
-New to ZenML? Get acquainted with the [core concepts](core-concepts.md) first 
+New to ZenML? Get acquainted with the [core concepts](./core-concepts.md) first 
 to understand what makes ZenML so special. 
-Next, jump right into [developer guide](../developer-guide/installation.md) to go from zero to hero in no time.
+Next, jump right into [developer guide](../developer-guide/steps-pipelines/steps-and-pipelines.md) to go from zero to hero in no time.
 
 ## **Stacking** - Connect Your Favorite Tools
 
@@ -51,7 +51,7 @@ MLOps stack from basic to fully-fledged.
 ## **Extending** - Make It Your Own
 
 ZenML doesn't support your favorite tool? Worry not! ZenML is 
-built from the ground up with extensibility in mind. Find out how to integrate other tools or proprietary on-prem solutions for you and your team in [Stack Components](../mlops_stacks/extending.md). 
+built from the ground up with extensibility in mind. Find out how to integrate other tools or proprietary on-prem solutions for you and your team in [Stack Components](../developer-guide/advanced-usage/custom-flavors.md). 
 
 ## **Collaborating** - Work Together With Your Team
 

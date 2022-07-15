@@ -2,7 +2,7 @@
 description: How to log and visualize experiments with MLflow
 ---
 
-The MLflow Experiment Tracker is an [Experiment Tracker](./overview.md) flavor
+The MLflow Experiment Tracker is an [Experiment Tracker](./experiment-trackers.md) flavor
 provided with the MLflow ZenML integration that uses [the MLflow tracking service](https://mlflow.org/docs/latest/tracking.html) to log and visualize information from your pipeline steps (e.g. models, parameters,
 metrics).
 
@@ -25,7 +25,7 @@ results produced from your ZenML pipeline runs (e.g. models, metrics, datasets)
 somewhere on-premise or in the cloud, and you would like to connect ZenML to it
 to share the artifacts and metrics logged by your pipelines
 
-You should consider one of the other [Experiment Tracker flavors](./overview.md#experiment-tracker-flavors)
+You should consider one of the other [Experiment Tracker flavors](./experiment-trackers.md#experiment-tracker-flavors)
 if you have never worked with MLflow before and would rather use another
 experiment tracking tool that you are more familiar with.
 
@@ -106,7 +106,7 @@ zenml stack register custom_stack -e mlflow_experiment_tracker ... --set
 
 {% tab title="Secrets Manager (Recommended)" %}
 
-This method requires you to include a [Secrets Manager](../secrets_managers/overview.md)
+This method requires you to include a [Secrets Manager](../secrets-managers/secrets-managers.md)
 in your stack and configure a ZenML secret to store the MLflow tracking service
 credentials securely.
 

@@ -2,7 +2,7 @@
 description: How to store container images in GitHub
 ---
 
-The GitHub container registry is a [container registry](./overview.md) flavor which comes built-in with 
+The GitHub container registry is a [container registry](./container-registries.md) flavor which comes built-in with 
 ZenML and uses the [GitHub Container Registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
 to store container images.
 
@@ -11,7 +11,7 @@ to store container images.
 You should use the GitHub container registry if:
 * one or more components of your stack need to pull or push container images.
 * you're using GitHub for your projects. If you're not using GitHub, take a look at the
- other [container registry flavors](./overview.md#container-registry-flavors).
+ other [container registry flavors](./container-registries.md#container-registry-flavors).
 
 ## How to deploy it
 

@@ -2,7 +2,7 @@
 description: How to execute individual steps in AzureML
 ---
 
-The AzureML step operator is a [step operator](./overview.md) flavor provided with
+The AzureML step operator is a [step operator](./step-operators.md) flavor provided with
 the ZenML `azure` integration that uses [AzureML](https://azure.microsoft.com/en-us/services/machine-learning/)
 to execute individual steps of ZenML pipelines.
 
@@ -12,7 +12,7 @@ You should use the AzureML step operator if:
 * one or more steps of your pipeline require computing resources (CPU, GPU, memory) that are
 not provided by your orchestrator.
 * you have access to AzureML. If you're using a different cloud provider, take 
-a look at the [SageMaker](./amazon_sagemaker.md) or [Vertex](./gcloud_vertexai.md) step operators.
+a look at the [SageMaker](./amazon-sagemaker.md) or [Vertex](./gcloud-vertexai.md) step operators.
 
 ## How to deploy it
 
@@ -64,12 +64,12 @@ def trainer(...) -> ...:
 {% hint style="info" %}
 ZenML will build Docker images which include your code and use these
 to run your steps in AzureML. Check out
-[this page](../../developer-guide/advanced-concepts/docker.md)
+[this page](../../developer-guide/advanced-usage/docker.md)
 if you want to learn more about how ZenML builds these images and
 how you can customize them.
 
 If you decide you need the full flexibility of having a
-[custom base image](../../developer-guide/advanced-concepts/docker.md#using-a-custom-base-image),
+[custom base image](../../developer-guide/advanced-usage/docker.md#using-a-custom-base-image),
 you can update your existing step operator
 ```shell
 zenml step-operator update <NAME> \

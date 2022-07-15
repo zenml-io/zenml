@@ -2,7 +2,7 @@
 description: How to store container images in GCP
 ---
 
-The GCP container registry is a [container registry](./overview.md) flavor which comes built-in with 
+The GCP container registry is a [container registry](./container-registries.md) flavor which comes built-in with 
 ZenML and uses the [Google Artifact Registry](https://cloud.google.com/artifact-registry) or the 
 [Google Container Registry](https://cloud.google.com/container-registry)
 to store container images.
@@ -12,7 +12,7 @@ to store container images.
 You should use the GCP container registry if:
 * one or more components of your stack need to pull or push container images.
 * you have access to GCP. If you're not using GCP, take a look at the
- other [container registry flavors](./overview.md#container-registry-flavors).
+ other [container registry flavors](./container-registries.md#container-registry-flavors).
 
 ## How to deploy it
 

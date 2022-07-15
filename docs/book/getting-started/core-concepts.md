@@ -8,10 +8,10 @@ ZenML consists of a few components. This guide walks through the various pieces 
 
 Here's a high-level overview of a typical ZenML workflow:
 
-1. Writing a *[pipeline](../developer-guide/steps-pipelines/steps-and-pipelines.md)* to define what happens in your machine learning workflow.
-2. Configuring a ZenML *[stack](../developer-guide/stacks-profiles-repositories/stacks_profiles_repositories.md)*.
+1. Writing a *[pipeline](../developer-guide/steps-pipelines/steps-and-pipelines.md#pipeline)* to define what happens in your machine learning workflow.
+2. Configuring a ZenML *[stack](../developer-guide/stacks-profiles-repositories/stack.md)*.
 3. Switching between *stacks* depending on needs.
-4. Customizing your *stack* with different *[components](../mlops_stacks/categories.md)*.
+4. Customizing your *stack* with different *[components](../developer-guide/stacks-profiles-repositories/stack.md#stack-components)*.
 
 So first, the basics.
 
@@ -56,7 +56,7 @@ Since pipelines can be set up with complex combinations of steps with various as
 
 ZenML comes with a built-in *local orchestrator* designed to run on your local machine. This is useful especially during the exploration phase of your project. You don't have to rent a cloud instance just to try out basic things.
 
-Once the pipeline is established you can switch to a full-fledged cloud stack that uses more sophisticated orchestrators like the Airflow or Kubeflow orchestrator. See the list of all orchestrators [here](../mlops_stacks/orchestrators/overview.md).
+Once the pipeline is established you can switch to a full-fledged cloud stack that uses more sophisticated orchestrators like the Airflow or Kubeflow orchestrator. See the list of all orchestrators [here](../mlops-stacks/orchestrators/orchestrators.md).
 
 ### Artifact Store
 
@@ -89,7 +89,7 @@ At some point, you might want to scale up your stack to run elsewhere, for examp
 ZenML provides many other stack components to suit these use cases.
 Having these components in your stack supercharges your pipeline for production.
 
-For other stack components check out this [page](../mlops_stacks/categories.md).
+For other stack components check out this [page](../mlops-stacks/categories.md).
 
 ## Switching Stacks to Scale Up
 We've seen how to run a pipeline locally. But that is rarely enough in production machine learning which typically involves cloud infrastructure.

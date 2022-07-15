@@ -2,7 +2,7 @@
 description: How to orchestrate pipelines with Kubeflow
 ---
 
-The Kubeflow orchestrator is an [orchestrator](./overview.md) flavor provided with
+The Kubeflow orchestrator is an [orchestrator](./orchestrators.md) flavor provided with
 the ZenML `kubeflow` integration that uses
 [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/introduction/)
 to run your pipelines.
@@ -128,7 +128,7 @@ To use the Kubeflow orchestrator, we need:
 When using the Kubeflow orchestrator locally, you'll additionally need
 * [K3D](https://k3d.io/v5.2.1/#installation) installed to spin up a local Kubernetes
 cluster.
-* A [local container registry](../container_registries/default.md) as part of your stack.
+* A [local container registry](../container-registries/default.md) as part of your stack.
 
 {% hint style="warning" %}
 The local Kubeflow Pipelines deployment requires more than 2 GB of RAM,
@@ -154,13 +154,13 @@ When using the Kubeflow orchestrator with a remote cluster, you'll additionally 
 for more information.
 * The name of your Kubernetes context which points to your remote cluster. 
 Run `kubectl config get-contexts` to see a list of available contexts.
-* A [remote artifact store](../artifact_stores/overview.md) as part of your stack.
-* A [remote metadata store](../metadata_stores/overview.md) as part of your stack. Kubeflow Pipelines
+* A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack.
+* A [remote metadata store](../metadata-stores/metadata-stores.md) as part of your stack. Kubeflow Pipelines
 already comes with its own MySQL database that is deployed in your Kubernetes cluster. If you want
 to use this database as your metadata store to get started quickly, check out the corresponding
-[documentation page](../metadata_stores/kubeflow.md). For a more production-ready setup we suggest
-using a [MySQL metatadata store](../metadata_stores/mysql.md) instead.
-* A [remote container registry](../container_registries/overview.md) as part of your stack.
+[documentation page](../metadata-stores/kubeflow.md). For a more production-ready setup we suggest
+using a [MySQL metatadata store](../metadata-stores/mysql.md) instead.
+* A [remote container registry](../container-registries/container-registries.md) as part of your stack.
 
 We can then register the orchestrator and use it in our active stack:
 ```shell
@@ -183,7 +183,7 @@ if you want to learn more about how ZenML builds these images and
 how you can customize them.
 
 If you decide you need the full flexibility of having a
-[custom base image](../../developer-guide/advanced-concepts/docker.md#using-a-custom-base-image),
+[custom base image](../../developer-guide/advanced-usage/docker.md#using-a-custom-base-image),
 you can update your existing orchestrator
 ```shell
 zenml orchestrator update <NAME> \

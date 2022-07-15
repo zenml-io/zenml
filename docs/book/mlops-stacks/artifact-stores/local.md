@@ -2,7 +2,7 @@
 description: How to store artifacts on your local filesystem
 ---
 
-The local Artifact Store is a built-in ZenML [Artifact Store](./overview.md)
+The local Artifact Store is a built-in ZenML [Artifact Store](./artifact-stores.md)
 flavor that uses a folder on your local filesystem to store artifacts.
 
 ## When would you want to use it?
@@ -24,15 +24,15 @@ expected from a production grade MLOps system.
 The fact that it stores artifacts on your local filesystem also means that not
 all stack components can be used in the same stack as a local Artifact Store:
 
-* only [Orchestrators](../orchestrators/overview.md) running on the local
+* only [Orchestrators](../orchestrators/orchestrators.md) running on the local
 machine, such as the [local Orchestrator](../orchestrators/local.md),
 a [local Kubeflow Orchestrator](../orchestrators/kubeflow.md), or a
 [local Kubernetes Orchestrator](../orchestrators/kubernetes.md) can be combined
 with a local Artifact Store
-* only [Model Deployers](../model_deployers/overview.md) that are running
-locally, such as the [MLflow Model Deployer](../model_deployers/mlflow.md)
+* only [Model Deployers](../model-deployers/model-deployers.md) that are running
+locally, such as the [MLflow Model Deployer](../model-deployers/mlflow.md)
 can only be used in combination with a local Artifact Store
-* [Step Operators](../step_operators/): none of the Step Operators can be used
+* [Step Operators](../step-operators/step-operators.md): none of the Step Operators can be used
 in the same stack as a local Artifact Store, given that their very purpose is
 to run ZenML steps in remote specialized environments
 
@@ -106,4 +106,4 @@ its configuration, you can have a look at [the API docs](https://apidocs.zenml.i
 ## How do you use it?
 
 Aside from the fact that the artifacts are stored locally, using the local
-Artifact Store is no different than [using any other flavor of Artifact Store](./overview.md#how-to-use-it).
+Artifact Store is no different than [using any other flavor of Artifact Store](./artifact-stores.md#how-to-use-it).

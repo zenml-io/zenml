@@ -28,8 +28,8 @@ public cloud or self-hosted MySQL database service.
 You should use the MySQL Metadata Store when you need a shared, scalable and
 performant Metadata Store and if you have access to a MySQL database service.
 The database should ideally be accessible both from your local machine and the 
-[Orchestrator](../orchestrators/overview.md) that you use in your ZenML stack. 
-You should consider one of the other [Metadata Store flavors](./overview.md#metadata-store-flavors)
+[Orchestrator](../orchestrators/orchestrators.md) that you use in your ZenML stack. 
+You should consider one of the other [Metadata Store flavors](./metadata-stores.md#metadata-store-flavors)
 if you don't have access to a MySQL compatible database service.
 
 ## How do you deploy it?
@@ -89,7 +89,7 @@ zenml stack register custom_stack -m mysql_metadata_store ... --set
 
 {% tab title="Secrets Manager (Recommended)" %}
 
-This method requires you to include a [Secrets Manager](../secrets_managers/overview.md)
+This method requires you to include a [Secrets Manager](../secrets-managers/secrets-managers.md)
 in your stack and configure a ZenML secret to store the username and password
 credentials securely.
 
@@ -134,4 +134,4 @@ configuration, you can have a look at [the API docs](https://apidocs.zenml.io/la
 ## How do you use it?
 
 Aside from the fact that the metadata information is stored in a MySQL database,
-using the MySQL Metadata Store is no different than [using any other flavor of Metadata Store](./overview.md#how-to-use-it).
+using the MySQL Metadata Store is no different than [using any other flavor of Metadata Store](./metadata-stores.md#how-to-use-it).

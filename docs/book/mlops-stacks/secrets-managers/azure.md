@@ -2,7 +2,7 @@
 description: How to store secrets in Azure
 ---
 
-The Azure secrets manager is a [secrets manager](./overview.md) flavor provided with
+The Azure secrets manager is a [secrets manager](./secrets-managers.md) flavor provided with
 the ZenML `azure` integration that uses [Azure Key Vault](https://azure.microsoft.com/en-us/services/key-vault/#product-overview)
 to store secrets.
 
@@ -12,7 +12,7 @@ You should use the Azure secrets manager if:
 * a component of your stack requires a secret for authentication or you want 
 to use secrets inside your steps.
 * you're already using Azure, especially if your orchestrator is running in Azure.
-If you're using a different cloud provider, take a look at the other [secrets manager flavors](./overview.md#secrets-manager-flavors).
+If you're using a different cloud provider, take a look at the other [secrets manager flavors](./secrets-managers.md#secrets-manager-flavors).
 
 ## How to deploy it
 

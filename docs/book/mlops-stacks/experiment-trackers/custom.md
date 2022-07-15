@@ -8,16 +8,11 @@ description: How to develop a custom experiment tracker
 We are actively working on the base abstraction for the Experiment Tracker,
 which  will be available soon. As a result, their extension is not recommended at
 the moment. When you are selecting an Experiment Tracker for your stack, you can
-use  one of [the existing flavors](./overview.md#experiment-tracker-flavors).
+use  one of [the existing flavors](./experiment-trackers.md#experiment-tracker-flavors).
 
 If you need to implement your own Experiment Tracker flavor, you can still do so,
 but keep in mind that you may have to refactor it when the base abstraction
 is released.
-{% endhint %}
-
-{% hint style="warning" %}
-Before reading this chapter, make sure that you are familiar with the 
-concept of [stacks, stack components and their flavors](../advanced-guide/stacks-components-flavors.md).  
 {% endhint %}
 
 ## Build your own custom experiment tracker

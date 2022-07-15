@@ -2,7 +2,7 @@
 description: How to log and visualize experiments with Weights & Biases
 ---
 
-The Weights & Biases Experiment Tracker is an [Experiment Tracker](./overview.md)
+The Weights & Biases Experiment Tracker is an [Experiment Tracker](./experiment-trackers.md)
 flavor provided with the Weights & Biases ZenML integration that uses
 [the Weights & Biases experiment tracking platform](https://wandb.ai/site/experiment-tracking)
 to log and visualize information from your pipeline steps (e.g. models, parameters,
@@ -27,7 +27,7 @@ results produced from your ZenML pipeline runs (e.g. models, metrics, datasets)
 and metrics logged by your pipelines with your team, organization or external
 stakeholders
 
-You should consider one of the other [Experiment Tracker flavors](./overview.md#experiment-tracker-flavors)
+You should consider one of the other [Experiment Tracker flavors](./experiment-trackers.md#experiment-tracker-flavors)
 if you have never worked with Weights & Biases before and would rather use
 another experiment tracking tool that you are more familiar with.
 
@@ -82,7 +82,7 @@ zenml stack register custom_stack -e wandb_experiment_tracker ... --set
 
 {% tab title="Secrets Manager (Recommended)" %}
 
-This method requires you to include a [Secrets Manager](../secrets_managers/overview.md)
+This method requires you to include a [Secrets Manager](../secrets-managers/secrets-managers.md)
 in your stack and configure a ZenML secret to store the Weights & Biases
 credentials securely.
 

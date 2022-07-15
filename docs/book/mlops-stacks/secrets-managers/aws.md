@@ -2,7 +2,7 @@
 description: How to store secrets in AWS
 ---
 
-The AWS secrets manager is a [secrets manager](./overview.md) flavor provided with
+The AWS secrets manager is a [secrets manager](./secrets-managers.md) flavor provided with
 the ZenML `aws` integration that uses [AWS](https://aws.amazon.com/secrets-manager/)
 to store secrets.
 
@@ -12,7 +12,7 @@ You should use the AWS secrets manager if:
 * a component of your stack requires a secret for authentication or you want 
 to use secrets inside your steps.
 * you're already using AWS, especially if your orchestrator is running in AWS.
-If you're using a different cloud provider, take a look at the other [secrets manager flavors](./overview.md#secrets-manager-flavors).
+If you're using a different cloud provider, take a look at the other [secrets manager flavors](./secrets-managers.md#secrets-manager-flavors).
 ## How to deploy it
 
 The AWS secrets manager is automatically activated once you create an AWS account.
@@ -37,7 +37,7 @@ zenml secrets-manager register <NAME> \
 zenml stack update -x <NAME>
 ```
 
-You can now [register, update or delete secrets](./overview.md#in-the-cli) using the CLI or [fetch secret values inside your steps](./overview.md#in-a-zenml-step).
+You can now [register, update or delete secrets](./secrets-managers.md#in-the-cli) using the CLI or [fetch secret values inside your steps](./secrets-managers.md#in-a-zenml-step).
 
 A concrete example of using the AWS secrets manager can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/cloud_secrets_manager).

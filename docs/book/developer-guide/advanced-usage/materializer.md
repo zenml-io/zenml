@@ -6,7 +6,7 @@ A ZenML pipeline is built in a data-centric way. The outputs and inputs of steps
 define how steps are connected and the order in which they are executed. Each
 step should be considered as its very own process that reads and writes its
 inputs and outputs from and to the
-[Artifact Store](../../mlops_stacks/artifact_stores/overview.md). 
+[Artifact Store](../../mlops-stacks/artifact-stores/artifact-stores.md). 
 This is where **Materializers** come into play.
 
 A materializer dictates how a given artifact can be written to and retrieved

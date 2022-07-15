@@ -12,11 +12,6 @@ models that are currently deployed for online inference or filtered according
 to a particular pipeline run or step, or to suspend, resume or delete an 
 external model server managed through ZenML.
 
-{% hint style="warning" %}
-Before reading this chapter, make sure that you are familiar with the 
-concept of [stacks, stack components and their flavors](../advanced-guide/stacks-components-flavors.md).  
-{% endhint %}
-
 ## Base Abstraction
 
 In ZenML, the base abstraction of the model deployer is built on top of three 

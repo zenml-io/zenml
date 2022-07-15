@@ -31,7 +31,7 @@ inject them into the process in the server-side. This includes
 * Achieve consistency between training and serving data (Training Serving Skew)
 * Provide a central registry of features and feature schemas
 
-### Artifact Store Flavors
+## List of available feature stores
 
 For production use cases, some more flavors can be found in specific 
 `integrations` modules. In terms of features stores, ZenML features an 
@@ -40,6 +40,7 @@ integration of `feast`.
 | Feature Store | Flavor | Integration | Notes             |
 |----------------|--------|-------------|-------------------|
 | [FeastFeatureStore](./feast.md) | `feast` | `feast` | Connect ZenML with already existing Feast |
+| [Custom Implementation](./custom.md) | _custom_ | | Extend the feature store abstraction and provide your own implementation |
 
 If you would like to see the available flavors for feature stores, you can 
 use the command:

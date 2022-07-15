@@ -4,7 +4,7 @@ description: How to store ML metadata using the Kubeflow ML metadata service
 
 Kubeflow deployments include a [ML metadata service](https://www.kubeflow.org/docs/components/pipelines/concepts/metadata/)
 that is compatible with ZenML. The Kubeflow Metadata Store is a
-[Metadata Store](./overview.md) flavor provided with the Kubeflow ZenML
+[Metadata Store](./metadata-stores.md) flavor provided with the Kubeflow ZenML
 integration that uses [the Kubeflow ML metadata service](https://www.kubeflow.org/)
 to store metadata information.
 
@@ -19,7 +19,7 @@ having to deploy and manage additional services such as a MySQL database for
 your Metadata Store. However, this will put additional strain on your Kubeflow
 ML metadata service and you may have to resize it accordingly.
 
-You should consider one of the other [Metadata Store flavors](./overview.md#metadata-store-flavors)
+You should consider one of the other [Metadata Store flavors](./metadata-stores.md#metadata-store-flavors)
 if you don't use a Kubeflow Orchestrator in your stack, or if you wish to
 use an alternative more suited for production.
 
@@ -57,7 +57,7 @@ and its configuration, you can have a look at [the API docs](https://apidocs.zen
 ## How do you use it?
 
 Aside from the fact that the metadata information is stored using a Kubeflow
-ML metadata service, using the Kubeflow Metadata Store is no different than [using any other flavor of Metadata Store](./overview.md#how-to-use-it).
+ML metadata service, using the Kubeflow Metadata Store is no different than [using any other flavor of Metadata Store](./metadata-stores.md#how-to-use-it).
 
 You can also check out our examples pages for working examples that use the
 Kubeflow Metadata Store in their stacks:

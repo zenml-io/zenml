@@ -21,7 +21,7 @@ The Kubernetes Metadata Store is not suited for production use because it
 lacks the scalability, performance and maintainability required from a
 production MLOps stack.
 
-You should consider one of the other [Metadata Store flavors](./overview.md#metadata-store-flavors)
+You should consider one of the other [Metadata Store flavors](./metadata-stores.md#metadata-store-flavors)
 if you don't have access to a Kubernetes cluster or if you wish to use an
 alternative that is better suited for production.
 
@@ -67,7 +67,7 @@ and its configuration, you can have a look at [the API docs](https://apidocs.zen
 
 Aside from the fact that the metadata information is stored using a MySQL
 database deployed in a Kubernetes cluster, using the Kubernetes Metadata Store
-is no different than [using any other flavor of Metadata Store](./overview.md#how-to-use-it).
+is no different than [using any other flavor of Metadata Store](./metadata-stores.md#how-to-use-it).
 
 You can also check out our examples pages for working examples that use the
 Kubernetes Metadata Store in their stacks:

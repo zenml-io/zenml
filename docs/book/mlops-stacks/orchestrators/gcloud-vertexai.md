@@ -2,7 +2,7 @@
 description: How to orchestrate pipelines with Vertex AI
 ---
 
-The Vertex orchestrator is an [orchestrator](./overview.md) flavor provided with
+The Vertex orchestrator is an [orchestrator](./orchestrators.md) flavor provided with
 the ZenML `gcp` integration that uses [Vertex AI](https://cloud.google.com/vertex-ai)
 to run your pipelines.
 
@@ -30,9 +30,9 @@ To use the Vertex orchestrator, we need:
     ```
 * [Docker](https://www.docker.com) installed and running.
 * [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed.
-* A [remote artifact store](../artifact_stores/overview.md) as part of your stack.
-* A [remote metadata store](../metadata_stores/overview.md) as part of your stack.
-* A [remote container registry](../container_registries/overview.md) as part of your stack.
+* A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack.
+* A [remote metadata store](../metadata-stores/metadata-stores.md) as part of your stack.
+* A [remote container registry](../container-registries/container-registries.md) as part of your stack.
 * The GCP project ID and location in which you want to run your Vertex AI pipelines.
 
 We can then register the orchestrator and use it in our active stack:
@@ -49,12 +49,12 @@ zenml stack update -o <NAME>
 {% hint style="info" %}
 ZenML will build a Docker image called `zenml-vertex` which includes your code and use it
 to run your pipeline steps in Vertex AI. Check out
-[this page](../../developer-guide/advanced-concepts/docker.md)
+[this page](../../developer-guide/advanced-usage/docker.md)
 if you want to learn more about how ZenML builds these images and
 how you can customize them.
 
 If you decide you need the full flexibility of having a
-[custom base image](../../developer-guide/advanced-concepts/docker.md#using-a-custom-base-image),
+[custom base image](../../developer-guide/advanced-usage/docker.md#using-a-custom-base-image),
 you can update your existing orchestrator
 ```shell
 zenml orchestrator update <NAME> \

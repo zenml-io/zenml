@@ -2,11 +2,6 @@
 description: How to develop a custom container registry
 ---
 
-{% hint style="warning" %}
-Before reading this page, make sure that you are familiar with the
-concept of [stacks, stack components and their flavors](../advanced-guide/stacks-components-flavors.md).  
-{% endhint %}
-
 ## Base Abstraction
 
 In the current version of ZenML, container registries have a rather basic base 

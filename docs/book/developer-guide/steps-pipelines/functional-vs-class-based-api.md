@@ -132,7 +132,7 @@ Choose whichever style feels most natural to you!
 
 ## Advanced Usage: Using decorators to give your steps superpowers
 
-As you will learn later, ZenML has many [integrations](../../mlops_stacks/integrations.md)
+As you will learn later, ZenML has many [integrations](../../mlops-stacks/integrations.md)
 that allow you to add functionality like automated experiment tracking to your steps.
 Some of those integrations need to be initialized before they can be used, which
 ZenML wraps using special `@enable_<INTEGRATION>` decorators.

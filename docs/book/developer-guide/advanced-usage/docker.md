@@ -3,8 +3,8 @@ description: How ZenML uses Docker images to run your pipeline
 ---
 
 When running locally, ZenML will execute the steps of your pipeline in the
-active Python environment. When using a remote [orchestrators](../../mlops_stacks/orchestrators/)
-or [step operators](../../mlops_stacks/step_operators/overview.md) instead,
+active Python environment. When using a remote [orchestrators](../../mlops-stacks/orchestrators/orchestrators.md)
+or [step operators](../../mlops-stacks/step-operators/step-operators.md) instead,
 ZenML builds [Docker](https://www.docker.com/) images to transport and
 run your pipeline code in an isolated and well-defined environment.
 For this purpose, a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated and used
@@ -19,7 +19,7 @@ If your pipeline needs any additional requirements, check out our [guide on incl
 
 ZenML will try to determine the root directory of your source files in the following order:
 * If you've created a 
-[ZenML repository](../stacks-profiles-repositories/stacks_profiles_repositories.md#repositories)
+[ZenML repository](../stacks-profiles-repositories/repository.md)
 for your project, the repository directory will be used.
 * Otherwise, the parent directory of the python file you're executing will be the source root.
 For example, running `python /path/to/file.py`, the source root would be `/path/to`.
@@ -50,7 +50,7 @@ any integration that is used for components of your active stack.
 
 If you want ZenML to install additional pip dependencies on top of the base image, you
 can use any of the following three ways:
-* Specify a list of [ZenML integrations]() that you're using in your pipeline:
+* Specify a list of [ZenML integrations](../../mlops-stacks/integrations.md) that you're using in your pipeline:
     ```python
     from zenml.integrations.constants import PYTORCH, EVIDENTLY
 
@@ -80,8 +80,8 @@ specified by your required integrations.
 To have full control over the environment which is used to execute your pipelines,
 you can specify a custom base image which will be used as the starting point of the 
 Docker image that ZenML will use to execute your code. For more information on how 
-to specify a base image for the [orchestrator](../../mlops_stacks/orchestrators/overview.md)
-or [step operator](../../mlops_stacks/step_operators/overview.md) you're using, visit 
+to specify a base image for the [orchestrator](../../mlops-stacks/orchestrators/orchestrators.md)
+or [step operator](../../mlops-stacks/step-operators/step-operators.md) you're using, visit 
 the corresponding documentation page.
 
 {% hint style="info" %}

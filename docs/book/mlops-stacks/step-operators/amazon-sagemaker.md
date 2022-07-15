@@ -2,7 +2,7 @@
 description: How to execute individual steps in SageMaker
 ---
 
-The SageMaker step operator is a [step operator](./overview.md) flavor provided with
+The SageMaker step operator is a [step operator](./step-operators.md) flavor provided with
 the ZenML `aws` integration that uses [SageMaker](https://aws.amazon.com/sagemaker/)
 to execute individual steps of ZenML pipelines.
 
@@ -12,7 +12,7 @@ You should use the SageMaker step operator if:
 * one or more steps of your pipeline require computing resources (CPU, GPU, memory) that are
 not provided by your orchestrator.
 * you have access to SageMaker. If you're using a different cloud provider, take 
-a look at the [Vertex](./gcloud_vertexai.md) or [AzureML](./azureml.md) step operators.
+a look at the [Vertex](./gcloud-vertexai.md) or [AzureML](./azureml.md) step operators.
 
 ## How to deploy it
 
@@ -30,8 +30,8 @@ To use the SageMaker step operator, we need:
 * [Docker](https://www.docker.com) installed and running.
 * An IAM role with the correct permissions. See the [deployment section](#how-do-you-deploy-it)
 for detailed instructions.
-* An [AWS container registry](../container_registries/amazon_ecr.md) as part of our stack.
-Take a look [here](../container_registries/amazon_ecr.md) for a guide on how to set that up.
+* An [AWS container registry](../container-registries/amazon-ecr.md) as part of our stack.
+Take a look [here](../container-registries/amazon-ecr.md#how-to-deploy-it) for a guide on how to set that up.
 * The `aws` cli set up and authenticated. Make sure you have the permissions to create 
 and manage SageMaker runs.
 * An instance type that we want to execute our steps on.
@@ -65,12 +65,12 @@ def trainer(...) -> ...:
 {% hint style="info" %}
 ZenML will build a Docker image called `zenml-sagemaker` which includes your code and use it
 to run your steps in SageMaker. Check out
-[this page](../../developer-guide/advanced-concepts/docker.md)
+[this page](../../developer-guide/advanced-usage/docker.md)
 if you want to learn more about how ZenML builds these images and
 how you can customize them.
 
 If you decide you need the full flexibility of having a
-[custom base image](../../developer-guide/advanced-concepts/docker.md#using-a-custom-base-image),
+[custom base image](../../developer-guide/advanced-usage/docker.md#using-a-custom-base-image),
 you can update your existing step operator
 ```shell
 zenml step-operator update <NAME> \

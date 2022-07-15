@@ -2,7 +2,7 @@
 description: How to orchestrate pipelines with GitHub Actions
 ---
 
-The GitHub Actions orchestrator is an [orchestrator](./overview.md) flavor provided with
+The GitHub Actions orchestrator is an [orchestrator](./orchestrators.md) flavor provided with
 the ZenML `github` integration that uses [GitHub Actions](https://github.com/features/actions)
 to run your pipelines.
 
@@ -31,9 +31,9 @@ To use the GitHub Actions orchestrator, we need:
     zenml integration install github
     ```
 * [Docker](https://www.docker.com) installed and running.
-* A [remote artifact store](../artifact_stores/overview.md) as part of your stack.
-* A [remote metadata store](../metadata_stores/overview.md) as part of your stack.
-* A [GitHub container registry](../container_registries/github.md) as part of your stack.
+* A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack.
+* A [remote metadata store](../metadata-stores/metadata-stores.md) as part of your stack.
+* A [GitHub container registry](../container-registries/github.md) as part of your stack.
 
 We can then register the orchestrator and use it in our active stack:
 ```shell
@@ -46,12 +46,12 @@ zenml stack update -o <NAME>
 {% hint style="info" %}
 ZenML will build a Docker image called `zenml-github-actions` which includes
 your code and use it to run your pipeline steps in GitHub. Check out
-[this page](../../developer-guide/advanced-concepts/docker.md)
+[this page](../../developer-guide/advanced-usage/docker.md)
 if you want to learn more about how ZenML builds these images and
 how you can customize them.
 
 If you decide you need the full flexibility of having a
-[custom base image](../../developer-guide/advanced-concepts/docker.md#using-a-custom-base-image),
+[custom base image](../../developer-guide/advanced-usage/docker.md#using-a-custom-base-image),
 you can update your existing orchestrator
 ```shell
 zenml orchestrator update <NAME> \

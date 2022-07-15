@@ -5,7 +5,7 @@ description: How to inspect a finished pipeline run
 # Inspecting Pipeline Runs
 
 Once a pipeline run has completed, we can access it using the
-[ZenML Repository](stacks_profiles_repositories.md), about which you will find
+[ZenML Repository](../stacks-profiles-repositories/repository.md), about which you will find
 more details in a later section.
 
 Each pipeline can have multiple runs associated with it, and for each run there
@@ -102,7 +102,7 @@ step = run.get_step(name=...)
 
 {% hint style="info" %}
 The steps are ordered by time of execution. Depending on the 
-[orchestrator](../mlops_stacks/orchestrators/overview.md), steps can be run in 
+[orchestrator](../../mlops-stacks/orchestrators/orchestrators.md), steps can be run in 
 parallel. Thus, accessing steps by index can be unreliable across different
 runs and it is recommended to access steps by their name using
 `get_step(name=...)` instead.

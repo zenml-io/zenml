@@ -26,7 +26,7 @@ files. Additional cloud secrets managers are provided by integrations:
 | [AWS](./aws.md) | `aws` | `aws` |  Uses AWS to store secrets |
 | [GCP](./gcp.md) | `gcp_secrets_manager` | `gcp` |  Uses GCP to store secretes |
 | [Azure](./azure.md) | `azure_key_vault` | `azure` |  Uses Azure Key Vaults to store secrets |
-| [HashiCorp Vault](./hashicorp_vault.md) | `vault` | `vault` |  Uses HashiCorp Vault to store secrets |
+| [HashiCorp Vault](./hashicorp-vault.md) | `vault` | `vault` |  Uses HashiCorp Vault to store secrets |
 | [Custom Implementation](./custom.md) | _custom_ | | Extend the secrets manager abstraction and provide your own implementation |
 
 If you would like to see the available flavors of secrets managers, you can 

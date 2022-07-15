@@ -2,7 +2,7 @@
 description: How to store artifacts using Azure Blob Storage
 ---
 
-The Azure Artifact Store is an [Artifact Store](./overview.md) flavor provided with
+The Azure Artifact Store is an [Artifact Store](./artifact-stores.md) flavor provided with
 the Azure ZenML integration that uses [the Azure Blob Storage managed object storage service](https://azure.microsoft.com/en-us/services/storage/blobs/)
 to store ZenML artifacts in a Azure Blob Storage container.
 
@@ -30,7 +30,7 @@ public cloud or self-hosted shared object storage service.
 You should use the Azure Artifact Store when you decide to keep your ZenML
 artifacts in a shared object storage and if you have access to the Azure Blob
 Storage managed service.
-You should consider one of the other [Artifact Store flavors](./overview.md#artifact-store-flavors)
+You should consider one of the other [Artifact Store flavors](./artifact-stores.md#artifact-store-flavors)
 if you don't have access to the Azure Blob Storage service.
 
 ## How do you deploy it?
@@ -119,11 +119,11 @@ machine, they do not have access to the local environment variables and
 will encounter authentication failures while trying to access the Azure Artifact
 Store:
 
-* [Orchestrators](../orchestrators/overview.md) need to access the Artifact
+* [Orchestrators](../orchestrators/orchestrators.md) need to access the Artifact
 Store to manage pipeline artifacts
-* [Step Operators](../step_operators/overview.md) need to access the Artifact
+* [Step Operators](../step-operators/step-operators.md) need to access the Artifact
 Store to manage step level artifacts
-* [Model Deployers](../model_deployers/overview.md) need to access the Artifact
+* [Model Deployers](../model-deployers/model-deployers.md) need to access the Artifact
 Store to load served models
 
 These remote stack components can still use the implicit authentication method:
@@ -141,7 +141,7 @@ one of the other authentication methods.
 
 {% tab title="Secrets Manager (Recommended)" %}
 
-This method requires using a [Secrets Manager](../secrets_managers/overview.md)
+This method requires using a [Secrets Manager](../secrets-managers/secrets-managers.md)
 in your stack to store the sensitive Azure authentication information in a secure
 location and configuring the Azure credentials using a ZenML secret.
 
@@ -186,4 +186,4 @@ its configuration, you can have a look at [the API docs](https://apidocs.zenml.i
 ## How do you use it?
 
 Aside from the fact that the artifacts are stored in Azure Blob Storage,
-using the Azure Artifact Store is no different than [using any other flavor of Artifact Store](./overview.md#how-to-use-it).
+using the Azure Artifact Store is no different than [using any other flavor of Artifact Store](./artifact-stores.md#how-to-use-it).

@@ -2,7 +2,7 @@
 description: How to deploy your models locally with MLflow
 ---
 
-The MLflow Model Deployer is one of the available flavors of the [Model Deployer](./overview.md) 
+The MLflow Model Deployer is one of the available flavors of the [Model Deployer](./model-deployers.md) 
 stack component. Provided with the MLflow integration it can be used to deploy
 and manage [MLflow models](https://www.mlflow.org/docs/latest/python_api/mlflow.deployments.html) on a local running MLflow server.
 
@@ -25,7 +25,7 @@ You should use the MLflow Model Deployer:
   deployment environment like Kubernetes or advanced infrastructure configuration.
 
 If you are looking to deploy your models in a more complex way, you should use one of the
-other [Model Deployer Flavors]() available in ZenML (e.g. Seldon Core, KServe, etc.)
+other [Model Deployer Flavors](./model-deployers.md#model-deployers-flavors) available in ZenML (e.g. Seldon Core, KServe, etc.)
 
 ## How do you deploy it?
 

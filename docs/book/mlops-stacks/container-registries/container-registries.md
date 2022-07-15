@@ -11,9 +11,9 @@ environment which allows code to run in an isolated manner.
 
 The container registry is needed whenever other components of your stack 
 need to push or pull container images. Currently, this is the case for most of
-ZenML's remote [orchestrators](../orchestrators/overview.md),
-[step operators](../step_operators/overview.md) and some
-[model deployers](../model_deployers/overview.md). These containerize your 
+ZenML's remote [orchestrators](../orchestrators/orchestrators.md),
+[step operators](../step-operators/step-operators.md) and some
+[model deployers](../model-deployers/model-deployers.md). These containerize your 
 pipeline code and therefore require a container registry to store the 
 resulting [Docker](https://www.docker.com/) images. Take a look at the documentation page of the 
 component you want to use in your stack to see if it requires a container registry
@@ -37,7 +37,7 @@ use of the additional URI validations.
 | [GCPContainerRegistry](./gcloud.md)       | `gcp`       | _built-in_     | gcr.io/zenml |
 | [AzureContainerRegistry](./azure.md)     | `azure`    | _built-in_     | zenml.azurecr.io |
 | [GitHubContainerRegistry](./github.md)    | `github`    | _built-in_     | ghcr.io/zenml |
-| [AWSContainerRegistry](./amazon_ecr.md)       | `aws`       | `aws`            | 123456789.dkr.ecr.us-east-1.amazonaws.com |
+| [AWSContainerRegistry](./amazon-ecr.md)       | `aws`       | `aws`            | 123456789.dkr.ecr.us-east-1.amazonaws.com |
 
 If you would like to see the available flavors of container registries, you can 
 use the command:

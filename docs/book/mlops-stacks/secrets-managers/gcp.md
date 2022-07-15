@@ -2,7 +2,7 @@
 description: How to store secrets in GCP
 ---
 
-The GCP secrets manager is a [secrets manager](./overview.md) flavor provided with
+The GCP secrets manager is a [secrets manager](./secrets-managers.md) flavor provided with
 the ZenML `gcp` integration that uses [GCP](https://cloud.google.com/secret-manager)
 to store secrets.
 
@@ -12,7 +12,7 @@ You should use the GCP secrets manager if:
 * a component of your stack requires a secret for authentication or you want 
 to use secrets inside your steps.
 * you're already using GCP, especially if your orchestrator is running in GCP.
-If you're using a different cloud provider, take a look at the other [secrets manager flavors](./overview.md#secrets-manager-flavors).
+If you're using a different cloud provider, take a look at the other [secrets manager flavors](./secrets-managers.md#secrets-manager-flavors).
 
 ## How to deploy it
 
@@ -40,7 +40,7 @@ zenml secrets-manager register <NAME> \
 zenml stack update -x <NAME>
 ```
 
-You can now [register, update or delete secrets](./overview.md#in-the-cli) using the CLI or [fetch secret values inside your steps](./overview.md#in-a-zenml-step).
+You can now [register, update or delete secrets](./secrets-managers.md#in-the-cli) using the CLI or [fetch secret values inside your steps](./secrets-managers.md#in-a-zenml-step).
 
 A concrete example of using the GCP secrets manager can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/cloud_secrets_manager).

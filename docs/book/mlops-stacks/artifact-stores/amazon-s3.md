@@ -2,7 +2,7 @@
 description: How to store artifacts in an AWS S3 bucket
 ---
 
-The S3 Artifact Store is an [Artifact Store](./overview.md) flavor provided with
+The S3 Artifact Store is an [Artifact Store](./artifact-stores.md) flavor provided with
 the S3 ZenML integration that uses [the AWS S3 managed object storage service](https://aws.amazon.com/s3/)
 or one of the self-hosted S3 alternatives, such as [MinIO](https://min.io/) or
 [Ceph RGW](https://ceph.io/en/discover/technology/#object).
@@ -32,7 +32,7 @@ public cloud or self-hosted shared object storage service.
 You should use the S3 Artifact Store when you decide to keep your ZenML
 artifacts in a shared object storage and if you have access to the AWS S3
 managed service or one of the S3 compatible alternatives (e.g. Minio, Ceph RGW).
-You should consider one of the other [Artifact Store flavors](./overview.md#artifact-store-flavors)
+You should consider one of the other [Artifact Store flavors](./artifact-stores.md#artifact-store-flavors)
 if you don't have access to an S3 compatible service.
 
 ## How do you deploy it?
@@ -79,7 +79,7 @@ for a more holistic approach to configuring full AWS-based stacks for ZenML.
 Integrating and using an S3 compatible Artifact Store in your pipelines is not
 possible without employing some form of authentication. ZenML currently provides
 three options for configuring S3 credentials, the recommended one being to
-use a [Secrets Manager](../secrets_managers/overview.md) in your stack to store
+use a [Secrets Manager](../secrets-managers/secrets-managers.md) in your stack to store
 the sensitive information in a secure location.
 
 {% tabs %}
@@ -100,11 +100,11 @@ with it directly to function. If these components are not running on your
 machine, they do not have access to the local AWS CLI configuration and will
 encounter authentication failures while trying to access the S3 Artifact Store:
 
-* [Orchestrators](../orchestrators/overview.md) need to access the Artifact
+* [Orchestrators](../orchestrators/orchestrators.md) need to access the Artifact
 Store to manage pipeline artifacts
-* [Step Operators](../step_operators/overview.md) need to access the Artifact
+* [Step Operators](../step-operators/step-operators.md) need to access the Artifact
 Store to manage step level artifacts
-* [Model Deployers](../model_deployers/overview.md) need to access the Artifact
+* [Model Deployers](../model-deployers/model-deployers.md) need to access the Artifact
 Store to load served models
 
 These remote stack components can still use the implicit authentication method:
@@ -150,7 +150,7 @@ zenml stack register custom_stack -a s3_store ... --set
 
 {% tab title="Secrets Manager (Recommended)" %}
 
-This method requires using a [Secrets Manager](../secrets_managers/overview.md)
+This method requires using a [Secrets Manager](../secrets-managers/secrets-managers.md)
 in your stack to store the sensitive S3 authentication information in a secure
 location.
 
@@ -212,4 +212,4 @@ configuration, you can have a look at [the API docs](https://apidocs.zenml.io/la
 ## How do you use it?
 
 Aside from the fact that the artifacts are stored in an S3 compatible backend,
-using the S3 Artifact Store is no different than [using any other flavor of Artifact Store](./overview.md#how-to-use-it).
+using the S3 Artifact Store is no different than [using any other flavor of Artifact Store](./artifact-stores.md#how-to-use-it).

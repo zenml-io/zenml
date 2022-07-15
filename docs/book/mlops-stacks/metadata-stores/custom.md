@@ -8,23 +8,18 @@ description: How to develop a custom metadata store
 We are actively working on the base abstraction for the Metadata Stores, which 
 will be available soon. As a result, their extension is not recommended at the 
 moment. When you are selecting a metadata store for your stack, you can use 
-one of [the existing flavors](./overview.md#metadata-store-flavors).
+one of [the existing flavors](./metadata-stores.md#metadata-store-flavors).
 
 If you need to implement your own Metadata Store flavor, you can still do so,
 but keep in mind that you may have to refactor it when the base abstraction
 is released. 
 {% endhint %}
 
-ZenML comes equipped with [Metadata Store implementations](./overview.md#metadata-store-flavors)
+ZenML comes equipped with [Metadata Store implementations](./metadata-stores.md#metadata-store-flavors)
 that you can use to store artifacts on a local filesystem, in a MySQL database
 or in the metadata service installed with Kubeflow. However, if you need to use
 a different type of service as a backend for your ZenML Metadata Store, you can
 extend ZenML to provide your own custom Metadata Store implementation.
-
-{% hint style="warning" %}
-Before reading this chapter, make sure that you are familiar with the 
-concept of [stacks, stack components and their flavors](../advanced-guide/stacks-components-flavors.md).  
-{% endhint %}
 
 ## Build your own custom metadata store
 

@@ -37,7 +37,7 @@ zenml integration install slack -y
 ```
 
 {% hint style="info" %}
-See the [Integrations](../../mlops_stacks/integrations.md) page for more
+See the [Integrations](../../mlops-stacks/integrations.md) page for more
 details on ZenML integrations and how to install and use them.
 {% endhint %}
 

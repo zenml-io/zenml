@@ -4,7 +4,7 @@ description: How to manage stack configurations with profiles
 
 ZenML implicitly stores all the information about the configured Stacks, Stack
 Components, and Stack Component Flavors in the 
-[Global Configuration](../resources/global_config.md) on the filesystem of the
+[Global Configuration](../../resources/global-config.md) on the filesystem of the
 machine where it is installed. The details of how ZenML stores this persistent
 data, where it is located, and how it is accessed can be configured via the 
 ZenML **Profile**.

@@ -12,8 +12,8 @@ for general monitoring/reporting, and also for building human-in-the-loop ML.
 ## Alerter Flavors
 
 Currently, the [SlackAlerter](./slack.md) is the only available alerter integration.
-However, it is straightforward to extend ZenML and [build an alerter for other 
-chat services](custom.md).
+However, it is straightforward to extend ZenML and 
+[build an alerter for other chat services](./custom.md).
 
 | Alerter | Flavor | Integration | Notes             |
 |----------------|--------|-------------|-------------------|

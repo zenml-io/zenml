@@ -102,7 +102,7 @@ step.
 ### Enable cache explicitly for steps that have a `context` argument, if they don't invalidate the caching behavior
 
 Cache is implicitly disabled for steps that have a
-[context](../developer-guide/step-fixtures.md#using-the-stepcontext) argument,
+[context](../developer-guide/advanced-usage/step-fixtures.md#step-contexts) argument,
 because it is assumed that you might use the step context to retrieve artifacts
 from the artifact store that are unrelated to the current step. However, if that
 is not the case, and your step logic doesn't invalidate the caching behavior, it
@@ -117,7 +117,7 @@ inactive artifact stores.
 
 Using Profiles allows you to separate your ZenML stacks and work
 locally within independent ZenML instances. See our
-[docs](../collaborate/share-with-profiles.md) on profiles to learn more.
+[docs](../developer-guide/stacks-profiles-repositories/profile.md) on profiles to learn more.
 
 ### Use unique pipeline names across projects, especially if used with the same metadata store
 
@@ -145,7 +145,7 @@ git repos, etc.) within the `.dockerignore`.
 
 ### Use `get_pipeline_run(RUN_NAME)` instead of indexing (`[-1]`) to retrieve previous pipeline runs
 
-When using the [post execution workflow](../developer-guide/post-execution-workflow.md)
+When [inspecting pipeline runs](../developer-guide/steps-pipelines/inspecting-pipeline-runs.md)
 it is tempting to access the pipeline views directly by their index, but
 the pipelines within your `Repository` are sorted by time of first run, so the 
 pipeline at `[-1]` might not be the one you are expecting.

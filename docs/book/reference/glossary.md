@@ -62,7 +62,7 @@ dependencies between the different stages are managed.
 An integration is a third-party tool or platform that implements a ZenML abstraction. 
 A tool can implement many abstractions and therefore an integration can have different 
 entrypoints for the user. We have a consistently updated integrations page which shows all 
-current integrations supported by the ZenML core team [here](../advanced-guide/integrations.md). 
+current integrations supported by the ZenML core team [here](../mlops-stacks/integrations.md). 
 However, as ZenML is a framework users are encouraged to use these as a guideline and implement 
 their own integrations by extending the various ZenML abstractions.
 
@@ -78,7 +78,7 @@ might well be the inputs of the next.
 We have some built-in ways to serialize and deserialize the data flowing between
 steps. Of course, if you are using some library or tool which doesn't work with
 our built-in options, you can write
-[your own custom materializer](https://docs.zenml.io/developer-guide/materializer)
+[your own custom materializer](../developer-guide/advanced-usage/materializer.md)
 to ensure that your data can be passed from step to step in this way. We use our
 [`fileio` utilities](https://apidocs.zenml.io/api_reference/zenml.io.fileio.html)
 to do the disk operations without needing to be concerned with whether we're
@@ -131,7 +131,7 @@ all ZenML activity. Every action that can be executed within ZenML must take
 place within such a repository. ZenML repositories are denoted by a local `.zen`
 folder in your project root where various information about your local
 configuration lives, e.g., the active
-[Stack](../advanced-guide/stacks-components-flavors.md) that you are using to
+[Stack](../developer-guide/stacks-profiles-repositories/stack.md) that you are using to
 run pipelines, is stored.
 
 ## Runner Scripts
@@ -173,8 +173,8 @@ to AWS, which requires an `access_key_id` and a `secret_access_key` which it
 You might find you need to access those secrets from within your Kubernetes
 cluster as it runs individual steps, or you might just want a centralized
 location for the storage of secrets across your project. ZenML offers a local
-secrets manager and an integration with the managed [AWS Secrets
-Manager](https://aws.amazon.com/secrets-manager).
+secrets manager and an integration with the managed 
+[AWS Secrets Manager](../mlops-stacks/secrets-managers/aws.md).
 
 ## Stack
 

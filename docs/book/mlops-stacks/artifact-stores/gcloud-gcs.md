@@ -2,7 +2,7 @@
 description: How to store artifacts using GCP Cloud Storage
 ---
 
-The GCS Artifact Store is an [Artifact Store](./overview.md) flavor provided with
+The GCS Artifact Store is an [Artifact Store](./artifact-stores.md) flavor provided with
 the GCP ZenML integration that uses [the Google Cloud Storage managed object storage service](https://cloud.google.com/storage/docs/introduction)
 to store ZenML artifacts in a GCP Cloud Storage bucket.
 
@@ -30,7 +30,7 @@ public cloud or self-hosted shared object storage service.
 You should use the GCS Artifact Store when you decide to keep your ZenML
 artifacts in a shared object storage and if you have access to the Google Cloud
 Storage managed service.
-You should consider one of the other [Artifact Store flavors](./overview.md#artifact-store-flavors)
+You should consider one of the other [Artifact Store flavors](./artifact-stores.md#artifact-store-flavors)
 if you don't have access to the GCP Cloud Storage service.
 
 ## How do you deploy it?
@@ -75,7 +75,7 @@ for a more holistic approach to configuring full GCP-based stacks for ZenML.
 Integrating and using a GCS Artifact Store in your pipelines is not
 possible without employing some form of authentication. ZenML currently provides
 two options for configuring GCP credentials, the recommended one being to use
-a [Secrets Manager](../secrets_managers/overview.md) in your stack to store the
+a [Secrets Manager](../secrets-managers/secrets-managers.md) in your stack to store the
 sensitive information in a secure location.
 
 {% tabs %}
@@ -97,11 +97,11 @@ machine, they do not have access to the local Google Cloud CLI configuration and
 will encounter authentication failures while trying to access the GCS Artifact
 Store:
 
-* [Orchestrators](../orchestrators/overview.md) need to access the Artifact
+* [Orchestrators](../orchestrators/orchestrators.md) need to access the Artifact
 Store to manage pipeline artifacts
-* [Step Operators](../step_operators/overview.md) need to access the Artifact
+* [Step Operators](../step-operators/step-operators.md) need to access the Artifact
 Store to manage step level artifacts
-* [Model Deployers](../model_deployers/overview.md) need to access the Artifact
+* [Model Deployers](../model-deployers/model-deployers.md) need to access the Artifact
 Store to load served models
 
 These remote stack components can still use the implicit authentication method:
@@ -121,7 +121,7 @@ Identity, you should use one of the other authentication methods.
 
 {% tab title="Secrets Manager (Recommended)" %}
 
-This method requires using a [Secrets Manager](../secrets_managers/overview.md)
+This method requires using a [Secrets Manager](../secrets-managers/secrets-managers.md)
 in your stack to store the sensitive GCP authentication information in a secure
 location.
 
@@ -159,4 +159,4 @@ configuration, you can have a look at [the API docs](https://apidocs.zenml.io/la
 ## How do you use it?
 
 Aside from the fact that the artifacts are stored in GCP Cloud Storage,
-using the GCS Artifact Store is no different than [using any other flavor of Artifact Store](./overview.md#how-to-use-it).
+using the GCS Artifact Store is no different than [using any other flavor of Artifact Store](./artifact-stores.md#how-to-use-it).

@@ -2,7 +2,7 @@
 description: How to deploy models to Kubernetes with Seldon Core
 ---
 
-The Seldon Core Model Deployer is one of the available flavors of the [Model Deployer](./overview.md) 
+The Seldon Core Model Deployer is one of the available flavors of the [Model Deployer](./model-deployers.md) 
 stack component. Provided with the MLflow integration it can be used to deploy
 and manage models on a inference server running on top of a Kubernetes cluster.
 
@@ -58,7 +58,7 @@ cluster. Check out the [official Seldon Core installation instructions](https://
 3. models deployed with Seldon Core need to be stored in some form of
 persistent shared storage that is accessible from the Kubernetes cluster where
 Seldon Core is installed (e.g. AWS S3, GCS, Azure Blob Storage, etc.).
-You can use one of the supported [remote storage flavors](../artifact_stores/overview.md) to store your models as part of your stack
+You can use one of the supported [remote storage flavors](../artifact-stores/artifact-stores.md) to store your models as part of your stack
 
 Since the Seldon Model Deployer is interacting with the Seldon Core model server deployed on 
 a Kubernetes cluster, you need to provide a set of configuration parameters. These parameters are:
@@ -92,7 +92,7 @@ can be used to configure credentials for the 3 main types of Artifact Stores
 supported by ZenML: S3, GCS and Azure.
 
 you can use `seldon_s3` for AWS S3 or `seldon_gs` for GCS and `seldon_az` for Azure. To read more about secrets, secret schemas and how they are used in ZenML, please refer to the
-[Secrets Manager](../secrets_managers/overview.md).
+[Secrets Manager](../secrets-managers/secrets-managers.md).
 
 The following is an example of registering an S3 secret with the Seldon Core model deployer:
 

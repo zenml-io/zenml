@@ -20,21 +20,21 @@ steps. Information about every pipeline run is collected and automatically
 recorded in the Metadata Store: the pipeline configuration, the pipeline steps
 and their configuration, as well as the types of artifacts produced by pipeline
 step runs and the location in the Artifact Store where they are kept. This is
-coupled with saving the artifact contents themselves in the [Artifact Store](../artifact_stores/overview.md)
+coupled with saving the artifact contents themselves in the [Artifact Store](../artifact-stores/artifact-stores.md)
 to provide extremely useful features such as caching, provenance/lineage
 tracking and pipeline reproducibility.
 
 Related concepts:
 
 * the Metadata Store is a type of Stack Component that needs to be registered as
-part of your ZenML [Stack](../../developer-guide/stacks_profiles_repositories.md#stacks).
+part of your ZenML [Stack](../../developer-guide/stacks-profiles-repositories/stack.md).
 * the Metadata Store stores information about where the artifacts produced by
-your pipelines are kept in the [Artifact Store](../artifact_stores/overview.md).
-* the [Orchestrators](../orchestrators/overview.md) are the stack components
+your pipelines are kept in the [Artifact Store](../artifact-stores/artifact-stores.md).
+* the [Orchestrators](../orchestrators/orchestrators.md) are the stack components
 responsible for collecting the pipeline runtime information and storing it in
 the Metadata Store.
 * you can access the information recorded about your pipeline runs in the
-Metadata Store using [the post-execution workflow API](../../developer-guide/post-execution-workflow.md).
+Metadata Store using [the post-execution workflow API](../../developer-guide/steps-pipelines/inspecting-pipeline-runs.md).
 
 ## When to use it
 
@@ -76,7 +76,7 @@ pipeline executions:
 
 * information about your pipeline step executions is automatically recorded in
 the Metadata Store.
-* use [the post-execution workflow API](../../developer-guide/post-execution-workflow.md)
+* use [the post-execution workflow API](../../developer-guide/steps-pipelines/inspecting-pipeline-runs.md)
 to retrieve information about your pipeline runs from the active Metadata Store
 after a pipeline run is complete.
 <!---

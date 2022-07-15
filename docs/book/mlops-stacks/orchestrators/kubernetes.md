@@ -2,7 +2,7 @@
 description: How to orchestrate pipelines with Kubernetes
 ---
 
-The Kubernetes orchestrator is an [orchestrator](./overview.md) flavor provided with
+The Kubernetes orchestrator is an [orchestrator](./orchestrators.md) flavor provided with
 the ZenML `kubernetes` integration that runs your pipelines on a 
 [Kubernetes](https://kubernetes.io/) cluster.
 
@@ -13,7 +13,7 @@ You should use the Kubernetes orchestrator if:
 * you don't need a UI to list all your pipelines runs.
 * you're not willing to maintain [Kubeflow Pipelines](./kubeflow.md)
 on your Kubernetes cluster.
-* you're not interested in paying for managed solutions like [Vertex](./gcloud_vertexai.md).
+* you're not interested in paying for managed solutions like [Vertex](./gcloud-vertexai.md).
 
 ## How to deploy it
 
@@ -32,12 +32,12 @@ To use the Kubernetes orchestrator, we need:
     ```
 * [Docker](https://www.docker.com) installed and running.
 * [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed.
-* A [remote artifact store](../artifact_stores/overview.md) as part of your stack.
-* A [remote metadata store](../metadata_stores/overview.md) as part of your stack.
+* A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack.
+* A [remote metadata store](../metadata-stores/metadata-stores.md) as part of your stack.
 If you want to use a MySQL database deployed in your Kubernetes cluster, you can use
-the [Kubernetes metadata store](../metadata_stores/kubernetes.md). For a more 
-production-ready setup we suggest using a [MySQL metatadata store](../metadata_stores/mysql.md) instead.
-* A [remote container registry](../container_registries/overview.md) as part of your stack.
+the [Kubernetes metadata store](../metadata-stores/kubernetes.md). For a more 
+production-ready setup we suggest using a [MySQL metatadata store](../metadata-stores/mysql) instead.
+* A [remote container registry](../container-registries/container-registries.md) as part of your stack.
 * A Kubernetes cluster [deployed](#how-to-deploy-it) and the name
 of your Kubernetes context which points to this cluster. Run 
 `kubectl config get-contexts` to see a list of available contexts.
@@ -55,12 +55,12 @@ zenml stack update -o <NAME>
 {% hint style="info" %}
 ZenML will build a Docker image called `zenml-kubernetes`
 which includes your code and use it to run your pipeline steps in Kubernetes. Check out
-[this page](../../developer-guide/advanced-concepts/docker.md)
+[this page](../../developer-guide/advanced-usage/docker.md)
 if you want to learn more about how ZenML builds these images and
 how you can customize them.
 
 If you decide you need the full flexibility of having a
-[custom base image](../../developer-guide/advanced-concepts/docker.md#using-a-custom-base-image),
+[custom base image](../../developer-guide/advanced-usage/docker.md#using-a-custom-base-image),
 you can update your existing orchestrator
 ```shell
 zenml orchestrator update <NAME> \

@@ -17,16 +17,16 @@ zenml integration install dash -y
 ```
 
 {% hint style="info" %}
-See the [Integrations](../../mlops_stacks/integrations.md) page for more
+See the [Integrations](../../mlops-stacks/integrations.md) page for more
 details on ZenML integrations and how to install and use them.
 {% endhint %}
 
 ## Visualizing Pipelines
 
 After a pipeline run has been started, we can access it using the 
-[Repository](../stacks-profiles-repositories/stacks_profiles_repositories.md#repositories),
+[Repository](../stacks-profiles-repositories/repository.md),
 as you learned in the last section on 
-[Inspecting Finished Pipeline Runs](post-execution-workflow.md).
+[Inspecting Finished Pipeline Runs](./inspecting-pipeline-runs.md).
 
 We can then visualize a run using the `PipelineRunLineageVisualizer` class:
 
@@ -56,14 +56,14 @@ step at a glance, as it will be colored red or yellow respectively.
 
 In addition to `Completed`, `Running`, and `Failed`, there is also a separate
 `Cached` state. You already learned about caching in a previous section on
-[Caching Pipeline Runs](caching.md). Using the `PipelineRunLineageVisualizer`,
+[Caching Pipeline Runs](./caching.md). Using the `PipelineRunLineageVisualizer`,
 you can see at a glance which steps were cached (green) and which were rerun (blue).
 See below for a detailed example.
 
 ## Code Example
 
 In the following example we use the `PipelineRunLineageVisualizer` to visualize
-the three pipeline runs from the [Caching Pipeline Runs Example](caching.md#code-example):
+the three pipeline runs from the [Caching Pipeline Runs Example](./caching.md#code-example):
 
 <details>
 <summary>Code Example of this Section</summary>

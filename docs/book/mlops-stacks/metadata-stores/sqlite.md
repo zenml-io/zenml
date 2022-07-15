@@ -2,7 +2,7 @@
 description: How to store ML metadata in a SQLite database on your local filesystem
 ---
 
-The SQLite Metadata Store is a built-in ZenML [Metadata Store](./overview.md)
+The SQLite Metadata Store is a built-in ZenML [Metadata Store](./metadata-stores.md)
 flavor that uses a SQLite database file on your local filesystem to store
 ML metadata information.
 
@@ -23,7 +23,7 @@ high-availability, scalability, backup and restore and other features that are
 expected from a production grade MLOps system.
 
 The fact that it stores information on your local filesystem also means that not
-all [Orchestrators](../orchestrators/overview.md) can be used in the same stack
+all [Orchestrators](../orchestrators/orchestrators.md) can be used in the same stack
 as a local Metadata Store. Only Orchestrators running on the local machine, such
 as the [local Orchestrator](../orchestrators/local.md), a [local Kubeflow Orchestrator](../orchestrators/kubeflow.md),
 or a [local Kubernetes Orchestrator](../orchestrators/kubernetes.md) can be
@@ -101,4 +101,4 @@ its configuration, you can have a look at [the API docs](https://apidocs.zenml.i
 ## How do you use it?
 
 Aside from the fact that the metadata information is stored locally, using the
-SQLite Metadata Store is no different than [using any other flavor of Metadata Store](./overview.md#how-to-use-it).
+SQLite Metadata Store is no different than [using any other flavor of Metadata Store](./metadata-stores.md#how-to-use-it).

@@ -10,7 +10,7 @@ functionality for provisioning, deprovisioning, starting, or stopping the
 corresponding daemons.
 
 {% hint style="info" %}
-See the advanced section on [Services](../advanced-concepts/manage-external-services.md)
+See the advanced section on [Services](../advanced-usage/manage-external-services.md)
 for more information on daemons.
 {% endhint %}
 

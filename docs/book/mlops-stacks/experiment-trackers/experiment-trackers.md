@@ -12,16 +12,16 @@ components. This establishes a clear link between pipeline runs and experiments.
 Related concepts:
 
 * the Experiment Tracker is an optional type of Stack Component that needs to be
-registered as part of your ZenML [Stack](../../developer-guide/stacks_profiles_repositories.md#stacks).
+registered as part of your ZenML [Stack](../../developer-guide/stacks-profiles-repositories/stack.md).
 * ZenML already includes versioning and tracking for the pipeline artifacts by
-storing artifacts in the [Artifact Store](../artifact_stores/overview.md) and
-maintaining a record of pipeline executions through the [Metadata Store](../metadata_stores/overview.md).
+storing artifacts in the [Artifact Store](../artifact-stores/artifact-stores.md) and
+maintaining a record of pipeline executions through the [Metadata Store](../metadata-stores/metadata-stores.md).
 
 ## When to use it
 
 ZenML already records information about the artifacts circulated through your
-pipelines by means of the mandatory [Artifact Store](../artifact_stores/overview.md) and
-[Metadata Store](../metadata_stores/overview.md) stack components. 
+pipelines by means of the mandatory [Artifact Store](../artifact-stores/artifact-stores.md) and
+[Metadata Store](../metadata-stores/metadata-stores.md) stack components. 
 <!---
 Similar to
 Experiment Trackers, the ZenML pipeline artifacts can be extracted using
@@ -32,7 +32,7 @@ However, these ZenML mechanisms are meant to be used programmatically and can be
 more difficult to work with without a visual interface.
 
 Experiment Trackers on the other hand are tools designed with usability in mind.
-They include extensive UI's providing users with an interactive and intuitive
+They include extensive UIs providing users with an interactive and intuitive
 interface that allows them to browse and visualize the information logged during
 the ML pipeline runs.
 

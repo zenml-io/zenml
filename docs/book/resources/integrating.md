@@ -6,27 +6,27 @@ description: How to integrate with ZenML
 
 ![ZenML integrates with a bunch of tools from the MLOps landscape](../assets/sam-side-by-side-full-text.png)
 
-One of the main goals of ZenML is to find some semblance of order in the ever-growing MLOps landscape. ZenML already provides [numerous integrations](https://zenml.io/integrations) into many popular tools, and allows you to [extend ZenML](../mlops\_stacks/extending.md) in order to fill in any gaps that are remaining.\
-\
+One of the main goals of ZenML is to find some semblance of order in the ever-growing MLOps landscape. ZenML already provides [numerous integrations](https://zenml.io/integrations) into many popular tools, and allows you to [extend ZenML](../developer-guide/advanced-usage/custom-flavors.md) in order to fill in any gaps that are remaining.
+
 However, what if you want to make your extension of ZenML part of the main codebase, to share it with others? If you are such a person, e.g., a tooling provider in the ML/MLOps space, or just want to contribute a tooling integration to ZenML, this guide is intended for you.
 
 ## Step 1: Categorize your integration
 
-In [Extending ZenML](../mlops\_stacks/extending.md), we already looked at the categories and abstractions that core ZenML defines. In order to create a new integration into ZenML, you would need to first find the categories that your integration belongs to. The list of categories can be found on [this page](../mlops\_stacks/extending.md).
+In [Extending ZenML](../developer-guide/advanced-usage/custom-flavors.md), we already looked at the categories and abstractions that core ZenML defines. In order to create a new integration into ZenML, you would need to first find the categories that your integration belongs to. The list of categories can be found on [this page](../mlops-stacks/categories.md).
 
-Note that one integration may belong to different categories: For example, the cloud integrations (AWS/GCP/Azure) contain [container registries](../mlops\_stacks/container\_registries/overview.md), [artifact stores](../mlops\_stacks/artifact\_stores/overview.md), [metadata stores](../mlops\_stacks/metadata\_stores/overview.md), etc.
+Note that one integration may belong to different categories: For example, the cloud integrations (AWS/GCP/Azure) contain [container registries](../mlops-stacks/container-registries/container-registries.md), [artifact stores](../mlops-stacks/artifact-stores/artifact-stores.md), [metadata stores](../mlops-stacks/metadata-stores/metadata-stores.md), etc.
 
 ## Step 2: Create individual stack components
 
-Each category selected above would correspond to a [stack component](../developer-guide/stacks-profiles-repositories/stacks\_profiles\_repositories.md). You can now start developing these individual stack components by following the detailed instructions on each stack component page.
+Each category selected above would correspond to a [stack component](../developer-guide/stacks-profiles-repositories/stack.md#stack-components). You can now start developing these individual stack components by following the detailed instructions on each stack component page.
 
-Before you package your new components into an integration, you may want to first register them with the `zenml <STACK_COMPONENT> flavor register` command and use/test them as a regular custom flavor. E.g., when [developing an orchestrator](../mlops\_stacks/orchestrators/custom.md) you can use:
+Before you package your new components into an integration, you may want to first register them with the `zenml <STACK_COMPONENT> flavor register` command and use/test them as a regular custom flavor. E.g., when [developing an orchestrator](../mlops-stacks/orchestrators/custom.md) you can use:
 
 ```
 zenml orchestrator flavor register <THE-SOURCE-PATH-OF-YOUR-ORCHESTRATOR>
 ```
 
-See the docs on extensibility of the different components [here ](../mlops\_stacks/extending.md)or get inspired by the many integrations that are already implemented, for example the mlflow [experiment tracker](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/experiment\_trackers/mlflow\_experiment\_tracker.py).
+See the docs on extensibility of the different components [here ](../developer-guide/advanced-usage/custom-flavors.md) or get inspired by the many integrations that are already implemented, for example the mlflow [experiment tracker](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/experiment\_trackers/mlflow\_experiment\_tracker.py).
 
 ## Step 3: Integrate into the ZenML repo
 
@@ -110,7 +110,7 @@ Have a look at the [MLflow Integration](https://github.com/zenml-io/zenml/blob/m
 
 As said above, each Integration can have implementations for multiple ZenML stack components. Generally the outer repository structure `src/zenml/<stack-component>/<base-component-impl.py` is reflected inside the integration folder: `integrations/<name-of-integration>/<stack-component>/<custom-component-impl.py`
 
-Here, you can now copy the code you created in [Step 2](integrating.md#step-2-create-individual-stack-components) above.&#x20;
+Here, you can now copy the code you created in [Step 2](./integrating.md#step-2-create-individual-stack-components) above.&#x20;
 
 ### Import in all the right places
 

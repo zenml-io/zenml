@@ -40,7 +40,7 @@ def load_digits() -> Output(
 As this step has multiple outputs, we need to use the
 `zenml.steps.step_output.Output` class to indicate the names of each output. 
 These names can be used to directly access the outputs of steps after running
-a pipeline, as we will see [in a later chapter](./post-execution-workflow.md).
+a pipeline, as we will see [in a later chapter](./inspecting-pipeline-runs.md).
 
 Let's come up with a second step that consumes the output of our first step and
 performs some sort of transformation on it. In this case, let's train a support
@@ -132,7 +132,7 @@ Pipeline run `first_pipeline-06_Jul_22-16_10_46_255748` has finished in 0.128s.
 ```
 
 We will dive deeper into how to inspect the finished run within the chapter on
-[Accessing Pipeline Runs](./post-execution-workflow.md).
+[Accessing Pipeline Runs](./inspecting-pipeline-runs.md).
 
 ### Give each pipeline run a name
 

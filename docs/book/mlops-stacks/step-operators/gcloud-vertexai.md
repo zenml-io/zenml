@@ -2,7 +2,7 @@
 description: How to execute individual steps in Vertex AI
 ---
 
-The Vertex step operator is a [step operator](./overview.md) flavor provided with
+The Vertex step operator is a [step operator](./step-operators.md) flavor provided with
 the ZenML `gcp` integration that uses [Vertex AI](https://cloud.google.com/vertex-ai)
 to execute individual steps of ZenML pipelines.
 
@@ -12,7 +12,7 @@ You should use the Vertex step operator if:
 * one or more steps of your pipeline require computing resources (CPU, GPU, memory) that are
 not provided by your orchestrator.
 * you have access to Vertex AI. If you're using a different cloud provider, take 
-a look at the [SageMaker](./amazon_sagemaker.md) or [AzureML](./azureml.md) step operators.
+a look at the [SageMaker](./amazon-sagemaker.md) or [AzureML](./azureml.md) step operators.
 
 ## How to deploy it
 
@@ -31,7 +31,7 @@ To use the Vertex step operator, we need:
 * [Docker](https://www.docker.com) installed and running.
 * Vertex AI enabled and a service account file. See the [deployment section](#how-do-you-deploy-it)
 for detailed instructions.
-* A [GCR container registry](../container_registries/gcloud.md) as part of our stack.
+* A [GCR container registry](../container-registries/gcloud.md) as part of our stack.
 * (Optional) A machine type that we want to execute our steps on (this defaults to `n1-standard-4`).
 See [here](https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types)
 for a list of available machine types.
@@ -63,12 +63,12 @@ def trainer(...) -> ...:
 {% hint style="info" %}
 ZenML will build a Docker image called `zenml-vertex` which includes your code and use it
 to run your steps in Vertex. Check out
-[this page](../../developer-guide/advanced-concepts/docker.md)
+[this page](../../developer-guide/advanced-usage/docker.md)
 if you want to learn more about how ZenML builds these images and
 how you can customize them.
 
 If you decide you need the full flexibility of having a
-[custom base image](../../developer-guide/advanced-concepts/docker.md#using-a-custom-base-image),
+[custom base image](../../developer-guide/advanced-usage/docker.md#using-a-custom-base-image),
 you can update your existing step operator
 ```shell
 zenml step-operator update <NAME> \

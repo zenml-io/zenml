@@ -2,11 +2,6 @@
 description: How to develop a custom secrets manager
 ---
 
-{% hint style="warning" %}
-Before reading this page, make sure that you are familiar with the
-concept of [stacks, stack components and their flavors](../advanced-guide/stacks-components-flavors.md).  
-{% endhint %}
-
 ## Base Abstraction
 
 The secret manager acts as the one-stop shop for all the secrets to which your 

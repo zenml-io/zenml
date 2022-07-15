@@ -57,7 +57,7 @@ deployment model.
 
 By default, newly created Profiles use the `local` ZenStore driver that stores
 the Profile data on the local filesystem, in
-[the global configuration directory](../developer-guide/repo-and-config.md),
+[the global configuration directory](../resources/global-config.md),
 as a collection of YAML files.
 
 The YAML representation makes it suitable to commit Stack configurations and
@@ -138,7 +138,7 @@ the full range of configuration options, consult the
 #### Local SQLite Profile
 
 The simplest form of SQL-based Profile uses a SQLite file located in
-[the global configuration directory](../developer-guide/repo-and-config.md):
+[the global configuration directory](../resources/global-config.md):
 
 ```
 $ zenml profile create sqlite_profile -t sql

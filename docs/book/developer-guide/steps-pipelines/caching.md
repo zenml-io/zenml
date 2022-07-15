@@ -67,7 +67,7 @@ def import_data_from_api(...):
 
 {% hint style="info" %}
 You can get a graphical visualization of which steps were cached using
-[ZenML's Pipeline Run Visualization Tool](pipeline-visualization.md).
+[ZenML's Pipeline Run Visualization Tool](./pipeline-visualization.md).
 {% endhint %}
 
 ### Dynamically disabling caching for a pipeline run

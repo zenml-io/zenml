@@ -157,7 +157,7 @@ need a bit more information:
 path to the the code file where it is defined (if it is not in 
 `<PATH_TO_PIPELINE_PYTHON_FILE>`),
 - Optionally, the name of each materializer (about which you will learn
-later in the section on [Materializers](materializer.md)).
+later in the section on [Materializers](../advanced-usage/materializer.md)).
 
 Overall, the required structure of such a YAML should look like this:
 
@@ -192,7 +192,7 @@ name: <PIPELINE_CLASS_OR_FUNCTION_NAME>
 The first line of the YAML defines which pipeline code to use.
 In case you defined your pipeline as Python function with `@pipeline` decorator, 
 this name is the name of the decorated function. 
-If you used the [Class Based API](./class-based-api.md) (which you will learn 
+If you used the [Class Based API](./functional-vs-class-based-api.md) (which you will learn 
 about in the next section), it will be the name of the class.
 
 For example, if you have defined a pipeline `my_pipeline_a` in
@@ -235,7 +235,7 @@ of your step outputs and inputs.
 
 Materializers are responsible for saving and loading artifacts within each step.
 For more details on materializers and how to configure them in YAML config
-files, see the [Materializers](../advanced-concepts/materializer.md#runtime-configuration.md)
+files, see the [Materializers](../advanced-usage/materializer.md#configuring-materializers-at-runtime)
 section in the list of advanced concepts.
 
 ### Code Summary

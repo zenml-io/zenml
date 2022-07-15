@@ -15,20 +15,3 @@ will be available soon. As a result, their extension is not possible at the
 moment. If you would like to use a feature store in your stack, please check 
 the list of already available feature stores down below.
 {% endhint %}
-
-## List of available feature stores
-
-For production use cases, some more flavors can be found in specific 
-`integrations` modules. In terms of features stores, ZenML features an 
-integration of `feast`.
-
-| Feature Store | Flavor | Integration | Notes             |
-|----------------|--------|-------------|-------------------|
-| [FeastFeatureStore](./feast.md) | `feast` | `feast` | Connect ZenML with already existing Feast |
-
-If you would like to see the available flavors for feature stores, you can 
-use the command:
-
-```shell
-zenml feature-store flavor list
-```

@@ -2,17 +2,12 @@
 description: How to develop a custom artifact store
 ---
 
-ZenML comes equipped with [Artifact Store implementations](./overview.md#artifact-store-flavors)
+ZenML comes equipped with [Artifact Store implementations](./artifact-stores.md#artifact-store-flavors)
 that you can use to store artifacts on a local filesystem or in the managed AWS,
 GCP or Azure cloud object storage services. However, if you need to use a
 different type of object storage service as a backend for your ZenML Artifact
 Store, you can extend ZenML to provide your own custom Artifact Store
 implementation.
-
-{% hint style="warning" %}
-Before reading this chapter, make sure that you are familiar with the 
-concept of [stacks, stack components and their flavors](../advanced-guide/stacks-components-flavors.md).  
-{% endhint %}
 
 ## Base Abstraction
 

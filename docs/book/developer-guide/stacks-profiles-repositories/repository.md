@@ -3,7 +3,7 @@ description: How to link stacks to code with repositories
 ---
 
 ZenML has two main locations where it stores information on the local machine.
-These are the [Global Configuration](../resources/global_config.md) and the 
+These are the [Global Configuration](../../resources/global-config.md) and the 
 _Repository_. The latter is also referred to as the _.zen folder_.
 
 The ZenML **Repository** related to a pipeline run is the folder that contains 
@@ -13,7 +13,7 @@ The repository plays a double role in ZenML:
 
 * It is used by ZenML to identify which files must be copied into Docker images 
 in order to execute pipeline steps remotely, e.g., when orchestrating pipelines
-with [Kubeflow](../mlops_stacks/orchestrators/kubeflow.md).
+with [Kubeflow](../../mlops-stacks/orchestrators/kubeflow.md).
 * It defines the local active [Profile](#profiles) and active [Stack](#stacks)
 that will be used when running pipelines from the repository root or one of its
 sub-folders, as shown [below](#setting-local-active-profile-and-stack).
@@ -181,7 +181,7 @@ repo = Repository()
 ```
 
 This allows you to perform various repository operations directly in Python, 
-such as [Inspecting Finished Pipeline Runs](post-execution-workflow.md) or
+such as [Inspecting Finished Pipeline Runs](../steps-pipelines/inspecting-pipeline-runs.md) or
 accessing and managing stacks, as shown below.
 
 {% hint style="info" %}

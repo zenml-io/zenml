@@ -2,7 +2,7 @@
 description: How to store container images in DockerHub
 ---
 
-The DockerHub container registry is a [container registry](./overview.md) 
+The DockerHub container registry is a [container registry](./container-registries.md) 
 flavor which comes built-in with ZenML and uses [DockerHub](https://hub.docker.com/)
 to store container images.
 
@@ -11,7 +11,7 @@ to store container images.
 You should use the DockerHub container registry if:
 * one or more components of your stack need to pull or push container images.
 * you have a DockerHub account. If you're not using DockerHub, take a look at the
- other [container registry flavors](./overview.md#container-registry-flavors).
+ other [container registry flavors](./container-registries.md#container-registry-flavors).
 
 ## How to deploy it
 
@@ -23,8 +23,8 @@ that are built will be published in a **public** repository and everyone
 will be able to pull your images. If you want to use a **private** repository
 instead, you'll have to [create a private repository](https://docs.docker.com/docker-hub/repos/#creating-repositories)
 on the website before running the pipeline. The repository name depends on
-the remote [orchestrator](../orchestrators/overview.md) or
-[step operator](../step_operators/overview.md) that you're using in your stack.
+the remote [orchestrator](../orchestrators/orchestrators.md) or
+[step operator](../step-operators/step-operators.md) that you're using in your stack.
 
 ## How to find the registry URI
 

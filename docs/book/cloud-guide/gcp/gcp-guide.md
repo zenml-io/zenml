@@ -473,8 +473,8 @@ Now rerun your pipeline, it should work now.
 
 Within this guide you have set up and used a stack on GCP using the Vertex AI
 orchestrator. For more guides on different cloud set-ups, check out the 
-[Kubeflow](https://docs.zenml.io/advanced-guide/execute-pipelines-in-cloud) and 
-[Kubernetes](https://blog.zenml.io/k8s-orchestrator/) orchestrators 
+[Kubeflow](../../mlops-stacks/orchestrators/kubeflow.md) and 
+[Kubernetes](../../mlops-stacks/orchestrators/kubernetes.md) orchestrators 
 respectively and find out if these are a better fit for you.
 
 
