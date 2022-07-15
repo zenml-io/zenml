@@ -8,14 +8,14 @@ ZenML consists of a few components. This guide walks through the various pieces 
 
 Here's a high-level overview of a typical ZenML workflow:
 
-1. Writing a *pipeline* to define what happens in your machine learning workflow.
-2. Configuring a ZenML *stack*.
+1. Writing a *[pipeline](../developer-guide/steps-pipelines/steps-and-pipelines.md)* to define what happens in your machine learning workflow.
+2. Configuring a ZenML *[stack](../developer-guide/stacks-profiles-repositories/stacks_profiles_repositories.md)*.
 3. Switching between *stacks* depending on needs.
-4. Customizing your *stack* with different *components*.
+4. Customizing your *stack* with different *[components](../mlops_stacks/categories.md)*.
 
 So first, the basics.
 
-## Pipeline and Steps
+## Pipelines and Steps
 
 At its core, ZenML follows a pipeline-based workflow for your data projects.
 A **pipeline** consist of a series of **steps**, organized in any order that makes sense for your use case. 
