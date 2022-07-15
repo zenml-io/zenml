@@ -20,11 +20,11 @@ from typing import Dict, List
 from fastai.data.transforms import get_image_files
 from fastai.learner import Learner
 from fastai.metrics import error_rate
+from fastai.vision.all import *  # noqa
 from fastai.vision.augment import Resize
 from fastai.vision.data import ImageDataLoaders
 from fastai.vision.learner import vision_learner
 from fastai.vision.models import squeezenet1_1
-from fastai.vision.all import *  # noqa
 
 from zenml.integrations.label_studio.label_studio_utils import (
     download_azure_image,
