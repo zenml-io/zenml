@@ -31,6 +31,8 @@ To use the GitHub Actions orchestrator, we need:
     zenml integration install github
     ```
 * [Docker](https://www.docker.com) installed and running.
+* A [remote artifact store](../artifact_stores/overview.md) as part of your stack.
+* A [remote metadata store](../metadata_stores/overview.md) as part of your stack.
 * A [GitHub container registry](../container_registries/github.md) as part of your stack.
 
 We can then register the orchestrator and use it in our active stack:
@@ -48,7 +50,8 @@ your code and use it to run your pipeline steps in GitHub. Check out
 if you want to learn more about how ZenML builds these images and
 how you can customize them.
 
-If you decide you need the full flexibility of having a custom base image,
+If you decide you need the full flexibility of having a
+[custom base image](../../developer-guide/advanced-concepts/docker.md#using-a-custom-base-image),
 you can update your existing orchestrator
 ```shell
 zenml orchestrator update <NAME> \

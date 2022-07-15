@@ -46,7 +46,7 @@ To figure our the URI for your registry:
 To use the Azure container registry, we need:
 * [Docker](https://www.docker.com) installed and running.
 * The [GCP CLI](https://cloud.google.com/sdk/docs/install) installed and authenticated.
-* The registry URI. Check out the [previous section](#uri-format) on the URI format and how
+* The registry URI. Check out the [previous section](#how-to-find-the-registry-uri) on the URI format and how
 to get the URI for your registry.
 
 We can then register the container registry and use it in our active stack:

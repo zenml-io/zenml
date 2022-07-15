@@ -68,7 +68,8 @@ to run your steps in AzureML. Check out
 if you want to learn more about how ZenML builds these images and
 how you can customize them.
 
-If you decide you need the full flexibility of having a custom base image,
+If you decide you need the full flexibility of having a
+[custom base image](../../developer-guide/advanced-concepts/docker.md#using-a-custom-base-image),
 you can update your existing step operator
 ```shell
 zenml step-operator update <NAME> \

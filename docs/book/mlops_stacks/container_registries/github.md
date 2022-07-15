@@ -37,7 +37,7 @@ To figure our the URI for your registry:
 
 To use the GitHub container registry, we need:
 * [Docker](https://www.docker.com) installed and running.
-* The registry URI. Check out the [previous section](#uri-format) on the URI format and how
+* The registry URI. Check out the [previous section](#how-to-find-the-registry-uri) on the URI format and how
 to get the URI for your registry.
 * Our Docker client configured so it can pull and push images. Follow
 [this guide](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry) to create a

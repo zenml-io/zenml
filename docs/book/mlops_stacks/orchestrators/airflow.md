@@ -52,7 +52,7 @@ zenml stack up
 ```
 
 This command will start up an Airflow server on your local machine
-that's running in the same Python environemnt that you used to
+that's running in the same Python environment that you used to
 provision it. When it is finished, it will print a 
 username and password which you can use to login to the Airflow UI
 [here](http://0.0.0.0:8080).
