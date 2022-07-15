@@ -1,5 +1,5 @@
 ---
-description: Collaboration with ZenML.
+description: How to collaborate with your team in ZenML
 ---
 
 # ZenML for Teams and Organizations

@@ -1,5 +1,5 @@
 ---
-description: Store artifacts using Azure Blob Storage
+description: How to store artifacts using Azure Blob Storage
 ---
 
 The Azure Artifact Store is an [Artifact Store](./overview.md) flavor provided with

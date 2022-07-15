@@ -1,3 +1,7 @@
+---
+description: Glossary of terminology used in ZenML
+---
+
 # Glossary
 
 ## Artifact

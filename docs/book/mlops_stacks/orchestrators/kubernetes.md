@@ -1,5 +1,5 @@
 ---
-description: Orchestrate pipelines with Kubernetes
+description: How to orchestrate pipelines with Kubernetes
 ---
 
 The Kubernetes orchestrator is an [orchestrator](./overview.md) flavor provided with

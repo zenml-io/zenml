@@ -1,5 +1,5 @@
 ---
-description: Deploy a Kubernetes MySQL database service and use it to store metadata information
+description: How to store ML metadata in MySQL database deployed on Kubernetes
 ---
 
 The Kubernetes Metadata Store is a spin off the [MySQL Metadata Store](./mysql.md)

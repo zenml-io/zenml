@@ -1,5 +1,5 @@
 ---
-description: Extend ZenML to implement a custom Artifact Store
+description: How to develop a custom artifact store
 ---
 
 ZenML comes equipped with [Artifact Store implementations](./overview.md#artifact-store-flavors)

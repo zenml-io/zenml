@@ -1,8 +1,6 @@
 ---
-description: Start here with the ZenML Docs.
+description: Welcome to ZenML!
 ---
-
-# Introduction
 
 Are you an ML engineer or data scientist shipping models to production and jumbling a plethora of tools?
 Do you struggle with versioning data, code, and models in your projects?

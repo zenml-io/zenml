@@ -1,5 +1,5 @@
 ---
-description: What is the global ZenML config?
+description: What is the global ZenML config
 ---
 
 # The Global Config

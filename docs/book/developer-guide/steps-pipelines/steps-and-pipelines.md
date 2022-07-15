@@ -1,5 +1,5 @@
 ---
-description: How to create steps and build and run pipelines.
+description: How to create ML pipelines in ZenML
 ---
 
 # Steps & Pipelines

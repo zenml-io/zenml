@@ -1,5 +1,5 @@
 ---
-description: How to use materializers to pass custom data types through steps.
+description: How to use materializers to pass custom data types through steps
 ---
 
 A ZenML pipeline is built in a data-centric way. The outputs and inputs of steps

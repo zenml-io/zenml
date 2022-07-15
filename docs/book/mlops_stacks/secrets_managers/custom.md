@@ -1,5 +1,5 @@
 ---
-description: Implement a custom secrets manager
+description: How to develop a custom secrets manager
 ---
 
 {% hint style="warning" %}

@@ -1,5 +1,5 @@
 ---
-description: How to set up all the GCP resources needed for a complete cloud stack
+description: How to set up a minimal stack on Google Cloud Platform (GCP)
 ---
 
 # GCP Setup Guide

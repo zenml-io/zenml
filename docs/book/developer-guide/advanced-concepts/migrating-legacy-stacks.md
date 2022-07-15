@@ -1,5 +1,5 @@
 ---
-description: How to migrate legacy stacks from zenml<0.7.
+description: How to migrate legacy stacks from zenml<0.7
 ---
 
 # Migrating Legacy Stacks to ZenML Profiles

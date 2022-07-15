@@ -1,5 +1,5 @@
 ---
-description: How to use the functional and class-based APIs for ZenML steps and pipelines.
+description: How to define pipelines and steps with functional and class-based APIs
 ---
 
 In ZenML there are two different ways how you can define pipelines or steps.

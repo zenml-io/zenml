@@ -1,5 +1,5 @@
 ---
-description: How to inspect a finished pipeline run.
+description: How to inspect a finished pipeline run
 ---
 
 # Inspecting Pipeline Runs

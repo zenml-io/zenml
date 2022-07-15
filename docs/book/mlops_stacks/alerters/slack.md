@@ -1,5 +1,5 @@
 ---
-description: How to send automated alerts to a Slack channel.
+description: How to send automated alerts to a Slack channel
 ---
 
 # Slack Alerter

@@ -1,5 +1,5 @@
 ---
-description: Execute individual steps in specialized environments
+description: How to execute individual steps in specialized environments
 ---
 
 The step operator enables the execution of individual pipeline steps in

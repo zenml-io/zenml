@@ -1,5 +1,5 @@
 ---
-description: How to configure step and pipeline parameters for each run.
+description: How to configure step and pipeline parameters for each run
 ---
 
 # Runtime Configuration

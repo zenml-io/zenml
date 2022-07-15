@@ -1,5 +1,5 @@
 ---
-description: Extend ZenML to implement a custom Experiment Tracker
+description: How to develop a custom experiment tracker
 ---
 
 {% hint style="warning" %}

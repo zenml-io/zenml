@@ -1,5 +1,5 @@
 ---
-description: How to send automated alerts to chat services.
+description: How to send automated alerts to chat services
 ---
 
 # Alerters

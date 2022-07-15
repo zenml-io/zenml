@@ -1,5 +1,5 @@
 ---
-description: Store artifacts using GCP Cloud Storage
+description: How to store artifacts using GCP Cloud Storage
 ---
 
 The GCS Artifact Store is an [Artifact Store](./overview.md) flavor provided with

@@ -1,5 +1,5 @@
 ---
-description: Implement a custom container registry
+description: How to develop a custom container registry
 ---
 
 {% hint style="warning" %}

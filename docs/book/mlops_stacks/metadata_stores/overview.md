@@ -1,5 +1,5 @@
 ---
-description: Tracking the pipeline runs in the metadata store
+description: How to track pipeline runs with metadata stores
 ---
 
 Keeping a historical record of your pipeline runs is a core MLOps practice.

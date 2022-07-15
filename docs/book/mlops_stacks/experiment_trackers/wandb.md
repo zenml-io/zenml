@@ -1,5 +1,5 @@
 ---
-description: Log and visualize extended pipeline run information with Weights & Biases
+description: How to log and visualize experiments with Weights & Biases
 ---
 
 The Weights & Biases Experiment Tracker is an [Experiment Tracker](./overview.md)

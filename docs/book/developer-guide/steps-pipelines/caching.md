@@ -1,5 +1,5 @@
 ---
-description: How automated caching works in ZenML.
+description: How automated caching works in ZenML
 ---
 
 Machine learning pipelines are rerun many times over throughout their

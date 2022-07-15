@@ -1,5 +1,5 @@
 ---
-description: How to access run names and other global data from within a step.
+description: How to access run names and other global data from within a step
 ---
 
 In addition to [Step Fixtures](step-fixtures.md), ZenML provides another

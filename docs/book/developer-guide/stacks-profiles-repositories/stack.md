@@ -1,5 +1,5 @@
 ---
-description: How to configure MLOps tooling and infrastructure with ZenML Stacks
+description: How to configure MLOps tooling and infrastructure with stacks
 ---
 
 In ZenML, a **Stack** represents a set of configurations for your MLOps tools

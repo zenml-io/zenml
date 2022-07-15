@@ -1,5 +1,5 @@
 ---
-description: We answer the most frequently asked questions about ZenML here.
+description: Find answers to the most frequently asked questions about ZenML
 ---
 
 # FAQ

@@ -1,5 +1,5 @@
 ---
-description: How to manage external, longer-lived services.
+description: How to manage external, longer-lived services
 ---
 
 ZenML interacts with external systems (e.g. prediction services, monitoring

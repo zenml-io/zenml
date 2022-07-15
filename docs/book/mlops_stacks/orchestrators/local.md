@@ -1,5 +1,5 @@
 ---
-description: Orchestrate pipelines locally
+description: How to orchestrate pipelines locally
 ---
 
 The local orchestrator is an [orchestrator](./overview.md) flavor which comes built-in with 

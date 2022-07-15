@@ -1,5 +1,5 @@
 ---
-description: How to link stacks to code with Repositories.
+description: How to link stacks to code with repositories
 ---
 
 ZenML has two main locations where it stores information on the local machine.

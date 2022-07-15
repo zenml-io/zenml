@@ -1,5 +1,5 @@
 ---
-description: Deploy Machine Learning model to Kubernetes with Seldon Core
+description: How to deploy models to Kubernetes with Seldon Core
 ---
 
 The Seldon Core Model Deployer is one of the available flavors of the [Model Deployer](./overview.md) 

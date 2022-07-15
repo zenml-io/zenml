@@ -1,5 +1,5 @@
 ---
-description: A good place to start before diving further into the docs.
+description: What are the core concepts in ZenML
 ---
 
 # Core Concepts

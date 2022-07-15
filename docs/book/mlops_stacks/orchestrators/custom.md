@@ -1,5 +1,5 @@
 ---
-description: Implement a custom orchestrator
+description: How to develop a custom orchestrator
 ---
 
 {% hint style="warning" %}

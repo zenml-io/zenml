@@ -1,5 +1,5 @@
 ---
-description: Implement a custom step operator
+description: How to develop a custom step operator
 ---
 
 {% hint style="warning" %}

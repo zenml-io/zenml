@@ -1,5 +1,5 @@
 ---
-description: Store artifacts on your local filesystem
+description: How to store artifacts on your local filesystem
 ---
 
 The local Artifact Store is a built-in ZenML [Artifact Store](./overview.md)

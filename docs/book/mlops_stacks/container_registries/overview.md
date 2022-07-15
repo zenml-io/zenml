@@ -1,5 +1,5 @@
 ---
-description: Setting up the storage for Docker images
+description: How to set up the storage for Docker images
 ---
 
 The container registry is an essential part in most remote MLOps stacks.

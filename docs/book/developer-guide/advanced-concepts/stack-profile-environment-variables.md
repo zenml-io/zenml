@@ -1,5 +1,5 @@
 ---
-description: How to set stacks and profiles with environment variables.
+description: How to set stacks and profiles with environment variables
 ---
 
 # Setting Stacks and Profiles with Environment Variables

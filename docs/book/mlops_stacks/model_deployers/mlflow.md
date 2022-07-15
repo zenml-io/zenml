@@ -1,5 +1,5 @@
 ---
-description: Deploy and Test your models locally with MLFlow
+description: How to deploy your models locally with MLFlow
 ---
 
 The MLFLow Model Deployer is one of the available flavors of the [Model Deployer](./overview.md) 

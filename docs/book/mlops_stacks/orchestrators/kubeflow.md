@@ -1,5 +1,5 @@
 ---
-description: Orchestrate pipelines with Kubeflow
+description: How to orchestrate pipelines with Kubeflow
 ---
 
 The Kubeflow orchestrator is an [orchestrator](./overview.md) flavor provided with

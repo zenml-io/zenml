@@ -1,5 +1,5 @@
 ---
-description: How to perform advanced use cases in ZenML
+description: An overview of advanced ZenML use cases
 ---
 
 The previous sections on [Steps and Pipelines](../steps-pipelines/steps-and-pipelines.md)

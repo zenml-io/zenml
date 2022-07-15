@@ -1,5 +1,5 @@
 ---
-description: Extend ZenML to implement a custom Model Deployer
+description: How to develop a custom model deployer
 ---
 
 To deploy and manage your trained machine learning models, ZenML provides a

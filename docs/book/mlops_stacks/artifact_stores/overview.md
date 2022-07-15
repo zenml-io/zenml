@@ -1,5 +1,5 @@
 ---
-description: Setting up the persistent storage for your artifacts
+description: How to set up the persistent storage for your artifacts
 ---
 
 The Artifact Store is a central component in any MLOps stack. As the name

@@ -1,5 +1,5 @@
 ---
-description: Best Practices, Recommendations, and Tips from the ZenML team.
+description: Best practices, recommendations, and tips from the ZenML team
 ---
 
 ## Recommended Repository Structure

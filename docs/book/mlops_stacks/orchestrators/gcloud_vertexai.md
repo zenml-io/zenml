@@ -1,5 +1,5 @@
 ---
-description: Orchestrate pipelines with Vertex AI
+description: How to orchestrate pipelines with Vertex AI
 ---
 
 The Vertex orchestrator is an [orchestrator](./overview.md) flavor provided with

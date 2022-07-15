@@ -1,5 +1,5 @@
 ---
-description: Store container images in GCP
+description: How to store container images in GCP
 ---
 
 The GCP container registry is a [container registry](./overview.md) flavor which comes built-in with 

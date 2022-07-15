@@ -1,5 +1,5 @@
 ---
-description: How to integrate with ZenML.
+description: How to integrate with ZenML
 ---
 
 # External Integration Guide

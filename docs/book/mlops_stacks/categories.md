@@ -4,8 +4,6 @@ description: Overview of categories of MLOps tools
 
 # Breaking down MLOps into Digestible Categories
 
-(TBD: Insert picture of categories)
-
 If you are new to the world of MLOps, it is often daunting to be immediately faced 
 with a sea of tools that seemingly all promise and do the same things. It is useful 
 in this case to try to categorize tools in various groups in order to understand 

@@ -1,5 +1,5 @@
 ---
-description: Store ML metadata on your local filesystem
+description: How to store ML metadata in a SQLite database on your local filesystem
 ---
 
 The SQLite Metadata Store is a built-in ZenML [Metadata Store](./overview.md)

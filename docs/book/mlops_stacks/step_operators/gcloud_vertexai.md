@@ -1,5 +1,5 @@
 ---
-description: Execute individual steps in Vertex AI
+description: How to execute individual steps in Vertex AI
 ---
 
 The Vertex step operator is a [step operator](./overview.md) flavor provided with

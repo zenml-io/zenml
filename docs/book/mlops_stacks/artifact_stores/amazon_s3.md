@@ -1,5 +1,5 @@
 ---
-description: Store artifacts in an AWS S3 or compatible bucket
+description: How to store artifacts in an AWS S3 bucket
 ---
 
 The S3 Artifact Store is an [Artifact Store](./overview.md) flavor provided with

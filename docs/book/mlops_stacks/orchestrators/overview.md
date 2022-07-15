@@ -1,5 +1,5 @@
 ---
-description: Orchestrate Machine Learning pipelines
+description: How to orchestrate ML pipelines
 ---
 
 The orchestrator is an essential component in any MLOps stack as 

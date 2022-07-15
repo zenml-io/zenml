@@ -1,5 +1,5 @@
 ---
-description: How to develop a custom alerter.
+description: How to develop a custom alerter
 ---
 
 ## Base Abstraction

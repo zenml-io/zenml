@@ -1,5 +1,5 @@
 ---
-description: Setting up your stack on Microsoft Azure
+description: How to set up stacks on Microsoft Azure
 ---
 
 Azure is one of the most popular cloud providers and offers a range of services that can be used while building your MLOps stacks. You can learn more about machine learning at Azure on their [website](https://azure.microsoft.com/en-in/services/machine-learning/).

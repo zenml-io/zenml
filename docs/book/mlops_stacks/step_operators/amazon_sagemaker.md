@@ -1,5 +1,5 @@
 ---
-description: Execute individual steps in SageMaker
+description: How to execute individual steps in SageMaker
 ---
 
 The SageMaker step operator is a [step operator](./overview.md) flavor provided with

@@ -1,5 +1,5 @@
 ---
-description: Store secrets locally
+description: How to store secrets locally
 ---
 
 The local secrets manager is a [secrets manager](./overview.md) flavor which comes built-in with 

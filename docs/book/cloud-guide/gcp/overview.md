@@ -1,5 +1,5 @@
 ---
-description: Setting up your stack on Google Cloud Platform (GCP)
+description: How to set up stacks on Google Cloud Platform (GCP)
 ---
 
 GCP is one of the most popular cloud providers and offers a range of services that can be used while building your MLOps stacks. You can learn more about machine learning at GCP on their [website](https://cloud.google.com/solutions/ai).

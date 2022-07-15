@@ -1,5 +1,5 @@
 ---
-description: How to set up all the Azure resources needed for a complete cloud stack
+description: How to set up a minimal stack on Microsoft Azure
 ---
 
 # Getting started with Azure

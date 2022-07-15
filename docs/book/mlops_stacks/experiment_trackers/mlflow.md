@@ -1,5 +1,5 @@
 ---
-description: Log and visualize extended pipeline run information with MLflow
+description: How to log and visualize experiments with MLflow
 ---
 
 The MLflow Experiment Tracker is an [Experiment Tracker](./overview.md) flavor

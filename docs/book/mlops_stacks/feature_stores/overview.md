@@ -1,5 +1,5 @@
 ---
-description: Access your batch and online data via a Feature Store
+description: How to manage data in feature stores
 ---
 
 Feature stores allow data teams to serve data via an offline store and an online

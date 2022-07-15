@@ -1,5 +1,5 @@
 ---
-description: Store container images in DockerHub
+description: How to store container images in DockerHub
 ---
 
 The DockerHub container registry is a [container registry](./overview.md) 

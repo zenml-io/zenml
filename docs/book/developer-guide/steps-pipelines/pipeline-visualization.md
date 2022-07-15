@@ -1,5 +1,5 @@
 ---
-description: How to visualize ZenML pipeline runs.
+description: How to visualize ZenML pipeline runs
 ---
 
 ZenML's **Dash** integration provides a `PipelineRunLineageVisualizer` that can

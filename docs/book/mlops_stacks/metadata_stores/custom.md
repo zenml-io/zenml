@@ -1,5 +1,5 @@
 ---
-description: Extend ZenML to implement a custom Metadata Store
+description: How to develop a custom metadata store
 ---
 
 {% hint style="warning" %}

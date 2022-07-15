@@ -1,5 +1,5 @@
 ---
-description: How to explore the MLOps landscape with ZenML
+description: Overview of third-party ZenML integrations
 ---
 
 # Integrating with best-in-breed tools

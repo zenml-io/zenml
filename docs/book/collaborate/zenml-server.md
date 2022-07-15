@@ -1,5 +1,5 @@
 ---
-description: Use ZenML in a Collaborative Setting with the ZenServer.
+description: How to collaboratively use ZenML in larger organizations with the ZenServer
 ---
 
 # The ZenML Server

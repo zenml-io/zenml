@@ -1,5 +1,5 @@
 ---
-description: Use the Kubeflow ML metadata service to store ML metadata 
+description: How to store ML metadata using the Kubeflow ML metadata service
 ---
 
 Kubeflow deployments include a [ML metadata service](https://www.kubeflow.org/docs/components/pipelines/concepts/metadata/)

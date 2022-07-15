@@ -1,5 +1,5 @@
 ---
-description: How to manage stack configurations with Profiles.
+description: How to manage stack configurations with profiles
 ---
 
 ZenML implicitly stores all the information about the configured Stacks, Stack

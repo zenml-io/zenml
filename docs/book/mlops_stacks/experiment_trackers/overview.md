@@ -1,5 +1,5 @@
 ---
-description: Record and interact with extended pipeline run information with experiment trackers
+description: How to log and visualize ML experiments
 ---
 
 Experiment trackers let you track your ML experiments by logging extended

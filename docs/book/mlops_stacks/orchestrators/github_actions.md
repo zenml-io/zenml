@@ -1,5 +1,5 @@
 ---
-description: Orchestrate pipelines with GitHub Actions
+description: How to orchestrate pipelines with GitHub Actions
 ---
 
 The GitHub Actions orchestrator is an [orchestrator](./overview.md) flavor provided with

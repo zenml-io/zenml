@@ -1,3 +1,7 @@
+---
+description: How to set up a minimal stack on Amazon Web Services (AWS)
+---
+
 # Getting started with AWS
 
 To get started using ZenML on the cloud, you need some basic infrastructure up 

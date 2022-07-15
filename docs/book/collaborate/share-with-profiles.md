@@ -1,5 +1,5 @@
 ---
-description: Centralized ZenML Stack Management with ZenStores.
+description: How to manage stacks in a centralized location with ZenStores
 ---
 
 # Share Stacks and Profiles via ZenStores

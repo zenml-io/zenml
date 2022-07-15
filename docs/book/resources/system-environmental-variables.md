@@ -1,5 +1,5 @@
 ---
-description: Control ZenML behavior with environmental variables.
+description: How to control ZenML behavior with environmental variables
 ---
 
 # System environmental variables

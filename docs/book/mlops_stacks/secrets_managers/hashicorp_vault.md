@@ -1,5 +1,5 @@
 ---
-description: Store secrets in HashiCorp Vault
+description: How to store secrets in HashiCorp Vault
 ---
 
 The HashiCorp Vault secrets manager is a [secrets manager](./overview.md) flavor provided with
