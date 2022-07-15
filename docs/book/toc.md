@@ -90,6 +90,13 @@
   * [Google Cloud VertexAI](mlops_stacks/step_operators/gcloud_vertexai.md)
   * [AzureML](mlops_stacks/step_operators/azureml.md)
   * [Develop a Custom Step Operator](mlops_stacks/step_operators/custom.md)
+* [Alerters](mlops_stacks/alerters/overview.md)
+  * [Slack Alerter](mlops_stacks/alerters/slack.md)
+  * [Develop a Custom Alerter](mlops_stacks/alerters/custom.md)
+* [Feature Stores](mlops_stacks/feature_stores/overview.md)
+  * [Feast](mlops_stacks/feature_stores/feast.md)
+  * [Develop a Custom Feature Store](mlops_stacks/feature_stores/custom.md)
+<!---
 * [Data Validators](mlops_stacks/data_validators/overview.md)
   * [Great Expectations](mlops_stacks/data_validators/great_expectations.md)
   * [Deepchecks](mlops_stacks/data_validators/deepchecks.md)
@@ -97,12 +104,7 @@
   * [WhyLabs](mlops_stacks/data_validators/whylogs.md)
   * [Facets](mlops_stacks/data_validators/facets.md)
   * [Develop a Custom Data Validator](mlops_stacks/data_validators/custom.md)
-* [Alerters](mlops_stacks/alerters/overview.md)
-  * [Slack Alerter](mlops_stacks/alerters/slack.md)
-  * [Develop a Custom Alerter](mlops_stacks/alerters/custom.md)
-* [Feature Stores](mlops_stacks/feature_stores/overview.md)
-  * [Feast](mlops_stacks/feature_stores/feast.md)
-  * [Develop a Custom Feature Store](mlops_stacks/feature_stores/custom.md)
+-->
 
 ## Cloud Guide
 
