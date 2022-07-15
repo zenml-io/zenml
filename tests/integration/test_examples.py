@@ -105,7 +105,6 @@ examples = [
         setup_function=generate_data_validator_setup_function(
             "great_expectations"
         ),
-        skip_on_windows=True,
     ),
     ExampleIntegrationTestConfiguration(
         name="kubeflow_pipelines_orchestration",

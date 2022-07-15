@@ -28,23 +28,21 @@ from zenml.integrations.whylogs.secret_schemas.whylabs_secret_schema import (
     WhylabsSecretSchema,
 )
 from zenml.logger import get_logger
-from zenml.repository import Repository
+from zenml.stack.authentication_mixin import AuthenticationMixin
 from zenml.steps import STEP_ENVIRONMENT_NAME, StepEnvironment
 
 logger = get_logger(__name__)
 
 
-class WhylogsDataValidator(BaseDataValidator):
+class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
     """Whylogs data validator stack component.
 
     Attributes:
-        whylabs_secret: Optional ZenML secret with Whylabs credentials. If
-            configured, all the data profiles returned by all pipeline steps
+        authentication_secret: Optional ZenML secret with Whylabs credentials.
+            If configured, all the data profiles returned by all pipeline steps
             will automatically be uploaded to Whylabs in addition to being
             stored in the ZenML Artifact Store.
     """
-
-    whylabs_secret: Optional[str] = None
 
     # Class Configuration
     FLAVOR: ClassVar[str] = WHYLOGS_DATA_VALIDATOR_FLAVOR
@@ -80,51 +78,6 @@ class WhylogsDataValidator(BaseDataValidator):
         profile.set_dataset_timestamp(dataset_timestamp=dataset_timestamp)
         return profile.view()
 
-    def _get_whylabs_secret(self) -> Optional[WhylabsSecretSchema]:
-        """Load the Whylabs secret from the active secrets manager.
-
-        Returns:
-            The Whylabs secret, if one was configured, otherwise None.
-
-        Raises:
-            RuntimeError: if the configured secret cannot be loaded.
-        """
-        # if a ZenML secret was configured in the model deployer,
-        # create a Kubernetes secret as a means to pass this information
-        # to the Seldon Core deployment
-        if not self.whylabs_secret:
-            return None
-
-        secret_manager = Repository(  # type: ignore [call-arg]
-            skip_repository_check=True
-        ).active_stack.secrets_manager
-
-        if not secret_manager:
-            raise RuntimeError(
-                f"The active stack doesn't have a secret manager component. "
-                f"The Whylabs secret specified in the whylogs Data Validator "
-                f"configuration cannot be fetched: {self.whylabs_secret}."
-            )
-
-        try:
-            whylabs_secret = secret_manager.get_secret(self.whylabs_secret)
-        except KeyError:
-            raise RuntimeError(
-                f"The Whylabs secret '{self.whylabs_secret}' specified in the "
-                f"whylogs Data Validateor configuration was not found "
-                f"in the active secrets manager."
-            )
-
-        if not isinstance(whylabs_secret, WhylabsSecretSchema):
-            raise RuntimeError(
-                f"The Whylabs secret '{self.whylabs_secret}' loaded from the "
-                f"active secrets manager is not of type {WhylabsSecretSchema}. "
-                f"Please ensure that you use the `{WhylabsSecretSchema.TYPE}` "
-                f"schema type when you configure the Whylabs secret."
-            )
-
-        return whylabs_secret
-
     def upload_profile_view(
         self, profile_view: DatasetProfileView, dataset_id: Optional[str] = None
     ) -> None:
@@ -144,7 +97,9 @@ class WhylogsDataValidator(BaseDataValidator):
             ValueError: If the dataset ID was not provided and could not be
                 retrieved or inferred from other sources.
         """
-        secret = self._get_whylabs_secret()
+        secret = self.get_authentication_secret(
+            expected_schema_type=WhylabsSecretSchema
+        )
         if not secret:
             return
 

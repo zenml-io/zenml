@@ -13,14 +13,15 @@
 #  permissions and limitations under the License.
 """Implementation of the Evidently Profile Step."""
 
-from typing import List, Literal, Optional, Sequence, Union, cast
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, cast
 
 import pandas as pd
 from evidently.model_profile import Profile  # type: ignore[import]
 from evidently.pipeline.column_mapping import (  # type: ignore[import]
     ColumnMapping,
 )
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing_extensions import Literal
 
 from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
 from zenml.steps import Output
@@ -102,11 +103,21 @@ class EvidentlyProfileConfig(BaseDriftDetectionConfig):
         - "probabilisticmodelperformance"
     verbose_level: Verbosity level for the Evidently dashboards. Use
         0 for a brief dashboard, 1 for a detailed dashboard.
+    profile_options: Optional list of options to pass to the
+        profile constructor. See `EvidentlyDataValidator._unpack_options`.
+    dashboard_options: Optional list of options to pass to the
+        dashboard constructor. See `EvidentlyDataValidator._unpack_options`.
     """
 
     column_mapping: Optional[EvidentlyColumnMapping] = None
     profile_sections: Optional[Sequence[str]] = None
     verbose_level: int = 1
+    profile_options: Sequence[Tuple[str, Dict[str, Any]]] = Field(
+        default_factory=list
+    )
+    dashboard_options: Sequence[Tuple[str, Dict[str, Any]]] = Field(
+        default_factory=list
+    )
 
 
 class EvidentlyProfileStep(BaseDriftDetectionStep):
@@ -146,6 +157,8 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
             profile_list=config.profile_sections,
             column_mapping=column_mapping,
             verbose_level=config.verbose_level,
+            profile_options=config.profile_options,
+            dashboard_options=config.dashboard_options,
         )
         return [profile, dashboard.html()]
 

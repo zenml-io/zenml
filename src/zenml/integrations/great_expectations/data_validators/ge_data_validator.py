@@ -384,6 +384,12 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         """
         context = self.data_context
 
+        if comparison_dataset is not None:
+            logger.warning(
+                "A comparison dataset is not required by Great Expectations "
+                "to do data profiling. Silently ignoring the supplied dataset "
+            )
+
         if not expectation_suite_name:
             try:
                 # get pipeline name and step name
@@ -485,6 +491,12 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         """
         if not expectation_suite_name:
             raise ValueError("Missing expectation_suite_name argument value.")
+
+        if comparison_dataset is not None:
+            logger.warning(
+                "A comparison dataset is not required by Great Expectations "
+                "to do data validation. Silently ignoring the supplied dataset "
+            )
 
         try:
             # get pipeline name, step name and run id

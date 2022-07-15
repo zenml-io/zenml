@@ -14,7 +14,7 @@
 """Implementation of the whylogs profiler step."""
 
 import datetime
-from typing import Optional, Type, cast
+from typing import Optional, cast
 
 import pandas as pd
 from whylogs.core import DatasetProfileView  # type: ignore
@@ -72,7 +72,6 @@ class WhylogsProfilerStep(BaseAnalyzerStep):
 def whylogs_profiler_step(
     step_name: str,
     config: WhylogsProfilerConfig,
-    log_to_whylabs: bool = False,
     dataset_id: Optional[str] = None,
 ) -> BaseStep:
     """Shortcut function to create a new instance of the WhylogsProfilerStep step.
@@ -84,16 +83,12 @@ def whylogs_profiler_step(
     Args:
         step_name: The name of the step
         config: The step configuration
-        log_to_whylabs: Set to True to enable logging to Whylabs. This is the
-            same as adding the `enable_whylabs` decorator to your step.
         dataset_id: Optional dataset ID to use to upload the profile to Whylabs.
 
     Returns:
         a WhylogsProfilerStep step instance
     """
-    step: Type[BaseStep] = clone_step(WhylogsProfilerStep, step_name)
-
-    if log_to_whylabs:
-        step = enable_whylabs(dataset_id=dataset_id)(step)
-
+    step = enable_whylabs(dataset_id=dataset_id)(
+        clone_step(WhylogsProfilerStep, step_name)
+    )
     return step(config=config)

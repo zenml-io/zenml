@@ -22,7 +22,7 @@ customized with specialized conditions that the validation checks should perform
 At its core, the Deepchecks data validation library takes in a target dataset and
 an optional model and reference dataset and generates a data validation check
 result in the form of a `SuiteResult` object that can be analyzed programmatically
-of visualized in a notebook or in the browser as a HTML web page. 
+or visualized in a notebook or in the browser as a HTML web page. 
 Datasets come in the form of `pandas` dataframes and models can be anything
 that implement a `predict` method for regression tasks and also a `predict_proba`
 method for classification tasks.

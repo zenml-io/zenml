@@ -277,14 +277,13 @@ def generate_data_validator_setup_function(
 
     def data_validator_setup(repository: Repository) -> None:
         """Adds a data validator component to the active stack."""
-        # install the integration so we can import the stack component
-        import subprocess
-
-        subprocess.check_call(
-            ["zenml", "integration", "install", integration, "-y"]
-        )
-
+        from zenml.cli.integration import install
         from zenml.stack.flavor_registry import flavor_registry
+
+        # install the integration so we can import the stack component
+        install.callback(
+            integrations=(integration), ignore_integration=(), force=True
+        )
 
         data_validators = flavor_registry.get_flavors_by_type(
             component_type=StackComponentType.DATA_VALIDATOR,

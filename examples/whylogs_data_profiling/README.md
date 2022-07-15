@@ -40,7 +40,7 @@ Artifact Store just as any other artifacts.
 It also shows how the `enable_whylabs` decorator can be applied to an existing
 to automatically log all returned whylogs data profiles to the Whylabs platform.
 This needs to be combined with configuring secrets in the whylogs Data Validator
-stack component to work, as detailed in the [Run it locally](#🖥-run-it-locally)
+stack component to work, as detailed in the [Run it locally](#-run-it-locally)
 section.
 
 ```python
@@ -193,7 +193,7 @@ Adding Whylabs logging capabilities to that is just a bit more complicated, as y
 also require a Secrets Manager in your stack:
 
 ```shell
-zenml data-validator register whylogs -f whylogs --whylabs_secret=whylabs_secret
+zenml data-validator register whylogs -f whylogs --authentication_secret=whylabs_secret
 zenml secrets-manager register local -f local
 zenml stack register whylogs_stack -o default -a default -m default -x local -dv whylogs --set
 

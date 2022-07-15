@@ -24,12 +24,10 @@ from zenml.integrations.whylogs.steps import (
 train_data_profiler = whylogs_profiler_step(
     step_name="train_data_profiler",
     config=WhylogsProfilerConfig(),
-    log_to_whylabs=True,
     dataset_id="model-2",
 )
 test_data_profiler = whylogs_profiler_step(
     step_name="test_data_profiler",
     config=WhylogsProfilerConfig(),
-    log_to_whylabs=True,
     dataset_id="model-3",
 )
