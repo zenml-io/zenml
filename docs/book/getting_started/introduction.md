@@ -37,7 +37,7 @@ This is why we built ZenML.
 
 Eager to get started? We recommend the following to start using **ZenML** right away!
 
-## **Pipelining** - Take your first ZenML Steps
+## **Pipelining** - Take Your First ZenML Steps
 
 New to ZenML? Get acquainted with the [core concepts](core-concepts.md) first 
 to understand what makes ZenML so special. 
@@ -50,19 +50,19 @@ production use cases? Check out ZenML [integrations](https://zenml.io/integratio
 use cases and features. Learn how to take your 
 MLOps stack from basic to fully-fledged.
 
-## **Extending** - Make it your own
+## **Extending** - Make It Your Own
 
 ZenML doesn't support your favorite tool? Worry not! ZenML is 
 built from the ground up with extensibility in mind. Find out how to integrate other tools or proprietary on-prem solutions for you and your team in [Stack Components](../mlops_stacks/extending.md). 
 
-## **Collaborating** - Work together with your team
+## **Collaborating** - Work Together With Your Team
 
 Share not only your code but also your ZenML stacks with your team. Find out how in [collaboration](../collaborate/collaborate-with-zenml.md). 
 
-## **Resources** - Learn ZenML with tutorials, examples, and guides
+## **Resources** - Learn ZenML with Tutorials, Examples, and Guides
 
 The ZenML team and community have put together resources to learn about the framework. Learn more in [resources](../resources/index.md).
 
-## **Community** - Be part of the ZenML family
+## **Community** - Be Part of the ZenML Family
 
 Can't really find what you want and need help? Join our [Slack group](https://zenml.io/slack-invite/). Ask questions about bugs or specific use cases and get a quick response from the ZenML core team.
