@@ -15,6 +15,7 @@
 
 import os
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 from typing import List, Optional, cast
@@ -66,6 +67,15 @@ class LocalStackRecipe:
         """
         raise NotImplementedError
 
+    @property
+    def recipes_run_bash_script(self) -> str:
+        """Path to the bash script that runs the recipe.
+
+        Returns:
+            Path to the bash script that runs the recipe.
+        """
+        return os.path.join(self.path, RECIPE_RUN_SCRIPT)
+
     # @property
     # def executable_python_stack_recipe(self) -> str:
     #     """Return the Python file for the stack_recipe.
@@ -92,27 +102,55 @@ class LocalStackRecipe:
         """
         return fileio.exists(str(self.path)) and fileio.isdir(str(self.path))
 
-    # def run_stack_recipe(
-    #     self,
-    #     stack_recipe_runner: List[str],
-    #     force: bool,
-    #     prevent_stack_setup: bool = False,
-    # ) -> None:
-    #     """Run the local stack_recipe using the bash script at the supplied location.
+    def run_stack_recipe(
+        self,
+        stack_recipe_runner: List[str],
+        force: bool,
+    ) -> None:
+        """Run the local stack_recipe using the bash script at the supplied location.
 
-    #     Args:
-    #         stack_recipe_runner: Sequence of locations of executable file(s)
-    #                         to run the stack_recipe
-    #         force: Whether to force the install
-    #         prevent_stack_setup: Prevents the stack_recipe from setting up a custom
-    #             stack.
+        Args:
+            stack_recipe_runner: Sequence of locations of executable file(s)
+                            to run the stack_recipe
+            force: Whether to force the install
 
-    #     Raises:
-    #         NotImplementedError: If the stack_recipe hasn't been implement yet.
-    #         FileNotFoundError: If the stack_recipe runner script is not found.
-    #         subprocess.CalledProcessError: If the stack_recipe runner script fails.
-    #     """
-    #     raise NotImplementedError
+        Raises:
+            NotImplementedError: If the stack_recipe hasn't been implement yet.
+            FileNotFoundError: If the stack_recipe runner script is not found.
+            subprocess.CalledProcessError: If the stack_recipe runner script fails.
+        """
+        if all(map(fileio.exists, stack_recipe_runner)):
+            call = (
+                stack_recipe_runner
+            )
+            try:
+                # TODO [ENG-271]: Catch errors that might be thrown
+                #  in subprocess
+                logger.info("calling process with call, %s", call)
+                subprocess.check_call(
+                    call,
+                    cwd=str(self.path),
+                    shell=click._compat.WIN,
+                    env=os.environ.copy(),
+                )
+            except RuntimeError:
+                raise NotImplementedError(
+                    f"Currently the recipe {self.name} "
+                    "has no implementation for the "
+                    "run method"
+                )
+            except subprocess.CalledProcessError as e:
+                if e.returncode == 38:
+                    raise NotImplementedError(
+                        f"Currently the recipe {self.name} "
+                        "has no implementation for the "
+                        "run method"
+                    )
+                raise
+        else:
+            raise FileNotFoundError(
+                "Bash File(s) to run recipes not found at" f"{stack_recipe_runner}"
+            )
 
     # Telemetry
     # track_event(AnalyticsEvent.RUN_stack_recipe, {"stack_recipe_name": self.name})
@@ -653,13 +691,18 @@ def deploy(
     stack_recipe_name: str,
     path: str,
     force: bool,
-    old_force: bool,
     shell_executable: Optional[str],
 ) -> None:
     """Run the stack_recipe at the specified relative path.
 
     `zenml stack_recipe pull stack_recipe_NAME` has to be called with the same relative
     path before the run command.
+
+    What I need this to do:
+    - change the directory to the path of the recipe.
+    - do terraform apply and handle any errors.
+    - tell users if they have to do deploy again.
+    - keep the option to stream logs 
 
     Args:
         ctx: The click context.
@@ -671,12 +714,12 @@ def deploy(
         shell_executable: Manually specify the path to the executable that
             runs .sh files.
     """
-    if old_force:
-        force = old_force
-        warning(
-            "The `--force` flag will soon be deprecated. Use `--yes` or "
-            "`-y` instead."
-        )
+    # if old_force:
+    #     force = old_force
+    #     warning(
+    #         "The `--force` flag will soon be deprecated. Use `--yes` or "
+    #         "`-y` instead."
+    #     )
 
     # TODO [ENG-272]: - create a post_run function inside individual setup.sh
     #  to inform user how to clean up
@@ -695,10 +738,13 @@ def deploy(
     except KeyError as e:
         error(str(e))
     else:
+        
         stack_recipe_dir = stack_recipes_dir / stack_recipe_name
         local_stack_recipe = LocalStackRecipe(
             stack_recipe_dir, stack_recipe_name
         )
+
+        logger.info("Inside else, %s", stack_recipe_dir)
 
         if not local_stack_recipe.is_present():
             ctx.invoke(
@@ -711,7 +757,7 @@ def deploy(
         stack_recipe_runner = (
             [] if shell_executable is None else [shell_executable]
         ) + [
-            git_stack_recipes_handler.stack_recipe_repo.recipes_run_bash_script
+            local_stack_recipe.recipes_run_bash_script
         ]
         try:
             local_stack_recipe.run_stack_recipe(
