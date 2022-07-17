@@ -46,7 +46,7 @@ from zenml.integrations.registry import integration_registry
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.pipelines.schedule import Schedule
-from zenml.post_execution import PipelineRunView, PipelineView
+from zenml.post_execution import PipelineRunView
 from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.steps import BaseStep
@@ -610,9 +610,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
         if pipeline_view:
             return pipeline_view.runs  # type: ignore[no-any-return]
         else:
-            raise RuntimeError(f"The PipelineView for `{cls.__name__}` could "
-                               f"not be found. Are you sure this pipeline has "
-                               f"been run already?")
+            raise RuntimeError(
+                f"The PipelineView for `{cls.__name__}` could "
+                f"not be found. Are you sure this pipeline has "
+                f"been run already?"
+            )
 
     @classmethod
     def get_run(cls, run_name: str) -> Optional["PipelineRunView"]:
@@ -632,6 +634,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
         if pipeline_view:
             return pipeline_view.get_run(run_name)  # type: ignore[no-any-return]
         else:
-            raise RuntimeError(f"The PipelineView for `{cls.__name__}` could "
-                               f"not be found. Are you sure this pipeline has "
-                               f"been run already?")
+            raise RuntimeError(
+                f"The PipelineView for `{cls.__name__}` could "
+                f"not be found. Are you sure this pipeline has "
+                f"been run already?"
+            )
