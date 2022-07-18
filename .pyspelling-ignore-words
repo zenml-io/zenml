@@ -305,6 +305,7 @@ PipelineRun
 PipelineRunLineageVisualizer
 PipelineRunTable
 PipelineRunView
+PipelineRunViews
 PipelineRunWrapper
 PipelineView
 PipelineWrapper
@@ -334,6 +335,7 @@ RIL
 RL
 RedPill
 Reproducibility
+repos
 RichHandler
 Roadmap
 Runtime
