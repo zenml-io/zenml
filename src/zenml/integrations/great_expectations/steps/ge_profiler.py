@@ -17,22 +17,14 @@ from typing import Any, Dict, Optional
 
 import pandas as pd
 from great_expectations.core import ExpectationSuite  # type: ignore[import]
-from great_expectations.data_context.types.resource_identifiers import (  # type: ignore[import]
-    ExpectationSuiteIdentifier,
-)
-from great_expectations.profile.user_configurable_profiler import (  # type: ignore[import]
-    UserConfigurableProfiler,
-)
 from pydantic import Field
 
 from zenml.integrations.great_expectations.data_validators.ge_data_validator import (
     GreatExpectationsDataValidator,
 )
-from zenml.integrations.great_expectations.steps.utils import (
-    create_batch_request,
-)
 from zenml.logger import get_logger
 from zenml.steps import BaseStep, BaseStepConfig
+from zenml.steps.utils import clone_step
 
 logger = get_logger(__name__)
 
@@ -76,51 +68,35 @@ class GreatExpectationsProfilerStep(BaseStep):
         Returns:
             The generated Great Expectations suite.
         """
-        context = GreatExpectationsDataValidator.get_data_context()
-
-        suite_exists = False
-        if context.expectations_store.has_key(  # noqa
-            ExpectationSuiteIdentifier(config.expectation_suite_name)
-        ):
-            suite_exists = True
-            suite = context.get_expectation_suite(config.expectation_suite_name)
-            if not config.overwrite_existing_suite:
-                logger.info(
-                    f"Expectation Suite `{config.expectation_suite_name}` "
-                    f"already exists and `overwrite_existing_suite` is not set "
-                    f"in the step configuration. Skipping re-running the "
-                    f"profiler."
-                )
-                return suite
-
-        batch_request = create_batch_request(
-            context, dataset, config.data_asset_name
+        data_validator = (
+            GreatExpectationsDataValidator.get_active_data_validator()
         )
 
-        try:
-            if suite_exists:
-                validator = context.get_validator(
-                    batch_request=batch_request,
-                    expectation_suite_name=config.expectation_suite_name,
-                )
-            else:
-                validator = context.get_validator(
-                    batch_request=batch_request,
-                    create_expectation_suite_with_name=config.expectation_suite_name,
-                )
+        return data_validator.data_profiling(
+            dataset,
+            expectation_suite_name=config.expectation_suite_name,
+            data_asset_name=config.data_asset_name,
+            profiler_kwargs=config.profiler_kwargs,
+            overwrite_existing_suite=config.overwrite_existing_suite,
+        )
 
-            profiler = UserConfigurableProfiler(
-                profile_dataset=validator, **config.profiler_kwargs
-            )
 
-            suite = profiler.build_suite()
-            context.save_expectation_suite(
-                expectation_suite=suite,
-                expectation_suite_name=config.expectation_suite_name,
-            )
+def great_expectations_profiler_step(
+    step_name: str,
+    config: GreatExpectationsProfilerConfig,
+) -> BaseStep:
+    """Shortcut function to create a new instance of the GreatExpectationsProfilerStep step.
 
-            context.build_data_docs()
-        finally:
-            context.delete_datasource(batch_request.datasource_name)
+    The returned GreatExpectationsProfilerStep can be used in a pipeline to
+    infer data validation rules from an input pd.DataFrame dataset and return
+    them as an Expectation Suite. The Expectation Suite is also persisted in the
+    Great Expectations expectation store.
 
-        return suite
+    Args:
+        step_name: The name of the step
+        config: The configuration for the step
+
+    Returns:
+        a GreatExpectationsProfilerStep step instance
+    """
+    return clone_step(GreatExpectationsProfilerStep, step_name)(config=config)

@@ -31,5 +31,5 @@ jobs:
         run: |-
           gcloud builds submit \
             --quiet \
-            --config=cloudbuild.yaml \
+            --config=release-cloudbuild.yaml \
             --substitutions=TAG_NAME=${{github.ref_name}} .
