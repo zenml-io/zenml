@@ -4,6 +4,13 @@ description: Glossary of terminology used in ZenML
 
 # Glossary
 
+## Annotator
+
+Annotators are a stack component that enables the use of data annotation as part
+of your ZenML stack and pipelines. You can use the associated CLI command to
+launch annotation, configure your datasets and get stats on how many labeled
+tasks you have ready for use.
+
 ## Artifact
 
 Artifacts are the data that power your experimentation and model training. It is
