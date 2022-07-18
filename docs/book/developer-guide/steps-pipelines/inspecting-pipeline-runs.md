@@ -50,14 +50,18 @@ pipelines = repo.get_pipelines()
 pipeline_with_latest_initial_run_time = pipelines[-1]
 
 # or get one pipeline by name
-pipeline_x = repo.get_pipeline(pipeline_name=...)
+pipeline_x = repo.get_pipeline(pipeline="example_pipeline")
+
+# or even use the pipeline class
+pipeline_x = repo.get_pipeline(pipeline=example_pipeline)
 ```
 
 {% hint style="info" %}
 Be careful when accessing pipelines by index. Even if you just ran a pipeline 
 it might not be at index `-1`, due to the fact that the pipelines are sorted 
-by time of *first* run. Instead, it is recommended to access the pipeline by its
-name using `get_pipeline(pipeline_name=...)`.
+by time of *first* run. Instead, it is recommended to access the pipeline using 
+the pipeline class, an instance of the class or even the name of the 
+pipeline as a string: `get_pipeline(pipeline=...)`.
 {% endhint %}
 
 ### Runs
@@ -83,6 +87,26 @@ stores as all run data need to be transferred from the cloud to the local
 machine. 
 {% endhint %}
 
+Alternatively, you can also access the runs from the pipeline class/instance
+itself. 
+
+```python
+from zenml.pipelines import pipeline
+
+@pipeline
+def example_pipeline(...):
+    ...
+
+# get all runs of a pipeline chronologically ordered
+runs = example_pipeline.get_runs()
+
+# get the last run by index, runs are ordered by execution time in ascending order
+last_run = runs[-1]
+
+# or get a specific run by name
+run = example_pipeline.get_run(run_name=...)
+```
+
 ### Steps
 
 Within a given pipeline run you can now further zoom in on individual steps
@@ -97,15 +121,19 @@ steps = run.steps
 first_step = steps[0]
 
 # or get a specific step by name
-step = run.get_step(name=...)
+step = run.get_step(step="first_step")
+
+# or even use the step class
+step = run.get_step(step=first_step)
 ```
 
 {% hint style="info" %}
 The steps are ordered by time of execution. Depending on the 
-[orchestrator](../../mlops-stacks/orchestrators/orchestrators.md), steps can be run in 
-parallel. Thus, accessing steps by index can be unreliable across different
-runs and it is recommended to access steps by their name using
-`get_step(name=...)` instead.
+[orchestrator](../../mlops-stacks/orchestrators/orchestrators.md), steps can be 
+run in parallel. Thus, accessing steps by index can be unreliable across 
+different runs, and it is recommended to access steps by the step class,
+an instance of the class or even the name of the step as a string: 
+`get_step(step=...)` instead.
 {% endhint %}
 
 ### Outputs
@@ -147,7 +175,6 @@ of our example pipeline from the previous sections:
 
 ```python
 from zenml.repository import Repository
-
 
 repo = Repository()
 pipeline = repo.get_pipeline(pipeline_name="first_pipeline")

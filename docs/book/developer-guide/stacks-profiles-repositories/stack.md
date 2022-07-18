@@ -141,6 +141,16 @@ zenml artifact-store register <ARTIFACT_STORE_NAME> \
     --path=/path/to/your/store
 ```
 
+In case you do not know all the available parameters, you can also use the 
+interactive mode to register stack components. This will then walk you through 
+each parameter (to skip just press ENTER):
+
+```shell
+zenml artifact-store register <ARTIFACT_STORE_NAME> \
+    --flavor=local -i
+```
+
+
 Afterwards, you should be able to see the new artifact store in the
 list of registered artifact stores, which you can access using the following command:
 
