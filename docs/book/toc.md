@@ -103,6 +103,9 @@
   * [Facets](mlops_stacks/data_validators/facets.md)
   * [Develop a Custom Data Validator](mlops_stacks/data_validators/custom.md)
 -->
+* [Annotators](./mlops-stacks/annotators/annotators.md)
+  * [Label Studio](./mlops-stacks/annotators/label-studio.md)
+  * [Develop a Custom Annotator](./mlops-stacks/annotators/custom.md)
 
 ## Cloud Guide
 
