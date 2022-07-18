@@ -163,10 +163,10 @@ repo.get_pipelines()
 
 # This is the recommended explicit way to retrieve your specific pipeline 
 # using the pipeline class if you have it at hand
-repo.get_pipeline(pipeline_name=first_pipeline)
+repo.get_pipeline(pipeline=first_pipeline)
 
 # Alternatively you can also use the name of the pipeline
-repo.get_pipeline(pipeline_name="first_pipeline")
+repo.get_pipeline(pipeline="first_pipeline")
 ```
 
 ### Have your imports relative to your `.zen` directory OR have your imports relative to the root of your repository in cases when you don't have a `.zen` directory (=> which means to have the runner at the root of your repository)

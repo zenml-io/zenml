@@ -137,7 +137,8 @@ E.g., to register a *local* artifact store, we could use the following command:
 
 ```shell
 zenml artifact-store register <ARTIFACT_STORE_NAME> \
-    --flavor=local --path=/path/to/your/store
+    --flavor=local \
+    --path=/path/to/your/store
 ```
 
 In case you do not know all the available parameters, you can also use the 
