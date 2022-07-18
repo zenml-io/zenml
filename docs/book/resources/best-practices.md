@@ -143,7 +143,7 @@ into a Docker image for execution. To speed up the process and reduce Docker
 image sizes, exclude all unnecessary files (like data, virtual environments, 
 git repos, etc.) within the `.dockerignore`.
 
-### Use `get_pipeline_run(RUN_NAME)` instead of indexing (`[-1]`) to retrieve previous pipeline runs
+### Use `get_pipeline(pipeline=...)` instead of indexing (`[-1]`) to retrieve previous pipelines
 
 When [inspecting pipeline runs](../developer-guide/steps-pipelines/inspecting-pipeline-runs.md)
 it is tempting to access the pipeline views directly by their index, but
@@ -152,7 +152,6 @@ pipeline at `[-1]` might not be the one you are expecting.
 
 ```python
 from zenml.repository import Repository
-from zenml.pipelines import pipeline
 
 first_pipeline.run()
 second_pipeline.run()
@@ -162,7 +161,11 @@ repo = Repository()
 repo.get_pipelines()
 >>> [PipelineView('first_pipeline'), PipelineView('second_pipeline')]
 
-# This is the recommended explicit way to retrieve your specific pipeline
+# This is the recommended explicit way to retrieve your specific pipeline 
+# using the pipeline class if you have it at hand
+repo.get_pipeline(pipeline_name=first_pipeline)
+
+# Alternatively you can also use the name of the pipeline
 repo.get_pipeline(pipeline_name="first_pipeline")
 ```
 
