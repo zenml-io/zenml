@@ -30,17 +30,7 @@
 """Implementation of the VertexAI orchestrator."""
 
 import os
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    ClassVar,
-    Dict,
-    List,
-    Literal,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
 
 import kfp
 from google.api_core import exceptions as google_exceptions
@@ -133,6 +123,29 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         synchronous: If `True`, running a pipeline using this orchestrator will
             block until all steps finished running on Vertex AI Pipelines
             service.
+        cpu_limit: The maximum CPU limit for this operator. This string value
+            can be a number (integer value for number of CPUs) as string,
+            or a number followed by "m", which means 1/1000. You can specify
+            at most 96 CPUs.
+            (see. https://cloud.google.com/vertex-ai/docs/pipelines/machine-types)
+        memory_limit: The maximum memory limit for this operator. This string
+            value can be a number, or a number followed by "K" (kilobyte),
+            "M" (megabyte), or "G" (gigabyte). At most 624GB is supported.
+        node_selector_constraint: Each constraint is a key-value pair label.
+            For the container to be eligible to run on a node, the node must have
+            each of the constraints appeared as labels.
+            For example a GPU type can be providing by one of the following tuples:
+                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_A100")
+                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_K80")
+                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_P4")
+                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_P100")
+                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_T4")
+                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_V100")
+            Hint: the selected region (location) must provide the requested accelerator
+            (see https://cloud.google.com/compute/docs/gpus/gpu-regions-zones).
+        gpu_limit: The GPU limit (positive number) for the operator.
+            For more information about GPU resources, see:
+            https://cloud.google.com/vertex-ai/docs/training/configure-compute#specifying_gpus
     """
 
     custom_docker_base_image_name: Optional[str] = None
@@ -145,18 +158,9 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
     network: Optional[str] = None
     synchronous: bool = False
 
-    cpu_limit: Union[int, str, None] = None
+    cpu_limit: Optional[str] = None
     memory_limit: Optional[str] = None
-    node_selector_constraint: Optional[
-        Literal[
-            "NVIDIA_TESLA_A100",
-            "NVIDIA_TESLA_K80",
-            "NVIDIA_TESLA_P4",
-            "NVIDIA_TESLA_P100",
-            "NVIDIA_TESLA_T4",
-            "NVIDIA_TESLA_V100",
-        ]
-    ] = None
+    node_selector_constraint: Optional[Tuple[str, str]] = None
     gpu_limit: Optional[int] = None
 
     _pipeline_root: str
@@ -449,7 +453,8 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
 
                 if self.node_selector_constraint is not None:
                     container_op = container_op.add_node_selector_constraint(
-                        self.node_selector_constraint
+                        label_name=self.node_selector_constraint[0],
+                        value=self.node_selector_constraint[1],
                     )
 
                 if self.gpu_limit is not None:
