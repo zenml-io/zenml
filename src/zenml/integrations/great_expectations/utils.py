@@ -26,6 +26,7 @@ from great_expectations.data_context.data_context import (  # type: ignore[impor
 from zenml.environment import Environment
 from zenml.logger import get_logger
 from zenml.steps import STEP_ENVIRONMENT_NAME, StepEnvironment
+from zenml.utils.string_utils import random_str
 
 logger = get_logger(__name__)
 
@@ -45,11 +46,17 @@ def create_batch_request(
     Returns:
         A Great Expectations runtime batch request.
     """
-    # get pipeline name, step name and run id
-    step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
-    pipeline_name = step_env.pipeline_name
-    run_id = step_env.pipeline_run_id
-    step_name = step_env.step_name
+    try:
+        # get pipeline name, step name and run id
+        step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
+        pipeline_name = step_env.pipeline_name
+        run_id = step_env.pipeline_run_id
+        step_name = step_env.step_name
+    except KeyError:
+        # if not running inside a pipeline step, use random values
+        pipeline_name = f"pipeline_{random_str(5)}"
+        run_id = f"pipeline_{random_str(5)}"
+        step_name = f"step_{random_str(5)}"
 
     datasource_name = f"{run_id}_{step_name}"
     data_connector_name = datasource_name

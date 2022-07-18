@@ -445,7 +445,7 @@ def test_get_pipelines_forwards_to_metadata_store(clean_repo, mocker):
         name="new_metadata_store_name",
         host="",
         port=0,
-        database="",
+        database="zenml",
         username="",
         password="",
     )

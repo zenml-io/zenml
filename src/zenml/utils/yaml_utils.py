@@ -15,7 +15,7 @@
 
 import json
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Type
 from uuid import UUID
 
 import yaml
@@ -102,12 +102,17 @@ def is_yaml(file_path: str) -> bool:
     return False
 
 
-def write_json(file_path: str, contents: Dict[str, Any]) -> None:
+def write_json(
+    file_path: str,
+    contents: Dict[str, Any],
+    encoder: Optional[Type[json.JSONEncoder]] = None,
+) -> None:
     """Write contents as JSON format to file_path.
 
     Args:
         file_path: Path to JSON file.
         contents: Contents of JSON file as dict.
+        encoder: Custom JSON encoder to use when saving json.
 
     Raises:
         FileNotFoundError: if directory does not exist.
@@ -117,7 +122,13 @@ def write_json(file_path: str, contents: Dict[str, Any]) -> None:
         if not fileio.isdir(dir_):
             # Check if it is a local path, if it doesn't exist, raise Exception.
             raise FileNotFoundError(f"Directory {dir_} does not exist.")
-    io_utils.write_file_contents_as_string(file_path, json.dumps(contents))
+    io_utils.write_file_contents_as_string(
+        file_path,
+        json.dumps(
+            contents,
+            cls=encoder,
+        ),
+    )
 
 
 def read_json(file_path: str) -> Any:
