@@ -105,7 +105,6 @@ def main(pipeline):
             model_trainer=fastai_model_trainer().with_return_materializers(
                 FastaiLearnerMaterializer
             ),
-            # model_trainer=pytorch_model_trainer(),
         ).run()
     elif pipeline == "inference":
         # inference_pipeline()
