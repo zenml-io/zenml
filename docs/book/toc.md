@@ -94,6 +94,9 @@
 * [Feature Stores](./mlops-stacks/feature-stores/feature-stores.md)
   * [Feast](./mlops-stacks/feature-stores/feast.md)
   * [Develop a Custom Feature Store](./mlops-stacks/feature-stores/custom.md)
+* [Annotators](./mlops-stacks/annotators/annotators.md)
+  * [Label Studio](./mlops-stacks/annotators/label-studio.md)
+  * [Develop a Custom Annotator](./mlops-stacks/annotators/custom.md)
 <!---
 * [Data Validators](mlops_stacks/data_validators/overview.md)
   * [Great Expectations](mlops_stacks/data_validators/great_expectations.md)
@@ -103,9 +106,6 @@
   * [Facets](mlops_stacks/data_validators/facets.md)
   * [Develop a Custom Data Validator](mlops_stacks/data_validators/custom.md)
 -->
-* [Annotators](./mlops-stacks/annotators/annotators.md)
-  * [Label Studio](./mlops-stacks/annotators/label-studio.md)
-  * [Develop a Custom Annotator](./mlops-stacks/annotators/custom.md)
 
 ## Cloud Guide
 
