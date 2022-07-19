@@ -73,6 +73,7 @@ CIDR
 CLI
 CLIs
 CNI
+CPUs
 CRD
 CWD
 CalledProcessError
@@ -143,6 +144,7 @@ EvidentlyColumnMapping
 EvidentlyProfileConfig
 EvidentlyProfileStep
 EvidentlyVisualizer
+ExampleIntegrationTestConfiguration
 ExampleSecretSchema
 ExamplesRepo
 ExecutionStatus
