@@ -10,7 +10,7 @@ and manage [MLflow models](https://www.mlflow.org/docs/latest/python_api/mlflow.
 The MLflow Model Deployer is not yet available for use in production. This is a work in progress and will be available soon. At the moment it is only available for use in a local development environment.
 {% endhint %}
 
-## When would you want to use it?
+## When to use it?
 
 MLflow is a popular open source platform for machine learning. It's a great tool for
 managing the entire lifecycle of your machine learning. One of the most important features

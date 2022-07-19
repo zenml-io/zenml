@@ -21,7 +21,21 @@ MYSQL_METADATA_STORE_SCHEMA_TYPE = "mysql"
 
 
 class MYSQLSecretSchema(BaseSecretSchema):
-    """MySQL secret schema."""
+    """MySQL secret schema.
+
+    Attributes:
+        user: database username
+        password: database password
+        ssl_ca: certificate authority certificate contents. Required for SSL
+            enabled authentication if the CA certificate is not part of the
+            certificates shipped by the operating system.
+        ssl_cert: client certificate contents. Required for SSL enabled
+            authentication if client certificates are used.
+        ssl_key: client certificate private key contents. Required for SSL
+            enabled if client certificates are used.
+        ssl_verify_server_cert: set to verify the identity of the server
+            against the provided server certificate.
+    """
 
     TYPE: ClassVar[str] = MYSQL_METADATA_STORE_SCHEMA_TYPE
 

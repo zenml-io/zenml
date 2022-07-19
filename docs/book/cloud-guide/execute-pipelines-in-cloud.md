@@ -246,7 +246,7 @@ SSL credentials (i.e. certificates) required to connect to it.
   (if they do not share the same VPC).
 * It is strongly recommended to also [enable SSL access to your RDS database instance](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html).
   This is done differently depending on the type of RDS service you use. For
-  example, [for a MySQL RDS service](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_MySQL.html#MySQL.Concepts.SSLSupport),
+  example, [for a MySQL RDS service](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/mysql-ssl-connections.html#MySQL.Concepts.SSLSupport),
   you have to connect to the database using the `mysql` client and require SSL
   for the access for the user you created at the first step. You will also need
   the AWS server certificate associated with the AWS region where the RDS instance
@@ -307,7 +307,7 @@ new stack with these components that you have just created.
      `mysql_secret` in the example) to be registered after the stack (step 5.).
 
     ```powershell
-    zenml metadata-store register cloud_metadata_store --flavor=mysql --secret=mysql_secret
+    zenml metadata-store register cloud_metadata_store --flavor=mysql --host=<mysql-server-hostname> --port=<mysql-server-port> --secret=mysql_secret
     ```
 
 3. Register the other stack components and the stack itself
