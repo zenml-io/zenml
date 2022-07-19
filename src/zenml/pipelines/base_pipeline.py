@@ -318,6 +318,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     {
                         requirement.strip()
                         for requirement in f.read().split("\n")
+                        if requirement
                     }
                 )
             if self.requirements_file:
@@ -359,6 +360,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     {
                         requirement.strip()
                         for requirement in f.read().split("\n")
+                        if requirement
                     }
                 )
 
