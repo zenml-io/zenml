@@ -6,7 +6,7 @@ The Seldon Core Model Deployer is one of the available flavors of the [Model Dep
 stack component. Provided with the MLflow integration it can be used to deploy
 and manage models on a inference server running on top of a Kubernetes cluster.
 
-## How do you deploy it?
+## When to use it?
 
 [Seldon Core](https://github.com/SeldonIO/seldon-core) is a production grade
 open source model serving platform. It packs a wide range of features built
