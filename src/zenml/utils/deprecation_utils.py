@@ -45,7 +45,7 @@ def deprecate_pydantic_attributes(
         old_name: Optional[str] = None
         new_name: str
 
-        _deprecatation_validator = deprecate_pydantic_attributes(
+        _deprecation_validator = deprecate_pydantic_attributes(
             "deprecated", ("old_name", "new_name")
         )
     ```
