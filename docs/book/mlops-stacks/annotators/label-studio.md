@@ -62,6 +62,11 @@ required for the Artifact Store. (See the docs on how to register and [setup a
 cloud artifact store](../artifact-stores/artifact-stores.md) as well as [a
 secrets manager](../secrets-managers/secrets-managers.md).)
 
+Be sure to register an secret schema for whichever
+artifact store you choose, and then you should make sure to pass the name of
+that secret into the artifact store as the `--authentication_secret` as
+[described in this guide](../artifact-stores/amazon-s3.md#advanced-configuration), for example in the case of AWS.
+
 You will next need to obtain your Label Studio API key. This will give you
 access to the web annotation interface.
 
@@ -92,98 +97,90 @@ Then register your annotator with ZenML:
 zenml annotator register label_studio --flavor label_studio --authentication_secret="<label_studio_secret_name>"
 ```
 
+Finally, add all these components to a stack and set it as your active stack.
+For example:
+
+```shell
+zenml stack copy annotation
+zenml stack update annotation -x <your_secrets_manager> -a <your_cloud_artifact_store>
+# this must be done separately so that the other required stack components are first registered
+zenml stack update annotation -an <your_label_studio_annotator>
+zenml stack set annotation
+# optionally also
+zenml stack describe
+```
+
 Now if you run a simple CLI command like `zenml annotator dataset list` this
-should work without any errors. You're ready to use your annotator in your ML workflow!
+should work without any errors. You're ready to use your annotator in your ML
+workflow!
 
 ## How do you use it?
 
-ZenML assumes that users already have a feature store that they just need to
-connect with. The ZenML Online data retrieval is currently possible in a local
-setting, but we don't currently support using the online data serving in the
-context of a deployed model or as part of model deployment. We will update this
-documentation as we develop out this feature.
+ZenML assumes that users have registered a cloud artifact store, a secrets
+manager and an annotator as described above. ZenML currently only supports this
+setup, but we will add in the fully local stack option in the future.
 
-ZenML supports access to your feature store via a stack component that you can
-configure via the CLI tool. ( See [here](https://apidocs.zenml.io/latest/cli/)
-for details on how to do that.)
+ZenML supports access to your data and annotations via the `zenml annotator...`
+CLI command.
 
-Getting features from a registered and active feature store is possible by
-creating your own step that interfaces into the feature store:
+You can access information about the datasets you're using with the `zenml
+annotator dataset list`. To work on annotation for a particular dataset, you can
+run `zenml annotator dataset annotate <dataset_name>`.
 
-```python
-from datetime import datetime
-from typing import Any, Dict, List, Union
-import pandas as pd
+[Our full continuous annotation / training example](#coming-soon) is the best
+place to see how all the pieces of making this integration work fit together.
+What follows is an overview of some of the key components to the Label Studio
+integration and how it can be used.
 
-from zenml.steps import BaseStepConfig, step, StepContext
-entity_dict = {…}  # defined in earlier code
-features = […]  # defined in earlier code
+### Label Studio Annotator Stack Component
 
-class FeastHistoricalFeaturesConfig(BaseStepConfig):
-    """Feast Feature Store historical data step configuration."""
+Our Label Studio annotator component inherits from the `BaseAnnotator` class.
+There are some methods that are core methods that must be defined, like being
+able to register or get a dataset. Most annotators handle things like the
+storage of state and have their own custom features, so there are quite a few
+extra methods specific to Label Studio.
 
-    entity_dict: Union[Dict[str, Any], str]
-    features: List[str]
-    full_feature_names: bool = False
+The core Label Studio functionality that's currently enabled includes a way to
+register your datasets, export any annotations for use in separate steps as well
+as to start the annotator daemon process. (Label Studio requires a server to be
+running in order to use the web interface, and ZenML handles the provisioning of
+this server locally using the details you passed in when registering the
+component.)
 
-    class Config:
-        arbitrary_types_allowed = True
+### Standard Steps
 
+ZenML offers some standard steps (and their associated config objects) which
+will get you up and running with the Label Studio integration quickly. These
+include:
 
-@step
-def get_historical_features(
-        config: FeastHistoricalFeaturesConfig,
-        context: StepContext,
-) -> pd.DataFrame:
-    """Feast Feature Store historical data step
+- `LabelStudioDatasetRegistrationConfig` - a step config object to be used when
+  registering a dataset with Label studio using the `get_or_create_dataset` step
+- `LabelStudioDatasetSyncConfig` - a step config object to be used when
+  registering a dataset with Label studio using the
+  `sync_new_data_to_label_studio` step. Note that this requires a secret schema
+  to have been pre-registered with your artifact store as being the one that
+  holds authentication secrets specific to your particular cloud provider.
+  (Label Studio provides some documentation on what permissions these secrets
+  require [here](https://labelstud.io/guide/tasks.html).)
+- `get_or_create_dataset` step - This takes a
+  `LabelStudioDatasetRegistrationConfig` config object which includes the name
+  of the dataset. If it exists, this step will return the name, but if it
+  doesn't exist then ZenML will register the dataset along with the appropriate
+  label config with Label Studio.
+- `get_labeled_data` step - This step will get all labeled data available for a
+  particular dataset. Note that these are output in a Label Studio annotation
+  format, which will subsequently converted into a format appropriate for your
+  specific use case.
+- `sync_new_data_to_label_studio` step - This step is for ensuring that ZenML is
+  handling the annotations and the files being used are stored and synced with
+  the ZenML cloud artifact store. This is an important step as part of a
+  continuous annotation workflow since you want all the subsequent steps of your
+  workflow to remain in sync with whatever new annotations are being made or
+  have been created.
 
-    Args:
-        config: The step configuration.
-        context: The step context.
-
-    Returns:
-        The historical features as a DataFrame.
-    """
-    if not context.stack:
-        raise DoesNotExistException(
-            "No active stack is available. Please make sure that you have registered and set a stack."
-        )
-    elif not context.stack.feature_store:
-        raise DoesNotExistException(
-            "The Feast feature store component is not available. "
-            "Please make sure that the Feast stack component is registered as part of your current active stack."
-        )
-
-    feature_store_component = context.stack.feature_store
-    config.entity_dict["event_timestamp"] = [
-        datetime.fromisoformat(val)
-        for val in config.entity_dict["event_timestamp"]
-    ]
-    entity_df = pd.DataFrame.from_dict(config.entity_dict)
-
-    return feature_store_component.get_historical_features(
-        entity_df=entity_df,
-        features=config.features,
-        full_feature_names=config.full_feature_names,
-    )
+### Helper Functions
 
 
-historical_features = get_historical_features(
-    config=FeastHistoricalFeaturesConfig(
-        entity_dict=historical_entity_dict, features=features
-    ),
-)
-```
-
-{% hint style="warning" %} Note that ZenML's use of Pydantic to serialize and
-deserialize inputs stored in the ZenML metadata means that we are limited to
-basic data types. Pydantic cannot handle Pandas `DataFrame`s, for example, or
-`datetime` values, so in the above code you can see that we have to convert them
-at various points. {% endhint %}
 
 A concrete example of using the Feast feature store can be found
 [here](https://github.com/zenml-io/zenml/tree/main/examples/feast_feature_store).
-
-For more information and a full list of configurable attributes of the Kubeflow
-orchestrator, check out the [API
-Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.feast.feature_stores.feast_feature_store.FeastFeatureStore).
