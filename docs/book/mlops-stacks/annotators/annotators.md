@@ -7,48 +7,83 @@ of your ZenML stack and pipelines. You can use the associated CLI command to
 launch annotation, configure your datasets and get stats on how many labeled
 tasks you have ready for use.
 
-As a data scientist working on training your model, your requirements for how
-you access your batch / 'offline' data
-will almost certainly be different from how you access that data as part of a
-real-time or online inference setting.
-Feast solves the problem of
-developing [train-serve skew](https://ploomber.io/blog/train-serve-skew/) where
-those two
-sources of data diverge from each other.
+Data annotation / labelling is a core part of MLOps that is frequently left out
+of the conversation. ZenML will incrementally start to build in features that
+support an iterative annotation workflow that sees the people doing labelling
+(and their workflows/behaviors) as integrated parts of their ML process(es).
 
-Feature stores are a relatively recent addition to commonly-used machine
-learning stacks. 
+![When and where to annotate.](../assets/annotation/annotation-when-where.png)
+
+There are a number of different places in the ML lifecycle where this can
+happen:
+
+- **At the start**: You might be starting out without any data, or with a ton of
+  data but no clear sense of which parts of it are useful to your particular
+  problem. It’s not uncommon to have a lot of data, but to be lacking accurate
+  labels for that data. So you can start and get great value from bootstrapping
+  your model: label some data, train your model, use your model to suggest
+  labels allowing you to speed up your labeling, iterating on and on in this
+  way. Labeling data early on in the process also helps clarify and condense
+  down your specific rules and standards. For example, you might realize that
+  you need to have specific definitions for certain concepts so that your
+  labeling efforts are consistent across your team.
+- **As new data comes in**: New data will likely continue to come in, and you
+  might want to check in with the labeling process at regular intervals to
+  expose yourself to this new data. (You’ll probably also want to have some kind
+  of automation around detecting data or concept drift, but for certain kinds of
+  unstructured data you probably can never completely abandon the instant
+  feedback of actual contact with the raw data.)
+- **Samples generated for inference**: Your model will be making predictions on
+  real-world data being passed in. If you store and label this data, you’ll gain
+  a valuable set of data which you can use to compare your labels with what the
+  model was prediction, another possible way to flag drifts of various kinds.
+  This data can then (subject to privacy / user consent) be used in retraining
+  or fine-tuning your model.
+- **Other ad hoc interventions**: You will probably have some kind of process to
+  identify bad labels, or to find the kinds of examples that your model finds
+  really difficult to make correct predictions. For these, and for areas where
+  you have clear class imbalances, you might want to do ad hoc annotation to
+  supplement the raw materials your model has to learn from.
+
+ZenML currently offers standard steps that help you tackle the above use cases,
+but the stack component and abstraction will continue to be developed to make it
+easier to use.
 
 ## When to use it
 
-The feature store is an optional stack component in the ZenML Stack.
-The feature store as a technology should be used to store the features and
-inject them into the process in the server-side. This includes 
+The annotator is an optional stack component in the ZenML Stack. We designed our
+abstraction to fit into the larger ML use cases, particularly the training and
+deployment parts of the lifecycle.
 
-* Productionalize new features
-* Reuse existing features across multiple pipelines and models
-* Achieve consistency between training and serving data (Training Serving Skew)
-* Provide a central registry of features and feature schemas
+The core parts of the annotation workflow include:
 
-## List of available feature stores
+- using labels or annotations in your training steps in a seamless way
+- handling the versioning of annotation data
+- allow for the conversion of annotation data to and from custom formats
+- handle annotator-specific tasks, for example the generation of UI config files
+  that Label Studio requires for the web annotation interface
 
-For production use cases, some more flavors can be found in specific 
-`integrations` modules. In terms of features stores, ZenML features an 
-integration of `feast`.
+## List of available annotators
 
-| Feature Store | Flavor | Integration | Notes             |
+For production use cases, some more flavors can be found in specific
+`integrations` modules. In terms of annotators, ZenML features an integration with
+`label_studio`.
+
+| Annotator | Flavor | Integration | Notes             |
 |----------------|--------|-------------|-------------------|
-| [FeastFeatureStore](./feast.md) | `feast` | `feast` | Connect ZenML with already existing Feast |
-| [Custom Implementation](./custom.md) | _custom_ | | Extend the feature store abstraction and provide your own implementation |
+| [LabelStudioAnnotator](./label-studio.md) | `label_studio` | `label_studio` | Connect ZenML with Label Studio |
+| [Custom Implementation](./custom.md) | _custom_ | | Extend the annotator abstraction and provide your own implementation |
 
-If you would like to see the available flavors for feature stores, you can 
-use the command:
+If you would like to see the available flavors for annotators, you can use
+the command:
 
 ```shell
-zenml feature-store flavor list
+zenml annotator flavor list
 ```
 
 ## How to use it
 
-The available implementation of the feature store is built on top of the feast integration,
-which means that using a feature store is no different than what's described in the [feast page: How to use it?](./feast.md#how-to-use-it).
+The available implementation of the annotator is built on top of the Label
+Studio integration, which means that using an annotator currently is no
+different than what's described in the [Label Studio page: How to use
+it?](./label_studio.md#how-to-use-it).
