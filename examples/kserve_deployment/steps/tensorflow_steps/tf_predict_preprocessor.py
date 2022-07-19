@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 import json
 from typing import Optional
-from urllib.request import urlopen
-
-import cv2
+import requests
+from io import BytesIO
+from PIL import Image
 import numpy as np
 
 from zenml.steps import step
@@ -44,10 +44,8 @@ def tf_predict_preprocessor(
     Returns:
         The request body includes a base64 coded image for the inference request.
     """
-
-    img = urlopen(config.img_url).read()
-    image_content = np.asarray(bytearray(img), dtype="uint8")
-    image_content = cv2.imdecode(image_content, cv2.IMREAD_GRAYSCALE)
-    img_array = image_content.reshape((-1, 28, 28))
+    res = requests.get(config.img_url)
+    img_arr = np.array(Image.open(BytesIO(res.content)))
+    img_array = img_arr.reshape((-1, 28, 28))
     request = img_array.tolist()
     return json.dumps([request])
