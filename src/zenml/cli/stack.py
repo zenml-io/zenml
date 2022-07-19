@@ -131,6 +131,14 @@ def stack() -> None:
     required=False,
 )
 @click.option(
+    "-an",
+    "--annotator",
+    "annotator_name",
+    help="Name of the annotator for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
     "-dv",
     "--data_validator",
     "data_validator_name",
@@ -157,6 +165,7 @@ def register_stack(
     model_deployer_name: Optional[str] = None,
     experiment_tracker_name: Optional[str] = None,
     alerter_name: Optional[str] = None,
+    annotator_name: Optional[str] = None,
     data_validator_name: Optional[str] = None,
     set_stack: bool = False,
 ) -> None:
@@ -174,6 +183,7 @@ def register_stack(
         model_deployer_name: Name of the model deployer for this stack.
         experiment_tracker_name: Name of the experiment tracker for this stack.
         alerter_name: Name of the alerter for this stack.
+        annotator_name: Name of the annotator for this stack.
         data_validator_name: Name of the data validator for this stack.
         set_stack: Immediately set this stack as active.
     """
@@ -247,6 +257,14 @@ def register_stack(
             ] = repo.get_stack_component(
                 StackComponentType.ALERTER,
                 name=alerter_name,
+            )
+
+        if annotator_name:
+            stack_components[
+                StackComponentType.ANNOTATOR
+            ] = repo.get_stack_component(
+                StackComponentType.ANNOTATOR,
+                name=annotator_name,
             )
 
         if data_validator_name:
@@ -354,6 +372,14 @@ def register_stack(
     required=False,
 )
 @click.option(
+    "-an",
+    "--annotator",
+    "annotator_name",
+    help="Name of the new annotator for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
     "-dv",
     "--data_validator",
     "data_validator_name",
@@ -373,6 +399,7 @@ def update_stack(
     model_deployer_name: Optional[str] = None,
     experiment_tracker_name: Optional[str] = None,
     alerter_name: Optional[str] = None,
+    annotator_name: Optional[str] = None,
     data_validator_name: Optional[str] = None,
 ) -> None:
     """Update a stack.
@@ -391,6 +418,7 @@ def update_stack(
         experiment_tracker_name: Name of the new experiment tracker for this
             stack.
         alerter_name: Name of the new alerter for this stack.
+        annotator_name: Name of the new annotator for this stack.
         data_validator_name: Name of the new data validator for this stack.
     """
     cli_utils.print_active_profile()
@@ -487,6 +515,14 @@ def update_stack(
                 name=alerter_name,
             )
 
+        if annotator_name:
+            stack_components[
+                StackComponentType.ANNOTATOR
+            ] = repo.get_stack_component(
+                StackComponentType.ANNOTATOR,
+                name=annotator_name,
+            )
+
         if data_validator_name:
             stack_components[
                 StackComponentType.DATA_VALIDATOR
@@ -565,6 +601,14 @@ def update_stack(
     required=False,
 )
 @click.option(
+    "-an",
+    "--annotator",
+    "annotator_flag",
+    help="Include this to remove the annotator from this stack.",
+    is_flag=True,
+    required=False,
+)
+@click.option(
     "-dv",
     "--data_validator",
     "data_validator_flag",
@@ -581,6 +625,7 @@ def remove_stack_component(
     model_deployer_flag: Optional[bool] = False,
     experiment_tracker_flag: Optional[bool] = False,
     alerter_flag: Optional[bool] = False,
+    annotator_flag: Optional[bool] = False,
     data_validator_flag: Optional[bool] = False,
 ) -> None:
     """Remove stack components from a stack.
@@ -592,8 +637,10 @@ def remove_stack_component(
         secrets_manager_flag: To remove the secrets manager from this stack.
         feature_store_flag: To remove the feature store from this stack.
         model_deployer_flag: To remove the model deployer from this stack.
-        experiment_tracker_flag: To remove the experiment tracker from this stack.
+        experiment_tracker_flag: To remove the experiment tracker from this
+            stack.
         alerter_flag: To remove the alerter from this stack.
+        annotator_flag: To remove the annotator from this stack.
         data_validator_flag: To remove the data validator from this stack.
     """
     cli_utils.print_active_profile()
@@ -633,6 +680,9 @@ def remove_stack_component(
 
         if alerter_flag:
             stack_components.pop(StackComponentType.ALERTER, None)
+
+        if annotator_flag:
+            stack_components.pop(StackComponentType.ANNOTATOR, None)
 
         if data_validator_flag:
             stack_components.pop(StackComponentType.DATA_VALIDATOR, None)

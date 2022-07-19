@@ -16,7 +16,7 @@ setup_stack () {
 }
 
 pre_run () {
-  zenml integration install evidently sklearn -y
+  zenml integration install evidently sklearn
 }
 
 pre_run_forced () {
