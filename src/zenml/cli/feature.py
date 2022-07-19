@@ -30,7 +30,10 @@ if TYPE_CHECKING:
 
 
 # Features
-@cli.group(cls=TagGroup)
+@cli.group(
+    cls=TagGroup,
+    help="Features as obtained from a feature store.",
+)
 @click.pass_context
 def feature(ctx: click.Context) -> None:
     """Features as obtained from a feature store.

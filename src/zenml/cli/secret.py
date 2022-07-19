@@ -39,7 +39,11 @@ if TYPE_CHECKING:
 
 
 # Secrets
-@cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
+@cli.group(
+    cls=TagGroup,
+    tag=CliCategories.IDENTITY_AND_SECURITY,
+    help="List and manage your secrets.",
+)
 @click.pass_context
 def secret(ctx: click.Context) -> None:
     """List and manage your secrets.

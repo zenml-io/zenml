@@ -36,7 +36,11 @@ if TYPE_CHECKING:
 
 
 # Analytics
-@cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
+@cli.group(
+    cls=TagGroup,
+    tag=CliCategories.MANAGEMENT_TOOLS,
+    help="Analytics for opt-in and opt-out.",
+)
 def analytics() -> None:
     """Analytics for opt-in and opt-out."""
 
@@ -69,7 +73,11 @@ def opt_out() -> None:
 
 
 # Logging
-@cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
+@cli.group(
+    cls=TagGroup,
+    tag=CliCategories.MANAGEMENT_TOOLS,
+    help="Configuration of logging for ZenML pipelines.",
+)
 def logging() -> None:
     """Configuration of logging for ZenML pipelines."""
 
@@ -100,7 +108,11 @@ def set_logging_verbosity(verbosity: str) -> None:
 
 
 # Profiles
-@cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
+@cli.group(
+    cls=TagGroup,
+    tag=CliCategories.IDENTITY_AND_SECURITY,
+    help="Configuration of ZenML profiles.",
+)
 def profile() -> None:
     """Configuration of ZenML profiles."""
 

@@ -39,6 +39,7 @@ from zenml.utils.yaml_utils import read_yaml, write_yaml
 @cli.group(
     cls=TagGroup,
     tag=CliCategories.MANAGEMENT_TOOLS,
+    help="Stacks to define various environments.",
 )
 def stack() -> None:
     """Stacks to define various environments."""

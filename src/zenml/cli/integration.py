@@ -41,6 +41,7 @@ logger = get_logger(__name__)
 @cli.group(
     cls=TagGroup,
     tag=CliCategories.INTEGRATIONS,
+    help="Interact with the requirements of external integrations.",
 )
 def integration() -> None:
     """Interact with the requirements of external integrations."""

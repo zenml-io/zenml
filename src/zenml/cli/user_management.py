@@ -24,7 +24,11 @@ from zenml.exceptions import EntityExistsError
 from zenml.repository import Repository
 
 
-@cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
+@cli.group(
+    cls=TagGroup,
+    tag=CliCategories.IDENTITY_AND_SECURITY,
+    help="Commands for user management.",
+)
 def user() -> None:
     """Commands for user management."""
 
@@ -98,7 +102,11 @@ def delete_user(user_name: str) -> None:
         cli_utils.warning(f"No user found for name '{user_name}'.")
 
 
-@cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
+@cli.group(
+    cls=TagGroup,
+    tag=CliCategories.IDENTITY_AND_SECURITY,
+    help="Commands for team management.",
+)
 def team() -> None:
     """Commands for team management."""
 
@@ -210,7 +218,11 @@ def remove_users(team_name: str, user_names: Tuple[str]) -> None:
             )
 
 
-@cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
+@cli.group(
+    cls=TagGroup,
+    tag=CliCategories.MANAGEMENT_TOOLS,
+    help="Commands for project management.",
+)
 def project() -> None:
     """Commands for project management."""
 
@@ -353,7 +365,11 @@ def delete_project(project_name: str) -> None:
     cli_utils.declare(f"Deleted project '{project_name}'.")
 
 
-@cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
+@cli.group(
+    cls=TagGroup,
+    tag=CliCategories.IDENTITY_AND_SECURITY,
+    help="Commands for role management.",
+)
 def role() -> None:
     """Commands for role management."""
 

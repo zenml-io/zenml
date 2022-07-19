@@ -24,7 +24,11 @@ from zenml.pipelines.run_pipeline import run_pipeline
 logger = get_logger(__name__)
 
 
-@cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
+@cli.group(
+    cls=TagGroup,
+    tag=CliCategories.MANAGEMENT_TOOLS,
+    help="Run pipelines from Command-Line.",
+)
 def pipeline() -> None:
     """Run pipelines."""
 

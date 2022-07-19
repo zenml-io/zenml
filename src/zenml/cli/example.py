@@ -587,7 +587,10 @@ def check_for_version_mismatch(
             )
 
 
-@cli.group(cls=TagGroup)
+@cli.group(
+    cls=TagGroup,
+    help="Access all ZenML examples.",
+)
 def example() -> None:
     """Access all ZenML examples."""
 

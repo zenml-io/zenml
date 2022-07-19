@@ -37,6 +37,7 @@ if TYPE_CHECKING:
 @cli.group(
     cls=TagGroup,
     tag=CliCategories.MODEL_DEPLOYMENT,
+    help="List and manage served models with the active model deployer.",
 )
 @click.pass_context
 def served_models(ctx: click.Context) -> None:
