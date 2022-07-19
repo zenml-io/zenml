@@ -67,13 +67,6 @@ class StackComponentType(StrEnum):
         return f"{self.value}s"
 
 
-class MetadataContextTypes(Enum):
-    """All possible types that contexts can have within pipeline nodes."""
-
-    STACK = "stack"
-    PIPELINE_REQUIREMENTS = "pipeline_requirements"
-
-
 class StoreType(StrEnum):
     """Repository Store Backend Types."""
 
@@ -90,7 +83,6 @@ class ContainerRegistryFlavor(StrEnum):
     DOCKERHUB = "dockerhub"
     GCP = "gcp"
     AZURE = "azure"
-    GITLAB = "gitlab"
 
 
 class CliCategories(StrEnum):

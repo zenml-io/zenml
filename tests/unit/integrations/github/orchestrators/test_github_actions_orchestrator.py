@@ -44,7 +44,7 @@ def test_github_actions_orchestrator_stack_validation() -> None:
         password="",
         host="",
         port=0,
-        database="",
+        database="zenml",
     )
 
     local_container_registry = DefaultContainerRegistry(

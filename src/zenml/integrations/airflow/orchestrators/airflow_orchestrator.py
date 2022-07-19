@@ -39,6 +39,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 from pydantic import root_validator
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
+from zenml.environment import Environment
 from zenml.integrations.airflow import AIRFLOW_ORCHESTRATOR_FLAVOR
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -339,6 +340,15 @@ class AirflowOrchestrator(BaseOrchestrator):
             raise RuntimeError(
                 "Airflow orchestrator is currently not running. Run `zenml "
                 "stack up` to provision resources for the active stack."
+            )
+
+        if Environment.in_notebook():
+            raise RuntimeError(
+                "Unable to run the Airflow orchestrator from within a "
+                "notebook. Airflow requires a python file which contains a "
+                "global Airflow DAG object and therefore does not work with "
+                "notebooks. Please copy your ZenML pipeline code in a python "
+                "file and try again."
             )
 
         try:

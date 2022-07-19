@@ -56,6 +56,23 @@ class AWSContainerRegistry(BaseContainerRegistry):
 
         return uri
 
+    def _get_region(self) -> str:
+        """Parses the AWS region from the registry URI.
+
+        Raises:
+            RuntimeError: If the region parsing fails due to an invalid URI.
+
+        Returns:
+            The region string.
+        """
+        match = re.fullmatch(r".*\.dkr\.ecr\.(.*)\.amazonaws\.com", self.uri)
+        if not match:
+            raise RuntimeError(
+                f"Unable to parse region from ECR URI {self.uri}."
+            )
+
+        return match.group(1)
+
     def prepare_image_push(self, image_name: str) -> None:
         """Logs warning message if trying to push an image for which no repository exists.
 
@@ -65,7 +82,9 @@ class AWSContainerRegistry(BaseContainerRegistry):
         Raises:
             ValueError: If the docker image name is invalid.
         """
-        response = boto3.client("ecr").describe_repositories()
+        response = boto3.client(
+            "ecr", region_name=self._get_region()
+        ).describe_repositories()
         try:
             repo_uris: List[str] = [
                 repository["repositoryUri"]

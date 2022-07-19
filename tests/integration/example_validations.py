@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Dict
+from typing import Callable
 
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.repository import Repository
@@ -72,6 +72,8 @@ def caching_example_validation(repository: Repository):
 def drift_detection_example_validation(repository: Repository):
     """Validates the metadata store after running the drift detection
     example."""
+    from evidently.model_profile import Profile  # type: ignore[import]
+
     pipeline = repository.get_pipeline("drift_detection_pipeline")
     assert pipeline
 
@@ -81,8 +83,7 @@ def drift_detection_example_validation(repository: Repository):
     # Final step should have output a data drift report
     drift_detection_step = run.get_step("drift_detector")
     output = drift_detection_step.outputs["profile"].read()
-    assert isinstance(output, Dict)
-    assert output.get("data_drift") is not None
+    assert isinstance(output, Profile)
 
 
 def mlflow_tracking_setup(repository: Repository) -> None:
@@ -246,7 +247,7 @@ def whylogs_example_validation(repository: Repository):
     run = pipeline.runs[-1]
     assert run.status == ExecutionStatus.COMPLETED
 
-    from whylogs import DatasetProfile
+    from whylogs.core import DatasetProfileView  # type: ignore
 
     profiles = [
         run.get_step("data_loader").outputs["profile"].read(),
@@ -255,26 +256,51 @@ def whylogs_example_validation(repository: Repository):
     ]
 
     for profile in profiles:
-        assert isinstance(profile, DatasetProfile)
+        assert isinstance(profile, DatasetProfileView)
 
 
-def great_expectations_setup(repository: Repository) -> None:
-    """Adds a Great Expectations data validator component to the active stack."""
-    # install the GE integration so we can import the stack component
-    import subprocess
+def generate_data_validator_setup_function(
+    integration: str,
+) -> Callable[[Repository], None]:
+    """Generate a setup function for data validation example.
 
-    subprocess.check_call(
-        ["zenml", "integration", "install", "great_expectations", "-y"]
-    )
+    The setup function automatically detects which data validator flavor belongs
+    to the referenced integration, then registers a data validator component and
+    a stack to include it.
 
-    from zenml.integrations.great_expectations.data_validators import (
-        GreatExpectationsDataValidator,
-    )
+    Args:
+        integration: The name of the integration under test.
 
-    components = repository.active_stack.components
-    components[
-        StackComponentType.DATA_VALIDATOR
-    ] = GreatExpectationsDataValidator(name="great_expectations")
-    stack = Stack.from_components(name="ge_stack", components=components)
-    repository.register_stack(stack)
-    repository.activate_stack(stack.name)
+    Returns:
+        Data validation setup function.
+    """
+
+    def data_validator_setup(repository: Repository) -> None:
+        """Adds a data validator component to the active stack."""
+        from zenml.cli.integration import install
+        from zenml.stack.flavor_registry import flavor_registry
+
+        # install the integration so we can import the stack component
+        install.callback(
+            integrations=(integration,), ignore_integration=(), force=True
+        )
+
+        data_validators = flavor_registry.get_flavors_by_type(
+            component_type=StackComponentType.DATA_VALIDATOR,
+        )
+        validator_wrappers = filter(
+            lambda v: v[1].integration == integration, data_validators.items()
+        )
+        validator_class = next(validator_wrappers)[1].to_flavor()
+
+        components = repository.active_stack.components
+        components[StackComponentType.DATA_VALIDATOR] = validator_class(
+            name=f"{integration}_data_validator"
+        )
+        stack = Stack.from_components(
+            name=f"{integration}_stack", components=components
+        )
+        repository.register_stack(stack)
+        repository.activate_stack(stack.name)
+
+    return data_validator_setup

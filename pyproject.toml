@@ -240,6 +240,7 @@ module = [
     "wandb.*",
     "lightgbm.*",
     "scipy.*",
+    "deepchecks.*",
     "boto3.*",
     "botocore.*",
     "jupyter_dash.*",
