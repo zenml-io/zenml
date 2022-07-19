@@ -31,7 +31,7 @@ of that components role in the MLOps process:
 | [Feature Store](./feature-stores/feature-stores.md)           | Management of your data/features                                  |
 | [Experiment Tracker](./experiment-trackers/experiment-trackers.md) | Tracking your ML experiments                                      |
 | [Alerter](./alerters/alerters.md)                       | Sending alerts through specified channels                         |
-| [Annotator](./annotators/annotators.md)                       | Labelling and annotating data                         |
+| [Annotator](./annotators/annotators.md)                       | Labeling and annotating data                         |
 
 Each pipeline run that you execute with ZenML will require a **stack** and each **stack** will be required to include at least an orchestrator, an artifact store, and a metadata store. Apart from these three, the other components are optional and to be added as your pipeline evolves in 
 MLOps maturity.

@@ -7,9 +7,9 @@ of your ZenML stack and pipelines. You can use the associated CLI command to
 launch annotation, configure your datasets and get stats on how many labeled
 tasks you have ready for use.
 
-Data annotation / labelling is a core part of MLOps that is frequently left out
+Data annotation / labeling is a core part of MLOps that is frequently left out
 of the conversation. ZenML will incrementally start to build in features that
-support an iterative annotation workflow that sees the people doing labelling
+support an iterative annotation workflow that sees the people doing labeling
 (and their workflows/behaviors) as integrated parts of their ML process(es).
 
 ![When and where to annotate.](../assets/annotation/annotation-when-where.png)
