@@ -30,7 +30,7 @@ common ML development tasks. ZenML is not here to replace the great tools that
 solve these individual problems. Rather, it offers an **extensible framework** and a
 standard abstraction to write and build your workflows.
 
-🎉 **Version 0.10.0 out now!** [Check out the release notes
+🎉 **Version 0.11.0 out now!** [Check out the release notes
 here](https://github.com/zenml-io/zenml/releases).
 
 [![PyPI - Python
@@ -80,7 +80,7 @@ your project, you get the following benefits:
 | 🧘‍♀️ **[ZenML 101]** | New to ZenML? Here's everything you need to know! |
 | ⚛️ **[Core Concepts]** | Some key terms and concepts we use. |
 | 🗃 **[Functional API Guide]** | Build production ML pipelines with simple functions. |
-| 🚀 **[New in v0.10.0]** | New features, bug fixes. |
+| 🚀 **[New in v0.11.0]** | New features, bug fixes. |
 | 🗳 **[Vote for Features]** | Pick what we work on next! |
 | 📓 **[Docs]** | Full documentation for creating your own ZenML pipelines. |
 | 📒 **[API Reference]** | The detailed reference for ZenML's API. |
@@ -97,7 +97,7 @@ your project, you get the following benefits:
 [ZenML 101]: https://docs.zenml.io/
 [Core Concepts]: https://docs.zenml.io/core-concepts
 [Functional API Guide]: https://docs.zenml.io/v/docs/guides/functional-api
-[New in v0.10.0]: https://github.com/zenml-io/zenml/releases
+[New in v0.11.0]: https://github.com/zenml-io/zenml/releases
 [Vote for Features]: https://zenml.io/discussion
 [Docs]: https://docs.zenml.io/
 [API Reference]: https://apidocs.zenml.io/
