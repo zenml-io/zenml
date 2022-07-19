@@ -26,17 +26,10 @@ We currently support the use of annotation at the various stages described in
 functions to generate Label Studio label config files for image classification
 and object detection. (More will follow in due course.)
 
-The Label Studio integration currently is built to support workflows using cloud
-artifact stores (i.e. AWS S3, GCP/GCS and Azure Blob Storage). Purely local
-stacks will currently *not* work if you want to do add the annotation stack
-component as part of your stack.
-
-
-Feast integration currently supports your choice of offline data sources, and a
-[Redis](https://redis.com/) backend for your online feature serving. We
-encourage users to check out [Feast's documentation](https://docs.feast.dev/)
-and [guides](https://docs.feast.dev/how-to-guides/) on how to set up your
-offline and online data sources via the configuration `yaml` file.
+The Label Studio integration currently is built to support workflows using the
+following three cloud artifact stores: AWS S3, GCP/GCS and Azure Blob Storage.
+Purely local stacks will currently *not* work if you want to do add the
+annotation stack component as part of your stack.
 
 {% hint style="info" %} COMING SOON: The Label Studio Integration supports the
 use of annotations in an ML workflow, but we do not currently handle the
@@ -73,7 +66,7 @@ access to the web annotation interface.
 
 ```shell
 # choose a username and password for your label-studio account
-label-studio reset_password --username <username> --password <password>
+label-studio reset_password --username <USERNAME> --password <PASSWORD>
 # start a temporary / one-off label-studio instance to get your API key
 label-studio start -p 8094
 ```
@@ -89,13 +82,13 @@ custom secret name, making sure to replace the two parts in `<>` with whatever
 you choose:
 
 ```shell
-zenml secret register <label_studio_secret_name> --api_key="<your_label_studio_api_key>"
+zenml secret register <LABEL_STUDIO_SECRET_NAME> --api_key="<your_label_studio_api_key>"
 ```
 
 Then register your annotator with ZenML:
 
 ```shell
-zenml annotator register label_studio --flavor label_studio --authentication_secret="<label_studio_secret_name>"
+zenml annotator register label_studio --flavor label_studio --authentication_secret="<LABEL_STUDIO_SECRET_NAME>"
 ```
 
 Finally, add all these components to a stack and set it as your active stack.
@@ -103,9 +96,9 @@ For example:
 
 ```shell
 zenml stack copy annotation
-zenml stack update annotation -x <your_secrets_manager> -a <your_cloud_artifact_store>
+zenml stack update annotation -x <YOUR_SECRETS_MANAGER> -a <YOUR_CLOUD_ARTIFACT_STORE>
 # this must be done separately so that the other required stack components are first registered
-zenml stack update annotation -an <your_label_studio_annotator>
+zenml stack update annotation -an <YOUR_LABEL_STUDIO_ANNOTATOR>
 zenml stack set annotation
 # optionally also
 zenml stack describe

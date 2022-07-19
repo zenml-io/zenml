@@ -7,7 +7,7 @@ of your ZenML stack and pipelines. You can use the associated CLI command to
 launch annotation, configure your datasets and get stats on how many labeled
 tasks you have ready for use.
 
-Data annotation / labeling is a core part of MLOps that is frequently left out
+Data annotation/labeling is a core part of MLOps that is frequently left out
 of the conversation. ZenML will incrementally start to build in features that
 support an iterative annotation workflow that sees the people doing labeling
 (and their workflows/behaviors) as integrated parts of their ML process(es).
@@ -36,7 +36,7 @@ happen:
 - **Samples generated for inference**: Your model will be making predictions on
   real-world data being passed in. If you store and label this data, you’ll gain
   a valuable set of data which you can use to compare your labels with what the
-  model was prediction, another possible way to flag drifts of various kinds.
+  model was predicting, another possible way to flag drifts of various kinds.
   This data can then (subject to privacy / user consent) be used in retraining
   or fine-tuning your model.
 - **Other ad hoc interventions**: You will probably have some kind of process to
