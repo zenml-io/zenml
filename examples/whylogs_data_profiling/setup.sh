@@ -12,12 +12,12 @@ setup_stack () {
       -dv whylogs_validator || \
     msg "${WARNING}Reusing preexisting stack ${NOFORMAT}whylogs_stack"
 
-  zenml stack set mlflow_stack
+  zenml stack set whylogs_stack
 }
 
 
 pre_run () {
-  zenml integration install whylogs sklearn -y
+  zenml integration install whylogs sklearn
 }
 
 pre_run_forced () {
