@@ -1,3 +1,7 @@
+---
+description: What are the usage statistics ZenML collects
+---
+
 # Usage Analytics
 
 In order to help us better understand how the community uses **ZenML**, the pip

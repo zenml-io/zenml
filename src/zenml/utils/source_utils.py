@@ -41,7 +41,7 @@ from types import (
     ModuleType,
     TracebackType,
 )
-from typing import Any, Callable, Iterator, Optional, Type, Union
+from typing import Any, Callable, Iterator, List, Optional, Type, Union
 
 from zenml import __version__
 from zenml.constants import APP_NAME
@@ -227,15 +227,31 @@ def get_module_source_from_module(module: ModuleType) -> str:
             root_path,
         )
 
-    # Remove root_path from module_path to get relative path left over
-    module_path = module_path.replace(root_path, "")[1:]
+    root_path = os.path.abspath(root_path)
 
-    # Kick out the .py and replace `/` with `.` to get the module source
-    module_path = module_path.replace(".py", "")
+    # Remove root_path from module_path to get relative path left over
+    module_path = os.path.relpath(module_path, root_path)
+
+    if module_path.startswith(os.pardir):
+        raise RuntimeError(
+            f"Unable to resolve source for module {module}. The module file "
+            f"'{module_path}' does not seem to be inside the source root "
+            f"'{root_path}'."
+        )
+
+    # Remove the file extension and replace the os specific path separators
+    # with `.` to get the module source
+    module_path, file_extension = os.path.splitext(module_path)
+    if file_extension != ".py":
+        raise RuntimeError(
+            f"Unable to resolve source for module {module}. The module file "
+            f"'{module_path}' does not seem to be a python file."
+        )
+
     module_source = module_path.replace(os.path.sep, ".")
 
     logger.debug(
-        f"Resolved module source for module {module} to: {module_source}"
+        f"Resolved module source for module {module} to: `{module_source}`"
     )
 
     return module_source
@@ -460,12 +476,9 @@ def resolve_class(class_: Type[Any]) -> str:
         sys.modules[class_.__module__]
     )
 
-    # ENG-123 Sanitize for Windows OS
-    # module_source = module_source.replace("\\", ".")
-
-    logger.debug(f"Resolved class {class_} to {module_source}")
-
-    return module_source + "." + class_.__name__
+    source = module_source + "." + class_.__name__
+    logger.debug(f"Resolved class {class_} to `{source}`.")
+    return source
 
 
 def import_class_by_path(class_path: str) -> Type[Any]:
@@ -483,22 +496,24 @@ def import_class_by_path(class_path: str) -> Type[Any]:
 
 
 @contextmanager
-def prepend_python_path(path: str) -> Iterator[None]:
+def prepend_python_path(paths: List[str]) -> Iterator[None]:
     """Simple context manager to help import module within the repo.
 
     Args:
-        path: str, path to prepend to sys.path
+        paths: paths to prepend to sys.path
 
     Yields:
         None
     """
     try:
         # Entering the with statement
-        sys.path.insert(0, path)
+        for path in paths:
+            sys.path.insert(0, path)
         yield
     finally:
         # Exiting the with statement
-        sys.path.remove(path)
+        for path in paths:
+            sys.path.remove(path)
 
 
 def load_source_path_class(
@@ -523,7 +538,7 @@ def load_source_path_class(
         source = source.split("@")[0]
 
     if import_path is not None:
-        with prepend_python_path(import_path):
+        with prepend_python_path([import_path]):
             logger.debug(
                 f"Loading class {source} with import path {import_path}"
             )
@@ -531,39 +546,37 @@ def load_source_path_class(
     return import_class_by_path(source)
 
 
-def import_python_file(file_path: str) -> types.ModuleType:
-    """Imports a python file.
+def import_python_file(file_path: str, zen_root: str) -> types.ModuleType:
+    """Imports a python file in relationship to the zen root.
 
     Args:
         file_path: Path to python file that should be imported.
+        zen_root: Path to current zenml root
 
     Returns:
         imported module: Module
     """
-    # Add directory of python file to PYTHONPATH so we can import it
     file_path = os.path.abspath(file_path)
-    module_name = os.path.splitext(os.path.basename(file_path))[0]
+    module_path = os.path.relpath(file_path, zen_root)
+    module_name = os.path.splitext(module_path)[0].replace(os.path.sep, ".")
 
-    # In case the module is already fully or partially imported and the module
-    #  path is something like materializer.materializer the full path needs to
-    #  be checked for in the sys.modules to avoid getting an empty namespace
-    #  module
-    full_module_path = os.path.splitext(
-        os.path.relpath(file_path, os.getcwd())
-    )[0].replace(os.path.sep, ".")
-
-    if full_module_path not in sys.modules:
-        with prepend_python_path(os.path.dirname(file_path)):
+    if module_name in sys.modules:
+        del sys.modules[module_name]
+        # Add directory of python file to PYTHONPATH so we can import it
+        with prepend_python_path([zen_root]):
             module = importlib.import_module(module_name)
         return module
     else:
-        return sys.modules[full_module_path]
+        # Add directory of python file to PYTHONPATH so we can import it
+        with prepend_python_path([zen_root]):
+            module = importlib.import_module(module_name)
+        return module
 
 
 def validate_flavor_source(
     source: str, component_type: StackComponentType
 ) -> Type[StackComponent]:
-    """Utility function to import a StackComponent class from a given source and validate its type.
+    """Import a StackComponent class from a given source and validate its type.
 
     Args:
         source: source path of the implementation

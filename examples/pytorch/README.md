@@ -48,6 +48,12 @@ Now we're ready. Execute the pipeline:
 python run.py
 ```
 
+Alternatively, if you want to run based on the config.yaml you can run with:
+
+```bash
+zenml pipeline run pipelines/fashion_mnist_pipeline.py -c config.yaml
+```
+
 This will train a PyTorch model on the Fashion MNIST dataset.
 
 ### 🧽 Clean up

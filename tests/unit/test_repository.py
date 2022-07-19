@@ -30,6 +30,7 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.metadata_stores import MySQLMetadataStore, SQLiteMetadataStore
 from zenml.orchestrators import LocalOrchestrator
+from zenml.pipelines import pipeline
 from zenml.repository import Repository
 from zenml.stack import Stack
 from zenml.utils import io_utils
@@ -444,7 +445,7 @@ def test_get_pipelines_forwards_to_metadata_store(clean_repo, mocker):
         name="new_metadata_store_name",
         host="",
         port=0,
-        database="",
+        database="zenml",
         username="",
         password="",
     )
@@ -474,3 +475,52 @@ def test_get_pipelines_forwards_to_metadata_store(clean_repo, mocker):
     clean_repo.get_pipelines(stack_name=new_stack.name)
     MySQLMetadataStore.get_pipelines.assert_called_once()
     MySQLMetadataStore.get_pipeline.assert_called_once()
+
+
+def test_get_pipeline_forwards_to_metadata_store(clean_repo, mocker):
+    """Tests that getting post-execution pipelines forwards calls to the
+    metadata store of the (active) stack."""
+    # register a stack with a mysql metadata store
+
+    mocker.patch.object(SQLiteMetadataStore, "get_pipeline", return_value=None)
+
+    @pipeline
+    def some_pipeline():
+        pass
+
+    input_args = [
+        {"pipeline": "some_pipeline"},  # calling by name
+        {"pipeline": some_pipeline},  # calling by pipeline class
+        {"pipeline": some_pipeline()},  # calling by pipeline instance
+        {"pipeline_name": "some_pipeline"},
+    ]  # calling with deprecated kwarg
+
+    for input_arg in input_args:
+        SQLiteMetadataStore.get_pipeline.reset_mock()
+        clean_repo.get_pipeline(**input_arg)
+        SQLiteMetadataStore.get_pipeline.assert_called_once_with(
+            "some_pipeline"
+        )
+
+
+def test_get_pipeline_raises_exception(clean_repo, mocker):
+    """Tests that get_pipeline raises a runtime error."""
+    # register a stack with a mysql metadata store
+
+    mocker.patch.object(SQLiteMetadataStore, "get_pipeline", return_value=None)
+
+    class NonPipeline:
+        pass
+
+    input_args = [
+        {"pipeline": NonPipeline},  # calling with wrong class
+        {"pipeline": NonPipeline()},  # calling with wrong class instance
+        {"useless_arg": "some_pipeline"},  # calling with wrong kwarg
+        {"pipeline_name": 1234},
+    ]  # calling kwarg with wrong data type
+
+    for input_arg in input_args:
+        SQLiteMetadataStore.get_pipeline.reset_mock()
+        with pytest.raises(RuntimeError):
+            clean_repo.get_pipeline(**input_arg)
+        assert SQLiteMetadataStore.get_pipeline.call_count == 0

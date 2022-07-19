@@ -1,33 +1,16 @@
-FROM ubuntu:20.04
+ARG PYTHON_VERSION=3.9
+FROM python:${PYTHON_VERSION}-slim AS base
 
-# python
 ENV PYTHONFAULTHANDLER=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONHASHSEED=random \
-    PIP_NO_CACHE_DIR=off \
-    PIP_DISABLE_PIP_VERSION_CHECK=on
-
-RUN apt-get update && \
-  apt-get install --no-install-recommends -q -y \
-  build-essential \
-  ca-certificates \
-  libsnappy-dev \
-  protobuf-compiler \
-  libprotobuf-dev \
-  python3 \
-  python3-dev \
-  python-is-python3 \
-  python3-venv \
-  python3-pip \
-  curl \
-  unzip \
-  git && \
-  apt-get autoclean && \
-  apt-get autoremove --purge
-
-RUN curl -sSL https://bootstrap.pypa.io/get-pip.py | python && \
-  pip install --no-cache-dir --upgrade --pre pip
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
 ARG ZENML_VERSION
+
 # install the given zenml version (default to latest)
-RUN pip install --no-cache-dir zenml${ZENML_VERSION:+==$ZENML_VERSION}
+RUN pip install zenml${ZENML_VERSION:+==$ZENML_VERSION}
+
+FROM base AS server
+RUN pip install zenml${ZENML_VERSION:+==$ZENML_VERSION}[server]

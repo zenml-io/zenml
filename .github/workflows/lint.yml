@@ -9,7 +9,7 @@ jobs:
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
-      PYTHONIOENCODING: 'utf-8'
+      PYTHONIOENCODING: "utf-8"
 
     # Exit if its a commit from Gitbook
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
@@ -20,8 +20,8 @@ jobs:
 
     strategy:
       matrix:
-        os: [ macos-latest, ubuntu-latest, windows-latest ]
-        python-version: [ 3.7, 3.8, 3.9 ]
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        python-version: [3.7, 3.8, 3.9]
       fail-fast: false
 
     steps:
@@ -36,7 +36,7 @@ jobs:
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
           source $VENV
-          zenml integration install -y --ignore-integration feast
+          zenml integration install -y --ignore-integration feast --ignore-integration label_studio
           pip install click~=8.0.3
 
       - name: Lint
