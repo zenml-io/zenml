@@ -41,6 +41,9 @@ EXCLUDED_RECIPE_DIRS = [""]
 STACK_RECIPES_GITHUB_REPO = "https://github.com/zenml-io/mlops-stacks.git"
 STACK_RECIPES_REPO_DIR = "zenml_stack_recipes"
 RECIPE_RUN_SCRIPT = "run_recipe.sh"
+RECIPE_DESTROY_SCRIPT = "destroy_recipe.sh"
+RECIPE_DEPLOY_IDENTIFIER = "deploy"
+RECIPE_DESTROY_INDENTIFIER = "destroy"
 SHELL_EXECUTABLE = "SHELL_EXECUTABLE"
 
 
@@ -68,13 +71,22 @@ class LocalStackRecipe:
         raise NotImplementedError
 
     @property
-    def recipes_run_bash_script(self) -> str:
-        """Path to the bash script that runs the recipe.
+    def recipes_deploy_bash_script(self) -> str:
+        """Path to the bash script that deploys the recipe.
 
         Returns:
-            Path to the bash script that runs the recipe.
+            Path to the bash script that deploys the recipe.
         """
         return os.path.join(self.path, RECIPE_RUN_SCRIPT)
+
+    @property
+    def recipes_destroy_bash_script(self) -> str:
+        """Path to the bash script that destroys the recipe.
+
+        Returns:
+            Path to the bash script that destroys the recipe.
+        """
+        return os.path.join(self.path, RECIPE_DESTROY_SCRIPT)
 
     # @property
     # def executable_python_stack_recipe(self) -> str:
@@ -105,14 +117,13 @@ class LocalStackRecipe:
     def run_stack_recipe(
         self,
         stack_recipe_runner: List[str],
-        force: bool,
+        identifier: str
     ) -> None:
-        """Run the local stack_recipe using the bash script at the supplied location.
+        """Run the local stack recipe using the bash script at the supplied location.
 
         Args:
             stack_recipe_runner: Sequence of locations of executable file(s)
                             to run the stack_recipe
-            force: Whether to force the install
 
         Raises:
             NotImplementedError: If the stack_recipe hasn't been implement yet.
@@ -124,9 +135,6 @@ class LocalStackRecipe:
                 stack_recipe_runner
             )
             try:
-                # TODO [ENG-271]: Catch errors that might be thrown
-                #  in subprocess
-                logger.info("calling process with call, %s", call)
                 subprocess.check_call(
                     call,
                     cwd=str(self.path),
@@ -137,14 +145,14 @@ class LocalStackRecipe:
                 raise NotImplementedError(
                     f"Currently the recipe {self.name} "
                     "has no implementation for the "
-                    "run method"
+                    f"{identifier} method"
                 )
             except subprocess.CalledProcessError as e:
                 if e.returncode == 38:
                     raise NotImplementedError(
                         f"Currently the recipe {self.name} "
                         "has no implementation for the "
-                        "run method"
+                        f"{identifier} method"
                     )
                 raise
         else:
@@ -497,7 +505,13 @@ def list_stack_recipes(
     ]
     print_table(stack_recipes)
 
-    declare("\n" + "To pull the stack_recipes, type: ")
+    declare("\n" + "To get the latest list of stack recipes, run: ")
+    text = Text(
+        "zenml stack recipe pull -y", style="markdown.code_block"
+    )
+    declare(text)
+    
+    declare("\n" + "To pull any individual stack_recipes, type: ")
     text = Text(
         "zenml stack recipe pull RECIPE_NAME", style="markdown.code_block"
     )
@@ -653,7 +667,7 @@ def pull(
 
 
 @stack_recipe.command(
-    help="Run the stack_recipe that you previously installed with "
+    help="Run the stack_recipe that you previously pulled with "
     "`zenml stack recipe pull`"
 )
 @click.argument("stack_recipe_name", required=True)
@@ -695,14 +709,8 @@ def deploy(
 ) -> None:
     """Run the stack_recipe at the specified relative path.
 
-    `zenml stack_recipe pull stack_recipe_NAME` has to be called with the same relative
-    path before the run command.
-
-    What I need this to do:
-    - change the directory to the path of the recipe.
-    - do terraform apply and handle any errors.
-    - tell users if they have to do deploy again.
-    - keep the option to stream logs 
+    `zenml stack_recipe pull stack_recipe_name` has to be called with the same relative
+    path before the deploy command.
 
     Args:
         ctx: The click context.
@@ -710,19 +718,9 @@ def deploy(
         stack_recipe_name: The name of the stack_recipe.
         path: The path at which you want to install the stack_recipe(s).
         force: Force the run of the stack_recipe.
-        old_force: DEPRECATED: Force the run of the stack_recipe.
         shell_executable: Manually specify the path to the executable that
             runs .sh files.
     """
-    # if old_force:
-    #     force = old_force
-    #     warning(
-    #         "The `--force` flag will soon be deprecated. Use `--yes` or "
-    #         "`-y` instead."
-    #     )
-
-    # TODO [ENG-272]: - create a post_run function inside individual setup.sh
-    #  to inform user how to clean up
     stack_recipes_dir = Path(os.getcwd()) / path
 
     if sys.platform == "win32":
@@ -738,13 +736,10 @@ def deploy(
     except KeyError as e:
         error(str(e))
     else:
-        
         stack_recipe_dir = stack_recipes_dir / stack_recipe_name
         local_stack_recipe = LocalStackRecipe(
             stack_recipe_dir, stack_recipe_name
         )
-
-        logger.info("Inside else, %s", stack_recipe_dir)
 
         if not local_stack_recipe.is_present():
             ctx.invoke(
@@ -757,11 +752,84 @@ def deploy(
         stack_recipe_runner = (
             [] if shell_executable is None else [shell_executable]
         ) + [
-            local_stack_recipe.recipes_run_bash_script
+            local_stack_recipe.recipes_deploy_bash_script
         ]
         try:
             local_stack_recipe.run_stack_recipe(
-                stack_recipe_runner=stack_recipe_runner, force=force
+                stack_recipe_runner=stack_recipe_runner, identifier=RECIPE_DEPLOY_IDENTIFIER
+            )
+        except NotImplementedError as e:
+            error(str(e))
+
+
+@stack_recipe.command(
+    help="Destroy the stack components created previously with "
+    "`zenml stack recipe deploy <name>`"
+)
+@click.argument("stack_recipe_name", required=True)
+@click.option(
+    "--path",
+    "-p",
+    type=click.STRING,
+    default="zenml_stack_recipes",
+    help="Relative path at which you want to install the stack_recipe(s)",
+)
+@pass_git_stack_recipes_handler
+@click.pass_context
+def destroy(
+    ctx: click.Context,
+    git_stack_recipes_handler: GitStackRecipesHandler,
+    stack_recipe_name: str,
+    path: str,
+) -> None:
+    """Destroy all resources from the stack_recipe at the specified relative path.
+
+    `zenml stack_recipe deploy stack_recipe_name` has to be called with the same relative
+    path before the destroy command.
+
+    Args:
+        ctx: The click context.
+        git_stack_recipes_handler: The GitStackRecipesHandler instance.
+        stack_recipe_name: The name of the stack_recipe.
+        path: The path at which you want to install the stack_recipe(s).
+        force: Force the run of the stack_recipe.
+        shell_executable: Manually specify the path to the executable that
+            runs .sh files.
+    """
+    stack_recipes_dir = Path(os.getcwd()) / path
+
+    if sys.platform == "win32":
+        logger.info(
+            "If you are running stack_recipes on Windows, make sure that you have "
+            "an associated application with executing .sh files. If you don't "
+            "have any and you see a pop-up during 'zenml stack_recipe run', we "
+            "suggest to use the Git BASH: https://gitforwindows.org/"
+        )
+
+    try:
+        _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[0]
+    except KeyError as e:
+        error(str(e))
+    else:
+        stack_recipe_dir = stack_recipes_dir / stack_recipe_name
+        local_stack_recipe = LocalStackRecipe(
+            stack_recipe_dir, stack_recipe_name
+        )
+
+        if not local_stack_recipe.is_present():
+            raise ModuleNotFoundError(
+                f"The recipe {stack_recipe_name} "
+                "has not been pulled at the specified path. "
+                f"Run `zenml stack recipe pull {stack_recipe_name}` "
+                f"followed by `zenml stack recipe deploy {stack_recipe_name}` first."
+            ) 
+
+        stack_recipe_runner = [
+            local_stack_recipe.recipes_destroy_bash_script
+        ]
+        try:
+            local_stack_recipe.run_stack_recipe(
+                stack_recipe_runner=stack_recipe_runner, identifier=RECIPE_DESTROY_INDENTIFIER
             )
         except NotImplementedError as e:
             error(str(e))
