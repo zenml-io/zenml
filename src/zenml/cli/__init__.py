@@ -559,7 +559,7 @@ should pass its name in with the `-x` option flag.)
 Keep in mind that once you register a stack, its artifact store and
 metadata store will be coupled together, and using these instances in other
 pairings will not be allowed. This is done to avoid mismatches between
-these two stores. If you want to bypass this check when you are
+these two stores. If you want to override this check when you are
 declaring/updating a stack, you can use the `--decouple_stores` flag which will
 reset any previous couplings and establish a new one with the given artifact-
 and metadata store.

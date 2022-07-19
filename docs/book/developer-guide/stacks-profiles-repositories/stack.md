@@ -186,9 +186,9 @@ option to use for which stack component.
 {% hint style="warning" %}
 When you register a stack, the corresponding artifact- and metadata store 
 gets coupled, which means that these instances can not be use in different 
-pairings. This is an intended behaviour to avoid mismatches between the two 
+pairings. This is an intended behavior to avoid mismatches between the two 
 stores. In order get more information about this interaction, please refer to 
-our [our CLI docs](https://apidocs.zenml.io/latest/cli/).. 
+[our CLI docs](https://apidocs.zenml.io/latest/cli/).. 
 {% endhint %}
 
 ### Activating a Stack
