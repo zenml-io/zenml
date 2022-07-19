@@ -24,10 +24,8 @@ from zenml.cli import EXAMPLES_RUN_SCRIPT, SHELL_EXECUTABLE, LocalExample
 from zenml.repository import Repository
 
 from .example_validations import (
-    drift_detection_example_validation,
     generate_basic_validation_function,
     mlflow_tracking_example_validation,
-    whylogs_example_validation,
 )
 
 
@@ -86,25 +84,33 @@ examples = [
             pipeline_name="airflow_example_pipeline", step_count=3
         ),
     ),
-    ExampleIntegrationTestConfiguration(
-        name="evidently_drift_detection",
-        validation_function=drift_detection_example_validation,
-        prevent_stack_setup=False,
-    ),
-    ExampleIntegrationTestConfiguration(
-        name="deepchecks_data_validation",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="data_validation_pipeline", step_count=6
-        ),
-        prevent_stack_setup=False,
-    ),
-    ExampleIntegrationTestConfiguration(
-        name="great_expectations_data_validation",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="validation_pipeline", step_count=6
-        ),
-        prevent_stack_setup=False,
-    ),
+    # TODO: re-add data validation test when we understand why they
+    # intermittently break some of the other test cases
+    # ExampleIntegrationTestConfiguration(
+    #     name="evidently_drift_detection",
+    #     validation_function=drift_detection_example_validation,
+    #     prevent_stack_setup=False,
+    # ),
+    # ExampleIntegrationTestConfiguration(
+    #     name="deepchecks_data_validation",
+    #     validation_function=generate_basic_validation_function(
+    #         pipeline_name="data_validation_pipeline", step_count=6
+    #     ),
+    #     prevent_stack_setup=False,
+    # ),
+    # ExampleIntegrationTestConfiguration(
+    #     name="great_expectations_data_validation",
+    #     validation_function=generate_basic_validation_function(
+    #         pipeline_name="validation_pipeline", step_count=6
+    #     ),
+    #     prevent_stack_setup=False,
+    # ),
+    # TODO [ENG-708]: Enable running the whylogs example on kubeflow
+    # ExampleIntegrationTestConfiguration(
+    #     name="whylogs_data_profiling",
+    #     validation_function=whylogs_example_validation,
+    #     prevent_stack_setup=False,
+    # ),
     ExampleIntegrationTestConfiguration(
         name="kubeflow_pipelines_orchestration",
         validation_function=generate_basic_validation_function(
@@ -124,12 +130,6 @@ examples = [
         validation_function=generate_basic_validation_function(
             pipeline_name="neural_prophet_pipeline", step_count=3
         ),
-    ),
-    # TODO [ENG-708]: Enable running the whylogs example on kubeflow
-    ExampleIntegrationTestConfiguration(
-        name="whylogs_data_profiling",
-        validation_function=whylogs_example_validation,
-        prevent_stack_setup=False,
     ),
     ExampleIntegrationTestConfiguration(
         name="xgboost",
