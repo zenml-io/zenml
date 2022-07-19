@@ -87,3 +87,20 @@ The available implementation of the annotator is built on top of the Label
 Studio integration, which means that using an annotator currently is no
 different than what's described in the [Label Studio page: How to use
 it?](./label_studio.md#how-to-use-it).
+
+## A note on names
+
+The various annotation tools have mostly standardized around the naming of key
+concepts as part of how they build their tools. Unfortunately, this hasn't been
+completely unified so ZenML takes an opinion on which names we use for our stack
+component and integrations. Key differences to note:
+
+- Label Studio refers to the grouping of a set of annotations / tasks as a
+  'Project', whereas most other tools use the term 'Dataset', so ZenML also
+  calls this grouping a 'Dataset'.
+- The individual metaunit for 'an annotation + the source data' is referred to
+  in different ways, but at ZenML (and with Label Studio) we refer to them as
+  'tasks'.
+
+The remaining core concepts ('annotation' and 'prediction', in particular) are
+broadly used among annotation tools.

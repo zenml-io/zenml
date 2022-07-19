@@ -62,10 +62,11 @@ required for the Artifact Store. (See the docs on how to register and [setup a
 cloud artifact store](../artifact-stores/artifact-stores.md) as well as [a
 secrets manager](../secrets-managers/secrets-managers.md).)
 
-Be sure to register an secret schema for whichever
-artifact store you choose, and then you should make sure to pass the name of
-that secret into the artifact store as the `--authentication_secret` as
-[described in this guide](../artifact-stores/amazon-s3.md#advanced-configuration), for example in the case of AWS.
+Be sure to register an secret schema for whichever artifact store you choose,
+and then you should make sure to pass the name of that secret into the artifact
+store as the `--authentication_secret` as [described in this
+guide](../artifact-stores/amazon-s3.md#advanced-configuration), for example in
+the case of AWS.
 
 You will next need to obtain your Label Studio API key. This will give you
 access to the web annotation interface.
@@ -180,7 +181,13 @@ include:
 
 ### Helper Functions
 
+Label Studio requires the use of what it calls 'label config' when you are
+creating/registering your dataset. These are strings containing HTML-like syntax
+that allow you to define a custom interface for your annotation. ZenML provides
+two helper functions that will construct these label config strings in the case
+of object detection and image classification. See the
+`integrations.label_studio.label_config_generators` module for those two
+functions.
 
-
-A concrete example of using the Feast feature store can be found
-[here](https://github.com/zenml-io/zenml/tree/main/examples/feast_feature_store).
+A concrete example of using the Label Studio annotator can be found
+[here](#coming-soon).
