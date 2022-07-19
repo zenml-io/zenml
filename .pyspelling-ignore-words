@@ -218,6 +218,7 @@ KubernetesMetadataStore
 KubernetesOrchestrator
 LLC
 LabelStudio
+LabelStudioAnnotator
 LegacyVersion
 LightGBM
 LocalArtifactStore
@@ -642,6 +643,7 @@ dest
 dev
 devnull
 df
+diarization
 dicts
 dir
 dirmatch
