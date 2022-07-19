@@ -53,7 +53,6 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
     """
 
     port: int = DEFAULT_LABEL_STUDIO_PORT
-    api_key: str
 
     FLAVOR: ClassVar[str] = LABEL_STUDIO_ANNOTATOR_FLAVOR
 
