@@ -17,7 +17,7 @@ without wanting to fiddle around with all the individual installation and
 configuration steps, just run the following:
 
 ```shell
-zenml example run kubeflow_pipelines_orchestrator
+zenml example run kubeflow_pipelines_orchestration
 ```
 
 
@@ -49,8 +49,8 @@ pip install notebook  # if you want to run the example on the notebook
 zenml integration install kubeflow tensorflow
 
 # Pull the kubeflow example
-zenml example pull kubeflow_pipelines_orchestrator
-cd zenml_examples/kubeflow_pipelines_orchestrator
+zenml example pull kubeflow_pipelines_orchestration
+cd zenml_examples/kubeflow_pipelines_orchestration
 
 # Initialize a ZenML repository
 zenml init
