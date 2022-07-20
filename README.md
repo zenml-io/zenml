@@ -327,7 +327,7 @@ pip install zenml[server]
 zenml server up
 ```
 
-Read more about collaboration in ZenML [here](https://docs.zenml.io/collaborate/collaborate).
+Read more about collaboration in ZenML [here](https://docs.zenml.io/collaborate/collaborate-with-zenml).
 
 # 🍰 ZenBytes
 
