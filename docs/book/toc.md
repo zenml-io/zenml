@@ -97,15 +97,12 @@
 * [Annotators](./mlops-stacks/annotators/annotators.md)
   * [Label Studio](./mlops-stacks/annotators/label-studio.md)
   * [Develop a Custom Annotator](./mlops-stacks/annotators/custom.md)
-<!---
 * [Data Validators](mlops_stacks/data_validators/overview.md)
   * [Great Expectations](mlops_stacks/data_validators/great_expectations.md)
   * [Deepchecks](mlops_stacks/data_validators/deepchecks.md)
   * [Evidently](mlops_stacks/data_validators/evidently.md)
-  * [WhyLabs](mlops_stacks/data_validators/whylogs.md)
-  * [Facets](mlops_stacks/data_validators/facets.md)
+  * [Whylogs](mlops_stacks/data_validators/whylogs.md)
   * [Develop a Custom Data Validator](mlops_stacks/data_validators/custom.md)
--->
 
 ## Cloud Guide
 
