@@ -105,5 +105,5 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-If you want to learn more about orchestrators in general or about how to build your own orchestrators in ZenML
-check out our [docs](https://docs.zenml.io/extending-zenml/orchestrators).
+If you want to learn more about orchestrators in general or about how to build your orchestrators in ZenML
+check out our [docs](https://docs.zenml.io/mlops-stacks/orchestrators).
