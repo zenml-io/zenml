@@ -10,8 +10,8 @@ In order to run your ZenML pipelines using GitHub Actions, we need to set up a f
 
 * First you'll need a [GitHub](https://github.com) account and a cloned repository.
 * You'll also need to create a GitHub personal access token that allows you read/write GitHub secrets and push Docker images to your GitHub container registry. To do so, please follow [this guide](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) and make sure to assign your token the **repo** and **write:packages** scopes.
-* A MySQL database that ZenML will use to store metadata. See [here](https://docs.zenml.io/advanced-guide/execute-pipelines-in-cloud#metadata-store) for more information on how to set one up on AWS/GCP/Azure.
-* An artifact store to save the outputs of your pipeline steps. See [here](https://docs.zenml.io/advanced-guide/execute-pipelines-in-cloud#artifact-store) for more information on how to set one up on AWS/GCP/Azure.
+* A MySQL database that ZenML will use to store metadata. See [here](https://docs.zenml.io/cloud-guide/overview) for more information on how to set one up on AWS/GCP/Azure.
+* An artifact store to save the outputs of your pipeline steps. See [here](https://docs.zenml.io/cloud-guide/overview) for more information on how to set one up on AWS/GCP/Azure.
 
 ```bash
 pip install zenml
@@ -150,4 +150,4 @@ GitHub Actions and you should be able to access it from the GitHub UI. It will l
 # 📜 Learn more
 
 If you want to learn more about orchestrators in general or about how to build your own orchestrators in ZenML
-check out our [docs](https://docs.zenml.io/extending-zenml/orchestrators).
+check out our [docs](https://docs.zenml.io/mlops-stacks/orchestrators).

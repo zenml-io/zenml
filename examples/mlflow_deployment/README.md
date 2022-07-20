@@ -317,8 +317,8 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the MLflow deployment integration can be found [here](https://docs.zenml.io/advanced-guide/continuous-training-and-deployment).
+Our docs regarding the MLflow deployment integration can be found [here](https://docs.zenml.io/mlops-stacks/model-deployers/mlflow).
 
 If you want to learn more about deployment in ZenML in general or about how to 
 build your own deployer steps in ZenML check out our 
-[docs](https://docs.zenml.io/extending-zenml/model-deployers).
+[docs](https://docs.zenml.io/mlops-stacks/model-deployers/custom).
