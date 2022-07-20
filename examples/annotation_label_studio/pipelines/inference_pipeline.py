@@ -37,5 +37,13 @@ logger = get_logger(__name__)
 
 
 @pipeline
-def inference_pipeline(model_loader) -> None:
-    model_loader()
+def inference_pipeline(
+    inference_data_loader,
+    prediction_service_loader,
+    predictor,
+    data_sync,
+):
+    inference_data = inference_data_loader()
+    model_deployment_service = prediction_service_loader()
+    predictor(model_deployment_service, inference_data)
+    data_sync(...)  # TODO

@@ -13,17 +13,21 @@
 #  permissions and limitations under the License.
 
 
-from zenml.logger import get_logger
 from zenml.pipelines import pipeline
 
-logger = get_logger(__name__)
 
-
-@pipeline
+@pipeline(enable_cache=False)
 def training_pipeline(
-    get_or_create_dataset, get_labeled_data, convert_annotations, model_trainer
-) -> None:
+    get_or_create_dataset,
+    get_labeled_data,
+    convert_annotations,
+    model_trainer,
+    deployment_trigger,
+    model_deployer,
+):
     dataset_name = get_or_create_dataset()
     labeled_data = get_labeled_data(dataset_name)
     training_images, training_annotations = convert_annotations(labeled_data)
-    model_trainer(training_images, training_annotations)
+    model = model_trainer(training_images, training_annotations)
+    deployment_decision = deployment_trigger()
+    model_deployer(deployment_decision, model)

@@ -15,69 +15,17 @@
 import click
 from materializers import FastaiLearnerMaterializer
 from pipelines import inference_pipeline, training_pipeline
-from steps import convert_annotations, fastai_model_trainer, model_loader
-
-from zenml.integrations.label_studio.label_config_generators import (
-    generate_image_classification_label_config,
-)
-from zenml.integrations.label_studio.steps import (
-    LabelStudioDatasetRegistrationConfig,
-    LabelStudioDatasetSyncConfig,
-    get_labeled_data,
-    get_or_create_dataset,
-    sync_new_data_to_label_studio,
-)
-from zenml.logger import get_logger
-
-IMAGE_REGEX_FILTER = ".*(jpe?g|png)"
-
-logger = get_logger(__name__)
-
-
-label_config, label_config_type = generate_image_classification_label_config(
-    ["aria", "not_aria"]
-)
-
-label_studio_registration_config = LabelStudioDatasetRegistrationConfig(
-    label_config=label_config,
-    dataset_name="aria_detector",
-)
-
-get_or_create_the_dataset = get_or_create_dataset(
-    label_studio_registration_config
-)
-
-
-zenml_azure_artifact_store_sync_config = LabelStudioDatasetSyncConfig(
-    storage_type="azure",
-    label_config_type=label_config_type,
-    regex_filter=IMAGE_REGEX_FILTER,
-)
-
-zenml_gcs_artifact_store_sync_config = LabelStudioDatasetSyncConfig(
-    storage_type="gcs",
-    label_config_type=label_config_type,
-    regex_filter=IMAGE_REGEX_FILTER,
-)
-
-zenml_s3_artifact_store_sync_config = LabelStudioDatasetSyncConfig(
-    storage_type="s3",
-    label_config_type=label_config_type,
-    regex_filter=IMAGE_REGEX_FILTER,
-    s3_region_name="eu-west-1",  # change this to your closest region
-)
-
-
-azure_data_sync = sync_new_data_to_label_studio(
-    config=zenml_azure_artifact_store_sync_config,
-)
-
-gcs_data_sync = sync_new_data_to_label_studio(
-    config=zenml_gcs_artifact_store_sync_config,
-)
-
-s3_data_sync = sync_new_data_to_label_studio(
-    config=zenml_s3_artifact_store_sync_config,
+from steps import (
+    azure_data_sync,
+    convert_annotations_step,
+    deployment_trigger,
+    fastai_model_trainer,
+    get_labeled_data_step,
+    get_or_create_the_dataset,
+    model_deployer,
+    model_loader,
+    prediction_service_loader,
+    predictor,
 )
 
 
@@ -100,15 +48,20 @@ def main(pipeline):
     if pipeline == "train":
         training_pipeline(
             get_or_create_dataset=get_or_create_the_dataset,
-            get_labeled_data=get_labeled_data(),
-            convert_annotations=convert_annotations(),
+            get_labeled_data=get_labeled_data_step,
+            convert_annotations=convert_annotations_step,
             model_trainer=fastai_model_trainer().with_return_materializers(
                 FastaiLearnerMaterializer
-            ),
+            ),  # TODO
+            deployment_trigger=deployment_trigger(),
+            model_deployer=model_deployer,
         ).run()
     elif pipeline == "inference":
         inference_pipeline(
-            model_loader().with_return_materializers(FastaiLearnerMaterializer)
+            inference_data_loader=None  # TODO
+            prediction_service_loader=prediction_service_loader(),  # TODO
+            predictor=predictor(),  # TODO
+            data_sync=azure_data_sync,
         ).run()
 
 
