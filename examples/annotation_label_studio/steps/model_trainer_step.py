@@ -52,6 +52,13 @@ pytorch_initial_training_path = str(
     / "initial_pytorch_training"
 )
 
+initial_training_path = str(
+    Path(__file__).parent.absolute().parent.absolute()
+    / "assets"
+    / "images"
+    / "initial_training"
+)
+
 new_data_for_batch_inference = str(
     Path(__file__).parent.absolute().parent.absolute()
     / "assets"
@@ -89,10 +96,8 @@ def fastai_model_trainer(
             return learner
     else:
         dls = ImageDataLoaders.from_name_func(
-            "/Users/strickvl/coding/zenml/repos/zenml/examples/annotation_label_studio/assets/images/initial_training",
-            get_image_files(
-                "/Users/strickvl/coding/zenml/repos/zenml/examples/annotation_label_studio/assets/images/initial_training"
-            ),
+            initial_training_path,
+            get_image_files(initial_training_path),
             valid_pct=0.2,
             seed=42,
             label_func=is_aria,

@@ -12,14 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from materializers import FastaiLearnerMaterializer, PillowImageMaterializer
-from pipelines import continuous_training_pipeline
-from steps import (
-    batch_inference,
-    convert_annotations,
-    load_image_data,
-    model_loader,
-)
+import click
+from materializers import FastaiLearnerMaterializer
+from pipelines import inference_pipeline, training_pipeline
+from steps import convert_annotations, fastai_model_trainer, model_loader
 
 from zenml.integrations.label_studio.label_config_generators import (
     generate_image_classification_label_config,
@@ -39,12 +35,16 @@ logger = get_logger(__name__)
 
 
 label_config, label_config_type = generate_image_classification_label_config(
-    ["cat", "dog"]
+    ["aria", "not_aria"]
 )
 
 label_studio_registration_config = LabelStudioDatasetRegistrationConfig(
     label_config=label_config,
-    dataset_name="catvsdog",
+    dataset_name="aria_detector",
+)
+
+get_or_create_the_dataset = get_or_create_dataset(
+    label_studio_registration_config
 )
 
 
@@ -68,11 +68,6 @@ zenml_s3_artifact_store_sync_config = LabelStudioDatasetSyncConfig(
 )
 
 
-get_or_create_the_dataset = get_or_create_dataset(
-    label_studio_registration_config
-)
-
-
 azure_data_sync = sync_new_data_to_label_studio(
     config=zenml_azure_artifact_store_sync_config,
 )
@@ -86,26 +81,36 @@ s3_data_sync = sync_new_data_to_label_studio(
 )
 
 
-def is_cat(x):
-    # NEEDED FOR FASTAI MODEL IMPORT (when / if we use it)
-    # return labels[x] == "cat"
-    return True
+@click.command()
+@click.option(
+    "--train",
+    "pipeline",
+    flag_value="train",
+    default=True,
+    help="Run the training pipeline.",
+)
+@click.option(
+    "--inference",
+    "pipeline",
+    flag_value="inference",
+    help="Run the inference pipeline.",
+)
+def main(pipeline):
+    """Simple CLI interface for annotation example."""
+    if pipeline == "train":
+        training_pipeline(
+            get_or_create_dataset=get_or_create_the_dataset,
+            get_labeled_data=get_labeled_data(),
+            convert_annotations=convert_annotations(),
+            model_trainer=fastai_model_trainer().with_return_materializers(
+                FastaiLearnerMaterializer
+            ),
+        ).run()
+    elif pipeline == "inference":
+        inference_pipeline(
+            model_loader().with_return_materializers(FastaiLearnerMaterializer)
+        ).run()
 
 
 if __name__ == "__main__":
-    ct_pipeline = continuous_training_pipeline(
-        get_or_create_the_dataset,
-        get_labeled_data(),
-        convert_annotations(),
-        model_loader().with_return_materializers(FastaiLearnerMaterializer),
-        # fine_tuning_step().with_return_materializers(
-        #     FastaiLearnerMaterializer
-        # ),
-        load_image_data().with_return_materializers(
-            {"images": PillowImageMaterializer}
-        ),
-        batch_inference(),
-        azure_data_sync,
-    )
-
-    ct_pipeline.run()
+    main()

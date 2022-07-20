@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Type
 
 from fastai.learner import Learner, load_learner
+from fastai.vision.all import *  # noqa
 
 from zenml.artifacts import ModelArtifact
 from zenml.io import fileio
@@ -37,6 +38,16 @@ class FastaiLearnerMaterializer(BaseMaterializer):
                 os.path.join(self.artifact.uri, DEFAULT_MODEL_FILENAME),
                 os.path.join(td, DEFAULT_MODEL_FILENAME),
             )
+            # dls = ImageDataLoaders.from_lists(
+            #     td,
+            #     image_urls,
+            #     labels=labels,
+            #     valid_pct=0.2,
+            #     seed=42,
+            #     item_tfms=Resize(224),
+            #     bs=2,
+            # )
+            # learner = vision_learner(dls, squeezenet1_1, metrics=error_rate)
             return load_learner(os.path.join(td, DEFAULT_MODEL_FILENAME))
 
     def handle_return(self, model: Learner) -> None:

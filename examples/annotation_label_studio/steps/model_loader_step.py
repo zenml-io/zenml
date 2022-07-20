@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 
 from fastai.learner import Learner
-from huggingface_hub import from_pretrained_fastai
 
 from zenml.logger import get_logger
+from zenml.repository import Repository
 from zenml.steps import step
 
 logger = get_logger(__name__)
@@ -23,4 +23,11 @@ logger = get_logger(__name__)
 
 @step
 def model_loader() -> Learner:
-    return from_pretrained_fastai("fastai/cat_or_dog")
+    repo = Repository(skip_repository_check=True)
+    trainer_output = (
+        repo.get_pipeline("training_pipeline")
+        .runs[-1]
+        .get_step("model_trainer")
+        .output
+    )
+    breakpoint()

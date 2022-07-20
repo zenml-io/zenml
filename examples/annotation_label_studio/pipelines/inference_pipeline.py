@@ -19,18 +19,23 @@ from zenml.pipelines import pipeline
 logger = get_logger(__name__)
 
 
+# @pipeline
+# def inference_pipeline(
+#     get_or_create_dataset,
+#     images_loader,
+#     get_model,
+#     batch_inference,
+#     data_syncer,
+# ) -> None:
+#     dataset_name = get_or_create_dataset()
+#     new_images_dict, new_images_uri = images_loader()
+#     model = get_model()
+#     preds = batch_inference(new_images_dict, model)
+#     data_syncer(
+#         uri=new_images_uri, dataset_name=dataset_name, predictions=preds
+#     )
+
+
 @pipeline
-def inference_pipeline(
-    get_or_create_dataset,
-    images_loader,
-    get_model,
-    batch_inference,
-    data_syncer,
-) -> None:
-    dataset_name = get_or_create_dataset()
-    new_images_dict, new_images_uri = images_loader()
-    model = get_model()
-    preds = batch_inference(new_images_dict, model)
-    data_syncer(
-        uri=new_images_uri, dataset_name=dataset_name, predictions=preds
-    )
+def inference_pipeline(model_loader) -> None:
+    model_loader()
