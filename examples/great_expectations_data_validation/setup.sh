@@ -16,7 +16,7 @@ setup_stack () {
 }
 
 pre_run () {
-  zenml integration install sklearn great_expectations -y
+  zenml integration install sklearn great_expectations
 }
 
 pre_run_forced () {

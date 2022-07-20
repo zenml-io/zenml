@@ -1,3 +1,80 @@
+# 0.11.0
+
+Our 0.11.0 release contains our new annotation workflow and stack component. We've been blogging about this for a few weeks, and even started maintaining our own repository of open-source annotation tools. With ZenML 0.11.0 you can bring data labeling into your MLOps pipelines and workflows as a first-class citizen. We've started our first iteration of this functionality by integrating with [Label Studio](https://labelstud.io/), a leader in the open-source annotation tool space.
+
+This release also includes a ton of updates to our documentation. (Seriously, go check them out! We added tens of thousands of words since the last release.) We continued the work on our data validation story from the previous release: [Deepchecks](https://deepchecks.com/) is the newest data validator we support, and we updated our Evidently and Whylogs integrations to include all the latest and greatest from those tools.
+
+Beyond this, as usual we included a number of smaller bugfixes and documentation changes to cumulatively improve experience of using ZenML as a user. For a detailed look at what's changed, give [our full release notes](https://github.com/zenml-io/zenml/releases/tag/0.11.0) a glance.
+
+## Breaking Changes
+
+The 0.11.0 release remodels the Evidently and whylogs integrations as Data Validator stack components, in an effort to converge all data profiling and validation libraries around the same abstraction. As a consequence, you now need to configure and add a Data Validator stack component to your stack if you wish to use Evidently or whylogs in your pipelines:
+
+* for Evidently:
+
+    ```shell
+    zenml data-validator register evidently -f evidently
+    zenml stack update -dv evidently
+    ```
+
+* for whylogs:
+
+    ```shell
+    zenml data-validator register whylogs -f whylogs
+    zenml stack update -dv whylogs
+    ```
+
+In this release, we have also upgraded the Evidently and whylogs libraries to their latest and greatest versions (whylogs 1.0.6 and evidently 0.1.52). These versions introduce non-backwards compatible changes that are also reflected in the ZenML integrations:
+
+* Evidently profiles are now materialized using their original `evidently.model_profile.Profile ` data type and the builtin `EvidentlyProfileStep` step now also returns a `Profile` instance instead of the previous dictionary representation. This may impact your existing pipelines as you may have to update your steps to take in `Profile` artifact instances instead of dictionaries.
+
+* the whylogs `whylogs.DatasetProfile` data type was replaced by `whylogs.core.DatasetProfileView` in the builtin whylogs materializer and steps. This may impact your existing pipelines as you may have to update your steps to return and take in `whylogs.core.DatasetProfileView` artifact instances instead of `whylogs.DatasetProfile` objects.
+
+* the whylogs library has gone through a major transformation that completely removed the session concept. As a result, the `enable_whylogs` step decorator was replaced by an `enable_whylabs` step decorator. You only need to use the step decorator if you wish to log your profiles to the Whylabs platform.
+
+Pleaser refer to the examples provided for Evidently and whylogs to learn more about how to use the new integration versions:
+
+* [Evidently](https://github.com/zenml-io/zenml/tree/main/examples/evidently_drift_detection)
+* [whylogs/Whylabs](https://github.com/zenml-io/zenml/tree/main/examples/whylogs_data_profiling)
+
+## What's Changed
+* Changed PR template to reflect integrations flow by @htahir1 in https://github.com/zenml-io/zenml/pull/732
+* Fix broken Feast integration by @strickvl in https://github.com/zenml-io/zenml/pull/737
+* Describe args run.py application actually supports by @jsuchome in https://github.com/zenml-io/zenml/pull/740
+* Update kubernetes_orchestration example by @fa9r in https://github.com/zenml-io/zenml/pull/743
+* Fix some example links by @schustmi in https://github.com/zenml-io/zenml/pull/744
+* Fix broken links for docs and examples by @safoinme in https://github.com/zenml-io/zenml/pull/747
+* Update CONTRIBUTING.md by @strickvl in https://github.com/zenml-io/zenml/pull/748
+* Fix references to types when registering secrets managers by @strickvl in https://github.com/zenml-io/zenml/pull/738
+* Make examples conform to best practices guidance by @AlexejPenner in https://github.com/zenml-io/zenml/pull/734
+* API Docs with Cookies and Milk by @AlexejPenner in https://github.com/zenml-io/zenml/pull/758
+* Use correct region when trying to fetch ECR repositories by @schustmi in https://github.com/zenml-io/zenml/pull/761
+* Encode azure secrets manager secret names by @schustmi in https://github.com/zenml-io/zenml/pull/760
+* Add nested mlflow option to enable_mlflow decorator by @Val3nt-ML in https://github.com/zenml-io/zenml/pull/742
+* Combine all MLMD contexts by @schustmi in https://github.com/zenml-io/zenml/pull/759
+* Prevent extra attributes when initializing StackComponents by @schustmi in https://github.com/zenml-io/zenml/pull/763
+* New Docker images by @schustmi in https://github.com/zenml-io/zenml/pull/757
+* Fix facets magic display in Google Colab by @fa9r in https://github.com/zenml-io/zenml/pull/765
+* Allow fetching secrets from within a step by @schustmi in https://github.com/zenml-io/zenml/pull/766
+* Add notebook to great expectation example by @stefannica in https://github.com/zenml-io/zenml/pull/768
+* Module resolving and path fixes by @schustmi in https://github.com/zenml-io/zenml/pull/735
+* Fix step operator entrypoint by @schustmi in https://github.com/zenml-io/zenml/pull/771
+* Docs Revamp by @fa9r in https://github.com/zenml-io/zenml/pull/769
+* Allow fetching pipeline/step by name, class or instance by @AlexejPenner in https://github.com/zenml-io/zenml/pull/733
+* Data Validator abstraction and Deepchecks integration by @htahir1 in https://github.com/zenml-io/zenml/pull/553
+* rolling back seldon deployment example by @safoinme in https://github.com/zenml-io/zenml/pull/774
+* Added changes from 1062 and 1061 into the updated docs by @AlexejPenner in https://github.com/zenml-io/zenml/pull/775
+* Refresh Examples on `zenml examples pull` by @fa9r in https://github.com/zenml-io/zenml/pull/776
+* Annotation stack component and Label Studio integration by @strickvl in https://github.com/zenml-io/zenml/pull/764
+* Add optional machine specs to vertex orchestrator by @felixthebeard in https://github.com/zenml-io/zenml/pull/762
+
+## New Contributors
+* @jsuchome made their first contribution in https://github.com/zenml-io/zenml/pull/740
+* @Val3nt-ML made their first contribution in https://github.com/zenml-io/zenml/pull/742
+* @felixthebeard made their first contribution in https://github.com/zenml-io/zenml/pull/762
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.10.0...0.11.0
+
 # 0.10.0
 
 The 0.10.0 release continues our streak of extending ZenML with support for new
