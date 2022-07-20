@@ -119,7 +119,3 @@ In order to clean up, delete the remaining ZenML references.
 ```shell
 rm -rf zenml_examples
 ```
-
-# 📜 Learn more
-
-Our docs regarding the evidently integration can be found [here](https://docs.zenml.io/advanced-guide/perform-drift-detection).
