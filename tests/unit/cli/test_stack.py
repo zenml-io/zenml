@@ -310,7 +310,7 @@ def test_stack_update_and_register_couples_stores(clean_repo):
         artifact_store=default_stack.artifact_store,
     )
     clean_repo.register_stack(stack)
-    assert len(existing_association) == 2
+    assert len(existing_association) == 1
 
     # Third, create a stack with the wrong association which should fail.
     new_artifact_store_name = "new_artifact_store"
