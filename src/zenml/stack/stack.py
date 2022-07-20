@@ -524,7 +524,7 @@ class Stack:
             if component.validator:
                 component.validator.validate(stack=self)
 
-        if ZENML_IGNORE_STORE_COUPLINGS:
+        if not ZENML_IGNORE_STORE_COUPLINGS:
             from zenml.cli.utils import warning
             from zenml.repository import Repository
 
