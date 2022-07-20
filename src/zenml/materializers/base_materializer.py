@@ -59,7 +59,7 @@ class BaseMaterializerMeta(type):
                     f"Invalid materializer class '{name}'. When creating a "
                     f"custom materializer, make sure to specify at least one "
                     f"type in its ASSOCIATED_TYPES class variable.",
-                    url="https://docs.zenml.io/developer-guide/materializer",
+                    url="https://docs.zenml.io/developer-guide/advanced-usage/materializer",
                 )
 
             for artifact_type in cls.ASSOCIATED_ARTIFACT_TYPES:
@@ -71,7 +71,7 @@ class BaseMaterializerMeta(type):
                         f"Associated artifact type {artifact_type} for "
                         f"materializer {name} is not a `BaseArtifact` "
                         f"subclass.",
-                        url="https://docs.zenml.io/developer-guide/materializer",
+                        url="https://docs.zenml.io/developer-guide/advanced-usage/materializer",
                     )
 
             artifact_types = cls.ASSOCIATED_ARTIFACT_TYPES or (BaseArtifact,)
@@ -80,7 +80,7 @@ class BaseMaterializerMeta(type):
                     raise MaterializerInterfaceError(
                         f"Associated type {associated_type} for materializer "
                         f"{name} is not a class.",
-                        url="https://docs.zenml.io/developer-guide/materializer",
+                        url="https://docs.zenml.io/developer-guide/advanced-usage/materializer",
                     )
 
                 default_materializer_registry.register_materializer_type(

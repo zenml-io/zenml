@@ -44,7 +44,7 @@ def restrict_step_access(_func: Any) -> Any:
             "Unable to access repository during step execution. If you "
             "require access to the artifact or metadata store, please use "
             "a `StepContext` inside your step instead.",
-            url="https://docs.zenml.io/features/step-fixtures#using-the-stepcontext",
+            url="https://docs.zenml.io/developer-guide/advanced-usage/step-fixtures#step-contexts",
         )
 
     return _func
