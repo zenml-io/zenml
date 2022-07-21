@@ -2,7 +2,7 @@ from typing import List
 
 import numpy as np
 import torch
-from steps.pytorch_trainer import load_mobilenetv3_transforms
+from steps.pytorch_trainer import LABEL_MAPPING, load_mobilenetv3_transforms
 
 from zenml.repository import Repository
 from zenml.services import BaseService
@@ -10,6 +10,7 @@ from zenml.steps import Output, step
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_context import StepContext
 
+REVERSE_LABEL_MAPPING = {value: key for key, value in LABEL_MAPPING.items()}
 PIPELINE_NAME = "training_pipeline"
 PIPELINE_STEP_NAME = "model_trainer"  # TODO: change to "model_deployer"
 
@@ -71,7 +72,7 @@ def predictor(
         pred = model(image)
         pred = pred.squeeze(0).softmax(0)
         class_id = pred.argmax().item()
-        class_name = {0: "aria", 1: "not_aria"}[class_id]
+        class_name = REVERSE_LABEL_MAPPING[class_id]
         label_studio_output = {
             "filename": file_name,
             "result": [

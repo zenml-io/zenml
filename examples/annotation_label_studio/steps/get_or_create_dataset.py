@@ -6,9 +6,9 @@ from zenml.integrations.label_studio.steps import (
     get_or_create_dataset,
 )
 
-label_config, _ = generate_image_classification_label_config(
-    ["aria", "not_aria"]
-)
+LABELS = ["aria", "not_aria"]
+
+label_config, _ = generate_image_classification_label_config(LABELS)
 
 label_studio_registration_config = LabelStudioDatasetRegistrationConfig(
     label_config=label_config,

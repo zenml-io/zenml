@@ -7,12 +7,15 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from PIL import Image
+from steps.get_or_create_dataset import LABELS
 from torchvision import models, transforms
 
 from zenml.io import fileio
 from zenml.steps import BaseStepConfig, step
 from zenml.steps.step_context import StepContext
 from zenml.utils import io_utils
+
+LABEL_MAPPING = {label: idx for idx, label in enumerate(LABELS)}
 
 PIPELINE_NAME = "training_pipeline"  # TODO: cleanup
 PIPELINE_STEP_NAME = "model_trainer"  # TODO: cleanup
@@ -92,7 +95,7 @@ class CustomDataset:
         fileio.rmtree(temp_dir.name)
 
         # Define class-label mapping and map labels
-        self.class_label_mapping = {"aria": 0, "not_aria": 1}  # TODO
+        self.class_label_mapping = LABEL_MAPPING
         self.labels = [self.class_label_mapping[label] for label in labels]
 
     def __getitem__(self, idx):
