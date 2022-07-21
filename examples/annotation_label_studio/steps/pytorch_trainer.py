@@ -116,7 +116,7 @@ class CustomDataset:
         temp_dir = tempfile.TemporaryDirectory()
         for i, image_url in enumerate(image_urls):
             parts = image_url.split("/")
-            az_url = "az://" + "/".join(parts[3:])
+            az_url = "az://" + "/".join(parts[3:])  # TODO: other providers?
             path = os.path.join(temp_dir.name, f"{i}.jpeg")
             io_utils.copy(az_url, path)
             with fileio.open(path, "rb") as f:
@@ -125,8 +125,7 @@ class CustomDataset:
         fileio.rmtree(temp_dir.name)
 
         # Define class-label mapping and map labels
-
-        self.class_label_mapping = {"aria": 0, "not_aria": 1}
+        self.class_label_mapping = {"aria": 0, "not_aria": 1}  # TODO
         self.labels = [self.class_label_mapping[label] for label in labels]
 
     def __getitem__(self, idx):
@@ -138,6 +137,67 @@ class CustomDataset:
         return len(self.images)
 
 
+def _find_last_successful_run(context: StepContext) -> int:
+    """Get the index of the last successful run of this pipeline and step."""
+    pipeline = context.metadata_store.get_pipeline(PIPELINE_NAME)
+    if pipeline is not None:
+        for idx, run in reversed(list(enumerate(pipeline.runs))):
+            try:
+                run.get_step(PIPELINE_STEP_NAME).output.read()
+                return idx
+            except (KeyError, ValueError):  # step didn't run or had no output
+                pass
+    return None
+
+
+def _load_last_model(context: StepContext) -> nn.Module:
+    """Return the most recently trained model from this pipeline, or None."""
+    idx = _find_last_successful_run(context=context)
+    if idx is None:
+        return None
+    last_run = context.metadata_store.get_pipeline(PIPELINE_NAME).runs[idx]
+    return last_run.get_step(PIPELINE_STEP_NAME).output.read()
+
+
+def _is_new_data_available(
+    image_urls: List[str],
+    labels: List[Dict[str, str]],
+    context: StepContext,
+) -> bool:
+    """Find whether new data is available since the last run."""
+    # If there are no samples, nothing can be new.
+    num_samples = len(image_urls)
+    if num_samples == 0:
+        return False
+
+    # Otherwise, if there was no previous run, the data is for sure new.
+    idx = _find_last_successful_run(context=context)    
+    if idx is None:
+        return True
+
+    # Else, we check whether we had the same number of samples before.
+    last_run = context.metadata_store.get_pipeline(PIPELINE_NAME).runs[idx]
+    last_inputs = last_run.get_step(PIPELINE_STEP_NAME).inputs
+    last_image_urls = last_inputs["image_urls"].read()
+    return len(last_image_urls) != len(image_urls)
+
+
+def load_pretrained_mobilenetv3(num_classes : int = 2):
+    """Load a pretrained mobilenetv3 with fresh classification head."""
+    model = models.mobilenet_v3_small(pretrained=True)
+    for param in model.parameters():
+        param.requires_grad = False
+    model.classifier = nn.Linear(576, num_classes)
+    model.num_classes = num_classes
+    return model
+
+
+def load_mobilenetv3_transforms():
+    """Load the transforms required before running mobilenetv3 on data."""
+    weights = models.MobileNet_V3_Small_Weights.DEFAULT
+    return transforms.Compose([transforms.ToTensor(), weights.transforms()])
+
+
 @step(enable_cache=False)
 def pytorch_model_trainer(
     image_urls: List[str],
@@ -145,61 +205,37 @@ def pytorch_model_trainer(
     context: StepContext,
 ) -> nn.Module:
 
-    num_classes = 2  # TODO: to step config
+    # Try to load a model from a previous run, otherwise use a pretrained net
+    model = _load_last_model(context=context)
+    if model is None:
+        model = load_pretrained_mobilenetv3()
 
-    # If this is the first run, load a pretrained MobileNetv3
-    if not labels or not image_urls:
-        model = models.mobilenet_v3_small(pretrained=True)
-        for param in model.parameters():
-            param.requires_grad = False
-        model.classifier = nn.Linear(576, num_classes)
-        model.num_classes = num_classes
+    # If there is no new data, just return the model
+    if not _is_new_data_available(image_urls, labels, context):
         return model
 
-    # Otherwise load the model from the previous run
-    train_run = context.metadata_store.get_pipeline(PIPELINE_NAME).runs[
-        -1
-    ]  # TODO
-    model = train_run.get_step(PIPELINE_STEP_NAME).output.read()
+    # Otherwise finetune the model on the current data
+    # TODO: below to step config
+    batch_size = 1
+    num_epochs = 1
+    device = "cpu"
+    shuffle = True
+    num_workers = 1
 
-    # If there is no new data, just return the model - TODO
-
-    # Otherwise train the model on the new data
-    batch_size = 1  # TODO: to step config
-    num_epochs = 5  # TODO: to step config
-    input_size = 224  # TODO: to step config
-    device = "cpu"  # TODO: to step config
-    model = model.to(device)  # TODO: need to pass back to CPU?
-
-    # Define Transforms
-    weights = models.MobileNet_V3_Small_Weights.DEFAULT
-    preprocessing = transforms.Compose(
-        [
-            transforms.ToTensor(),
-            weights.transforms(),
-        ]
-    )
-
-    # Write images and labels to torch datasets
+    # Write images and labels to torch dataset
     dataset = CustomDataset(
-        image_urls=image_urls, labels=labels, transforms=preprocessing
+        image_urls=image_urls,
+        labels=labels,
+        transforms=load_mobilenetv3_transforms(),
     )
-
-    breakpoint()
-
-    # Create training and validation datasets
-    image_datasets = {
-        "train": dataset,
-        "val": dataset,
-    }
 
     # Create training and validation dataloaders
     dataloaders_dict = {
         x: torch.utils.data.DataLoader(
-            image_datasets[x],
+            dataset,
             batch_size=batch_size,
-            shuffle=True,
-            num_workers=4,
+            shuffle=shuffle,
+            num_workers=num_workers,
         )
         for x in ["train", "val"]
     }
