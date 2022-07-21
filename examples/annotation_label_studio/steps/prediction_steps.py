@@ -2,7 +2,7 @@ from typing import List
 
 import numpy as np
 import torch
-from torchvision import models, transforms
+from steps.pytorch_trainer import load_mobilenetv3_transforms
 
 from zenml.repository import Repository
 from zenml.services import BaseService
@@ -63,17 +63,7 @@ def predictor(
     images: np.ndarray,
     image_names: List[str],
 ) -> Output(predictions=List):
-
-    # TODO: get the preprocessing from the training step
-    # -> torchvision integration
-    models.MobileNet_V3_Small_Weights.DEFAULT
-    preprocess = transforms.Compose(
-        [
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-        ]
-    )
-
+    preprocess = load_mobilenetv3_transforms()
     preds = []
     for file_name, image in zip(image_names, images):
         image = preprocess(image)
