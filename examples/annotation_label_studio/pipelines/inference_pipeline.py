@@ -38,12 +38,16 @@ logger = get_logger(__name__)
 
 @pipeline
 def inference_pipeline(
+    get_or_create_dataset,
     inference_data_loader,
     prediction_service_loader,
     predictor,
-    data_sync,
+    data_syncer,
 ):
-    inference_data = inference_data_loader()
+    dataset_name = get_or_create_dataset()
+    new_images, new_images_np, new_images_names, new_images_uri = inference_data_loader()
     model_deployment_service = prediction_service_loader()
-    predictor(model_deployment_service, inference_data)
-    data_sync(...)  # TODO
+    preds = predictor(model_deployment_service, new_images_np, new_images_names)
+    data_syncer(
+        uri=new_images_uri, dataset_name=dataset_name, predictions=preds
+    )

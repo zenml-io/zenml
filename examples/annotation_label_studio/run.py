@@ -13,21 +13,17 @@
 #  permissions and limitations under the License.
 
 import click
-from materializers import FastaiLearnerMaterializer
 from pipelines import inference_pipeline, training_pipeline
-from steps import (
-    azure_data_sync,
-    convert_annotations_step,
-    deployment_trigger,
-    fastai_model_trainer,
-    get_labeled_data_step,
-    get_or_create_the_dataset,
-    model_deployer,
-    model_loader,
-    prediction_service_loader,
-    predictor,
-)
-
+from steps.convert_annotations_step import convert_annotations
+from steps.deployment_triggers import deployment_trigger
+from steps.get_labeled_data import get_labeled_data_step
+from steps.get_or_create_dataset import get_or_create_the_dataset
+from steps.load_image_data_step import load_image_data
+from steps.model_deployers import model_deployer
+from steps.prediction_steps import prediction_service_loader, predictor
+from steps.pytorch_trainer import pytorch_model_trainer
+from steps.sync_new_data_to_label_studio import azure_data_sync
+from materializers.pillow_image_materializer import PillowImageMaterializer
 
 @click.command()
 @click.option(
@@ -49,19 +45,20 @@ def main(pipeline):
         training_pipeline(
             get_or_create_dataset=get_or_create_the_dataset,
             get_labeled_data=get_labeled_data_step,
-            convert_annotations=convert_annotations_step,
-            model_trainer=fastai_model_trainer().with_return_materializers(
-                FastaiLearnerMaterializer
-            ),  # TODO
+            convert_annotations=convert_annotations(),
+            model_trainer=pytorch_model_trainer(),
             deployment_trigger=deployment_trigger(),
-            model_deployer=model_deployer,
+            model_deployer=model_deployer,  # TODO: how to run label studio with local mlflow?
         ).run()
     elif pipeline == "inference":
         inference_pipeline(
-            inference_data_loader=None  # TODO
+            get_or_create_dataset=get_or_create_the_dataset,
+            inference_data_loader=load_image_data().with_return_materializers(
+                {"images": PillowImageMaterializer}
+            ),  # TODO: configure image path
             prediction_service_loader=prediction_service_loader(),  # TODO
             predictor=predictor(),  # TODO
-            data_sync=azure_data_sync,
+            data_syncer=azure_data_sync,
         ).run()
 
 

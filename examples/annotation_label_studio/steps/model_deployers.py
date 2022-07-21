@@ -12,6 +12,18 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.integrations.mlflow.steps import mlflow_model_deployer_step
+from zenml.steps import step
 
 model_deployer = mlflow_model_deployer_step()
+
+# TODO: remove below
+
+
+@step
+def model_deployer_mock(deploy_decision: bool, model: ModelArtifact) -> None:
+    pass
+
+
+model_deployer = model_deployer_mock()

@@ -14,24 +14,40 @@
 
 import glob
 import os
-from pathlib import Path
-from typing import Dict
+from typing import List, Dict
 
+import numpy as np
 from PIL import Image
 
 from zenml.steps import Output, step
 from zenml.steps.step_context import StepContext
 
-LOCAL_IMAGE_FILES = str(
-    Path(__file__).parent.absolute().parent.absolute() / "assets" / "images"
-)
+LOCAL_IMAGE_FILES = os.path.join(
+    os.getcwd(), "data", "initial_training"
+)  # TODO: to step config
 
 
 @step(enable_cache=False)
-def load_image_data(context: StepContext) -> Output(images=Dict, uri=str):
+def load_image_data(
+    context: StepContext,
+) -> Output(images=Dict, images_np=np.ndarray, image_names=List, uri=str):
     """Gets images from a cloud artifact store directory."""
     image_files = glob.glob(f"{LOCAL_IMAGE_FILES}/*.jpeg")
-    return {
+
+    images = {
         os.path.basename(image_file): Image.open(image_file)
         for image_file in image_files
-    }, context.get_output_artifact_uri("images")
+    }
+
+    images_np = []
+    for image_file in image_files:
+        img = Image.open(image_file)
+        img = img.resize((224, 224), Image.ANTIALIAS)
+        img = np.asarray(img)
+        images_np.append(img)
+    images_np = np.stack(images_np, axis=0)
+
+    image_names = [os.path.basename(image_file) for image_file in image_files]
+    uri = context.get_output_artifact_uri("images")
+
+    return images, images_np, image_names, uri
