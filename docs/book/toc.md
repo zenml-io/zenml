@@ -97,7 +97,7 @@
 * [Annotators](./mlops-stacks/annotators/annotators.md)
   * [Label Studio](./mlops-stacks/annotators/label-studio.md)
   * [Develop a Custom Annotator](./mlops-stacks/annotators/custom.md)
-* [Data Validators](mlops_stacks/data_validators/overview.md)
+* [Data Validators](mlops_stacks/data_validators/data-validators.md)
   * [Great Expectations](mlops_stacks/data_validators/great_expectations.md)
   * [Deepchecks](mlops_stacks/data_validators/deepchecks.md)
   * [Evidently](mlops_stacks/data_validators/evidently.md)
