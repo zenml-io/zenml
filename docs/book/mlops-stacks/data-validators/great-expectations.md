@@ -1,359 +1,419 @@
 ---
-description: Keep your data quality in check and guard against data drift with Evidently profiling.
+description: Use Great Expectations to run data quality checks in your pipelines and document the results
 ---
 
-The Evidently Data Validator is a [Data Validator](./data-validators.md) flavor
-provided with the Evidently ZenML integration that uses [Evidently](https://evidentlyai.com/)
-to perform data quality, data drift, model drift and model performance analyses
-and generate reports. The reports can be used to implement automated corrective
-actions in your pipelines or to render interactive representations for further
-visual interpretation, evaluation and documentation.
+The Great Expectations Data Validator is a [Data Validator](./data-validators.md) flavor
+provided with the Great Expectations ZenML integration that uses [Great Expectations](https://greatexpectations.io/)
+to run data profiling and data quality tests on the data circulated through your
+pipelines. The test results can be used to implement automated corrective
+actions in your pipelines. They are also automatically rendered into
+documentation for further visual interpretation and evaluation.
 
 ## When would you want to use it?
 
-[Evidently](https://evidentlyai.com/) is an open-source library that you can use
-to monitor and debug machine learning models by analyzing the data that they
-use through a powerful set of data profiling and visualization features.
-Evidently currently works with tabular data in `pandas.DataFrame` or CSV file
-formats and can handle both regression and classification tasks.
+[Great Expectations](https://greatexpectations.io/) is an open-source library
+that helps keep the quality of your data in check through data testing,
+documentation, and profiling, and to improve communication and observability.
+Great Expectations works with tabular data in a variety of formats and data
+sources, of which ZenML currently supports only `pandas.DataFrame` as part of
+its pipelines.
 
-You should use the Evidently Data Validator when you need the following data
-and/or model validation features that are possible with Evidently:
+You should use the Great Expectations Data Validator when you need the following
+data validation features that are possible with Great Expectations:
 
-* [Data Quality](https://docs.evidentlyai.com/reports/data-quality):
-provides detailed feature statistics and a feature behavior overview for a
-single dataset. It can also compare any two datasets. E.g. you can use it to
-compare train and test data, reference and current data, or two subgroups of one
-dataset.
+* [Data Profiling](https://docs.greatexpectations.io/docs/guides/expectations/how_to_create_and_edit_expectations_with_a_profiler):
+generates a set of validation rules (Expectations) automatically by inferring
+them from the properties of an input dataset.
 
-* [Data Drift](https://docs.evidentlyai.com/reports/data-drift):
-helps detects and explore feature distribution changes in the input data by
-comparing two datasets with identical schema.
+* [Data Quality](https://docs.greatexpectations.io/docs/guides/validation/checkpoints/how_to_pass_an_in_memory_dataframe_to_a_checkpoint):
+runs a set of predefined or inferred validation rules (Expectations) against an
+in-memory dataset.
 
-* [Numerical Target Drift](https://docs.evidentlyai.com/reports/num-target-drift)
-and [Categorical Target Drift](https://docs.evidentlyai.com/reports/categorical-target-drift):
-helps detect and explore changes in the target function and/or model predictions
-by comparing two datasets where the target and/or prediction columns are
-available.
-
-* [Regression Performance](https://docs.evidentlyai.com/reports/reg-performance),
-[Classification Performance](https://docs.evidentlyai.com/reports/classification-performance),
-or [Probabilistic Classification Performance](https://docs.evidentlyai.com/reports/probabilistic-classification-performance):
-evaluate the performance of a model by analyzing a single dataset where both the
-target and prediction columns are available. It can also compare it to the past
-performance of the same model, or the performance of an alternative model by
-providing a second dataset.
+* [Data Docs](https://docs.greatexpectations.io/docs/terms/data_docs): generate
+and maintain human readable documentation of all your data validation rules,
+data quality checks and their results.
 
 You should consider one of the other [Data Validator flavors](./data-validators.md#data-validator-flavors)
 if you need a different set of data validation features.
 
 ## How do you deploy it?
 
-The Evidently Data Validator flavor is included in the Evidently ZenML
-integration, you need to install it on your local machine to be able to register
-an Evidently Data Validator and add it to your stack:
+The Great Expectations Data Validator flavor is included in the Great
+Expectations ZenML integration, you need to install it on your local machine to
+be able to register a Great Expectations Data Validator and add it to your stack:
 
 ```shell
-zenml integration install evidently -y
+zenml integration install great_expectations -y
 ```
 
-The Data Validator stack component does not have any configuration parameters.
-Adding it to a stack is as simple as running e.g.:
+Depending on how you configure the Great Expectations Data Validator, it can
+reduce or even completely eliminate the complexity associated with setting up
+the store backends for Great Expectations. If you're  only looking for a quick
+and easy way of adding Great Expectations to your stack and are not concerned
+with the configuration details, you can simply run:
 
 ```shell
-# Register the Evidently data validator
-zenml data-validator register evidently_data_validator --flavor=evidently
+# Register the Great Expectations data validator
+zenml data-validator register ge_data_validator --flavor=great_expectations
 
 # Register and set a stack with the new data validator
-zenml stack register custom_stack -dv evidently_data_validator ... --set
+zenml stack register custom_stack -dv ge_data_validator ... --set
 ```
+
+{% tabs %}
+{% tab title="ZenML Managed Great Expectations (default)" %}
+
+The default Data Validator setup plugs Great Expectations directly into the
+[Artifact Store](../artifact-stores/artifact-stores.md) component that is part
+of the same stack. As a result, the Expectation Suites, Validation Results and
+Data Docs are stored in the ZenML Artifact Store and you don't have to configure
+Great Expectations at all, ZenML takes care of that for you:
+
+```shell
+# Register the Great Expectations data validator
+zenml data-validator register ge_data_validator --flavor=great_expectations
+
+# Register and set a stack with the new data validator
+zenml stack register custom_stack -dv ge_data_validator ... --set
+```
+
+{% hint style="warning" %}
+Given that the Great Expectations configuration is completely managed by ZenML,
+you cannot update it to setup new Great Expectations Data Sources, Metadata
+Stores or Data Docs sites. Any changes you try and make to the configuration
+through code will not be persisted and will be lost when your pipeline
+completes or your local process exits.
+
+The Great Expectations CLI commands may not work well with this deployment
+method. You will be required to use Python code to manage your Expectations or
+to edit the Jupyter notebooks generated by the Great Expectations CLI to connect
+them to your ZenML managed configuration.
+{% endhint %}
+
+The default deployment method is useful in the following cases:
+
+* you haven't used Great Expectations before and you want to try it with
+ZenML, or you don't care about reusing your existing Great Expectations
+configuration (i.e. Data Sources, Metadata Stores, Data Docs sites) or the
+information stored there (e.g. Expectation Suites, Validation Results) with
+ZenML.
+* you don't need to manually configure new Great Expectations Data Sources and
+can rely exclusively on those set up automatically by ZenML through its standard
+Great Expectations pipeline steps.
+
+{% endtab %}
+
+{% tab title="Use an Existing Great Expectations Configuration" %}
+
+If you have an existing Great Expectations configuration that you would
+like to reuse with your ZenML pipelines, the Data Validator allows you to do so.
+All you need is to point it to the folder where your local `great_expectations.yaml`
+configuration file is located:
+
+```shell
+# Register the Great Expectations data validator
+zenml data-validator register ge_data_validator --flavor=great_expectations \
+    --context_root_dir=/path/to/my/great_expectations
+
+# Register and set a stack with the new data validator
+zenml stack register custom_stack -dv ge_data_validator ... --set
+```
+
+You can continue to edit your local Great Expectations configuration (e.g.
+add new Data Sources, update the Metadata Stores etc.) and these changes will be
+visible in your ZenML pipelines. You can also use the Great Expectations CLI as
+usual to manage your configuration and your Expectations.
+
+{% hint style="warning" %}
+When you are using ZenML with your existing local Great Expectations
+configuration, you are limited to running pipelines locally. To run pipelines
+with a remote orchestrator, you have to use one of the other deployment methods.
+{% endhint %}
+
+{% endtab %}
+
+{% tab title="Migrate Your Great Expectations Configuration to ZenML" %}
+
+This deployment method migrates your existing Great Expectations configuration
+to ZenML and allows you to use it with local as well as remote orchestrators.
+You have to load the Great Expectations configuration contents in one of the
+Data Validator configuration parameters using the `@` operator, e.g.:
+
+```shell
+# Register the Great Expectations data validator
+zenml data-validator register ge_data_validator --flavor=great_expectations \
+    --context_config=@/path/to/my/great_expectations/great_expectations.yaml
+
+# Register and set a stack with the new data validator
+zenml stack register custom_stack -dv ge_data_validator ... --set
+```
+
+{% hint style="warning" %}
+Similarly to the default deployment case, after migration, the Great
+Expectations configuration is completely managed by ZenML. You can no longer
+update it to setup new Great Expectations Data Sources, Metadata Stores or Data
+Docs sites. Any changes you try and make to these Great Expectations objects
+after the Data Validator is registered will not be persisted and will be lost
+when your pipeline completes or your local process exits.
+
+The Great Expectations CLI commands may not work well with this deployment
+method. You may be required to use Python code to manage your Expectations or
+to edit the Jupyter notebooks generated by the Great Expectations CLI to connect
+them to your ZenML managed configuration.
+{% endhint %}
+
+{% hint style="warning" %}
+When you are migrating your existing Great Expectations configuration to ZenML,
+keep in mind that the Metadata Stores that you configured there will also need
+to be accessible from the location where pipelines are running. For example,
+you cannot use a non-local orchestrator with a Great Expectations Metadata Store
+that is located on your filesystem.
+{% endhint %}
+
+{% endtab %}
+{% endtabs %}
+
+### Advanced Configuration
+
+The Great Expectations Data Validator has a few advanced configuration attributes
+that might be useful for your particular use-case:
+
+* `configure_zenml_stores`: if set, ZenML will automatically update the Great
+Expectation configuration to include Metadata Stores that use the Artifact Store
+as a backend. If neither `context_root_dir` nor `context_config` are set, this
+is the default behavior. You can set this flag to use the ZenML Artifact Store
+as a backend for Great Expectations with any of the deployment methods
+described above.
+* `configure_local_docs`: set this flag to configure a local Data Docs site
+where Great Expectations docs are generated and can be visualized locally. Use
+this in case you don't already have a local Data Docs site in your existing
+Great Expectations configuration.
+
+For more, up-to-date information on the Great Expectations Data Validator
+configuration, you can have a look at [the API docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.great_expectations.data_validators.ge_data_validator.GreatExpectationsDataValidator).
 
 ## How do you use it?
 
-Evidently's profiling functions take in a `pandas.DataFrame` dataset or a pair
-of datasets and generate results in the form of a `Profile` object containing
-all the relevant information, or as a `Dashboard` visualization.
+The core Great Expectations concepts that you should be aware of when using it
+within ZenML pipelines are Expectations / Expectation Suites, Validations and
+Data Docs.
 
-One of Evidently's notable characteristics is that it only requires datasets as
-input. Even when running model performance comparison analyses, no model
-needs to be present. However, that does mean that the input data needs to
-include additional `target` and `prediction` columns for some profiling reports
-and you have to include additional information about the dataset columns in the
-form of [column mappings](https://docs.evidentlyai.com/features/dashboards/column_mapping).
+ZenML wraps the Great Expectations functionality in the form of two standard
+steps:
 
-There are three ways you can use Evidently in your ZenML pipelines that allow
-different levels of flexibility:
+* a Great Expectations data profiler that can be used to automatically generate
+Expectation Suites from an input `pandas.DataFrame` dataset
+* a Great Expectations data validator that uses an existing Expectation Suite to
+validate an input `pandas.DataFrame` dataset
 
-* instantiate, configure and insert [the standard `EvidentlyProfileStep`](#using-the-evidently-standard-step)
-shipped with ZenML into your pipelines. This is the easiest way and the
-recommended approach, but can only be customized through the supported step
-configuration parameters.
-* call the data validation methods provided by [the Evidently Data Validator](#using-the-evidently-data-validator-api)
-in your custom step implementation. This method allows for more flexibility
-concerning what can happen in the pipeline step, but you are still limited to the
-functionality implemented in the Data Validator.
-* [use the Evidently library directly](#using-the-evidently-library-directly) in
-your custom step implementation. This gives you complete freedom in how you are
-using Evidently's features.
+You can also check out our examples pages for working examples that use the
+Great Expectations standard steps:
 
-### Using the Evidently standard step
+- [Data Validation with Great Expectations](https://github.com/zenml-io/zenml/tree/main/examples/great_expectations_data_validation)
 
-ZenML wraps the Evidently functionality in the form of a standard
-`EvidentlyProfileStep` step. You select which reports you want to generate in
-your step by passing a list of string identifiers into the `EvidentlyProfileConfig`:
+### Using the Great Expectations data profiler standard step
+
+The standard Great Expectations data profiler step builds an Expectation Suite
+automatically by running a [`UserConfigurableProfiler`](https://docs.greatexpectations.io/docs/guides/expectations/how_to_create_and_edit_expectations_with_a_profiler)
+on an input `pandas.DataFrame` dataset. The generated Expectation Suite is saved
+in the Great Expectations Expectation Store, but also returned as an
+`ExpectationSuite` artifact that is versioned and saved in the ZenML Artifact
+Store. The step automatically rebuilds the Data Docs.
+
+At a minimum, the step configuration expects a name to be used for the
+Expectation Suite:
 
 ```python
-from zenml.integrations.evidently.steps import (
-    EvidentlyProfileConfig,
-    evidently_profile_step,
+from zenml.integrations.great_expectations.steps import (
+    GreatExpectationsProfilerConfig,
+    great_expectations_profiler_step,
 )
 
-drift_detector = evidently_profile_step(
-    step_name="drift_detector",
-    config=EvidentlyProfileConfig(
-        profile_sections=[
-            "datadrift",
-        ],
-        verbose_level=1,
-    ),
+# instantiate a builtin Great Expectations data profiling step
+ge_profiler_config = GreatExpectationsProfilerConfig(
+    expectation_suite_name="breast_cancer_suite",
+    data_asset_name="breast_cancer_ref_df",
+)
+ge_profiler_step = great_expectations_profiler_step(
+    step_name="ge_profiler_step",
+    config=ge_profiler_config,
 )
 ```
 
-The step can then be inserted into your pipeline where it can take in two
-datasets, e.g.:
+The step can then be inserted into your pipeline where it can take in a
+pandas dataframe, e.g.:
 
 ```python
-@pipeline(required_integrations=[EVIDENTLY, SKLEARN])
-def drift_detection_pipeline(
-    data_loader,
-    data_splitter,
-    drift_detector,
-    drift_analyzer,
+@pipeline(required_integrations=[SKLEARN, GREAT_EXPECTATIONS])
+def profiling_pipeline(
+    importer, profiler
 ):
-    """Links all the steps together in a pipeline"""
-    data = data_loader()
-    reference_dataset, comparison_dataset = data_splitter(data)
-    drift_report, _ = drift_detector(
-        reference_dataset=reference_dataset,
-        comparison_dataset=comparison_dataset,
-    )
-    drift_analyzer(drift_report)
+    """Data profiling pipeline for Great Expectations.
 
-pipeline = drift_detection_pipeline(
-    data_loader=data_loader(),
-    data_splitter=data_splitter(),
-    drift_detector=drift_detector,
-    drift_analyzer=analyze_drift(),
-)
-pipeline.run()
+    The pipeline imports a reference dataset from a source then uses the builtin
+    Great Expectations profiler step to generate an expectation suite (i.e.
+    validation rules) inferred from the schema and statistical properties of the
+    reference dataset.
+
+    Args:
+        importer: reference data importer step
+        profiler: data profiler step
+    """
+    dataset, _ = importer()
+    profiler(dataset)
+
+profiling_pipeline(
+    importer=importer(),
+    profiler=ge_profiler_step,
+).run()
 ```
 
-Possible report options supported by Evidently are:
-
-- "datadrift"
-- "categoricaltargetdrift"
-- "numericaltargetdrift"
-- "dataquality"
-- "classificationmodelperformance"
-- "regressionmodelperformance"
-- "probabilisticmodelperformance"
-
-As can be seen from the [step definition](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.evidently.steps.evidently_profile.EvidentlyProfileStep), the step takes in
-a reference dataset and a comparison dataset required for data drift and
-model comparison reports. It returns an Evidently `Profile` object and a
-`Dashboard` rendered as an HTML string:
+As can be seen from the [step definition](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.great_expectations.steps.ge_profiler.GreatExpectationsProfilerStep), the step
+takes in a `pandas.DataFrame` dataset and it returns a Great Expectations
+`ExpectationSuite` object:
 
 ```python
-class EvidentlyProfileStep(BaseDriftDetectionStep):
-    """Step implementation implementing an Evidently Profile Step."""
+class GreatExpectationsProfilerStep(BaseStep):
+    """Standard Great Expectations profiling step implementation.
+    """
 
-    def entrypoint(  # type: ignore[override]
+    def entrypoint(
         self,
-        reference_dataset: pd.DataFrame,
-        comparison_dataset: pd.DataFrame,
-        config: EvidentlyProfileConfig,
-    ) -> Output(  # type:ignore[valid-type]
-        profile=Profile, dashboard=str
-    ):
+        dataset: pd.DataFrame,
+        config: GreatExpectationsProfilerConfig,
+    ) -> ExpectationSuite:
         ...
 ```
 
-If needed, Evidently column mappings can be passed into the step configuration,
-but as `zenml.integrations.evidently.steps.EvidentlyColumnMapping` objects,
-which have the exact same structure as `evidently.pipeline.column_mapping.ColumnMapping`:
-
-```python
-from zenml.integrations.evidently.steps import (
-    EvidentlyColumnMapping,
-    EvidentlyProfileConfig,
-    evidently_profile_step,
-)
-
-drift_detector = evidently_profile_step(
-    step_name="drift_detector",
-    config=EvidentlyProfileConfig(
-        column_mapping=EvidentlyColumnMapping(
-            target="class", prediction="class_prediction"
-        ),
-        profile_sections=[
-            "categoricaltargetdrift",
-            "numericaltargetdrift",
-            "datadrift",
-        ],
-        verbose_level=1,
-    ),
-)
-```
-
-You should consult [the official Evidently documentation](https://docs.evidentlyai.com/reports)
-for more information on what each report is useful for and what data columns it
-requires as input.
-
-The `EvidentlyProfileConfig` step configuration also allows for additional
-profile options and [dashboard options](https://docs.evidentlyai.com/user-guide/customization)
-to be passed to the `Profile` and `Dashboard` constructors e.g.:
-
-
-```python
-from zenml.integrations.evidently.steps import (
-    EvidentlyProfileConfig,
-)
-
-config=EvidentlyProfileConfig(
-    column_mapping=EvidentlyColumnMapping(
-        target="class", prediction="class_prediction"
-    ),
-    profile_sections=[
-        "categoricaltargetdrift",
-        "numericaltargetdrift",
-        "datadrift",
-    ],
-    verbose_level=1,
-    dashboard_options = [
-        (
-            "evidently.options.ColorOptions",{
-                "primary_color": "#5a86ad",
-                "fill_color": "#fff4f2",
-                "zero_line_color": "#016795",
-                "current_data_color": "#c292a1",
-                "reference_data_color": "#017b92",
-            }
-        ),
-    ],
-)
-```
-
-You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.evidently.steps.evidently_profile.EvidentlyProfileConfig) in the API
+You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.great_expectations.steps.ge_profiler.GreatExpectationsProfilerConfig) in the API
 docs.
 
-You can also check out our examples pages for working examples that use the
-Evidently standard step:
+### Using the Great Expectations data validator standard step
 
-- [Drift Detection with Evidently](https://github.com/zenml-io/zenml/tree/main/examples/evidently_drift_detection)
+The standard Great Expectations data validator step validates an input
+`pandas.DataFrame` dataset by running an existing Expectation Suite on it. The
+validation results are saved in the Great Expectations Validation Store, but
+also returned as an `CheckpointResult` artifact that is versioned and saved in
+the ZenML Artifact Store. The step automatically rebuilds the Data Docs.
 
-### Using the Evidently Data Validator API
-
-The Evidently Data Validator implements the same interface as do all Data
-Validators, so this method forces you to maintain some level of compatibility
-with the overall Data Validator abstraction, which guarantees an easier
-migration in case you decide to switch to another Data Validator.
-
-All you have to do is call the Evidently Data Validator methods when you need
-to interact with Evidently to run generate data profiles, e.g.:
+At a minimum, the step configuration expects the name of the Expectation Suite
+to be used for the validation:
 
 ```python
+from zenml.integrations.great_expectations.steps import (
+    GreatExpectationsValidatorConfig,
+    great_expectations_validator_step,
+)
 
-import pandas as pd
-from evidently.model_profile import Profile
-from evidently.pipeline.column_mapping import ColumnMapping
-from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
-from zenml.steps import Output, step
-
-@step
-def data_drift_detection(
-    reference_dataset: pd.DataFrame,
-    comparison_dataset: pd.DataFrame,
-) -> Output(
-    profile=Profile, dashboard=str
-):
-    """Custom data drift detection step with Evidently
-
-    Args:
-        reference_dataset: a Pandas DataFrame
-        comparison_dataset: a Pandas DataFrame of new data you wish to
-            compare against the reference data
-
-    Returns:
-        profile: Evidently Profile generated for the data drift
-        dashboard: HTML report extracted from an Evidently Dashboard
-            generated for the data drift
-    """
-
-    # validation pre-processing (e.g. dataset preparation) can take place here
-
-    data_validator = EvidentlyDataValidator.get_active_data_validator()
-    column_mapping = None
-    if config.column_mapping:
-        column_mapping = config.column_mapping.to_evidently_column_mapping()
-    profile, dashboard = data_validator.data_profiling(
-        dataset=reference_dataset,
-        comparison_dataset=comparison_dataset,
-        profile_list=[
-            "categoricaltargetdrift",
-            "numericaltargetdrift",
-            "datadrift",
-        ],
-        column_mapping=ColumnMapping(
-        target="class", prediction="class_prediction"
-        ),
-        verbose_level=1,
-    )
-
-    # validation post-processing (e.g. interpret results, take actions) can happen here
-
-    return [profile, dashboard.html()]
+# instantiate a builtin Great Expectations data validation step
+ge_validator_config = GreatExpectationsValidatorConfig(
+    expectation_suite_name="breast_cancer_suite",
+    data_asset_name="breast_cancer_test_df",
+)
+ge_validator_step = great_expectations_validator_step(
+    step_name="ge_validator_step",
+    config=ge_validator_config,
+)
 ```
 
-Have a look at [the complete list of methods and parameters available in the `EvidentlyDataValidator` API](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.evidently.data_validators.evidently_data_validator.EvidentlyDataValidator) in the API docs.
+The step can then be inserted into your pipeline where it can take in a
+pandas dataframe and a bool flag used solely for order reinforcement purposes, e.g.:
 
-### Using the Evidently library directly
+```python
+@pipeline(required_integrations=[SKLEARN, GREAT_EXPECTATIONS])
+def validation_pipeline(
+    importer, validator, checker
+):
+    """Data validation pipeline for Great Expectations.
 
-You can use the Evidently library directly in your custom pipeline steps, and
-only leverage ZenML's capability of serializing, versioning and storing the
-`Profile` objects in its Artifact Store, e.g.:
+    The pipeline imports a test data from a source, then uses the builtin
+    Great Expectations data validation step to validate the dataset against
+    the expectation suite generated in the profiling pipeline.
 
-All you have to do is call the Evidently Data Validator methods when you need
-to interact with Evidently to run generate data profiles, e.g.:
+    Args:
+        importer: test data importer step
+        validator: dataset validation step
+        checker: checks the validation results
+    """
+    dataset, condition = importer()
+    results = validator(dataset, condition)
+    message = checker(results)
+
+validation_pipeline(
+    importer=importer(),
+    validator=ge_validator_step,
+    checker=analyze_result(),
+).run()
+```
+
+As can be seen from the [step definition](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.great_expectations.steps.ge_validator.GreatExpectationsValidatorStep), the step
+takes in a `pandas.DataFrame` dataset and a boolean `condition` and it returns a
+Great Expectations `CheckpointResult` object. The boolean `condition` is only
+used as a means of ordering steps in a pipeline (e.g. if you must force it to
+run only after the data profiling step generates an Expectation Suite):
 
 ```python
 
-import pandas as pd
-from evidently.model_profile import Profile
-from evidently.model_profile.sections import DataQualityProfileSection
-from evidently.pipeline.column_mapping import ColumnMapping
-from zenml.steps import step
-
-@step
-def data_quality_profiler(
-    dataset: pd.DataFrame,
-) -> Profile:
-    """Custom data quality profiler step with Evidently
-
-    Args:
-        dataset: a Pandas DataFrame
-
-    Returns:
-        profile: Evidently Profile generated for the dataset
+class GreatExpectationsValidatorStep(BaseStep):
+    """Standard Great Expectations data validation step implementation.
     """
 
-    # validation pre-processing (e.g. dataset preparation) can take place here
+    def entrypoint(
+        self,
+        dataset: pd.DataFrame,
+        condition: bool,
+        config: GreatExpectationsValidatorConfig,
+    ) -> CheckpointResult:
+        ...
+```
 
-    profile = Profile(sections=[DataQualityProfileSection])
-    profile.calculate(
-        reference_data=dataset,
-    )
+You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.great_expectations.steps.ge_validator.GreatExpectationsValidatorConfig) in the API
+docs.
 
-    # validation post-processing (e.g. interpret results, take actions) can happen here
+### Using the Great Expectations library directly
 
-    return profile
+To use the Great Expectations configuration managed by ZenML with your existing
+Great Expectations code, you only need to use the Data Context managed by ZenML
+instead of the default one provided by Great Expectations:
+
+```python
+import great_expectations as ge
+from zenml.integrations.great_expectations.data_validators import (
+    GreatExpectationsDataValidator
+)
+
+context = GreatExpectationsDataValidator.get_data_context()
+# instead of:
+# context = ge.get_context()
+
+context.add_data_source(...)
+context.add_checkpoint(...)
+context.run_checkpoint(...)
+context.build_data_docs(...)
+```
+
+### Using the Great Expectations ZenML Visualizer
+
+In the [post-execution workflow](../../developer-guide/steps-pipelines/inspecting-pipeline-runs.md),
+you can view the Expectation Suites and Validation Results generated and
+returned by your pipeline steps in the Great Expectations Data Docs by means of
+the ZenML Great Expectations Visualizer, e.g.:
+
+```python
+from zenml.integrations.great_expectations.visualizers.ge_visualizer import (
+    GreatExpectationsVisualizer,
+)
+from zenml.repository import Repository
+
+def visualize_results(pipeline_name: str, step_name: str) -> None:
+    repo = Repository()
+    pipeline = repo.get_pipeline(pipeline_name)
+    last_run = pipeline.runs[-1]
+    validation_step = last_run.get_step(name=step_name)
+    GreatExpectationsVisualizer().visualize(validation_step)
+
+if __name__ == "__main__":
+    visualize_results("validation_pipeline", "profiler")
+    visualize_results("validation_pipeline", "train_validator")
+    visualize_results("validation_pipeline", "test_validator")
 ```

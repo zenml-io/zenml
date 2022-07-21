@@ -1,5 +1,5 @@
 ---
-description: Keep your data quality in check and guard against data drift with Evidently profiling.
+description: Keep your data quality in check and guard against data and model drift with Evidently profiling.
 ---
 
 The Evidently Data Validator is a [Data Validator](./data-validators.md) flavor
@@ -80,6 +80,10 @@ needs to be present. However, that does mean that the input data needs to
 include additional `target` and `prediction` columns for some profiling reports
 and you have to include additional information about the dataset columns in the
 form of [column mappings](https://docs.evidentlyai.com/features/dashboards/column_mapping).
+Depending on how your data is structured, you may also need to include additional
+steps in your pipeline before the data validation step to insert the additional
+`target` and `prediction` columns into your data. This may also require
+interacting with one or more models.
 
 There are three ways you can use Evidently in your ZenML pipelines that allow
 different levels of flexibility:
@@ -356,4 +360,24 @@ def data_quality_profiler(
     # validation post-processing (e.g. interpret results, take actions) can happen here
 
     return profile
+```
+
+### Using the Evidently ZenML Visualizer
+
+In the [post-execution workflow](../../developer-guide/steps-pipelines/inspecting-pipeline-runs.md),
+you can load and render the Evidently dashboards generated and returned by your
+pipeline steps by means of the ZenML Evidently Visualizer, e.g.:
+
+```python
+from zenml.integrations.evidently.visualizers import EvidentlyVisualizer
+from zenml.repository import Repository
+
+def visualize_results(pipeline_name: str, step_name: str) -> None:
+    repo = Repository()
+    pipeline = repo.get_pipeline(pipeline_name=pipeline_name)
+    evidently_outputs = pipeline.runs[-1].get_step(name=step_name)
+    EvidentlyVisualizer().visualize(evidently_outputs)
+
+if __name__ == "__main__":
+    visualize_results("drift_detection_pipeline", "drift_detector")
 ```
