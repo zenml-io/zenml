@@ -8,14 +8,14 @@ only in the initial stages of model development, but throughout the entire
 machine learning project lifecycle. Data Validators are a category of ML
 libraries, tools and frameworks that grant a wide range of features and best
 practices that should be employed in the ML pipelines to keep data quality in
-check and to prevent model performance from degrading over time.
+check and to monitor model performance to keep it from degrading over time.
 
 Data profiling, data integrity testing, data and model drift detection
 are all ways of employing data validation techniques at different points in your
 ML pipelines where data is concerned: data ingestion, model training and
-evaluation and online or batch inference. Data profiles and data quality check
-results can be visualized and analyzed to detect problems and take course
-correcting actions before they can negatively impact the model performance.
+evaluation and online or batch inference. Data profiles and model performance
+evaluation results can be visualized and analyzed to detect problems and take
+preventive or correcting actions.
 
 Related concepts:
 
@@ -33,27 +33,31 @@ incorporate them into your workflow. These are some common cases where you
 may consider employing the use of Data Validators in your pipelines:
 
 * early on, even if it's just to keep a log of the quality state of your
-data at different stages of development.
+data and the performance of your models at different stages of development.
 * if you have pipelines that regularly ingest new data, you should use data
-validation to run regular data integrity checks on it to signal problems before
+validation to run regular data integrity checks to signal problems before
 they are propagated downstream.
-* if you train models in your pipelines, you should use data validation to
-run data comparison analyses of your train and test data to make sure your
-model is properly evaluated.
+* in continuous training pipelines, you should use data validation techniques to
+compare new training data against a data reference and to compare the
+performance of newly trained models against previous ones.
 * when you have pipelines that automate batch inference or if you regularly
 collect data used as input in online inference, you should use data validation
-to run data drift analyses and detect training-serving skew and model drift.
+to run data drift analyses and detect training-serving skew, data drift and
+model drift.
 
 ### Data Validator Flavors
 
-Data Validator are optional stack components provided by integrations:
+Data Validator are optional stack components provided by integrations. The
+following table lists the currently available Data Validators and summarizes
+their features and the data types and model types that they can be used with in
+ZenML pipelines:
 
-| Data Validator | Flavor | Integration | Notes             |
-|----------------|--------|-------------|-----------------------|
-| [Deepchecks](./deepchecks.md) | `deepchecks` | `deepchecks` | Add Deepchecks data validation tests to your pipelines, from data integrity checks that work with a single dataset to data+model evaluation to data drift analyses |
-| [Evidently](./evidently.md) | `evidently` | `evidently` | Use Evidently to generate a variety of data quality and data drift profiles |
-| [Great Expectations](./great_expectations.md) | `great_expectations` | `great_expectations` | Perform data testing, documentation and profiling with Great Expectations |
-| [Whylogs/WhyLabs](./whylogs.md) | `whylogs` | `whylogs` | Generate data profiles with whylogs and upload them to WhyLabs |
+| Data Validator | Flavor | Integration | Validation Features | Data Types | Model Types | Notes |
+|----------------|--------|-------------|---------------------|------------|-------------|-------|
+| [Deepchecks](./deepchecks.md) | `deepchecks` | `deepchecks` | data quality<br>data drift<br>model drift<br>model performance | tabular: `pandas.DataFrame`<br>CV: `torch.utils.data.dataloader.DataLoader`| tabular: `sklearn.base.ClassifierMixin`<br>CV: `torch.nn.Module` | Add Deepchecks data and model validation tests to your pipelines |
+| [Evidently](./evidently.md) | `evidently` | `evidently` | data quality<br>data drift<br>model drift<br>model performance | tabular: `pandas.DataFrame` | N/A | Use Evidently to generate a variety of data quality and data/model drift reports and visualizations |
+| [Great Expectations](./great_expectations.md) | `great_expectations` | `great_expectations` | data profiling<br>data quality | tabular: `pandas.DataFrame` | N/A | Perform data testing, documentation and profiling with Great Expectations |
+| [Whylogs/WhyLabs](./whylogs.md) | `whylogs` | `whylogs` | data drift | tabular: `pandas.DataFrame` | N/A | Generate data profiles with whylogs and upload them to WhyLabs |
 
 If you would like to see the available flavors of Experiment Tracker, you can 
 use the command:
@@ -61,11 +65,12 @@ use the command:
 ```shell
 zenml data-validator flavor list
 ```
+
 ## How to use it
 
 Every Data Validator has different data profiling and testing capabilities and
-uses a slightly different way of analyzing your data, but it generally works
-as follows:
+uses a slightly different way of analyzing your data and your models, but it
+generally works as follows:
 
 * first, you have to configure and add an Data Validator to your ZenML stack
 * every integration includes one or more builtin data validation steps that you
@@ -74,7 +79,7 @@ your own custom pipeline steps and simply return the results (e.g. data profiles
 test reports) as artifacts that are versioned and stored by ZenML in its Artifact
 Store.
 * you can access the data validation artifacts in subsequent pipeline steps or
-you can load them in the [the post-execution workflow](../../developer-guide/steps-pipelines/inspecting-pipeline-runs.md) to visualize them as needed.
+you can load them in the [the post-execution workflow](../../developer-guide/steps-pipelines/inspecting-pipeline-runs.md) to process them or visualize them as needed.
 
 Consult the documentation for the particular [Data Validator flavor](#data-validator-flavors)
 that you plan on using or are using in your stack for detailed information about
