@@ -455,7 +455,7 @@ def test_get_pipelines_forwards_to_metadata_store(clean_repo, mocker):
         metadata_store=new_metadata_store,
         artifact_store=active_stack.artifact_store,
     )
-    clean_repo.register_stack(new_stack)
+    clean_repo.register_stack(new_stack, decouple_stores=True)
 
     mocker.patch.object(SQLiteMetadataStore, "get_pipelines", return_value=[])
     mocker.patch.object(SQLiteMetadataStore, "get_pipeline", return_value=None)

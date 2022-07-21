@@ -29,6 +29,25 @@ if TYPE_CHECKING:
     from zenml.stack import Stack, StackValidator
 
 
+def uuid_factory() -> UUID:
+    """Generates a UUID whose hex string does not start with a '0'.
+
+    Returns:
+        A UUID whose hex string does not start with a '0'.
+    """
+    # TODO [MEDIUM]: This is a replica of the fix which is applied
+    #   to the zen_store.sql_zen_store.SQLZenStore. Since the UUID for
+    #   stack components get created upon the creation of the
+    #   pydantic instance, the same logic must apply here in order to
+    #   save it within the ZenStore.
+    # SQLModel crashes when a UUID hex string starts with '0'
+    # (see: https://github.com/tiangolo/sqlmodel/issues/25)
+    uuid = uuid4()
+    while uuid.hex[0] == "0":
+        uuid = uuid4()
+    return uuid
+
+
 class StackComponent(BaseModel, ABC):
     """Abstract StackComponent class for all components of a ZenML stack.
 
@@ -38,7 +57,7 @@ class StackComponent(BaseModel, ABC):
     """
 
     name: str
-    uuid: UUID = Field(default_factory=uuid4)
+    uuid: UUID = Field(default_factory=uuid_factory)
 
     # Class Configuration
     TYPE: ClassVar[StackComponentType]
