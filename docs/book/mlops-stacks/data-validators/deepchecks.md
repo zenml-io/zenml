@@ -1,361 +1,489 @@
-
-
 ---
-description: Keep your data quality in check and guard against data drift with Evidently profiling.
+description: Test the data and models used in your pipelines with Deepchecks test suites
 ---
 
-The Evidently Data Validator is a [Data Validator](./data-validators.md) flavor
-provided with the Evidently ZenML integration that uses [Evidently](https://evidentlyai.com/)
-to perform data quality, data drift, model drift and model performance analyses
-and generate reports. The reports can be used to implement automated corrective
-actions in your pipelines or to render interactive representations for further
-visual interpretation, evaluation and documentation.
+The Deepchecks Data Validator is a [Data Validator](./data-validators.md) flavor
+provided with the Deepchecks ZenML integration that uses [Deepchecks](https://deepchecks.com/)
+to run data integrity, data drift, model drift and model performance tests
+on the datasets and models circulated in your ZenML pipelines. The test results
+can be used to implement automated corrective actions in your pipelines or to
+render interactive representations for further visual interpretation, evaluation
+and documentation.
 
 ## When would you want to use it?
 
-[Evidently](https://evidentlyai.com/) is an open-source library that you can use
-to monitor and debug machine learning models by analyzing the data that they
-use through a powerful set of data profiling and visualization features.
-Evidently currently works with tabular data in `pandas.DataFrame` or CSV file
-formats and can handle both regression and classification tasks.
+[Deepchecks](https://deepchecks.com/) is an open-source library that you can use
+to run a variety of data and model validation tests, from data integrity tests
+that work with a single dataset to model evaluation tests to data drift analyses
+and model performance comparison tests. All this can be done with minimal
+configuration input from the user, or customized with specialized conditions
+that the validation tests should perform.
 
-You should use the Evidently Data Validator when you need the following data
-and/or model validation features that are possible with Evidently:
+Deepchecks works with both tabular data and computer vision data (currently in
+beta). For tabular, the supported dataset format is `pandas.DataFrame` and
+the supported model format is `sklearn.base.ClassifierMixin`. For computer
+vision, the supported dataset format is `torch.utils.data.dataloader.DataLoader`
+and supported model format is `torch.nn.Module`.
 
-* [Data Quality](https://docs.evidentlyai.com/reports/data-quality):
-provides detailed feature statistics and a feature behavior overview for a
-single dataset. It can also compare any two datasets. E.g. you can use it to
-compare train and test data, reference and current data, or two subgroups of one
-dataset.
+You should use the Deepchecks Data Validator when you need the following data
+and/or model validation features that are possible with Deepchecks:
 
-* [Data Drift](https://docs.evidentlyai.com/reports/data-drift):
-helps detects and explore feature distribution changes in the input data by
-comparing two datasets with identical schema.
+* Data Integrity Checks [for tabular](https://docs.deepchecks.com/en/stable/checks_gallery/tabular.html#data-integrity)
+or [computer vision](https://docs.deepchecks.com/en/stable/checks_gallery/vision.html#data-integrity)
+data:
+detect data integrity problems within a single dataset (e.g. missing values,
+conflicting labels, mixed data types etc.).
 
-* [Numerical Target Drift](https://docs.evidentlyai.com/reports/num-target-drift)
-and [Categorical Target Drift](https://docs.evidentlyai.com/reports/categorical-target-drift):
-helps detect and explore changes in the target function and/or model predictions
-by comparing two datasets where the target and/or prediction columns are
-available.
+* Data Drift Checks [for tabular](https://docs.deepchecks.com/en/stable/checks_gallery/tabular.html#train-test-validation)
+or [computer vision](https://docs.deepchecks.com/en/stable/checks_gallery/vision.html#train-test-validation)
+data:
+detect data skew and data drift problems by comparing a target dataset against a
+reference dataset (e.g. feature drift, label drift, new labels etc.).
 
-* [Regression Performance](https://docs.evidentlyai.com/reports/reg-performance),
-[Classification Performance](https://docs.evidentlyai.com/reports/classification-performance),
-or [Probabilistic Classification Performance](https://docs.evidentlyai.com/reports/probabilistic-classification-performance):
-evaluate the performance of a model by analyzing a single dataset where both the
-target and prediction columns are available. It can also compare it to the past
-performance of the same model, or the performance of an alternative model by
-providing a second dataset.
+* Model Performance Checks [for tabular](https://docs.deepchecks.com/en/stable/checks_gallery/tabular.html#model-evaluation)
+or [computer vision](https://docs.deepchecks.com/en/stable/checks_gallery/vision.html#model-evaluation)
+data:
+evaluate a model and detect problems with its performance (e.g. confusion matrix,
+boosting overfit, model error analysis)
 
 You should consider one of the other [Data Validator flavors](./data-validators.md#data-validator-flavors)
 if you need a different set of data validation features.
 
 ## How do you deploy it?
 
-The Evidently Data Validator flavor is included in the Evidently ZenML
+The Deepchecks Data Validator flavor is included in the Deepchecks ZenML
 integration, you need to install it on your local machine to be able to register
-an Evidently Data Validator and add it to your stack:
+an Deepchecks Data Validator and add it to your stack:
 
 ```shell
-zenml integration install evidently -y
+zenml integration install deepchecks -y
 ```
 
 The Data Validator stack component does not have any configuration parameters.
 Adding it to a stack is as simple as running e.g.:
 
 ```shell
-# Register the Evidently data validator
-zenml data-validator register evidently_data_validator --flavor=evidently
+# Register the Deepchecks data validator
+zenml data-validator register deepchecks_data_validator --flavor=deepchecks
 
 # Register and set a stack with the new data validator
-zenml stack register custom_stack -dv evidently_data_validator ... --set
+zenml stack register custom_stack -dv deepchecks_data_validator ... --set
 ```
 
 ## How do you use it?
 
-Evidently's profiling functions take in a `pandas.DataFrame` dataset or a pair
-of datasets and generate results in the form of a `Profile` object containing
-all the relevant information, or as a `Dashboard` visualization.
+The ZenML integration restructures the way Deepchecks validation checks are
+organized in four categories, based on the type and number of input parameters
+that they expect as input. This makes it easier to reason about them when you
+decide which tests to use in your pipeline steps:
 
-One of Evidently's notable characteristics is that it only requires datasets as
-input. Even when running model performance comparison analyses, no model
-needs to be present. However, that does mean that the input data needs to
-include additional `target` and `prediction` columns for some profiling reports
-and you have to include additional information about the dataset columns in the
-form of [column mappings](https://docs.evidentlyai.com/features/dashboards/column_mapping).
+* **data integrity checks** expect a single dataset as input. These correspond
+one-to-one to the set of Deepchecks data integrity checks [for tabular](https://docs.deepchecks.com/en/stable/checks_gallery/tabular.html#data-integrity)
+and [computer vision](https://docs.deepchecks.com/en/stable/checks_gallery/vision.html#data-integrity)
+data
 
-There are three ways you can use Evidently in your ZenML pipelines that allow
+* **data drift checks** require two datasets as input: target and reference. These correspond
+one-to-one to the set of Deepchecks train-test checks [for tabular data](https://docs.deepchecks.com/stable/checks_gallery/tabular.html#train-test-validation) and [for computer vision](https://docs.deepchecks.com/stable/checks_gallery/vision.html#train-test-validation).
+
+* **model validation checks** require a single dataset and a mandatory model as
+input. This list includes a subset of the model evaluation checks provided by
+Deepchecks [for tabular data](https://docs.deepchecks.com/en/stable/checks_gallery/tabular.html#model-evaluation) and 
+and [for computer vision](https://docs.deepchecks.com/stable/checks_gallery/vision.html#model-evaluation)
+that expect a single dataset as input.
+
+* **model drift checks** require two datasets and a mandatory model as input.
+This list includes a subset of the model evaluation checks provided by
+Deepchecks [for tabular data](https://docs.deepchecks.com/en/stable/checks_gallery/tabular.html#model-evaluation) and 
+and [for computer vision](https://docs.deepchecks.com/stable/checks_gallery/vision.html#model-evaluation)
+that expect two datasets as input: target and reference.
+
+This structure is directly reflected in how Deepchecks can be used with ZenML:
+there are four different Deepchecks standard steps and four different [ZenML enums for Deepchecks checks](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.deepchecks.validation_checks).
+[The Deepchecks Data Validator API](#the-deepchecks-data-validator) is also
+modeled to reflect this same structure.
+
+A notable characteristic of Deepchecks is that you don't need to customize the
+set of Deepchecks tests that are part of a test suite. Both ZenML and Deepchecks
+provide sane defaults that will run all available Deepchecks tests in a given
+category with their default conditions if a custom list of tests and conditions
+are not provided.
+
+There are three ways you can use Deepchecks in your ZenML pipelines that allow
 different levels of flexibility:
 
-* instantiate, configure and insert [the standard `EvidentlyProfileStep`](#using-the-evidently-standard-step)
+* instantiate, configure and insert one or more of [the standard Deepchecks steps](#the-deepchecks-standard-steps)
 shipped with ZenML into your pipelines. This is the easiest way and the
 recommended approach, but can only be customized through the supported step
 configuration parameters.
-* call the data validation methods provided by [the Evidently Data Validator](#using-the-evidently-data-validator-api)
+* call the data validation methods provided by [the Deepchecks Data Validator](#the-deepchecks-data-validator)
 in your custom step implementation. This method allows for more flexibility
 concerning what can happen in the pipeline step, but you are still limited to the
 functionality implemented in the Data Validator.
-* [use the Evidently library directly](#using-the-evidently-library-directly) in
+* [use the Deepchecks library directly](#call-deepchecks-directly) in
 your custom step implementation. This gives you complete freedom in how you are
-using Evidently's features.
+using Deepchecks' features.
 
-### Using the Evidently standard step
+### The Deepchecks standard steps
 
-ZenML wraps the Evidently functionality in the form of a standard
-`EvidentlyProfileStep` step. You select which reports you want to generate in
-your step by passing a list of string identifiers into the `EvidentlyProfileConfig`:
+ZenML wraps the Deepchecks functionality for tabular data in the form of four
+standard steps:
+
+* [`DeepchecksDataIntegrityCheckStep`](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.deepchecks.steps.deepchecks_data_drift.DeepchecksDataDriftCheckStep):
+use it in your pipelines to run data integrity tests on a single dataset
+* [`DeepchecksDataDriftCheckStep`](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.deepchecks.steps.deepchecks_data_integrity.DeepchecksDataIntegrityCheckStep):
+use it in your pipelines to run data drift tests on two datasets as input:
+target and reference.
+* [`DeepchecksModelValidationCheckStep`](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.deepchecks.steps.deepchecks_model_validation.DeepchecksModelValidationCheckStep):
+class DeepchecksModelDriftCheckStep(BaseStep):
+use it in your pipelines to run model performance tests using a single dataset
+and a mandatory model artifact as input
+* [`DeepchecksModelDriftCheckStep`](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.deepchecks.steps.deepchecks_model_drift.DeepchecksModelDriftCheckStep):
+use it in your pipelines to run model comparison/drift tests using a mandatory
+model artifact and two datasets as input: target and reference.
+
+The integration doesn't yet include standard steps for computer vision, but you
+can still write your own custom steps that call [the Deepchecks Data Validator API](#the-deepchecks-data-validator)
+or even [call the Deepchecks library directly](#call-deepchecks-directly).
+
+All four standard steps behave similarly regarding the configuration parameters
+and returned artifacts, with the following differences:
+
+* the type and number of input artifacts are different, as mentioned above
+* each step expects a different enum data type to be used when explicitly
+listing the checks to be performed via the `check_list` configuration attribute.
+See the [`zenml.integrations.deepchecks.validation_checks`](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.deepchecks.validation_checks)
+module for more details about these enums (e.g. the data integrity step expects
+a list of `DeepchecksDataIntegrityCheck` values).
+
+This section will only cover how you can use the data integrity step, with
+a similar usage to be easily inferred for the other three steps. 
+
+To instantiate a data integrity step that will run all available Deepchecks
+data integrity tests with their default configuration, e.g.:
 
 ```python
-from zenml.integrations.evidently.steps import (
-    EvidentlyProfileConfig,
-    evidently_profile_step,
+from zenml.integrations.deepchecks.steps import (
+    DeepchecksDataIntegrityCheckStepConfig,
+    deepchecks_data_integrity_check_step,
 )
 
-drift_detector = evidently_profile_step(
-    step_name="drift_detector",
-    config=EvidentlyProfileConfig(
-        profile_sections=[
-            "datadrift",
-        ],
-        verbose_level=1,
-    ),
+data_validator = deepchecks_data_integrity_check_step(
+    step_name="data_validator",
+    config=DeepchecksDataIntegrityCheckStepConfig(),
 )
 ```
 
-The step can then be inserted into your pipeline where it can take in two
-datasets, e.g.:
+The step can then be inserted into your pipeline where it can take in a
+dataset, e.g.:
 
 ```python
-@pipeline(required_integrations=[EVIDENTLY, SKLEARN])
-def drift_detection_pipeline(
+@pipeline(required_integrations=[DEEPCHECKS, SKLEARN])
+def data_validation_pipeline(
     data_loader,
-    data_splitter,
-    drift_detector,
-    drift_analyzer,
+    data_validator,
 ):
-    """Links all the steps together in a pipeline"""
-    data = data_loader()
-    reference_dataset, comparison_dataset = data_splitter(data)
-    drift_report, _ = drift_detector(
-        reference_dataset=reference_dataset,
-        comparison_dataset=comparison_dataset,
-    )
-    drift_analyzer(drift_report)
+    df_train, df_test = data_loader()
+    data_validator(dataset=df_train)
 
-pipeline = drift_detection_pipeline(
+pipeline = data_validation_pipeline(
     data_loader=data_loader(),
-    data_splitter=data_splitter(),
-    drift_detector=drift_detector,
-    drift_analyzer=analyze_drift(),
+    data_validator=data_validator,
 )
 pipeline.run()
 ```
 
-Possible report options supported by Evidently are:
-
-- "datadrift"
-- "categoricaltargetdrift"
-- "numericaltargetdrift"
-- "dataquality"
-- "classificationmodelperformance"
-- "regressionmodelperformance"
-- "probabilisticmodelperformance"
-
-As can be seen from the [step definition](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.evidently.steps.evidently_profile.EvidentlyProfileStep), the step takes in
-a reference dataset and a comparison dataset required for data drift and
-model comparison reports. It returns an Evidently `Profile` object and a
-`Dashboard` rendered as an HTML string:
+As can be seen from the [step definition](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.deepchecks.steps.deepchecks_data_integrity.DeepchecksDataIntegrityCheckStepConfig),
+the step takes in a dataset and it returns a Deepchecks `SuiteResult` object
+that contains the test results:
 
 ```python
-class EvidentlyProfileStep(BaseDriftDetectionStep):
-    """Step implementation implementing an Evidently Profile Step."""
+class DeepchecksDataIntegrityCheckStep(BaseStep):
+    """Deepchecks data integrity validator step."""
 
     def entrypoint(  # type: ignore[override]
         self,
-        reference_dataset: pd.DataFrame,
-        comparison_dataset: pd.DataFrame,
-        config: EvidentlyProfileConfig,
-    ) -> Output(  # type:ignore[valid-type]
-        profile=Profile, dashboard=str
-    ):
+        dataset: pd.DataFrame,
+        config: DeepchecksDataIntegrityCheckStepConfig,
+    ) -> SuiteResult:
         ...
 ```
 
-If needed, Evidently column mappings can be passed into the step configuration,
-but as `zenml.integrations.evidently.steps.EvidentlyColumnMapping` objects,
-which have the exact same structure as `evidently.pipeline.column_mapping.ColumnMapping`:
+If needed, you can specify a custom list of data integrity Deepchecks tests to
+be executed by supplying a `check_list` argument to the step configuration:
 
 ```python
-from zenml.integrations.evidently.steps import (
-    EvidentlyColumnMapping,
-    EvidentlyProfileConfig,
-    evidently_profile_step,
+from zenml.integrations.deepchecks.validation_checks import DeepchecksDataIntegrityCheck
+from zenml.integrations.deepchecks.steps import (
+    DeepchecksDataIntegrityCheckStepConfig,
+    deepchecks_data_integrity_check_step,
 )
 
-drift_detector = evidently_profile_step(
-    step_name="drift_detector",
-    config=EvidentlyProfileConfig(
-        column_mapping=EvidentlyColumnMapping(
-            target="class", prediction="class_prediction"
-        ),
-        profile_sections=[
-            "categoricaltargetdrift",
-            "numericaltargetdrift",
-            "datadrift",
+data_validator = deepchecks_data_integrity_check_step(
+    step_name="data_validator",
+    config=DeepchecksDataIntegrityCheckStepConfig(
+        check_list=[
+            DeepchecksDataIntegrityCheck.TABULAR_MIXED_DATA_TYPES,
+            DeepchecksDataIntegrityCheck.TABULAR_DATA_DUPLICATES,
+            DeepchecksDataIntegrityCheck.TABULAR_CONFLICTING_LABELS,
         ],
-        verbose_level=1,
     ),
 )
 ```
 
-You should consult [the official Evidently documentation](https://docs.evidentlyai.com/reports)
-for more information on what each report is useful for and what data columns it
-requires as input.
+You should consult [the official Deepchecks documentation](https://docs.deepchecks.com/en/stable/checks_gallery/tabular.html)
+for more information on what each test is useful for.
 
-The `EvidentlyProfileConfig` step configuration also allows for additional
-profile options and [dashboard options](https://docs.evidentlyai.com/user-guide/customization)
-to be passed to the `Profile` and `Dashboard` constructors e.g.:
+For more customization, the `DeepchecksDataIntegrityCheckStepConfig` step
+configuration also allows for additional keyword arguments to be supplied to be
+passed transparently to the Deepchecks library:
 
+* `dataset_kwargs`: Additional keyword arguments to be passed to the Deepchecks
+`tabular.Dataset` or `vision.VisionData` constructor. This is used to pass
+additional information about how the data is structured, e.g.:
+
+    ```python
+    config=DeepchecksDataIntegrityCheckStepConfig(
+        dataset_kwargs=dict(label='class', cat_features=['country', 'state']),
+    ),
+    ```
+
+* `check_kwargs`: Additional keyword arguments to be passed to the Deepchecks
+check object constructors. Arguments are grouped for each check and indexed
+using the full check class name or check enum value as dictionary keys, e.g.:
+
+    ```python
+    config=DeepchecksDataIntegrityCheckStepConfig(
+        check_list=[
+            DeepchecksDataIntegrityCheck.TABULAR_OUTLIER_SAMPLE_DETECTION,
+            DeepchecksDataIntegrityCheck.TABULAR_STRING_LENGTH_OUT_OF_BOUNDS,
+            DeepchecksDataIntegrityCheck.TABULAR_STRING_MISMATCH,
+        ],
+        check_kwargs={
+            DeepchecksDataIntegrityCheck.TABULAR_OUTLIER_SAMPLE_DETECTION: dict(
+                nearest_neighbors_percent=0.01,
+                extent_parameter=3,
+            ),
+            DeepchecksDataIntegrityCheck.TABULAR_STRING_LENGTH_OUT_OF_BOUNDS: dict(
+                num_percentiles=1000,
+                min_unique_values=3,
+            ),
+        },
+    )
+    ```
+
+* `run_kwargs`: Additional keyword arguments to be passed to the Deepchecks
+Suite `run` method.
+
+The `check_kwargs` attribute can also be used to customize [the conditions](https://docs.deepchecks.com/en/stable/user-guide/general/deepchecks_hierarchy.html#condition)
+configured for each Deepchecks test. ZenML attaches a special meaning to all
+check arguments that start with `condition_` and have a dictionary as value.
+This is required because there is no declarative way to specify conditions for
+Deepchecks checks. For example, the following step configuration:
 
 ```python
-from zenml.integrations.evidently.steps import (
-    EvidentlyProfileConfig,
-)
-
-config=EvidentlyProfileConfig(
-    column_mapping=EvidentlyColumnMapping(
-        target="class", prediction="class_prediction"
-    ),
-    profile_sections=[
-        "categoricaltargetdrift",
-        "numericaltargetdrift",
-        "datadrift",
+config=DeepchecksDataIntegrityCheckStepConfig(
+    check_list=[
+        DeepchecksDataIntegrityCheck.TABULAR_OUTLIER_SAMPLE_DETECTION,
+        DeepchecksDataIntegrityCheck.TABULAR_STRING_LENGTH_OUT_OF_BOUNDS,
     ],
-    verbose_level=1,
-    dashboard_options = [
-        (
-            "evidently.options.ColorOptions",{
-                "primary_color": "#5a86ad",
-                "fill_color": "#fff4f2",
-                "zero_line_color": "#016795",
-                "current_data_color": "#c292a1",
-                "reference_data_color": "#017b92",
-            }
+    dataset_kwargs=dict(label='class', cat_features=['country', 'state']),
+    check_kwargs={
+        DeepchecksDataIntegrityCheck.TABULAR_OUTLIER_SAMPLE_DETECTION: dict(
+            nearest_neighbors_percent=0.01,
+            extent_parameter=3,
+            condition_outlier_ratio_less_or_equal=dict(
+                max_outliers_ratio=0.007,
+                outlier_score_threshold= 0.5,
+            ),
+            condition_no_outliers=dict(
+                outlier_score_threshold=0.6,
+            )
         ),
-    ],
+        DeepchecksDataIntegrityCheck.TABULAR_STRING_LENGTH_OUT_OF_BOUNDS: dict(
+            num_percentiles=1000,
+            min_unique_values=3,
+            condition_number_of_outliers_less_or_equal=dict(
+                max_outliers=3,
+            )
+        ),
+    },
 )
 ```
 
-You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.evidently.steps.evidently_profile.EvidentlyProfileConfig) in the API
+is equivalent to running the following Deepchecks tests:
+
+```python
+import deepchecks.tabular.checks as tabular_checks
+from deepchecks.tabular import Suite
+from deepchecks.tabular import Dataset
+
+train_dataset = Dataset(
+    reference_dataset,
+    label='class',
+    cat_features=['country', 'state']
+)
+
+suite = Suite(name="custom")
+check = tabular_checks.OutlierSampleDetection(
+    nearest_neighbors_percent=0.01,
+    extent_parameter=3,
+)
+check.add_condition_outlier_ratio_less_or_equal(
+    max_outliers_ratio=0.007,
+    outlier_score_threshold= 0.5,
+)
+check.add_condition_no_outliers(
+    outlier_score_threshold=0.6,
+)
+suite.add(check)
+check = tabular_checks.StringLengthOutOfBounds(
+    num_percentiles=1000,
+    min_unique_values=3,
+)
+check.add_condition_number_of_outliers_less_or_equal(
+    max_outliers=3,
+)
+suite.run(train_dataset=train_dataset)
+```
+
+You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.deepchecks.steps.deepchecks_data_integrity.DeepchecksDataIntegrityCheckStepConfig) in the API
 docs.
 
 You can also check out our examples pages for working examples that use the
-Evidently standard step:
+Deepchecks standard steps:
 
-- [Drift Detection with Evidently](https://github.com/zenml-io/zenml/tree/main/examples/evidently_drift_detection)
+- [Data and model validation with Deepchecks](https://github.com/zenml-io/zenml/tree/main/examples/deepchecks_data_validation)
 
-### Using the Evidently Data Validator API
+### The Deepchecks Data Validator
 
-The Evidently Data Validator implements the same interface as do all Data
+The Deepchecks Data Validator implements the same interface as do all Data
 Validators, so this method forces you to maintain some level of compatibility
 with the overall Data Validator abstraction, which guarantees an easier
 migration in case you decide to switch to another Data Validator.
 
-All you have to do is call the Evidently Data Validator methods when you need
-to interact with Evidently to run generate data profiles, e.g.:
+All you have to do is call the Deepchecks Data Validator methods when you need
+to interact with Deepchecks to run tests, e.g.:
 
 ```python
 
 import pandas as pd
-from evidently.model_profile import Profile
-from evidently.pipeline.column_mapping import ColumnMapping
-from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
-from zenml.steps import Output, step
+from deepchecks.core.suite import SuiteResult
+from zenml.integrations.deepchecks.data_validators import DeepchecksDataValidator
+from zenml.integrations.deepchecks.validation_checks import DeepchecksDataIntegrityCheck
+from zenml.steps import step
 
 @step
-def data_drift_detection(
-    reference_dataset: pd.DataFrame,
-    comparison_dataset: pd.DataFrame,
-) -> Output(
-    profile=Profile, dashboard=str
-):
-    """Custom data drift detection step with Evidently
+def data_integrity_check(
+    dataset: pd.DataFrame,
+) -> SuiteResult:
+    """Custom data integrity check step with Deepchecks
 
     Args:
-        reference_dataset: a Pandas DataFrame
-        comparison_dataset: a Pandas DataFrame of new data you wish to
-            compare against the reference data
+        dataset: input Pandas DataFrame
 
     Returns:
-        profile: Evidently Profile generated for the data drift
-        dashboard: HTML report extracted from an Evidently Dashboard
-            generated for the data drift
+        Deepchecks test suite execution result
     """
 
     # validation pre-processing (e.g. dataset preparation) can take place here
 
-    data_validator = EvidentlyDataValidator.get_active_data_validator()
-    column_mapping = None
-    if config.column_mapping:
-        column_mapping = config.column_mapping.to_evidently_column_mapping()
-    profile, dashboard = data_validator.data_profiling(
-        dataset=reference_dataset,
-        comparison_dataset=comparison_dataset,
-        profile_list=[
-            "categoricaltargetdrift",
-            "numericaltargetdrift",
-            "datadrift",
+    data_validator = DeepchecksDataValidator.get_active_data_validator()
+    suite = data_validator.data_validation(
+        dataset=dataset,
+        check_list=[
+            DeepchecksDataIntegrityCheck.TABULAR_OUTLIER_SAMPLE_DETECTION,
+            DeepchecksDataIntegrityCheck.TABULAR_STRING_LENGTH_OUT_OF_BOUNDS,
         ],
-        column_mapping=ColumnMapping(
-        target="class", prediction="class_prediction"
-        ),
-        verbose_level=1,
     )
 
     # validation post-processing (e.g. interpret results, take actions) can happen here
 
-    return [profile, dashboard.html()]
+    return suite
 ```
 
-Have a look at [the complete list of methods and parameters available in the `EvidentlyDataValidator` API](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.evidently.data_validators.evidently_data_validator.EvidentlyDataValidator) in the API docs.
+The arguments that the Deepchecks Data Validator methods can take in are the
+same as those used for [the Deepchecks standard steps](#the-deepchecks-standard-steps).
 
-### Using the Evidently library directly
+Have a look at [the complete list of methods and parameters available in the `DeepchecksDataValidator` API](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.deepchecks.data_validators.deepchecks_data_validator.DeepchecksDataValidator) in the API docs.
 
-You can use the Evidently library directly in your custom pipeline steps, and
+### Call Deepchecks directly
+
+You can use the Deepchecks library directly in your custom pipeline steps, and
 only leverage ZenML's capability of serializing, versioning and storing the
-`Profile` objects in its Artifact Store, e.g.:
+`SuiteResult` objects in its Artifact Store, e.g.:
 
-All you have to do is call the Evidently Data Validator methods when you need
-to interact with Evidently to run generate data profiles, e.g.:
 
 ```python
-
 import pandas as pd
-from evidently.model_profile import Profile
-from evidently.model_profile.sections import DataQualityProfileSection
-from evidently.pipeline.column_mapping import ColumnMapping
+import deepchecks.tabular.checks as tabular_checks
+
+from deepchecks.core.suite import SuiteResult
+from deepchecks.tabular import Suite
+from deepchecks.tabular import Dataset
 from zenml.steps import step
 
 @step
-def data_quality_profiler(
+def data_integrity_check(
     dataset: pd.DataFrame,
-) -> Profile:
-    """Custom data quality profiler step with Evidently
+) -> SuiteResult:
+    """Custom data integrity check step with Deepchecks
 
     Args:
         dataset: a Pandas DataFrame
 
     Returns:
-        profile: Evidently Profile generated for the dataset
+        Deepchecks test suite execution result
     """
 
     # validation pre-processing (e.g. dataset preparation) can take place here
 
-    profile = Profile(sections=[DataQualityProfileSection])
-    profile.calculate(
-        reference_data=dataset,
+    train_dataset = Dataset(
+        dataset,
+        label='class',
+        cat_features=['country', 'state']
     )
+
+    suite = Suite(name="custom")
+    check = tabular_checks.OutlierSampleDetection(
+        nearest_neighbors_percent=0.01,
+        extent_parameter=3,
+    )
+    check.add_condition_outlier_ratio_less_or_equal(
+        max_outliers_ratio=0.007,
+        outlier_score_threshold= 0.5,
+    )
+    suite.add(check)
+    check = tabular_checks.StringLengthOutOfBounds(
+        num_percentiles=1000,
+        min_unique_values=3,
+    )
+    check.add_condition_number_of_outliers_less_or_equal(
+        max_outliers=3,
+    )
+    results = suite.run(train_dataset=train_dataset)
 
     # validation post-processing (e.g. interpret results, take actions) can happen here
 
-    return profile
+    return results
+```
+
+### Using the Deepchecks ZenML Visualizer
+
+In the [post-execution workflow](../../developer-guide/steps-pipelines/inspecting-pipeline-runs.md),
+you can load and render the Deepchecks test suite results generated and returned
+by your pipeline steps by means of the ZenML Deepchecks Visualizer, e.g.:
+
+```python
+from zenml.integrations.deepchecks.visualizers import DeepchecksVisualizer
+from zenml.repository import Repository
+
+def visualize_results(pipeline_name: str, step_name: str) -> None:
+    repo = Repository()
+    pipeline = repo.get_pipeline(pipeline_name=pipeline_name)
+    last_run = pipeline.runs[-1]
+    step = last_run.get_step(name=step_name)
+    DeepchecksVisualizer().visualize(step)
+
+if __name__ == "__main__":
+    visualize_results("data_validation_pipeline", "data_integrity_check")
 ```

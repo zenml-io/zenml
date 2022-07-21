@@ -88,19 +88,19 @@ interacting with one or more models.
 There are three ways you can use Evidently in your ZenML pipelines that allow
 different levels of flexibility:
 
-* instantiate, configure and insert [the standard `EvidentlyProfileStep`](#using-the-evidently-standard-step)
+* instantiate, configure and insert [the standard `EvidentlyProfileStep`](#the-evidently-standard-step)
 shipped with ZenML into your pipelines. This is the easiest way and the
 recommended approach, but can only be customized through the supported step
 configuration parameters.
-* call the data validation methods provided by [the Evidently Data Validator](#using-the-evidently-data-validator-api)
+* call the data validation methods provided by [the Evidently Data Validator](#the-evidently-data-validator)
 in your custom step implementation. This method allows for more flexibility
 concerning what can happen in the pipeline step, but you are still limited to the
 functionality implemented in the Data Validator.
-* [use the Evidently library directly](#using-the-evidently-library-directly) in
+* [use the Evidently library directly](#call-evidently-directly) in
 your custom step implementation. This gives you complete freedom in how you are
 using Evidently's features.
 
-### Using the Evidently standard step
+### The Evidently standard step
 
 ZenML wraps the Evidently functionality in the form of a standard
 `EvidentlyProfileStep` step. You select which reports you want to generate in
@@ -255,7 +255,7 @@ Evidently standard step:
 
 - [Drift Detection with Evidently](https://github.com/zenml-io/zenml/tree/main/examples/evidently_drift_detection)
 
-### Using the Evidently Data Validator API
+### The Evidently Data Validator
 
 The Evidently Data Validator implements the same interface as do all Data
 Validators, so this method forces you to maintain some level of compatibility
@@ -263,7 +263,7 @@ with the overall Data Validator abstraction, which guarantees an easier
 migration in case you decide to switch to another Data Validator.
 
 All you have to do is call the Evidently Data Validator methods when you need
-to interact with Evidently to run generate data profiles, e.g.:
+to interact with Evidently to generate data profiles, e.g.:
 
 ```python
 
@@ -296,9 +296,6 @@ def data_drift_detection(
     # validation pre-processing (e.g. dataset preparation) can take place here
 
     data_validator = EvidentlyDataValidator.get_active_data_validator()
-    column_mapping = None
-    if config.column_mapping:
-        column_mapping = config.column_mapping.to_evidently_column_mapping()
     profile, dashboard = data_validator.data_profiling(
         dataset=reference_dataset,
         comparison_dataset=comparison_dataset,
@@ -308,7 +305,8 @@ def data_drift_detection(
             "datadrift",
         ],
         column_mapping=ColumnMapping(
-        target="class", prediction="class_prediction"
+            target="class",
+            prediction="class_prediction"
         ),
         verbose_level=1,
     )
@@ -320,14 +318,11 @@ def data_drift_detection(
 
 Have a look at [the complete list of methods and parameters available in the `EvidentlyDataValidator` API](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.evidently.data_validators.evidently_data_validator.EvidentlyDataValidator) in the API docs.
 
-### Using the Evidently library directly
+### Call Evidently directly
 
 You can use the Evidently library directly in your custom pipeline steps, and
 only leverage ZenML's capability of serializing, versioning and storing the
 `Profile` objects in its Artifact Store, e.g.:
-
-All you have to do is call the Evidently Data Validator methods when you need
-to interact with Evidently to run generate data profiles, e.g.:
 
 ```python
 
@@ -347,7 +342,7 @@ def data_quality_profiler(
         dataset: a Pandas DataFrame
 
     Returns:
-        profile: Evidently Profile generated for the dataset
+        Evidently Profile generated for the dataset
     """
 
     # validation pre-processing (e.g. dataset preparation) can take place here
