@@ -150,6 +150,8 @@ costs for storage of artifacts, containers, metadata or secrets.
 
 # 📜 Learn more
 
+Our docs regarding the VertexAI integration can be found [here](https://docs.zenml.io/mlops-stacks/orchestrators/gcloud-vertexai).
+
 If you want to learn more about orchestrators in general or about how to build
 your own orchestrators in ZenML
-check out our [docs](https://docs.zenml.io/extending-zenml/orchestrators).
+check out our [docs](https://docs.zenml.io/mlops-stacks/orchestrators/custom).

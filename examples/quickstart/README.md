@@ -81,7 +81,7 @@ are the perfect place to get started.
 
 Already have an MLOps stack in mind?
 ZenML most likely has
-[**:link: Integrations**](https://docs.zenml.io/features/integrations) 
+[**:link: Integrations**](https://docs.zenml.io/mlops-stacks/integrations) 
 for whatever tools you plan to use. Check out the
 [**:pray: ZenML Examples**](https://github.com/zenml-io/zenml/tree/main/examples)
 to see how to use a specific tool with ZenML.

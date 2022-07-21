@@ -11,7 +11,7 @@ features). At its core, Evidently's drift detection takes in a reference data
 set and compares it against another comparison dataset. These are both input in
 the form of a `pandas` dataframe, though CSV inputs are also possible. You can receive these results in the form of a standard dictionary object containing all the relevant information, or as a visualization. We support both outputs.
 
-ZenML implements this functionality in the form of several standardized steps.
+ZenML implements this functionality in the form of a standard `EvidentlyProfileStep` step.
 You select which of the profile sections you want to use in your step by passing
 a string into the `EvidentlyProfileConfig`. Possible options supported by
 Evidently are:
@@ -19,6 +19,7 @@ Evidently are:
 - "datadrift"
 - "categoricaltargetdrift"
 - "numericaltargetdrift"
+- "dataquality"
 - "classificationmodelperformance"
 - "regressionmodelperformance"
 - "probabilisticmodelperformance"
@@ -32,22 +33,32 @@ to illustrate how it works.
 
 ```python
 from zenml.integrations.evidently.steps import (
+    EvidentlyColumnMapping,
     EvidentlyProfileConfig,
-    EvidentlyProfileStep,
+    evidently_profile_step,
 )
 
-# instead of defining the step yourself, we have done it for you
-drift_detector = EvidentlyProfileStep(
-    EvidentlyProfileConfig(
-        column_mapping=None,
-        profile_section="datadrift",
-    )
+drift_detector = evidently_profile_step(
+    step_name="drift_detector",
+    config=EvidentlyProfileConfig(
+        column_mapping=EvidentlyColumnMapping(
+            target="class", prediction="class"
+        ),
+        profile_sections=[
+            "dataquality",
+            "categoricaltargetdrift",
+            "numericaltargetdrift",
+            "datadrift",
+        ],
+        verbose_level=1,
+    ),
 )
+
 ```
 
 Here you can see that defining the step is extremely simple using our
-class-based interface, and then you just have to pass in the two dataframes for
-the comparison to take place.
+builtin steps and included utility, and then you just have to pass in the two
+dataframes for the comparison to take place.
 
 We even allow you to use the Evidently visualization tool easily to display data
 drift diagrams in your browser or within a Jupyter notebook:
@@ -59,16 +70,6 @@ If you have a google account, you can get started directly with google colab - [
 
 # 🖥 Run it locally
 
-## ⏩ SuperQuick `evidently` run
-
-If you're really in a hurry and just want to see this example pipeline run
-without wanting to fiddle around with all the individual installation and
-configuration steps, just run the following:
-
-```shell
-zenml example run evidently_drift_detection
-```
-
 ## 👣 Step-by-Step
 ### 📄 Prerequisites 
 In order to run this example, you need to install and initialize ZenML:
@@ -78,7 +79,7 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-zenml integration install evidently sklearn
+zenml integration install evidently sklearn -y
 
 # pull example
 zenml example pull evidently_drift_detection
@@ -88,11 +89,28 @@ cd zenml_examples/evidently_drift_detection
 zenml init
 ```
 
+### 🥞 Set up your stack for Evidently
+
+You need to have an Evidently Data Validator component to your stack to be able to
+use Evidently data profiling in your ZenML pipelines. Creating such a stack is
+easily accomplished:
+
+```shell
+zenml data-validator register evidently -f evidently
+zenml stack register evidently_stack -o default -a default -m default -dv evidently --set
+```
+
 ### ▶️ Run the Code
 Now we're ready. Execute:
 
 ```bash
 python run.py
+```
+
+Alternatively, if you want to run based on the config.yaml you can run with:
+
+```bash
+zenml pipeline run pipelines/drift_detection_pipeline/drift_detection_pipeline.py -c config.yaml
 ```
 
 ### 🧽 Clean up
@@ -101,7 +119,3 @@ In order to clean up, delete the remaining ZenML references.
 ```shell
 rm -rf zenml_examples
 ```
-
-# 📜 Learn more
-
-Our docs regarding the evidently integration can be found [here](https://docs.zenml.io/advanced-guide/perform-drift-detection).

@@ -58,7 +58,30 @@ def tf_trainer(
     
     return model
 ```
+You can also log parameters, metrics and artifacts into nested runs, which 
+will be children of the pipeline run. You only need to add the parameter 
+`nested=True` to the decorator, like so:
 
+```python
+from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
+
+@enable_mlflow(nested=True)
+@step
+def tf_trainer(
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+) -> tf.keras.Model:
+    """Train a neural net from scratch to recognize MNIST digits return our
+    model or the learner"""
+    
+    # compile model
+
+    mlflow.tensorflow.autolog()
+    
+    # train model
+    
+    return model
+```
 If you want to use this decorator with our class-based API, simply decorate your step class as follows:
 
 ```python
@@ -120,6 +143,12 @@ Now we're ready. Execute:
 python run.py
 ```
 
+Alternatively, if you want to run based on the config.yaml you can run with:
+
+```bash
+zenml pipeline run pipelines/training_pipeline/training_pipeline.py -c config.yaml
+```
+
 ### 🔮 See results
 Now we just need to start the mlflow UI to have a look at our two pipeline runs.
 To do this we need to run:
@@ -146,5 +175,8 @@ rm -rf <SPECIFIC_MLRUNS_PATH_GOES_HERE>
 
 # 📜 Learn more
 
+Our docs regarding the MLflow Expirement tracker integration can be found [here](https://docs.zenml.io/mlops-stacks/experiment-trackers/mlflow).
+
+
 If you want to learn more about experiment trackers in general or about how to build your own experiment trackers in ZenML
-check out our [docs](https://docs.zenml.io/extending-zenml/experiment-trackers).
+check out our [docs](https://docs.zenml.io/mlops-stacks/experiment-trackers/custom).

@@ -12,14 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from pipeline import (
-    TrainerConfig,
-    importer_mnist,
-    normalizer,
-    tf_evaluator,
-    tf_trainer,
-    wandb_example_pipeline,
-)
+from pipelines.training_pipeline.training_pipeline import wandb_example_pipeline
+from steps.evaluator.evaluator_step import tf_evaluator
+from steps.importer.importer_step import importer_mnist
+from steps.normalizer.normalizer_step import normalizer
+from steps.trainer.trainer_step import TrainerConfig, tf_trainer
 
 if __name__ == "__main__":
 

@@ -1,0 +1,23 @@
+name: lgbm_pipeline
+steps:
+  data_loader:
+    source:
+      file: steps/data_loader/data_loader_step
+      name: data_loader
+  trainer:
+    source:
+      file: steps/trainer/trainer_step
+      name: trainer
+      parameters:
+        boosting_type: gbdt
+        objective: regression
+        num_leaves: 31
+        learning_rate: 0.05
+        feature_fraction: 0.9
+        bagging_fraction: 0.8
+        bagging_freq: 5
+        verbose: 0
+  predictor:
+    source:
+      file: steps/predictor/predictor_step
+      name: predictor

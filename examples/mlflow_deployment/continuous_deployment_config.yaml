@@ -1,0 +1,28 @@
+name: continuous_deployment_pipeline
+steps:
+  importer:
+    source:
+      file: steps/importer/importer_step
+      name: importer_mnist
+  normalizer:
+    source:
+      file: steps/normalizer/normalizer_step
+      name: normalizer
+  trainer:
+    source:
+      file: steps/tf_trainer/tf_trainer_step
+      name: tf_trainer
+  evaluator:
+    source:
+      file: steps/tf_evaluator/tf_evaluator_step
+      name: tf_evaluator
+  deployment_trigger:
+    source:
+      file: steps/deployment_trigger/deployment_trigger_step
+      name: deployment_trigger
+    parameters:
+      min_accuracy: 0.8
+  model_deployer:
+    source:
+      file: steps/prediction_service_loader/prediction_service_loader_step
+      name: model_deployer

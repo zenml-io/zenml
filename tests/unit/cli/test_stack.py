@@ -64,7 +64,9 @@ def test_updating_active_stack_succeeds(clean_repo) -> None:
     clean_repo.register_stack_component(new_artifact_store)
 
     runner = CliRunner()
-    result = runner.invoke(update_stack, ["default", "-a", "arias_store"])
+    result = runner.invoke(
+        update_stack, ["default", "--decouple_stores", "-a", "arias_store"]
+    )
     assert result.exit_code == 0
     assert clean_repo.active_stack.artifact_store == new_artifact_store
 
@@ -282,3 +284,62 @@ def test_stack_export_delete_import(clean_repo) -> None:
     result = runner.invoke(import_stack, export_import_args)
     assert result.exit_code == 0
     assert clean_repo.get_stack("arias_new_stack") is not None
+
+
+def test_stack_update_and_register_couples_stores(clean_repo):
+    """Tests if the artifact- and metadata store coupling works as intended."""
+    # First, check if default association exists.
+    default_stack = clean_repo.active_stack
+
+    existing_association = clean_repo.zen_store.get_store_associations_for_artifact_and_metadata_store(
+        artifact_store_uuid=default_stack.artifact_store.uuid,
+        metadata_store_uuid=default_stack.metadata_store.uuid,
+    )
+
+    assert len(existing_association) == 1
+
+    # Second, create another stack with the same association successfully.
+    new_orchestrator_name = "new_orchestrator"
+    new_orchestrator = LocalOrchestrator(name=new_orchestrator_name)
+    clean_repo.register_stack_component(new_orchestrator)
+
+    stack = Stack(
+        name="new_stack_with_existing_association",
+        orchestrator=new_orchestrator,
+        metadata_store=default_stack.metadata_store,
+        artifact_store=default_stack.artifact_store,
+    )
+    clean_repo.register_stack(stack)
+    assert len(existing_association) == 1
+
+    # Third, create a stack with the wrong association which should fail.
+    new_artifact_store_name = "new_artifact_store"
+    new_artifact_store = LocalArtifactStore(
+        name=new_artifact_store_name, path="path/"
+    )
+    clean_repo.register_stack_component(new_artifact_store)
+
+    from zenml.exceptions import StackValidationError
+
+    with pytest.raises(StackValidationError):
+        stack = Stack(
+            name="new_stack_with_wrong_association",
+            orchestrator=default_stack.orchestrator,
+            metadata_store=default_stack.metadata_store,
+            artifact_store=new_artifact_store,
+        )
+        clean_repo.register_stack(stack)
+
+    # Fourth, successfully create the faulty stack by resetting the coupling.
+    stack = Stack(
+        name="new_stack_with_wrong_association",
+        orchestrator=default_stack.orchestrator,
+        metadata_store=default_stack.metadata_store,
+        artifact_store=new_artifact_store,
+    )
+    clean_repo.register_stack(stack, decouple_stores=True)
+
+    # Finally, due to the fourth step resetting the coupling, default stack
+    # should fail.
+    with pytest.raises(StackValidationError):
+        default_stack.validate()

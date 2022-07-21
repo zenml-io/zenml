@@ -1,0 +1,26 @@
+name: training_pipeline
+steps:
+  training_data_loader:
+    source:
+      file: steps/data_loaders
+      name: training_data_loader
+  skew_comparison:
+    source:
+      file: steps/skew_comparisons
+      name: skew_comparison
+  trainer:
+    source:
+      file: steps/trainers
+      name: svc_trainer_mlflow
+  evaluator:
+    source:
+      file: steps/evaluators
+      name: evaluator
+  deployment_trigger:
+    source:
+      file: steps/deployment_triggers
+      name: deployment_trigger
+  model_deployer:
+    source:
+      file: steps/model_deployers
+      name: model_deployer
