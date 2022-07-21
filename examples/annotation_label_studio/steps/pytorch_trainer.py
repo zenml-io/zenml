@@ -1,7 +1,5 @@
 import os
 import tempfile
-import time
-from copy import deepcopy
 from typing import Dict, List
 
 import numpy as np
@@ -12,7 +10,7 @@ from PIL import Image
 from torchvision import models, transforms
 
 from zenml.io import fileio
-from zenml.steps import step
+from zenml.steps import BaseStepConfig, step
 from zenml.steps.step_context import StepContext
 from zenml.utils import io_utils
 
@@ -140,7 +138,7 @@ def _is_new_data_available(
         return False
 
     # Otherwise, if there was no previous run, the data is for sure new.
-    idx = _find_last_successful_run(context=context)    
+    idx = _find_last_successful_run(context=context)
     if idx is None:
         return True
 
@@ -151,7 +149,7 @@ def _is_new_data_available(
     return len(last_image_urls) != len(image_urls)
 
 
-def load_pretrained_mobilenetv3(num_classes : int = 2):
+def load_pretrained_mobilenetv3(num_classes: int = 2):
     """Load a pretrained mobilenetv3 with fresh classification head."""
     model = models.mobilenet_v3_small(pretrained=True)
     for param in model.parameters():
@@ -167,10 +165,20 @@ def load_mobilenetv3_transforms():
     return transforms.Compose([transforms.ToTensor(), weights.transforms()])
 
 
+class PytorchModelTrainerConfig(BaseStepConfig):
+    batch_size = 1
+    num_epochs = 1
+    device = "cpu"
+    shuffle = True
+    num_workers = 1
+    seed = 42
+
+
 @step(enable_cache=False)
 def pytorch_model_trainer(
     image_urls: List[str],
     labels: List[Dict[str, str]],
+    config: PytorchModelTrainerConfig,
     context: StepContext,
 ) -> nn.Module:
 
@@ -184,14 +192,6 @@ def pytorch_model_trainer(
         return model
 
     # Otherwise finetune the model on the current data
-    # TODO: below to step config
-    batch_size = 1
-    num_epochs = 1
-    device = "cpu"
-    shuffle = True
-    num_workers = 1
-    seed = 42
-
     # Write images and labels to torch dataset
     dataset = CustomDataset(
         image_urls=image_urls,
@@ -205,7 +205,7 @@ def pytorch_model_trainer(
     train_dataset, val_dataset = torch.utils.data.random_split(
         dataset=dataset,
         lengths=[train_size, val_size],
-        generator=torch.Generator().manual_seed(seed)
+        generator=torch.Generator().manual_seed(config.seed),
     )
     dataset_dict = {
         "train": train_dataset,
@@ -216,9 +216,9 @@ def pytorch_model_trainer(
     dataloaders_dict = {
         dataset_type: torch.utils.data.DataLoader(
             dataset,
-            batch_size=batch_size,
-            shuffle=shuffle,
-            num_workers=num_workers,
+            batch_size=config.batch_size,
+            shuffle=config.shuffle,
+            num_workers=config.num_workers,
         )
         for dataset_type, dataset in dataset_dict
     }
@@ -235,7 +235,7 @@ def pytorch_model_trainer(
         dataloaders_dict,
         criterion,
         optimizer_ft,
-        num_epochs=num_epochs,
-        device=device,
+        num_epochs=config.num_epochs,
+        device=config.device,
     )
     return model

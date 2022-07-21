@@ -7,6 +7,7 @@ from torchvision import models, transforms
 from zenml.repository import Repository
 from zenml.services import BaseService
 from zenml.steps import Output, step
+from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_context import StepContext
 
 PIPELINE_NAME = "training_pipeline"
@@ -41,10 +42,19 @@ def predictor(
     return [prediction.tolist()]
 
 
+class PredictionServiceLoaderConfig(BaseStepConfig):
+    training_pipeline_name = "training_pipeline"
+    training_pipeline_step_name = "model_trainer"  # TODO: "model_deployer"?
+
+
 @step
-def prediction_service_loader(context: StepContext) -> torch.nn.Module:
-    train_run = context.metadata_store.get_pipeline(PIPELINE_NAME).runs[-1]
-    return train_run.get_step(PIPELINE_STEP_NAME).output.read()
+def prediction_service_loader(
+    config: PredictionServiceLoaderConfig, context: StepContext
+) -> torch.nn.Module:
+    train_run = context.metadata_store.get_pipeline(
+        config.training_pipeline_name
+    ).runs[-1]
+    return train_run.get_step(config.training_pipeline_step_name).output.read()
 
 
 @step

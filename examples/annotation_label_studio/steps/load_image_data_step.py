@@ -20,19 +20,23 @@ import numpy as np
 from PIL import Image
 
 from zenml.steps import Output, step
+from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_context import StepContext
 
-LOCAL_IMAGE_FILES = os.path.join(
-    os.getcwd(), "data", "initial_training"
-)  # TODO: to step config
+
+class LoadImageDataConfig(BaseStepConfig):
+    base_path = os.path.join(os.getcwd(), "data")
+    dir_name = "batch_1"
 
 
 @step(enable_cache=False)
 def load_image_data(
+    config: LoadImageDataConfig,
     context: StepContext,
 ) -> Output(images=Dict, images_np=np.ndarray, image_names=List, uri=str):
     """Gets images from a cloud artifact store directory."""
-    image_files = glob.glob(f"{LOCAL_IMAGE_FILES}/*.jpeg")
+    image_dir_path = os.path.join(config.base_path, config.dir_name)
+    image_files = glob.glob(f"{image_dir_path}/*.jpeg")
 
     images = {
         os.path.basename(image_file): Image.open(image_file)
