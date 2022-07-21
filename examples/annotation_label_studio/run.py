@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import click
+from materializers.pillow_image_materializer import PillowImageMaterializer
 from pipelines import inference_pipeline, training_pipeline
 from steps.convert_annotations_step import convert_annotations
 from steps.deployment_triggers import deployment_trigger
@@ -23,7 +24,7 @@ from steps.model_deployers import model_deployer
 from steps.prediction_steps import prediction_service_loader, predictor
 from steps.pytorch_trainer import pytorch_model_trainer
 from steps.sync_new_data_to_label_studio import azure_data_sync
-from materializers.pillow_image_materializer import PillowImageMaterializer
+
 
 @click.command()
 @click.option(

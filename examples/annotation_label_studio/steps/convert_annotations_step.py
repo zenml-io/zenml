@@ -22,12 +22,12 @@ logger = get_logger(__name__)
 @step
 def convert_annotations(
     label_studio_annotations: List[Dict[Any, Any]]
-) -> Output(image_urls=List, image_labels=List,):
+) -> Output(image_urls=List, image_labels=List):
     """Converts the annotation from Label Studio to a dictionary."""
     image_urls, labels = [], []
     for annotation in label_studio_annotations:
         image_url = annotation["data"]["image"]
         label = annotation["annotations"][0]["result"][0]["value"]["choices"][0]
         image_urls.append(image_url)
-        labels[image_url] = label
+        labels.append(label)
     return image_urls, labels

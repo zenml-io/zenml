@@ -1,15 +1,23 @@
 import os
+import tempfile
 import time
 from copy import deepcopy
 from typing import Dict, List
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torchvision import datasets, models, transforms
+from PIL import Image
+from torchvision import models, transforms
 
+from zenml.io import fileio
 from zenml.steps import step
 from zenml.steps.step_context import StepContext
+from zenml.utils import io_utils
+
+PIPELINE_NAME = "training_pipeline"  # TODO: cleanup
+PIPELINE_STEP_NAME = "model_trainer"  # TODO: cleanup
 
 
 def train_model(
@@ -98,6 +106,38 @@ def train_model(
     return model, val_acc_history
 
 
+class CustomDataset:
+    def __init__(self, image_urls, labels, transforms) -> None:
+        assert len(image_urls) == len(labels)
+        self.transforms = transforms
+
+        # Download all images from the artifact store as np.ndarray
+        self.images = []
+        temp_dir = tempfile.TemporaryDirectory()
+        for i, image_url in enumerate(image_urls):
+            parts = image_url.split("/")
+            az_url = "az://" + "/".join(parts[3:])
+            path = os.path.join(temp_dir.name, f"{i}.jpeg")
+            io_utils.copy(az_url, path)
+            with fileio.open(path, "rb") as f:
+                image = np.asarray(Image.open(f))
+                self.images.append(image)
+        fileio.rmtree(temp_dir.name)
+
+        # Define class-label mapping and map labels
+
+        self.class_label_mapping = {"aria": 0, "not_aria": 1}
+        self.labels = [self.class_label_mapping[label] for label in labels]
+
+    def __getitem__(self, idx):
+        image = self.transforms(self.images[idx])
+        label = self.labels[idx]
+        return (image, label)
+
+    def __len__(self):
+        return len(self.images)
+
+
 @step(enable_cache=False)
 def pytorch_model_trainer(
     image_urls: List[str],
@@ -117,46 +157,42 @@ def pytorch_model_trainer(
         return model
 
     # Otherwise load the model from the previous run
-    else:
-        pass  # TODO
+    train_run = context.metadata_store.get_pipeline(PIPELINE_NAME).runs[
+        -1
+    ]  # TODO
+    model = train_run.get_step(PIPELINE_STEP_NAME).output.read()
 
-    # If there is no new data, just return the model
-    if not image_urls or not labels:
-        return model
+    # If there is no new data, just return the model - TODO
 
     # Otherwise train the model on the new data
-    data_dir = ""  # TODO
     batch_size = 1  # TODO: to step config
     num_epochs = 5  # TODO: to step config
     input_size = 224  # TODO: to step config
     device = "cpu"  # TODO: to step config
-
-    model = model.to(device)
+    model = model.to(device)  # TODO: need to pass back to CPU?
 
     # Define Transforms
     weights = models.MobileNet_V3_Small_Weights.DEFAULT
-    data_transforms = {
-        "train": transforms.Compose(
-            [
-                transforms.RandomResizedCrop(input_size),
-                transforms.RandomHorizontalFlip(),
-                weights.transforms(),
-            ]
-        ),
-        "val": transforms.Compose(
-            [
-                transforms.Resize(input_size),
-                transforms.CenterCrop(input_size),
-                weights.transforms(),
-            ]
-        ),
-    }
+    preprocessing = transforms.Compose(
+        [
+            transforms.ToTensor(),
+            weights.transforms(),
+        ]
+    )
+
+    # Write images and labels to torch datasets
+    dataset = CustomDataset(
+        image_urls=image_urls, labels=labels, transforms=preprocessing
+    )
+
+    breakpoint()
 
     # Create training and validation datasets
     image_datasets = {
-        x: datasets.ImageFolder(os.path.join(data_dir, x), data_transforms[x])
-        for x in ["train", "val"]
+        "train": dataset,
+        "val": dataset,
     }
+
     # Create training and validation dataloaders
     dataloaders_dict = {
         x: torch.utils.data.DataLoader(
@@ -169,7 +205,7 @@ def pytorch_model_trainer(
     }
 
     # Define optimizer
-    optimizer_ft = optim.Adam(params=model.classifier.parameters)
+    optimizer_ft = optim.Adam(params=model.classifier.parameters())
 
     # Define loss
     criterion = nn.CrossEntropyLoss()
