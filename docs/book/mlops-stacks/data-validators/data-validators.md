@@ -56,7 +56,7 @@ ZenML pipelines:
 |----------------|--------|-------------|---------------------|------------|-------------|-------|
 | [Deepchecks](./deepchecks.md) | `deepchecks` | `deepchecks` | data quality<br>data drift<br>model drift<br>model performance | tabular: `pandas.DataFrame`<br>CV: `torch.utils.data.dataloader.DataLoader`| tabular: `sklearn.base.ClassifierMixin`<br>CV: `torch.nn.Module` | Add Deepchecks data and model validation tests to your pipelines |
 | [Evidently](./evidently.md) | `evidently` | `evidently` | data quality<br>data drift<br>model drift<br>model performance | tabular: `pandas.DataFrame` | N/A | Use Evidently to generate a variety of data quality and data/model drift reports and visualizations |
-| [Great Expectations](./great_expectations.md) | `great_expectations` | `great_expectations` | data profiling<br>data quality | tabular: `pandas.DataFrame` | N/A | Perform data testing, documentation and profiling with Great Expectations |
+| [Great Expectations](./great-expectations.md) | `great_expectations` | `great_expectations` | data profiling<br>data quality | tabular: `pandas.DataFrame` | N/A | Perform data testing, documentation and profiling with Great Expectations |
 | [Whylogs/WhyLabs](./whylogs.md) | `whylogs` | `whylogs` | data drift | tabular: `pandas.DataFrame` | N/A | Generate data profiles with whylogs and upload them to WhyLabs |
 
 If you would like to see the available flavors of Experiment Tracker, you can 
