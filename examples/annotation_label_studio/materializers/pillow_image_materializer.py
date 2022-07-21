@@ -36,7 +36,9 @@ class PillowImageMaterializer(BaseMaterializer):
         images_dict = {}
         for filename in files:
             with fileio.open(filename, "rb") as f:
-                images_dict[filename] = Image.open(f)
+                image = Image.open(f)
+                image.load()
+                images_dict[filename] = image
 
         fileio.rmtree(temp_dir.name)
         return images_dict

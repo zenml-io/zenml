@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List
 
 import numpy as np
 import torch
@@ -61,12 +61,11 @@ def prediction_service_loader(
 @step
 def predictor(
     model: torch.nn.Module,
-    images: np.ndarray,
-    image_names: List[str],
+    images: Dict,
 ) -> Output(predictions=List):
     preprocess = load_mobilenetv3_transforms()
     preds = []
-    for file_name, image in zip(image_names, images):
+    for file_name, image in images.items():
         image = preprocess(image)
         image = image.unsqueeze(0)
         pred = model(image)

@@ -14,9 +14,8 @@
 
 import glob
 import os
-from typing import Dict, List
+from typing import Dict
 
-import numpy as np
 from PIL import Image
 
 from zenml.steps import Output, step
@@ -33,25 +32,14 @@ class LoadImageDataConfig(BaseStepConfig):
 def load_image_data(
     config: LoadImageDataConfig,
     context: StepContext,
-) -> Output(images=Dict, images_np=np.ndarray, image_names=List, uri=str):
+) -> Output(images=Dict, uri=str):
     """Gets images from a cloud artifact store directory."""
     image_dir_path = os.path.join(config.base_path, config.dir_name)
     image_files = glob.glob(f"{image_dir_path}/*.jpeg")
-
-    images = {
-        os.path.basename(image_file): Image.open(image_file)
-        for image_file in image_files
-    }
-
-    images_np = []
+    images = {}
     for image_file in image_files:
-        img = Image.open(image_file)
-        img = img.resize((224, 224), Image.ANTIALIAS)
-        img = np.asarray(img)
-        images_np.append(img)
-    images_np = np.stack(images_np, axis=0)
-
-    image_names = [os.path.basename(image_file) for image_file in image_files]
+        image = Image.open(image_file)
+        image.load()
+        images[os.path.basename(image_file)] = image
     uri = context.get_output_artifact_uri("images")
-
-    return images, images_np, image_names, uri
+    return images, uri

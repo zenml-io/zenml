@@ -45,14 +45,9 @@ def inference_pipeline(
     data_syncer,
 ):
     dataset_name = get_or_create_dataset()
-    (
-        new_images,
-        new_images_np,
-        new_images_names,
-        new_images_uri,
-    ) = inference_data_loader()
+    new_images, new_images_uri = inference_data_loader()
     model_deployment_service = prediction_service_loader()
-    preds = predictor(model_deployment_service, new_images_np, new_images_names)
+    preds = predictor(model_deployment_service, new_images)
     data_syncer(
         uri=new_images_uri, dataset_name=dataset_name, predictions=preds
     )
