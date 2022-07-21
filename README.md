@@ -79,7 +79,7 @@ your project, you get the following benefits:
 | ------------- | - |
 | 🧘‍♀️ **[ZenML 101]** | New to ZenML? Here's everything you need to know! |
 | ⚛️ **[Core Concepts]** | Some key terms and concepts we use. |
-| 🗃 **[Functional API Guide]** | Build production ML pipelines with simple functions. |
+| 🗃 **[API Guide]** | Build production ML pipelines using class-based or functional API. |
 | 🚀 **[New in v0.11.0]** | New features, bug fixes. |
 | 🗳 **[Vote for Features]** | Pick what we work on next! |
 | 📓 **[Docs]** | Full documentation for creating your own ZenML pipelines. |
@@ -96,7 +96,7 @@ your project, you get the following benefits:
 
 [ZenML 101]: https://docs.zenml.io/
 [Core Concepts]: https://docs.zenml.io/core-concepts
-[Functional API Guide]: https://docs.zenml.io/v/docs/guides/functional-api
+[API Guide]: https://docs.zenml.io/v/docs/developer-guide/steps-and-pipelines/functional-vs-class-based-api
 [New in v0.11.0]: https://github.com/zenml-io/zenml/releases
 [Vote for Features]: https://zenml.io/discussion
 [Docs]: https://docs.zenml.io/
@@ -327,7 +327,7 @@ pip install zenml[server]
 zenml server up
 ```
 
-Read more about collaboration in ZenML [here](https://docs.zenml.io/collaborate/collaborate).
+Read more about collaboration in ZenML [here](https://docs.zenml.io/collaborate/collaborate-with-zenml).
 
 # 🍰 ZenBytes
 
