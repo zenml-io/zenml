@@ -28,15 +28,9 @@ def train_model(
     num_epochs=25,
     device="cpu",
 ):
-    since = time.time()
-
-    val_acc_history = []
-
-    best_model_wts = deepcopy(model.state_dict())
-    best_acc = 0.0
-
+    """Simplified version of https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html"""
     for epoch in range(num_epochs):
-        print("Epoch {}/{}".format(epoch, num_epochs - 1))
+        print(f"Epoch {epoch}/{num_epochs - 1}")
         print("-" * 10)
 
         # Each epoch has a training and validation phase
@@ -57,14 +51,13 @@ def train_model(
                 # zero the parameter gradients
                 optimizer.zero_grad()
 
-                # forward
-                # track history if only in train
+                # forward; track history only if in train
                 with torch.set_grad_enabled(phase == "train"):
                     outputs = model(inputs)
                     loss = criterion(outputs, labels)
                     _, preds = torch.max(outputs, 1)
 
-                    # backward + optimize only if in training phase
+                    # backward; optimize only if in training phase
                     if phase == "train":
                         loss.backward()
                         optimizer.step()
@@ -77,33 +70,9 @@ def train_model(
             epoch_acc = running_corrects.double() / len(
                 dataloaders[phase].dataset
             )
+            print(f"{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}")
 
-            print(
-                "{} Loss: {:.4f} Acc: {:.4f}".format(
-                    phase, epoch_loss, epoch_acc
-                )
-            )
-
-            # deep copy the model
-            if phase == "val" and epoch_acc > best_acc:
-                best_acc = epoch_acc
-                best_model_wts = deepcopy(model.state_dict())
-            if phase == "val":
-                val_acc_history.append(epoch_acc)
-
-        print()
-
-    time_elapsed = time.time() - since
-    print(
-        "Training complete in {:.0f}m {:.0f}s".format(
-            time_elapsed // 60, time_elapsed % 60
-        )
-    )
-    print("Best val Acc: {:4f}".format(best_acc))
-
-    # load best model weights
-    model.load_state_dict(best_model_wts)
-    return model, val_acc_history
+    return model
 
 
 class CustomDataset:
@@ -221,6 +190,7 @@ def pytorch_model_trainer(
     device = "cpu"
     shuffle = True
     num_workers = 1
+    seed = 42
 
     # Write images and labels to torch dataset
     dataset = CustomDataset(
@@ -229,15 +199,28 @@ def pytorch_model_trainer(
         transforms=load_mobilenetv3_transforms(),
     )
 
+    # Split dataset into train and val
+    train_size = int(0.8 * len(dataset))
+    val_size = len(dataset) - train_size
+    train_dataset, val_dataset = torch.utils.data.random_split(
+        dataset=dataset,
+        lengths=[train_size, val_size],
+        generator=torch.Generator().manual_seed(seed)
+    )
+    dataset_dict = {
+        "train": train_dataset,
+        "val": val_dataset,
+    }
+
     # Create training and validation dataloaders
     dataloaders_dict = {
-        x: torch.utils.data.DataLoader(
+        dataset_type: torch.utils.data.DataLoader(
             dataset,
             batch_size=batch_size,
             shuffle=shuffle,
             num_workers=num_workers,
         )
-        for x in ["train", "val"]
+        for dataset_type, dataset in dataset_dict
     }
 
     # Define optimizer
@@ -247,7 +230,7 @@ def pytorch_model_trainer(
     criterion = nn.CrossEntropyLoss()
 
     # Train and evaluate
-    model, hist = train_model(
+    model = train_model(
         model,
         dataloaders_dict,
         criterion,
