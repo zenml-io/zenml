@@ -17,6 +17,7 @@ import base64
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
+from uuid import UUID
 
 import yaml
 
@@ -32,6 +33,7 @@ from zenml.zen_stores.models import (
     Role,
     RoleAssignment,
     StackWrapper,
+    StoreAssociation,
     Team,
     User,
 )
@@ -631,6 +633,88 @@ class BaseZenStore(ABC):
             KeyError: If no team or project with the given names exists.
         """
 
+    @property
+    @abstractmethod
+    def store_associations(self) -> List[StoreAssociation]:
+        """Fetches all artifact/metadata store associations.
+
+        Returns:
+            A list of all artifact/metadata store associations.
+        """
+
+    @abstractmethod
+    def create_store_association(
+        self,
+        artifact_store_uuid: UUID,
+        metadata_store_uuid: UUID,
+    ) -> StoreAssociation:
+        """Creates an association between an artifact- and a metadata store.
+
+        Args:
+            artifact_store_uuid: The UUID of the artifact store.
+            metadata_store_uuid: The UUID of the metadata store.
+
+        Returns:
+            The newly created store association.
+        """
+
+    @abstractmethod
+    def get_store_associations_for_artifact_store(
+        self,
+        artifact_store_uuid: UUID,
+    ) -> List[StoreAssociation]:
+        """Fetches all associations for a given artifact store.
+
+        Args:
+            artifact_store_uuid: The UUID of the selected artifact store.
+
+        Returns:
+            A list of store associations for the given artifact store.
+        """
+
+    @abstractmethod
+    def get_store_associations_for_metadata_store(
+        self,
+        metadata_store_uuid: UUID,
+    ) -> List[StoreAssociation]:
+        """Fetches all associations for a given metadata store.
+
+        Args:
+            metadata_store_uuid: The UUID of the selected metadata store.
+
+        Returns:
+            A list of store associations for the given metadata store.
+        """
+
+    @abstractmethod
+    def get_store_associations_for_artifact_and_metadata_store(
+        self,
+        artifact_store_uuid: UUID,
+        metadata_store_uuid: UUID,
+    ) -> List[StoreAssociation]:
+        """Fetches all associations for a given artifact/metadata store pair.
+
+        Args:
+            artifact_store_uuid: The UUID of the selected artifact store.
+            metadata_store_uuid: The UUID of the selected metadata store.
+
+        Returns:
+            A list of store associations for the given combination.
+        """
+
+    @abstractmethod
+    def delete_store_association_for_artifact_and_metadata_store(
+        self,
+        artifact_store_uuid: UUID,
+        metadata_store_uuid: UUID,
+    ) -> None:
+        """Deletes associations between a given artifact/metadata store pair.
+
+        Args:
+            artifact_store_uuid: The UUID of the selected artifact store.
+            metadata_store_uuid: The UUID of the selected metadata store.
+        """
+
     # Pipelines and pipeline runs
 
     @abstractmethod
@@ -956,6 +1040,13 @@ class BaseZenStore(ABC):
         a local artifact store and a local SQLite metadata store.
         """
         stack = Stack.default_local_stack()
+        # For the default stack, we have to set up the association manually.
+        # As we can not use the repo/store yet to check the previously defined
+        # associations.
+        self.create_store_association(
+            artifact_store_uuid=stack.artifact_store.uuid,
+            metadata_store_uuid=stack.metadata_store.uuid,
+        )
         sw = StackWrapper.from_stack(stack)
         self._register_stack(sw)
         metadata = {c.type.value: c.flavor for c in sw.components}
@@ -1064,18 +1155,6 @@ class BaseZenStore(ABC):
             metadata=analytics_metadata,
         )
         return self._update_stack_component(name, component_type, component)
-
-    def deregister_stack(self, name: str) -> None:
-        """Delete a stack from storage.
-
-        Args:
-            name: The name of the stack to be deleted.
-
-        Returns:
-            None.
-        """
-        # No tracking events, here for consistency
-        return self._deregister_stack(name)
 
     def create_user(self, user_name: str) -> User:
         """Creates a new user.
@@ -1283,3 +1362,15 @@ class BaseZenStore(ABC):
         metadata["store_type"] = self.type.value
         track_event(AnalyticsEvent.UPDATED_STACK, metadata=metadata)
         return self._update_stack(name, stack)
+
+    def deregister_stack(self, name: str) -> None:
+        """Delete a stack from storage.
+
+        Args:
+            name: The name of the stack to be deleted.
+
+        Returns:
+            None.
+        """
+        # No tracking events, here for consistency
+        return self._deregister_stack(name)

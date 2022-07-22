@@ -151,7 +151,7 @@ rm -rf zenml_examples
 # 📜 Learn more
 
 If you want to learn more about secret managers in general or about how to build your own secret manager in ZenML
-check out our [docs](https://docs.zenml.io/extending-zenml/secrets-managers).
+check out our [docs](https://docs.zenml.io/mlops-stacks/secrets-managers).
 
 We also have extensive CLI docs for the
 [secret manager](https://apidocs.zenml.io/latest/cli/#zenml.cli--setting-up-a-secrets-manager)

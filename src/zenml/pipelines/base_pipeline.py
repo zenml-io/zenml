@@ -318,6 +318,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     {
                         requirement.strip()
                         for requirement in f.read().split("\n")
+                        if requirement
                     }
                 )
             if self.requirements_file:
@@ -359,6 +360,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     {
                         requirement.strip()
                         for requirement in f.read().split("\n")
+                        if requirement
                     }
                 )
 
@@ -507,8 +509,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         Args:
             config_file: Path to a yaml file which contains configuration
                 options for running this pipeline. See
-                https://docs.zenml.io/features/pipeline-configuration#setting
-                -step-parameters-using-a-config-file
+                https://docs.zenml.io/developer-guide/steps-and-pipelines/runtime-configuration#configuring-with-yaml-config-files
                 for details regarding the specification of this file.
             overwrite_step_parameters: If set to `True`, values from the
                 configuration file will overwrite configuration parameters

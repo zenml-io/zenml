@@ -16,7 +16,7 @@ setup_stack () {
 }
 
 pre_run () {
-  zenml integration install deepchecks sklearn -y
+  zenml integration install deepchecks sklearn
 }
 
 pre_run_forced () {

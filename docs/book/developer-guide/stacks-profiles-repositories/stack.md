@@ -183,6 +183,14 @@ arguments to the `zenml stack register` command, including a list of which
 option to use for which stack component.
 {% endhint %}
 
+{% hint style="warning" %}
+When you register a stack, the corresponding artifact- and metadata store 
+gets coupled, which means that these instances can not be use in different 
+pairings. This is an intended behavior to avoid mismatches between the two 
+stores. In order get more information about this interaction, please refer to 
+[our CLI docs](https://apidocs.zenml.io/latest/cli/).. 
+{% endhint %}
+
 ### Activating a Stack
 
 Finally, to start using the stack you just registered, set it as active:
