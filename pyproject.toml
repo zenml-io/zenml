@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.10.0"
+version = "0.11.0"
 packages = [
     { include = "zenml", from = "src" },
 ]
@@ -239,6 +239,7 @@ module = [
     "wandb.*",
     "lightgbm.*",
     "scipy.*",
+    "deepchecks.*",
     "boto3.*",
     "botocore.*",
     "jupyter_dash.*",

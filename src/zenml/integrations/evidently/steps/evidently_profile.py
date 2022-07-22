@@ -13,114 +13,115 @@
 #  permissions and limitations under the License.
 """Implementation of the Evidently Profile Step."""
 
-from typing import List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, cast
 
 import pandas as pd
-from evidently.dashboard import Dashboard  # type: ignore
-from evidently.dashboard.tabs import (  # type: ignore
-    CatTargetDriftTab,
-    ClassificationPerformanceTab,
-    DataDriftTab,
-    NumTargetDriftTab,
-    ProbClassificationPerformanceTab,
-    RegressionPerformanceTab,
+from evidently.model_profile import Profile  # type: ignore[import]
+from evidently.pipeline.column_mapping import (  # type: ignore[import]
+    ColumnMapping,
 )
-from evidently.dashboard.tabs.base_tab import Tab  # type: ignore
-from evidently.model_profile import Profile  # type: ignore
-from evidently.model_profile.sections import (  # type: ignore
-    CatTargetDriftProfileSection,
-    ClassificationPerformanceProfileSection,
-    DataDriftProfileSection,
-    NumTargetDriftProfileSection,
-    ProbClassificationPerformanceProfileSection,
-    RegressionPerformanceProfileSection,
-)
-from evidently.model_profile.sections.base_profile_section import (  # type: ignore
-    ProfileSection,
-)
-from evidently.pipeline.column_mapping import ColumnMapping  # type: ignore
+from pydantic import BaseModel, Field
+from typing_extensions import Literal
 
-from zenml.artifacts import DataAnalysisArtifact
+from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
 from zenml.steps import Output
+from zenml.steps.base_step import BaseStep
 from zenml.steps.step_interfaces.base_drift_detection_step import (
     BaseDriftDetectionConfig,
     BaseDriftDetectionStep,
 )
+from zenml.steps.utils import clone_step
 
-profile_mapper = {
-    "datadrift": DataDriftProfileSection,
-    "categoricaltargetdrift": CatTargetDriftProfileSection,
-    "numericaltargetdrift": NumTargetDriftProfileSection,
-    "classificationmodelperformance": ClassificationPerformanceProfileSection,
-    "regressionmodelperformance": RegressionPerformanceProfileSection,
-    "probabilisticmodelperformance": ProbClassificationPerformanceProfileSection,
-}
 
-dashboard_mapper = {
-    "datadrift": DataDriftTab,
-    "categoricaltargetdrift": CatTargetDriftTab,
-    "numericaltargetdrift": NumTargetDriftTab,
-    "classificationmodelperformance": ClassificationPerformanceTab,
-    "regressionmodelperformance": RegressionPerformanceTab,
-    "probabilisticmodelperformance": ProbClassificationPerformanceTab,
-}
+class EvidentlyColumnMapping(BaseModel):
+    """Column mapping configuration for Evidently.
+
+    This class is a 1-to-1 serializable analogue of Evidently's
+    ColumnMapping data type that can be used as a step configuration field
+    (see https://docs.evidentlyai.com/features/dashboards/column_mapping).
+
+    Attributes:
+        target: target column
+        prediction: target column
+        datetime: datetime column
+        id: id column
+        numerical_features: numerical features
+        categorical_features: categorical features
+        datetime_features: datetime features
+        target_names: target column names
+        task: model task (regression or classification)
+    """
+
+    target: Optional[str] = None
+    prediction: Optional[Union[str, Sequence[str]]] = None
+    datetime: Optional[str] = None
+    id: Optional[str] = None
+    numerical_features: Optional[List[str]] = None
+    categorical_features: Optional[List[str]] = None
+    datetime_features: Optional[List[str]] = None
+    target_names: Optional[List[str]] = None
+    task: Optional[Literal["classification", "regression"]] = None
+
+    def to_evidently_column_mapping(self) -> ColumnMapping:
+        """Convert this Pydantic object to an Evidently ColumnMapping object.
+
+        Returns:
+            An Evidently column mapping converted from this Pydantic object.
+        """
+        column_mapping = ColumnMapping()
+
+        # preserve the Evidently defaults where possible
+        column_mapping.target = self.target or column_mapping.target
+        column_mapping.prediction = self.prediction or column_mapping.prediction
+        column_mapping.datetime = self.datetime or column_mapping.datetime
+        column_mapping.id = self.id or column_mapping.id
+        column_mapping.numerical_features = (
+            self.numerical_features or column_mapping.numerical_features
+        )
+        column_mapping.datetime_features = (
+            self.datetime_features or column_mapping.datetime_features
+        )
+        column_mapping.target_names = (
+            self.target_names or column_mapping.target_names
+        )
+        column_mapping.task = self.task or column_mapping.task
+
+        return column_mapping
 
 
 class EvidentlyProfileConfig(BaseDriftDetectionConfig):
     """Config class for Evidently profile steps.
 
-    column_mapping: properties of the DataFrame's columns used
-    profile_section: a string that identifies the profile section to be used.
-        The following are valid options supported by Evidently:
+    column_mapping: properties of the DataFrame columns used
+    profile_sections: a list identifying the Evidently profile sections to be
+        used. The following are valid options supported by Evidently:
         - "datadrift"
         - "categoricaltargetdrift"
         - "numericaltargetdrift"
         - "classificationmodelperformance"
         - "regressionmodelperformance"
         - "probabilisticmodelperformance"
+    verbose_level: Verbosity level for the Evidently dashboards. Use
+        0 for a brief dashboard, 1 for a detailed dashboard.
+    profile_options: Optional list of options to pass to the
+        profile constructor. See `EvidentlyDataValidator._unpack_options`.
+    dashboard_options: Optional list of options to pass to the
+        dashboard constructor. See `EvidentlyDataValidator._unpack_options`.
     """
 
-    def get_profile_sections_and_tabs(
-        self,
-    ) -> Tuple[List[ProfileSection], List[Tab]]:
-        """Get the profile sections and tabs to be used in the dashboard.
-
-        Returns:
-            A tuple of two lists of profile sections and tabs.
-
-        Raises:
-            ValueError: if the profile_section is not supported.
-        """
-        try:
-            return (
-                [
-                    profile_mapper[profile]()
-                    for profile in self.profile_sections
-                ],
-                [
-                    dashboard_mapper[profile]()
-                    for profile in self.profile_sections
-                ],
-            )
-        except KeyError:
-            nl = "\n"
-            raise ValueError(
-                f"Invalid profile section: {self.profile_sections} \n\n"
-                f"Valid and supported options are: {nl}- "
-                f'{f"{nl}- ".join(list(profile_mapper.keys()))}'
-            )
-
-    column_mapping: Optional[ColumnMapping]
-    profile_sections: Sequence[str]
+    column_mapping: Optional[EvidentlyColumnMapping] = None
+    profile_sections: Optional[Sequence[str]] = None
+    verbose_level: int = 1
+    profile_options: Sequence[Tuple[str, Dict[str, Any]]] = Field(
+        default_factory=list
+    )
+    dashboard_options: Sequence[Tuple[str, Dict[str, Any]]] = Field(
+        default_factory=list
+    )
 
 
 class EvidentlyProfileStep(BaseDriftDetectionStep):
     """Step implementation implementing an Evidently Profile Step."""
-
-    OUTPUT_SPEC = {
-        "profile": DataAnalysisArtifact,
-        "dashboard": DataAnalysisArtifact,
-    }
 
     def entrypoint(  # type: ignore[override]
         self,
@@ -128,7 +129,7 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
         comparison_dataset: pd.DataFrame,
         config: EvidentlyProfileConfig,
     ) -> Output(  # type:ignore[valid-type]
-        profile=dict, dashboard=str
+        profile=Profile, dashboard=str
     ):
         """Main entrypoint for the Evidently categorical target drift detection step.
 
@@ -139,22 +140,44 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
             config: the configuration for the step
 
         Returns:
-            profile: dictionary report extracted from an Evidently Profile
-              generated for the data drift
+            profile: Evidently Profile generated for the data drift
             dashboard: HTML report extracted from an Evidently Dashboard
               generated for the data drift
         """
-        sections, tabs = config.get_profile_sections_and_tabs()
-        data_drift_dashboard = Dashboard(tabs=tabs)
-        data_drift_dashboard.calculate(
-            reference_dataset,
-            comparison_dataset,
-            column_mapping=config.column_mapping or None,
+        data_validator = cast(
+            EvidentlyDataValidator,
+            EvidentlyDataValidator.get_active_data_validator(),
         )
-        data_drift_profile = Profile(sections=sections)
-        data_drift_profile.calculate(
-            reference_dataset,
-            comparison_dataset,
-            column_mapping=config.column_mapping or None,
+        column_mapping = None
+        if config.column_mapping:
+            column_mapping = config.column_mapping.to_evidently_column_mapping()
+        profile, dashboard = data_validator.data_profiling(
+            dataset=reference_dataset,
+            comparison_dataset=comparison_dataset,
+            profile_list=config.profile_sections,
+            column_mapping=column_mapping,
+            verbose_level=config.verbose_level,
+            profile_options=config.profile_options,
+            dashboard_options=config.dashboard_options,
         )
-        return [data_drift_profile.object(), data_drift_dashboard.html()]
+        return [profile, dashboard.html()]
+
+
+def evidently_profile_step(
+    step_name: str,
+    config: EvidentlyProfileConfig,
+) -> BaseStep:
+    """Shortcut function to create a new instance of the EvidentlyProfileConfig step.
+
+    The returned EvidentlyProfileStep can be used in a pipeline to
+    run model drift analyses on two input pd.DataFrame datasets and return the
+    results as an Evidently profile object and a rendered dashboard object.
+
+    Args:
+        step_name: The name of the step
+        config: The configuration for the step
+
+    Returns:
+        a EvidentlyProfileStep step instance
+    """
+    return clone_step(EvidentlyProfileStep, step_name)(config=config)

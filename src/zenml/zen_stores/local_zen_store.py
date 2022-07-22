@@ -43,6 +43,7 @@ from zenml.zen_stores.models import (
     Project,
     Role,
     RoleAssignment,
+    StoreAssociation,
     Team,
     User,
     ZenStoreModel,
@@ -918,6 +919,118 @@ class LocalZenStore(BaseZenStore):
         return self._get_role_assignments(
             team_id=team.id, project_id=project_id
         )
+
+    @property
+    def store_associations(self) -> List[StoreAssociation]:
+        """Fetches all artifact/metadata store associations.
+
+        Returns:
+            A list of all artifact/metadata store associations.
+        """
+        return self.__store.store_associations
+
+    def create_store_association(
+        self,
+        artifact_store_uuid: UUID,
+        metadata_store_uuid: UUID,
+    ) -> StoreAssociation:
+        """Creates an association between an artifact- and a metadata store.
+
+        Args:
+            artifact_store_uuid: The UUID of the artifact store.
+            metadata_store_uuid: The UUID of the metadata store.
+
+        Returns:
+            The newly created store association.
+        """
+        association = StoreAssociation(
+            metadata_store_uuid=metadata_store_uuid,
+            artifact_store_uuid=artifact_store_uuid,
+        )
+        self.__store.store_associations.append(association)
+        self.__store.write_config()
+        return association
+
+    def get_store_associations_for_artifact_store(
+        self,
+        artifact_store_uuid: UUID,
+    ) -> List[StoreAssociation]:
+        """Fetches all associations for a given artifact store.
+
+        Args:
+            artifact_store_uuid: The UUID of the selected artifact store.
+
+        Returns:
+            A list of store associations for the given artifact store.
+        """
+        return [
+            association
+            for association in self.__store.store_associations
+            if association.artifact_store_uuid == artifact_store_uuid
+        ]
+
+    def get_store_associations_for_metadata_store(
+        self,
+        metadata_store_uuid: UUID,
+    ) -> List[StoreAssociation]:
+        """Fetches all associations for a given metadata store.
+
+        Args:
+            metadata_store_uuid: The UUID of the selected metadata store.
+
+        Returns:
+            A list of store associations for the given metadata store.
+        """
+        return [
+            association
+            for association in self.__store.store_associations
+            if association.metadata_store_uuid == metadata_store_uuid
+        ]
+
+    def get_store_associations_for_artifact_and_metadata_store(
+        self,
+        artifact_store_uuid: UUID,
+        metadata_store_uuid: UUID,
+    ) -> List[StoreAssociation]:
+        """Fetches all associations for a given artifact/metadata store pair.
+
+        Args:
+            artifact_store_uuid: The UUID of the selected artifact store.
+            metadata_store_uuid: The UUID of the selected metadata store.
+
+        Returns:
+            A list of store associations for the given combination.
+        """
+        return [
+            association
+            for association in self.__store.store_associations
+            if association.artifact_store_uuid == artifact_store_uuid
+            and association.metadata_store_uuid == metadata_store_uuid
+        ]
+
+    def delete_store_association_for_artifact_and_metadata_store(
+        self,
+        artifact_store_uuid: UUID,
+        metadata_store_uuid: UUID,
+    ) -> None:
+        """Deletes associations between a given artifact/metadata store pair.
+
+        Args:
+            artifact_store_uuid: The UUID of the selected artifact store.
+            metadata_store_uuid: The UUID of the selected metadata store.
+        """
+        existing_associations = (
+            self.get_store_associations_for_artifact_and_metadata_store(
+                artifact_store_uuid=artifact_store_uuid,
+                metadata_store_uuid=metadata_store_uuid,
+            )
+        )
+
+        for association in existing_associations:
+            self.__store.store_associations.remove(association)
+            logger.info(f"Deleted store association {association}.")
+
+        self.__store.write_config()
 
     # Pipelines and pipeline runs
 

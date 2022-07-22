@@ -11,6 +11,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from typing import Optional
+
 from pipelines import data_profiling_pipeline
 from steps import (
     data_loader,
@@ -18,7 +20,6 @@ from steps import (
     test_data_profiler,
     train_data_profiler,
 )
-from whylogs import DatasetProfile  # type: ignore
 
 from zenml.integrations.whylogs.visualizers import WhylogsVisualizer
 from zenml.logger import get_logger
@@ -27,11 +28,30 @@ from zenml.repository import Repository
 logger = get_logger(__name__)
 
 
-def visualize_statistics(step_name: str):
+def visualize_statistics(
+    step_name: str, reference_step_name: Optional[str] = None
+) -> None:
+    """Helper function to visualize whylogs statistics from step artifacts.
+
+    Args:
+        step_name: step that generated and returned a whylogs profile
+        reference_step_name: an optional second step that generated a whylogs
+            profile to use for data drift visualization where two whylogs
+            profiles are required.
+    """
     repo = Repository()
     pipe = repo.get_pipeline(pipeline_name="data_profiling_pipeline")
-    whylogs_outputs = pipe.runs[-1].get_step(name=step_name)
-    WhylogsVisualizer().visualize(whylogs_outputs)
+    whylogs_step = pipe.runs[-1].get_step(name=step_name)
+    whylogs_reference_step = None
+    if reference_step_name:
+        whylogs_reference_step = pipe.runs[-1].get_step(
+            name=reference_step_name
+        )
+
+    WhylogsVisualizer().visualize(
+        whylogs_step,
+        reference_step_view=whylogs_reference_step,
+    )
 
 
 if __name__ == "__main__":
@@ -46,5 +66,4 @@ if __name__ == "__main__":
     p.run()
 
     visualize_statistics("data_loader")
-    visualize_statistics("train_data_profiler")
-    visualize_statistics("test_data_profiler")
+    visualize_statistics("train_data_profiler", "test_data_profiler")
