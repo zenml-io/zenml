@@ -1,5 +1,5 @@
 ---
-description: Enhance and maintain the quality of your data and the performance of your models with data profiling and validation
+description: How to enhance and maintain the quality of your data and the performance of your models with data profiling and validation
 ---
 
 Without good data, even the best machine learning models will yield questionable

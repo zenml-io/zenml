@@ -44,10 +44,9 @@ ZenML includes a range of Data Validator implementations provided by specific
 integration modules. You can use them as examples of how you can extend the [base Data Validator class](https://apidocs.zenml.io/latest/api_docs/data_validators/#zenml.data_validators.base_data_validator.BaseDataValidator)
 to implement your own custom Data Validator:
 
-
-|                                                                                                                                                                           | Flavor         | Integration  |
-|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------|--------------|
-| [DeepchecksDataValidator](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.deepchecks.data_validators.deepchecks_data_validator.DeepchecksDataValidator)                          | `deepchecks`         | `deepchecks`   |
-| [EvidentlyDataValidator](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.evidently.data_validators.evidently_data_validator.EvidentlyDataValidator)                             | `evidently`          | `evidently`   |
-| [GreatExpectationsDataValidator](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.great_expectations.data_validators.ge_data_validator.GreatExpectationsDataValidator) | `great_expectations` | `great_expectations` |
-| [WhylogsDataValidator](hhttps://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.whylogs.data_validators.whylogs_data_validator.WhylogsDataValidator) | `whylogs`       | `whylogs`     |
+|  Data Validator  | Implementation  |
+|------------------|-----------------|
+| [Deepchecks](./deepchecks.md) | [DeepchecksDataValidator](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/deepchecks/data_validators/deepchecks_data_validator.py) |
+| [Evidently](./evidently.md) | [EvidentlyDataValidator](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/evidently/data_validators/evidently_data_validator.py) |
+| [Great Expectations](./great_expectations.md) | [GreatExpectationsDataValidator](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/great_expectations/data_validators/ge_data_validator.py) |
+| [Whylogs/WhyLabs](./whylogs.md) | [WhylogsDataValidator](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/whylogs/data_validators/whylogs_data_validator.py) |

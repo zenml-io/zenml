@@ -1,9 +1,9 @@
 ---
-description: Keep your data quality in check and guard against data and model drift with Evidently profiling.
+description: How to keep your data quality in check and guard against data and model drift with Evidently profiling
 ---
 
-The Evidently Data Validator is a [Data Validator](./data-validators.md) flavor
-provided with the Evidently ZenML integration that uses [Evidently](https://evidentlyai.com/)
+The Evidently [Data Validator](./data-validators.md) flavor
+provided with the ZenML integration uses [Evidently](https://evidentlyai.com/)
 to perform data quality, data drift, model drift and model performance analyses
 and generate reports. The reports can be used to implement automated corrective
 actions in your pipelines or to render interactive representations for further

@@ -1,9 +1,9 @@
 ---
-description: Test the data and models used in your pipelines with Deepchecks test suites
+description: How to test the data and models used in your pipelines with Deepchecks test suites
 ---
 
-The Deepchecks Data Validator is a [Data Validator](./data-validators.md) flavor
-provided with the Deepchecks ZenML integration that uses [Deepchecks](https://deepchecks.com/)
+The Deepchecks [Data Validator](./data-validators.md) flavor
+provided with the ZenML integration uses [Deepchecks](https://deepchecks.com/)
 to run data integrity, data drift, model drift and model performance tests
 on the datasets and models circulated in your ZenML pipelines. The test results
 can be used to implement automated corrective actions in your pipelines or to

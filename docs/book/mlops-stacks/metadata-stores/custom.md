@@ -43,10 +43,9 @@ other provided by specific integration modules. You can use them as examples
 of how you can extend the [base Metadata Store class](https://apidocs.zenml.io/latest/api_docs/metadata_stores/#zenml.metadata_stores.base_metadata_store.BaseMetadataStore)
 to implement your own custom Metadata Store:
 
-
-|                                                                                                                                                                           | Flavor         | Integration  |
-|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------|--------------|
-| [SQLiteMetadataStore](https://apidocs.zenml.io/latest/api_docs/metadata_stores/#zenml.metadata_stores.sqlite_metadata_store.SQLiteMetadataStore)                          | sqlite         | `built-in`   |
-| [MySQLMetadataStore](https://apidocs.zenml.io/latest/api_docs/metadata_stores/#zenml.metadata_stores.mysql_metadata_store.MySQLMetadataStore)                             | mysql          | `built-in`   |
-| [KubeflowMetadataStore](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.kubeflow.metadata_stores.kubeflow_metadata_store.KubeflowMetadataStore) | kubeflow       | kubeflow     |
-| [KubernetesMetadataStore](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.kubernetes.metadata_stores.kubernetes_metadata_store.KubernetesMetadataStore) | kubernetes       | kubernetes     |
+|  Metadata Store  | Implementation  |
+|------------------|-----------------|
+| [SQLite](./sqlite.md) | [SQLiteMetadataStore](https://github.com/zenml-io/zenml/blob/main/src/zenml/metadata_stores/sqlite_metadata_store.py) |
+| [MySQL](./mysql.md) | [MySQLMetadataStore](https://github.com/zenml-io/zenml/blob/main/src/zenml/metadata_stores/mysql_metadata_store.py) |
+| [Kubeflow](./kubeflow.md) | [KubeflowMetadataStore](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/kubeflow/metadata_stores/kubeflow_metadata_store.py) |
+| [Kubernetes](./kubernetes.md) | [KubernetesMetadataStore](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/kubernetes/metadata_stores/kubernetes_metadata_store.py) |
