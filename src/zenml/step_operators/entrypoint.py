@@ -160,7 +160,7 @@ def main(
     # activate integrations and import the user main module to register all
     # materializers and stack components
     integration_registry.activate_integrations()
-    with prepend_python_path("/app"):
+    with prepend_python_path(["/app"]):
         importlib.import_module(main_module)
 
         input_artifact_type_mapping = yaml_utils.read_json(
