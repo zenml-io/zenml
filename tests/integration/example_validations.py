@@ -13,9 +13,8 @@
 #  permissions and limitations under the License.
 from typing import Dict
 
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import ExecutionStatus
 from zenml.repository import Repository
-from zenml.stack import Stack
 
 
 def generate_basic_validation_function(

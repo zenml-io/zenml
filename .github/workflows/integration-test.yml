@@ -64,19 +64,13 @@ jobs:
         if: runner.os=='Windows'
         run: choco install graphviz
 
-      - name: Check Python Env ahead of tests
+      - name: Install Prerequisites
         run: |
           source $VENV
-          zenml integration list
-          pip list
+          zenml integration install s3 kubeflow \
+            evidently facets huggingface mlflow tensorflow sklearn xgboost lightgbm slack neural_prophet -f
 
       - name: Test
         run: |
           source $VENV
           bash scripts/test-coverage-xml.sh integration
-
-      - name: Verify Python Env unaffected
-        run: |
-          source $VENV
-          zenml integration list
-
