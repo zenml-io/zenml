@@ -262,7 +262,8 @@ def test_run_example(
 
         time.sleep(1)
         # Validate the result
-        # example_configuration.assert_successful(repo)
+        example_configuration.assert_successful(repo)
+
     except Exception as e:
         pass
     finally:
