@@ -144,6 +144,6 @@
 ## Reference
 
 * [Glossary](reference/glossary.md)
-* [CLI Cheat Sheet](reference/cheet-sheet.md)
+* [CLI Cheat Sheet](reference/cheat-sheet.md)
 * [CLI Reference](https://apidocs.zenml.io/latest/cli/)
 * [API Reference](https://apidocs.zenml.io/latest/)
