@@ -22,7 +22,7 @@ the ZenML whylogs integration currently only works with tabular data in
 `pandas.DataFrame` format.
 
 You should use the whylogs/WhyLabs Data Validator when you need the following
-data validation features that are possible with whylogs ane WhyLabs:
+data validation features that are possible with whylogs and WhyLabs:
 
 * Data Quality: validate data quality in model inputs or in a data pipeline
 * Data Drift: detect data drift in model input features
