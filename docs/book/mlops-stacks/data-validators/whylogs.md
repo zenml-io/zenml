@@ -1,378 +1,334 @@
 ---
-description: Keep your data quality in check and guard against data and model drift with Evidently profiling.
+description: Collect and visualize statistics to track changes in your pipelines data with whylogs/WhyLabs profiling.
 ---
 
-The Evidently Data Validator is a [Data Validator](./data-validators.md) flavor
-provided with the Evidently ZenML integration that uses [Evidently](https://evidentlyai.com/)
-to perform data quality, data drift, model drift and model performance analyses
-and generate reports. The reports can be used to implement automated corrective
-actions in your pipelines or to render interactive representations for further
-visual interpretation, evaluation and documentation.
+The whylogs/WhyLabs Data Validator is a [Data Validator](./data-validators.md)
+flavor provided with the whylogs ZenML integration that uses [whylogs](https://whylabs.ai/whylogs)
+and [WhyLabs](https://whylabs.ai) to generate and track data profiles, highly
+accurate descriptive representations of your data. The profiles can be used to
+implement automated corrective actions in your pipelines, or to render
+interactive representations for further visual interpretation, evaluation and
+documentation.
 
 ## When would you want to use it?
 
-[Evidently](https://evidentlyai.com/) is an open-source library that you can use
-to monitor and debug machine learning models by analyzing the data that they
-use through a powerful set of data profiling and visualization features.
-Evidently currently works with tabular data in `pandas.DataFrame` or CSV file
-formats and can handle both regression and classification tasks.
+[Whylogs](https://whylabs.ai/whylogs) is an open-source library that analyzes
+your data and creates statistical summaries called whylogs profiles. Whylogs
+profiles can be processed in your pipelines and visualized locally or uploaded
+to the [WhyLabs platform](https://whylabs.ai/), where more in depth analyses
+can be carried out.
+Even though [whylogs also supports other data types](https://github.com/whylabs/whylogs#data-types),
+the ZenML whylogs integration currently only works with tabular data in
+`pandas.DataFrame` format.
 
-You should use the Evidently Data Validator when you need the following data
-and/or model validation features that are possible with Evidently:
+You should use the whylogs/WhyLabs Data Validator when you need the following
+data validation features that are possible with whylogs ane WhyLabs:
 
-* [Data Quality](https://docs.evidentlyai.com/reports/data-quality):
-provides detailed feature statistics and a feature behavior overview for a
-single dataset. It can also compare any two datasets. E.g. you can use it to
-compare train and test data, reference and current data, or two subgroups of one
-dataset.
-
-* [Data Drift](https://docs.evidentlyai.com/reports/data-drift):
-helps detects and explore feature distribution changes in the input data by
-comparing two datasets with identical schema.
-
-* [Numerical Target Drift](https://docs.evidentlyai.com/reports/num-target-drift)
-and [Categorical Target Drift](https://docs.evidentlyai.com/reports/categorical-target-drift):
-helps detect and explore changes in the target function and/or model predictions
-by comparing two datasets where the target and/or prediction columns are
-available.
-
-* [Regression Performance](https://docs.evidentlyai.com/reports/reg-performance),
-[Classification Performance](https://docs.evidentlyai.com/reports/classification-performance),
-or [Probabilistic Classification Performance](https://docs.evidentlyai.com/reports/probabilistic-classification-performance):
-evaluate the performance of a model by analyzing a single dataset where both the
-target and prediction columns are available. It can also compare it to the past
-performance of the same model, or the performance of an alternative model by
-providing a second dataset.
+* Data Quality: validate data quality in model inputs or in a data pipeline
+* Data Drift: detect data drift in model input features
+* Model Drift: Detect training-serving skew, concept drift, and model
+performance degradation
 
 You should consider one of the other [Data Validator flavors](./data-validators.md#data-validator-flavors)
 if you need a different set of data validation features.
 
 ## How do you deploy it?
 
-The Evidently Data Validator flavor is included in the Evidently ZenML
+The whylogs Data Validator flavor is included in the whylogs ZenML
 integration, you need to install it on your local machine to be able to register
-an Evidently Data Validator and add it to your stack:
+a whylogs Data Validator and add it to your stack:
 
 ```shell
-zenml integration install evidently -y
+zenml integration install whylogs -y
 ```
 
-The Data Validator stack component does not have any configuration parameters.
-Adding it to a stack is as simple as running e.g.:
+If you don't need to connect to the WhyLabs platform to upload and store the
+generated whylogs data profiles, the Data Validator stack component does not
+require any configuration parameters. Adding it to a stack is as simple as
+running e.g.:
 
 ```shell
-# Register the Evidently data validator
-zenml data-validator register evidently_data_validator --flavor=evidently
+# Register the whylogs data validator
+zenml data-validator register whylogs_data_validator --flavor=whylogs
 
 # Register and set a stack with the new data validator
-zenml stack register custom_stack -dv evidently_data_validator ... --set
+zenml stack register custom_stack -dv whylogs_data_validator ... --set
 ```
+
+Adding WhyLabs logging capabilities to your whylogs Data Validator is just
+slightly more complicated, as you also require a [Secrets Manager](../secrets-managers/secrets-managers.md)
+in your stack to store the sensitive WhyLabs authentication information in a
+secure location. The WhyLabs credentials are configured as a ZenML secret that
+is referenced in the Data Validator configuration, e.g.:
+
+```shell
+# Register the whylogs data validator
+zenml data-validator register whylogs_data_validator --flavor=whylogs \
+    --authentication_secret=whylabs_secret
+
+# Register a secrets manager
+zenml secrets-manager register secrets_manager \
+    --flavor=<FLAVOR_OF_YOUR_CHOICE> ...
+
+# Register and set a stack with the new data validator and secrets manager
+zenml stack register custom_stack -dv whylogs_data_validator -x secrets_manager ... --set
+
+# Create the secret referenced in the data validator
+zenml secret register whylabs_secret -s whylogs \
+    --whylabs_default_org_id=<YOUR-WHYLOGS-ORGANIZATION-ID> \
+    --whylabs_api_key=<YOUR-WHYLOGS-API-KEY>
+```
+
+You'll have to remember to also add the `enable_whylogs` decorator to your
+custom pipeline steps if you want to upload the whylogs data profiles that
+they return as artifacts to the WhyLabs platform. This is enabled by default
+for the standard whylog step.
 
 ## How do you use it?
 
-Evidently's profiling functions take in a `pandas.DataFrame` dataset or a pair
-of datasets and generate results in the form of a `Profile` object containing
-all the relevant information, or as a `Dashboard` visualization.
+Whylogs's profiling functions take in a `pandas.DataFrame` dataset generate
+a `DatasetProfileView` object containing all the relevant information extracted
+from the dataset.
 
-One of Evidently's notable characteristics is that it only requires datasets as
-input. Even when running model performance comparison analyses, no model
-needs to be present. However, that does mean that the input data needs to
-include additional `target` and `prediction` columns for some profiling reports
-and you have to include additional information about the dataset columns in the
-form of [column mappings](https://docs.evidentlyai.com/features/dashboards/column_mapping).
-Depending on how your data is structured, you may also need to include additional
-steps in your pipeline before the data validation step to insert the additional
-`target` and `prediction` columns into your data. This may also require
-interacting with one or more models.
-
-There are three ways you can use Evidently in your ZenML pipelines that allow
+There are three ways you can use whylogs in your ZenML pipelines that allow
 different levels of flexibility:
 
-* instantiate, configure and insert [the standard `EvidentlyProfileStep`](#the-evidently-standard-step)
+* instantiate, configure and insert [the standard `WhylogsProfilerStep`](#the-whylogs-standard-step)
 shipped with ZenML into your pipelines. This is the easiest way and the
 recommended approach, but can only be customized through the supported step
 configuration parameters.
-* call the data validation methods provided by [the Evidently Data Validator](#the-evidently-data-validator)
+* call the data validation methods provided by [the whylogs Data Validator](#the-whylogs-data-validator)
 in your custom step implementation. This method allows for more flexibility
 concerning what can happen in the pipeline step, but you are still limited to the
 functionality implemented in the Data Validator.
-* [use the Evidently library directly](#call-evidently-directly) in
+* [use the whylogs library directly](#call-whylogs-directly) in
 your custom step implementation. This gives you complete freedom in how you are
-using Evidently's features.
+using whylogs's features.
 
-### The Evidently standard step
+Outside of the pipeline workflow, you can use [the ZenML whylogs visualizer](#the-whylogs-zenml-visualizer)
+to display the whylogs dashboards generated by your pipelines. 
 
-ZenML wraps the Evidently functionality in the form of a standard
-`EvidentlyProfileStep` step. You select which reports you want to generate in
-your step by passing a list of string identifiers into the `EvidentlyProfileConfig`:
+### The whylogs standard step
+
+ZenML wraps the whylogs/WhyLabs functionality in the form of a standard
+`WhylogsProfilerStep` step. The only field in the step config is a
+`dataset_timestamp` attribute which is only relevant when you upload the
+profiles to WhyLabs that uses this field to group and merge together profiles
+belonging to the same dataset. The helper function `whylogs_profiler_step`
+used to create an instance of this standard step takes in an optional
+`dataset_id` parameter that is also used only in the context of WhyLabs
+upload to identify the model in the context of which the profile is uploaded, e.g.:
 
 ```python
-from zenml.integrations.evidently.steps import (
-    EvidentlyProfileConfig,
-    evidently_profile_step,
+from zenml.integrations.whylogs.steps import (
+    WhylogsProfilerConfig,
+    whylogs_profiler_step,
 )
 
-drift_detector = evidently_profile_step(
-    step_name="drift_detector",
-    config=EvidentlyProfileConfig(
-        profile_sections=[
-            "datadrift",
-        ],
-        verbose_level=1,
-    ),
+train_data_profiler = whylogs_profiler_step(
+    step_name="train_data_profiler",
+    config=WhylogsProfilerConfig(),
+    dataset_id="model-2",
+)
+test_data_profiler = whylogs_profiler_step(
+    step_name="test_data_profiler",
+    config=WhylogsProfilerConfig(),
+    dataset_id="model-3",
 )
 ```
 
-The step can then be inserted into your pipeline where it can take in two
-datasets, e.g.:
+The step can then be inserted into your pipeline where it can take in a `pandas.DataFrame`
+dataset, e.g.:
 
 ```python
-@pipeline(required_integrations=[EVIDENTLY, SKLEARN])
-def drift_detection_pipeline(
+from zenml.integrations.constants import SKLEARN, WHYLOGS
+from zenml.pipelines import pipeline
+
+@pipeline(required_integrations=[SKLEARN, WHYLOGS])
+def data_profiling_pipeline(
     data_loader,
     data_splitter,
-    drift_detector,
-    drift_analyzer,
+    train_data_profiler,
+    test_data_profiler,
 ):
-    """Links all the steps together in a pipeline"""
-    data = data_loader()
-    reference_dataset, comparison_dataset = data_splitter(data)
-    drift_report, _ = drift_detector(
-        reference_dataset=reference_dataset,
-        comparison_dataset=comparison_dataset,
-    )
-    drift_analyzer(drift_report)
+    data, _ = data_loader()
+    train, test = data_splitter(data)
+    train_data_profiler(train)
+    test_data_profiler(test)
 
-pipeline = drift_detection_pipeline(
+p = data_profiling_pipeline(
     data_loader=data_loader(),
     data_splitter=data_splitter(),
-    drift_detector=drift_detector,
-    drift_analyzer=analyze_drift(),
+    train_data_profiler=train_data_profiler,
+    test_data_profiler=test_data_profiler,
 )
-pipeline.run()
+
+p.run()
 ```
 
-Possible report options supported by Evidently are:
-
-- "datadrift"
-- "categoricaltargetdrift"
-- "numericaltargetdrift"
-- "dataquality"
-- "classificationmodelperformance"
-- "regressionmodelperformance"
-- "probabilisticmodelperformance"
-
-As can be seen from the [step definition](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.evidently.steps.evidently_profile.EvidentlyProfileStep), the step takes in
-a reference dataset and a comparison dataset required for data drift and
-model comparison reports. It returns an Evidently `Profile` object and a
-`Dashboard` rendered as an HTML string:
+As can be seen from the [step definition](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.whylogs.steps.whylogs_profiler.WhylogsProfilerStep),
+the step takes in a dataset and returns a whylogs `DatasetProfileView` object:
 
 ```python
-class EvidentlyProfileStep(BaseDriftDetectionStep):
-    """Step implementation implementing an Evidently Profile Step."""
+class WhylogsProfilerStep(BaseAnalyzerStep):
+    """Generates a whylogs data profile from a given pd.DataFrame."""
 
+    @staticmethod
     def entrypoint(  # type: ignore[override]
-        self,
-        reference_dataset: pd.DataFrame,
-        comparison_dataset: pd.DataFrame,
-        config: EvidentlyProfileConfig,
-    ) -> Output(  # type:ignore[valid-type]
-        profile=Profile, dashboard=str
-    ):
+        dataset: pd.DataFrame,
+        config: WhylogsProfilerConfig,
+    ) -> DatasetProfileView:
         ...
 ```
 
-If needed, Evidently column mappings can be passed into the step configuration,
-but as `zenml.integrations.evidently.steps.EvidentlyColumnMapping` objects,
-which have the exact same structure as `evidently.pipeline.column_mapping.ColumnMapping`:
+You should consult [the official whylogs documentation](https://whylogs.readthedocs.io/en/latest/index.html)
+for more information on what you can do with the collected profiles.
 
-```python
-from zenml.integrations.evidently.steps import (
-    EvidentlyColumnMapping,
-    EvidentlyProfileConfig,
-    evidently_profile_step,
-)
-
-drift_detector = evidently_profile_step(
-    step_name="drift_detector",
-    config=EvidentlyProfileConfig(
-        column_mapping=EvidentlyColumnMapping(
-            target="class", prediction="class_prediction"
-        ),
-        profile_sections=[
-            "categoricaltargetdrift",
-            "numericaltargetdrift",
-            "datadrift",
-        ],
-        verbose_level=1,
-    ),
-)
-```
-
-You should consult [the official Evidently documentation](https://docs.evidentlyai.com/reports)
-for more information on what each report is useful for and what data columns it
-requires as input.
-
-The `EvidentlyProfileConfig` step configuration also allows for additional
-profile options and [dashboard options](https://docs.evidentlyai.com/user-guide/customization)
-to be passed to the `Profile` and `Dashboard` constructors e.g.:
-
-
-```python
-from zenml.integrations.evidently.steps import (
-    EvidentlyProfileConfig,
-)
-
-config=EvidentlyProfileConfig(
-    column_mapping=EvidentlyColumnMapping(
-        target="class", prediction="class_prediction"
-    ),
-    profile_sections=[
-        "categoricaltargetdrift",
-        "numericaltargetdrift",
-        "datadrift",
-    ],
-    verbose_level=1,
-    dashboard_options = [
-        (
-            "evidently.options.ColorOptions",{
-                "primary_color": "#5a86ad",
-                "fill_color": "#fff4f2",
-                "zero_line_color": "#016795",
-                "current_data_color": "#c292a1",
-                "reference_data_color": "#017b92",
-            }
-        ),
-    ],
-)
-```
-
-You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.evidently.steps.evidently_profile.EvidentlyProfileConfig) in the API
+You can view [the complete list of configuration parameters](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.whylogs.steps.whylogs_profiler.WhylogsProfilerConfig) in the API
 docs.
 
 You can also check out our examples pages for working examples that use the
-Evidently standard step:
+whylogs standard step:
 
-- [Drift Detection with Evidently](https://github.com/zenml-io/zenml/tree/main/examples/evidently_drift_detection)
+- [Data Profiling with whylogs](https://github.com/zenml-io/zenml/tree/main/examples/whylogs_data_profiling)
 
-### The Evidently Data Validator
+### The whylogs Data Validator
 
-The Evidently Data Validator implements the same interface as do all Data
+The whylogs Data Validator implements the same interface as do all Data
 Validators, so this method forces you to maintain some level of compatibility
 with the overall Data Validator abstraction, which guarantees an easier
 migration in case you decide to switch to another Data Validator.
 
-All you have to do is call the Evidently Data Validator methods when you need
-to interact with Evidently to generate data profiles, e.g.:
+All you have to do is call the whylogs Data Validator methods when you need
+to interact with whylogs to generate data profiles. You may optionally use
+the `enable_whylabs` decorator to automatically upload the returned whylogs
+profile to WhyLabs, e.g.:
 
 ```python
 
 import pandas as pd
-from evidently.model_profile import Profile
-from evidently.pipeline.column_mapping import ColumnMapping
-from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
-from zenml.steps import Output, step
-
-@step
-def data_drift_detection(
-    reference_dataset: pd.DataFrame,
-    comparison_dataset: pd.DataFrame,
-) -> Output(
-    profile=Profile, dashboard=str
-):
-    """Custom data drift detection step with Evidently
-
-    Args:
-        reference_dataset: a Pandas DataFrame
-        comparison_dataset: a Pandas DataFrame of new data you wish to
-            compare against the reference data
-
-    Returns:
-        profile: Evidently Profile generated for the data drift
-        dashboard: HTML report extracted from an Evidently Dashboard
-            generated for the data drift
-    """
-
-    # validation pre-processing (e.g. dataset preparation) can take place here
-
-    data_validator = EvidentlyDataValidator.get_active_data_validator()
-    profile, dashboard = data_validator.data_profiling(
-        dataset=reference_dataset,
-        comparison_dataset=comparison_dataset,
-        profile_list=[
-            "categoricaltargetdrift",
-            "numericaltargetdrift",
-            "datadrift",
-        ],
-        column_mapping=ColumnMapping(
-            target="class",
-            prediction="class_prediction"
-        ),
-        verbose_level=1,
-    )
-
-    # validation post-processing (e.g. interpret results, take actions) can happen here
-
-    return [profile, dashboard.html()]
-```
-
-Have a look at [the complete list of methods and parameters available in the `EvidentlyDataValidator` API](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.evidently.data_validators.evidently_data_validator.EvidentlyDataValidator) in the API docs.
-
-### Call Evidently directly
-
-You can use the Evidently library directly in your custom pipeline steps, and
-only leverage ZenML's capability of serializing, versioning and storing the
-`Profile` objects in its Artifact Store, e.g.:
-
-```python
-
-import pandas as pd
-from evidently.model_profile import Profile
-from evidently.model_profile.sections import DataQualityProfileSection
-from evidently.pipeline.column_mapping import ColumnMapping
+from whylogs.core import DatasetProfileView
+from zenml.integrations.whylogs.data_validators.whylogs_data_validator import (
+    WhylogsDataValidator,
+)
+from zenml.integrations.whylogs.whylabs_step_decorator import enable_whylabs
 from zenml.steps import step
 
+@enable_whylabs(dataset_id="model-1")
 @step
-def data_quality_profiler(
+def data_profiler(
     dataset: pd.DataFrame,
-) -> Profile:
-    """Custom data quality profiler step with Evidently
+) -> DatasetProfileView:
+    """Custom data profiler step with whylogs
 
     Args:
         dataset: a Pandas DataFrame
 
     Returns:
-        Evidently Profile generated for the dataset
+        Whylogs profile generated for the data
     """
 
     # validation pre-processing (e.g. dataset preparation) can take place here
 
-    profile = Profile(sections=[DataQualityProfileSection])
-    profile.calculate(
-        reference_data=dataset,
+    data_validator = WhylogsDataValidator.get_active_data_validator()
+    profile = data_validator.data_profiling(
+        dataset,
     )
+    # optionally upload the profile to WhyLabs, if WhyLabs credentials are configured
+    data_validator.upload_profile_view(profile)
 
     # validation post-processing (e.g. interpret results, take actions) can happen here
 
     return profile
 ```
 
-### Using the Evidently ZenML Visualizer
+Have a look at [the complete list of methods and parameters available in the `WhylogsDataValidator` API](https://apidocs.zenml.io/0.11.0/api_docs/integrations/#zenml.integrations.whylogs.data_validators.whylogs_data_validator.WhylogsDataValidator) in the API docs.
 
-In the [post-execution workflow](../../developer-guide/steps-pipelines/inspecting-pipeline-runs.md),
-you can load and render the Evidently dashboards generated and returned by your
-pipeline steps by means of the ZenML Evidently Visualizer, e.g.:
+### Call whylogs directly
+
+You can use the whylogs library directly in your custom pipeline steps, and
+only leverage ZenML's capability of serializing, versioning and storing the
+`DatasetProfileView` objects in its Artifact Store. You may optionally use
+the `enable_whylabs` decorator to automatically upload the returned whylogs
+profile to WhyLabs, e.g.:
 
 ```python
-from zenml.integrations.evidently.visualizers import EvidentlyVisualizer
+
+import pandas as pd
+from whylogs.core import DatasetProfileView
+import whylogs as why
+from zenml.integrations.whylogs.whylabs_step_decorator import enable_whylabs
+from zenml.steps import step
+
+@enable_whylabs(dataset_id="model-1")
+@step
+def data_profiler(
+    dataset: pd.DataFrame,
+) -> DatasetProfileView:
+    """Custom data profiler step with whylogs
+
+    Args:
+        dataset: a Pandas DataFrame
+
+    Returns:
+        Whylogs Profile generated for the dataset
+    """
+
+    # validation pre-processing (e.g. dataset preparation) can take place here
+
+    results = why.log(dataset)
+    profile = results.profile()
+
+    # validation post-processing (e.g. interpret results, take actions) can happen here
+
+    return profile.view()
+```
+
+### Using the whylogs ZenML Visualizer
+
+In the [post-execution workflow](../../developer-guide/steps-pipelines/inspecting-pipeline-runs.md),
+you can load and render the whylogs profiles generated and returned by your
+pipeline steps by means of the ZenML whylogs Visualizer. The visualizer can
+take in a single step view, or two separate step views. In the first case,
+a visualization of a single data profile is rendered, in the second you will
+get a data drift report, e.g.:
+
+```python
+from zenml.integrations.whylogs.visualizers import WhylogsVisualizer
 from zenml.repository import Repository
 
-def visualize_results(pipeline_name: str, step_name: str) -> None:
+def visualize_statistics(
+    step_name: str, reference_step_name: Optional[str] = None
+) -> None:
+    """Helper function to visualize whylogs statistics from step artifacts.
+
+    Args:
+        step_name: step that generated and returned a whylogs profile
+        reference_step_name: an optional second step that generated a whylogs
+            profile to use for data drift visualization where two whylogs
+            profiles are required.
+    """
     repo = Repository()
-    pipeline = repo.get_pipeline(pipeline_name=pipeline_name)
-    evidently_outputs = pipeline.runs[-1].get_step(name=step_name)
-    EvidentlyVisualizer().visualize(evidently_outputs)
+    pipe = repo.get_pipeline(pipeline_name="data_profiling_pipeline")
+    whylogs_step = pipe.runs[-1].get_step(name=step_name)
+    whylogs_reference_step = None
+    if reference_step_name:
+        whylogs_reference_step = pipe.runs[-1].get_step(
+            name=reference_step_name
+        )
+
+    WhylogsVisualizer().visualize(
+        whylogs_step,
+        reference_step_view=whylogs_reference_step,
+    )
 
 if __name__ == "__main__":
-    visualize_results("drift_detection_pipeline", "drift_detector")
+    visualize_statistics("data_loader")
+    visualize_statistics("train_data_profiler", "test_data_profiler")
 ```
+
+The whylogs profile will be displayed as a new tab in your browser, or rendered
+inline in your Jupyter notebook, depending on where you are running the code:
+
+![Whylogs Visualization Example 1](../../assets/whylogs/whylogs-visualizer-01.png)
+![Whylogs Visualization Example 2](../../assets/whylogs/whylogs-visualizer-02.png)
