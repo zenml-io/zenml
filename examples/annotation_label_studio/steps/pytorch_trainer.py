@@ -223,7 +223,7 @@ def pytorch_model_trainer(
             shuffle=config.shuffle,
             num_workers=config.num_workers,
         )
-        for dataset_type, dataset in dataset_dict
+        for dataset_type, dataset in dataset_dict.items()
     }
 
     # Define optimizer
