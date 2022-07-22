@@ -13,7 +13,6 @@ repo_url: https://github.com/zenml-io/zenml
 edit_uri: https://github.com/zenml-io/zenml/docs/
 
 plugins:
-    - embed-pdf
     - search
     - awesome-pages
     - mkdocstrings:
