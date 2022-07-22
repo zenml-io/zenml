@@ -143,9 +143,11 @@ class KubernetesSparkStepOperator(BaseStepOperator):
         """Build the configuration parameters for the spark-submit command."""
         configurations = [
             "--conf",
-            "spark.kubernetes.namespace=default",
-            "--conf",
             f"spark.kubernetes.container.image={image_name}",
+            "--conf",
+            "spark.kubernetes.namespace=spark-namespace",
+            "--conf",
+            "spark.kubernetes.authenticate.driver.serviceAccountName=spark-service-account",
         ]
 
         for o in self.configuration_properties:
@@ -192,9 +194,11 @@ class KubernetesSparkStepOperator(BaseStepOperator):
         spark_app_command = self._create_spark_app_command(entrypoint_command)
         base_command.extend(spark_app_command)
 
+        command = " ".join(base_command)
+
         # Execute the command
         process = subprocess.Popen(
-            " ".join(base_command),
+            command,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             universal_newlines=True,
