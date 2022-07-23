@@ -72,6 +72,7 @@ ENV_ZENML_ACTIVATED_STACK = "ZENML_ACTIVATED_STACK"
 ENV_ZENML_PROFILE_NAME = "ZENML_PROFILE_NAME"
 ENV_ZENML_SUPPRESS_LOGS = "ZENML_SUPPRESS_LOGS"
 ENV_ZENML_ENABLE_REPO_INIT_WARNINGS = "ZENML_ENABLE_REPO_INIT_WARNINGS"
+ENV_ZENML_IGNORE_STORE_COUPLINGS = "ZENML_IGNORE_STORE_COUPLINGS"
 
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
@@ -129,6 +130,11 @@ SHOULD_PREVENT_PIPELINE_EXECUTION = handle_bool_env_var(
     ENV_ZENML_PREVENT_PIPELINE_EXECUTION
 )
 
+# Store couplings
+ZENML_IGNORE_STORE_COUPLINGS = handle_bool_env_var(
+    ENV_ZENML_IGNORE_STORE_COUPLINGS, default=False
+)
+
 # Repository and local store directory paths:
 REPOSITORY_DIRECTORY_NAME = ".zen"
 LOCAL_STORES_DIRECTORY_NAME = "local_stores"
@@ -165,6 +171,7 @@ ROLES = "/roles"
 FLAVORS = "/flavors"
 ROLE_ASSIGNMENTS = "/role_assignments"
 PIPELINE_RUNS = "/pipeline_runs"
+STORE_ASSOCIATIONS = "/store_associations"
 
 # mandatory stack component attributes
 MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]

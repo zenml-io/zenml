@@ -96,14 +96,14 @@ class MaterializerRegistry:
                     f"registry: {materializers_for_compatible_superclasses}. "
                     f"Please specify which of these materializers you would "
                     f"like to use explicitly in your step.",
-                    url="https://docs.zenml.io/developer-guide/materializer",
+                    url="https://docs.zenml.io/developer-guide/advanced-usage/materializer",
                 )
         raise StepInterfaceError(
             f"No materializer registered for class {key}. You can register a "
             f"default materializer for specific types by subclassing "
             f"`BaseMaterializer` and setting its `ASSOCIATED_TYPES` class"
             f" variable.",
-            url="https://docs.zenml.io/developer-guide/materializer",
+            url="https://docs.zenml.io/developer-guide/advanced-usage/materializer",
         )
 
     def get_materializer_types(

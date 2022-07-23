@@ -510,8 +510,7 @@ def generate_stack_component_flavor_register_command(
                     "installed package or create a ZenML repository by running "
                     "`zenml init` and specify the source relative to the "
                     "repository directory. Check out "
-                    "https://docs.zenml.io/developer-guide/repo-and-config"
-                    "#the-zenml-repository "
+                    "https://docs.zenml.io/developer-guide/stacks-profiles-repositories/repository "
                     "for more information."
                 )
 
