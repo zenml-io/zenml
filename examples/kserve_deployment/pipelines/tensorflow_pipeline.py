@@ -15,7 +15,11 @@ from zenml.integrations.constants import KSERVE, TENSORFLOW
 from zenml.pipelines import pipeline
 
 
-@pipeline(enable_cache=True, required_integrations=[KSERVE, TENSORFLOW])
+@pipeline(
+    enable_cache=True,
+    required_integrations=[KSERVE, TENSORFLOW],
+    requirements=["Pillow"],
+)
 def tensorflow_training_deployment_pipeline(
     importer,
     normalizer,
@@ -36,7 +40,7 @@ def tensorflow_training_deployment_pipeline(
 @pipeline(
     enable_cache=True,
     required_integrations=[KSERVE, TENSORFLOW],
-    requirements=["opencv-python"],
+    requirements=["Pillow"],
 )
 def tensorflow_inference_pipeline(
     predict_preprocessor,

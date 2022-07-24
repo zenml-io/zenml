@@ -27,17 +27,21 @@ can be supplied as command-line arguments to the `run.py` Python script.
 
 The example contains three pipelines:
 * `pytorch_training_deployment_pipeline`: trains a classifier using TensorFlow and deploys it to KServe with the TFServing Runtime Server.
+* `pytorch_inference_pipeline`: run some predictions using the deployed PyTorch model.
+
 * `tensorflow_training_deployment_pipeline`: trains a classifier using PyTorch and deploys it to KServe with TorchServe Runtime Server.
-* `inference_pipeline`: runs predictions on the served models.
+* `tensorflow_inference_pipeline`: runs predictions on the Tensorflow served models.
 
 Running the pipelines to train the classifiers and then deploying them to 
 KServe requires preparing them into an exact format that is expected 
-by the runtime server, storing them into remote storage or a persistent volume 
-in the cluster and giving the path to KServe as the model uri with the right permissions. 
+by the runtime server, then storing them into remote storage or a persistent volume 
+in the cluster and giving the path to KServe as the model URI with the right permissions to be able to retrieve the model artifacts. 
 By default, ZenML's KServe integration will try to handle that for you 
-by automatically loading, preparing and then saving files to the Artifact Store 
-active in the ZenML stack. However, for some frameworks (e.g. PyTorch) you will still need 
-to provide some additional files that Runtime Server needs to be able to run the model. 
+by automatically loading, preparing and then saving files to the same active Artifact Store 
+within the ZenML stack. However, for some frameworks (e.g. PyTorch) you will still need 
+to provide some additional files that Runtime Server needs to be able to run the model.
+
+Note: Pytorch models are deployed with TorchServe Runtime Server. Read more about how to deploy Pytorch models with TorchServe Runtime Server [KServe Pytorch](https://kserve.github.io/website/0.9/modelserving/v1beta1/torchserve/) or in [TorchServe Official documentation](https://pytorch.org/serve/).
 
 The KServe deployment server is provisioned remotely as a Kubernetes
 resource that continues to run after the deployment pipeline run is complete.
@@ -85,7 +89,7 @@ zenml init
 ### Installing KServe (e.g. in an GKE cluster)
 
 This section is a trimmed-up version of the serverless installation guide for KServe,
-[official KServe installation instructions](https://kserve.github.io/website/0.8/admin/serverless/#recommended-version-matrix), applied to a particular type of Kubernetes cluster, GKE in this case. It assumes that a GKE cluster is already set up and accessible.
+[official KServe installation instructions](https://kserve.github.io/website/0.9/admin/serverless/#recommended-version-matrix), applied to a particular type of Kubernetes cluster, GKE in this case. It assumes that a GKE cluster is already set up and accessible.
 
 To configure GKE cluster access locally, e.g:
 
@@ -153,9 +157,9 @@ kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/
 
 ```bash
 # Install KServe
-kubectl apply -f https://github.com/kserve/kserve/releases/download/v0.8.0/kserve.yaml
+kubectl apply -f https://github.com/kserve/kserve/releases/download/v0.9.0/kserve.yaml
 # Install KServe Built-in ClusterServingRuntimes
-kubectl apply -f https://github.com/kserve/kserve/releases/download/v0.8.0/kserve-runtimes.yaml
+kubectl apply -f https://github.com/kserve/kserve/releases/download/v0.9.0/kserve-runtimes.yaml
 ```
 
 ### Testing the KServe deployment
@@ -394,17 +398,14 @@ $ zenml secret get kserve_secret
 
 ## 🔦 Run TensorFlow Pipeline
 
-[MLServer](https://github.com/SeldonIO/MLServer) is a Python library that aims to provide an easy way to start 
-serving your machine learning models through a REST and gRPC interface. Out of the box, MLServer comes with 
-a set of pre-packaged runtimes which let you interact with a subset of common frameworks.
-(e.g. Scikit-Learn, XGBoost, LightGBM, MLflow etc.)
+[TFServing](https://www.tensorflow.org/tfx/guide/serving) TensorFlow Serving is a flexible, high-performance serving system for machine learning models, designed for production environments. TensorFlow Serving makes it easy to deploy new algorithms and experiments, while keeping the same server architecture and APIs. TensorFlow Serving provides out-of-the-box integration with TensorFlow models, but can be easily extended to serve other types of models and data.
 
 The TensorFlow pipeline consists of the following steps:
 * importer - Load the MNIST handwritten digits dataset from the TensorFlow library
 * train - Train a Support Vector Classifier model using the training dataset.
 * evaluate - Evaluate the model using the test dataset.
 * deployment_trigger - Verify if the newly trained model exceeds the threshold and if so, deploy the model.
-* model_deployer - Deploy the TensorFlow model to the KServe model server using the SKLearn MLServer runtime. the model_deployer is a ZenML built-in step that takes care of the preparing of the model to the right format for the runtime servers. In this case, the ZenML will be saving a file with name `model.joblib` in the artifact store which is the format that the runtime servers expect.
+* model_deployer - Deploy the TensorFlow model to the KServe model server using the TFServing runtime server. the model_deployer is a ZenML built-in step that takes care of the preparing of the model to the [right format](https://www.tensorflow.org/guide/saved_model) for the runtime servers. In this case, the ZenML will be saving a file with name `tf.saved_model` in the artifact store which is the format that the runtime servers expect.
 
 ### 🏃️ Run the code
 To run the training/deployment TensorFlow pipeline:
