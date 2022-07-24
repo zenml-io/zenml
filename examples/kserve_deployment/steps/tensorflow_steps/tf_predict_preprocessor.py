@@ -12,11 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import json
-from typing import Optional
-import requests
 from io import BytesIO
-from PIL import Image
+from typing import Optional
+
 import numpy as np
+import requests
+from PIL import Image
 
 from zenml.steps import step
 from zenml.steps.base_step_config import BaseStepConfig
