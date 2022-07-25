@@ -124,8 +124,8 @@ def visualize_statistics(
             profiles are required.
     """
     repo = Repository()
-    pipe = repo.get_pipeline(pipeline_name="data_profiling_pipeline")
-    whylogs_step = pipe.runs[-1].get_step(name=step_name)
+    pipe = repo.get_pipeline(pipeline="data_profiling_pipeline")
+    whylogs_step = pipe.runs[-1].get_step(step=step_name)
     whylogs_reference_step = None
     if reference_step_name:
         whylogs_reference_step = pipe.runs[-1].get_step(

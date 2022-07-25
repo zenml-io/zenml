@@ -38,12 +38,12 @@ if __name__ == "__main__":
     pipeline.run()
 
     repo = Repository()
-    pipeline = repo.get_pipeline(pipeline_name="data_validation_pipeline")
+    pipeline = repo.get_pipeline(pipeline="data_validation_pipeline")
     last_run = pipeline.runs[-1]
-    data_val_step = last_run.get_step(name="data_validator")
-    model_val_step = last_run.get_step(name="model_validator")
-    data_drift_step = last_run.get_step(name="data_drift_detector")
-    model_drift_step = last_run.get_step(name="model_drift_detector")
+    data_val_step = last_run.get_step(step="data_validator")
+    model_val_step = last_run.get_step(step="model_validator")
+    data_drift_step = last_run.get_step(step="data_drift_detector")
+    model_drift_step = last_run.get_step(step="model_drift_detector")
     DeepchecksVisualizer().visualize(data_val_step)
     DeepchecksVisualizer().visualize(model_val_step)
     DeepchecksVisualizer().visualize(data_drift_step)

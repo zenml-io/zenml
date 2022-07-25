@@ -40,7 +40,7 @@ The repository contains a collection of all created pipelines with at least one
 run sorted by the time of their first run from oldest to newest.
 
 You can either access this collection via the `get_pipelines()` method or query
-a specific pipeline by name using `get_pipeline(pipeline_name=...)`:
+a specific pipeline by name using `get_pipeline(pipeline=...)`:
 
 ```python
 # get all pipelines from all stacks
@@ -111,7 +111,7 @@ run = example_pipeline.get_run(run_name=...)
 
 Within a given pipeline run you can now further zoom in on individual steps
 using the `steps` attribute or by querying a specific step using the
-`get_step(name=...)` method.
+`get_step(step=...)` method.
 
 ```python
 # get all steps of a pipeline for a given run
@@ -177,7 +177,7 @@ of our example pipeline from the previous sections:
 from zenml.repository import Repository
 
 repo = Repository()
-pipeline = repo.get_pipeline(pipeline_name="first_pipeline")
+pipeline = repo.get_pipeline(pipeline="first_pipeline")
 last_run = pipeline.runs[-1]
 last_step = last_run.steps[-1]
 model = last_step.output.read()

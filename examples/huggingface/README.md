@@ -167,7 +167,7 @@ from transformers import pipeline
 
 # 1. Load sequence-classification and inference
 repo = Repository()
-p = repo.get_pipeline(pipeline_name="seq_classifier_train_eval_pipeline")
+p = repo.get_pipeline(pipeline="seq_classifier_train_eval_pipeline")
 runs = p.runs
 print(f"Pipeline `seq_classifier_train_eval_pipeline` has {len(runs)} run(s)")
 latest_run = runs[-1]
@@ -183,7 +183,7 @@ print(sentiment_classifier("MLOps movie by Zenml-io was awesome."))
 
 # 2. Load token-classification and inference
 repo = Repository()
-p = repo.get_pipeline(pipeline_name="token_classifier_train_eval_pipeline")
+p = repo.get_pipeline(pipeline="token_classifier_train_eval_pipeline")
 runs = p.runs
 print(f"Pipeline `token_classifier_train_eval_pipeline` has {len(runs)} run(s)")
 latest_run = runs[-1]

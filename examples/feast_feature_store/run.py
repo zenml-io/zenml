@@ -33,6 +33,6 @@ if __name__ == "__main__":
     repo = Repository()
     pipeline = repo.get_pipeline("feast_pipeline")
     last_run = pipeline.runs[-1]
-    historical_features_step = last_run.get_step(name="feature_printer")
+    historical_features_step = last_run.get_step(step="feature_printer")
     print("HISTORICAL FEATURES:")
     print(historical_features_step.output.read())

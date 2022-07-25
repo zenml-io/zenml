@@ -29,9 +29,9 @@ if __name__ == "__main__":
     ).run()
 
     repo = Repository()
-    runs = repo.get_pipeline(pipeline_name="kubernetes_example_pipeline").runs
+    runs = repo.get_pipeline(pipeline="kubernetes_example_pipeline").runs
     last_run = runs[-1]
-    train_test_skew_step = last_run.get_step(name="skew_comparison")
+    train_test_skew_step = last_run.get_step(step="skew_comparison")
     FacetStatisticsVisualizer().visualize(train_test_skew_step)
 
     # In case you want to run the pipeline on a schedule, run the following:

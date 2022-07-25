@@ -483,9 +483,9 @@ from zenml.repository import Repository
 
 def visualize_results(pipeline_name: str, step_name: str) -> None:
     repo = Repository()
-    pipeline = repo.get_pipeline(pipeline_name=pipeline_name)
+    pipeline = repo.get_pipeline(pipeline=pipeline_name)
     last_run = pipeline.runs[-1]
-    step = last_run.get_step(name=step_name)
+    step = last_run.get_step(step=step_name)
     DeepchecksVisualizer().visualize(step)
 
 if __name__ == "__main__":

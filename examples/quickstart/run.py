@@ -70,8 +70,8 @@ def main():
 
     # fetch latest runs for each pipeline
     repo = Repository()
-    train_run = repo.get_pipeline(pipeline_name="training_pipeline").runs[-1]
-    inf_run = repo.get_pipeline(pipeline_name="inference_pipeline").runs[-1]
+    train_run = repo.get_pipeline(pipeline="training_pipeline").runs[-1]
+    inf_run = repo.get_pipeline(pipeline="inference_pipeline").runs[-1]
 
     # visualize training pipeline
     PipelineRunLineageVisualizer().visualize(train_run)
@@ -80,15 +80,15 @@ def main():
     PipelineRunLineageVisualizer().visualize(inf_run)
 
     # visualize train-test skew
-    train_test_skew_step = train_run.get_step(name="skew_comparison")
+    train_test_skew_step = train_run.get_step(step="skew_comparison")
     FacetStatisticsVisualizer().visualize(train_test_skew_step)
 
     # visualize training-serving skew
-    training_serving_skew_step = inf_run.get_step(name="skew_comparison")
+    training_serving_skew_step = inf_run.get_step(step="skew_comparison")
     FacetStatisticsVisualizer().visualize(training_serving_skew_step)
 
     # visualize data drift
-    drift_detection_step = inf_run.get_step(name="drift_detector")
+    drift_detection_step = inf_run.get_step(step="drift_detector")
     EvidentlyVisualizer().visualize(drift_detection_step)
 
 
