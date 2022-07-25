@@ -584,7 +584,7 @@ the `zenml served-models describe <uuid>` CLI command can be run:
 
 ```shell
 $ zenml served-models describe a9e967a1-9b26-4d5c-855c-e5abba0b020b
-                                     Properties of Served Model 62aac6aa-88fd-4eb7-a753-b46f1658775c                                      
+  Properties of Served Model 62aac6aa-88fd-4eb7-a753-b46f1658775c                                      
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ MODEL SERVICE PROPERTY   │ VALUE                                                                                                       ┃
 ┠──────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────┨
