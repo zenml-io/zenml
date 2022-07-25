@@ -50,6 +50,7 @@ from zenml.materializers.default_materializer_registry import (
 )
 from zenml.step_operators.step_executor_operator import StepExecutorOperator
 from zenml.steps.base_step_config import BaseStepConfig
+from zenml.steps.resource_configuration import ResourceConfiguration
 from zenml.steps.step_context import StepContext
 from zenml.steps.step_output import Output
 from zenml.steps.utils import (
@@ -59,6 +60,7 @@ from zenml.steps.utils import (
     PARAM_CUSTOM_STEP_OPERATOR,
     PARAM_ENABLE_CACHE,
     PARAM_PIPELINE_PARAMETER_NAME,
+    PARAM_RESOURCE_CONFIGURATION,
     SINGLE_RETURN_OUT_NAME,
     _ZenMLSimpleComponent,
     generate_component_class,
@@ -265,6 +267,9 @@ class BaseStep(metaclass=BaseStepMeta):
 
         self.requires_context = bool(self.CONTEXT_PARAMETER_NAME)
         self.custom_step_operator = kwargs.pop(PARAM_CUSTOM_STEP_OPERATOR, None)
+        self._resource_configuration = (
+            kwargs.pop(PARAM_RESOURCE_CONFIGURATION) or ResourceConfiguration()
+        )
 
         enable_cache = kwargs.pop(PARAM_ENABLE_CACHE, None)
         if enable_cache is None:
@@ -704,6 +709,15 @@ class BaseStep(metaclass=BaseStepMeta):
             return returns[0]
         else:
             return returns
+
+    @property
+    def resource_configuration(self) -> ResourceConfiguration:
+        """The resource configuration for this step.
+
+        Returns:
+            The (potentially empty) resource configuration for this step.
+        """
+        return self._resource_configuration
 
     @property
     def component(self) -> _ZenMLSimpleComponent:

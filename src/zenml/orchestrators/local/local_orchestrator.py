@@ -65,6 +65,14 @@ class LocalOrchestrator(BaseOrchestrator):
 
         # Run each step
         for step in sorted_steps:
+            if self.requires_resources_in_orchestration_environment(step):
+                logger.warning(
+                    "Specifying step resources is not supported for the local "
+                    "orchestrator, ignoring resource configuration for "
+                    "step %s.",
+                    step.name,
+                )
+
             self.run_step(
                 step=step,
                 run_name=runtime_configuration.run_name,

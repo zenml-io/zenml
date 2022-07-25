@@ -32,11 +32,13 @@ from zenml.steps.utils import (
     PARAM_CREATED_BY_FUNCTIONAL_API,
     PARAM_CUSTOM_STEP_OPERATOR,
     PARAM_ENABLE_CACHE,
+    PARAM_RESOURCE_CONFIGURATION,
     STEP_INNER_FUNC_NAME,
 )
 
 if TYPE_CHECKING:
     from zenml.artifacts.base_artifact import BaseArtifact
+    from zenml.steps import ResourceConfiguration
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -53,6 +55,7 @@ def step(
     enable_cache: bool = True,
     output_types: Optional[Dict[str, Type["BaseArtifact"]]] = None,
     custom_step_operator: Optional[str] = None,
+    resource_configuration: Optional["ResourceConfiguration"] = None
 ) -> Callable[[F], Type[BaseStep]]:
     ...
 
@@ -64,6 +67,7 @@ def step(
     enable_cache: Optional[bool] = None,
     output_types: Optional[Dict[str, Type["BaseArtifact"]]] = None,
     custom_step_operator: Optional[str] = None,
+    resource_configuration: Optional["ResourceConfiguration"] = None
 ) -> Union[Type[BaseStep], Callable[[F], Type[BaseStep]]]:
     """Outer decorator function for the creation of a ZenML step.
 
@@ -77,11 +81,12 @@ def step(
         enable_cache: Specify whether caching is enabled for this step. If no
             value is passed, caching is enabled by default unless the step
             requires a `StepContext` (see
-            :class:`zenml.steps.step_context.StepContext` for more information).
+            `zenml.steps.step_context.StepContext` for more information).
         output_types: A dictionary which sets different outputs to non-default
-            artifact types
+            artifact types.
         custom_step_operator: Optional name of a
             `zenml.step_operators.BaseStepOperator` to use for this step.
+        resource_configuration: Optional resource configuration for this step.
 
     Returns:
         the inner decorator which creates the step class based on the
@@ -110,6 +115,7 @@ def step(
                     PARAM_ENABLE_CACHE: enable_cache,
                     PARAM_CREATED_BY_FUNCTIONAL_API: True,
                     PARAM_CUSTOM_STEP_OPERATOR: custom_step_operator,
+                    PARAM_RESOURCE_CONFIGURATION: resource_configuration,
                 },
                 OUTPUT_SPEC: output_spec,
                 "__module__": func.__module__,

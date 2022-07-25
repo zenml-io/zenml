@@ -15,7 +15,7 @@
 
 import os
 from pathlib import PurePosixPath
-from typing import ClassVar, List, Optional
+from typing import TYPE_CHECKING, ClassVar, List, Optional
 
 from azureml.core import (
     ComputeTarget,
@@ -35,9 +35,15 @@ from zenml.constants import ENV_ZENML_CONFIG_PATH
 from zenml.environment import Environment as ZenMLEnvironment
 from zenml.integrations.azure import AZUREML_STEP_OPERATOR_FLAVOR
 from zenml.io import fileio
+from zenml.logger import get_logger
 from zenml.step_operators import BaseStepOperator
 from zenml.utils.docker_utils import CONTAINER_ZENML_CONFIG_DIR
 from zenml.utils.source_utils import get_source_root_path
+
+if TYPE_CHECKING:
+    from zenml.steps import ResourceConfiguration
+
+logger = get_logger(__name__)
 
 
 class AzureMLStepOperator(BaseStepOperator):
@@ -170,6 +176,7 @@ class AzureMLStepOperator(BaseStepOperator):
         run_name: str,
         requirements: List[str],
         entrypoint_command: List[str],
+        resource_configuration: "ResourceConfiguration",
     ) -> None:
         """Launches a step on AzureML.
 
@@ -181,7 +188,20 @@ class AzureMLStepOperator(BaseStepOperator):
             entrypoint_command: Command that executes the step.
             requirements: List of pip requirements that must be installed
                 inside the step operator environment.
+            resource_configuration: The resource configuration for this step.
         """
+        if not resource_configuration.empty:
+            logger.warning(
+                "Specifying custom step resources is not supported for "
+                "the AzureML step operator. If you want to run this step "
+                "operator on specific resources, you can do so by creating an "
+                "Azure compute target (https://docs.microsoft.com/en-us/azure/machine-learning/concept-compute-target) "
+                "with a specific machine type and then updating this step "
+                "operator: `zenml step-operator update %s "
+                "--compute_target_name=<COMPUTE_TARGET_NAME>`",
+                self.name,
+            )
+
         workspace = Workspace.get(
             subscription_id=self.subscription_id,
             resource_group=self.resource_group,

@@ -46,6 +46,7 @@ from zenml.utils import source_utils, yaml_utils
 if TYPE_CHECKING:
     from zenml.stack import Stack
     from zenml.step_operators import BaseStepOperator
+    from zenml.steps import BaseStep
 
 logger = get_logger(__name__)
 
@@ -164,6 +165,42 @@ class StepExecutorOperator(BaseExecutorOperator):
         return main_module_path, step_source_path
 
     @staticmethod
+    def _get_step(
+        pipeline_node: pipeline_pb2.PipelineNode,
+    ) -> "BaseStep":
+        """Gets a step instance for a given pipeline line.
+
+        **Important**: This method assumes that the step class has already been
+        imported.
+
+        Args:
+            pipeline_node: Pipeline node info for a step.
+
+        Returns:
+            The step that the pipeline node is referring to.
+
+        Raises:
+            RuntimeError: If the step class loading failed.
+        """
+        step_type = cast(str, pipeline_node.node_info.type.name)
+        step_module_path, step_class_name = step_type.rsplit(".", maxsplit=1)
+
+        user_main_module = zenml.constants.USER_MAIN_MODULE
+        if step_module_path == "__main__" and user_main_module:
+            # If the step was initially defined in the __main__ module,
+            # but we're now executing in a different environment where the same
+            # module is not the __main__ module anymore, we need to replace the
+            # module name
+            step_module_path = user_main_module
+
+        try:
+            step_class = getattr(sys.modules[step_module_path], step_class_name)
+        except (KeyError, AttributeError):
+            raise RuntimeError(f"Unable to load step {step_type}.")
+
+        return step_class()
+
+    @staticmethod
     def _get_step_operator(
         stack: "Stack", execution_info: data_types.ExecutionInfo
     ) -> "BaseStepOperator":
@@ -277,11 +314,17 @@ class StepExecutorOperator(BaseExecutorOperator):
             requirements,
             entrypoint_command,
         )
+
+        resource_configuration = self._get_step(
+            pipeline_node=execution_info.pipeline_node
+        ).resource_configuration
+
         step_operator.launch(
             pipeline_name=execution_info.pipeline_info.id,
             run_name=execution_info.pipeline_run_id,
             requirements=requirements,
             entrypoint_command=entrypoint_command,
+            resource_configuration=resource_configuration,
         )
 
         return _read_executor_output(execution_info.execution_output_uri)

@@ -443,13 +443,16 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                     container_op.after(upstream_container_op)
 
                 # Set optional CPU, RAM and GPU constraints for the pipeline
-                if self.cpu_limit is not None:
-                    container_op = container_op.set_cpu_limit(self.cpu_limit)
+                step_resources = step.resource_configuration
+                cpu_limit = step_resources.cpu_count or self.cpu_limit
+                if cpu_limit is not None:
+                    container_op = container_op.set_cpu_limit(cpu_limit)
 
-                if self.memory_limit is not None:
-                    container_op = container_op.set_memory_limit(
-                        self.memory_limit
-                    )
+                memory_limit = (
+                    step_resources.get_memory(unit="GB") or self.memory_limit
+                )
+                if memory_limit is not None:
+                    container_op = container_op.set_memory_limit(memory_limit)
 
                 if self.node_selector_constraint is not None:
                     container_op = container_op.add_node_selector_constraint(
@@ -457,8 +460,9 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                         value=self.node_selector_constraint[1],
                     )
 
-                if self.gpu_limit is not None:
-                    container_op = container_op.set_gpu_limit(self.gpu_limit)
+                gpu_limit = step_resources.gpu_count or self.gpu_limit
+                if gpu_limit is not None:
+                    container_op = container_op.set_gpu_limit(gpu_limit)
 
                 step_name_to_container_op[step.name] = container_op
 

@@ -469,6 +469,14 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
 
         jobs = {}
         for step in sorted_steps:
+            if not step.resource_configuration.empty:
+                logger.warning(
+                    "Specifying step resources is not supported for the "
+                    "GitHub Actions orchestrator, ignoring resource "
+                    "configuration for step %s.",
+                    step.name,
+                )
+
             job_steps = []
 
             # Copy the shared dicts here to avoid creating yaml anchors (which

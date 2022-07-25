@@ -427,6 +427,25 @@ class BaseOrchestrator(StackComponent, ABC):
 
         return upstream_steps
 
+    def requires_resources_in_orchestration_environment(
+        step: "BaseStep",
+    ) -> bool:
+        """Checks if the orchestrator should run this step on special resources.
+
+        Args:
+            step: The step that will be checked.
+
+        Returns:
+            True if the step requires special resources in the orchestration
+            environment, False otherwise.
+        """
+        # If the step requires custom resources and doesn't run with a step
+        # operator, it would need these requirements in the orchestrator
+        # environment
+        return not (
+            step.custom_step_operator or step.resource_configuration.empty
+        )
+
     @staticmethod
     def _get_node_with_step_name(
         step_name: str, pb2_pipeline: Pb2Pipeline

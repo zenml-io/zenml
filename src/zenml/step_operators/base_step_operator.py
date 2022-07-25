@@ -14,10 +14,13 @@
 """Base class for ZenML step operators."""
 
 from abc import ABC, abstractmethod
-from typing import ClassVar, List
+from typing import TYPE_CHECKING, ClassVar, List
 
 from zenml.enums import StackComponentType
 from zenml.stack import StackComponent
+
+if TYPE_CHECKING:
+    from zenml.steps import ResourceConfiguration
 
 
 class BaseStepOperator(StackComponent, ABC):
@@ -33,6 +36,7 @@ class BaseStepOperator(StackComponent, ABC):
         run_name: str,
         requirements: List[str],
         entrypoint_command: List[str],
+        resource_configuration: "ResourceConfiguration",
     ) -> None:
         """Abstract method to execute a step.
 
@@ -50,4 +54,5 @@ class BaseStepOperator(StackComponent, ABC):
             entrypoint_command: Command that executes the step.
             requirements: List of pip requirements that must be installed
                 inside the step operator environment.
+            resource_configuration: The resource configuration for this step.
         """

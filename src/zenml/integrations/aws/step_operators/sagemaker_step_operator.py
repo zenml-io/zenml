@@ -13,17 +13,24 @@
 #  permissions and limitations under the License.
 """Implementation of the Sagemaker Step Operator."""
 
-from typing import ClassVar, List, Optional, Tuple
+from typing import TYPE_CHECKING, ClassVar, List, Optional, Tuple
 
 import sagemaker
 
 from zenml.enums import StackComponentType
 from zenml.integrations.aws import AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
+from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 from zenml.utils import docker_utils
 from zenml.utils.source_utils import get_source_root_path
+
+if TYPE_CHECKING:
+    from zenml.steps import ResourceConfiguration
+
+
+logger = get_logger(__name__)
 
 
 class SagemakerStepOperator(BaseStepOperator):
@@ -36,12 +43,12 @@ class SagemakerStepOperator(BaseStepOperator):
         role: The role that has to be assigned to the jobs which are
             running in Sagemaker.
         instance_type: The type of the compute instance where jobs will run.
-        base_image: [Optional] The base image to use for building the docker
+        base_image: The base image to use for building the docker
             image that will be executed.
-        bucket: [Optional] Name of the S3 bucket to use for storing artifacts
+        bucket: Name of the S3 bucket to use for storing artifacts
             from the job run. If not provided, a default bucket will be created
             based on the following format: "sagemaker-{region}-{aws-account-id}".
-        experiment_name: [Optional] The name for the experiment to which the job
+        experiment_name: The name for the experiment to which the job
             will be associated. If not provided, the job runs would be
             independent.
     """
@@ -106,6 +113,7 @@ class SagemakerStepOperator(BaseStepOperator):
         run_name: str,
         requirements: List[str],
         entrypoint_command: List[str],
+        resource_configuration: "ResourceConfiguration",
     ) -> None:
         """Launches a step on Sagemaker.
 
@@ -117,12 +125,24 @@ class SagemakerStepOperator(BaseStepOperator):
             entrypoint_command: Command that executes the step.
             requirements: List of pip requirements that must be installed
                 inside the step operator environment.
+            resource_configuration: The resource configuration for this step.
         """
         image_name = self._build_docker_image(
             pipeline_name=pipeline_name,
             requirements=requirements,
             entrypoint_command=entrypoint_command,
         )
+
+        if not resource_configuration.empty:
+            logger.warning(
+                "Specifying custom step resources is not supported for "
+                "the SageMaker step operator. If you want to run this step "
+                "operator on specific resources, you can do so by configuring "
+                "a different instance type like this: "
+                "`zenml step-operator update %s "
+                "--instance_type=<INSTANCE_TYPE>`",
+                self.name,
+            )
 
         session = sagemaker.Session(default_bucket=self.bucket)
         estimator = sagemaker.estimator.Estimator(

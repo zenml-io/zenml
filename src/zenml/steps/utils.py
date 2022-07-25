@@ -81,24 +81,10 @@ PARAM_ENABLE_CACHE: str = "enable_cache"
 PARAM_PIPELINE_PARAMETER_NAME: str = "pipeline_parameter_name"
 PARAM_CREATED_BY_FUNCTIONAL_API: str = "created_by_functional_api"
 PARAM_CUSTOM_STEP_OPERATOR: str = "custom_step_operator"
+PARAM_RESOURCE_CONFIGURATION: str = "resource_configuration"
 INTERNAL_EXECUTION_PARAMETER_PREFIX: str = "zenml-"
 INSTANCE_CONFIGURATION: str = "INSTANCE_CONFIGURATION"
 OUTPUT_SPEC: str = "OUTPUT_SPEC"
-
-
-def do_types_match(type_a: Type[Any], type_b: Type[Any]) -> bool:
-    """Check whether type_a and type_b match.
-
-    Args:
-        type_a: First Type to check.
-        type_b: Second Type to check.
-
-    Returns:
-        True if types match, otherwise False.
-    """
-    # TODO [ENG-158]: Check more complicated cases where type_a can be a sub-type
-    #  of type_b
-    return type_a == type_b
 
 
 def resolve_type_annotation(obj: Any) -> Any:
@@ -416,38 +402,12 @@ class _FunctionExecutor(BaseExecutor):
             artifact: A TFX artifact type.
             data: The object to be passed to `handle_return()`.
         """
-        # Skip materialization for BaseArtifact and subclasses.
-        if issubclass(type(data), BaseArtifact):
-            return
-
         materializer_class = self.resolve_materializer_with_registry(
             param_name, artifact
         )
         artifact.materializer = source_utils.resolve_class(materializer_class)
         artifact.datatype = source_utils.resolve_class(type(data))
         materializer_class(artifact).handle_return(data)
-
-    def check_output_types_match(
-        self, output_value: Any, specified_type: Type[Any]
-    ) -> None:
-        """Raise error if types don't match.
-
-        Args:
-            output_value: Value of output.
-            specified_type: What the type of output should be as defined in the
-                signature.
-
-        Raises:
-            ValueError: if types do not match.
-        """
-        # TODO [ENG-160]: Include this check when we figure out the logic of
-        #  slightly different subclasses.
-        if not do_types_match(type(output_value), specified_type):
-            raise ValueError(
-                f"Output `{output_value}` of type {type(output_value)} does "
-                f"not match specified return type {specified_type} in step "
-                f"{getattr(self, PARAM_STEP_NAME)}"
-            )
 
     def Do(
         self,
@@ -532,11 +492,10 @@ class _FunctionExecutor(BaseExecutor):
         with StepEnvironment(
             pipeline_name=self._context.pipeline_info.id,
             pipeline_run_id=self._context.pipeline_run_id,
-            step_name=getattr(self, PARAM_STEP_NAME),
+            step_name=step_name,
         ):
             return_values = self._FUNCTION(**function_params)
 
-        spec = inspect.getfullargspec(inspect.unwrap(self._FUNCTION))
         return_type: Type[Any] = spec.annotations.get("return", None)
         if return_type is not None:
             if isinstance(return_type, Output):
@@ -571,6 +530,11 @@ class _FunctionExecutor(BaseExecutor):
             for return_value, (output_name, output_type) in zip(
                 return_values, output_annotations
             ):
+                # Skip materialization if the output is specified as a
+                # BaseArtifact (subclass)
+                if issubclass(output_type, BaseArtifact):
+                    continue
+
                 if not isinstance(return_value, output_type):
                     raise StepInterfaceError(
                         f"Wrong type for output '{output_name}' of step "
