@@ -95,7 +95,7 @@ your project, you get the following benefits:
 | 🙋‍♀️ **[Contribute]** | How to contribute to the ZenML project and code base. |
 
 [ZenML 101]: https://docs.zenml.io/
-[Core Concepts]: https://docs.zenml.io/core-concepts
+[Core Concepts]: https://docs.zenml.io/getting-started/core-concepts
 [API Guide]: https://docs.zenml.io/v/docs/developer-guide/steps-and-pipelines/functional-vs-class-based-api
 [New in v0.11.0]: https://github.com/zenml-io/zenml/releases
 [Vote for Features]: https://zenml.io/discussion
@@ -133,7 +133,7 @@ cloud](docs/book/assets/core_concepts/concepts-3.png)
 Once code is organized into a ZenML pipeline, you can supercharge your ML
 development with [powerful
 integrations](https://docs.zenml.io/mlops-stacks/integrations) on multiple [MLOps
-stacks](https://docs.zenml.io/core-concepts). There are lots of moving parts for
+stacks](https://docs.zenml.io/mlops-stacks/categories). There are lots of moving parts for
 all the MLOps tooling and infrastructure you require for ML in production and
 ZenML aims to bring it all together under one roof.
 
