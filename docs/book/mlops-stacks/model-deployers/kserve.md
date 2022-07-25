@@ -31,7 +31,7 @@ frameworks.
 
 * If you want more advanced deployment strategies like A/B testing, canary deployments, ensembles and transformers.
 
-* if you want to overcome the model deployment sclability problems. Read more about KServe Multi Model Serving or 
+* if you want to overcome the model deployment Scalability problems. Read more about KServe Multi Model Serving or 
 [ModelMesh ](https://kserve.github.io/website/0.9/modelserving/mms/modelmesh/overview/).
 
 If you are looking for a more easy way to deploy your models locally, you can use the [MLflow Model Deployer](./mlflow.md) flavor.

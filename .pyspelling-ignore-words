@@ -1182,3 +1182,8 @@ zenmldocker
 zenmlregistry
 zenserver
 zenserver
+KServeDeployerStepConfig
+KServeDeploymentConfig
+ModelMesh
+Rollouts
+TorchServeParameters
