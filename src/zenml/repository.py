@@ -149,19 +149,28 @@ class RepositoryMetaClass(ABCMeta):
         Returns:
             Repository: The global Repository instance.
         """
+        from zenml.steps.step_environment import (
+            STEP_ENVIRONMENT_NAME,
+            StepEnvironment,
+        )
+
+        step_env = cast(
+            StepEnvironment, Environment().get_component(STEP_ENVIRONMENT_NAME)
+        )
+
         # `skip_repository_check` is a special kwarg that can be passed to
         # the Repository constructor to silent the message that warns users
         # about accessing external information in their steps.
         if not kwargs.pop("skip_repository_check", False):
-            if Environment().step_is_running:
+            if step_env and step_env.cache_enabled:
                 logger.warning(
-                    "You are accessing repository information during a step "
-                    "execution. If your step has caching enabled, future "
-                    "executions of this step may be cached even though the "
-                    "repository information may be different. You should take "
-                    "this into consideration and adjust your step to disable "
-                    "caching if needed. Alternatively, use a `StepContext` "
-                    "inside your step instead, as covered here:",
+                    "You are accessing repository information from a step "
+                    "that has caching enabled. Future executions of this step "
+                    "may be cached even though the repository information may "
+                    "be different. You should take this into consideration and "
+                    "adjust your step to disable caching if needed. "
+                    "Alternatively, use a `StepContext` inside your step "
+                    "instead, as covered here: "
                     "https://docs.zenml.io/developer-guide/advanced-usage/step-fixtures#step-contexts",
                 )
 
