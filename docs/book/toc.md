@@ -31,6 +31,7 @@
   * [Pass Custom Data Types through Steps](./developer-guide/advanced-usage/materializer.md)
   * [Access the Active Stack within Steps](./developer-guide/advanced-usage/step-fixtures.md)
   * [Access Global Info within Steps](./developer-guide/advanced-usage/environment.md)
+  * [Specify Step Resources](./developer-guide/advanced-usage/specify-step-resources.md)
   * [Manage External Services](./developer-guide/advanced-usage/manage-external-services.md)
   * [Manage Docker Images](./developer-guide/advanced-usage/docker.md)
   * [Set Stacks and Profiles with Environment Variables](./developer-guide/advanced-usage/stack-profile-environment-variables.md)

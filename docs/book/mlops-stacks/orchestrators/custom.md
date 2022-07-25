@@ -120,6 +120,19 @@ command and arguments that will make the image run just the one step.
 The ContainerOps are assembled according to their interdependencies inside a
 `dsl.Pipeline` which can then be compiled into the yaml file.
 
+## Handling per-step resources
+
+If your orchestrator allows specification of per-step resources, make sure
+to handle the configurations defined on each step:
+
+```python
+def prepare_or_run_pipeline(...):
+    for step in sorted_steps:
+        if self.requires_resources_in_orchestration_environment(step):
+            # make sure to handle the specified resources
+            ...
+```
+
 ## Base Implementation of the Step Entrypoint Configuration
 
 Within the base Docker images that are used for container-based orchestration
