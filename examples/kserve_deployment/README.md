@@ -476,7 +476,7 @@ To stop the service, run `zenml served-models delete a9e967a1-9b26-4d5c-855c-e5a
 
 Example of the Tensorflow inference pipeline when run with the remote Kubeflow stack:
 
-![Tensorflow Inference Pipeline](assets/tensoflow_inference_remote.png)
+![Tensorflow Inference Pipeline](assets/tensorflow_inference_remote.png)
 
 
 To stop the service, re-run the same command and supply the `--stop-service` argument.
