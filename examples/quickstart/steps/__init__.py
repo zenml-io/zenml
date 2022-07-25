@@ -4,3 +4,4 @@ from steps.evaluators import evaluator
 from steps.prediction_steps import prediction_service_loader, predictor
 from steps.skew_comparisons import drift_detector, skew_comparison
 from steps.trainers import svc_trainer_mlflow
+from steps.model_deployers import model_deployer
