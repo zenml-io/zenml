@@ -268,7 +268,6 @@ def test_run_example(
     finally:
         # clean up
         try:
-            # subprocess.check_call(["docker", "system", "prune", "-a", "-f"])
             os.chdir(previous_wd)
             shutil.rmtree(tmp_path)
         except PermissionError:
