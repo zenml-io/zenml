@@ -158,7 +158,7 @@ def load_pretrained_mobilenetv3(num_classes: int = 2):
     model = models.mobilenet_v3_small(pretrained=True)
     for param in model.parameters():
         param.requires_grad = False
-    model.classifier = nn.Linear(576, num_classes)
+    model.classifier[-1] = nn.Linear(1024, num_classes)
     model.num_classes = num_classes
     return model
 
@@ -171,11 +171,12 @@ def load_mobilenetv3_transforms():
 
 class PytorchModelTrainerConfig(BaseStepConfig):
     batch_size = 1
-    num_epochs = 1
+    num_epochs = 10
+    learning_rate = 5e-3
     device = "cpu"
     shuffle = True
     num_workers = 1
-    seed = 42
+    seed = 42  # don't change: this seed ensures a good train/val split
 
 
 @step(enable_cache=False)
@@ -228,7 +229,9 @@ def pytorch_model_trainer(
     }
 
     # Define optimizer
-    optimizer_ft = optim.Adam(params=model.classifier.parameters())
+    optimizer_ft = optim.Adam(
+        params=model.classifier[-1].parameters(), lr=config.learning_rate
+    )
 
     # Define loss
     criterion = nn.CrossEntropyLoss()
