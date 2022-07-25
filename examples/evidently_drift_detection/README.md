@@ -63,7 +63,9 @@ dataframes for the comparison to take place.
 We even allow you to use the Evidently visualization tool easily to display data
 drift diagrams in your browser or within a Jupyter notebook:
 
-![Evidently drift visualization UI](assets/drift_visualization.png)
+![Evidently drift visualization 1](assets/drift-visualization-01.png)
+![Evidently drift visualization 2](assets/drift-visualization-02.png)
+
 
 # ☁️ Run in Colab
 If you have a google account, you can get started directly with google colab - [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/evidently_drift_detection/evidently.ipynb)
