@@ -29,7 +29,6 @@ import importlib
 import inspect
 import os
 import pathlib
-import site
 import sys
 import types
 from contextlib import contextmanager
