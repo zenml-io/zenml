@@ -86,6 +86,7 @@ class CustomDataset:
         temp_dir = tempfile.TemporaryDirectory()
         for i, image_url in enumerate(image_urls):
             parts = image_url.split("/")
+            breakpoint()
             az_url = "az://" + "/".join(parts[3:])  # TODO: other providers?
             path = os.path.join(temp_dir.name, f"{i}.jpeg")
             io_utils.copy(az_url, path)
