@@ -1,4 +1,4 @@
-# 🚀 KServe Deployment Example - Scikit-Learn and Pytorch Examples 🚀
+# 🚀 KServe Deployment Example - TensorFlow and Pytorch Examples 🚀
 
 [KServe](https://kserve.github.io/website) is a Kubernetes-based model inference platform
 built for highly scalable deployment use cases. It provides a standardized inference protocol 
@@ -445,7 +445,10 @@ KServe deployment service started and reachable at:
 Step `kserve_model_deployer_step` has finished in 29.502s.
 Pipeline run `tensorflow_training_deployment_pipeline-24_Jul_22-23_57_50_176513` has finished in 31.799s.
 ``` 
-To stop the service, re-run the same command and supply the `--stop-service` argument.
+
+Example of the Tensorflow training/deployment pipeline when run with the remote Kubeflow stack:
+
+![Tensorflow Training/Deployment Pipeline](assets/tensorflow_train_deploy_remote.png)
 
 To run the TensorFlow Inference pipeline:
 
@@ -470,6 +473,14 @@ The KServe prediction server is running remotely as a Kubernetes service and acc
     With the hostname: `mnist-tensorflow.kubeflow.example.com.`
 To stop the service, run `zenml served-models delete a9e967a1-9b26-4d5c-855c-e5abba0b020b`.
 ```
+
+Example of the Tensorflow inference pipeline when run with the remote Kubeflow stack:
+
+![Tensorflow Inference Pipeline](assets/tensoflow_inference_remote.png)
+
+
+To stop the service, re-run the same command and supply the `--stop-service` argument.
+
 ## 🖥 Run PyTorch Pipeline
 
 As PyTorch becomes more of a standard framework for writing Computer Vision
@@ -540,6 +551,10 @@ Step kserve_model_deployer_step has finished in 32.602s.
 Pipeline run `tensorflow_training_deployment_pipeline-25_Jul_22-00_17_10_197418` has finished in 34.904s.
 ```
 
+Example of the PyTorch training/deployment pipeline when run with the remote Kubeflow stack:
+
+![PyTorch Training/Deployment Pipeline](assets/pytorch_train_deploy_remote.png)
+
 To run the PyTorch inference pipeline:
 
 ```shell
@@ -565,6 +580,13 @@ The KServe prediction server is running remotely as a Kubernetes service and acc
     With the hostname: `mnist-tensorflow.kubeflow.example.com.`
 To stop the service, run `zenml served-models delete 62aac6aa-88fd-4eb7-a753-b46f1658775c`.
 ```
+
+Example of the PyTorch inference pipeline when run with the remote Kubeflow stack:
+
+![PyTorch Inference Pipeline](assets/pytorch_inference_remote.png)
+
+
+## 🎮 ZenML Served Models CLI
 
 The `zenml served-models list` CLI command can be run to list the active model servers:
 
@@ -630,7 +652,7 @@ CLI command:
 $ zenml served-models delete 62aac6aa-88fd-4eb7-a753-b46f1658775c
 ```
 
-### 🧽 Clean up
+## 🧽 Clean up
 
 To stop any prediction servers running in the background, use the `zenml model-server list`
 and `zenml model-server delete <uuid>` CLI commands.:
