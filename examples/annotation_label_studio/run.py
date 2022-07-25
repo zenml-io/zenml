@@ -30,7 +30,7 @@ from steps.pytorch_trainer import (
     PytorchModelTrainerConfig,
     pytorch_model_trainer,
 )
-from steps.sync_new_data_to_label_studio import azure_data_sync
+from steps.sync_new_data_to_label_studio import s3_data_sync
 
 
 @click.command()
@@ -75,7 +75,7 @@ def main(pipeline, rerun):
                 PredictionServiceLoaderConfig()
             ),  # TODO: use model deployer?
             predictor=predictor(),  # TODO: use model deployer?
-            data_syncer=azure_data_sync,
+            data_syncer=s3_data_sync,
         ).run()
 
 

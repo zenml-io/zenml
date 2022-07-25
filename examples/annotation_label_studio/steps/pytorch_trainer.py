@@ -1,6 +1,7 @@
 import os
 import tempfile
 from typing import Dict, List
+from urllib.parse import urlparse
 
 import numpy as np
 import torch
@@ -10,6 +11,12 @@ from PIL import Image
 from steps.get_or_create_dataset import LABELS
 from torchvision import models, transforms
 
+from zenml.integrations.label_studio.label_studio_utils import (
+    get_file_extension,
+    is_azure_url,
+    is_gcs_url,
+    is_s3_url,
+)
 from zenml.io import fileio
 from zenml.steps import BaseStepConfig, step
 from zenml.steps.step_context import StepContext
@@ -77,7 +84,9 @@ def train_model(
 
 
 class CustomDataset:
-    def __init__(self, image_urls, labels, transforms) -> None:
+    def __init__(
+        self, image_urls, labels, transforms, artifact_store_path: str
+    ) -> None:
         assert len(image_urls) == len(labels)
         self.transforms = transforms
 
@@ -86,10 +95,15 @@ class CustomDataset:
         temp_dir = tempfile.TemporaryDirectory()
         for i, image_url in enumerate(image_urls):
             parts = image_url.split("/")
-            breakpoint()
-            az_url = "az://" + "/".join(parts[3:])  # TODO: other providers?
-            path = os.path.join(temp_dir.name, f"{i}.jpeg")
-            io_utils.copy(az_url, path)
+            if is_s3_url(image_url):
+                file_url = f"{artifact_store_path}{urlparse(image_url).path}"
+            elif is_azure_url(image_url):
+                file_url = "az://" + "/".join(parts[3:])
+            elif is_gcs_url(image_url):
+                file_url = "gcs://" + "/".join(parts[3:])
+            file_extension = get_file_extension(urlparse(image_url).path)
+            path = os.path.join(temp_dir.name, f"{i}{file_extension}")
+            io_utils.copy(file_url, path)
             with fileio.open(path, "rb") as f:
                 image = np.asarray(Image.open(f))
                 self.images.append(image)
@@ -196,12 +210,15 @@ def pytorch_model_trainer(
     if not _is_new_data_available(image_urls, labels, context):
         return model
 
+    artifact_store_path = context.stack.artifact_store.path
+
     # Otherwise finetune the model on the current data
     # Write images and labels to torch dataset
     dataset = CustomDataset(
         image_urls=image_urls,
         labels=labels,
         transforms=load_mobilenetv3_transforms(),
+        artifact_store_path=artifact_store_path,
     )
 
     # Split dataset into train and val

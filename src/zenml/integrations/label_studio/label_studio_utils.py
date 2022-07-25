@@ -65,18 +65,6 @@ def get_gcs_credentials() -> Optional[str]:
     return os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
 
 
-# def get_s3_credentials() -> Tuple[Optional[str], Optional[str], Optional[str]]:
-#     """Returns access credentials for S3 from the environment.
-
-#     Returns:
-#         Tuple of (access_key_id, secret_access_key, session_token).
-#     """
-#     access_key_id = os.environ.get("AWS_ACCESS_KEY_ID")
-#     secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
-#     session_token = os.environ.get("AWS_SESSION_TOKEN")
-#     return access_key_id, secret_access_key, session_token
-
-
 def convert_pred_filenames_to_task_ids(
     preds: List[Dict[str, Any]],
     tasks: List[Dict[str, Any]],
@@ -118,3 +106,27 @@ def convert_pred_filenames_to_task_ids(
         }
         for pred in preds
     ]
+
+
+def is_s3_url(url: str) -> bool:
+    """Return whether the given URL is an S3 URL."""
+    return "s3.amazonaws" in urlparse(url).netloc
+
+
+def is_azure_url(url: str) -> bool:
+    """Return whether the given URL is an Azure URL."""
+    breakpoint()
+    return "s3.amazonaws" in urlparse(url).netloc
+    # return url.startswith("azure://")
+
+
+def is_gcs_url(url: str) -> bool:
+    """Return whether the given URL is an GCS URL."""
+    breakpoint()
+    return "s3.amazonaws" in urlparse(url).netloc
+    # return url.startswith("gs://")
+
+
+def get_file_extension(path_str: str) -> str:
+    """Return the file extension of the given filename."""
+    return os.path.splitext(urlparse(path_str).path)[1]
