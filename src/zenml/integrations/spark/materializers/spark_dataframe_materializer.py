@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+import os.path
 import tempfile
 from typing import Any, Type
 
@@ -20,6 +20,8 @@ from pyspark.sql import DataFrame, SparkSession
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
+
+DEFAULT_FILENAME = "data.parquet"
 
 
 class SparkDataFrameMaterializer(BaseMaterializer):
@@ -44,7 +46,8 @@ class SparkDataFrameMaterializer(BaseMaterializer):
         spark = SparkSession.builder.getOrCreate()
 
         # Read the data from the temporary directory
-        return spark.read.load(temp_dir.name, format="parquet")
+        filename = os.path.join(temp_dir.name, DEFAULT_FILENAME)
+        return spark.read.load(filename, format="parquet")
 
     def handle_return(self, df: DataFrame) -> None:
         """Writes a spark dataframe.
@@ -55,8 +58,12 @@ class SparkDataFrameMaterializer(BaseMaterializer):
         temp_dir = tempfile.TemporaryDirectory()
 
         super().handle_return(df)
+
+        # Write the model to a temporary directory
+        filename = os.path.join(temp_dir.name, DEFAULT_FILENAME)
         df.write.save(temp_dir.name, format="parquet")
 
+        # Copy the results to the artifact store
         io_utils.copy_dir(temp_dir.name, self.artifact.uri)
 
         # Remove the temporary directory
