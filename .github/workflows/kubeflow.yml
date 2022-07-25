@@ -58,7 +58,7 @@ jobs:
       - name: Build docker image
         # this step can be much faster if we use an image that copies the
         # lockfile that was generated in the previous step
-        run: docker build -t zenml-base-image:latest -f docker/base-dev.Dockerfile .
+        run: docker build -t zenml-base-image:latest -f docker/local-dev.Dockerfile .
 
       - name: Setup tmate session
         if: ${{ github.event.inputs.tags }}
