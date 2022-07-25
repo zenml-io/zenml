@@ -137,7 +137,9 @@ def prepare_torch_service_config(
     else:
         # Create a temporary folder
         temp_dir = tempfile.mkdtemp(prefix="zenml-pytorch-temp-")
-        tmp_model_uri = os.path.join(str(temp_dir), f"{config.service_config.model_name}.pt")
+        tmp_model_uri = os.path.join(
+            str(temp_dir), f"{config.service_config.model_name}.pt"
+        )
 
         # Copy from artifact store to temporary file
         fileio.copy(f"{model_uri}/checkpoint.pt", tmp_model_uri)

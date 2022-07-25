@@ -87,6 +87,7 @@ class KServeModelDeployer(BaseModelDeployer):
         """
         return {
             "PREDICTION_URL": service_instance.prediction_url,
+            "PREDICTION_HOSTNAME": service_instance.prediction_hostname,
             "MODEL_URI": service_instance.config.model_uri,
             "MODEL_NAME": service_instance.config.model_name,
             "KSERVE_INFERENCE_SERVICE": service_instance.crd_name,
