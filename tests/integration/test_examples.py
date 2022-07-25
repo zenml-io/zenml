@@ -70,10 +70,10 @@ class ExampleConfiguration(BaseModel, ABC):
 
     name: str
     runs_on_windows: bool
-    required_stack_components: List[StackComponent] = list()
+    required_stack_components: List[StackComponent] = []
     pipeline_name: str
     pipeline_path: str
-    step_count: Optional[int]
+    step_count: Optional[int] = None
     config_file_path: Optional[str] = None
     validation_function: Optional[Callable] = None
 
