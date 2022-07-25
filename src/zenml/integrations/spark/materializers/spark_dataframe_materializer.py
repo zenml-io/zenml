@@ -61,7 +61,7 @@ class SparkDataFrameMaterializer(BaseMaterializer):
 
         # Write the model to a temporary directory
         filename = os.path.join(temp_dir.name, DEFAULT_FILENAME)
-        df.write.save(temp_dir.name, format="parquet")
+        df.write.save(filename, format="parquet")
 
         # Copy the results to the artifact store
         io_utils.copy_dir(temp_dir.name, self.artifact.uri)
