@@ -242,7 +242,7 @@ def data_profiler(
     return profile
 ```
 
-Have a look at [the complete list of methods and parameters available in the `WhylogsDataValidator` API](https://apidocs.zenml.io/0.11.0/api_docs/integrations/#zenml.integrations.whylogs.data_validators.whylogs_data_validator.WhylogsDataValidator) in the API docs.
+Have a look at [the complete list of methods and parameters available in the `WhylogsDataValidator` API](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.whylogs.data_validators.whylogs_data_validator.WhylogsDataValidator) in the API docs.
 
 ### Call whylogs directly
 
