@@ -132,7 +132,7 @@ cloud](docs/book/assets/core_concepts/concepts-3.png)
 
 Once code is organized into a ZenML pipeline, you can supercharge your ML
 development with [powerful
-integrations](https://docs.zenml.io/advanced-guide/integrations) on multiple [MLOps
+integrations](https://docs.zenml.io/mlops-stacks/integrations) on multiple [MLOps
 stacks](https://docs.zenml.io/core-concepts). There are lots of moving parts for
 all the MLOps tooling and infrastructure you require for ML in production and
 ZenML aims to bring it all together under one roof.
