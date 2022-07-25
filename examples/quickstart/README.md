@@ -57,9 +57,10 @@ zenml profile create quickstart
 zenml profile set quickstart
 
 # Register required ZenML stack
+zenml data-validator register evidently_data_validator --flavor=evidently
 zenml experiment-tracker register mlflow_tracker --flavor=mlflow
 zenml model-deployer register mlflow_deployer --flavor=mlflow
-zenml stack update default -d mlflow_deployer -e mlflow_tracker
+zenml stack update default -d mlflow_deployer -e mlflow_tracker -dv evidently_data_validator
 
 # Run the quickstart script
 python run.py
