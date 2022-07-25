@@ -55,7 +55,7 @@ def generate_dockerfile_contents(
         f"WORKDIR {ZENML_DIR}",
         f"COPY entrypoint.py .",
         "RUN apt-get -y update",
-        "RUN apt-get -y install git"
+        "RUN apt-get -y install git",
     ]
 
     # Add env variables
