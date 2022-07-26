@@ -8,7 +8,7 @@ from zenml.steps import Output, step
 @step(enable_cache=False)
 def prediction_service_loader() -> BaseService:
     """Load the model service of our train_evaluate_deploy_pipeline."""
-    repo = Repository(skip_repository_check=True)
+    repo = Repository()
     model_deployer = repo.active_stack.model_deployer
     services = model_deployer.find_model_server(
         pipeline_name="training_pipeline",

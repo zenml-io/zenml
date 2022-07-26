@@ -508,6 +508,7 @@ class StepEntrypointConfiguration(ABC):
             execution_parameter_names=set(execution_parameters),
             step_function=step.entrypoint,
             materializers=materializers,
+            enable_cache=step.enable_cache,
         )
 
     def run(self) -> None:
