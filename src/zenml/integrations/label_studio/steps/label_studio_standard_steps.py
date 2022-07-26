@@ -28,6 +28,8 @@ from zenml.steps import BaseStepConfig, StepContext, step
 
 logger = get_logger(__name__)
 
+LABEL_STUDIO_AWS_SECRET_NAME = "aws_label_studio"
+
 
 class LabelStudioDatasetRegistrationConfig(BaseStepConfig):
     """Step config when registering a dataset with Label Studio.
@@ -259,13 +261,13 @@ def sync_new_data_to_label_studio(
         ).token
     elif config.storage_type == "s3":
         config.aws_access_key_id = secrets_manager.get_secret(  # type: ignore[union-attr]
-            authentication_secret_name
+            LABEL_STUDIO_AWS_SECRET_NAME
         ).aws_access_key_id
         config.aws_secret_access_key = secrets_manager.get_secret(  # type: ignore[union-attr]
-            authentication_secret_name
+            LABEL_STUDIO_AWS_SECRET_NAME
         ).aws_secret_access_key
         config.aws_session_token = secrets_manager.get_secret(  # type: ignore[union-attr]
-            authentication_secret_name
+            LABEL_STUDIO_AWS_SECRET_NAME
         ).aws_session_token
 
     if annotator and annotator._connection_available():

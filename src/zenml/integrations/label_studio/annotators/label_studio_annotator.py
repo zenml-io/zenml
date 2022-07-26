@@ -516,8 +516,9 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         Raises:
             ValueError: If the storage type is not supported.
         """
-        if self._storage_source_already_exists(uri, config, dataset):
-            return None
+        # TODO: check if proposed storage source has differing / new data
+        # if self._storage_source_already_exists(uri, config, dataset):
+        #     return None
 
         storage_connection_args = {
             "prefix": config.prefix,

@@ -88,7 +88,6 @@ def convert_pred_filenames_to_task_ids(
         ]
         for task in tasks
     }
-
     # GCS and S3 URL encodes filenames containing spaces, requiring this
     # separate encoding step
     if storage_type in {"gcs", "s3"}:
@@ -96,7 +95,6 @@ def convert_pred_filenames_to_task_ids(
             {"filename": quote(pred["filename"]), "result": pred["result"]}
             for pred in preds
         ]
-
     return [
         {
             "task": int(
