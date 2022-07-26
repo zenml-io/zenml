@@ -75,9 +75,8 @@ jobs:
       - name: Install Prerequisites
         run: |
           source $VENV
-          zenml integration install s3 kubeflow \
-            evidently facets huggingface mlflow tensorflow sklearn xgboost lightgbm slack neural_prophet -f
-
+          zenml integration install s3 kubeflow evidently facets huggingface mlflow \
+            tensorflow sklearn xgboost lightgbm slack neural_prophet deepchecks -f
       - name: Setup tmate session
         if: ${{ github.event.inputs.tags }}
         uses: mxschmitt/action-tmate@v3

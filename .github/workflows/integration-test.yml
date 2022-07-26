@@ -67,8 +67,9 @@ jobs:
       - name: Install Prerequisites
         run: |
           source $VENV
-          zenml integration install s3 kubeflow \
-            evidently facets huggingface mlflow tensorflow sklearn xgboost lightgbm slack neural_prophet -f
+          zenml integration install s3 kubeflow evidently facets huggingface mlflow \
+            tensorflow sklearn xgboost lightgbm slack neural_prophet deepchecks \
+            great_expectations -f
 
       - name: Test
         env:
