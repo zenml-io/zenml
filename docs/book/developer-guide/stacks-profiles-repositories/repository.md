@@ -107,7 +107,7 @@ ZenML repository initialized at /tmp/zenml.
 The local active profile was initialized to 'default' and the local active stack
 to 'default'. This local configuration will only take effect when you're running
 ZenML from the initialized repository root, or from a subdirectory. For more
-information on profile and stack configuration, please visit https://docs.zenml.io .
+information on profile and stack configuration, please visit https://docs.zenml.io.
 
 /tmp/zenml$ zenml profile list
 Running with active profile: 'default' (local)
