@@ -113,9 +113,7 @@ def is_s3_url(url: str) -> bool:
 
 def is_azure_url(url: str) -> bool:
     """Return whether the given URL is an Azure URL."""
-    breakpoint()
-    return "s3.amazonaws" in urlparse(url).netloc
-    # return url.startswith("azure://")
+    return "blob.core.windows.net" in urlparse(url).netloc
 
 
 def is_gcs_url(url: str) -> bool:
