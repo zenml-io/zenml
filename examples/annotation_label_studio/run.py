@@ -30,10 +30,15 @@ from steps.pytorch_trainer import (
     PytorchModelTrainerConfig,
     pytorch_model_trainer,
 )
-from steps.sync_new_data_to_label_studio import s3_data_sync
+from steps.sync_new_data_to_label_studio import (
+    azure_data_sync,
+    gcs_data_sync,
+    s3_data_sync,
+)
 
 
 @click.command()
+@click.argument("cloud_platform")
 @click.option(
     "--train",
     "pipeline",
@@ -52,8 +57,15 @@ from steps.sync_new_data_to_label_studio import s3_data_sync
     is_flag=True,
     default=False,
 )
-def main(pipeline, rerun):
+def main(cloud_platform, pipeline, rerun):
     """Simple CLI interface for annotation example."""
+    if cloud_platform == "azure":
+        sync_function = azure_data_sync
+    elif cloud_platform == "gcp":
+        sync_function = gcs_data_sync
+    elif cloud_platform == "aws":
+        sync_function = s3_data_sync
+
     if pipeline == "train":
         training_pipeline(
             get_or_create_dataset=get_or_create_the_dataset,
@@ -75,7 +87,7 @@ def main(pipeline, rerun):
                 PredictionServiceLoaderConfig()
             ),
             predictor=predictor(),
-            data_syncer=s3_data_sync,
+            data_syncer=sync_function,
         ).run()
 
 
