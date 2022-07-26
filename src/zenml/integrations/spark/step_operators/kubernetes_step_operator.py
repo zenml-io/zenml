@@ -14,7 +14,7 @@
 import os
 import subprocess
 from typing import AbstractSet, ClassVar, Dict, List, Optional
-
+import tempfile
 from zenml.constants import ENV_ZENML_CONFIG_PATH
 from zenml.integrations.spark import SPARK_KUBERNETES_STEP_OPERATOR
 from zenml.io.fileio import copy
@@ -31,7 +31,7 @@ LOCAL_ENTRYPOINT = entrypoint.__file__
 ZENML_DIR = "/zenml/"
 APP_DIR = "/app/"
 CONTAINER_ZENML_CONFIG_DIR = ".zenconfig"
-
+ENTRYPOINT_NAME = "__zenml_entrypoint__.py"
 
 def generate_dockerfile_contents(
     base_image: str,
@@ -52,10 +52,8 @@ def generate_dockerfile_contents(
     lines = [
         f"FROM {base_image}",
         "USER root",  # required to install the requirements
-        f"WORKDIR {ZENML_DIR}",
-        f"COPY entrypoint.py .",
-        "RUN apt-get -y update",
-        "RUN apt-get -y install git",
+        "RUN apt-get -y update",  # TODO: To be removed
+        "RUN apt-get -y install git",  # TODO: To be removed
     ]
 
     # Add env variables
@@ -88,41 +86,55 @@ class KubernetesSparkStepOperator(BaseStepOperator):
     deploy_mode: str = "cluster"
     configuration_properties: List[str] = []
 
+    # Parameters for the docker images
+    spark_base_image_name: str = None
+
+    # Parameters for kubernetes
+    kubernetes_namespace: Optional[str] = None
+    kubernetes_service_account: Optional[str] = None
+
     # Class configuration
     FLAVOR: ClassVar[str] = SPARK_KUBERNETES_STEP_OPERATOR
 
-    @staticmethod
     def _build_docker_image(
+        self,
         pipeline_name,
         requirements,
     ):
-        repo = Repository()
-        container_registry = repo.active_stack.container_registry
-        if not container_registry:
-            raise RuntimeError("Missing container registry")
-        registry_uri = container_registry.uri.rstrip("/")
-        image_name = f"{registry_uri}/spark-zenml:{pipeline_name}"
-
         """Create the proper image to use for spark on k8s."""
-        base_image = f"{registry_uri}/spark-base:1.0"
-
-        dockerfile_content = generate_dockerfile_contents(
-            base_image=base_image, requirements=requirements
+        # Copy over the entrypoint first
+        entrypoint_path = os.path.join(
+            get_source_root_path(),
+            ENTRYPOINT_NAME
         )
-        dockerfile_path = os.path.join(os.getcwd(), "DOCKERFILE")
-        entrypoint_path = os.path.join(os.getcwd(), "entrypoint.py")
         copy(LOCAL_ENTRYPOINT, entrypoint_path, overwrite=True)
+
+        # Create a dockerfile and save it to a temp directory
+        dockerfile_content = generate_dockerfile_contents(
+            base_image=self.spark_base_image_name,
+            requirements=requirements
+        )
+        dockerfile_path = os.path.join(
+            tempfile.TemporaryDirectory().name,
+            "Dockerfile"
+        )
         write_file_contents_as_string(
             dockerfile_path,
             dockerfile_content,
         )
 
+        # Build the image and push it to the repository
+        repo = Repository()
+        container_registry = repo.active_stack.container_registry
+        if not container_registry:
+            raise RuntimeError("Missing container registry")
+        registry_uri = container_registry.uri.rstrip("/")
+        image_name = f"{registry_uri}/zenml-spark:{pipeline_name}"
+
         build_docker_image(
             image_name=image_name,
             build_context_path=get_source_root_path(),
             dockerfile_path=dockerfile_path,
-            base_image=base_image,
-            requirements=requirements,
         )
 
         container_registry.push_image(image_name)
@@ -144,14 +156,25 @@ class KubernetesSparkStepOperator(BaseStepOperator):
         configurations = [
             "--conf",
             f"spark.kubernetes.container.image={image_name}",
-            "--conf",
-            "spark.kubernetes.namespace=spark-namespace",
-            "--conf",
-            "spark.kubernetes.authenticate.driver.serviceAccountName=spark-service-account",
         ]
+        if self.kubernetes_namespace:
+            configurations.extend(
+                [
+                    "--conf",
+                    f"spark.kubernetes.namespace={self.kubernetes_namespace}",
+                ]
+            )
+        if self.kubernetes_service_account:
+            configurations.extend(
+                [
+                    "--conf",
+                    f"spark.kubernetes.authenticate.driver.serviceAccountName={self.kubernetes_service_account}",
+                ]
+            )
 
         for o in self.configuration_properties:
             configurations.extend(["--conf", o])
+
         return configurations
 
     @staticmethod
