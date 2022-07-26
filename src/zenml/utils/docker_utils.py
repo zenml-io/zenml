@@ -28,6 +28,7 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ENV_ZENML_CONFIG_PATH
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.pipelines.base_pipeline import PARAM_DOCKERIGNORE_FILE
 from zenml.utils import string_utils
 from zenml.utils.io_utils import read_file_contents_as_string
 
@@ -134,21 +135,17 @@ def create_custom_build_context(
     default_dockerignore_path = os.path.join(
         build_context_path, ".dockerignore"
     )
-    if dockerignore_path:
-        exclude_patterns = _parse_dockerignore(dockerignore_path)
-    elif fileio.exists(default_dockerignore_path):
+    if dockerignore_path or fileio.exists(default_dockerignore_path):
+        if not dockerignore_path:
+            dockerignore_path = default_dockerignore_path
         logger.info(
-            "Using dockerignore found at path '%s' to create docker "
-            "build context.",
-            default_dockerignore_path,
+            "Using dockerignore file `%s` to create docker build context.",
+            dockerignore_path,
         )
-        exclude_patterns = _parse_dockerignore(default_dockerignore_path)
+        exclude_patterns = _parse_dockerignore(dockerignore_path)
     else:
         logger.info(
-            "No explicit dockerignore specified and no file called "
-            ".dockerignore exists at the build context root (%s). "
-            "Creating docker build context with all files inside the build "
-            "context root directory.",
+            "No `.dockerignore` found, including all files inside `%s`.",
             build_context_path,
         )
 
@@ -174,12 +171,13 @@ def create_custom_build_context(
         # The build context exceeds 50MiB and we didn't find any excludes
         # in dockerignore files -> remind to specify a .dockerignore file
         logger.warning(
-            "Build context size for docker image: %s. If you believe this is "
-            "unreasonably large, make sure to include a .dockerignore file at "
-            "the root of your build context (%s) or specify a custom file "
-            "when defining your pipeline.",
+            "Build context size for docker image: `%s`. If you believe this is "
+            "unreasonably large, make sure to include a `.dockerignore` file"
+            "at the root of your build context `%s` or specify a custom file "
+            "for argument `%s` when defining your pipeline.",
             string_utils.get_human_readable_filesize(build_context_size),
             default_dockerignore_path,
+            PARAM_DOCKERIGNORE_FILE,
         )
 
     return context
@@ -237,6 +235,7 @@ def build_docker_image(
     """
     config_path = os.path.join(build_context_path, CONTAINER_ZENML_CONFIG_DIR)
     try:
+        logger.info("Building Docker image `%s`:", image_name)
 
         # Save a copy of the current global configuration with the
         # active profile and the active stack configuration into the build
@@ -254,11 +253,14 @@ def build_docker_image(
                 for package, version in local_requirements.items()
                 if package != "zenml"  # exclude ZenML
             }
+            logger.info("Using requirements from local environment.")
+
+        if requirements:
             logger.info(
-                "Using requirements from local environment to build "
-                "docker image: %s",
-                requirements,
+                "The following external requirements are built into the image:"
             )
+            for requirement in requirements:
+                logger.info(f"\t- `{requirement}`")
 
         if dockerfile_path:
             dockerfile_contents = read_file_contents_as_string(dockerfile_path)
@@ -283,10 +285,7 @@ def build_docker_image(
         if base_image:
             pull_base_image = not is_local_image(base_image)
 
-        logger.info(
-            "Building docker image '%s', this might take a while...",
-            image_name,
-        )
+        logger.info("Building the image might take a while...")
 
         docker_client = DockerClient.from_env()
         # We use the client api directly here, so we can stream the logs
@@ -302,7 +301,7 @@ def build_docker_image(
         # Clean up the temporary build files
         fileio.rmtree(config_path)
 
-    logger.info("Finished building docker image.")
+    logger.info("Finished building Docker image `%s`.", image_name)
 
 
 def push_docker_image(image_name: str) -> None:
@@ -311,11 +310,11 @@ def push_docker_image(image_name: str) -> None:
     Args:
         image_name: The full name (including a tag) of the image to push.
     """
-    logger.info("Pushing docker image '%s'.", image_name)
+    logger.info("Pushing Docker image `%s`.", image_name)
     docker_client = DockerClient.from_env()
     output_stream = docker_client.images.push(image_name, stream=True)
     _process_stream(output_stream)
-    logger.info("Finished pushing docker image.")
+    logger.info("Finished pushing Docker image `%s`.", image_name)
 
 
 def get_image_digest(image_name: str) -> Optional[str]:
@@ -381,7 +380,7 @@ def _process_stream(stream: Iterable[bytes]) -> None:
                 if "error" in line_json:
                     raise RuntimeError(f"Docker error: {line_json['error']}.")
                 elif "stream" in line_json:
-                    logger.info(line_json["stream"].strip())
+                    logger.debug(line_json["stream"].strip())
                 else:
                     pass
             except json.JSONDecodeError as error:
