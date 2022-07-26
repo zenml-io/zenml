@@ -164,7 +164,6 @@ FirstPipeline
 FixtureRequest
 FlavorWrapper
 Flyte
-ForbiddenRepositoryAccessError
 Formatter
 FullAccess
 FunctionType
