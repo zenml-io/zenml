@@ -71,6 +71,12 @@ jobs:
             evidently facets huggingface mlflow tensorflow sklearn xgboost lightgbm slack neural_prophet -f
 
       - name: Test
+        env:
+          TEST_MLFLOW_TRACKING_URI: https://ac8e6c63af207436194ab675ee71d85a-1399000870.us-east-1.elb.amazonaws.com
+          TEST_MLFLOW_TRACKING_USERNAME: ${{ secrets.TEST_MLFLOW_TRACKING_USERNAME }}
+          TEST_MLFLOW_TRACKING_PASSWORD: ${{ secrets.TEST_MLFLOW_TRACKING_PASSWORD }}
+          TEST_SLACK_TOKEN: ${{ secrets.TEST_SLACK_TOKEN }}
+          TEST_SLACK_CHANNEL_ID: ${{ secrets.TEST_SLACK_CHANNEL_ID }}
         run: |
           source $VENV
           bash scripts/test-coverage-xml.sh integration
