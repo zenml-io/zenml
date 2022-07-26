@@ -14,16 +14,21 @@
 """Implementation of the AWS Secrets Manager integration."""
 
 import json
-from typing import Any, ClassVar, Dict, List
+import re
+from typing import Any, ClassVar, Dict, List, Optional
 
 import boto3
+from pydantic import validator
 
 from zenml.exceptions import SecretExistsError
 from zenml.integrations.aws import AWS_SECRET_MANAGER_FLAVOR
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
-from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
+from zenml.secrets_managers.base_secrets_manager import (
+    BaseSecretsManager,
+    SecretsManagerScope,
+)
 
 logger = get_logger(__name__)
 
@@ -57,6 +62,20 @@ class AWSSecretsManager(BaseSecretsManager):
     FLAVOR: ClassVar[str] = AWS_SECRET_MANAGER_FLAVOR
     CLIENT: ClassVar[Any] = None
 
+    @validator("namespace")
+    def validate_namespace(cls, namespace: Optional[str]) -> Optional[str]:
+        """Pydantic validator for the namespace value.
+
+        Args:
+            namespace: The namespace value to validate.
+
+        Returns:
+            The validated namespace value.
+        """
+        if namespace:
+            cls.validate_secret_name(namespace)
+        return namespace
+
     @classmethod
     def _ensure_client_connected(cls, region_name: str) -> None:
         """Ensure that the client is connected to the AWS secrets manager.
@@ -71,6 +90,75 @@ class AWSSecretsManager(BaseSecretsManager):
                 service_name="secretsmanager", region_name=region_name
             )
 
+    @classmethod
+    def validate_secret_name(cls, name: str) -> None:
+        """Validate a secret name.
+
+        AWS secret names must contain only alphanumeric characters and the
+        characters /_+=.@-. The `/` character is only used internally to delimit
+        scopes.
+
+        Args:
+            name: the secret name
+
+        Raises:
+            ValueError: if the secret name is invalid
+        """
+        if not re.fullmatch(r"[a-zA-Z0-9_+=\.@\-]+", name):
+            raise ValueError(
+                f"Invalid secret name or namespace '{name}'. Must contain "
+                f"only alphanumeric characters and the characters _+=.@-."
+            )
+
+    def _get_scope_prefix(self) -> str:
+        """Get the secret name prefix for the current scope.
+
+        Returns:
+            the secret name scope prefix
+        """
+        prefix = ""
+        if self.scope == SecretsManagerScope.COMPONENT:
+            prefix = f"zenml/{str(self.uuid)}/"
+        elif self.scope == SecretsManagerScope.GLOBAL:
+            prefix = "zenml/"
+        elif self.scope == SecretsManagerScope.NAMESPACE:
+            prefix = f"zenml/{self.namespace}/"
+
+        return prefix
+
+    def _get_scoped_secret_name(self, name: str) -> str:
+        """Convert a ZenML secret name into an AWS scoped secret name.
+
+        Args:
+            name: the name of the secret
+
+        Returns:
+            The AWS scoped secret name
+        """
+        prefix = self._get_scope_prefix()
+        return f"{prefix}{name}"
+
+    def _get_unscoped_secret_name(self, name: str) -> Optional[str]:
+        """Extract the name of a ZenML secret from an AWS scoped secret name.
+
+        Args:
+            name: the name of the AWS scoped secret
+
+        Returns:
+            The ZenML secret name or None, if the input secret name does not
+            belong to the current scope.
+        """
+        name_tokens = name.split("/")
+        secret_name = name_tokens[-1]
+        name_tokens[-1]
+        prefix = "/".join(name_tokens)
+
+        if not secret_name or prefix != self._get_scope_prefix():
+            # secret name is not in the current scope
+            return None
+
+        return secret_name
+
     def register_secret(self, secret: BaseSecretSchema) -> None:
         """Registers a new secret.
 
@@ -80,6 +168,7 @@ class AWSSecretsManager(BaseSecretsManager):
         Raises:
             SecretExistsError: if the secret already exists
         """
+        self.validate_secret_name(secret.name)
         self._ensure_client_connected(self.region_name)
         secret_value = jsonify_secret_contents(secret)
 
@@ -88,7 +177,23 @@ class AWSSecretsManager(BaseSecretsManager):
                 f"A Secret with the name {secret.name} already exists"
             )
 
-        kwargs = {"Name": secret.name, "SecretString": secret_value}
+        kwargs: Dict[str, Any] = {
+            "Name": self._get_scoped_secret_name(secret.name),
+            "SecretString": secret_value,
+        }
+        if self.scope != SecretsManagerScope.UNSCOPED:
+            # unscoped secrets do not have tags, for backwards compatibility
+            # purposes
+            kwargs["Tags"] = (
+                [
+                    {
+                        "zenml_component_name": self.name,
+                        "zenml_component_uuid": str(self.uuid),
+                        "zenml_scope": self.scope.value,
+                        "zenml_namespace": self.namespace,
+                    },
+                ],
+            )
 
         self.CLIENT.create_secret(**kwargs)
 
@@ -104,9 +209,10 @@ class AWSSecretsManager(BaseSecretsManager):
         Raises:
             RuntimeError: if the secret does not exist
         """
+        self.validate_secret_name(secret_name)
         self._ensure_client_connected(self.region_name)
         get_secret_value_response = self.CLIENT.get_secret_value(
-            SecretId=secret_name
+            SecretId=self._get_scoped_secret_name(secret_name)
         )
         if "SecretString" not in get_secret_value_response:
             raise RuntimeError(f"No secrets found within the {secret_name}")
@@ -130,11 +236,52 @@ class AWSSecretsManager(BaseSecretsManager):
         """
         self._ensure_client_connected(self.region_name)
 
+        filters: List[Any]
+        prefix = self._get_scope_prefix()
+        if prefix:
+            filters = [
+                {
+                    "Key": "name",
+                    "Values": [
+                        prefix,
+                    ],
+                },
+                {
+                    "Key": "tag-key",
+                    "Values": [
+                        "zenml_scope",
+                    ],
+                },
+                {
+                    "Key": "tag-value",
+                    "Values": [
+                        self.scope,
+                    ],
+                },
+            ]
+        else:
+            # unscoped (legacy) secrets don't have tags
+            filters = [
+                {
+                    "Key": "tag-key",
+                    "Values": [
+                        "!zenml_scope",
+                    ],
+                },
+            ]
+
         # TODO [ENG-720]: Deal with pagination in the aws secret manager when
         #  listing all secrets
         # TODO [ENG-721]: take out this magic maxresults number
-        response = self.CLIENT.list_secrets(MaxResults=100)
-        return [secret["Name"] for secret in response["SecretList"]]
+        response = self.CLIENT.list_secrets(MaxResults=100, Filters=filters)
+        results = [
+            self._get_unscoped_secret_name(secret["Name"])
+            for secret in response["SecretList"]
+        ]
+
+        # filter out out of scope secrets that may have slipped through (i.e.
+        # for which `_get_unscoped_secret_name` returned None)
+        return list(filter(None, results))
 
     def update_secret(self, secret: BaseSecretSchema) -> None:
         """Update an existing secret.
@@ -146,7 +293,10 @@ class AWSSecretsManager(BaseSecretsManager):
 
         secret_value = jsonify_secret_contents(secret)
 
-        kwargs = {"SecretId": secret.name, "SecretString": secret_value}
+        kwargs = {
+            "SecretId": self._get_scoped_secret_name(secret.name),
+            "SecretString": secret_value,
+        }
 
         self.CLIENT.put_secret_value(**kwargs)
 
@@ -158,7 +308,8 @@ class AWSSecretsManager(BaseSecretsManager):
         """
         self._ensure_client_connected(self.region_name)
         self.CLIENT.delete_secret(
-            SecretId=secret_name, ForceDeleteWithoutRecovery=False
+            SecretId=self._get_scoped_secret_name(secret_name),
+            ForceDeleteWithoutRecovery=False,
         )
 
     def delete_all_secrets(self) -> None:
@@ -170,5 +321,6 @@ class AWSSecretsManager(BaseSecretsManager):
         self._ensure_client_connected(self.region_name)
         for secret_name in self.get_all_secret_keys():
             self.CLIENT.delete_secret(
-                SecretId=secret_name, ForceDeleteWithoutRecovery=True
+                SecretId=self._get_scoped_secret_name(secret_name),
+                ForceDeleteWithoutRecovery=True,
             )
