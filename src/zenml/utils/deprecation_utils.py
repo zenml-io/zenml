@@ -104,44 +104,41 @@ def deprecate_pydantic_attributes(
                     "annotation."
                 )
 
-            if deprecated_attribute in values:
-                if replacement_attribute is None:
-                    warnings.warn(
-                        f"The attribute {deprecated_attribute} of class "
-                        f"{cls.__name__} will be deprecated soon.",
-                        DeprecationWarning,
-                    )
-                    continue
-                else:
-                    warnings.warn(
-                        f"The attribute {deprecated_attribute} of class "
-                        f"{cls.__name__} will be deprecated soon. Use the "
-                        f"attribute {replacement_attribute} instead.",
-                        DeprecationWarning,
-                    )
+            if deprecated_attribute not in values:
+                continue
 
-                if replacement_attribute not in values:
-                    logger.info(
-                        "Migrating value of deprecated attribute %s to "
-                        "replacement attribute %s.",
-                        deprecated_attribute,
-                        replacement_attribute,
-                    )
-                    values[replacement_attribute] = values.pop(
-                        deprecated_attribute
-                    )
-                elif (
-                    values[deprecated_attribute]
-                    != values[replacement_attribute]
-                ):
-                    raise ValueError(
-                        "Got different values for deprecated attribute "
-                        f"{deprecated_attribute} and replacement "
-                        f"attribute {replacement_attribute}."
-                    )
-                else:
-                    # Both values are identical, no need to do anything
-                    pass
+            if replacement_attribute is None:
+                warnings.warn(
+                    f"The attribute {deprecated_attribute} of class "
+                    f"{cls.__name__} will be deprecated soon.",
+                    DeprecationWarning,
+                )
+                continue
+
+            warnings.warn(
+                f"The attribute {deprecated_attribute} of class "
+                f"{cls.__name__} will be deprecated soon. Use the "
+                f"attribute {replacement_attribute} instead.",
+                DeprecationWarning,
+            )
+
+            if replacement_attribute not in values:
+                logger.info(
+                    "Migrating value of deprecated attribute %s to "
+                    "replacement attribute %s.",
+                    deprecated_attribute,
+                    replacement_attribute,
+                )
+                values[replacement_attribute] = values.pop(deprecated_attribute)
+            elif values[deprecated_attribute] != values[replacement_attribute]:
+                raise ValueError(
+                    "Got different values for deprecated attribute "
+                    f"{deprecated_attribute} and replacement "
+                    f"attribute {replacement_attribute}."
+                )
+            else:
+                # Both values are identical, no need to do anything
+                pass
 
         return values
 
