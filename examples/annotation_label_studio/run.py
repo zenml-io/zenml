@@ -61,7 +61,7 @@ def main(pipeline, rerun):
             convert_annotations=convert_annotations(),
             model_trainer=pytorch_model_trainer(PytorchModelTrainerConfig()),
             deployment_trigger=deployment_trigger(),
-            model_deployer=model_deployer,  # TODO: how to run label studio with local mlflow?
+            model_deployer=model_deployer,
         ).run()
     elif pipeline == "inference":
         inference_pipeline(
@@ -73,8 +73,8 @@ def main(pipeline, rerun):
             ).with_return_materializers({"images": PillowImageMaterializer}),
             prediction_service_loader=prediction_service_loader(
                 PredictionServiceLoaderConfig()
-            ),  # TODO: use model deployer?
-            predictor=predictor(),  # TODO: use model deployer?
+            ),
+            predictor=predictor(),
             data_syncer=s3_data_sync,
         ).run()
 

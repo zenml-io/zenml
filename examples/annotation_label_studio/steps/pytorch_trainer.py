@@ -185,7 +185,7 @@ def load_mobilenetv3_transforms():
 
 class PytorchModelTrainerConfig(BaseStepConfig):
     batch_size = 1
-    num_epochs = 10
+    num_epochs = 4
     learning_rate = 5e-3
     device = "cpu"
     shuffle = True
