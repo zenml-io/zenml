@@ -107,7 +107,7 @@ last_run = runs[-1]
 run = example_pipeline.get_run(run_name=...)
 ```
 
-Besides steps, each run also has a collection of metadata which can be useful:
+Each run has a collection of useful metadata which you can access:
 
 **git_sha**
 The Git commit SHA that the pipeline run was performed on. This will only be set 
