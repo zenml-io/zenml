@@ -1,21 +1,67 @@
+[![PyPI - Python
+Version](https://img.shields.io/pypi/pyversions/zenml)](https://pypi.org/project/zenml/)
+[![PyPI Status](https://pepy.tech/badge/zenml)](https://pepy.tech/project/zenml)
+![GitHub](https://img.shields.io/github/license/zenml-io/zenml)
+[![Codecov](https://codecov.io/gh/zenml-io/zenml/branch/main/graph/badge.svg)](https://codecov.io/gh/zenml-io/zenml)
+[![Interrogate](docs/book/assets/interrogate.svg)](https://interrogate.readthedocs.io/en/latest/)
+[![Main Workflow
+Tests](https://github.com/zenml-io/zenml/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/zenml-io/zenml/actions/workflows/ci.yml)
+[![PyPI version](https://badge.fury.io/py/zenml.svg)](https://badge.fury.io/py/zenml)
+
+
+
+<!-- PROJECT LOGO -->
+<br />
 <div align="center">
-    <img src="docs/book/assets/oss-header.svg">
+  <a href="https://zenml.io">
+    <img src="docs/book/assets/zenml_logo.png" alt="Logo" width="400">
+  </a>
+
+  <h3 align="center">ZenML - Build portable, production-ready MLOps pipelines.</h3>
+
+  <p align="center">
+    An open-source framework.
+    <br />
+    <a href="https://docs.zenml.io/"><strong>Explore the docs »</strong></a>
+    <br />
+    <br />
+    <a href="https://github.com/zenml-io/zenml/issues">Report Bug</a>
+    ·
+    <a href="https://zenml.io/discussion">Vote Feature</a>
+    ·
+    <a href="https://blog.zenml.io/">Read Blog</a>
+    .
+    <a href="https://zenml.io/slack-invite">Join us on Slack</a>
+  </p>
 </div>
 
-# :family_man_woman_boy_boy: ZenML: Meet the Team
 
-Hi ZenCommunity! Did you ever have a question that's too hard to express on our Slack? Is it just too much effort to say everything on a 
-long GitHub issue? Or are you just curious what ZenML has been up to in the past week? Well, register now for the ZenML Office 
-(Half) Hour to get your answers and more!
+<!-- <div align="center">
+Join our <a href="https://zenml.io/slack-invite" target="_blank">
+    <img width="25" src="https://cdn3.iconfinder.com/data/icons/logos-and-brands-adobe/512/306_Slack-512.png" alt="Slack"/>
+<b>Slack Community</b> </a> and become part of the ZenML family
+</div>
+<div align="center"> Give us a 
+    <img width="25" src="https://cdn.iconscout.com/icon/free/png-256/github-153-675523.png" alt="Slack"/>
+<b>GitHub star</b> to show your love
+</div>
+<div align="center"> 
+    <b>NEW: </b> <a href="https://zenml.io/discussion" target="_blank"><img width="25" src="https://cdn1.iconfinder.com/data/icons/social-17/48/like-512.png" alt="Vote"/><b> Vote</b></a> on the next ZenML features 
+</div> -->
 
-Every week, part of the ZenML core team will pop in for 30 minutes to interact directly with the community. Sometimes we'll be presenting a 
-feature, other times just taking questions, and having fun. Join us if you are curious about ZenML, or just want to talk shop about MLOps.
+<br>
 
-We will host the gathering every Wednesday 8:30AM PT (5:30PM CET). Register now through [this link](https://www.eventbrite.com/e/zenml-meet-the-community-tickets-354426688767), 
-or subscribe to the [public events calendar](https://calendar.google.com/calendar/u/0/r?cid=Y19iaDJ0Zm44ZzdodXBlbnBzaWplY3UwMmNjZ0Bncm91cC5jYWxlbmRhci5nb29nbGUuY29t) to get notified 
-before every community gathering.
+### 🎉 **Update** - Version 0.11.0 is out! Check out the release notes [here](https://github.com/zenml-io/zenml/releases).
+
+
+
 
 # 👀 What is ZenML?
+
+Are you an ML engineer or data scientist shipping models to production and jumbling a plethora of tools? Do you struggle with versioning data, code, and models in your projects? Have you had trouble replicating production pipelines and monitoring models in production?
+
+If you answered yes to any, ZenML is here to help with all that, and more.
+
 
 **ZenML** is an extensible, open-source MLOps framework for creating 
 portable, production-ready MLOps pipelines. Built to enable collaboration among data scientists, ML Engineers, and MLOps Developers,
@@ -30,32 +76,7 @@ common ML development tasks. ZenML is not here to replace the great tools that
 solve these individual problems. Rather, it offers an **extensible framework** and a
 standard abstraction to write and build your workflows.
 
-🎉 **Version 0.11.0 out now!** [Check out the release notes
-here](https://github.com/zenml-io/zenml/releases).
 
-[![PyPI - Python
-Version](https://img.shields.io/pypi/pyversions/zenml)](https://pypi.org/project/zenml/)
-[![PyPI Status](https://pepy.tech/badge/zenml)](https://pepy.tech/project/zenml)
-![GitHub](https://img.shields.io/github/license/zenml-io/zenml)
-[![Codecov](https://codecov.io/gh/zenml-io/zenml/branch/main/graph/badge.svg)](https://codecov.io/gh/zenml-io/zenml)
-[![Interrogate](docs/book/assets/interrogate.svg)](https://interrogate.readthedocs.io/en/latest/)
-[![Main Workflow
-Tests](https://github.com/zenml-io/zenml/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/zenml-io/zenml/actions/workflows/ci.yml)
-
-<div align="center">
-Join our <a href="https://zenml.io/slack-invite" target="_blank">
-    <img width="25" src="https://cdn3.iconfinder.com/data/icons/logos-and-brands-adobe/512/306_Slack-512.png" alt="Slack"/>
-<b>Slack Community</b> </a> and become part of the ZenML family
-</div>
-<div align="center"> Give us a 
-    <img width="25" src="https://cdn.iconscout.com/icon/free/png-256/github-153-675523.png" alt="Slack"/>
-<b>GitHub star</b> to show your love
-</div>
-<div align="center"> 
-    <b>NEW: </b> <a href="https://zenml.io/discussion" target="_blank"><img width="25" src="https://cdn1.iconfinder.com/data/icons/social-17/48/like-512.png" alt="Vote"/><b> Vote</b></a> on the next ZenML features 
-</div>
-
-<br>
 
 # 🤖 Why use ZenML?
 
@@ -351,6 +372,7 @@ also serve as a template from which to start similar projects.
 The ZenFiles project is fully maintained and can be viewed as a sister
 repository of ZenML. Check it out [here](https://github.com/zenml-io/zenfiles).
 
+
 # 🗺 Roadmap
 
 ZenML is being built in public. The [roadmap](https://zenml.io/roadmap) is a
@@ -365,6 +387,21 @@ influence the roadmap as follows:
 - Vote on your most wanted feature on our [Discussion
   board](https://zenml.io/discussion). You can also request for new features here.
 - Start a thread in our [Slack channel](https://zenml.io/slack-invite).
+
+
+# 👩‍👩‍👧‍👦 Meet the Team
+
+Hi ZenCommunity! Did you ever have a question that's too hard to express on our Slack? Is it just too much effort to say everything on a 
+long GitHub issue? Or are you just curious what ZenML has been up to in the past week? Well, register now for the ZenML Office 
+(Half) Hour to get your answers and more!
+
+Every week, part of the ZenML core team will pop in for 30 minutes to interact directly with the community. Sometimes we'll be presenting a 
+feature, other times just taking questions, and having fun. Join us if you are curious about ZenML, or just want to talk shop about MLOps.
+
+We will host the gathering every Wednesday 8:30AM PT (5:30PM CET). Register now through [this link](https://www.eventbrite.com/e/zenml-meet-the-community-tickets-354426688767), 
+or subscribe to the [public events calendar](https://calendar.google.com/calendar/u/0/r?cid=Y19iaDJ0Zm44ZzdodXBlbnBzaWplY3UwMmNjZ0Bncm91cC5jYWxlbmRhci5nb29nbGUuY29t) to get notified 
+before every community gathering.
+
 
 # 🙋‍♀️ Contributing & Community
 
