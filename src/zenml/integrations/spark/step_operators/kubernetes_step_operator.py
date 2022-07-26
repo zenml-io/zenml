@@ -31,7 +31,7 @@ LOCAL_ENTRYPOINT = entrypoint.__file__
 ZENML_DIR = "/zenml/"
 APP_DIR = "/app/"
 CONTAINER_ZENML_CONFIG_DIR = ".zenconfig"
-ENTRYPOINT_NAME = "__zenml_entrypoint__.py"
+ENTRYPOINT_NAME = "zenml_spark_entrypoint.py"
 
 
 def generate_dockerfile_contents(
@@ -180,7 +180,7 @@ class KubernetesSparkStepOperator(BaseStepOperator):
     def _create_spark_app_command(entrypoint_command):
         """Build the python entrypoint command for the spark-submit."""
         command = [
-            f"local://{ZENML_DIR}{os.path.basename(entrypoint.__file__)}"
+            f"local://{APP_DIR}{ENTRYPOINT_NAME}"
         ]
 
         for arg in [
