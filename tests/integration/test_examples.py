@@ -26,11 +26,13 @@ from pydantic import BaseModel
 from zenml.cli import set_active_stack
 
 # from zenml.integrations.slack.alerters import SlackAlerter
-from zenml.integrations.deepchecks.data_validators import \
-    DeepchecksDataValidator
+from zenml.integrations.deepchecks.data_validators import (
+    DeepchecksDataValidator,
+)
 from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
-from zenml.integrations.great_expectations.data_validators import \
-    GreatExpectationsDataValidator
+from zenml.integrations.great_expectations.data_validators import (
+    GreatExpectationsDataValidator,
+)
 from zenml.integrations.mlflow.experiment_trackers import (
     MLFlowExperimentTracker,
 )
@@ -111,7 +113,7 @@ EXAMPLES = [
     ExampleConfiguration(
         name="evidently_drift_detection",
         pipeline_path="pipelines/drift_detection_pipeline/"
-                      "drift_detection_pipeline.py",
+        "drift_detection_pipeline.py",
         pipeline_name="drift_detection_pipeline",
         runs_on_windows=True,
         step_count=4,
@@ -119,7 +121,7 @@ EXAMPLES = [
     ExampleConfiguration(
         name="deepchecks_data_validation",
         pipeline_path="deepchecks_data_validation/pipelines/"
-                      "data_validation.py",
+        "data_validation.py",
         pipeline_name="data_validation_pipeline",
         runs_on_windows=True,
         required_stack_components=[
@@ -132,7 +134,7 @@ EXAMPLES = [
     ExampleConfiguration(
         name="evidently_drift_detection",
         pipeline_path="evidently_drift_detection/pipelines/"
-                      "drift_detection_pipeline/drift_detection_pipeline.py",
+        "drift_detection_pipeline/drift_detection_pipeline.py",
         pipeline_name="drift_detection_pipeline",
         runs_on_windows=True,
         required_stack_components=[
@@ -152,7 +154,7 @@ EXAMPLES = [
     ExampleConfiguration(
         name="great_expectations_data_validation",
         pipeline_path="/great_expectations_data_validation/pipelines/"
-                      "validation.py",
+        "validation.py",
         pipeline_name="validation_pipeline",
         runs_on_windows=True,
         required_stack_components=[
@@ -165,7 +167,7 @@ EXAMPLES = [
     ExampleConfiguration(
         name="huggingface",
         pipeline_path="pipelines/sequence_classifier_pipeline/"
-                      "sequence_classifier_pipeline.py",
+        "sequence_classifier_pipeline.py",
         pipeline_name="seq_classifier_train_eval_pipeline",
         config_file_path="sequence_classification_config.yaml",
         runs_on_windows=True,
@@ -174,7 +176,7 @@ EXAMPLES = [
     ExampleConfiguration(
         name="huggingface",
         pipeline_path="pipelines/token_classifier_pipeline/"
-                      "token_classifier_pipeline.py",
+        "token_classifier_pipeline.py",
         pipeline_name="token_classifier_train_eval_pipeline",
         config_file_path="token_classification_config.yaml",
         runs_on_windows=True,
@@ -206,7 +208,7 @@ EXAMPLES = [
     ExampleConfiguration(
         name="neural_prophet",
         pipeline_path="pipelines/neural_prophet_pipeline/"
-                      "neural_prophet_pipeline.py",
+        "neural_prophet_pipeline.py",
         pipeline_name="neural_prophet_pipeline",
         runs_on_windows=False,
         step_count=3,
@@ -214,7 +216,7 @@ EXAMPLES = [
     ExampleConfiguration(
         name="scipy",
         pipeline_path="pipelines/scipy_example_pipeline/"
-                      "scipy_example_pipeline.py",
+        "scipy_example_pipeline.py",
         pipeline_name="scipy_example_pipeline",
         runs_on_windows=True,
         step_count=4,
@@ -248,11 +250,11 @@ EXAMPLES = [
     [pytest.param(example, id=example.name) for example in EXAMPLES],
 )
 def test_run_example(
-        example_configuration: ExampleConfiguration,
-        tmp_path_factory: pytest.TempPathFactory,
-        repo_fixture_name: str,
-        request: pytest.FixtureRequest,
-        virtualenv: str,
+    example_configuration: ExampleConfiguration,
+    tmp_path_factory: pytest.TempPathFactory,
+    repo_fixture_name: str,
+    request: pytest.FixtureRequest,
+    virtualenv: str,
 ) -> None:
     """Runs the given examples and validates they ran correctly.
 
@@ -268,8 +270,8 @@ def test_run_example(
                     empty string.
     """
     if (
-            not example_configuration.runs_on_windows
-            and platform.system() == "Windows"
+        not example_configuration.runs_on_windows
+        and platform.system() == "Windows"
     ):
         logging.info(
             f"Skipping example {example_configuration.name} on windows."
