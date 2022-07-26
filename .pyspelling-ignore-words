@@ -283,6 +283,7 @@ MyConfig
 MyCustomArtifactStore
 MyEnvironmentComponent
 MyMaterializer
+MyModel
 MyObj
 MyOrchestrator
 MySQLMetadataStore
