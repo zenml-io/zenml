@@ -57,7 +57,7 @@ Join our <a href="https://zenml.io/slack-invite" target="_blank">
 ### 🎉 **Update** - Version 0.11.0 is out! Check out the release notes [here](https://github.com/zenml-io/zenml/releases). -->
 
 
-🛠 Are you an ML engineer or data scientist shipping models to production and jumbling a plethora of tools? 
+🤹 Are you an ML engineer or data scientist shipping models to production and juggling a plethora of tools? 
 
 🤷‍♂️ Do you struggle with versioning data, code, and models in your projects? 
 
