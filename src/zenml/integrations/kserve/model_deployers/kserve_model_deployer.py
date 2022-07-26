@@ -71,6 +71,7 @@ class KServeModelDeployer(BaseModelDeployer):
     kubernetes_namespace: Optional[str]
     base_url: str
     secret: Optional[str]
+    custom_domain: Optional[str]
 
     # private attributes
     _client: Optional[KServeClient] = None
@@ -89,6 +90,7 @@ class KServeModelDeployer(BaseModelDeployer):
         """
         return {
             "PREDICTION_URL": service_instance.prediction_url,
+            "PREDICTION_HOSTNAME": service_instance.prediction_hostname,
             "MODEL_URI": service_instance.config.model_uri,
             "MODEL_NAME": service_instance.config.model_name,
             "KSERVE_INFERENCE_SERVICE": service_instance.crd_name,
@@ -163,6 +165,13 @@ class KServeModelDeployer(BaseModelDeployer):
                 # Handle additional params
                 else:
                     kserve_credentials[key] = content
+
+            # We need to add the namespace to the kserve_credentials
+            kserve_credentials["namespace"] = (
+                self.kubernetes_namespace
+                or utils.get_default_target_namespace()
+            )
+
             try:
                 self.kserve_client.set_credentials(**kserve_credentials)
             except Exception as e:
@@ -228,7 +237,7 @@ class KServeModelDeployer(BaseModelDeployer):
 
         # if the secret is passed in the config, use it to set the credentials
         if config.secret_name:
-            self.secret = config.secret_name
+            self.secret = config.secret_name or self.secret
         self._set_credentials()
 
         # if replace is True, find equivalent KServe deployments
@@ -250,7 +259,6 @@ class KServeModelDeployer(BaseModelDeployer):
                         # be deprovisioned
                         service.stop()
                     except RuntimeError as e:
-                        # ignore errors encountered while stopping old services
                         raise RuntimeError(
                             "Failed to stop the KServe deployment server:\n",
                             f"{e}\n",
@@ -356,7 +364,6 @@ class KServeModelDeployer(BaseModelDeployer):
         pipeline_step_name: Optional[str] = None,
         model_name: Optional[str] = None,
         model_uri: Optional[str] = None,
-        model_type: Optional[str] = None,
         predictor: Optional[str] = None,
     ) -> List[BaseService]:
         """Find one or more KServe model services that match the given criteria.
@@ -373,8 +380,6 @@ class KServeModelDeployer(BaseModelDeployer):
                 that deployed the model.
             model_name: the name of the deployed model.
             model_uri: URI of the deployed model.
-            model_type: the implementation specific type/format of the deployed
-                model.
             predictor: the name of the predictor that was used to deploy the model.
 
         Returns:

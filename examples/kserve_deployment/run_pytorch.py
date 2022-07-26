@@ -24,7 +24,6 @@ from steps.prediction_service_loader import (
     PredectionServiceLoaderStepConfig,
     prediction_service_loader,
 )
-from steps.predictor import predictor
 from steps.pytorch_steps import (
     PytorchDataLoaderConfig,
     PyTorchInferenceProcessorStepConfig,
@@ -33,6 +32,7 @@ from steps.pytorch_steps import (
     pytorch_evaluator,
     pytorch_inference_processor,
     pytorch_model_deployer,
+    pytorch_predictor,
     pytorch_trainer,
 )
 
@@ -99,7 +99,7 @@ def main(
     deploy = config == DEPLOY or config == DEPLOY_AND_PREDICT
     predict = config == PREDICT or config == DEPLOY_AND_PREDICT
 
-    model_name = "mnist"
+    model_name = "mnist-pytorch"
     deployment_pipeline_name = "pytorch_training_deployment_pipeline"
     deployer_step_name = "kserve_model_deployer_step"
 
@@ -142,7 +142,7 @@ def main(
                     model_name=model_name,
                 )
             ),
-            predictor=predictor(),
+            predictor=pytorch_predictor(),
         ).run()
 
     services = model_deployer.find_model_server(

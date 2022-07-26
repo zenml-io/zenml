@@ -42,6 +42,8 @@ from zenml.services import (
 )
 
 if TYPE_CHECKING:
+    pass
+
     from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (  # noqa
         KServeModelDeployer,
     )
@@ -64,7 +66,7 @@ class KServeDeploymentConfig(ServiceConfig):
     """
 
     model_uri: str = ""
-    model_name: str = "default"
+    model_name: str
     secret_name: Optional[str]
     predictor: str
     replicas: int = 1
@@ -284,7 +286,10 @@ class KServeDeploymentService(BaseService):
         Returns:
             The name of the KServe inference service CRD.
         """
-        return f"zenml-{str(self.uuid)[:8]}"
+        return (
+            self._get_kubernetes_labels().get("zenml.model_name")
+            or f"zenml-{str(self.uuid)[:8]}"
+        )
 
     def _get_kubernetes_labels(self) -> Dict[str, str]:
         """Generate the labels for the KServe inference service CRD from the service configuration.
@@ -529,11 +534,10 @@ class KServeDeploymentService(BaseService):
             return None
 
         model_deployer = self._get_model_deployer()
-        model_name = self._get_kubernetes_labels().get("model_name") or "mnist"
         return os.path.join(
             model_deployer.base_url,
             "v1/models",
-            f"{model_name}:predict",
+            f"{self.crd_name}:predict",
         )
 
     @property
@@ -548,7 +552,10 @@ class KServeDeploymentService(BaseService):
             return None
 
         namespace = self._get_namespace()
-        return f"{self.crd_name}.{namespace}.example.com"
+
+        model_deployer = self._get_model_deployer()
+        custom_domain = model_deployer.custom_domain or "example.com"
+        return f"{self.crd_name}.{namespace}.{custom_domain}"
 
     def predict(self, request: str) -> Any:
         """Make a prediction using the service.
@@ -579,7 +586,7 @@ class KServeDeploymentService(BaseService):
         if isinstance(request, str):
             request = json.loads(request)
         else:
-            request = request.tolist()
+            raise ValueError("Request must be a json string.")
         response = requests.post(
             self.prediction_url,
             headers=headers,

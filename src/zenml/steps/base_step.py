@@ -364,7 +364,7 @@ class BaseStep(metaclass=BaseStepMeta):
                         f"registering a default materializer for specific "
                         f"types by subclassing `BaseMaterializer` and setting "
                         f"its `ASSOCIATED_TYPES` class variable.",
-                        url="https://docs.zenml.io/developer-guide/materializer",
+                        url="https://docs.zenml.io/developer-guide/advanced-usage/materializer",
                     )
 
         return materializers
@@ -691,6 +691,7 @@ class BaseStep(metaclass=BaseStepMeta):
             execution_parameter_names=set(execution_parameters),
             step_function=self.entrypoint,
             materializers=materializers,
+            enable_cache=self.enable_cache,
         )
         self._component = component_class(
             **input_artifacts, **execution_parameters

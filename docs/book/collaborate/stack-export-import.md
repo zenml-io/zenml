@@ -1,5 +1,5 @@
 ---
-description: Exporting and Importing Stacks.
+description: How to export and import stacks to YAML files
 ---
 
 # Export and Import ZenML Stacks

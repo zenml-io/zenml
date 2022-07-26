@@ -212,7 +212,7 @@ def get_data_from_api():
 
     df = pd.DataFrame(requests.get(url).json())
     data = df["image"].map(lambda x: np.array(x)).values
-    data = np.array([x.reshape(28, 28) for x in data[:1]])
+    data = np.array([x.reshape(28, 28) for x in data])
     return data
 
 

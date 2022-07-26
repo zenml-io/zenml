@@ -18,11 +18,12 @@ import random
 from abc import ABCMeta
 from collections import defaultdict
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
 from uuid import UUID
 
 from pydantic import BaseModel, ValidationError
 
+import zenml
 from zenml.config.base_config import BaseConfiguration
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
@@ -33,12 +34,9 @@ from zenml.constants import (
 )
 from zenml.enums import StackComponentType, StoreType
 from zenml.environment import Environment
-from zenml.exceptions import (
-    ForbiddenRepositoryAccessError,
-    InitializationException,
-)
+from zenml.exceptions import InitializationException
 from zenml.io import fileio
-from zenml.logger import get_logger
+from zenml.logger import get_apidocs_link, get_logger
 from zenml.stack import Stack, StackComponent
 from zenml.utils import io_utils, yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -46,6 +44,7 @@ from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
     from zenml.config.profile_config import ProfileConfiguration
+    from zenml.pipelines import BasePipeline
     from zenml.post_execution import PipelineView
     from zenml.zen_stores import BaseZenStore
     from zenml.zen_stores.models import Project, User, ZenStoreModel
@@ -80,7 +79,7 @@ class RepositoryConfiguration(FileSyncModel):
 
 
 class LegacyRepositoryConfig(BaseModel):
-    """Pydantic object used for serializing legacy repository configuration options."""
+    """Pydantic object used for serializing legacy repository config options."""
 
     version: str
     active_stack_name: Optional[str]
@@ -149,21 +148,30 @@ class RepositoryMetaClass(ABCMeta):
 
         Returns:
             Repository: The global Repository instance.
-
-        Raises:
-            ForbiddenRepositoryAccessError: If trying to create a `Repository`
-                instance while a ZenML step is being executed.
         """
+        from zenml.steps.step_environment import (
+            STEP_ENVIRONMENT_NAME,
+            StepEnvironment,
+        )
+
+        step_env = cast(
+            StepEnvironment, Environment().get_component(STEP_ENVIRONMENT_NAME)
+        )
+
         # `skip_repository_check` is a special kwarg that can be passed to
-        # the Repository constructor to bypass the check that prevents the
-        # Repository instance from being accessed from within pipeline steps.
+        # the Repository constructor to silent the message that warns users
+        # about accessing external information in their steps.
         if not kwargs.pop("skip_repository_check", False):
-            if Environment().step_is_running:
-                raise ForbiddenRepositoryAccessError(
-                    "Unable to access repository during step execution. If you "
-                    "require access to the artifact or metadata store, please "
-                    "use a `StepContext` inside your step instead.",
-                    url="https://docs.zenml.io/features/step-fixtures#using-the-stepcontext",
+            if step_env and step_env.cache_enabled:
+                logger.warning(
+                    "You are accessing repository information from a step "
+                    "that has caching enabled. Future executions of this step "
+                    "may be cached even though the repository information may "
+                    "be different. You should take this into consideration and "
+                    "adjust your step to disable caching if needed. "
+                    "Alternatively, use a `StepContext` inside your step "
+                    "instead, as covered here: "
+                    "https://docs.zenml.io/developer-guide/advanced-usage/step-fixtures#step-contexts",
                 )
 
         if args or kwargs:
@@ -328,7 +336,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
     def _set_active_profile(
         self, profile: "ProfileConfiguration", new_profile: bool = False
     ) -> None:
-        """Set the supplied configuration profile as the active profile for this repository.
+        """Set the supplied config profile as the active profile for this repo.
 
         This method initializes the repository store associated with the
         supplied profile and also initializes it with the default stack
@@ -368,7 +376,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
         Raises:
             RuntimeError: If the repository configuration doesn't contain a
-                valid active stack and a new active stack cannot be automatically
+                valid active stack and a new active stack cannot be
+                automatically
                 determined based on the active profile and available stacks.
         """
         if not self.__config:
@@ -428,7 +437,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
     def _migrate_legacy_repository(
         config_file: str,
     ) -> Optional["ProfileConfiguration"]:
-        """Migrate a legacy repository configuration to the new format and create a new Profile out of it.
+        """Migrate a legacy repo config to the new format and create a new Profile out of it.
 
         Args:
             config_file: Path to the legacy repository configuration file.
@@ -561,7 +570,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         track_analytics: bool = True,
         skip_migration: bool = False,
     ) -> "BaseZenStore":
-        """Create repository persistence back-end store from a configuration profile.
+        """Create repos persistence back-end store from a configuration profile.
 
         If the configuration profile doesn't specify all necessary configuration
         options (e.g. the type or URL), a default configuration will be used.
@@ -848,7 +857,9 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         """
         return self.zen_store.get_stack(name).to_stack()
 
-    def register_stack(self, stack: Stack) -> None:
+    def register_stack(
+        self, stack: Stack, decouple_stores: bool = False
+    ) -> None:
         """Registers a stack and its components.
 
         If any of the stack's components aren't registered in the repository
@@ -856,22 +867,31 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
         Args:
             stack: The stack to register.
+            decouple_stores: Flag to reset the previous associations between
+                an artifact store and a metadata store.
         """
         from zenml.zen_stores.models import StackWrapper
 
-        stack.validate()
+        stack.validate(decouple_stores=decouple_stores)
         self.zen_store.register_stack(StackWrapper.from_stack(stack))
 
-    def update_stack(self, name: str, stack: Stack) -> None:
+    def update_stack(
+        self,
+        name: str,
+        stack: Stack,
+        decouple_stores: bool = False,
+    ) -> None:
         """Updates a stack and its components.
 
         Args:
             name: The original name of the stack.
             stack: The new stack to use as the updated version.
+            decouple_stores: Flag to reset the previous associations between
+                an artifact store and a metadata store.
         """
         from zenml.zen_stores.models import StackWrapper
 
-        stack.validate()
+        stack.validate(decouple_stores=decouple_stores)
         self.zen_store.update_stack(name, StackWrapper.from_stack(stack))
         if self.active_stack_name == name:
             self.activate_stack(stack.name)
@@ -1078,15 +1098,37 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
     @track(event=AnalyticsEvent.GET_PIPELINE)
     def get_pipeline(
-        self, pipeline_name: str, stack_name: Optional[str] = None
+        self,
+        pipeline: Optional[
+            Union["BasePipeline", Type["BasePipeline"], str]
+        ] = None,
+        stack_name: Optional[str] = None,
+        **kwargs: Any,
     ) -> Optional["PipelineView"]:
         """Fetches a post-execution pipeline view.
 
+        Use it in one of these ways:
+        ```python
+        # Get the pipeline by name
+        Repository().get_pipeline("first_pipeline")
+
+        # Get the step by supplying the original pipeline class
+        Repository().get_step(first_pipeline)
+
+        # Get the step by supplying an instance of the original pipeline class
+        Repository().get_step(first_pipeline())
+        ```
+
+        If the specified pipeline does not (yet) exist within the repository,
+        `None` will be returned.
+
         Args:
-            pipeline_name: Name of the pipeline.
+            pipeline: Class or class instance of the pipeline
             stack_name: If specified, pipelines in the metadata store of the
                 given stack are returned. Otherwise, pipelines in the metadata
                 store of the currently active stack are returned.
+            **kwargs: The deprecated `pipeline_name` is caught as a kwarg to
+                specify the pipeline instead of using the `pipeline` argument.
 
         Returns:
             A post-execution pipeline view for the given name or `None` if
@@ -1096,6 +1138,41 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             RuntimeError: If no stack name is specified and no active stack name
                 is configured.
         """
+        if isinstance(pipeline, str):
+            pipeline_name = pipeline
+        elif isinstance(pipeline, zenml.pipelines.base_pipeline.BasePipeline):
+            pipeline_name = pipeline.name
+        elif isinstance(pipeline, type) and issubclass(
+            pipeline, zenml.pipelines.base_pipeline.BasePipeline
+        ):
+            pipeline_name = pipeline.__name__
+        elif "pipeline_name" in kwargs and isinstance(
+            kwargs.get("pipeline_name"), str
+        ):
+            logger.warning(
+                "Using 'pipeline_name' to get a pipeline from "
+                "'Repository().get_pipeline()' is deprecated and "
+                "will be removed in the future. Instead please "
+                "use 'pipeline' to access a pipeline in your Repository based "
+                "on the name of the pipeline or even the class or instance "
+                "of the pipeline. Learn more in our API docs: %s",
+                get_apidocs_link(
+                    "repository", "zenml.repository.Repository.get_pipeline"
+                ),
+            )
+
+            pipeline_name = kwargs.pop("pipeline_name")
+        else:
+            raise RuntimeError(
+                "No pipeline specified to get from "
+                "`Repository()`. Please set a `pipeline` "
+                "within the `get_pipeline()` method. Learn more "
+                "in our API docs: %s",
+                get_apidocs_link(
+                    "repository", "zenml.repository.Repository.get_pipeline"
+                ),
+            )
+
         stack_name = stack_name or self.active_stack_name
         if not stack_name:
             raise RuntimeError(
@@ -1103,6 +1180,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 "`zenml stack set STACK_NAME` to update the active stack."
             )
         metadata_store = self.get_stack(stack_name).metadata_store
+
         return metadata_store.get_pipeline(pipeline_name)
 
     @staticmethod
@@ -1113,7 +1191,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             path: The path to check.
 
         Returns:
-            True if a ZenML repository exists at the given path, False otherwise.
+            True if a ZenML repository exists at the given path,
+            False otherwise.
         """
         config_dir = path / REPOSITORY_DIRECTORY_NAME
         return fileio.isdir(str(config_dir))

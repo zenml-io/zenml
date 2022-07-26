@@ -31,7 +31,6 @@ class KServeS3SecretSchema(BaseSecretSchema):
 
     Attributes:
         storage_type: the storage type. Must be set to "s3" for this schema.
-        namespace: the kubernetes namespace where secrets are stored.
         credentials: the credentials to use.
         service_account: the name of the service account.
         s3_endpoint: the S3 endpoint.
@@ -43,7 +42,6 @@ class KServeS3SecretSchema(BaseSecretSchema):
     TYPE: ClassVar[str] = KSERVE_S3_SECRET_SCHEMA_TYPE
 
     storage_type: Literal["S3"] = "S3"
-    namespace: Optional[str]
     credentials: Optional[str]
     service_account: Optional[str]
     s3_endpoint: Optional[str]
@@ -58,7 +56,6 @@ class KServeGSSecretSchema(BaseSecretSchema):
 
     Attributes:
         storage_type: the storage type. Must be set to "GCS" for this schema.
-        namespace: the namespace.
         credentials: the credentials to use.
         service_account: the service account.
     """
@@ -66,7 +63,6 @@ class KServeGSSecretSchema(BaseSecretSchema):
     TYPE: ClassVar[str] = KSERVE_GS_SECRET_SCHEMA_TYPE
 
     storage_type: Literal["GCS"] = "GCS"
-    namespace: Optional[str]
     credentials: Optional[str]
     service_account: Optional[str]
 
@@ -77,12 +73,10 @@ class KServeAzureSecretSchema(BaseSecretSchema):
 
     Attributes:
         storage_type: the storage type. Must be set to "GCS" for this schema.
-        namespace: the namespace.
-        credentials_file: the credentials to use.
+        credentials: the credentials to use.
     """
 
     TYPE: ClassVar[str] = KSERVE_AZUREBLOB_SECRET_SCHEMA_TYPE
 
     storage_type: Literal["Azure"] = "Azure"
-    namespace: Optional[str]
     credentials: Optional[str]

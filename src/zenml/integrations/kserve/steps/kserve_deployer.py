@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the KServe Deployer step."""
-import os
 from typing import List, Optional, cast
 
 from pydantic import BaseModel, validator
@@ -90,7 +89,7 @@ class TorchServeParameters(BaseModel):
             raise ValueError(
                 "Model class file path must be inside the repository."
             )
-        return os.path.join(get_source_root_path(), v)
+        return v
 
     @validator("handler")
     def handler_validate(cls, v: str) -> str:
@@ -109,7 +108,7 @@ class TorchServeParameters(BaseModel):
             if v in TORCH_HANDLERS:
                 return v
             elif is_inside_repository(v):
-                return os.path.join(get_source_root_path(), v)
+                return v
             else:
                 raise ValueError(
                     "Handler must be one of the TorchServe handlers",
@@ -131,15 +130,13 @@ class TorchServeParameters(BaseModel):
             extra files path
 
         Raises:
-            ValueError: if extra files path is not valid
+            ValueError: if the extra files path is not valid
         """
         extra_files = []
         if v is not None:
             for file_path in v:
                 if is_inside_repository(file_path):
-                    extra_files.append(
-                        os.path.join(get_source_root_path(), file_path)
-                    )
+                    extra_files.append(file_path)
                 else:
                     raise ValueError(
                         "Extra file path must be inside the repository."
@@ -162,7 +159,7 @@ class TorchServeParameters(BaseModel):
         """
         if v:
             if is_inside_repository(v):
-                return os.path.join(get_source_root_path(), v)
+                return v
             else:
                 raise ValueError(
                     "Torch config file path must be inside the repository."
@@ -206,16 +203,13 @@ class KServeDeployerStepConfig(BaseStepConfig):
 
     Attributes:
         service_config: KServe deployment service configuration.
-        secrets: a list of ZenML secrets containing additional configuration
-            parameters for the KServe deployment (e.g. credentials to
-            access the Artifact Store where the models are stored). If supplied,
-            the information fetched from these secrets is passed to the KServe
-            deployment server as a list of environment variables.
+        torch_serve_params: TorchServe set of parameters to deploy model.
+        timeout: Timeout for model deployment.
     """
 
     service_config: KServeDeploymentConfig
-    custom_deploy_paramters: Optional[CustomDeployParamters] = None
-    torch_serve_paramters: Optional[TorchServeParameters] = None
+    custom_deploy_parameters: Optional[CustomDeployParamters] = None
+    torch_serve_parameters: Optional[TorchServeParameters] = None
     timeout: int = DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT
 
 

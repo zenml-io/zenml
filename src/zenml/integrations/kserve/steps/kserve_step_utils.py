@@ -76,6 +76,12 @@ def prepare_service_config(
         # the TensorFlow server expects model artifacts to be
         # stored in numbered subdirectories, each representing a model
         # version
+        served_model_uri = os.path.join(
+            served_model_uri,
+            config.service_config.predictor,
+            config.service_config.model_name,
+        )
+        fileio.makedirs(served_model_uri)
         io_utils.copy_dir(model_uri, os.path.join(served_model_uri, "1"))
     elif config.service_config.predictor == "sklearn":
         # the sklearn server expects model artifacts to be
@@ -86,12 +92,24 @@ def prepare_service_config(
                 f"Expected sklearn model artifact was not found at "
                 f"{model_uri}"
             )
+        served_model_uri = os.path.join(
+            served_model_uri,
+            config.service_config.predictor,
+            config.service_config.model_name,
+        )
+        fileio.makedirs(served_model_uri)
         fileio.copy(model_uri, os.path.join(served_model_uri, "model.joblib"))
     else:
         # default treatment for all other server implementations is to
         # simply reuse the model from the artifact store path where it
         # is originally stored
-        served_model_uri = model_uri
+        served_model_uri = os.path.join(
+            served_model_uri,
+            config.service_config.predictor,
+            config.service_config.model_name,
+        )
+        fileio.makedirs(served_model_uri)
+        fileio.copy(model_uri, served_model_uri)
 
     service_config = config.service_config.copy()
     service_config.model_uri = served_model_uri
@@ -124,12 +142,14 @@ def prepare_torch_service_config(
     fileio.makedirs(served_model_uri)
     fileio.makedirs(config_propreties_uri)
 
-    if config.torch_serve_paramters is None:
+    if config.torch_serve_parameters is None:
         raise RuntimeError("No torch serve parameters provided")
     else:
         # Create a temporary folder
         temp_dir = tempfile.mkdtemp(prefix="zenml-pytorch-temp-")
-        tmp_model_uri = os.path.join(str(temp_dir), "mnist.pt")
+        tmp_model_uri = os.path.join(
+            str(temp_dir), f"{config.service_config.model_name}.pt"
+        )
 
         # Copy from artifact store to temporary file
         fileio.copy(f"{model_uri}/checkpoint.pt", tmp_model_uri)
@@ -137,10 +157,10 @@ def prepare_torch_service_config(
         torch_archiver_args = TorchModelArchiver(
             model_name=config.service_config.model_name,
             serialized_file=tmp_model_uri,
-            model_file=config.torch_serve_paramters.model_class,
-            handler=config.torch_serve_paramters.handler,
+            model_file=config.torch_serve_parameters.model_class,
+            handler=config.torch_serve_parameters.handler,
             export_path=temp_dir,
-            version=config.torch_serve_paramters.model_version,
+            version=config.torch_serve_parameters.model_version,
         )
 
         manifest = ModelExportUtils.generate_manifest_json(torch_archiver_args)
@@ -165,10 +185,10 @@ def prepare_torch_service_config(
         )
 
         # Get or Generate the config file
-        if config.torch_serve_paramters.torch_config:
+        if config.torch_serve_parameters.torch_config:
             # Copy the torch model config to the model store
             fileio.copy(
-                config.torch_serve_paramters.torch_config,
+                config.torch_serve_parameters.torch_config,
                 os.path.join(config_propreties_uri, "config.properties"),
             )
         else:

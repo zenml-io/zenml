@@ -14,6 +14,7 @@
 from contextlib import ExitStack as does_not_raise
 
 import pytest
+from pydantic import ValidationError
 
 
 def test_stack_component_default_method_implementations(stub_component):
@@ -59,3 +60,14 @@ def test_stack_component_public_attributes_are_immutable(stub_component):
 
     with does_not_raise():
         stub_component._some_private_attribute_name = "Woof"
+
+
+def test_stack_component_prevents_extra_attributes(stub_component):
+    """Tests that passing extra attributes to a StackComponent fails."""
+    component_class = stub_component.__class__
+
+    with does_not_raise():
+        component_class(some_public_attribute_name="test")
+
+    with pytest.raises(ValidationError):
+        component_class(not_an_attribute_name="test")

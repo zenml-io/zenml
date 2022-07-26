@@ -12,22 +12,20 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from pipeline import (
-    TrainerConfig,
-    importer_mnist,
+from pipelines.training_pipeline.training_pipeline import (
     mlflow_example_pipeline,
-    normalizer,
-    tf_evaluator,
-    tf_trainer,
 )
+from steps.evaluator.evaluator_step import tf_evaluator
+from steps.loader.loader_step import loader_mnist
+from steps.normalizer.normalizer_step import normalizer
+from steps.trainer.trainer_step import TrainerConfig, tf_trainer
 
 from zenml.integrations.mlflow.mlflow_utils import get_tracking_uri
 
 if __name__ == "__main__":
-
     # Initialize a pipeline run
     run_1 = mlflow_example_pipeline(
-        importer=importer_mnist(),
+        importer=loader_mnist(),
         normalizer=normalizer(),
         trainer=tf_trainer(config=TrainerConfig(epochs=5, lr=0.0003)),
         evaluator=tf_evaluator(),
@@ -37,7 +35,7 @@ if __name__ == "__main__":
 
     # Initialize a pipeline run again
     run_2 = mlflow_example_pipeline(
-        importer=importer_mnist(),
+        importer=loader_mnist(),
         normalizer=normalizer(),
         trainer=tf_trainer(config=TrainerConfig(epochs=5, lr=0.0001)),
         evaluator=tf_evaluator(),

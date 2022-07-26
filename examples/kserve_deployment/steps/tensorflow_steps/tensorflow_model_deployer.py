@@ -18,7 +18,7 @@ from zenml.integrations.kserve.steps import (
     kserve_model_deployer_step,
 )
 
-MODEL_NAME = "mnist"
+MODEL_NAME = "mnist-tensorflow"
 
 
 kserve_tensorflow_deployer = kserve_model_deployer_step(

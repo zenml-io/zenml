@@ -128,6 +128,12 @@ Now we're ready. Execute:
 python run.py
 ```
 
+Alternatively, if you want to run based on the config.yaml you can run with:
+
+```bash
+zenml pipeline run pipelines/secret_loading_pipeline/secret_loading_pipeline.py -c config.yaml 
+```
+
 ### 🧽 Clean up
 
 In order to clean up, delete the example secret:
@@ -145,7 +151,7 @@ rm -rf zenml_examples
 # 📜 Learn more
 
 If you want to learn more about secret managers in general or about how to build your own secret manager in ZenML
-check out our [docs](https://docs.zenml.io/extending-zenml/secrets-managers).
+check out our [docs](https://docs.zenml.io/mlops-stacks/secrets-managers).
 
 We also have extensive CLI docs for the
 [secret manager](https://apidocs.zenml.io/latest/cli/#zenml.cli--setting-up-a-secrets-manager)

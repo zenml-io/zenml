@@ -1,6 +1,10 @@
 import numpy as np
 import pandas as pd
 
+from zenml.integrations.evidently.steps import (
+    EvidentlyProfileConfig,
+    evidently_profile_step,
+)
 from zenml.steps import Output, step
 
 
@@ -14,3 +18,11 @@ def skew_comparison(
     return pd.DataFrame(reference_input, columns=columns), pd.DataFrame(
         comparison_input, columns=columns
     )
+
+
+evidently_profile_config = EvidentlyProfileConfig(
+    profile_sections=["datadrift"]
+)
+drift_detector = evidently_profile_step(
+    step_name="drift_detector", config=evidently_profile_config
+)
