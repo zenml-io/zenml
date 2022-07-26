@@ -46,6 +46,9 @@ def test_pydantic_model_attribute_deprecation():
     with pytest.warns(DeprecationWarning):
         Model(deprecated="aria")
 
+    with pytest.warns(DeprecationWarning):
+        Model(old="old_aria")
+
     with pytest.raises(ValidationError):
         # different value for deprecated and replacement attribute
         Model(old="aria", new="not_aria")

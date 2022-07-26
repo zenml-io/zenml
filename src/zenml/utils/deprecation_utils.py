@@ -111,7 +111,16 @@ def deprecate_pydantic_attributes(
                         f"{cls.__name__} will be deprecated soon.",
                         DeprecationWarning,
                     )
-                elif replacement_attribute not in values:
+                    continue
+                else:
+                    warnings.warn(
+                        f"The attribute {deprecated_attribute} of class "
+                        f"{cls.__name__} will be deprecated soon. Use the "
+                        f"attribute {replacement_attribute} instead.",
+                        DeprecationWarning,
+                    )
+
+                if replacement_attribute not in values:
                     logger.info(
                         "Migrating value of deprecated attribute %s to "
                         "replacement attribute %s.",
