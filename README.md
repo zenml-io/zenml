@@ -17,7 +17,7 @@ Tests](https://github.com/zenml-io/zenml/actions/workflows/ci.yml/badge.svg?bran
     <img src="docs/book/assets/zenml_logo.png" alt="Logo" width="400">
   </a>
 
-  <h3 align="center">ZenML - Build portable, production-ready MLOps pipelines.</h3>
+  <h3 align="center">Build portable, production-ready MLOps pipelines.</h3>
 
   <p align="center">
     An open-source framework.
