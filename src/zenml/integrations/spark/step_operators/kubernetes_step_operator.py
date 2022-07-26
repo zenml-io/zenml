@@ -22,7 +22,7 @@ from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.step_operators import BaseStepOperator, entrypoint
 from zenml.utils.docker_utils import build_docker_image, get_image_digest
-from zenml.utils.io_utils import write_file_contents_as_string
+from zenml.utils.io_utils import write_file_contents_as_string, create_file_if_not_exists
 from zenml.utils.source_utils import get_source_root_path
 
 logger = get_logger(__name__)
@@ -32,6 +32,7 @@ ZENML_DIR = "/zenml/"
 APP_DIR = "/app/"
 CONTAINER_ZENML_CONFIG_DIR = ".zenconfig"
 ENTRYPOINT_NAME = "__zenml_entrypoint__.py"
+
 
 def generate_dockerfile_contents(
     base_image: str,
@@ -118,10 +119,8 @@ class KubernetesSparkStepOperator(BaseStepOperator):
             tempfile.TemporaryDirectory().name,
             "Dockerfile"
         )
-        write_file_contents_as_string(
-            dockerfile_path,
-            dockerfile_content,
-        )
+        create_file_if_not_exists(dockerfile_path)
+        write_file_contents_as_string(dockerfile_path, dockerfile_content,)
 
         # Build the image and push it to the repository
         repo = Repository()
