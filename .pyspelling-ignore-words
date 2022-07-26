@@ -164,7 +164,6 @@ FirstPipeline
 FixtureRequest
 FlavorWrapper
 Flyte
-ForbiddenRepositoryAccessError
 Formatter
 FullAccess
 FunctionType
@@ -284,6 +283,7 @@ MyConfig
 MyCustomArtifactStore
 MyEnvironmentComponent
 MyMaterializer
+MyModel
 MyObj
 MyOrchestrator
 MySQLMetadataStore
@@ -1116,3 +1116,14 @@ zenml
 zenmldocker
 zenmlregistry
 zenserver
+GreatExpectationsValidatorConfig
+GreatExpectationsVisualizer
+observability
+br
+BaseDriftDetectionStep
+DataQualityProfileSection
+WhylogsDataValidator
+DeepchecksDataValidator
+DeepchecksVisualizer
+overfit
+pdf
