@@ -137,6 +137,7 @@ examples = [
             pipeline_name="xgboost_pipeline", step_count=3
         ),
         skip_on_windows=True,
+        prevent_stack_setup=False,
     ),
     # TODO [ENG-860]: Investigate why xgboost test doesn't work on windows
     # TODO [ENG-861]: Investigate why huggingface test throws pip error on
