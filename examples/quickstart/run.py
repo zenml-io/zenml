@@ -16,15 +16,15 @@
 from pipelines import inference_pipeline, training_pipeline
 from steps import (
     deployment_trigger,
+    drift_detector,
     evaluator,
     inference_data_loader,
+    model_deployer,
     prediction_service_loader,
     predictor,
     skew_comparison,
     svc_trainer_mlflow,
     training_data_loader,
-    drift_detector,
-    model_deployer,
 )
 
 from zenml.integrations.dash.visualizers.pipeline_run_lineage_visualizer import (
