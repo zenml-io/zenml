@@ -164,7 +164,6 @@ FirstPipeline
 FixtureRequest
 FlavorWrapper
 Flyte
-ForbiddenRepositoryAccessError
 Formatter
 FullAccess
 FunctionType
@@ -284,6 +283,7 @@ MyConfig
 MyCustomArtifactStore
 MyEnvironmentComponent
 MyMaterializer
+MyModel
 MyObj
 MyOrchestrator
 MySQLMetadataStore

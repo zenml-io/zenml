@@ -214,6 +214,21 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         mlflow.set_tracking_uri("")
 
     @property
+    def local_path(self) -> Optional[str]:
+        """Path to the local directory where the MLflow artifacts are stored.
+
+        Returns:
+            None if configured with a remote tracking URI, otherwise the
+            path to the local MLflow artifact store directory.
+        """
+        tracking_uri = self.get_tracking_uri()
+        if self.is_remote_tracking_uri(tracking_uri):
+            return None
+        else:
+            assert tracking_uri.startswith("file:")
+            return tracking_uri[5:]
+
+    @property
     def validator(self) -> Optional["StackValidator"]:
         """Checks the stack has a `LocalArtifactStore` if no tracking uri was specified.
 
