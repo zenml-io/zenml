@@ -255,11 +255,12 @@ def build_docker_image(
             }
             logger.info("Using requirements from local environment.")
 
-        logger.info(
-            "The following external requirements will be built into the image:"
-        )
-        for requirement in requirements:
-            logger.info(f"\t- `{requirement}`")
+        if requirements:
+            logger.info(
+                "The following external requirements are built into the image:"
+            )
+            for requirement in requirements:
+                logger.info(f"\t- `{requirement}`")
 
         if dockerfile_path:
             dockerfile_contents = read_file_contents_as_string(dockerfile_path)
