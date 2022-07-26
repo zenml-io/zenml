@@ -34,8 +34,8 @@ exclude = [
     "*.tests.*",
     "docs",
     "tests",
-    "legacy",
     "tests",
+    "legacy",
     "examples"
 ]
 include = [
