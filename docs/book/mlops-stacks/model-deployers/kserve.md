@@ -1,5 +1,5 @@
 ---
-description: How to deploy models to Kubernetes with Seldon Core
+description: How to deploy models to Kubernetes with KServe
 ---
 
 The KServe Model Deployer is one of the available flavors of the [Model Deployer](./model-deployers.md) stack component.
@@ -40,7 +40,7 @@ If you are looking for a more easy way to deploy your models locally, you can us
 
 ZenML provides a KServe flavor build on top of the KServe Integration to allow you to deploy and use your models in a 
 production-grade environment. In order to use the integration you need to install it on your local machine to be able 
-to register an KServe Model deployer with ZenML and add it to your stack:
+to register the KServe Model deployer with ZenML and add it to your stack:
 
 ```bash
 zenml integration install kserve -y
@@ -64,10 +64,10 @@ KServe is installed (e.g. AWS S3, GCS, Azure Blob Storage, etc.).
 You can use one of the supported [remote storage flavors](../artifact-stores/artifact-stores.md) to store your models 
 as part of your stack
 
-Since the Seldon Model Deployer is interacting with the KServe model server deployed on 
+Since the KServe Model Deployer is interacting with the KServe model serving Platform deployed on 
 a Kubernetes cluster, you need to provide a set of configuration parameters. These parameters are:
 
-* kubernetes_context: the Kubernetes context to use to contact the remote KServe installation. If not specified, the current configuration is used. Depending on where the Seldon model deployer is being used
+* kubernetes_context: the Kubernetes context to use to contact the remote KServe installation. If not specified, the current configuration is used. Depending on where the KServe model deployer is being used
 * kubernetes_namespace: the Kubernetes namespace where the KServe deployment servers 
 are provisioned and managed by ZenML. If not specified, the namespace set in the current configuration is used.
 * base_url: the base URL of the Kubernetes ingress used to expose the KServe deployment servers.
@@ -75,7 +75,7 @@ are provisioned and managed by ZenML. If not specified, the namespace set in the
 
 
 {% hint style="info" %}
-Configuring an KServe in a Kubernetes cluster can be a complex and error prone process, We provide a simple start 
+Configuring KServe in a Kubernetes cluster can be a complex and error prone process, We provide a simple start 
 guide on how to configure and setup KServe on your Kubernetes cluster, you can find it
 [here](https://github.com/zenml-io/zenml/tree/main/examples/kserve_deployment#installing-kserve-eg-in-an-gke-cluster) 
 we have also provided a set of of Terraform-based recipes to quickly provision popular combinations of MLOps tools. 
