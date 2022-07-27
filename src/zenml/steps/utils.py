@@ -53,13 +53,17 @@ from tfx.dsl.component.experimental.decorators import _SimpleComponent
 from tfx.dsl.components.base.base_executor import BaseExecutor
 from tfx.dsl.components.base.executor_spec import ExecutorClassSpec
 from tfx.orchestration.portable import outputs_utils
-from tfx.proto.orchestration import execution_result_pb2
+from tfx.proto.orchestration import execution_result_pb2, pipeline_pb2
 from tfx.types import component_spec
 from tfx.types.channel import Channel
 from tfx.utils import json_utils
 
 import zenml
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.constants import (
+    MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME,
+    ZENML_MLMD_CONTEXT_TYPE,
+)
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -72,6 +76,7 @@ from zenml.steps.step_output import Output
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
+    from zenml.stack import Stack
     from zenml.steps.base_step import BaseStep
 
 logger = get_logger(__name__)
@@ -454,33 +459,6 @@ class _FunctionExecutor(BaseExecutor):
                 f"{getattr(self, PARAM_STEP_NAME)}"
             )
 
-    def _collect_requirements(
-        self,
-    ) -> List[str]:
-        """Collects all requirements necessary to run a step.
-
-        Returns:
-            Alphabetically sorted list of pip requirements.
-        """
-        requirements = Repository().active_stack.requirements()
-
-        if self._context:
-            # Add pipeline requirements from the corresponding node context
-            for context in self._context.pipeline_node.contexts.contexts:
-                if context.type.name == "pipeline_requirements":
-                    pipeline_requirements = context.properties[
-                        "pipeline_requirements"
-                    ].field_value.string_value.split(" ")
-                    requirements.update(pipeline_requirements)
-                    break
-
-        # TODO [ENG-696]: Find a nice way to set this if the running version of
-        #  ZenML is not an official release (e.g. on a development branch)
-        # Add the current ZenML version as a requirement
-        requirements.add(f"zenml=={zenml.__version__}")
-
-        return sorted(requirements)
-
     def Do(
         self,
         input_dict: Dict[str, List[BaseArtifact]],
@@ -500,6 +478,7 @@ class _FunctionExecutor(BaseExecutor):
             StepInterfaceError: if the step interface is not implemented.
         """
         step_name = getattr(self, PARAM_STEP_NAME)
+        stack = Repository().active_stack
 
         # remove all ZenML internal execution properties
         exec_properties = {
@@ -566,7 +545,9 @@ class _FunctionExecutor(BaseExecutor):
             pipeline_run_id=self._context.pipeline_run_id,
             step_name=getattr(self, PARAM_STEP_NAME),
             cache_enabled=getattr(self, PARAM_ENABLE_CACHE),
-            pipeline_requirements=self._collect_requirements(),
+            pipeline_requirements=collect_requirements(
+                stack=stack, pipeline_node=self._context.pipeline_node
+            ),
         ):
             return_values = self._FUNCTION(**function_params)
 
@@ -697,3 +678,35 @@ def clone_step(step: Type["BaseStep"], step_name: str) -> Type["BaseStep"]:
 
     mod.__dict__[step_name] = step_clone
     return step_clone
+
+
+def collect_requirements(
+    stack: "Stack",
+    pipeline_node: pipeline_pb2.PipelineNode,
+) -> List[str]:
+    """Collects all requirements necessary to run a step.
+
+    Args:
+        stack: Stack on which the step is being executed.
+        pipeline_node: Pipeline node info for a step.
+
+    Returns:
+        Alphabetically sorted list of pip requirements.
+    """
+    requirements = stack.requirements()
+
+    # Add pipeline requirements from the corresponding node context
+    for context in pipeline_node.contexts.contexts:
+        if context.type.name == ZENML_MLMD_CONTEXT_TYPE:
+            pipeline_requirements = context.properties[
+                MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME
+            ].field_value.string_value.split(" ")
+            requirements.update(pipeline_requirements)
+            break
+
+    # TODO [ENG-696]: Find a nice way to set this if the running version of
+    #  ZenML is not an official release (e.g. on a development branch)
+    # Add the current ZenML version as a requirement
+    requirements.add(f"zenml=={zenml.__version__}")
+
+    return sorted(requirements)
