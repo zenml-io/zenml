@@ -93,12 +93,20 @@ itself.
 ```python
 from zenml.pipelines import pipeline
 
+# Definition of pipeline
 @pipeline
 def example_pipeline(...):
     ...
 
-# get all runs of a pipeline chronologically ordered
+# Instantiation and execution of pipeline
+pipe = example_pipeline(...)
+pipe.run()
+
+# get all runs of the defined pipeline chronologically ordered
 runs = example_pipeline.get_runs()
+
+# get all runs of the instantiated pipeline chronologically ordered
+runs = pipe.get_runs()
 
 # get the last run by index, runs are ordered by execution time in ascending order
 last_run = runs[-1]
@@ -111,7 +119,7 @@ run = example_pipeline.get_run(run_name=...)
 
 Within a given pipeline run you can now further zoom in on individual steps
 using the `steps` attribute or by querying a specific step using the
-`get_step(step=...)` method.
+`get_step(name=...)` method.
 
 ```python
 # get all steps of a pipeline for a given run
@@ -121,10 +129,29 @@ steps = run.steps
 first_step = steps[0]
 
 # or get a specific step by name
-step = run.get_step(step="first_step")
+step = run.get_step(name="first_step")
+```
 
-# or even use the step class
-step = run.get_step(step=first_step)
+{% hint style="warning" %}
+The step `name` refers to the pipeline attribute and not the class name of the
+steps that implement the step for a pipeline instance. 
+{% endhint %}
+
+```python
+# Definition of pipeline
+@pipeline
+def example_pipeline(step_1, step_2):
+    ...
+
+# Initialize a new pipeline run
+pipe = example_pipeline(step_1=first_step(), step_2=second_step())
+pipe.run()
+
+# Get the first step
+pipe.get_runs()[-1].get_step(name="step_1")
+
+# This won't work:
+# pipe.get_runs()[-1].get_step(name="first_step")
 ```
 
 {% hint style="info" %}
@@ -133,7 +160,7 @@ The steps are ordered by time of execution. Depending on the
 run in parallel. Thus, accessing steps by index can be unreliable across 
 different runs, and it is recommended to access steps by the step class,
 an instance of the class or even the name of the step as a string: 
-`get_step(step=...)` instead.
+`get_step(name=...)` instead.
 {% endhint %}
 
 ### Outputs
@@ -181,4 +208,20 @@ pipeline = repo.get_pipeline(pipeline="first_pipeline")
 last_run = pipeline.runs[-1]
 last_step = last_run.steps[-1]
 model = last_step.output.read()
+```
+
+or alternatively:
+
+```python
+# Definition of pipeline
+@pipeline
+def example_pipeline(step_1, step_2):
+    ...
+# Initialize a new pipeline run
+pipe = example_pipeline(step_1=first_step(), step_2=second_step())
+pipe.run()
+
+# Get the first step
+step_1 = pipe.get_runs()[-1].get_step(name="step_1")
+output = step_1.output.read()
 ```
