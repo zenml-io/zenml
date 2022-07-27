@@ -115,9 +115,7 @@ class LocalStackRecipe:
         return fileio.exists(str(self.path)) and fileio.isdir(str(self.path))
 
     def run_stack_recipe(
-        self,
-        stack_recipe_runner: List[str],
-        identifier: str
+        self, stack_recipe_runner: List[str], identifier: str
     ) -> None:
         """Run the local stack recipe using the bash script at the supplied location.
 
@@ -132,9 +130,7 @@ class LocalStackRecipe:
             subprocess.CalledProcessError: If the stack_recipe runner script fails.
         """
         if all(map(fileio.exists, stack_recipe_runner)):
-            call = (
-                stack_recipe_runner
-            )
+            call = stack_recipe_runner
             try:
                 subprocess.check_call(
                     call,
@@ -158,14 +154,21 @@ class LocalStackRecipe:
                 raise
         else:
             raise FileNotFoundError(
-                "Bash File(s) to run recipes not found at" f"{stack_recipe_runner}"
+                "Bash File(s) to run recipes not found at"
+                f"{stack_recipe_runner}"
             )
 
         # Telemetry
-        if identifier is 'deploy':
-            track_event(AnalyticsEvent.RUN_STACK_RECIPE, {"stack_recipe_name": self.name})
+        if identifier is "deploy":
+            track_event(
+                AnalyticsEvent.RUN_STACK_RECIPE,
+                {"stack_recipe_name": self.name},
+            )
         else:
-            track_event(AnalyticsEvent.DESTROY_STACK_RECIPE, {"stack_recipe_name": self.name})
+            track_event(
+                AnalyticsEvent.DESTROY_STACK_RECIPE,
+                {"stack_recipe_name": self.name},
+            )
 
 
 class StackRecipe:
@@ -510,11 +513,9 @@ def list_stack_recipes(
     print_table(stack_recipes)
 
     declare("\n" + "To get the latest list of stack recipes, run: ")
-    text = Text(
-        "zenml stack recipe pull -y", style="markdown.code_block"
-    )
+    text = Text("zenml stack recipe pull -y", style="markdown.code_block")
     declare(text)
-    
+
     declare("\n" + "To pull any individual stack_recipes, type: ")
     text = Text(
         "zenml stack recipe pull RECIPE_NAME", style="markdown.code_block"
@@ -755,12 +756,11 @@ def deploy(
 
         stack_recipe_runner = (
             [] if shell_executable is None else [shell_executable]
-        ) + [
-            local_stack_recipe.recipes_deploy_bash_script
-        ]
+        ) + [local_stack_recipe.recipes_deploy_bash_script]
         try:
             local_stack_recipe.run_stack_recipe(
-                stack_recipe_runner=stack_recipe_runner, identifier=RECIPE_DEPLOY_IDENTIFIER
+                stack_recipe_runner=stack_recipe_runner,
+                identifier=RECIPE_DEPLOY_IDENTIFIER,
             )
         except NotImplementedError as e:
             error(str(e))
@@ -826,14 +826,13 @@ def destroy(
                 "has not been pulled at the specified path. "
                 f"Run `zenml stack recipe pull {stack_recipe_name}` "
                 f"followed by `zenml stack recipe deploy {stack_recipe_name}` first."
-            ) 
+            )
 
-        stack_recipe_runner = [
-            local_stack_recipe.recipes_destroy_bash_script
-        ]
+        stack_recipe_runner = [local_stack_recipe.recipes_destroy_bash_script]
         try:
             local_stack_recipe.run_stack_recipe(
-                stack_recipe_runner=stack_recipe_runner, identifier=RECIPE_DESTROY_INDENTIFIER
+                stack_recipe_runner=stack_recipe_runner,
+                identifier=RECIPE_DESTROY_INDENTIFIER,
             )
         except NotImplementedError as e:
             error(str(e))
