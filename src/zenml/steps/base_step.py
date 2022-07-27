@@ -73,9 +73,60 @@ class BaseStepMeta(type):
     """Metaclass for `BaseStep`.
 
     Checks whether everything passed in:
-    * Has a matching materializer.
-    * Is a subclass of the Config class
+    * Has a matching materializer,
+    * Is a subclass of the Config class,
+    * Is typed correctly.
     """
+
+    @staticmethod
+    def _parse_returns(
+        name: str, step_annotations: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Parse the returns of a step function.
+
+        Called within `__new__()` to define `cls.OUTPUT_SIGNATURE`.
+
+        Args:
+            name: The name of the step.
+            step_annotations: Type annotations of the step.
+
+        Raises:
+            StepInterfaceError: If the return type is missing or not supported.
+
+        Returns:
+            Output signature of the new step clas.
+        """
+        if "return" not in step_annotations:
+            raise StepInterfaceError(
+                "Missing return type annotation when trying to create step "
+                f"'{name}'. Please make sure to include type annotations for "
+                "all your step inputs and outputs. If your step returns "
+                "nothing, please annotate it with `-> None`."
+            )
+        return_type = step_annotations.get("return", None)
+        if return_type is not None:
+            # Cast simple output types to `Output`.
+            if not isinstance(return_type, Output):
+                return_type = Output(**{SINGLE_RETURN_OUT_NAME: return_type})
+            # Raise error if subscripted generics used as output type.
+            # E.g., `Outputs(a=List[str])` must be `Outputs(a=List)`.
+            for output_name, output_type in return_type.items():
+                type_parts = str(output_type).split("[")
+                if len(type_parts) > 1:  # type is of the form <TYPE>[...]
+                    non_subscripted_type = type_parts[0]  # just <TYPE>
+                    raise StepInterfaceError(
+                        "Subscripted generics cannot be used as step "
+                        f"outputs. For step '{name}', use "
+                        f"`{output_name}={non_subscripted_type}` instead "
+                        f"of `{output_name}={output_type}`."
+                    )
+            # Resolve type annotations.
+            output_signature = {
+                output_name: resolve_type_annotation(output_type)
+                for output_name, output_type in return_type.items()
+            }
+            return output_signature
+        return {}
 
     def __new__(
         mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
@@ -177,35 +228,10 @@ class BaseStepMeta(type):
                 cls.INPUT_SIGNATURE.update({arg: arg_type})
 
         # Parse the returns of the step function
-        if "return" not in step_function_signature.annotations:
-            raise StepInterfaceError(
-                "Missing return type annotation when trying to create step "
-                f"'{name}'. Please make sure to include type annotations for "
-                "all your step inputs and outputs. If your step returns "
-                "nothing, please annotate it with `-> None`."
-            )
-        return_type = step_function_signature.annotations.get("return", None)
-        if return_type is not None:
-            # Cast simple output types to `Output`.
-            if not isinstance(return_type, Output):
-                return_type = Output(**{SINGLE_RETURN_OUT_NAME: return_type})
-            # Raise error if subscripted generics used as output type.
-            # E.g., `Outputs(a=List[str])` must be `Outputs(a=List)`.
-            for output_name, output_type in return_type.items():
-                type_parts = str(output_type).split("[")
-                if len(type_parts) > 1:  # type is of the form <TYPE>[...]
-                    non_subscripted_type = type_parts[0]  # just <TYPE>
-                    raise StepInterfaceError(
-                        "Subscripted generics cannot be used as step "
-                        f"outputs. For step '{name}', use "
-                        f"`{output_name}={non_subscripted_type}` instead "
-                        f"of `{output_name}={output_type}`."
-                    )
-            # Resolve type annotations.
-            cls.OUTPUT_SIGNATURE = {
-                output_name: resolve_type_annotation(output_type)
-                for output_name, output_type in return_type.items()
-            }
+        cls.OUTPUT_SIGNATURE = BaseStepMeta._parse_returns(
+            name=name,
+            step_annotations=step_function_signature.annotations,
+        )
 
         # Raise an exception if input and output names of a step overlap as
         # tfx requires them to be unique
