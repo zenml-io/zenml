@@ -314,16 +314,5 @@ def test_run_example(
         pass
     finally:
         # clean up
-        try:
-            os.chdir(previous_wd)
-            shutil.rmtree(tmp_path, onerror=fix_permissions)
-        except PermissionError:
-            # Windows does not have the concept of unlinking a file and deleting
-            # once all processes that are accessing the resource are done
-            # instead windows tries to delete immediately and fails with a
-            # PermissionError: [WinError 32] The process cannot access the
-            # file because it is being used by another process
-            logging.debug(
-                "Skipping deletion of temp dir at teardown, due to "
-                "Windows Permission error"
-            )
+        os.chdir(previous_wd)
+        shutil.rmtree(tmp_path, onerror=fix_permissions)
