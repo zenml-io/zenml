@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Step environment class."""
 
+from typing import List
+
 from zenml.environment import BaseEnvironmentComponent
 
 STEP_ENVIRONMENT_NAME = "step_environment"
@@ -45,6 +47,7 @@ class StepEnvironment(BaseEnvironmentComponent):
         pipeline_run_id: str,
         step_name: str,
         cache_enabled: bool,
+        pipeline_requirements: List[str],
     ):
         """Initialize the environment of the currently running step.
 
@@ -53,12 +56,14 @@ class StepEnvironment(BaseEnvironmentComponent):
             pipeline_run_id: the ID of the currently running pipeline
             step_name: the name of the currently running step
             cache_enabled: whether cache is enabled for this step
+            pipeline_requirements: the requirements of the currently running pipeline
         """
         super().__init__()
         self._pipeline_name = pipeline_name
         self._pipeline_run_id = pipeline_run_id
         self._step_name = step_name
         self._cache_enabled = cache_enabled
+        self._pipeline_requirements = pipeline_requirements
 
     @property
     def pipeline_name(self) -> str:
@@ -95,3 +100,12 @@ class StepEnvironment(BaseEnvironmentComponent):
             True if cache is enabled for the step, otherwise False.
         """
         return self._cache_enabled
+
+    @property
+    def pipeline_requirements(self) -> List[str]:
+        """The name of the currently running step.
+
+        Returns:
+            The List of the currently running pipeline requirements.
+        """
+        return self._pipeline_requirements
