@@ -94,7 +94,7 @@ class BaseStepMeta(type):
             StepInterfaceError: If the return type is missing or not supported.
 
         Returns:
-            Output signature of the new step clas.
+            Output signature of the new step class.
         """
         if "return" not in step_annotations:
             raise StepInterfaceError(
