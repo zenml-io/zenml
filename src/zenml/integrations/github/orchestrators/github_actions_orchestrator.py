@@ -469,7 +469,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
 
         jobs = {}
         for step in sorted_steps:
-            if not step.resource_configuration.empty:
+            if self.requires_resources_in_orchestration_environment(step):
                 logger.warning(
                     "Specifying step resources is not supported for the "
                     "GitHub Actions orchestrator, ignoring resource "

@@ -360,6 +360,7 @@ RIL
 RL
 RedPill
 Reproducibility
+ResourceConfiguration
 RichHandler
 Roadmap
 Runtime
@@ -373,6 +374,7 @@ SHAs
 SOTA
 SQLAlchemy
 SQLModel
+SQLZenStore
 SQLiteMetadataStore
 SSL
 SSLSupport
@@ -997,7 +999,6 @@ sqladmin
 sqlalche
 sqlite
 sqlmodel
-SQLZenStore
 src
 ssl
 stackoverflow
