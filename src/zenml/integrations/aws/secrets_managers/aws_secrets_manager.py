@@ -350,7 +350,7 @@ class AWSSecretsManager(BaseSecretsManager):
         try:
             self.CLIENT.delete_secret(
                 SecretId=self._get_scoped_secret_name(secret_name),
-                ForceDeleteWithoutRecovery=False,
+                ForceDeleteWithoutRecovery=True,
             )
         except botocore.exceptions.ClientError as error:
             if error.response["Error"]["Code"] == "ResourceNotFoundException":
