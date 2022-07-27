@@ -103,30 +103,33 @@ class BaseStepMeta(type):
                 "all your step inputs and outputs. If your step returns "
                 "nothing, please annotate it with `-> None`."
             )
-        return_type = step_annotations.get("return", None)
-        if return_type is not None:
-            # Cast simple output types to `Output`.
-            if not isinstance(return_type, Output):
-                return_type = Output(**{SINGLE_RETURN_OUT_NAME: return_type})
-            # Raise error if subscripted generics used as output type.
-            # E.g., `Outputs(a=List[str])` must be `Outputs(a=List)`.
-            for output_name, output_type in return_type.items():
-                type_parts = str(output_type).split("[")
-                if len(type_parts) > 1:  # type is of the form <TYPE>[...]
-                    non_subscripted_type = type_parts[0]  # just <TYPE>
-                    raise StepInterfaceError(
-                        "Subscripted generics cannot be used as step "
-                        f"outputs. For step '{name}', use "
-                        f"`{output_name}={non_subscripted_type}` instead "
-                        f"of `{output_name}={output_type}`."
-                    )
-            # Resolve type annotations.
-            output_signature = {
-                output_name: resolve_type_annotation(output_type)
-                for output_name, output_type in return_type.items()
-            }
-            return output_signature
-        return {}
+        return_type = step_annotations["return"]
+        if return_type is None:
+            return {}
+
+        # Cast simple output types to `Output`.
+        if not isinstance(return_type, Output):
+            return_type = Output(**{SINGLE_RETURN_OUT_NAME: return_type})
+
+        # Raise error if subscripted generics used as output type.
+        # E.g., `Outputs(a=List[str])` must be `Outputs(a=List)`.
+        for output_name, output_type in return_type.items():
+            type_parts = str(output_type).split("[")
+            if len(type_parts) > 1:  # type is of the form <TYPE>[...]
+                non_subscripted_type = type_parts[0]  # just <TYPE>
+                raise StepInterfaceError(
+                    "Subscripted generics cannot be used as step "
+                    f"outputs. For step '{name}', use "
+                    f"`{output_name}={non_subscripted_type}` instead "
+                    f"of `{output_name}={output_type}`."
+                )
+
+        # Resolve type annotations of all outputs.
+        output_signature = {
+            output_name: resolve_type_annotation(output_type)
+            for output_name, output_type in return_type.items()
+        }
+        return output_signature
 
     def __new__(
         mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
