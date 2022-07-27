@@ -161,6 +161,7 @@ def generate_component_class(
     execution_parameter_names: Set[str],
     step_function: Callable[..., Any],
     materializers: Dict[str, Type[BaseMaterializer]],
+    enable_cache: bool,
 ) -> Type["_ZenMLSimpleComponent"]:
     """Generates a TFX component class for a ZenML step.
 
@@ -172,6 +173,7 @@ def generate_component_class(
         execution_parameter_names: Execution parameter names of the step.
         step_function: The actual function to execute when running the step.
         materializers: Materializer classes for all outputs of the step.
+        enable_cache: Whether cache is enabled for the step.
 
     Returns:
         A TFX component class.
@@ -193,6 +195,7 @@ def generate_component_class(
             "__module__": step_module,
             "materializers": materializers,
             PARAM_STEP_NAME: step_name,
+            PARAM_ENABLE_CACHE: enable_cache,
         },
     )
 
@@ -493,6 +496,7 @@ class _FunctionExecutor(BaseExecutor):
             pipeline_name=self._context.pipeline_info.id,
             pipeline_run_id=self._context.pipeline_run_id,
             step_name=step_name,
+            cache_enabled=getattr(self, PARAM_ENABLE_CACHE),
         ):
             return_values = self._FUNCTION(**function_params)
 
