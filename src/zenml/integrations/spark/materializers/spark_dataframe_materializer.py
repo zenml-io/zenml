@@ -65,7 +65,7 @@ class SparkDataFrameMaterializer(BaseMaterializer):
         df.write.save(path, format="parquet")
 
         with open(os.path.join(path, 'all_files.txt'), "w") as text_file:
-            for x in os.listdir():
+            for x in os.listdir(path):
                 text_file.write(x)
                 text_file.write('\n')
 
