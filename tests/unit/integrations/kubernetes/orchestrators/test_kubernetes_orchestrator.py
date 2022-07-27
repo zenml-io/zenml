@@ -43,7 +43,7 @@ def test_kubernetes_orchestrator_remote_stack() -> None:
         password="",
         host="",
         port=0,
-        database="",
+        database="zenml",
     )
     remote_container_registry = DefaultContainerRegistry(
         name="", uri="gcr.io/my-project"

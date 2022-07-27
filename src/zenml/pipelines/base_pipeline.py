@@ -31,12 +31,12 @@ from typing import (
     cast,
 )
 
-import zenml.cli.utils as cli_utils
 from zenml import constants
 from zenml.config.config_keys import (
     PipelineConfigurationKeys,
     StepConfigurationKeys,
 )
+from zenml.environment import Environment
 from zenml.exceptions import (
     DuplicatedConfigurationError,
     PipelineConfigurationError,
@@ -47,6 +47,7 @@ from zenml.integrations.registry import integration_registry
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.pipelines.schedule import Schedule
+from zenml.post_execution import PipelineRunView
 from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.steps import BaseStep
@@ -116,7 +117,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
         requirements_file: DEPRECATED: Optional path to a pip requirements file
             that contains all requirements to run the pipeline. (Use
             `requirements` instead.)
-        requirements: Optional list of (string) pip requirements to run the pipeline, or a string path to a requirements file.
+        requirements: Optional list of (string) pip requirements to run the
+        pipeline, or a string path to a requirements file.
         required_integrations: Optional set of integrations that need to be
             installed for this pipeline to run.
     """
@@ -138,7 +140,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self.requirements_file = kwargs.pop(PARAM_REQUIREMENTS_FILE, None)
         if self.requirements_file:
             logger.warning(
-                "The `requirements_file` argument has been deprecated. Please use `requirements` instead to pass in either a string path to a file listing your 'requirements' or a list of the individual requirements."
+                "The `requirements_file` argument has been deprecated. Please "
+                "use `requirements` instead to pass in either a string path "
+                "to a file listing your 'requirements' or a list of the "
+                "individual requirements."
             )
         self._requirements = kwargs.pop(PARAM_REQUIREMENTS, None)
         self.dockerignore_file = kwargs.pop(PARAM_DOCKERIGNORE_FILE, None)
@@ -313,11 +318,13 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     {
                         requirement.strip()
                         for requirement in f.read().split("\n")
+                        if requirement
                     }
                 )
             if self.requirements_file:
-                cli_utils.warning(
-                    f"Using the file path passed in as `requirements` and ignoring the file '{self.requirements_file}'."
+                logger.warning(
+                    f"Using the file path passed in as `requirements` and "
+                    f"ignoring the file '{self.requirements_file}'."
                 )
         # Add this logic back in (described in #ENG-882)
         #
@@ -342,8 +349,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
         elif isinstance(self._requirements, List):
             requirements.update(self._requirements)
             if self.requirements_file:
-                cli_utils.warning(
-                    f"Using the values passed in as `requirements` and ignoring the file '{self.requirements_file}'."
+                logger.warning(
+                    f"Using the values passed in as `requirements` and "
+                    f"ignoring the file '{self.requirements_file}'."
                 )
         elif self.requirements_file and fileio.exists(self.requirements_file):
             # TODO [ENG-883]: Deprecate the `requirements_file` option
@@ -352,6 +360,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     {
                         requirement.strip()
                         for requirement in f.read().split("\n")
+                        if requirement
                     }
                 )
 
@@ -455,15 +464,17 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         integration_registry.activate_integrations()
 
-        # Path of the file where pipeline.run() was called. This is needed by
-        # the airflow orchestrator so it knows which file to copy into the DAG
-        # directory
-        dag_filepath = io_utils.resolve_relative_path(
-            inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr]
-        )
+        if not Environment.in_notebook():
+            # Path of the file where pipeline.run() was called. This is needed by
+            # the airflow orchestrator so it knows which file to copy into the DAG
+            # directory
+            dag_filepath = io_utils.resolve_relative_path(
+                inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr]
+            )
+            additional_parameters.setdefault("dag_filepath", dag_filepath)
+
         runtime_configuration = RuntimeConfiguration(
             run_name=run_name,
-            dag_filepath=dag_filepath,
             schedule=schedule,
             **additional_parameters,
         )
@@ -588,3 +599,48 @@ class BasePipeline(metaclass=BasePipelineMeta):
                             parameter, step_name, previous_value, value
                         )
                     )
+
+    @classmethod
+    def get_runs(cls) -> Optional[List["PipelineRunView"]]:
+        """Get all past runs from the associated PipelineView.
+
+        Returns:
+            A list of all past PipelineRunViews.
+
+        Raises:
+            RuntimeError: In case the repository does not contain the view
+                of the current pipeline.
+        """
+        pipeline_view = Repository().get_pipeline(cls)
+        if pipeline_view:
+            return pipeline_view.runs  # type: ignore[no-any-return]
+        else:
+            raise RuntimeError(
+                f"The PipelineView for `{cls.__name__}` could "
+                f"not be found. Are you sure this pipeline has "
+                f"been run already?"
+            )
+
+    @classmethod
+    def get_run(cls, run_name: str) -> Optional["PipelineRunView"]:
+        """Get a specific past run from the associated PipelineView.
+
+        Args:
+            run_name: Name of the run
+
+        Returns:
+            The PipelineRunView of the specific pipeline run.
+
+        Raises:
+            RuntimeError: In case the repository does not contain the view
+                of the current pipeline.
+        """
+        pipeline_view = Repository().get_pipeline(cls)
+        if pipeline_view:
+            return pipeline_view.get_run(run_name)  # type: ignore[no-any-return]
+        else:
+            raise RuntimeError(
+                f"The PipelineView for `{cls.__name__}` could "
+                f"not be found. Are you sure this pipeline has "
+                f"been run already?"
+            )

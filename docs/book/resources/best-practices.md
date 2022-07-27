@@ -1,5 +1,5 @@
 ---
-description: Best Practices, Recommendations, and Tips from the ZenML team.
+description: Best practices, recommendations, and tips from the ZenML team
 ---
 
 ## Recommended Repository Structure
@@ -102,7 +102,7 @@ step.
 ### Enable cache explicitly for steps that have a `context` argument, if they don't invalidate the caching behavior
 
 Cache is implicitly disabled for steps that have a
-[context](../developer-guide/step-fixtures.md#using-the-stepcontext) argument,
+[context](../developer-guide/advanced-usage/step-fixtures.md#step-contexts) argument,
 because it is assumed that you might use the step context to retrieve artifacts
 from the artifact store that are unrelated to the current step. However, if that
 is not the case, and your step logic doesn't invalidate the caching behavior, it
@@ -117,7 +117,7 @@ inactive artifact stores.
 
 Using Profiles allows you to separate your ZenML stacks and work
 locally within independent ZenML instances. See our
-[docs](../collaborate/share-with-profiles.md) on profiles to learn more.
+[docs](../developer-guide/stacks-profiles-repositories/profile.md) on profiles to learn more.
 
 ### Use unique pipeline names across projects, especially if used with the same metadata store
 
@@ -143,16 +143,15 @@ into a Docker image for execution. To speed up the process and reduce Docker
 image sizes, exclude all unnecessary files (like data, virtual environments, 
 git repos, etc.) within the `.dockerignore`.
 
-### Use `get_pipeline_run(RUN_NAME)` instead of indexing (`[-1]`) to retrieve previous pipeline runs
+### Use `get_pipeline(pipeline=...)` instead of indexing (`[-1]`) to retrieve previous pipelines
 
-When using the [post execution workflow](../developer-guide/post-execution-workflow.md)
+When [inspecting pipeline runs](../developer-guide/steps-pipelines/inspecting-pipeline-runs.md)
 it is tempting to access the pipeline views directly by their index, but
 the pipelines within your `Repository` are sorted by time of first run, so the 
 pipeline at `[-1]` might not be the one you are expecting.
 
 ```python
 from zenml.repository import Repository
-from zenml.pipelines import pipeline
 
 first_pipeline.run()
 second_pipeline.run()
@@ -162,8 +161,12 @@ repo = Repository()
 repo.get_pipelines()
 >>> [PipelineView('first_pipeline'), PipelineView('second_pipeline')]
 
-# This is the recommended explicit way to retrieve your specific pipeline
-repo.get_pipeline(pipeline_name="first_pipeline")
+# This is the recommended explicit way to retrieve your specific pipeline 
+# using the pipeline class if you have it at hand
+repo.get_pipeline(pipeline=first_pipeline)
+
+# Alternatively you can also use the name of the pipeline
+repo.get_pipeline(pipeline="first_pipeline")
 ```
 
 ### Have your imports relative to your `.zen` directory OR have your imports relative to the root of your repository in cases when you don't have a `.zen` directory (=> which means to have the runner at the root of your repository)
