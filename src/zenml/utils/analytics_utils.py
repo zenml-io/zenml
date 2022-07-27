@@ -87,7 +87,7 @@ class AnalyticsEvent(str, Enum):
     # Test event
     EVENT_TEST = "Test event"
 
-    # Stakc recipes
+    # Stack recipes
     PULL_STACK_RECIPE = "Stack recipes pulled"
     RUN_STACK_RECIPE = "Stack recipe created"
     DESTROY_STACK_RECIPE = "Stack recipe destroyed"
