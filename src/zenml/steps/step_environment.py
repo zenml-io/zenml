@@ -46,8 +46,8 @@ class StepEnvironment(BaseEnvironmentComponent):
         pipeline_name: str,
         pipeline_run_id: str,
         step_name: str,
-        pipeline_requirements: List[str],
         cache_enabled: bool,
+        pipeline_requirements: List[str],
     ):
         """Initialize the environment of the currently running step.
 
@@ -55,15 +55,15 @@ class StepEnvironment(BaseEnvironmentComponent):
             pipeline_name: the name of the currently running pipeline
             pipeline_run_id: the ID of the currently running pipeline
             step_name: the name of the currently running step
-            pipeline_requirements: the requirements of the currently running pipeline
             cache_enabled: whether cache is enabled for this step
+            pipeline_requirements: the requirements of the currently running pipeline
         """
         super().__init__()
         self._pipeline_name = pipeline_name
         self._pipeline_run_id = pipeline_run_id
         self._step_name = step_name
-        self._pipeline_requirements = pipeline_requirements
         self._cache_enabled = cache_enabled
+        self._pipeline_requirements = pipeline_requirements
 
     @property
     def pipeline_name(self) -> str:
@@ -93,13 +93,6 @@ class StepEnvironment(BaseEnvironmentComponent):
         return self._step_name
 
     @property
-    def pipeline_requirements(self) -> List[str]:
-        """The name of the currently running step.
-
-        Returns:
-            The List of the currently running pipeline requirements.
-        """
-        return self._pipeline_requirements
     def cache_enabled(self) -> bool:
         """Returns whether cache is enabled for the step.
 
@@ -107,3 +100,12 @@ class StepEnvironment(BaseEnvironmentComponent):
             True if cache is enabled for the step, otherwise False.
         """
         return self._cache_enabled
+
+    @property
+    def pipeline_requirements(self) -> List[str]:
+        """The name of the currently running step.
+
+        Returns:
+            The List of the currently running pipeline requirements.
+        """
+        return self._pipeline_requirements
