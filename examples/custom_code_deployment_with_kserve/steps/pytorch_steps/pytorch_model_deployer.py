@@ -14,7 +14,7 @@
 
 from zenml.integrations.kserve.services import KServeDeploymentConfig
 from zenml.integrations.kserve.steps import (
-    CustomDeployParamters,
+    CustomDeployParameters,
     KServeDeployerStepConfig,
     kserve_custom_model_deployer_step,
 )
@@ -30,7 +30,7 @@ custom_model_deployer = kserve_custom_model_deployer_step(
             resources={"requests": {"cpu": "200m", "memory": "500m"}},
         ),
         timeout=120,
-        custom_deploy_paramters=CustomDeployParamters(
+        custom_deploy_paramters=CustomDeployParameters(
             predict_function="steps.pytorch_steps.custom_deploy_functions.custom_predict",
         ),
     )

@@ -167,7 +167,7 @@ class TorchServeParameters(BaseModel):
         return v
 
 
-class CustomDeployParamters(BaseModel):
+class CustomDeployParameters(BaseModel):
     """Custom model deployer step extra parameters.
 
     Attributes:
@@ -208,7 +208,7 @@ class KServeDeployerStepConfig(BaseStepConfig):
     """
 
     service_config: KServeDeploymentConfig
-    custom_deploy_parameters: Optional[CustomDeployParamters] = None
+    custom_deploy_parameters: Optional[CustomDeployParameters] = None
     torch_serve_parameters: Optional[TorchServeParameters] = None
     timeout: int = DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT
 
