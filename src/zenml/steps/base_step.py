@@ -30,6 +30,7 @@ from typing import (
     TypeVar,
     Union,
     cast,
+    get_args,
 )
 
 from tfx.orchestration.portable.base_executor_operator import (
@@ -179,14 +180,25 @@ class BaseStepMeta(type):
         # Parse the returns of the step function
         if "return" not in step_function_signature.annotations:
             raise StepInterfaceError(
-                f"Missing return type annotation when "
-                f"trying to create step '{name}'. Please make sure to "
-                f"include type annotations for all your step inputs "
-                f"and outputs. If your step returns nothing, please annotate it with `-> None`."
+                "Missing return type annotation when trying to create step "
+                f"'{name}'. Please make sure to include type annotations for "
+                "all your step inputs and outputs. If your step returns "
+                "nothing, please annotate it with `-> None`."
             )
         return_type = step_function_signature.annotations.get("return", None)
         if return_type is not None:
             if isinstance(return_type, Output):
+                # Raise error if subscripted generics used as output type.
+                # E.g., `Outputs(a=List[str])` must be `Outputs(a=List)`.
+                for output_name, output_type in return_type.items():
+                    if get_args(output_type):
+                        non_subscripted_type = str(output_type).split("[")[0]
+                        raise StepInterfaceError(
+                            "Subscripted generics cannot be used as step "
+                            f"outputs. For step '{name}', use "
+                            f"`{output_name}={non_subscripted_type}` instead "
+                            f"of `{output_name}={output_type}`."
+                        )
                 cls.OUTPUT_SIGNATURE = {
                     name: resolve_type_annotation(type_)
                     for (name, type_) in return_type.items()
