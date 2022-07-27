@@ -556,6 +556,14 @@ identifier for the artifact store, metadata store or orchestrator when
 you originally registered it. (If you want to use your secrets manager, you
 should pass its name in with the `-x` option flag.)
 
+Keep in mind that once you register a stack, its artifact store and
+metadata store will be coupled together, and using these instances in other
+pairings will not be allowed. This is done to avoid mismatches between
+these two stores. If you want to override this check when you are
+declaring/updating a stack, you can use the `--decouple_stores` flag which will
+reset any previous couplings and establish a new one with the given artifact-
+and metadata store.
+
 If you want to immediately set this newly created stack as your active stack,
 simply pass along the `--set` flag.
 

@@ -22,7 +22,6 @@ import pytest
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.enums import StackComponentType
 from zenml.exceptions import (
-    ForbiddenRepositoryAccessError,
     InitializationException,
     StackComponentExistsError,
     StackExistsError,
@@ -176,14 +175,14 @@ def test_repo_without_configuration_file_falls_back_to_empty_config(tmp_path):
     assert repo.active_stack is not None
 
 
-def test_creating_repository_instance_during_step_execution_fails(mocker):
+def test_creating_repository_instance_during_step_execution(mocker):
     """Tests that creating a Repository instance while a step is being executed
-    fails."""
+    does not fail."""
     mocker.patch(
         "zenml.environment.Environment.step_is_running",
         return_value=True,
     )
-    with pytest.raises(ForbiddenRepositoryAccessError):
+    with does_not_raise():
         Repository()
 
 
@@ -455,7 +454,7 @@ def test_get_pipelines_forwards_to_metadata_store(clean_repo, mocker):
         metadata_store=new_metadata_store,
         artifact_store=active_stack.artifact_store,
     )
-    clean_repo.register_stack(new_stack)
+    clean_repo.register_stack(new_stack, decouple_stores=True)
 
     mocker.patch.object(SQLiteMetadataStore, "get_pipelines", return_value=[])
     mocker.patch.object(SQLiteMetadataStore, "get_pipeline", return_value=None)

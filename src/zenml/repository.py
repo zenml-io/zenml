@@ -34,10 +34,7 @@ from zenml.constants import (
 )
 from zenml.enums import StackComponentType, StoreType
 from zenml.environment import Environment
-from zenml.exceptions import (
-    ForbiddenRepositoryAccessError,
-    InitializationException,
-)
+from zenml.exceptions import InitializationException
 from zenml.io import fileio
 from zenml.logger import get_apidocs_link, get_logger
 from zenml.stack import Stack, StackComponent
@@ -151,22 +148,30 @@ class RepositoryMetaClass(ABCMeta):
 
         Returns:
             Repository: The global Repository instance.
-
-        Raises:
-            ForbiddenRepositoryAccessError: If trying to create a `Repository`
-                instance while a ZenML step is being executed.
         """
+        from zenml.steps.step_environment import (
+            STEP_ENVIRONMENT_NAME,
+            StepEnvironment,
+        )
+
+        step_env = cast(
+            StepEnvironment, Environment().get_component(STEP_ENVIRONMENT_NAME)
+        )
+
         # `skip_repository_check` is a special kwarg that can be passed to
-        # the Repository constructor to bypass the check that prevents the
-        # Repository instance from being accessed from within pipeline steps.
+        # the Repository constructor to silent the message that warns users
+        # about accessing external information in their steps.
         if not kwargs.pop("skip_repository_check", False):
-            if Environment().step_is_running:
-                raise ForbiddenRepositoryAccessError(
-                    "Unable to access repository during step execution. If you "
-                    "require access to the artifact or metadata store, please "
-                    "use a `StepContext` inside your step instead.",
-                    url="https://docs.zenml.io/features/step-fixtures#using"
-                    "-the-stepcontext",
+            if step_env and step_env.cache_enabled:
+                logger.warning(
+                    "You are accessing repository information from a step "
+                    "that has caching enabled. Future executions of this step "
+                    "may be cached even though the repository information may "
+                    "be different. You should take this into consideration and "
+                    "adjust your step to disable caching if needed. "
+                    "Alternatively, use a `StepContext` inside your step "
+                    "instead, as covered here: "
+                    "https://docs.zenml.io/developer-guide/advanced-usage/step-fixtures#step-contexts",
                 )
 
         if args or kwargs:
@@ -852,7 +857,9 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         """
         return self.zen_store.get_stack(name).to_stack()
 
-    def register_stack(self, stack: Stack) -> None:
+    def register_stack(
+        self, stack: Stack, decouple_stores: bool = False
+    ) -> None:
         """Registers a stack and its components.
 
         If any of the stack's components aren't registered in the repository
@@ -860,22 +867,31 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
         Args:
             stack: The stack to register.
+            decouple_stores: Flag to reset the previous associations between
+                an artifact store and a metadata store.
         """
         from zenml.zen_stores.models import StackWrapper
 
-        stack.validate()
+        stack.validate(decouple_stores=decouple_stores)
         self.zen_store.register_stack(StackWrapper.from_stack(stack))
 
-    def update_stack(self, name: str, stack: Stack) -> None:
+    def update_stack(
+        self,
+        name: str,
+        stack: Stack,
+        decouple_stores: bool = False,
+    ) -> None:
         """Updates a stack and its components.
 
         Args:
             name: The original name of the stack.
             stack: The new stack to use as the updated version.
+            decouple_stores: Flag to reset the previous associations between
+                an artifact store and a metadata store.
         """
         from zenml.zen_stores.models import StackWrapper
 
-        stack.validate()
+        stack.validate(decouple_stores=decouple_stores)
         self.zen_store.update_stack(name, StackWrapper.from_stack(stack))
         if self.active_stack_name == name:
             self.activate_stack(stack.name)

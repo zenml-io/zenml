@@ -315,7 +315,7 @@ class DeepchecksModelDriftCheck(DeepchecksValidationCheck):
     """Categories of Deepchecks model drift checks.
 
     This list includes a subset of the model evaluation checks provided by
-    Deepchecks that require two dataset and a mandatory model as input:
+    Deepchecks that require two datasets and a mandatory model as input:
 
       * [for tabular data](https://docs.deepchecks.com/en/stable/checks_gallery/tabular.html#model-evaluation)
       * [for computer vision](https://docs.deepchecks.com/stable/checks_gallery/vision.html#model-evaluation)

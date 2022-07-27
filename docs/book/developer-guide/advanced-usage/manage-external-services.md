@@ -65,3 +65,5 @@ You can find full examples of using services here:
 [MLflow deployment example](https://github.com/zenml-io/zenml/tree/main/examples/mlflow_deployment).
 * Interacting with the services of deployed models in the
 [Seldon deployment example](https://github.com/zenml-io/zenml/tree/main/examples/seldon_deployment).
+* Interacting with the services of deployed models in the
+[KServe deployment example](https://github.com/zenml-io/zenml/tree/main/examples/kserve_deployment).

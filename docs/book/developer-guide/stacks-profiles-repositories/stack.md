@@ -9,7 +9,7 @@ and infrastructure. For instance, you might want to:
 - Save ML artifacts in an [Amazon S3](../../mlops-stacks/artifact-stores/amazon-s3.md) bucket,
 - Track ML metadata in a managed [MySQL](../../mlops-stacks/metadata-stores/mysql.md) database,
 - Track your experiments with [Weights & Biases](../../mlops-stacks/experiment-trackers/wandb.md),
-- Deploy models on Kubernetes with [Seldon](../../mlops-stacks/model-deployers/seldon.md),
+- Deploy models on Kubernetes with [Seldon](../../mlops-stacks/model-deployers/seldon.md) or [KServe](../../mlops-stacks/model-deployers/kserve.md),
 
 Any such combination of tools and infrastructure can be registered as a 
 separate stack in ZenML. Since ZenML code is tooling-independent, you can 
@@ -181,6 +181,14 @@ zenml stack register <STACK_NAME> \
 You can use `zenml stack register --help` to see a list of all possible 
 arguments to the `zenml stack register` command, including a list of which 
 option to use for which stack component.
+{% endhint %}
+
+{% hint style="warning" %}
+When you register a stack, the corresponding artifact- and metadata store 
+gets coupled, which means that these instances can not be use in different 
+pairings. This is an intended behavior to avoid mismatches between the two 
+stores. In order get more information about this interaction, please refer to 
+[our CLI docs](https://apidocs.zenml.io/latest/cli/).. 
 {% endhint %}
 
 ### Activating a Stack

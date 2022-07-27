@@ -45,7 +45,7 @@ zenml step-operator register <NAME> \
     --flavor=sagemaker \
     --role=<SAGEMAKER_ROLE> \
     --instance_type=<INSTANCE_TYPE> \
-#   --experiment_name=<SEXPERIMENT_NAME> # optionally specify an experiment to assign this run to
+#   --experiment_name=<EXPERIMENT_NAME> # optionally specify an experiment to assign this run to
 
 # Add the step operator to the active stack
 zenml stack update -s <NAME>
