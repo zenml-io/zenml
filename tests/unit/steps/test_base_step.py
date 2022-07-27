@@ -854,6 +854,21 @@ def test_step_can_output_generic_types(one_step_pipeline):
             pipeline_.run()
 
 
+def test_step_cannot_output_subscripted_generic_types(one_step_pipeline):
+    """Tests that a step cannot output subscripted generic types."""
+    with pytest.raises(StepInterfaceError):
+
+        @step
+        def some_step_1() -> List[str]:
+            return []
+
+    with pytest.raises(StepInterfaceError):
+
+        @step
+        def some_step_2() -> Output(str_output=str, dict_output=Dict[str, int]):
+            return "", {}
+
+
 def test_step_can_have_generic_input_types():
     """Tests that a step can have generic typing classes as input."""
 
