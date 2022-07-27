@@ -37,7 +37,7 @@ def test_scope_backwards_compatibility():
         secrets_file="/tmp/local_test",
     )
     secrets_manager = LocalSecretsManager(**secrets_manager_dict)
-    assert secrets_manager.scope == SecretsManagerScope.UNSCOPED
+    assert secrets_manager.scope == SecretsManagerScope.NONE
     assert secrets_manager.namespace is None
 
 

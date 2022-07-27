@@ -18,6 +18,7 @@ import re
 from typing import Any, ClassVar, Dict, List, Optional
 
 import boto3
+import botocore
 from pydantic import validator
 
 from zenml.exceptions import SecretExistsError
@@ -150,9 +151,8 @@ class AWSSecretsManager(BaseSecretsManager):
         """
         name_tokens = name.split("/")
         secret_name = name_tokens[-1]
-        name_tokens[-1]
+        name_tokens[-1] = ""
         prefix = "/".join(name_tokens)
-
         if not secret_name or prefix != self._get_scope_prefix():
             # secret name is not in the current scope
             return None
@@ -172,28 +172,43 @@ class AWSSecretsManager(BaseSecretsManager):
         self._ensure_client_connected(self.region_name)
         secret_value = jsonify_secret_contents(secret)
 
-        if secret.name in self.get_all_secret_keys():
+        try:
+            self.get_secret(secret.name)
             raise SecretExistsError(
                 f"A Secret with the name {secret.name} already exists"
             )
+        except KeyError:
+            pass
 
         kwargs: Dict[str, Any] = {
             "Name": self._get_scoped_secret_name(secret.name),
             "SecretString": secret_value,
         }
-        if self.scope != SecretsManagerScope.UNSCOPED:
+        if self.scope != SecretsManagerScope.NONE:
             # unscoped secrets do not have tags, for backwards compatibility
             # purposes
-            kwargs["Tags"] = (
-                [
-                    {
-                        "zenml_component_name": self.name,
-                        "zenml_component_uuid": str(self.uuid),
-                        "zenml_scope": self.scope.value,
-                        "zenml_namespace": self.namespace,
-                    },
-                ],
-            )
+            namespace = self.namespace or ""
+            if self.scope != SecretsManagerScope.NAMESPACE:
+                namespace = ""
+
+            kwargs["Tags"] = [
+                {
+                    "Key": "zenml_component_name",
+                    "Value": self.name,
+                },
+                {
+                    "Key": "zenml_component_uuid",
+                    "Value": str(self.uuid),
+                },
+                {
+                    "Key": "zenml_scope",
+                    "Value": self.scope.value,
+                },
+                {
+                    "Key": "zenml_namespace",
+                    "Value": namespace,
+                },
+            ]
 
         self.CLIENT.create_secret(**kwargs)
 
@@ -207,15 +222,26 @@ class AWSSecretsManager(BaseSecretsManager):
             The secret.
 
         Raises:
-            RuntimeError: if the secret does not exist
+            KeyError: if the secret does not exist
         """
         self.validate_secret_name(secret_name)
         self._ensure_client_connected(self.region_name)
-        get_secret_value_response = self.CLIENT.get_secret_value(
-            SecretId=self._get_scoped_secret_name(secret_name)
-        )
-        if "SecretString" not in get_secret_value_response:
-            raise RuntimeError(f"No secrets found within the {secret_name}")
+
+        try:
+            get_secret_value_response = self.CLIENT.get_secret_value(
+                SecretId=self._get_scoped_secret_name(secret_name)
+            )
+            if "SecretString" not in get_secret_value_response:
+                get_secret_value_response = None
+        except botocore.exceptions.ClientError as error:
+            if error.response["Error"]["Code"] == "ResourceNotFoundException":
+                get_secret_value_response = None
+            else:
+                raise
+
+        if get_secret_value_response is None:
+            raise KeyError(f"Can't find the specified secret '{secret_name}'")
+
         secret_contents: Dict[str, str] = json.loads(
             get_secret_value_response["SecretString"]
         )
@@ -288,6 +314,9 @@ class AWSSecretsManager(BaseSecretsManager):
 
         Args:
             secret: the secret to update
+
+        Raises:
+            KeyError: if the secret does not exist
         """
         self._ensure_client_connected(self.region_name)
 
@@ -298,19 +327,38 @@ class AWSSecretsManager(BaseSecretsManager):
             "SecretString": secret_value,
         }
 
-        self.CLIENT.put_secret_value(**kwargs)
+        try:
+            self.CLIENT.put_secret_value(**kwargs)
+        except botocore.exceptions.ClientError as error:
+            if error.response["Error"]["Code"] == "ResourceNotFoundException":
+                raise KeyError(
+                    f"Can't find the specified secret '{secret.name}'"
+                )
+            else:
+                raise
 
     def delete_secret(self, secret_name: str) -> None:
         """Delete an existing secret.
 
         Args:
             secret_name: the name of the secret to delete
+
+        Raises:
+            KeyError: if the secret does not exist
         """
         self._ensure_client_connected(self.region_name)
-        self.CLIENT.delete_secret(
-            SecretId=self._get_scoped_secret_name(secret_name),
-            ForceDeleteWithoutRecovery=False,
-        )
+        try:
+            self.CLIENT.delete_secret(
+                SecretId=self._get_scoped_secret_name(secret_name),
+                ForceDeleteWithoutRecovery=False,
+            )
+        except botocore.exceptions.ClientError as error:
+            if error.response["Error"]["Code"] == "ResourceNotFoundException":
+                raise KeyError(
+                    f"Can't find the specified secret '{secret_name}'"
+                )
+            else:
+                raise
 
     def delete_all_secrets(self) -> None:
         """Delete all existing secrets.

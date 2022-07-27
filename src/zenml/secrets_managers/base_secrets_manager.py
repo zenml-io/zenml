@@ -27,7 +27,7 @@ from zenml.utils.enum_utils import StrEnum
 class SecretsManagerScope(StrEnum):
     """Secrets Manager scope enum."""
 
-    UNSCOPED = ""
+    NONE = "none"
     GLOBAL = "global"
     COMPONENT = "component"
     NAMESPACE = "namespace"
@@ -47,8 +47,8 @@ class BaseSecretsManager(StackComponent, ABC):
             * namespace: secrets are shared only by Secrets Manager instances
             that connect to the same backend *and* have the same `namespace`
             value configured.
-            * unscoped: only used to preserve backwards compatibility with
-            previous Secrets Manager instances that do not understand the
+            * none: only used to preserve backwards compatibility with
+            previous Secrets Manager instances that do not yet understand the
             concept of secrets scoping.
         namespace: Optional namespace to use with a `namespace` scoped Secrets
             Manager.
@@ -66,8 +66,8 @@ class BaseSecretsManager(StackComponent, ABC):
         """Pydantic root_validator for the scope.
 
         This root validator is used for backwards compatibility purposes. It
-        ensures that existing Secrets Managers continue to use unscoped secrets
-        while new instances default to using the component scope.
+        ensures that existing Secrets Managers continue to use no scope for
+        secrets while new instances default to using the component scope.
 
         Args:
             values: Values passed to the object constructor
@@ -80,9 +80,9 @@ class BaseSecretsManager(StackComponent, ABC):
             # explicitly set; just use the new default behavior
             return values
 
-        # for existing Secrets Manager instances, continue to use unscoped
+        # for existing Secrets Manager instances, continue to use no scope for
         # secrets
-        values["scope"] = SecretsManagerScope.UNSCOPED
+        values["scope"] = SecretsManagerScope.NONE
         return values
 
     @root_validator
@@ -114,6 +114,9 @@ class BaseSecretsManager(StackComponent, ABC):
     def register_secret(self, secret: BaseSecretSchema) -> None:
         """Registers a new secret.
 
+        The implementation should throw a `SecretExistsError` exception if the
+        secret already exists.
+
         Args:
             secret: The secret to register.
         """
@@ -121,6 +124,9 @@ class BaseSecretsManager(StackComponent, ABC):
     @abstractmethod
     def get_secret(self, secret_name: str) -> BaseSecretSchema:
         """Gets the value of a secret.
+
+        The implementation should throw a `KeyError` exception if the
+        secret doesn't exist.
 
         Args:
             secret_name: The name of the secret to get.
@@ -134,6 +140,9 @@ class BaseSecretsManager(StackComponent, ABC):
     def update_secret(self, secret: BaseSecretSchema) -> None:
         """Update an existing secret.
 
+        The implementation should throw a `KeyError` exception if the
+        secret doesn't exist.
+
         Args:
             secret: The secret to update.
         """
@@ -141,6 +150,9 @@ class BaseSecretsManager(StackComponent, ABC):
     @abstractmethod
     def delete_secret(self, secret_name: str) -> None:
         """Delete an existing secret.
+
+        The implementation should throw a `KeyError` exception if the
+        secret doesn't exist.
 
         Args:
             secret_name: The name of the secret to delete.
