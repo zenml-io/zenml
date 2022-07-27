@@ -540,7 +540,7 @@ team will respond.
 
 # 📜 License
 
-ZenML is distributed under the terms of the Apache License Version 2.0. A
-complete version of the license is available in the [LICENSE.md](LICENSE.md) in
+ZenML is distributed under the terms of the Apache License Version 2.0. 
+A complete version of the license is available in the [LICENSE](LICENSE) file in
 this repository. Any contribution made to this project will be licensed under
 the Apache License Version 2.0.
