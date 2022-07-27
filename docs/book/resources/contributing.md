@@ -20,8 +20,7 @@ bugs or specific use cases and someone from the core team will respond.
 ## 📜 License
 
 ZenML is distributed under the terms of the Apache License Version 2.0. A
-complete version of the license is available in
-the [LICENSE.md](https://github.com/zenml-io/zenml/blob/main/LICENSE.md) in this
+complete version of the license is available in the [LICENSE](https://github.com/zenml-io/zenml/blob/main/LICENSE) file in this
 repository. Any contribution made to this project will be licensed under the
 Apache License Version 2.0.
 
