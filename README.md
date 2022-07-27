@@ -63,6 +63,9 @@ Tests](https://github.com/zenml-io/zenml/actions/workflows/ci.yml/badge.svg?bran
 [twitter-shield]: https://img.shields.io/twitter/follow/zenml_io?style=for-the-badge
 [twitter-url]: https://twitter.com/zenml_io
 
+[slack-shield]: https://img.shields.io/badge/-Slack-black.svg?style=for-the-badge&logo=linkedin&colorB=555
+[slack-url]: https://zenml.io/slack-invite
+
 [product-screenshot]: images/screenshot.png
 [Next.js]: https://img.shields.io/badge/next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white
 [Next-url]: https://nextjs.org/
@@ -104,8 +107,6 @@ Tests](https://github.com/zenml-io/zenml/actions/workflows/ci.yml/badge.svg?bran
     <a href="https://zenml.io/discussion">Vote Feature</a>
     ·
     <a href="https://blog.zenml.io/">Read Blog</a>
-    .
-    <a href="https://zenml.io/slack-invite">Join us on Slack</a>
     <br />
     🎉 Version 0.11.0 is out. Check out the release notes
     <a href="https://www.linkedin.com/company/zenml/">here</a>.
@@ -115,7 +116,10 @@ Tests](https://github.com/zenml-io/zenml/actions/workflows/ci.yml/badge.svg?bran
     <img src="https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555" alt="Logo">
     </a>
     <a href="https://twitter.com/zenml_io">
-    <img src="https://img.shields.io/twitter/follow/zenml_io?style=for-the-badge" alt="Logo">
+    <img src="https://img.shields.io/badge/-Twitter-black.svg?style=for-the-badge&logo=twitter&colorB=555" alt="Logo">
+    </a>
+    <a href="https://zenml.io/slack-invite">
+    <img src="https://img.shields.io/badge/-Slack-black.svg?style=for-the-badge&logo=slack&colorB=555" alt="Logo">
     </a>
 
     
