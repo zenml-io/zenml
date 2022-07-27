@@ -124,6 +124,7 @@ class LocalStackRecipe:
         Args:
             stack_recipe_runner: Sequence of locations of executable file(s)
                             to run the stack_recipe
+            identifier: String to identify if deploy or destroy is being run
 
         Raises:
             NotImplementedError: If the stack_recipe hasn't been implement yet.
@@ -160,8 +161,11 @@ class LocalStackRecipe:
                 "Bash File(s) to run recipes not found at" f"{stack_recipe_runner}"
             )
 
-    # Telemetry
-    # track_event(AnalyticsEvent.RUN_stack_recipe, {"stack_recipe_name": self.name})
+        # Telemetry
+        if identifier is 'deploy':
+            track_event(AnalyticsEvent.RUN_STACK_RECIPE, {"stack_recipe_name": self.name})
+        else:
+            track_event(AnalyticsEvent.DESTROY_STACK_RECIPE, {"stack_recipe_name": self.name})
 
 
 class StackRecipe:

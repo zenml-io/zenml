@@ -89,6 +89,8 @@ class AnalyticsEvent(str, Enum):
 
     # Stakc recipes
     PULL_STACK_RECIPE = "Stack recipes pulled"
+    RUN_STACK_RECIPE = "Stack recipe created"
+    DESTROY_STACK_RECIPE = "Stack recipe destroyed"
 
 
 def get_segment_key() -> str:
