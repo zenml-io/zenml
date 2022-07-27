@@ -21,7 +21,7 @@ from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
 
-DEFAULT_FILENAME = 'data.parquet'
+DEFAULT_FILENAME = 'data'
 
 class SparkDataFrameMaterializer(BaseMaterializer):
     """Materializer to read/write NeuralProphet models."""
@@ -63,6 +63,11 @@ class SparkDataFrameMaterializer(BaseMaterializer):
         # Write the model to a temporary directory
         path = os.path.join(temp_dir.name, DEFAULT_FILENAME)
         df.write.save(path, format="parquet")
+
+        with open(os.path.join(temp_dir,'all_files.txt'), "w") as text_file:
+            for x in os.listdir():
+                text_file.write(x)
+                text_file.write('\n')
 
         # Copy the results to the artifact store
         io_utils.copy_dir(temp_dir.name, self.artifact.uri)
