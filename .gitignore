@@ -146,7 +146,7 @@ __pycache__
 *.env
 
 # poetry
-*poetry.lock*
+poetry.lock4
 
 # pre-commit
 !*.pre-commit-config.yaml

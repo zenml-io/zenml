@@ -40,6 +40,7 @@ from zenml.integrations.slack.alerters import SlackAlerter
 from zenml.pipelines.run_pipeline import run_pipeline
 from zenml.repository import Repository
 from zenml.stack import Stack, StackComponent
+from .conftest import fix_permissions
 
 from .example_validations import (
     generate_basic_validation_function,
@@ -315,7 +316,7 @@ def test_run_example(
         # clean up
         try:
             os.chdir(previous_wd)
-            shutil.rmtree(tmp_path)
+            shutil.rmtree(tmp_path, onerror=fix_permissions)
         except PermissionError:
             # Windows does not have the concept of unlinking a file and deleting
             # once all processes that are accessing the resource are done

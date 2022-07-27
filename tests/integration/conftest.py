@@ -141,7 +141,31 @@ def cleanup_active_profile() -> None:
 
     # Delete the artifact store and metadata store of previous tests
     if os.path.exists(kubeflow_stack.artifact_store.path):
-        shutil.rmtree(kubeflow_stack.artifact_store.path)
+        shutil.rmtree(kubeflow_stack.artifact_store.path,
+                      onerror=fix_permissions)
+
+
+def fix_permissions(func, path, exc_info):
+    """
+    Error handler for ``shutil.rmtree``.
+
+    If the error is due to an access error (read only file)
+    it attempts to add write permission and then retries.
+
+    If the error is for another reason it re-raises the error.
+
+    This is especially helpful on Windows systems, where permission errors
+    are frequent.
+
+    Usage : ``shutil.rmtree(path, onerror=fix_permissions)``
+    """
+    import stat
+    # Is the error an access error?
+    if not os.access(path, os.W_OK):
+        os.chmod(path, stat.S_IWUSR)
+        func(path)
+    else:
+        raise
 
 
 @pytest.fixture
@@ -162,7 +186,7 @@ def clean_kubeflow_profile(
     Yields:
         An empty repository with a provisioned local kubeflow stack.
     """
-    # cleanup_active_profile()
+    cleanup_active_profile()
 
     yield shared_kubeflow_profile
 
