@@ -76,6 +76,10 @@ model.
   deployment to the next level
   with Seldon. This example gives you detailed instructions to help you deploy
   your model onto a Kubernetes cluster.
+- **[kserve_deployment](kserve_deployment/README.md)**: Take your model
+  deployment to the next level
+  with KServe. This example gives you detailed instructions to help you deploy
+  a Pytorch model onto a Kubernetes cluster with TorchServe.
 
 ## 🚅 Pipeline Orchestration
 
