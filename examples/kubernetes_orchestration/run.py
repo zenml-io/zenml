@@ -29,7 +29,7 @@ if __name__ == "__main__":
     p.run()
 
     last_run = p.get_runs()[-1]
-    train_test_skew_step = last_run.get_step(name="skew_comparison")
+    train_test_skew_step = last_run.get_step(step="skew_comparison")
     FacetStatisticsVisualizer().visualize(train_test_skew_step)
 
     # In case you want to run the pipeline on a schedule, run the following:

@@ -80,15 +80,15 @@ def main():
     PipelineRunLineageVisualizer().visualize(inf_run)
 
     # visualize train-test skew
-    train_test_skew_step = train_run.get_step(name="skew_comparison")
+    train_test_skew_step = train_run.get_step(step="skew_comparison")
     FacetStatisticsVisualizer().visualize(train_test_skew_step)
 
     # visualize training-serving skew
-    training_serving_skew_step = inf_run.get_step(name="skew_comparison")
+    training_serving_skew_step = inf_run.get_step(step="skew_comparison")
     FacetStatisticsVisualizer().visualize(training_serving_skew_step)
 
     # visualize data drift
-    drift_detection_step = inf_run.get_step(name="drift_detector")
+    drift_detection_step = inf_run.get_step(step="drift_detector")
     EvidentlyVisualizer().visualize(drift_detection_step)
 
 

@@ -27,7 +27,7 @@ from zenml.repository import Repository
 def visualize_statistics():
     repo = Repository()
     pipe = repo.get_pipeline(pipeline="drift_detection_pipeline")
-    evidently_outputs = pipe.runs[-1].get_step(name="drift_detector")
+    evidently_outputs = pipe.runs[-1].get_step(step="drift_detector")
     EvidentlyVisualizer().visualize(evidently_outputs)
 
 
@@ -41,7 +41,7 @@ if __name__ == "__main__":
     p.run()
 
     last_run = p.get_runs()[-1]
-    drift_analysis_step = last_run.get_step(name="drift_analyzer")
+    drift_analysis_step = last_run.get_step(step="drift_analyzer")
     print(f"Data drift detected: {drift_analysis_step.output.read()}")
 
     visualize_statistics()

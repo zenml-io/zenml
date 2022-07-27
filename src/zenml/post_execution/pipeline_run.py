@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from ml_metadata import proto
 
 from zenml.enums import ExecutionStatus
-from zenml.logger import get_logger
+from zenml.logger import get_apidocs_link, get_logger
 from zenml.post_execution.step import StepView
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
@@ -156,7 +156,11 @@ class PipelineRunView:
         self._ensure_steps_fetched()
         return list(self._steps.keys())
 
-    def get_step(self, name: str) -> StepView:
+    def get_step(
+        self,
+        step: Optional[str] = None,
+        **kwargs: Any,
+    ) -> StepView:
         """Returns a step for the given name.
 
         The name refers to the name of the step in the pipeline definition, not
@@ -169,20 +173,47 @@ class PipelineRunView:
         ``
 
         Args:
-            name: The name of the step to return.
+            step: Class or class instance of the step
+            **kwargs: The deprecated `name` is caught as a kwarg to
+                specify the step instead of using the `step` argument.
 
         Returns:
             A step for the given name.
 
         Raises:
             KeyError: If there is no step with the given name.
+            RuntimeError: If no step has been specified at all.
         """
         self._ensure_steps_fetched()
+
+        api_doc_link = get_apidocs_link(
+            "post_execution",
+            "zenml.post_execution.pipeline_run.PipelineRunView" ".get_step",
+        )
         try:
-            return self._steps[name]
+            if step:
+                return self._steps[step]
+            elif "name" in kwargs and isinstance(kwargs.get("name"), str):
+                logger.warning(
+                    "Using 'name' to get a step from "
+                    "'PipelineRunView.get_step()' is deprecated and "
+                    "will be removed in the future. Instead please "
+                    "use 'step' to access a step from your past "
+                    "pipeline runs. Learn more in our API docs: %s",
+                    api_doc_link,
+                )
+                step = kwargs.pop("name")
+                return self._steps[step]
+            else:
+                raise RuntimeError(
+                    "No step specified. Please specify a step using "
+                    "pipeline_run_view.get_step(step=`step_name`). "
+                    f"Please refer to the API docs to learn more: "
+                    f"{api_doc_link}"
+                )
         except KeyError:
             raise KeyError(
-                f"No step found for name `{name}`. This pipeline "
+                f"No step found for name `{step}`. This pipeline "
                 f"run only has steps with the following "
                 f"names: `{self.get_step_names()}`"
             )

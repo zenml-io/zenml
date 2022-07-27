@@ -119,7 +119,7 @@ run = example_pipeline.get_run(run_name=...)
 
 Within a given pipeline run you can now further zoom in on individual steps
 using the `steps` attribute or by querying a specific step using the
-`get_step(name=...)` method.
+`get_step(step=...)` method.
 
 ```python
 # get all steps of a pipeline for a given run
@@ -129,7 +129,7 @@ steps = run.steps
 first_step = steps[0]
 
 # or get a specific step by name
-step = run.get_step(name="first_step")
+step = run.get_step(step="first_step")
 ```
 
 {% hint style="warning" %}
@@ -148,10 +148,10 @@ pipe = example_pipeline(step_1=first_step(), step_2=second_step())
 pipe.run()
 
 # Get the first step
-pipe.get_runs()[-1].get_step(name="step_1")
+pipe.get_runs()[-1].get_step(step="step_1")
 
 # This won't work:
-# pipe.get_runs()[-1].get_step(name="first_step")
+# pipe.get_runs()[-1].get_step(step="first_step")
 ```
 
 {% hint style="info" %}
@@ -160,7 +160,7 @@ The steps are ordered by time of execution. Depending on the
 run in parallel. Thus, accessing steps by index can be unreliable across 
 different runs, and it is recommended to access steps by the step class,
 an instance of the class or even the name of the step as a string: 
-`get_step(name=...)` instead.
+`get_step(step=...)` instead.
 {% endhint %}
 
 ### Outputs
@@ -222,6 +222,6 @@ pipe = example_pipeline(step_1=first_step(), step_2=second_step())
 pipe.run()
 
 # Get the first step
-step_1 = pipe.get_runs()[-1].get_step(name="step_1")
+step_1 = pipe.get_runs()[-1].get_step(step="step_1")
 output = step_1.output.read()
 ```

@@ -30,6 +30,6 @@ if __name__ == "__main__":
     p.run()
 
     last_run = p.get_runs()[-1]
-    historical_features_step = last_run.get_step(name="feature_printer")
+    historical_features_step = last_run.get_step(step="feature_printer")
     print("HISTORICAL FEATURES:")
     print(historical_features_step.output.read())
