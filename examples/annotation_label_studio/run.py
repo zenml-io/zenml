@@ -65,6 +65,10 @@ def main(cloud_platform, pipeline, rerun):
         sync_function = gcs_data_sync
     elif cloud_platform == "aws":
         sync_function = s3_data_sync
+    elif cloud_platform not in ["azure", "gcp", "aws"]:
+        raise ValueError(
+            f"Cloud platform '{cloud_platform}' is not supported for this example."
+        )
 
     if pipeline == "train":
         training_pipeline(
