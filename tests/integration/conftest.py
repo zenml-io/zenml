@@ -141,8 +141,9 @@ def cleanup_active_profile() -> None:
 
     # Delete the artifact store and metadata store of previous tests
     if os.path.exists(kubeflow_stack.artifact_store.path):
-        shutil.rmtree(kubeflow_stack.artifact_store.path,
-                      onerror=fix_permissions)
+        shutil.rmtree(
+            kubeflow_stack.artifact_store.path, onerror=fix_permissions
+        )
 
 
 def fix_permissions(func, path, exc_info):
@@ -160,6 +161,7 @@ def fix_permissions(func, path, exc_info):
     Usage : ``shutil.rmtree(path, onerror=fix_permissions)``
     """
     import stat
+
     # Is the error an access error?
     if not os.access(path, os.W_OK):
         os.chmod(path, stat.S_IWUSR)

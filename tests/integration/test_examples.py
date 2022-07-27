@@ -40,8 +40,8 @@ from zenml.integrations.slack.alerters import SlackAlerter
 from zenml.pipelines.run_pipeline import run_pipeline
 from zenml.repository import Repository
 from zenml.stack import Stack, StackComponent
-from .conftest import fix_permissions
 
+from .conftest import fix_permissions
 from .example_validations import (
     generate_basic_validation_function,
     mlflow_tracking_example_validation,
