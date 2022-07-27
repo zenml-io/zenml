@@ -30,7 +30,7 @@ custom_model_deployer = kserve_custom_model_deployer_step(
             resources={"requests": {"cpu": "200m", "memory": "500m"}},
         ),
         timeout=120,
-        custom_deploy_paramters=CustomDeployParameters(
+        custom_deploy_parameters=CustomDeployParameters(
             predict_function="steps.pytorch_steps.custom_deploy_functions.custom_predict",
         ),
     )

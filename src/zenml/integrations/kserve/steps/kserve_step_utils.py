@@ -304,7 +304,7 @@ def prepare_custom_service_config(
         RuntimeError: if the model files cannot be prepared.
         DoesNotExistException: if the active stack is not available.
     """
-    if config.custom_deploy_paramters is None:
+    if config.custom_deploy_parameters is None:
         raise RuntimeError("No custom deploy parameters provided")
 
     served_model_uri = os.path.join(output_artifact_uri, "kserve")

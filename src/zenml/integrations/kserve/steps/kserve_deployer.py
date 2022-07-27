@@ -340,8 +340,8 @@ def kserve_custom_model_deployer_step(
     Raises:
         ValueError: if custom deployer is not defined
     """
-    if not config.custom_deploy_paramters:
-        raise ValueError("Custom deploy paramters are required.")
+    if not config.custom_deploy_parameters:
+        raise ValueError("Custom deploy parameters are required.")
 
     model_deployer = KServeModelDeployer.get_active_model_deployer()
 
@@ -390,7 +390,7 @@ def kserve_custom_model_deployer_step(
         "--model_name",
         config.service_config.model_name,
         "--predict_func",
-        config.custom_deploy_paramters.predict_function,
+        config.custom_deploy_parameters.predict_function,
     ]
 
     # verify the flavor of the orchestrator.
