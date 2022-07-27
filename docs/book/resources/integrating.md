@@ -26,7 +26,7 @@ Before you package your new components into an integration, you may want to firs
 zenml orchestrator flavor register <THE-SOURCE-PATH-OF-YOUR-ORCHESTRATOR>
 ```
 
-See the docs on extensibility of the different components [here ](../developer-guide/advanced-usage/custom-flavors.md) or get inspired by the many integrations that are already implemented, for example the mlflow [experiment tracker](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/experiment\_trackers/mlflow\_experiment\_tracker.py).
+See the docs on extensibility of the different components [here ](../developer-guide/advanced-usage/custom-flavors.md) or get inspired by the many integrations that are already implemented, for example the mlflow [experiment tracker](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/experiment_trackers/mlflow_experiment_tracker.py).
 
 ## Step 3: Integrate into the ZenML repo
 
@@ -104,7 +104,7 @@ class ExampleIntegration(Integration):
 ExampleIntegration.check_installation() # this checks if the requirements are installed
 ```
 
-Have a look at the [MLflow Integration](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/\_\_init\_\_.py) as an example for how it is done.
+Have a look at the [MLflow Integration](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/__init__.py) as an example for how it is done.
 
 ### Copy your implementation(s)
 
@@ -116,7 +116,7 @@ Here, you can now copy the code you created in [Step 2](./integrating.md#step-2-
 
 The Integration itself must be imported within [`src/zenml/integrations/__init__.py`](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/\_\_init\_\_.py)`.`
 
-The Implementation of the individual stack components also needs to be imported within the sub-modules: `src/zenml/integrations/<name-of-integration>/<specifc-component>/__init__.py.`For example, in the mlflow integration, the [experiment tracker](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/experiment\_trackers/\_\_init\_\_.py) and [deployer](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/model\_deployers/\_\_init\_\_.py) are imported in the sub-module `__init__.py` files.
+The implementation of the individual stack components also needs to be imported within the sub-modules: `src/zenml/integrations/<name-of-integration>/<specifc-component>/__init__.py.`For example, in the mlflow integration, the [experiment tracker](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/experiment_trackers/__init__.py) and [deployer](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/model_deployers/__init__.py) are imported in the sub-module `__init__.py` files.
 
 ## Step 4: Create a PR and celebrate :tada:
 
