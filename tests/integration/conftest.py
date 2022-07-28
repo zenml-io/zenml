@@ -160,9 +160,8 @@ def fix_permissions(func, path, exc_info):
 
     Usage : ``shutil.rmtree(path, onerror=fix_permissions)``
     """
-    import stat
-    os.chmod(path, stat.S_IWRITE)
-    func(path, ignore_errors=True)
+    import subprocess
+    subprocess.call(f'rm -rf {path}', shell=True)
 
 
 @pytest.fixture
