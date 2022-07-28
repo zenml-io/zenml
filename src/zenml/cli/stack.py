@@ -972,31 +972,30 @@ def up_stack() -> None:
 @click.option(
     "--yes",
     "-y",
-    "force",
+    "old_force",
     is_flag=True,
-    help="Deprovisions local resources instead of suspending " "them.",
+    help="DEPRECATED: Deprovisions local resources instead of suspending "
+    "them. Use `-f/--force` instead.",
 )
 @click.option(
     "--force",
     "-f",
-    "old_force",
+    "force",
     is_flag=True,
-    help="DEPRECATED: Deprovisions local resources instead of suspending them."
-    "Use `-y/--yes` instead.",
+    help="Deprovisions local resources instead of suspending them.",
 )
 def down_stack(force: bool = False, old_force: bool = False) -> None:
     """Suspends resources of the active stack deployment.
-
     Args:
         force: Deprovisions local resources instead of suspending them.
         old_force: DEPRECATED: Deprovisions local resources instead of
-            suspending them. Use `-y/--yes` instead.
+            suspending them. Use `-f/--force` instead.
     """
     if old_force:
         force = old_force
         cli_utils.warning(
-            "The `--force` flag will soon be deprecated. Use `--yes` "
-            "or `-y` instead."
+            "The `--yes` flag will soon be deprecated. Use `--force` "
+            "or `-f` instead."
         )
     cli_utils.print_active_profile()
 
