@@ -228,7 +228,7 @@ docker run -it zenmldocker/zenml /bin/bash
 Let's start by creating a simple pipeline that does the following - 
 1. Loads the [digits dataset](https://archive.ics.uci.edu/ml/datasets/Optical+Recognition+of+Handwritten+Digits).
 2. Trains a scikit-learn classifier to classify the images from the dataset.
-3. Evaluates the classifier accuracy on a test dataset.
+3. Evaluates the classifier accuracy on a test set.
 
 ### Step 1: Initialize a ZenML repo
 In your terminal run
