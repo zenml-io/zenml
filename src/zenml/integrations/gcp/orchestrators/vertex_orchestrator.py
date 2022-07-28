@@ -66,7 +66,7 @@ if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
     from zenml.stack import Stack
-    from zenml.steps import BaseStep
+    from zenml.steps import BaseStep, ResourceConfiguration
 
 logger = get_logger(__name__)
 
@@ -321,6 +321,39 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         )
         container_registry.push_image(image_name)
 
+    def _configure_container_resources(
+        self,
+        container_op: dsl.ContainerOp,
+        resource_configuration: "ResourceConfiguration",
+    ) -> None:
+        """Adds resource requirements to the container.
+
+        Args:
+            container_op: The kubeflow container operation to configure.
+            resource_configuration: The resource configuration to use for this
+                container.
+        """
+        # Set optional CPU, RAM and GPU constraints for the pipeline
+        cpu_limit = resource_configuration.cpu_count or self.cpu_limit
+        if cpu_limit is not None:
+            container_op = container_op.set_cpu_limit(cpu_limit)
+
+        memory_limit = (
+            resource_configuration.get_memory(unit="GB") or self.memory_limit
+        )
+        if memory_limit is not None:
+            container_op = container_op.set_memory_limit(memory_limit)
+
+        if self.node_selector_constraint is not None:
+            container_op = container_op.add_node_selector_constraint(
+                label_name=self.node_selector_constraint[0],
+                value=self.node_selector_constraint[1],
+            )
+
+        gpu_limit = resource_configuration.gpu_count or self.gpu_limit
+        if gpu_limit is not None:
+            container_op = container_op.set_gpu_limit(gpu_limit)
+
     def prepare_or_run_pipeline(
         self,
         sorted_steps: List["BaseStep"],
@@ -442,27 +475,10 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                     ]
                     container_op.after(upstream_container_op)
 
-                # Set optional CPU, RAM and GPU constraints for the pipeline
-                step_resources = step.resource_configuration
-                cpu_limit = step_resources.cpu_count or self.cpu_limit
-                if cpu_limit is not None:
-                    container_op = container_op.set_cpu_limit(cpu_limit)
-
-                memory_limit = (
-                    step_resources.get_memory(unit="GB") or self.memory_limit
+                self._configure_container_resources(
+                    container_op=container_op,
+                    resource_configuration=step.resource_configuration,
                 )
-                if memory_limit is not None:
-                    container_op = container_op.set_memory_limit(memory_limit)
-
-                if self.node_selector_constraint is not None:
-                    container_op = container_op.add_node_selector_constraint(
-                        label_name=self.node_selector_constraint[0],
-                        value=self.node_selector_constraint[1],
-                    )
-
-                gpu_limit = step_resources.gpu_count or self.gpu_limit
-                if gpu_limit is not None:
-                    container_op = container_op.set_gpu_limit(gpu_limit)
 
                 step_name_to_container_op[step.name] = container_op
 
