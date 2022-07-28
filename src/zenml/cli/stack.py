@@ -974,8 +974,7 @@ def up_stack() -> None:
     "-y",
     "force",
     is_flag=True,
-    help="Deprovisions local resources instead of suspending "
-    "them.",
+    help="Deprovisions local resources instead of suspending " "them.",
 )
 @click.option(
     "--force",
@@ -1159,7 +1158,11 @@ def _import_stack_component(
 )
 @click.pass_context
 def import_stack(
-    ctx: click.Context, stack_name: str, filename: Optional[str], force: bool, old_force: bool
+    ctx: click.Context,
+    stack_name: str,
+    filename: Optional[str],
+    force: bool,
+    old_force: bool,
 ) -> None:
     """Import a stack from YAML.
 
@@ -1173,7 +1176,7 @@ def import_stack(
             irrespective of ZenML version matching. Use `-y/--yes` instead.
     """
     track_event(AnalyticsEvent.IMPORT_STACK)
-    
+
     if old_force:
         force = old_force
         cli_utils.warning(
