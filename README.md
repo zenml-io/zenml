@@ -197,12 +197,12 @@ ZenML is available for easy installation into your environment via [PyPI](https:
 pip install zenml
 ```
 
-Alternatively, if you’re feeling brave, feel free to install the bleeding edge:
-**NOTE:** Do so on your own risk, no guarantees given!
-
+Alternatively, if you’re feeling adventurous, try out the bleeding edge installation:
+> **Warning** - Proceed at your own risk, no guarantees are given!
 ```bash
 pip install git+https://github.com/zenml-io/zenml.git@main --upgrade
 ```
+
 
 ZenML is also available as a Docker image hosted publicly on
 [DockerHub](https://hub.docker.com/r/zenmldocker/zenml). Use the following
