@@ -45,6 +45,10 @@ class BuiltInMaterializer(BaseMaterializer):
         bool,
     )
 
+    def __init__(self, artifact: "BaseArtifact"):
+        super().__init__(artifact)
+        self.data_path = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+
     def handle_input(self, data_type: Type[Any]) -> Any:
         """Reads basic primitive types from json.
 
@@ -55,8 +59,7 @@ class BuiltInMaterializer(BaseMaterializer):
             The data read.
         """
         super().handle_input(data_type)
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
-        contents = yaml_utils.read_json(filepath)
+        contents = yaml_utils.read_json(self.data_path)
         if type(contents) != data_type:
             # TODO [ENG-142]: Raise error or try to coerce
             logger.debug(
@@ -72,5 +75,4 @@ class BuiltInMaterializer(BaseMaterializer):
             data: The data to store.
         """
         super().handle_return(data)
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
-        yaml_utils.write_json(filepath, data)
+        yaml_utils.write_json(self.data_path, data)
