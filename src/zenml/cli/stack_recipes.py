@@ -25,9 +25,9 @@ from packaging.version import Version, parse
 from rich.markdown import Markdown
 from rich.text import Text
 
+from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup
 from zenml.cli.stack import stack
-from zenml.cli.utils import confirmation, declare, error, print_table, warning
 from zenml.console import console
 from zenml.exceptions import GitNotFoundError
 from zenml.io import fileio
@@ -451,7 +451,7 @@ class GitStackRecipesHandler(object):
         try:
             self.stack_recipe_repo.checkout(branch=branch)
         except GitCommandError:
-            warning(
+            cli_utils.warning(
                 f"The specified branch {branch} not found in "
                 "repo, falling back to the latest release."
             )
@@ -510,17 +510,17 @@ def list_stack_recipes(
         {"stack_recipe_name": stack_recipe.name}
         for stack_recipe in git_stack_recipes_handler.get_stack_recipes()
     ]
-    print_table(stack_recipes)
+    cli_utils.print_table(stack_recipes)
 
-    declare("\n" + "To get the latest list of stack recipes, run: ")
+    cli_utils.declare("\n" + "To get the latest list of stack recipes, run: ")
     text = Text("zenml stack recipe pull -y", style="markdown.code_block")
-    declare(text)
+    cli_utils.declare(text)
 
-    declare("\n" + "To pull any individual stack_recipes, type: ")
+    cli_utils.declare("\n" + "To pull any individual stack_recipes, type: ")
     text = Text(
         "zenml stack recipe pull RECIPE_NAME", style="markdown.code_block"
     )
-    declare(text)
+    cli_utils.declare(text)
 
 
 @click.option(
@@ -543,13 +543,13 @@ def clean(git_stack_recipes_handler: GitStackRecipesHandler, path: str) -> None:
     if (
         fileio.exists(stack_recipes_directory)
         and fileio.isdir(stack_recipes_directory)
-        and confirmation(
+        and cli_utils.confirmation(
             "Do you wish to delete the stack recipes directory? \n"
             f"{stack_recipes_directory}"
         )
     ):
         git_stack_recipes_handler.clean_current_stack_recipes()
-        declare(
+        cli_utils.declare(
             "Stack recipes directory was deleted from your current working "
             "directory."
         )
@@ -582,7 +582,7 @@ def info(
             stack_recipe_name
         )[0]
     except KeyError as e:
-        error(str(e))
+        cli_utils.error(str(e))
 
     else:
         md = Markdown(stack_recipe_obj.readme_content)
@@ -638,7 +638,7 @@ def pull(
             stack_recipe_name
         )
     except KeyError as e:
-        error(str(e))
+        cli_utils.error(str(e))
 
     else:
         for stack_recipe in stack_recipes:
@@ -646,25 +646,27 @@ def pull(
             if LocalStackRecipe(
                 name=stack_recipe.name, path=Path(destination_dir)
             ).is_present():
-                if force or confirmation(
+                if force or cli_utils.confirmation(
                     f"Stack recipe {stack_recipe.name} is already pulled. "
                     "Do you wish to overwrite the directory at "
                     f"{destination_dir}?"
                 ):
                     fileio.rmtree(destination_dir)
                 else:
-                    warning(
+                    cli_utils.warning(
                         f"Stack recipe {stack_recipe.name} not overwritten."
                     )
                     continue
 
-            declare(f"Pulling stack recipe {stack_recipe.name}...")
+            cli_utils.declare(f"Pulling stack recipe {stack_recipe.name}...")
 
             io_utils.create_dir_if_not_exists(destination_dir)
             git_stack_recipes_handler.copy_stack_recipe(
                 stack_recipe, destination_dir
             )
-            declare(f"Stack recipe pulled in directory: {destination_dir}")
+            cli_utils.declare(
+                f"Stack recipe pulled in directory: {destination_dir}"
+            )
             track_event(
                 AnalyticsEvent.PULL_STACK_RECIPE,
                 {"stack_recipe_name": stack_recipe.name},
@@ -739,7 +741,7 @@ def deploy(
     try:
         _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[0]
     except KeyError as e:
-        error(str(e))
+        cli_utils.error(str(e))
     else:
         stack_recipe_dir = stack_recipes_dir / stack_recipe_name
         local_stack_recipe = LocalStackRecipe(
@@ -763,7 +765,7 @@ def deploy(
                 identifier=RECIPE_DEPLOY_IDENTIFIER,
             )
         except NotImplementedError as e:
-            error(str(e))
+            cli_utils.error(str(e))
 
 
 @stack_recipe.command(
@@ -813,7 +815,7 @@ def destroy(
     try:
         _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[0]
     except KeyError as e:
-        error(str(e))
+        cli_utils.error(str(e))
     else:
         stack_recipe_dir = stack_recipes_dir / stack_recipe_name
         local_stack_recipe = LocalStackRecipe(
@@ -835,4 +837,4 @@ def destroy(
                 identifier=RECIPE_DESTROY_INDENTIFIER,
             )
         except NotImplementedError as e:
-            error(str(e))
+            cli_utils.error(str(e))
