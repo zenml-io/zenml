@@ -88,24 +88,6 @@ class LocalStackRecipe:
         """
         return os.path.join(self.path, RECIPE_DESTROY_SCRIPT)
 
-    # @property
-    # def executable_python_stack_recipe(self) -> str:
-    #     """Return the Python file for the stack_recipe.
-
-    #     Returns:
-    #         The Python file for the stack_recipe.
-
-    #     Raises:
-    #         RuntimeError: If no runner script is present in the stack_recipe.
-    #         NotImplementedError: If the stack_recipes needs manual user setup.
-    #     """
-    #     if self.needs_manual_user_setup:
-    #         raise NotImplementedError(
-    #             "This recipe currently does not support being run from the "
-    #             "CLI as user specific setup is required. Consult the README.md "
-    #             "of the stack recipe to find out more."
-    #         )
-
     def is_present(self) -> bool:
         """Checks if the stack_recipe exists at the given path.
 
@@ -159,7 +141,7 @@ class LocalStackRecipe:
             )
 
         # Telemetry
-        if identifier is "deploy":
+        if identifier == "deploy":
             track_event(
                 AnalyticsEvent.RUN_STACK_RECIPE,
                 {"stack_recipe_name": self.name},
