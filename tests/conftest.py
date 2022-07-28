@@ -446,6 +446,8 @@ def pytest_addoption(parser):
         useful for local integration testing in case you do not care about your
         base environment being affected
         * an option to use a specific store type for the profiles
+        * an option to use a specific secrets manager flavor in the secrets
+        manager integration tests
 
     How to use this option:
 
@@ -454,6 +456,8 @@ def pytest_addoption(parser):
         ```pytest tests/integration/test_examples.py --use-virtualenv```
 
         ```pytest tests/integration/test_examples.py --store-type sql```
+
+        ```pytest tests/integration/test_examples.py --secrets-manager-flavor aws```
 
     """
     parser.addoption(
@@ -473,6 +477,12 @@ def pytest_addoption(parser):
         action="store",
         default="local",
         help="The type of store back-end to use for profiles (local, sql, etc)",
+    )
+    parser.addoption(
+        "--secrets-manager-flavor",
+        action="store",
+        default="local",
+        help="The flavor of secrets manager to use (local, aws, etc)",
     )
 
 

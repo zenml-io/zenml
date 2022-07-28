@@ -23,6 +23,8 @@ from zenml.secret.base_secret import BaseSecretSchema
 from zenml.stack import StackComponent
 from zenml.utils.enum_utils import StrEnum
 
+ZENML_SCOPE_PATH_PREFIX = "zenml"
+
 
 class SecretsManagerScope(StrEnum):
     """Secrets Manager scope enum."""
@@ -48,8 +50,9 @@ class BaseSecretsManager(StackComponent, ABC):
             that connect to the same backend *and* have the same `namespace`
             value configured.
             * none: only used to preserve backwards compatibility with
-            previous Secrets Manager instances that do not yet understand the
-            concept of secrets scoping.
+            old Secrets Manager instances that do not yet understand the
+            concept of secrets scoping. Will be deprecated and removed in
+            future versions.
         namespace: Optional namespace to use with a `namespace` scoped Secrets
             Manager.
     """
@@ -109,6 +112,139 @@ class BaseSecretsManager(StackComponent, ABC):
                 "Secrets Manager."
             )
         return values
+
+    def _get_scope_path(self) -> List[str]:
+        """Get the secret path for the current scope.
+
+        This utility method can be used with Secrets Managers that can map
+        the concept of a scope to a hierarchical path.
+
+        Returns:
+            the secret scope path
+        """
+        if self.scope == SecretsManagerScope.NONE:
+            return []
+
+        path = [ZENML_SCOPE_PATH_PREFIX]
+        if self.scope == SecretsManagerScope.COMPONENT:
+            path.append(str(self.uuid))
+        elif self.scope == SecretsManagerScope.NAMESPACE and self.namespace:
+            path.append(self.namespace)
+
+        return path
+
+    def _get_scoped_secret_path(self, secret_name: str) -> List[str]:
+        """Convert a ZenML secret name into a scoped secret path.
+
+        This utility method can be used with Secrets Managers that can map
+        the concept of a scope to a hierarchical path.
+
+        Args:
+            secret_name: the name of the secret
+
+        Returns:
+            The scoped secret path
+        """
+        path = self._get_scope_path()
+        path.append(secret_name)
+        return path
+
+    def _get_secret_name_from_path(
+        self, secret_path: List[str]
+    ) -> Optional[str]:
+        """Extract the name of a ZenML secret from a scoped secret path.
+
+        This utility method can be used with Secrets Managers that can map
+        the concept of a scope to a hierarchical path.
+
+        Args:
+            secret_path: the full scoped secret path including the secret name
+
+        Returns:
+            The ZenML secret name or None, if the input secret path does not
+            belong to the current scope.
+        """
+        if not len(secret_path):
+            return None
+        secret_name = secret_path[-1]
+        secret_path = secret_path[:-1]
+        if not secret_name or secret_path != self._get_scope_path():
+            # secret name is not in the current scope
+            return None
+
+        return secret_name
+
+    def _get_secret_scope_metadata(
+        self, secret_name: Optional[str] = None
+    ) -> Dict[str, str]:
+        """Get a dictionary with metadata uniquely identifying one or more scoped secrets.
+
+        This utility method can be used with Secrets Managers that can
+        associate metadata (e.g. tags, labels) with a secret. The scope related
+        metadata can be used as a filter criteria when running queries against
+        the backend to retrieve all the secrets within the current scope or
+        to retrieve a named secret within the current scope (if the
+        `secret_name` is supplied).
+
+        Args:
+            secret_name: Optional secret name for which to get the scope
+                metadata.
+
+        Returns:
+            Dictionary with scope metadata information uniquely identifying the
+            secret.
+        """
+        if self.scope == SecretsManagerScope.NONE:
+            # unscoped secrets do not have tags, for backwards compatibility
+            # purposes
+            return {}
+
+        metadata = {
+            "zenml_scope": self.scope.value,
+        }
+        if secret_name:
+            metadata["zenml_secret_name"] = secret_name
+        if self.scope == SecretsManagerScope.NAMESPACE and self.namespace:
+            metadata["zenml_namespace"] = self.namespace
+        if self.scope == SecretsManagerScope.COMPONENT:
+            metadata["zenml_component_uuid"] = str(self.uuid)
+
+        return metadata
+
+    def _get_secret_metadata(self, secret: BaseSecretSchema) -> Dict[str, str]:
+        """Get a dictionary with metadata describing a secret.
+
+        This is utility method can be used with Secrets Managers that can
+        associate metadata (e.g. tags, labels) with a secret. The metadata
+        can be used to relay more information about the secret in the Secrets
+        Manager backend. Part of the metadata can also be used as a filter
+        criteria when running queries against the backend to retrieve all the
+        secrets within the current scope or to retrieve a named secret (see
+        `_get_secret_scope_metadata`).
+
+        Args:
+            secret: The secret for which to get the metadata.
+
+        Returns:
+            Dictionary with metadata information describing the secret.
+        """
+        if self.scope == SecretsManagerScope.NONE:
+            # unscoped secrets do not have tags, for backwards compatibility
+            # purposes
+            return {}
+
+        scope_metadata = self._get_secret_scope_metadata(secret.name)
+        # include additional metadata not necessarily related to the secret
+        # scope
+        scope_metadata.update(
+            {
+                "zenml_component_name": self.name,
+                "zenml_component_uuid": str(self.uuid),
+                "zenml_secret_schema": secret.TYPE,
+            }
+        )
+
+        return scope_metadata
 
     @abstractmethod
     def register_secret(self, secret: BaseSecretSchema) -> None:

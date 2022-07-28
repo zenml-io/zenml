@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of the AWS Secrets Manager integration."""
 
-import json
 import re
 from typing import Any, ClassVar, Dict, List, Optional
 
@@ -25,33 +24,13 @@ from zenml.exceptions import SecretExistsError
 from zenml.integrations.aws import AWS_SECRET_MANAGER_FLAVOR
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
-from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
 from zenml.secrets_managers.base_secrets_manager import (
     BaseSecretsManager,
     SecretsManagerScope,
 )
+from zenml.secrets_managers.utils import secret_from_json, secret_to_json
 
 logger = get_logger(__name__)
-
-ZENML_SCHEMA_NAME = "zenml_schema_name"
-
-
-def jsonify_secret_contents(secret: BaseSecretSchema) -> str:
-    """Adds the secret type to the secret contents.
-
-    This persists the schema type in the secrets backend, so that the correct
-    SecretSchema can be retrieved when the secret is queried from the backend.
-
-    Args:
-        secret: should be a subclass of the BaseSecretSchema class
-
-    Returns:
-        jsonified dictionary containing all key-value pairs and the ZenML schema
-        type
-    """
-    secret_contents = secret.content
-    secret_contents[ZENML_SCHEMA_NAME] = secret.TYPE
-    return json.dumps(secret_contents)
 
 
 class AWSSecretsManager(BaseSecretsManager):
@@ -111,22 +90,6 @@ class AWSSecretsManager(BaseSecretsManager):
                 f"only alphanumeric characters and the characters _+=.@-."
             )
 
-    def _get_scope_prefix(self) -> str:
-        """Get the secret name prefix for the current scope.
-
-        Returns:
-            the secret name scope prefix
-        """
-        prefix = ""
-        if self.scope == SecretsManagerScope.COMPONENT:
-            prefix = f"zenml/{str(self.uuid)}/"
-        elif self.scope == SecretsManagerScope.GLOBAL:
-            prefix = "zenml/"
-        elif self.scope == SecretsManagerScope.NAMESPACE:
-            prefix = f"zenml/{self.namespace}/"
-
-        return prefix
-
     def _get_scoped_secret_name(self, name: str) -> str:
         """Convert a ZenML secret name into an AWS scoped secret name.
 
@@ -136,8 +99,7 @@ class AWSSecretsManager(BaseSecretsManager):
         Returns:
             The AWS scoped secret name
         """
-        prefix = self._get_scope_prefix()
-        return f"{prefix}{name}"
+        return "/".join(self._get_scoped_secret_path(name))
 
     def _get_unscoped_secret_name(self, name: str) -> Optional[str]:
         """Extract the name of a ZenML secret from an AWS scoped secret name.
@@ -149,15 +111,60 @@ class AWSSecretsManager(BaseSecretsManager):
             The ZenML secret name or None, if the input secret name does not
             belong to the current scope.
         """
-        name_tokens = name.split("/")
-        secret_name = name_tokens[-1]
-        name_tokens[-1] = ""
-        prefix = "/".join(name_tokens)
-        if not secret_name or prefix != self._get_scope_prefix():
-            # secret name is not in the current scope
-            return None
+        return self._get_secret_name_from_path(name.split("/"))
 
-        return secret_name
+    def _get_secret_tags(
+        self, secret: BaseSecretSchema
+    ) -> List[Dict[str, str]]:
+        """Return a list of AWS secret tag values for a given secret.
+
+        Args:
+            secret: the secret object
+
+        Returns:
+            A list of AWS secret tag values
+        """
+        metadata = self._get_secret_metadata(secret)
+        return [{"Key": k, "Value": v} for k, v in metadata.items()]
+
+    def _get_secret_scope_filters(
+        self,
+        secret_name: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Return a list of AWS filters for the entire scope or just a scoped secret.
+
+        These filters can be used when querying the AWS Secrets Manager
+        for all secrets or for a single secret available in the configured
+        scope.
+
+        Args:
+            secret_name: Optional secret name to include in the scope metadata.
+
+        Returns:
+            A list of AWS filters uniquely identifying all secrets
+            or a named secret within the configured scope.
+        """
+        metadata = self._get_secret_scope_metadata(secret_name)
+        filters: List[Dict[str, Any]] = []
+        for k, v in metadata.items():
+            filters.append(
+                {
+                    "Key": "tag-key",
+                    "Values": [
+                        k,
+                    ],
+                }
+            )
+            filters.append(
+                {
+                    "Key": "tag-value",
+                    "Values": [
+                        str(v),
+                    ],
+                }
+            )
+
+        return filters
 
     def register_secret(self, secret: BaseSecretSchema) -> None:
         """Registers a new secret.
@@ -170,7 +177,7 @@ class AWSSecretsManager(BaseSecretsManager):
         """
         self.validate_secret_name(secret.name)
         self._ensure_client_connected(self.region_name)
-        secret_value = jsonify_secret_contents(secret)
+        secret_value = secret_to_json(secret, encode=False)
 
         try:
             self.get_secret(secret.name)
@@ -183,32 +190,8 @@ class AWSSecretsManager(BaseSecretsManager):
         kwargs: Dict[str, Any] = {
             "Name": self._get_scoped_secret_name(secret.name),
             "SecretString": secret_value,
+            "Tags": self._get_secret_tags(secret),
         }
-        if self.scope != SecretsManagerScope.NONE:
-            # unscoped secrets do not have tags, for backwards compatibility
-            # purposes
-            namespace = self.namespace or ""
-            if self.scope != SecretsManagerScope.NAMESPACE:
-                namespace = ""
-
-            kwargs["Tags"] = [
-                {
-                    "Key": "zenml_component_name",
-                    "Value": self.name,
-                },
-                {
-                    "Key": "zenml_component_uuid",
-                    "Value": str(self.uuid),
-                },
-                {
-                    "Key": "zenml_scope",
-                    "Value": self.scope.value,
-                },
-                {
-                    "Key": "zenml_namespace",
-                    "Value": namespace,
-                },
-            ]
 
         self.CLIENT.create_secret(**kwargs)
 
@@ -223,6 +206,7 @@ class AWSSecretsManager(BaseSecretsManager):
 
         Raises:
             KeyError: if the secret does not exist
+            RuntimeError: if an unexpected AWS client error occurs
         """
         self.validate_secret_name(secret_name)
         self._ensure_client_connected(self.region_name)
@@ -237,22 +221,19 @@ class AWSSecretsManager(BaseSecretsManager):
             if error.response["Error"]["Code"] == "ResourceNotFoundException":
                 get_secret_value_response = None
             else:
-                raise
+                raise RuntimeError(
+                    f"An unexpected failure occurred while reading secret "
+                    f"'{secret_name}'"
+                ) from error
 
         if get_secret_value_response is None:
             raise KeyError(f"Can't find the specified secret '{secret_name}'")
 
-        secret_contents: Dict[str, str] = json.loads(
-            get_secret_value_response["SecretString"]
+        return secret_from_json(
+            get_secret_value_response["SecretString"],
+            secret_name=secret_name,
+            decode=False,
         )
-
-        zenml_schema_name = secret_contents.pop(ZENML_SCHEMA_NAME)
-        secret_contents["name"] = secret_name
-
-        secret_schema = SecretSchemaClassRegistry.get_class(
-            secret_schema=zenml_schema_name
-        )
-        return secret_schema(**secret_contents)
 
     def get_all_secret_keys(self) -> List[str]:
         """Get all secret keys.
@@ -262,31 +243,10 @@ class AWSSecretsManager(BaseSecretsManager):
         """
         self._ensure_client_connected(self.region_name)
 
-        filters: List[Any]
-        prefix = self._get_scope_prefix()
-        if prefix:
-            filters = [
-                {
-                    "Key": "name",
-                    "Values": [
-                        prefix,
-                    ],
-                },
-                {
-                    "Key": "tag-key",
-                    "Values": [
-                        "zenml_scope",
-                    ],
-                },
-                {
-                    "Key": "tag-value",
-                    "Values": [
-                        self.scope,
-                    ],
-                },
-            ]
-        else:
-            # unscoped (legacy) secrets don't have tags
+        filters: List[Dict[str, Any]] = []
+        if self.scope == SecretsManagerScope.NONE:
+            # unscoped (legacy) secrets don't have tags. We want to filter out
+            # non-legacy secrets
             filters = [
                 {
                     "Key": "tag-key",
@@ -295,18 +255,35 @@ class AWSSecretsManager(BaseSecretsManager):
                     ],
                 },
             ]
+        else:
+            filters = self._get_secret_scope_filters()
+            # add the name prefix to the filters to account for the fact that
+            # AWS does not do exact matching but prefix-matching on the filters
+            prefix = "/".join(self._get_scope_path())
+            filters.append(
+                {
+                    "Key": "name",
+                    "Values": [
+                        f"{prefix}/",
+                    ],
+                }
+            )
+
+        # print(filters)
 
         # TODO [ENG-720]: Deal with pagination in the aws secret manager when
         #  listing all secrets
         # TODO [ENG-721]: take out this magic maxresults number
         response = self.CLIENT.list_secrets(MaxResults=100, Filters=filters)
+        # print(response)
         results = [
             self._get_unscoped_secret_name(secret["Name"])
             for secret in response["SecretList"]
         ]
 
-        # filter out out of scope secrets that may have slipped through (i.e.
-        # for which `_get_unscoped_secret_name` returned None)
+        # remove out-of-scope secrets that may have slipped through (i.e.
+        # for which `_get_unscoped_secret_name` returned None) because AWS does
+        # not use exact matching with the filters, but prefix matching instead
         return list(filter(None, results))
 
     def update_secret(self, secret: BaseSecretSchema) -> None:
@@ -317,14 +294,16 @@ class AWSSecretsManager(BaseSecretsManager):
 
         Raises:
             KeyError: if the secret does not exist
+            RuntimeError: if an unexpected AWS client error occurs
         """
         self._ensure_client_connected(self.region_name)
 
-        secret_value = jsonify_secret_contents(secret)
+        secret_value = secret_to_json(secret)
 
         kwargs = {
             "SecretId": self._get_scoped_secret_name(secret.name),
             "SecretString": secret_value,
+            "Tags": self._get_secret_tags(secret),
         }
 
         try:
@@ -335,7 +314,10 @@ class AWSSecretsManager(BaseSecretsManager):
                     f"Can't find the specified secret '{secret.name}'"
                 )
             else:
-                raise
+                raise RuntimeError(
+                    f"An unexpected failure occurred while updating secret "
+                    f"'{secret.name}'"
+                ) from error
 
     def delete_secret(self, secret_name: str) -> None:
         """Delete an existing secret.
@@ -345,6 +327,7 @@ class AWSSecretsManager(BaseSecretsManager):
 
         Raises:
             KeyError: if the secret does not exist
+            RuntimeError: if an unexpected AWS client error occurs
         """
         self._ensure_client_connected(self.region_name)
         try:
@@ -358,7 +341,10 @@ class AWSSecretsManager(BaseSecretsManager):
                     f"Can't find the specified secret '{secret_name}'"
                 )
             else:
-                raise
+                raise RuntimeError(
+                    f"An unexpected failure occurred while deleting secret "
+                    f"'{secret_name}'"
+                ) from error
 
     def delete_all_secrets(self) -> None:
         """Delete all existing secrets.

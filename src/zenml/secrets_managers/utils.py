@@ -14,6 +14,7 @@
 """Utility functions for the ZenML secrets manager module."""
 
 import base64
+import json
 from typing import Dict, Tuple
 
 from zenml.constants import ZENML_SCHEMA_NAME
@@ -79,3 +80,55 @@ def decode_secret_dict(
 
     decoded_secret = {k: decode_string(v) for k, v in secret_dict.items()}
     return decoded_secret, zenml_schema_name
+
+
+def secret_to_json(secret: BaseSecretSchema, encode: bool = False) -> str:
+    """Converts a secret to a JSON representation.
+
+    This includes the schema type in the secret's JSON representation, so that
+    the correct SecretSchema can be retrieved when the secret is loaded.
+
+    Args:
+        secret: a subclass of the BaseSecretSchema class
+        encode: if true, encodes the secret values using base64 encoding
+
+    Returns:
+        A JSON representation containing all key-value pairs and the ZenML
+        schema type.
+    """
+    if encode:
+        secret_contents = encode_secret(secret)
+    else:
+        secret_contents = secret.content
+        secret_contents[ZENML_SCHEMA_NAME] = secret.TYPE
+
+    return json.dumps(secret_contents)
+
+
+def secret_from_json(
+    secret_json: str, secret_name: str = "", decode: bool = False
+) -> BaseSecretSchema:
+    """Converts a JSON secret representation into a secret.
+
+    Args:
+        secret_json: a JSON representation of a secret
+        secret_name: optional name for the secret, defaults to empty string
+        decode: if true, decodes the secret values using base64
+
+    Returns:
+        A secret instance containing all key-value pairs loaded from the JSON
+        representation and of the ZenML schema type indicated in the JSON.
+    """
+    from zenml.secret.secret_schema_class_registry import (
+        SecretSchemaClassRegistry,
+    )
+
+    secret_contents: Dict[str, str] = json.loads(secret_json)
+
+    zenml_schema_name = secret_contents.pop(ZENML_SCHEMA_NAME)
+    secret_contents["name"] = secret_name
+
+    secret_schema = SecretSchemaClassRegistry.get_class(
+        secret_schema=zenml_schema_name
+    )
+    return secret_schema(**secret_contents)
