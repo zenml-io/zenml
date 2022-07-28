@@ -12,16 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os.path
-import tempfile
 from typing import Any, Type
 
 from pyspark.sql import DataFrame, SparkSession
 
-from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.utils import io_utils
 
-DEFAULT_FILENAME = 'data'
+DEFAULT_FILEPATH = 'data'
+
 
 class SparkDataFrameMaterializer(BaseMaterializer):
     """Materializer to read/write NeuralProphet models."""
@@ -34,21 +32,12 @@ class SparkDataFrameMaterializer(BaseMaterializer):
             A loaded spark dataframe.
         """
         super().handle_input(data_type)
-
-        # Create a temporary directory to store the dataframe
-        temp_dir = tempfile.TemporaryDirectory()
-
-        # Copy from the dataframe to temporary directory
-        io_utils.copy_dir(self.artifact.uri, temp_dir.name)
-
-        # Create the Spark Session
+        # Create the Spark session
         spark = SparkSession.builder.getOrCreate()
 
-        # Read the data from the temporary directory
-        path = os.path.join(temp_dir.name, DEFAULT_FILENAME)
-        data = spark.read.load(path, format="parquet")
-
-        return data
+        # Read the data
+        path = os.path.join(self.artifact.uri, DEFAULT_FILEPATH)
+        return spark.read.parquet(path)
 
     def handle_return(self, df: DataFrame) -> None:
         """Writes a spark dataframe.
@@ -57,20 +46,6 @@ class SparkDataFrameMaterializer(BaseMaterializer):
         """
         super().handle_return(df)
 
-        # Create a temporary directory to store the model
-        temp_dir = tempfile.TemporaryDirectory()
-
-        # Write the model to a temporary directory
-        path = os.path.join(temp_dir.name, DEFAULT_FILENAME)
-        df.write.save(path, format="parquet")
-
-        with open(os.path.join(path, 'all_files.txt'), "w") as text_file:
-            for x in os.listdir(path):
-                text_file.write(x)
-                text_file.write('\n')
-
-        # Copy the results to the artifact store
-        io_utils.copy_dir(temp_dir.name, self.artifact.uri)
-
-        # Remove the temporary directory
-        fileio.rmtree(temp_dir.name)
+        # Write the dataframe to the artifact store
+        path = os.path.join(self.artifact.uri, DEFAULT_FILEPATH)
+        df.write.parquet(path)
