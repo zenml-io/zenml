@@ -336,10 +336,12 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         # Set optional CPU, RAM and GPU constraints for the pipeline
         cpu_limit = resource_configuration.cpu_count or self.cpu_limit
         if cpu_limit is not None:
-            container_op = container_op.set_cpu_limit(cpu_limit)
+            container_op = container_op.set_cpu_limit(str(cpu_limit))
 
         memory_limit = (
-            resource_configuration.get_memory(unit="GB") or self.memory_limit
+            resource_configuration.memory[:-1]
+            if resource_configuration.memory
+            else self.memory_limit
         )
         if memory_limit is not None:
             container_op = container_op.set_memory_limit(memory_limit)

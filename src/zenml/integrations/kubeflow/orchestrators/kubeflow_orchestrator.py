@@ -556,7 +556,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """
         if resource_configuration.cpu_count is not None:
             container_op = container_op.set_cpu_limit(
-                resource_configuration.cpu_count
+                str(resource_configuration.cpu_count)
             )
 
         if resource_configuration.gpu_count is not None:
@@ -565,7 +565,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             )
 
         if resource_configuration.memory is not None:
-            memory_limit = resource_configuration.get_memory(unit="GB")
+            memory_limit = resource_configuration.memory[:-1]
             container_op = container_op.set_memory_limit(memory_limit)
 
     def prepare_or_run_pipeline(
