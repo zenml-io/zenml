@@ -332,7 +332,7 @@ docker run -it zenmldocker/zenml /bin/bash
 
 > **Warning** 
 >
-> ### Known installation issues for M1 Mac Users
+> #### Known installation issues for M1 Mac Users
 >
 > If you have a M1 Mac machine and you are encountering an error > while trying to install ZenML, 
 >please try to setup `brew` and `pyenv` with Rosetta 2 and then install ZenML. The issue arises because some of the dependencies 
