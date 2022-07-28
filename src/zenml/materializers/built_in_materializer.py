@@ -14,6 +14,7 @@
 """Implementation of ZenML's builtin materializer."""
 
 import os
+import shutil
 from typing import Any, Iterable, Type
 
 from zenml.artifacts import DataAnalysisArtifact, DataArtifact
@@ -171,17 +172,13 @@ class ListMaterializer(BuiltInMaterializer):
             return super().handle_return(data)
 
         BaseMaterializer.handle_return(self, data)
-        metadata = {
-            "length": len(data),
-            "paths": [],
-            "types": [],
-        }
 
-        # Materialze each element into a subdirectory
+        # Define metadata and create a list of per-element materializers
+        metadata = {"length": len(data), "paths": [], "types": []}
+        materializers = []
         for i, element in enumerate(data):
             element_path = os.path.join(self.artifact.uri, str(i))
-            if not os.path.exists(element_path):
-                os.makedirs(element_path)
+            os.mkdir(element_path)
             type_ = type(element)
             metadata["paths"].append(element_path)
             metadata["types"].append(str(type_))
@@ -189,9 +186,18 @@ class ListMaterializer(BuiltInMaterializer):
             mock_artifact = DataArtifact()
             mock_artifact.uri = element_path
             materializer = materializer_class(mock_artifact)
-            materializer.handle_return(element)
+            materializers.append(materializer)
 
-        # Write metadata
-        yaml_utils.write_json(self.metadata_path, metadata)
-
-        # TODO: cleanup upon failure
+        # Write metadata and materialize each element
+        try:
+            yaml_utils.write_json(self.metadata_path, metadata)
+            for element, materializer in zip(data, materializers):
+                materializer.handle_return(element)
+        except Exception as e:  # If an error occurs, delete all created files
+            # Delete metadata
+            if os.path.exists(self.metadata_path):
+                os.remove(self.metadata_path)
+            # Delete all elements that were already saved
+            for element_path in metadata["paths"]:
+                shutil.rmtree(element_path)
+            raise e
