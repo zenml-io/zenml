@@ -305,6 +305,7 @@ Read more about CT/CD in ZenML [here](https://blog.zenml.io/ci-ct-cd-with-zenml/
 ## 💾 Install ZenML
 
 > **Note** 
+>
 > ZenML supports Python 3.7, 3.8, and 3.9.
 
 ZenML is available for easy installation into your environment via PyPI:
