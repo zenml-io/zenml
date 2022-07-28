@@ -200,7 +200,7 @@ pip install zenml
 Alternatively, if you’re feeling adventurous, try out the bleeding edge installation:
 > **Warning** - Proceed at your own risk, no guarantees are given!
 ```bash
-pip install git+https://github.com/zenml-io/zenml.git@main --upgrade
+pip install git+https://github.com/zenml-io/zenml.git@develop --upgrade
 ```
 
 
@@ -304,14 +304,17 @@ def mnist_pipeline(
 
 
 pipeline = mnist_pipeline(
-    importer=importer(),
-    trainer=trainer(),
-    evaluator=evaluator(),
+    importer=importer(), # Step 1
+    trainer=trainer(), # Step 2
+    evaluator=evaluator(), # Step 3
 )
 
 # Run the pipeline locally.
 pipeline.run()
 ```
+
+This runs the pipeline locally on your machine following the steps defined in the pipeline.
+You can scale this up to run on a full-fledged cloud platform by [switching stacks](https://docs.zenml.io/getting-started/core-concepts) and with minimal (or no) code changes!
 
 # 🪜 Get a guided tour with `zenml go`
 
