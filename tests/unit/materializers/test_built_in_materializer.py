@@ -90,3 +90,15 @@ def test_list_of_bytes_materialization():
 def test_dict_of_bytes_materialization():
     """Test materialization for dicts of bytes."""
     _test_materialization(type_=dict, example={"a": b"0", "b": b"1", "c": b"2"})
+
+
+def test_tuple_of_bytes_materialization():
+    """Test materialization for tuples of bytes."""
+    _test_materialization(type_=tuple, example=(b"0", b"1", b"2"))
+
+
+def test_set_materialization():
+    """Test materialization for `set` objects."""
+    _test_materialization(type_=set, example=set())
+    _test_materialization(type_=set, example={1, 2, 3})
+    _test_materialization(type_=set, example={b"0", b"1", b"2"})

@@ -41,7 +41,7 @@ class BuiltInMaterializer(BaseMaterializer):
         DataArtifact,
         DataAnalysisArtifact,
     )
-    ASSOCIATED_TYPES = (*BASIC_TYPES, dict)
+    ASSOCIATED_TYPES = BASIC_TYPES
 
     def __init__(self, artifact: "BaseArtifact"):
         super().__init__(artifact)
@@ -133,10 +133,10 @@ def find_type_by_str(type_str: str) -> Type[Any]:
     raise RuntimeError(f"Cannot resolve type '{type_str}'.")
 
 
-class ListMaterializer(BuiltInMaterializer):
-    """Read/Write JSON files."""
+class ContainerMaterializer(BuiltInMaterializer):
+    """Handle built-in container types (dict, list, set, tuple)."""
 
-    ASSOCIATED_TYPES = (list, tuple)
+    ASSOCIATED_TYPES = (dict, list, set, tuple)
 
     def __init__(self, artifact: "BaseArtifact"):
         super().__init__(artifact)
@@ -145,35 +145,59 @@ class ListMaterializer(BuiltInMaterializer):
         )
 
     def handle_input(self, data_type: Type[Any]) -> Any:
-        if os.path.exists(self.data_path):  # list of only built-in types
-            outputs = super().handle_input(data_type)
-            return tuple(outputs) if data_type == tuple else outputs
-        if not os.path.exists(self.metadata_path):
+        # If the data was not serialized, there must be metadata present.
+        if not os.path.exists(self.data_path) and not os.path.exists(
+            self.metadata_path
+        ):
             raise RuntimeError(
                 f"Materialization of type {data_type} failed. Expected either"
                 f"{self.data_path} or {self.metadata_path} to exist."
             )
 
-        # Reconstruct list from metadata
-        metadata = yaml_utils.read_json(self.metadata_path)
-        outputs = []
-        for element_path, type_str in zip(metadata["paths"], metadata["types"]):
-            type_ = find_type_by_str(type_str)
-            materializer_class = default_materializer_registry[type_]
-            mock_artifact = DataArtifact()
-            mock_artifact.uri = element_path
-            materializer = materializer_class(mock_artifact)
-            element = materializer.handle_input(type_)
-            outputs.append(element)
-        return tuple(outputs) if data_type == tuple else outputs
+        # If the data was serialized as JSON, deserialize it.
+        if os.path.exists(self.data_path):
+            outputs = super().handle_input(data_type)
+
+        # Otherwise, use the metadata to reconstruct the data as a list.
+        else:
+            metadata = yaml_utils.read_json(self.metadata_path)
+            outputs = []
+            for path_, type_str in zip(metadata["paths"], metadata["types"]):
+                type_ = find_type_by_str(type_str)
+                materializer_class = default_materializer_registry[type_]
+                mock_artifact = DataArtifact()
+                mock_artifact.uri = path_
+                materializer = materializer_class(mock_artifact)
+                element = materializer.handle_input(type_)
+                outputs.append(element)
+
+        # Cast the data to the correct type.
+        if issubclass(data_type, dict) and not isinstance(outputs, dict):
+            keys, values = outputs
+            return dict(zip(keys, values))
+        if issubclass(data_type, tuple):
+            return tuple(outputs)
+        if issubclass(data_type, set):
+            return set(outputs)
+        return outputs
 
     def handle_return(self, data: Any) -> None:
+        BaseMaterializer.handle_return(self, data)
+
+        # tuple and set: handle as list.
+        if isinstance(data, tuple) or isinstance(data, set):
+            data = list(data)
+
+        # If the data is serializable, just write it into a single JSON file.
         if _is_pure_builtin_type(data):
             return super().handle_return(data)
 
-        BaseMaterializer.handle_return(self, data)
+        # non-serializable dict: Handle as non-serializable list of lists.
+        if isinstance(data, dict):
+            data = [list(data.keys()), list(data.values())]
 
-        # Define metadata and create a list of per-element materializers
+        # non-serializable list: Materialize each element into a subfolder.
+        # Define metadata and create a list of per-element materializers.
         metadata = {"length": len(data), "paths": [], "types": []}
         materializers = []
         for i, element in enumerate(data):
@@ -187,8 +211,7 @@ class ListMaterializer(BuiltInMaterializer):
             mock_artifact.uri = element_path
             materializer = materializer_class(mock_artifact)
             materializers.append(materializer)
-
-        # Write metadata and materialize each element
+        # Write metadata and materialize each element.
         try:
             yaml_utils.write_json(self.metadata_path, metadata)
             for element, materializer in zip(data, materializers):
