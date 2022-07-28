@@ -208,47 +208,15 @@ your project, you get the following benefits:
 - Easy switch between local and cloud stacks
 - Painless **deployment and configuration** of infrastructure -->
 
-# 📖 Learn More
 
-| ZenML Resources | Description |
-| ------------- | - |
-| 🧘‍♀️ **[ZenML 101]** | New to ZenML? Here's everything you need to know! |
-| ⚛️ **[Core Concepts]** | Some key terms and concepts we use. |
-| 🗃 **[API Guide]** | Build production ML pipelines using class-based or functional API. |
-| 🚀 **[New in v0.11.0]** | New features, bug fixes. |
-| 🗳 **[Vote for Features]** | Pick what we work on next! |
-| 📓 **[Docs]** | Full documentation for creating your own ZenML pipelines. |
-| 📒 **[API Reference]** | The detailed reference for ZenML's API. |
-| 🍰 **[ZenBytes]** | A guided and in-depth tutorial on MLOps and ZenML. |
-| 🗂️️ **[ZenFiles]** | End-to-end projects using ZenML. |
-| ⚽️ **[Examples]** | Learn best through examples where ZenML is used? We've got you covered. |
-| 📬 **[Blog]** | Use cases of ZenML and technical deep dives on how we built it. |
-| 🔈 **[Podcast]** | Conversations with leaders in ML, released every 2 weeks. |
-| 📣 **[Newsletter]** | We build ZenML in public. Subscribe to learn how we work. |
-| 💬 **[Join Slack]** | Need help with your specific use case? Say hi on Slack! |
-| 🗺 **[Roadmap]** | See where ZenML is working to build new features. |
-| 🙋‍♀️ **[Contribute]** | How to contribute to the ZenML project and code base. |
-
-[ZenML 101]: https://docs.zenml.io/
-[Core Concepts]: https://docs.zenml.io/core-concepts
-[API Guide]: https://docs.zenml.io/v/docs/developer-guide/steps-and-pipelines/functional-vs-class-based-api
-[New in v0.11.0]: https://github.com/zenml-io/zenml/releases
-[Vote for Features]: https://zenml.io/discussion
-[Docs]: https://docs.zenml.io/
-[API Reference]: https://apidocs.zenml.io/
-[ZenBytes]: https://github.com/zenml-io/zenbytes
-[ZenFiles]: https://github.com/zenml-io/zenfiles
-[Examples]: https://github.com/zenml-io/zenml/tree/main/examples
-[Blog]: https://blog.zenml.io/
-[Podcast]: https://podcast.zenml.io/
-[Newsletter]: https://zenml.io/newsletter/
-[Join Slack]: https://zenml.io/slack-invite/
-[Roadmap]: https://zenml.io/roadmap
-[Contribute]: https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md
 
 # 🎮 Features
+ZenML is actively under development. Here are some of the most prominent features. 
+Read more about features [here](https://zenml.io/features).
 
-### 1. 💪 Write local, run anywhere
+![All features in ZenML.](docs/book/assets/features.png)
+
+<!-- ### 1. 💪 Write local, run anywhere
 
 You only need to write your core machine learning workflow code once, but you
 can run it anywhere. We decouple your code from the environment and
@@ -325,9 +293,13 @@ like Kubernetes with our Seldon Core integration. You can also listed served mod
 zenml served-models list
 ```
 
-Read more about CT/CD in ZenML [here](https://blog.zenml.io/ci-ct-cd-with-zenml/).
+Read more about CT/CD in ZenML [here](https://blog.zenml.io/ci-ct-cd-with-zenml/). -->
+
+
 
 # 🤸 Getting Started
+
+
 
 ## 💾 Install ZenML
 
@@ -463,6 +435,45 @@ zenml server up
 ```
 
 Read more about collaboration in ZenML [here](https://docs.zenml.io/collaborate/collaborate-with-zenml).
+
+# 📖 Learn More
+
+| ZenML Resources | Description |
+| ------------- | - |
+| 🧘‍♀️ **[ZenML 101]** | New to ZenML? Here's everything you need to know! |
+| ⚛️ **[Core Concepts]** | Some key terms and concepts we use. |
+| 🗃 **[API Guide]** | Build production ML pipelines using class-based or functional API. |
+| 🚀 **[New in v0.11.0]** | New features, bug fixes. |
+| 🗳 **[Vote for Features]** | Pick what we work on next! |
+| 📓 **[Docs]** | Full documentation for creating your own ZenML pipelines. |
+| 📒 **[API Reference]** | The detailed reference for ZenML's API. |
+| 🍰 **[ZenBytes]** | A guided and in-depth tutorial on MLOps and ZenML. |
+| 🗂️️ **[ZenFiles]** | End-to-end projects using ZenML. |
+| ⚽️ **[Examples]** | Learn best through examples where ZenML is used? We've got you covered. |
+| 📬 **[Blog]** | Use cases of ZenML and technical deep dives on how we built it. |
+| 🔈 **[Podcast]** | Conversations with leaders in ML, released every 2 weeks. |
+| 📣 **[Newsletter]** | We build ZenML in public. Subscribe to learn how we work. |
+| 💬 **[Join Slack]** | Need help with your specific use case? Say hi on Slack! |
+| 🗺 **[Roadmap]** | See where ZenML is working to build new features. |
+| 🙋‍♀️ **[Contribute]** | How to contribute to the ZenML project and code base. |
+
+[ZenML 101]: https://docs.zenml.io/
+[Core Concepts]: https://docs.zenml.io/core-concepts
+[API Guide]: https://docs.zenml.io/v/docs/developer-guide/steps-and-pipelines/functional-vs-class-based-api
+[New in v0.11.0]: https://github.com/zenml-io/zenml/releases
+[Vote for Features]: https://zenml.io/discussion
+[Docs]: https://docs.zenml.io/
+[API Reference]: https://apidocs.zenml.io/
+[ZenBytes]: https://github.com/zenml-io/zenbytes
+[ZenFiles]: https://github.com/zenml-io/zenfiles
+[Examples]: https://github.com/zenml-io/zenml/tree/main/examples
+[Blog]: https://blog.zenml.io/
+[Podcast]: https://podcast.zenml.io/
+[Newsletter]: https://zenml.io/newsletter/
+[Join Slack]: https://zenml.io/slack-invite/
+[Roadmap]: https://zenml.io/roadmap
+[Contribute]: https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md
+
 
 # 🍰 ZenBytes
 
