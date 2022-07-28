@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the PyTorch Module materializer."""
+
 import os
 from typing import Any, Type
 
@@ -24,7 +25,6 @@ from zenml.materializers.base_materializer import BaseMaterializer
 
 DEFAULT_FILENAME = "entire_model.pt"
 CHECKPOINT_FILENAME = "checkpoint.pt"
-# DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class PyTorchModuleMaterializer(BaseMaterializer):
@@ -37,10 +37,7 @@ class PyTorchModuleMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (Module,)
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
-    def handle_input(
-        self,
-        data_type: Type[Any],
-    ) -> Module:
+    def handle_input(self, data_type: Type[Any]) -> Module:
         """Reads and returns a PyTorch model.
 
         Only loads the model, not the checkpoint.
@@ -71,3 +68,11 @@ class PyTorchModuleMaterializer(BaseMaterializer):
             os.path.join(self.artifact.uri, DEFAULT_FILENAME), "wb"
         ) as f:
             torch.save(model, f)
+
+        # Also save model checkpoint to artifact directory,
+        # This is the default behavior for loading model in production phase (inference)
+        if isinstance(model, Module):
+            with fileio.open(
+                os.path.join(self.artifact.uri, CHECKPOINT_FILENAME), "wb"
+            ) as f:
+                torch.save(model.state_dict(), f)
