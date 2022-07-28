@@ -12,13 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implements a custom model for the Kserve integration."""
-import os
 from typing import Any, Dict
 
 import click
-import kserve
 
-from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
+import kserve
 from zenml.logger import get_logger
 from zenml.utils.source_utils import import_class_by_path
 
@@ -75,9 +73,7 @@ class ZenMLCustomModel(kserve.Model):  # type: ignore[misc]
         try:
             from zenml.utils.materializer_utils import load_model_from_metadata
 
-            self.model = load_model_from_metadata(
-                os.path.join(self.model_uri, MODEL_METADATA_YAML_FILE_NAME)
-            )
+            self.model = load_model_from_metadata(self.model_uri)
         except Exception as e:
             logger.error("Failed to load model: {}".format(e))
             return False

@@ -20,6 +20,9 @@ from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple
 from uuid import UUID
 
 import requests
+from kubernetes import client as k8s_client
+from pydantic import Field, ValidationError
+
 from kserve import (
     KServeClient,
     V1beta1InferenceService,
@@ -28,9 +31,6 @@ from kserve import (
     V1beta1PredictorSpec,
     constants,
 )
-from kubernetes import client as k8s_client
-from pydantic import Field, ValidationError
-
 from zenml import __version__
 from zenml.logger import get_logger
 from zenml.services import (

@@ -17,9 +17,9 @@ from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional, cast
 from uuid import UUID
 
-from kserve import KServeClient, V1beta1InferenceService, constants, utils
 from kubernetes import client
 
+from kserve import KServeClient, V1beta1InferenceService, constants, utils
 from zenml.config.global_config import GlobalConfiguration
 from zenml.integrations.kserve import KSERVE_MODEL_DEPLOYER_FLAVOR
 from zenml.integrations.kserve.services.kserve_deployment import (

@@ -13,11 +13,13 @@
 #  permissions and limitations under the License.
 """Util functions for models and materializers."""
 
+import os
 import tempfile
 from typing import Any
 
 from ml_metadata.proto.metadata_store_pb2 import Artifact
 
+from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import source_utils
@@ -48,18 +50,21 @@ def save_model_metadata(model_artifact: Artifact) -> str:
     return f.name
 
 
-def load_model_from_metadata(model_metadata_file: str) -> Any:
+def load_model_from_metadata(model_uri: str) -> Any:
     """Load a zenml artifact from a json file.
 
     Args:
-        model_metadata_file: the directory where the model files are stored
+        model_uri: the directory where the model files are stored
 
     Returns:
         The ML model loaded into a Python object
     """
-    with fileio.open(model_metadata_file, "r") as f:
+    with fileio.open(
+        os.path.join(model_uri, MODEL_METADATA_YAML_FILE_NAME), "r"
+    ) as f:
         metadata = read_yaml(f.name)
     model_artifact = Artifact()
+    model_artifact.uri = model_uri
     model_artifact.properties["datatype"].string_value = metadata["datatype"]
     model_artifact.properties["materializer"].string_value = metadata[
         "materializer"
