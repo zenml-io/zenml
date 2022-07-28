@@ -161,7 +161,6 @@ def fix_permissions(func, path, exc_info):
     Usage : ``shutil.rmtree(path, onerror=fix_permissions)``
     """
     import stat
-    "Clear the readonly bit and reattempt the removal"
     os.chmod(path, stat.S_IWRITE)
     func(path)
 
