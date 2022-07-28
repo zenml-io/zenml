@@ -37,6 +37,9 @@ def pre_process(tensor: torch.Tensor) -> dict:
 def custom_predict(model: Any, request: Dict) -> Dict:
     """Predict the given request.
 
+    The custom predict function is the core of the custom deployment, the function must be expecting a request
+    and a model object loaded from the model path. The function must return a response with the prediction.
+
     Args:
         model (Any): The model to use for prediction.
         request: The request to predict in a dictionary. e.g. {"instances": []}
