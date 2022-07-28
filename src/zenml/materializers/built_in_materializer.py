@@ -29,11 +29,11 @@ logger = get_logger(__name__)
 DEFAULT_FILENAME = "data.json"
 DEFAULT_BYTES_FILENAME = "data.txt"
 DEFAULT_METADATA_FILENAME = "metadata.json"
-BASIC_TYPES = (int, str, float, bool)  # complex/bytes are not JSON serializable
+BASIC_TYPES = (bool, float, int, str)  # complex/bytes are not JSON serializable
 
 
 class BuiltInMaterializer(BaseMaterializer):
-    """Read/Write JSON files."""
+    """Handle JSON-serializable basic types (`bool`, `float`, `int`, `str`)."""
 
     # since these are the 'correct' way to annotate these types.
 
@@ -133,18 +133,21 @@ def find_type_by_str(type_str: str) -> Type[Any]:
     raise RuntimeError(f"Cannot resolve type '{type_str}'.")
 
 
-class ContainerMaterializer(BuiltInMaterializer):
+class BuiltInContainerMaterializer(BaseMaterializer):
     """Handle built-in container types (dict, list, set, tuple)."""
 
     ASSOCIATED_TYPES = (dict, list, set, tuple)
 
     def __init__(self, artifact: "BaseArtifact"):
         super().__init__(artifact)
+        self.data_path = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
         self.metadata_path = os.path.join(
             self.artifact.uri, DEFAULT_METADATA_FILENAME
         )
 
     def handle_input(self, data_type: Type[Any]) -> Any:
+        super().handle_input(data_type)
+
         # If the data was not serialized, there must be metadata present.
         if not os.path.exists(self.data_path) and not os.path.exists(
             self.metadata_path
@@ -156,7 +159,7 @@ class ContainerMaterializer(BuiltInMaterializer):
 
         # If the data was serialized as JSON, deserialize it.
         if os.path.exists(self.data_path):
-            outputs = super().handle_input(data_type)
+            outputs = yaml_utils.read_json(self.data_path)
 
         # Otherwise, use the metadata to reconstruct the data as a list.
         else:
@@ -182,7 +185,7 @@ class ContainerMaterializer(BuiltInMaterializer):
         return outputs
 
     def handle_return(self, data: Any) -> None:
-        BaseMaterializer.handle_return(self, data)
+        super().handle_return(data)
 
         # tuple and set: handle as list.
         if isinstance(data, tuple) or isinstance(data, set):
@@ -190,7 +193,7 @@ class ContainerMaterializer(BuiltInMaterializer):
 
         # If the data is serializable, just write it into a single JSON file.
         if _is_pure_builtin_type(data):
-            return super().handle_return(data)
+            yaml_utils.write_json(self.data_path, data)
 
         # non-serializable dict: Handle as non-serializable list of lists.
         if isinstance(data, dict):
