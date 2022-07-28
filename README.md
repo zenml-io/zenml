@@ -388,7 +388,7 @@ Read more about collaboration in ZenML [here](https://docs.zenml.io/collaborate/
 | 🙋‍♀️ **[Contribute]** | How to contribute to the ZenML project and code base. |
 
 [ZenML 101]: https://docs.zenml.io/
-[Core Concepts]: https://docs.zenml.io/core-concepts
+[Core Concepts]: https://docs.zenml.io/getting-started/core-concepts
 [API Guide]: https://docs.zenml.io/v/docs/developer-guide/steps-and-pipelines/functional-vs-class-based-api
 [New in v0.11.0]: https://github.com/zenml-io/zenml/releases
 [Vote for Features]: https://zenml.io/discussion
