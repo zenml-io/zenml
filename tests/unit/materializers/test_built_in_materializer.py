@@ -70,3 +70,13 @@ def test_simple_dict_list_tuple_materialization():
     _test_materialization(type_=dict, example={"a": 0, "b": 1, "c": 2})
     _test_materialization(type_=list, example=[0, 1, 2])
     _test_materialization(type_=tuple, example=(0, 1, 2))
+
+
+def test_list_of_bytes_materialization():
+    """Test materialization for lists of bytes."""
+    _test_materialization(type_=list, example=[b"0", b"1", b"2"])
+
+
+def test_dict_of_bytes_materialization():
+    """Test materialization for dicts of bytes."""
+    _test_materialization(type_=dict, example={"a": b"0", "b": b"1", "c": b"2"})
