@@ -162,7 +162,7 @@ def fix_permissions(func, path, exc_info):
     """
     import stat
     os.chmod(path, stat.S_IWRITE)
-    func(path)
+    func(path, ignore_errors=True)
 
 
 @pytest.fixture
