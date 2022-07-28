@@ -14,16 +14,21 @@
 """Implementation of ZenML's builtin materializer."""
 
 import os
-from typing import Any, Type
+from typing import Any, Iterable, Type
 
 from zenml.artifacts import DataAnalysisArtifact, DataArtifact
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.materializers.default_materializer_registry import (
+    default_materializer_registry,
+)
 from zenml.utils import yaml_utils
 
 logger = get_logger(__name__)
 DEFAULT_FILENAME = "data.json"
 DEFAULT_BYTES_FILENAME = "data.txt"
+DEFAULT_METADATA_FILENAME = "metadata.json"
+BASIC_TYPES = (int, str, float, bool)  # complex/bytes are not JSON serializable
 
 
 class BuiltInMaterializer(BaseMaterializer):
@@ -35,15 +40,7 @@ class BuiltInMaterializer(BaseMaterializer):
         DataArtifact,
         DataAnalysisArtifact,
     )
-    ASSOCIATED_TYPES = (
-        int,
-        str,
-        dict,
-        float,
-        list,
-        tuple,
-        bool,
-    )
+    ASSOCIATED_TYPES = (*BASIC_TYPES, dict)
 
     def __init__(self, artifact: "BaseArtifact"):
         super().__init__(artifact)
@@ -110,3 +107,91 @@ class BytesMaterializer(BaseMaterializer):
         super().handle_return(data)
         with open(self.data_path, "wb") as file_:
             file_.write(data)
+
+
+def _all_builtin(iterable: Iterable):
+    return all(_is_pure_builtin_type(element) for element in iterable)
+
+
+def _is_pure_builtin_type(obj: Any):
+    if any(isinstance(obj, basic_type) for basic_type in BASIC_TYPES):
+        return True
+    if any(isinstance(obj, iterable_) for iterable_ in (list, tuple)):
+        return _all_builtin(obj)
+    if isinstance(obj, dict):
+        return _all_builtin(obj.keys()) and _all_builtin(obj.values())
+    return False
+
+
+def find_type_by_str(type_str: str) -> Type[Any]:
+    # TODO: how to handle subclasses of registered types?
+    registered_types = default_materializer_registry.materializer_types.keys()
+    type_str_mapping = {str(type_): type_ for type_ in registered_types}
+    if type_str in type_str_mapping:
+        return type_str_mapping[type_str]
+    raise RuntimeError(f"Cannot resolve type '{type_str}'.")
+
+
+class ListMaterializer(BuiltInMaterializer):
+    """Read/Write JSON files."""
+
+    ASSOCIATED_TYPES = (list, tuple)
+
+    def __init__(self, artifact: "BaseArtifact"):
+        super().__init__(artifact)
+        self.metadata_path = os.path.join(
+            self.artifact.uri, DEFAULT_METADATA_FILENAME
+        )
+
+    def handle_input(self, data_type: Type[Any]) -> Any:
+        if os.path.exists(self.data_path):  # list of only built-in types
+            outputs = super().handle_input(data_type)
+            return tuple(outputs) if data_type == tuple else outputs
+        if not os.path.exists(self.metadata_path):
+            raise RuntimeError(
+                f"Materialization of type {data_type} failed. Expected either"
+                f"{self.data_path} or {self.metadata_path} to exist."
+            )
+
+        # Reconstruct list from metadata
+        metadata = yaml_utils.read_json(self.metadata_path)
+        outputs = []
+        for element_path, type_str in zip(metadata["paths"], metadata["types"]):
+            type_ = find_type_by_str(type_str)
+            materializer_class = default_materializer_registry[type_]
+            mock_artifact = DataArtifact()
+            mock_artifact.uri = element_path
+            materializer = materializer_class(mock_artifact)
+            element = materializer.handle_input(type_)
+            outputs.append(element)
+        return tuple(outputs) if data_type == tuple else outputs
+
+    def handle_return(self, data: Any) -> None:
+        if _is_pure_builtin_type(data):
+            return super().handle_return(data)
+
+        BaseMaterializer.handle_return(self, data)
+        metadata = {
+            "length": len(data),
+            "paths": [],
+            "types": [],
+        }
+
+        # Materialze each element into a subdirectory
+        for i, element in enumerate(data):
+            element_path = os.path.join(self.artifact.uri, str(i))
+            if not os.path.exists(element_path):
+                os.makedirs(element_path)
+            type_ = type(element)
+            metadata["paths"].append(element_path)
+            metadata["types"].append(str(type_))
+            materializer_class = default_materializer_registry[type_]
+            mock_artifact = DataArtifact()
+            mock_artifact.uri = element_path
+            materializer = materializer_class(mock_artifact)
+            materializer.handle_return(element)
+
+        # Write metadata
+        yaml_utils.write_json(self.metadata_path, metadata)
+
+        # TODO: cleanup upon failure
