@@ -1,7 +1,3 @@
-
-
-
-
 <!-- PROJECT SHIELDS -->
 <!--
 *** I'm using markdown "reference style" links for readability.
@@ -20,33 +16,19 @@
 [![License][license-shield]][license-url]
 [![CodeCov][codecov-shield]][codecov-url]
 
-
-<!-- [![PyPI - Python
-Version](https://img.shields.io/pypi/pyversions/zenml)](https://pypi.org/project/zenml/) -->
-<!-- [![PyPI Status](https://pepy.tech/badge/zenml)](https://pepy.tech/project/zenml) -->
-<!-- ![GitHub](https://img.shields.io/github/license/zenml-io/zenml) -->
-<!-- [![Codecov](https://codecov.io/gh/zenml-io/zenml/branch/main/graph/badge.svg)](https://codecov.io/gh/zenml-io/zenml) -->
 [![Interrogate](docs/book/assets/interrogate.svg)](https://interrogate.readthedocs.io/en/latest/)
 [![Main Workflow
 Tests](https://github.com/zenml-io/zenml/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/zenml-io/zenml/actions/workflows/ci.yml)
-<!-- [![PyPI version](https://badge.fury.io/py/zenml.svg)](https://badge.fury.io/py/zenml) -->
-
 
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 [pypi-shield]: https://img.shields.io/pypi/pyversions/zenml?style=for-the-badge
 [pypi-url]: https://pypi.org/project/zenml/
-
 [downloads-shield]: https://img.shields.io/pypi/dm/zenml?style=for-the-badge
 [downloads-url]: https://pypi.org/project/zenml/
-
-
-
-
 [codecov-shield]: https://img.shields.io/codecov/c/gh/zenml-io/zenml?style=for-the-badge
 [codecov-url]: https://codecov.io/gh/zenml-io/zenml
-
 [contributors-shield]: https://img.shields.io/github/contributors/zenml-io/zenml?style=for-the-badge
 [contributors-url]: https://github.com/othneildrew/Best-README-Template/graphs/contributors
 [forks-shield]: https://img.shields.io/github/forks/zenml-io/zenml?style=for-the-badge
@@ -57,32 +39,12 @@ Tests](https://github.com/zenml-io/zenml/actions/workflows/ci.yml/badge.svg?bran
 [issues-url]: https://github.com/zenml-io/zenml/issues
 [license-shield]: https://img.shields.io/github/license/zenml-io/zenml?style=for-the-badge
 [license-url]: https://github.com/zenml-io/zenml/blob/main/LICENSE
-
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://www.linkedin.com/company/zenml/
 [twitter-shield]: https://img.shields.io/twitter/follow/zenml_io?style=for-the-badge
 [twitter-url]: https://twitter.com/zenml_io
-
 [slack-shield]: https://img.shields.io/badge/-Slack-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [slack-url]: https://zenml.io/slack-invite
-
-[product-screenshot]: images/screenshot.png
-[Next.js]: https://img.shields.io/badge/next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white
-[Next-url]: https://nextjs.org/
-[React.js]: https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB
-[React-url]: https://reactjs.org/
-[Vue.js]: https://img.shields.io/badge/Vue.js-35495E?style=for-the-badge&logo=vuedotjs&logoColor=4FC08D
-[Vue-url]: https://vuejs.org/
-[Angular.io]: https://img.shields.io/badge/Angular-DD0031?style=for-the-badge&logo=angular&logoColor=white
-[Angular-url]: https://angular.io/
-[Svelte.dev]: https://img.shields.io/badge/Svelte-4A4A55?style=for-the-badge&logo=svelte&logoColor=FF3E00
-[Svelte-url]: https://svelte.dev/
-[Laravel.com]: https://img.shields.io/badge/Laravel-FF2D20?style=for-the-badge&logo=laravel&logoColor=white
-[Laravel-url]: https://laravel.com
-[Bootstrap.com]: https://img.shields.io/badge/Bootstrap-563D7C?style=for-the-badge&logo=bootstrap&logoColor=white
-[Bootstrap-url]: https://getbootstrap.com
-[JQuery.com]: https://img.shields.io/badge/jQuery-0769AD?style=for-the-badge&logo=jquery&logoColor=white
-[JQuery-url]: https://jquery.com 
 
 
 
@@ -148,8 +110,6 @@ Tests](https://github.com/zenml-io/zenml/actions/workflows/ci.yml/badge.svg?bran
 ZenML is an extensible, open-source MLOps framework for creating portable, production-ready MLOps pipelines. It's built for Data Scientists, ML Engineers, and MLOps Developers to collaborate as they develop to production. 
 
 ZenML offers simple, flexible syntax, is cloud- and tool-agnostic, and has interfaces/abstractions that are catered towards ML workflows. ZenML brings together all your favorite tools in one place so you can tailor your workflow to cater your needs.
-
-
 
 # 🤖 Why ZenML?
 

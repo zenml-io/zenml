@@ -76,8 +76,9 @@ MLflow tracking server:
 server. 
 * `tracking_password`: Password for authenticating with the MLflow tracking
 server. 
-* `tracking_token`: Token for authenticating with the MLflow tracking server.
-* `tracking_insecure_tls`: Set to skip verifying the MLflow tracking server SSL
+* `tracking_token` (in place of `tracking_username` and `tracking_password`): 
+Token for authenticating with the MLflow tracking server.
+* `tracking_insecure_tls` (optional): Set to skip verifying the MLflow tracking server SSL
 certificate.
     
 Either `tracking_token` or `tracking_username` and `tracking_password` must be
@@ -98,6 +99,10 @@ stored securely and will be clearly visible in the stack configuration.
 # Register the MLflow experiment tracker
 zenml experiment-tracker register mlflow_experiment_tracker --flavor=mlflow \ 
     --tracking_uri=<URI> --tracking_token=<token>
+
+# You can also register it like this:
+# zenml experiment-tracker register mlflow_experiment_tracker --flavor=mlflow \ 
+#    --tracking_uri=<URI> --tracking_username=<USERNAME> --tracking_password=<PASSWORD>
 
 # Register and set a stack with the new experiment tracker
 zenml stack register custom_stack -e mlflow_experiment_tracker ... --set

@@ -88,6 +88,7 @@
 * [Model Deployers](./mlops-stacks/model-deployers/model-deployers.md)
   * [MLflow](./mlops-stacks/model-deployers/mlflow.md)
   * [Seldon](./mlops-stacks/model-deployers/seldon.md)
+  * [KServe](./mlops-stacks/model-deployers/kserve.md)
   * [Develop a Custom Model Deployer](./mlops-stacks/model-deployers/custom.md)
 * [Step Operators](./mlops-stacks/step-operators/step-operators.md)
   * [Amazon SageMaker](./mlops-stacks/step-operators/amazon-sagemaker.md)

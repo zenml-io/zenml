@@ -48,10 +48,6 @@ class InitializationException(ZenMLBaseException):
     """Raised when an error occurred during initialization of a ZenML repository."""
 
 
-class ForbiddenRepositoryAccessError(ZenMLBaseException, RuntimeError):
-    """Raised when trying to access a ZenML repository instance while a step is executed."""
-
-
 class DoesNotExistException(ZenMLBaseException):
     """Raises exception when the entity does not exist in the system but an action is being done that requires it to be present."""
 
