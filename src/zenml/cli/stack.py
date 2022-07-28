@@ -1141,9 +1141,24 @@ def _import_stack_component(
 @stack.command("import", help="Import a stack from YAML.")
 @click.argument("stack_name", type=str, required=True)
 @click.argument("filename", type=str, required=False)
+@click.option(
+    "--yes",
+    "-y",
+    "force",
+    is_flag=True,
+    help="Force the import of stack components irrespective of ZenML version matching.",
+)
+@click.option(
+    "--force",
+    "-f",
+    "old_force",
+    is_flag=True,
+    help="DEPRECATED: Force the import of stack components irrespective of ZenML version matching"
+    "Use `-y/--yes` instead.",
+)
 @click.pass_context
 def import_stack(
-    ctx: click.Context, stack_name: str, filename: Optional[str]
+    ctx: click.Context, stack_name: str, filename: Optional[str], force: bool, old_force: bool
 ) -> None:
     """Import a stack from YAML.
 
@@ -1151,8 +1166,19 @@ def import_stack(
         ctx: The click context.
         stack_name: The name of the stack to import.
         filename: The filename to import the stack from.
+        force: If True, stack components should be imported
+            irrespective of ZenML version matching.
+        old_force: DEPRECATED: If True, stack components should be imported
+            irrespective of ZenML version matching. Use `-y/--yes` instead.
     """
     track_event(AnalyticsEvent.IMPORT_STACK)
+    
+    if old_force:
+        force = old_force
+        cli_utils.warning(
+            "The `--force` flag will soon be deprecated. Use `--yes` "
+            "or `-y` instead."
+        )
 
     # handle 'zenml stack import file.yaml' calls
     if stack_name.endswith(".yaml") and filename is None:
@@ -1169,14 +1195,22 @@ def import_stack(
         data = read_yaml(filename)
         cli_utils.declare(f"Using '{filename}' to import '{stack_name}' stack.")
 
-    # assert zenml version is the same
+    # assert zenml version is the same if force is false
     if data["zenml_version"] != zenml.__version__:
-        cli_utils.error(
-            f"Cannot import stacks from other ZenML versions. "
-            f"The stack was created using ZenML version "
-            f"{data['zenml_version']}, you have version "
-            f"{zenml.__version__} installed."
-        )
+        if force:
+            cli_utils.warning(
+                f"The stack that will be installed is using ZenML version "
+                f"{data['zenml_version']}. You have version "
+                f"{zenml.__version__} installed. Some components might not"
+                "work as expected."
+            )
+        else:
+            cli_utils.error(
+                f"Cannot import stacks from other ZenML versions. "
+                f"The stack was created using ZenML version "
+                f"{data['zenml_version']}, you have version "
+                f"{zenml.__version__} installed."
+            )
 
     # ask user for new stack_name if current one already exists
     repo = Repository()
