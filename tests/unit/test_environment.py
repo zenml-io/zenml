@@ -49,7 +49,7 @@ def test_step_is_running():
         pipeline_run_id="run_id",
         step_name="step",
         cache_enabled=True,
-        pipeline_requirements=["zenml"],
+        pipeline_requirements=[""],
     ):
         assert Environment().step_is_running is True
 
