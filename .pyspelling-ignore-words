@@ -1187,3 +1187,5 @@ KServeDeploymentConfig
 ModelMesh
 Rollouts
 TorchServeParameters
+ZenMLCustomModel
+microservice

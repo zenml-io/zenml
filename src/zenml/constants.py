@@ -181,3 +181,7 @@ ZENML_MLMD_CONTEXT_TYPE = "zenml"
 MLMD_CONTEXT_STACK_PROPERTY_NAME = "stack"
 MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME = "pipeline_requirements"
 MLMD_CONTEXT_RUNTIME_CONFIG_PROPERTY_NAME = "runtime_configuration"
+
+
+# model metadata yaml file name
+MODEL_METADATA_YAML_FILE_NAME = "model_metadata.yaml"

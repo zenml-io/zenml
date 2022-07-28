@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import numpy as np
 import torch
@@ -34,7 +34,7 @@ def pre_process(tensor: torch.Tensor) -> dict:
     return processed_tensor.float()
 
 
-def custom_predict(model: Any, request: Dict) -> Dict:
+def custom_predict(model: Any, request: Dict) -> List:
     """Predict the given request.
 
     The custom predict function is the core of the custom deployment, the function must be expecting a request
@@ -60,4 +60,4 @@ def custom_predict(model: Any, request: Dict) -> Dict:
         processed_tensor = pre_process(tensor)
         prediction = softmax(model(processed_tensor))
         inputs.append(prediction.tolist())
-    return {"predictions": inputs}
+    return inputs

@@ -12,17 +12,18 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implements a custom model for the Kserve integration."""
+import os
 from typing import Any, Dict
 
 import click
 import kserve
 
+from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.logger import get_logger
 from zenml.utils.source_utils import import_class_by_path
 
 logger = get_logger(__name__)
 
-ARTIFACT_FILE = "artifact.json"
 DEFAULT_MODEL_NAME = "model"
 DEFAULT_LOCAL_MODEL_DIR = "/mnt/models"
 
@@ -72,11 +73,11 @@ class ZenMLCustomModel(kserve.Model):  # type: ignore[misc]
 
         """
         try:
-            from zenml.integrations.kserve.steps.kserve_step_utils import (
-                load_from_json_zenml_artifact,
-            )
+            from zenml.utils.materializer_utils import load_model_from_metadata
 
-            self.model = load_from_json_zenml_artifact(self.model_uri)
+            self.model = load_model_from_metadata(
+                os.path.join(self.model_uri, MODEL_METADATA_YAML_FILE_NAME)
+            )
         except Exception as e:
             logger.error("Failed to load model: {}".format(e))
             return False
@@ -102,7 +103,9 @@ class ZenMLCustomModel(kserve.Model):  # type: ignore[misc]
         """
         if self.predict_func is not None:
             try:
-                prediction = self.predict_func(self.model, request)
+                prediction = {
+                    "predictions": self.predict_func(self.model, request)
+                }
             except Exception as e:
                 raise Exception("Failed to predict: {}".format(e))
             if isinstance(prediction, dict):

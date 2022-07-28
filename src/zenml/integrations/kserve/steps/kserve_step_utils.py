@@ -12,16 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """This module contains the utility functions used by the KServe deployer step."""
-import json
 import os
 import tempfile
-from typing import Any, List, Optional
+from typing import List, Optional
 
-from ml_metadata.proto.metadata_store_pb2 import Artifact
 from model_archiver.model_packaging import package_model
 from model_archiver.model_packaging_utils import ModelExportUtils
 from pydantic import BaseModel
 
+from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.exceptions import DoesNotExistException
 from zenml.integrations.kserve.services.kserve_deployment import (
     KServeDeploymentConfig,
@@ -32,7 +31,8 @@ from zenml.integrations.kserve.steps.kserve_deployer import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.steps.step_context import StepContext
-from zenml.utils import io_utils, source_utils
+from zenml.utils import io_utils
+from zenml.utils.materializer_utils import save_model_metadata
 
 logger = get_logger(__name__)
 
@@ -323,58 +323,13 @@ def prepare_custom_service_config(
 
     if not artifact:
         raise DoesNotExistException("No artifact found at {}".format(model_uri))
-    artifact = artifact[0]
-    # Save the artifact data_type and materializer_type to a json file
-    #  in the same directory as the model files.
-    data = {}
-    # The data_type is the class type of the artifact.
-    data["datatype"] = artifact.properties["datatype"].string_value
-    # The materializer_type is the class type of the materializer.
-    data["materializer"] = artifact.properties["materializer"].string_value
 
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".json", delete=False
-    ) as f:
-        json.dump(data, f)
-        # Copy it into artifact store
-    fileio.copy(f.name, os.path.join(served_model_uri, ARTIFACT_FILE))
+    model_metadata_file = save_model_metadata(artifact[0])
+    fileio.copy(
+        model_metadata_file,
+        os.path.join(served_model_uri, MODEL_METADATA_YAML_FILE_NAME),
+    )
 
     service_config = config.service_config.copy()
     service_config.model_uri = served_model_uri
     return service_config
-
-
-def load_from_json_zenml_artifact(model_file_dir: str) -> Any:
-    """Load a zenml artifact from a json file.
-
-    Args:
-        model_file_dir: the directory where the model files are stored
-
-    Returns:
-        The ML model loaded into a Python object
-    """
-    with fileio.open(os.path.join(model_file_dir, ARTIFACT_FILE), "r") as f:
-        artifact = json.load(f)
-    model_artifact = Artifact()
-    model_artifact.uri = model_file_dir
-    model_artifact.properties["datatype"].string_value = artifact["datatype"]
-    model_artifact.properties["materializer"].string_value = artifact[
-        "materializer"
-    ]
-    materializer_class = source_utils.load_source_path_class(
-        model_artifact.properties["materializer"].string_value
-    )
-    model_class = source_utils.load_source_path_class(
-        model_artifact.properties["datatype"].string_value
-    )
-    materialzer_object = materializer_class(model_artifact)
-    model = materialzer_object.handle_input(model_class)
-    try:
-        import torch.nn as nn
-
-        if issubclass(model_class, nn.Module):  # type: ignore
-            model.eval()
-    except ImportError:
-        pass
-    logger.debug(f"model loaded successfully :\n{model}")
-    return model
