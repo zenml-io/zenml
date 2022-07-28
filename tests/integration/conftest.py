@@ -161,13 +161,9 @@ def fix_permissions(func, path, exc_info):
     Usage : ``shutil.rmtree(path, onerror=fix_permissions)``
     """
     import stat
-
-    # Is the error an access error?
-    if not os.access(path, os.W_OK):
-        os.chmod(path, stat.S_IWUSR)
-        func(path)
-    else:
-        raise
+    "Clear the readonly bit and reattempt the removal"
+    os.chmod(path, stat.S_IWRITE)
+    func(path)
 
 
 @pytest.fixture
