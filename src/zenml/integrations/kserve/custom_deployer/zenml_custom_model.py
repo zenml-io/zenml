@@ -15,8 +15,8 @@
 from typing import Any, Dict
 
 import click
-
 import kserve
+
 from zenml.logger import get_logger
 from zenml.utils.source_utils import import_class_by_path
 
