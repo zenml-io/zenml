@@ -211,7 +211,8 @@ your project, you get the following benefits:
 
 
 # 🎮 Features
-ZenML is actively under development. Here are some of the most prominent features. 
+ZenML is actively under development. 
+Here are 9 most prominent features as of the current release. 
 Read more about features [here](https://zenml.io/features).
 
 ![All features in ZenML.](docs/book/assets/features.png)
@@ -303,7 +304,7 @@ Read more about CT/CD in ZenML [here](https://blog.zenml.io/ci-ct-cd-with-zenml/
 
 ## 💾 Install ZenML
 
-*Requirements*: ZenML supports Python 3.7, 3.8, and 3.9.
+> *Requirements*: ZenML supports Python 3.7, 3.8, and 3.9.
 
 ZenML is available for easy installation into your environment via PyPI:
 
@@ -325,6 +326,9 @@ command to get started in a bash environment:
 ```shell
 docker run -it zenmldocker/zenml /bin/bash
 ```
+
+> **Warning**
+> This is a warning.
 
 ### 🐛 Known installation issues for M1 Mac Users
 
@@ -514,20 +518,6 @@ influence the roadmap as follows:
 - Start a thread in our [Slack channel](https://zenml.io/slack-invite).
 
 
-# 👩‍👩‍👧‍👦 Meet the Team
-
-Hi ZenCommunity! Did you ever have a question that's too hard to express on our Slack? Is it just too much effort to say everything on a 
-long GitHub issue? Or are you just curious what ZenML has been up to in the past week? Well, register now for the ZenML Office 
-(Half) Hour to get your answers and more!
-
-Every week, part of the ZenML core team will pop in for 30 minutes to interact directly with the community. Sometimes we'll be presenting a 
-feature, other times just taking questions, and having fun. Join us if you are curious about ZenML, or just want to talk shop about MLOps.
-
-We will host the gathering every Wednesday 8:30AM PT (5:30PM CET). Register now through [this link](https://www.eventbrite.com/e/zenml-meet-the-community-tickets-354426688767), 
-or subscribe to the [public events calendar](https://calendar.google.com/calendar/u/0/r?cid=Y19iaDJ0Zm44ZzdodXBlbnBzaWplY3UwMmNjZ0Bncm91cC5jYWxlbmRhci5nb29nbGUuY29t) to get notified 
-before every community gathering.
-
-
 # 🙋‍♀️ Contributing & Community
 
 We would love to develop ZenML together with our community! Best way to get
@@ -542,6 +532,19 @@ Guide](CONTRIBUTING.md) for all relevant details.
 image](https://repobeats.axiom.co/api/embed/635c57b743efe649cadceba6a2e6a956663f96dd.svg
 "Repobeats analytics image")
 
+
+# 👩‍👩‍👧‍👦 Meet the Team
+
+Hi ZenCommunity! Did you ever have a question that's too hard to express on our Slack? Is it just too much effort to say everything on a 
+long GitHub issue? Or are you just curious what ZenML has been up to in the past week? Well, register now for the ZenML Office 
+(Half) Hour to get your answers and more!
+
+Every week, part of the ZenML core team will pop in for 30 minutes to interact directly with the community. Sometimes we'll be presenting a 
+feature, other times just taking questions, and having fun. Join us if you are curious about ZenML, or just want to talk shop about MLOps.
+
+We will host the gathering every Wednesday 8:30AM PT (5:30PM CET). Register now through [this link](https://www.eventbrite.com/e/zenml-meet-the-community-tickets-354426688767), 
+or subscribe to the [public events calendar](https://calendar.google.com/calendar/u/0/r?cid=Y19iaDJ0Zm44ZzdodXBlbnBzaWplY3UwMmNjZ0Bncm91cC5jYWxlbmRhci5nb29nbGUuY29t) to get notified 
+before every community gathering.
 
 # 🆘 Where to get help
 
