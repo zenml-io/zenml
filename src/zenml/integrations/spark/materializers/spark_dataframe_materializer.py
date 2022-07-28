@@ -48,4 +48,5 @@ class SparkDataFrameMaterializer(BaseMaterializer):
 
         # Write the dataframe to the artifact store
         path = os.path.join(self.artifact.uri, DEFAULT_FILEPATH)
+        path = path.replace("s3", "s3a") # TODO: test
         df.write.parquet(path)

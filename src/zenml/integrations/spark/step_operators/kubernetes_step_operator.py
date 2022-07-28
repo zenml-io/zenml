@@ -155,6 +155,7 @@ class KubernetesSparkStepOperator(BaseStepOperator):
         configurations = [
             "--conf",
             f"spark.kubernetes.container.image={image_name}",
+            "--packages org.apache.hadoop:hadoop-aws:3.2.2"
         ]
         if self.kubernetes_namespace:
             configurations.extend(
