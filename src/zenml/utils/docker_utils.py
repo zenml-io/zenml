@@ -244,7 +244,9 @@ def build_docker_image(
         # context, to have the active profile and active stack accessible from
         # within the container.
         if global_configuration:
-            load_config_path = PurePosixPath(f"/app/{CONTAINER_ZENML_CONFIG_DIR}")
+            load_config_path = PurePosixPath(
+                f"/app/{CONTAINER_ZENML_CONFIG_DIR}"
+            )
             GlobalConfiguration().copy_active_configuration(
                 config_path, load_config_path=load_config_path
             )

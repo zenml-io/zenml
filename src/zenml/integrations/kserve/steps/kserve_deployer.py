@@ -34,11 +34,7 @@ from zenml.steps import (
     step,
 )
 from zenml.steps.step_context import StepContext
-from zenml.utils.source_utils import (
-    get_source_root_path,
-    import_class_by_path,
-    is_inside_repository,
-)
+from zenml.utils.source_utils import import_class_by_path, is_inside_repository
 
 logger = get_logger(__name__)
 
