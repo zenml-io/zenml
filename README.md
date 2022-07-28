@@ -314,7 +314,7 @@ pipeline.run()
 ```
 
 This runs the pipeline locally on your machine following the steps defined in the pipeline.
-You can scale this up to run on a full-fledged cloud platform by [switching stacks](https://docs.zenml.io/getting-started/core-concepts) and with minimal (or no) code changes!
+You can scale this up to run on a full-fledged cloud platform by [switching stacks](https://docs.zenml.io/getting-started/core-concepts) with minimal (or no) code changes!
 
 # 🪜 Get a guided tour with `zenml go`
 
