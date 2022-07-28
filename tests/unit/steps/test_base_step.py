@@ -854,19 +854,22 @@ def test_step_can_output_generic_types(one_step_pipeline):
             pipeline_.run()
 
 
-def test_step_cannot_output_subscripted_generic_types(one_step_pipeline):
-    """Tests that a step cannot output subscripted generic types."""
-    with pytest.raises(StepInterfaceError):
+def test_step_can_output_subscripted_generic_types(one_step_pipeline):
+    """Tests that a step can output subscripted generic types."""
 
-        @step
-        def some_step_1() -> List[str]:
-            return []
+    @step
+    def some_step_1() -> List[str]:
+        return []
 
-    with pytest.raises(StepInterfaceError):
+    @step
+    def some_step_2() -> Output(str_output=str, dict_output=Dict[str, int]):
+        return "", {}
 
-        @step
-        def some_step_2() -> Output(str_output=str, dict_output=Dict[str, int]):
-            return "", {}
+    for step_function in [some_step_1, some_step_2]:
+        pipeline_ = one_step_pipeline(step_function())
+
+        with does_not_raise():
+            pipeline_.run()
 
 
 def test_step_can_have_generic_input_types():
@@ -878,6 +881,25 @@ def test_step_can_have_generic_input_types():
 
     @step
     def step_2(dict_input: Dict, list_input: List) -> None:
+        pass
+
+    @pipeline
+    def p(s1, s2):
+        s2(*s1())
+
+    with does_not_raise():
+        p(step_1(), step_2()).run()
+
+
+def test_step_can_have_subscripted_generic_input_types():
+    """Tests that a step can have subscripted generic input types."""
+
+    @step
+    def step_1() -> Output(dict_output=Dict[str, int], list_output=List[str]):
+        return {}, []
+
+    @step
+    def step_2(dict_input: Dict[str, int], list_input: List[str]) -> None:
         pass
 
     @pipeline
