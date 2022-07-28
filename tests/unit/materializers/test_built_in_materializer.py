@@ -14,7 +14,10 @@
 import os
 
 from zenml.artifacts.data_artifact import DataArtifact
-from zenml.materializers.built_in_materializer import BuiltInMaterializer
+from zenml.materializers.built_in_materializer import (
+    BuiltInMaterializer,
+    BytesMaterializer,
+)
 
 
 def _test_materialization(
@@ -47,10 +50,12 @@ def test_basic_type_materialization():
 
 def test_bytes_materialization():
     """Test materialization for `bytes` objects.
-    
+
     This is a separate test since `bytes` is not JSON serializable.
     """
-    _test_materialization(type_=bytes, example=b'')
+    _test_materialization(
+        type_=bytes, example=b"", materializer_class=BytesMaterializer
+    )
 
 
 def test_empty_dict_list_tuple_materialization():

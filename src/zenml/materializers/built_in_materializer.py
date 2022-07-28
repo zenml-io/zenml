@@ -23,6 +23,7 @@ from zenml.utils import yaml_utils
 
 logger = get_logger(__name__)
 DEFAULT_FILENAME = "data.json"
+DEFAULT_BYTES_FILENAME = "data.txt"
 
 
 class BuiltInMaterializer(BaseMaterializer):
@@ -37,7 +38,6 @@ class BuiltInMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (
         int,
         str,
-        bytes,
         dict,
         float,
         list,
@@ -76,3 +76,37 @@ class BuiltInMaterializer(BaseMaterializer):
         """
         super().handle_return(data)
         yaml_utils.write_json(self.data_path, data)
+
+
+class BytesMaterializer(BaseMaterializer):
+    """Handle `bytes` data type, which is not JSON serializable."""
+
+    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact, DataAnalysisArtifact)
+    ASSOCIATED_TYPES = [bytes]
+
+    def __init__(self, artifact: "BaseArtifact"):
+        super().__init__(artifact)
+        self.data_path = os.path.join(self.artifact.uri, DEFAULT_BYTES_FILENAME)
+
+    def handle_input(self, data_type: Type[Any]) -> Any:
+        """Reads a bytes object from file.
+
+        Args:
+            data_type: The type of the data to read.
+
+        Returns:
+            The data read.
+        """
+        super().handle_input(data_type)
+        with open(self.data_path, "rb") as file_:
+            return file_.read()
+
+    def handle_return(self, data: Any) -> None:
+        """Save a bytes object to file.
+
+        Args:
+            data: The data to store.
+        """
+        super().handle_return(data)
+        with open(self.data_path, "wb") as file_:
+            file_.write(data)
