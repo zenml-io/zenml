@@ -15,20 +15,19 @@ import os
 import shutil
 
 from zenml.artifacts.data_artifact import DataArtifact
-from zenml.materializers.built_in_materializer import (
-    BuiltInMaterializer,
-    BytesMaterializer,
-    ListMaterializer,
+from zenml.materializers.default_materializer_registry import (
+    default_materializer_registry,
 )
 
 
 def _test_materialization(
     type_,
     example,
-    materializer_class=BuiltInMaterializer,
 ):
-    materializer = materializer_class(DataArtifact())
-    data_path = os.path.abspath(materializer.artifact.uri)
+    materializer_class = default_materializer_registry[type_]
+    mock_artifact = DataArtifact()
+    materializer = materializer_class(mock_artifact)
+    data_path = os.path.abspath(mock_artifact.uri)
     existing_files = os.listdir(data_path)
     try:
         materializer.handle_return(example)
@@ -66,40 +65,26 @@ def test_bytes_materialization():
 
     This is a separate test since `bytes` is not JSON serializable.
     """
-    _test_materialization(
-        type_=bytes, example=b"", materializer_class=BytesMaterializer
-    )
+    _test_materialization(type_=bytes, example=b"")
 
 
 def test_empty_dict_list_tuple_materialization():
     """Test materialization for empty `dict`, `list`, `tuple` objects."""
     _test_materialization(type_=dict, example={})
-    _test_materialization(
-        type_=list, example=[], materializer_class=ListMaterializer
-    )
-    _test_materialization(
-        type_=tuple, example=(), materializer_class=ListMaterializer
-    )
+    _test_materialization(type_=list, example=[])
+    _test_materialization(type_=tuple, example=())
 
 
 def test_simple_dict_list_tuple_materialization():
     """Test materialization for `dict`, `list`, `tuple` with data."""
     _test_materialization(type_=dict, example={"a": 0, "b": 1, "c": 2})
-    _test_materialization(
-        type_=list, example=[0, 1, 2], materializer_class=ListMaterializer
-    )
-    _test_materialization(
-        type_=tuple, example=(0, 1, 2), materializer_class=ListMaterializer
-    )
+    _test_materialization(type_=list, example=[0, 1, 2])
+    _test_materialization(type_=tuple, example=(0, 1, 2))
 
 
 def test_list_of_bytes_materialization():
     """Test materialization for lists of bytes."""
-    _test_materialization(
-        type_=list,
-        example=[b"0", b"1", b"2"],
-        materializer_class=ListMaterializer,
-    )
+    _test_materialization(type_=list, example=[b"0", b"1", b"2"])
 
 
 def test_dict_of_bytes_materialization():
