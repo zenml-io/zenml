@@ -77,19 +77,6 @@ def _include_active_profile(build_context_root: str) -> Iterator[None]:
         fileio.rmtree(config_path)
 
 
-def _printify_requirements(requirements: List[str]) -> str:
-    """Converts a requirements file in a string to be printed.
-
-    Args:
-        requirements: List of requirements.
-
-    Returns:
-        The converted string.
-    """
-    highlighted = [f"`{r}`" for r in requirements]
-    return ", ".join(highlighted)
-
-
 class PipelineDockerImageBuilder(BaseModel):
     """Builds Docker images to run a ZenML pipeline.
 
@@ -341,19 +328,18 @@ class PipelineDockerImageBuilder(BaseModel):
                 build_context_root=docker_configuration.build_context_root,
                 **docker_configuration.build_options,
             )
-        else:
-            if not requires_zenml_build:
-                if parent_image == DEFAULT_DOCKER_PARENT_IMAGE:
-                    raise ValueError(
-                        "Unable to run a ZenML pipeline with the given Docker "
-                        "configuration: No Dockerfile or custom parent image "
-                        "specified and no files will be copied or requirements "
-                        "installed."
-                    )
-                else:
-                    docker_utils.tag_image(
-                        parent_image, target=target_image_name
-                    )
+        elif not requires_zenml_build:
+            if parent_image == DEFAULT_DOCKER_PARENT_IMAGE:
+                raise ValueError(
+                    "Unable to run a ZenML pipeline with the given Docker "
+                    "configuration: No Dockerfile or custom parent image "
+                    "specified and no files will be copied or requirements "
+                    "installed."
+                )
+            else:
+                # The parent image will be used directly to run the pipeline and
+                # needs to be tagged so it gets pushed later
+                docker_utils.tag_image(parent_image, target=target_image_name)
 
         if requires_zenml_build:
             requirement_files = self._gather_requirements_files(

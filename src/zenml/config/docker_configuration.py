@@ -11,18 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Docker build configuration."""
+"""Docker configuration."""
 
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Extra
 
 from zenml.logger import get_logger
-
-if TYPE_CHECKING:
-
-    pass
 
 logger = get_logger(__name__)
 
@@ -119,7 +115,7 @@ class DockerConfiguration(BaseModel):
             resolve and/or install your packages, please use a custom parent
             image or specify a custom `dockerfile`.
         required_integrations: List of ZenML integrations that should be
-            installed. All requirementes for the specified integrations will
+            installed. All requirements for the specified integrations will
             be installed inside the Docker image.
         install_stack_requirements: If `True`, ZenML will automatically detect
             if components of your active stack are part of a ZenML integration
