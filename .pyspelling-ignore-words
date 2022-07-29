@@ -241,7 +241,9 @@ KFP
 KFPCompiler
 KMS
 KServe
+KServeDeployerStepConfig
 KServeDeployment
+KServeDeploymentConfig
 KServeDeploymentService
 KServeModelDeployer
 KServeclient
@@ -300,6 +302,7 @@ MinIO
 MissingStepParameterError
 Mixin
 ModelArtifact
+ModelMesh
 ModelRun
 ModuleNotFoundError
 MyConfig
@@ -389,6 +392,7 @@ Reproducibility
 RichHandler
 Roadmap
 RoleBinding
+Rollouts
 Runtime
 RuntimeConfiguration
 RuntimeError
@@ -503,6 +507,7 @@ Tokenize
 Tokenizer
 TorchServe
 TorchServe's
+TorchServeParameters
 TorchVision
 TrainerConfig
 TypeError
@@ -599,6 +604,7 @@ apiVersion
 apidocs
 apis
 arg
+argmax
 argo
 argoproj
 argparse
@@ -915,6 +921,7 @@ mlops
 mlserver
 mnist
 mnist
+mobilenetv
 modelUri
 msi
 mypy
@@ -1117,6 +1124,7 @@ tokenize
 tokenized
 tokenizer
 tokenizers
+tolist
 topdown
 torchvision
 touchpoint
@@ -1182,8 +1190,3 @@ zenmldocker
 zenmlregistry
 zenserver
 zenserver
-KServeDeployerStepConfig
-KServeDeploymentConfig
-ModelMesh
-Rollouts
-TorchServeParameters
