@@ -35,8 +35,6 @@ BASIC_TYPES = (bool, float, int, str)  # complex/bytes are not JSON serializable
 class BuiltInMaterializer(BaseMaterializer):
     """Handle JSON-serializable basic types (`bool`, `float`, `int`, `str`)."""
 
-    # since these are the 'correct' way to annotate these types.
-
     ASSOCIATED_ARTIFACT_TYPES = (
         DataArtifact,
         DataAnalysisArtifact,
@@ -44,11 +42,16 @@ class BuiltInMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = BASIC_TYPES
 
     def __init__(self, artifact: "BaseArtifact"):
+        """Define `self.data_path`.
+
+        Args:
+            artifact: Artifact required by `BaseMaterializer.__init__()`.
+        """
         super().__init__(artifact)
         self.data_path = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
 
     def handle_input(self, data_type: Type[Any]) -> Any:
-        """Reads basic primitive types from json.
+        """Reads basic primitive types from JSON.
 
         Args:
             data_type: The type of the data to read.
@@ -67,7 +70,7 @@ class BuiltInMaterializer(BaseMaterializer):
         return contents
 
     def handle_return(self, data: Any) -> None:
-        """Handles basic built-in types and stores them as json.
+        """Serialize a basic type to JSON.
 
         Args:
             data: The data to store.
@@ -83,6 +86,11 @@ class BytesMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = [bytes]
 
     def __init__(self, artifact: "BaseArtifact"):
+        """Define `self.data_path`.
+
+        Args:
+            artifact: Artifact required by `BaseMaterializer.__init__()`.
+        """
         super().__init__(artifact)
         self.data_path = os.path.join(self.artifact.uri, DEFAULT_BYTES_FILENAME)
 
@@ -110,21 +118,54 @@ class BytesMaterializer(BaseMaterializer):
             file_.write(data)
 
 
-def _all_builtin(iterable: Iterable):
-    return all(_is_pure_builtin_type(element) for element in iterable)
+def _all_serializable(iterable: Iterable):
+    """For an iterable, check whether all of its elements are JSON-serializable.
+
+    Args:
+        iterable (Iterable): The iterable to check.
+
+    Returns:
+        True if all elements are JSON-serializable, else False.
+    """
+    return all(_is_serializable(element) for element in iterable)
 
 
-def _is_pure_builtin_type(obj: Any):
+def _is_serializable(obj: Any):
+    """Check whether a built-in object is JSON-serializable.
+
+    Args:
+        obj: The object to check.
+
+    Returns:
+        True if the entire object is JSON-serializable, else False.
+    """
     if any(isinstance(obj, basic_type) for basic_type in BASIC_TYPES):
         return True
     if any(isinstance(obj, iterable_) for iterable_ in (list, tuple)):
-        return _all_builtin(obj)
+        return _all_serializable(obj)
     if isinstance(obj, dict):
-        return _all_builtin(obj.keys()) and _all_builtin(obj.values())
+        return _all_serializable(obj.keys()) and _all_serializable(obj.values())
     return False
 
 
 def find_type_by_str(type_str: str) -> Type[Any]:
+    """Get a Python type, given its string representation.
+
+    E.g., "<class 'int'>" should resolve to `int`.
+
+    Currently this is implemented by checking all artifact types registered in
+    the `default_materializer_registry`. This means, only types in the registry
+    can be found. Any other types will cause a `RunTimeError`.
+
+    Args:
+        type_str: The string representation of a type.
+
+    Raises:
+        RuntimeError: If the type could not be resolved.
+
+    Returns:
+        The type whose string representation is `type_str`.
+    """
     # TODO: how to handle subclasses of registered types?
     registered_types = default_materializer_registry.materializer_types.keys()
     type_str_mapping = {str(type_): type_ for type_ in registered_types}
@@ -139,6 +180,11 @@ class BuiltInContainerMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (dict, list, set, tuple)
 
     def __init__(self, artifact: "BaseArtifact"):
+        """Define `self.data_path` and `self.metadata_path`.
+
+        Args:
+            artifact: Artifact required by `BaseMaterializer.__init__()`.
+        """
         super().__init__(artifact)
         self.data_path = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
         self.metadata_path = os.path.join(
@@ -146,6 +192,26 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         )
 
     def handle_input(self, data_type: Type[Any]) -> Any:
+        """Reads a materialized built-in container object.
+
+        If the data was serialized to JSON, deserialize it.
+
+        Otherwise, reconstruct all elements according to the metadata file:
+            1. Resolve the data type using `find_type_by_str()`,
+            2. Get the materializer via the `default_materializer_registry`,
+            3. Initialize the materializer with a mock `DataArtifact`, whose
+                `uri` attribute is overwritten to point to the desired path,
+            4. Use `handle_input()` of that materializer to load the element.
+
+        Args:
+            data_type: The type of the data to read.
+
+        Returns:
+            The data read.
+
+        Raises:
+            RuntimeError: If the data was not found.
+        """
         super().handle_input(data_type)
 
         # If the data was not serialized, there must be metadata present.
@@ -185,6 +251,24 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         return outputs
 
     def handle_return(self, data: Any) -> None:
+        """Materialize a built-in container object.
+
+        If the object can be serialized to JSON, serialize it.
+
+        Otherwise, use the `default_materializer_registry` to find the correct
+        materializer for each element and materialize each element into a
+        subdirectory.
+
+        Tuples and sets are cast to list before materialization.
+
+        For non-serializable dicts, materialize keys/values as separate lists.
+
+        Args:
+            data: The built-in container object to materialize.
+
+        Raises:
+            Exception: If any exception occurs, it is raised after cleanup.
+        """
         super().handle_return(data)
 
         # tuple and set: handle as list.
@@ -192,7 +276,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             data = list(data)
 
         # If the data is serializable, just write it into a single JSON file.
-        if _is_pure_builtin_type(data):
+        if _is_serializable(data):
             yaml_utils.write_json(self.data_path, data)
 
         # non-serializable dict: Handle as non-serializable list of lists.
@@ -219,11 +303,11 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             yaml_utils.write_json(self.metadata_path, metadata)
             for element, materializer in zip(data, materializers):
                 materializer.handle_return(element)
-        except Exception as e:  # If an error occurs, delete all created files
+        except Exception as e:  # If an error occurs, delete all created files.
             # Delete metadata
             if os.path.exists(self.metadata_path):
                 os.remove(self.metadata_path)
-            # Delete all elements that were already saved
+            # Delete all elements that were already saved.
             for element_path in metadata["paths"]:
                 shutil.rmtree(element_path)
             raise e

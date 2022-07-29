@@ -851,6 +851,7 @@ isdir
 isinstance
 istio
 istioctl
+iterable
 iteratively
 jejik
 jira
