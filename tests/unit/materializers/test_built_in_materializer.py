@@ -102,3 +102,19 @@ def test_set_materialization():
     _test_materialization(type_=set, example=set())
     _test_materialization(type_=set, example={1, 2, 3})
     _test_materialization(type_=set, example={b"0", b"1", b"2"})
+
+
+def test_mixture_of_all_builtin_types():
+    """Test a mixture of built-in types as the ultimate stress test."""
+    example = [
+        {
+            "a": (42, 1.0, "aa", True),  # tuple of serializable basic types
+            "b": {
+                "ba": ["baa", "bab"],
+                "bb": [3.7, 1.8],
+            },  # dict of lists of serializable basic types
+            "c": b"ca",  # bytes (non-serializable)
+        },  # non-serializable dict
+        {1.0, 2.0, 4, 4},  # set of serializable types
+    ]  # non-serializable list
+    _test_materialization(type_=list, example=example)
