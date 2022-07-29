@@ -66,7 +66,7 @@
     ·
     <a href="https://blog.zenml.io/">Read Blog</a>
     ·
-    <a href="#👩‍👩‍👧‍👦-meet-the-team">Meet the Team</a>
+    <a href="#-meet-the-team">Meet the Team</a>
     <br />
     🎉 Version 0.11.0 is out. Check out the release notes
     <a href="https://www.linkedin.com/company/zenml/">here</a>.
