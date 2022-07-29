@@ -226,7 +226,7 @@ zenml.exceptions.StepInterfaceError: Unable to find materializer for output 'out
 type <class '__main__.MyObj'> in step 'step1'. Please make sure to either explicitly set a materializer for step 
 outputs using step.with_return_materializers(...) or registering a default materializer for specific types by 
 subclassing BaseMaterializer and setting its ASSOCIATED_TYPES class variable. 
-For more information, visit https://docs.zenml.io/guides/common-usecases/custom-materializer.
+For more information, visit https://docs.zenml.io/developer-guide/advanced-usage/materializer
 `
 
 The error message basically says that ZenML does not know how to persist the

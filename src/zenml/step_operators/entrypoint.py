@@ -81,6 +81,7 @@ def create_executor_class(
         execution_parameter_names=set(execution_parameters),
         step_function=step_instance.entrypoint,
         materializers=materializers,
+        enable_cache=step_instance.enable_cache,
     )
 
     return cast(

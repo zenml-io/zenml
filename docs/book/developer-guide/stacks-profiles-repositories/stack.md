@@ -9,7 +9,7 @@ and infrastructure. For instance, you might want to:
 - Save ML artifacts in an [Amazon S3](../../mlops-stacks/artifact-stores/amazon-s3.md) bucket,
 - Track ML metadata in a managed [MySQL](../../mlops-stacks/metadata-stores/mysql.md) database,
 - Track your experiments with [Weights & Biases](../../mlops-stacks/experiment-trackers/wandb.md),
-- Deploy models on Kubernetes with [Seldon](../../mlops-stacks/model-deployers/seldon.md),
+- Deploy models on Kubernetes with [Seldon](../../mlops-stacks/model-deployers/seldon.md) or [KServe](../../mlops-stacks/model-deployers/kserve.md),
 
 Any such combination of tools and infrastructure can be registered as a 
 separate stack in ZenML. Since ZenML code is tooling-independent, you can 
