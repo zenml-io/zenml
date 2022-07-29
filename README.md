@@ -105,7 +105,7 @@
     </li>
     <li><a href="#-get-a-guided-tour-with-zenml-go">Get a guided tour with zenml go</a></li>
     <li><a href="#-zenbytes">ZenBytes</a></li>
-    <li><a href="#-zenbytes">ZenFiles</a></li>
+    <li><a href="#-zenfiles">ZenFiles</a></li>
     <li><a href="#-collaborate-with-your-team">Collaborate with your team</a></li>
     <li><a href="#-learn-more">Learn More</a></li>
     <li><a href="#-roadmap">Roadmap</a></li>
