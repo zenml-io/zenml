@@ -182,6 +182,7 @@ class PipelineDockerImageBuilder(BaseModel):
             integration_requirements.update(stack.requirements())
 
         if integration_requirements:
+            integration_requirements = sorted(integration_requirements)
             integration_requirements_file = "\n".join(integration_requirements)
             requirements_files.append(
                 (

@@ -123,7 +123,7 @@ def deprecate_pydantic_attributes(
             )
 
             if replacement_attribute not in values:
-                logger.info(
+                logger.debug(
                     "Migrating value of deprecated attribute %s to "
                     "replacement attribute %s.",
                     deprecated_attribute,

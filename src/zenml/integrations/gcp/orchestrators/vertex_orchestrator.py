@@ -56,9 +56,9 @@ from zenml.logger import get_logger
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.repository import Repository
 from zenml.stack.stack_validator import StackValidator
-from zenml.utils.docker_utils import get_image_digest
+from zenml.utils import deprecation_utils
 from zenml.utils.io_utils import get_global_config_directory
-from zenml.utils.source_utils import get_source_root_path
+from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
     from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
@@ -83,7 +83,9 @@ def _clean_pipeline_name(pipeline_name: str) -> str:
     return pipeline_name.replace("_", "-").lower()
 
 
-class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
+class VertexOrchestrator(
+    BaseOrchestrator, GoogleCredentialsMixin, PipelineDockerImageBuilder
+):
     """Orchestrator responsible for running pipelines on Vertex AI.
 
     Attributes:
@@ -166,6 +168,10 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
     _pipeline_root: str
 
     FLAVOR: ClassVar[str] = GCP_VERTEX_ORCHESTRATOR_FLAVOR
+
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
+        ("custom_docker_base_image_name", "docker_parent_image")
+    )
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -295,31 +301,11 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         Raises:
             RuntimeError: If the container registry is missing.
         """
-        from zenml.utils import docker_utils
-
-        repo = Repository()
-        container_registry = repo.active_stack.container_registry
-
-        if not container_registry:
-            raise RuntimeError("Missing container registry")
-
-        image_name = self.get_docker_image_name(pipeline.name)
-
-        requirements = {*stack.requirements(), *pipeline.requirements}
-
-        logger.debug(
-            "Vertex AI Pipelines service docker container requirements %s",
-            requirements,
+        self.build_and_push_docker_image(
+            pipeline=pipeline,
+            stack=stack,
+            runtime_configuration=runtime_configuration,
         )
-
-        docker_utils.build_docker_image(
-            build_context_path=get_source_root_path(),
-            image_name=image_name,
-            dockerignore_path=pipeline.dockerignore_file,
-            requirements=requirements,
-            base_image=self.custom_docker_base_image_name,
-        )
-        container_registry.push_image(image_name)
 
     def prepare_or_run_pipeline(
         self,
@@ -389,8 +375,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
 
         # Build the Docker image that will be used to run the steps of the
         # pipeline.
-        image_name = self.get_docker_image_name(pipeline.name)
-        image_name = get_image_digest(image_name) or image_name
+        image_name = runtime_configuration["docker_image"]
 
         def _construct_kfp_pipeline() -> None:
             """Create a `ContainerOp` for each step.

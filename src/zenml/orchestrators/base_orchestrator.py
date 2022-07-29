@@ -54,7 +54,7 @@ from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 
 from zenml.constants import (
-    MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME,
+    MLMD_CONTEXT_DOCKER_CONFIGURATION_PROPERTY_NAME,
     MLMD_CONTEXT_RUNTIME_CONFIG_PROPERTY_NAME,
     MLMD_CONTEXT_STACK_PROPERTY_NAME,
     ZENML_MLMD_CONTEXT_TYPE,
@@ -476,7 +476,9 @@ class BaseOrchestrator(StackComponent, ABC):
         for node in pb2_pipeline.nodes:
             pipeline_node: PipelineNode = node.pipeline_node
 
-            requirements = " ".join(sorted(pipeline.requirements))
+            docker_config_json = pipeline.docker_configuration.json(
+                sort_keys=True
+            )
             stack_json = json.dumps(stack.dict(), sort_keys=True)
 
             # Copy and remove the run name so an otherwise identical run reuses
@@ -490,7 +492,7 @@ class BaseOrchestrator(StackComponent, ABC):
             context_properties = {
                 MLMD_CONTEXT_STACK_PROPERTY_NAME: stack_json,
                 MLMD_CONTEXT_RUNTIME_CONFIG_PROPERTY_NAME: runtime_config_json,
-                MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME: requirements,
+                MLMD_CONTEXT_DOCKER_CONFIGURATION_PROPERTY_NAME: docker_config_json,
             }
 
             properties_json = json.dumps(context_properties, sort_keys=True)
