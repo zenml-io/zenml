@@ -136,7 +136,7 @@ class VaultSecretsManager(BaseSecretsManager):
             The secret.
 
         Raises:
-            KeyError: if the secret does not exist
+            KeyError: If the secret does not exist.
         """
         self._ensure_client_is_authenticated()
 
