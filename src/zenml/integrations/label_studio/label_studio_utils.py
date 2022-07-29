@@ -83,9 +83,9 @@ def convert_pred_filenames_to_task_ids(
         List of predictions using task ids as reference.
     """
     filename_id_mapping = {
-        os.path.basename(urlparse(task["data"][filename_reference]).path): task[
-            "id"
-        ]
+        os.path.basename(
+            urlparse(task["data"][filename_reference]).path
+        ): task["id"]
         for task in tasks
     }
     # GCS and S3 URL encodes filenames containing spaces, requiring this
@@ -107,20 +107,48 @@ def convert_pred_filenames_to_task_ids(
 
 
 def is_s3_url(url: str) -> bool:
-    """Return whether the given URL is an S3 URL."""
+    """Return whether the given URL is an S3 URL.
+
+    Args:
+        url: URL to check.
+
+    Returns:
+        True if the URL is an S3 URL, False otherwise.
+    """
     return "s3.amazonaws" in urlparse(url).netloc
 
 
 def is_azure_url(url: str) -> bool:
-    """Return whether the given URL is an Azure URL."""
+    """Return whether the given URL is an Azure URL.
+
+    Args:
+        url: URL to check.
+
+    Returns:
+        True if the URL is an Azure URL, False otherwise.
+    """
     return "blob.core.windows.net" in urlparse(url).netloc
 
 
 def is_gcs_url(url: str) -> bool:
-    """Return whether the given URL is an GCS URL."""
+    """Return whether the given URL is an GCS URL.
+
+    Args:
+        url: URL to check.
+
+    Returns:
+        True if the URL is an GCS URL, False otherwise.
+    """
     return "storage.googleapis.com" in urlparse(url).netloc
 
 
 def get_file_extension(path_str: str) -> str:
-    """Return the file extension of the given filename."""
+    """Return the file extension of the given filename.
+
+    Args:
+        path_str: Path to the file.
+
+    Returns:
+        File extension.
+    """
     return os.path.splitext(urlparse(path_str).path)[1]
