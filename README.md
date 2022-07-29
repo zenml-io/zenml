@@ -316,7 +316,7 @@ then check out [the ZenBytes repository](https://github.com/zenml-io/zenbytes)
 and notebooks.
 
 
-# 🗂️ ZenFiles
+# 🍰 ZenFiles
 
 ZenFiles are production-grade ML use-cases powered by ZenML. They are fully
 fleshed out, end-to-end, projects that showcase ZenML's capabilities. They can
