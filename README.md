@@ -62,7 +62,7 @@
     ·
     <a href="https://github.com/zenml-io/zenml/issues">Report Bug</a>
     ·
-    <a href="https://zenml.io/discussion">Vote Feature</a>
+    <a href="https://zenml.io/discussion">Vote New Features</a>
     ·
     <a href="https://blog.zenml.io/">Read Blog</a>
     ·
