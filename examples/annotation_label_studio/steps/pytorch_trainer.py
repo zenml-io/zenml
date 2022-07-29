@@ -100,7 +100,9 @@ class CustomDataset:
             elif is_azure_url(image_url):
                 file_url = "az://" + "/".join(parts[3:])
             elif is_gcs_url(image_url):
-                file_url = "gcs://" + "/".join(parts[3:])
+                url_scheme = "gs"
+                url_path = urlparse(image_url).path
+                file_url = f"{url_scheme}://{url_path}"
             file_extension = get_file_extension(urlparse(image_url).path)
             path = os.path.join(temp_dir.name, f"{i}{file_extension}")
             io_utils.copy(file_url, path)
@@ -185,7 +187,7 @@ def load_mobilenetv3_transforms():
 
 class PytorchModelTrainerConfig(BaseStepConfig):
     batch_size = 1
-    num_epochs = 4
+    num_epochs = 2
     learning_rate = 5e-3
     device = "cpu"
     shuffle = True
