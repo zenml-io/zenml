@@ -48,11 +48,15 @@
   <h3 align="center">Build portable, production-ready MLOps pipelines.</h3>
 
   <p align="center">
-    An open-source framework.
+    A simple yet powerful open-source framework that scales your MLOps stack with your needs.
     <br />
     <a href="https://docs.zenml.io/"><strong>Explore the docs »</strong></a>
     <br />
     <br />
+    <a href="https://zenml.io/features">Features</a>
+    ·
+    <a href="https://zenml.io/roadmap">Roadmap</a>
+    .
     <a href="https://github.com/zenml-io/zenml/issues">Report Bug</a>
     ·
     <a href="https://zenml.io/discussion">Vote Feature</a>
@@ -153,18 +157,6 @@ With ZenML you'll have all your favorite tools in one place so you can tailor a 
 ![ZenML unifies all your tools in one place.](docs/book/assets/sam-side-by-side-full-text.png)
 
 Read more on all tools you can readily use in the [integrations](https://zenml.io/integrations) section. Can't find your tool? You can always [write your own integration](https://docs.zenml.io/developer-guide/advanced-usage/custom-flavors) to use it with ZenML.
-
-
-# 🎮 Features
-ZenML is actively under development.
-Here are 9 most prominent features as of the current release. 
-
-Read more about features [here](https://zenml.io/features).
-
-
-<a href="https://zenml.io/features">
-    <img src="docs/book/assets/features.png" alt="features">
-</a>
 
 # 🤸 Getting Started
 
