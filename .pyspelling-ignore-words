@@ -197,6 +197,7 @@ GitHubActionsOrchestrator
 GitHubContainerRegistry
 GitLab
 GitNotFoundError
+GitStackRecipesHandler
 GlobalConfiguration
 GmbH
 Gojek
@@ -267,6 +268,7 @@ LocalDaemonService
 LocalDaemonServiceConfig
 LocalExample
 LocalOrchestrator
+LocalStack
 LocationConstraint
 LogRecord
 LookupError
@@ -461,6 +463,8 @@ StackComponentType
 StackComponentWrapper
 StackComponents
 StackExistsError
+StackRecipe
+StackRecipeRepo
 StackValidationError
 StackValidator
 StackWrapper
