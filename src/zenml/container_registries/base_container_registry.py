@@ -85,9 +85,9 @@ class BaseContainerRegistry(StackComponent, AuthenticationMixin):
         return bool(re.fullmatch(r"localhost:[0-9]{4,5}", self.uri))
 
     def prepare_image_push(self, image_name: str) -> None:
-        """Preparation before an image gets pushed. 
+        """Preparation before an image gets pushed.
 
-        Subclasses can overwrite this to do any necessary checks or 
+        Subclasses can overwrite this to do any necessary checks or
         preparations before an image gets pushed.
 
         Args:
@@ -114,4 +114,4 @@ class BaseContainerRegistry(StackComponent, AuthenticationMixin):
             )
 
         self.prepare_image_push(image_name)
-        return docker_utils.push_docker_image(image_name)
+        return docker_utils.push_image(image_name)

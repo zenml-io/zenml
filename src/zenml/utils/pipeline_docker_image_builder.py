@@ -32,7 +32,6 @@ from zenml.logger import get_logger
 from zenml.utils import docker_utils, io_utils, source_utils
 
 if TYPE_CHECKING:
-
     from zenml.pipelines.base_pipeline import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
     from zenml.stack import Stack
@@ -78,8 +77,21 @@ def _include_active_profile(build_context_root: str) -> Iterator[None]:
         fileio.rmtree(config_path)
 
 
+def _printify_requirements(requirements: List[str]) -> str:
+    """Converts a requirements file in a string to be printed.
+
+    Args:
+        requirements: List of requirements.
+
+    Returns:
+        The converted string.
+    """
+    highlighted = [f"`{r}`" for r in requirements]
+    return ", ".join(highlighted)
+
+
 class PipelineDockerImageBuilder(BaseModel):
-    """Builds local Docker images.
+    """Builds Docker images to run a ZenML pipeline.
 
     **Usage**:
     ```python
@@ -90,14 +102,16 @@ class PipelineDockerImageBuilder(BaseModel):
     ```
 
     Attributes:
-        docker_parent_image: Name of the Docker image that should be
-            used as the parent for the image that will be built. If no
-            custom image is given, a basic image of the active ZenML and python
-            version will be used.
-            **Note**: This image needs to have ZenML installed, otherwise the
-            pipeline execution will fail. For that reason, you
-            might want to extend one of the ZenML Docker images found here:
-            https://hub.docker.com/r/zenmldocker/zenml/
+        docker_parent_image: Full name of the Docker image that should be
+            used as the parent for the image that will be built. Defaults to
+            a ZenML image built for the active Python and ZenML version.
+
+            Additional information to consider:
+            * If you specify a custom image here, you need to make sure it has
+            ZenML installed.
+            * If this is a non-local image, the environment which is running
+            the pipeline and building the Docker image needs to be able to pull
+            this image.
     """
 
     docker_parent_image: Optional[str] = None
@@ -142,37 +156,29 @@ class PipelineDockerImageBuilder(BaseModel):
             requirements_files.append(
                 (".zenml_local_requirements", local_requirements)
             )
-            logger.info("\t- Including python packages from local environment.")
+            logger.info("\t- Including python packages from local environment")
 
         # Generate/Read requirements file for user-defined requirements
         if isinstance(docker_configuration.requirements, str):
             user_requirements = io_utils.read_file_contents_as_string(
                 docker_configuration.requirements
             )
+            logger.info(
+                "\t- Including user-defined requirements from file `%s`",
+                os.path.abspath(docker_configuration.requirements),
+            )
         elif isinstance(docker_configuration.requirements, List):
             user_requirements = "\n".join(docker_configuration.requirements)
+            logger.info(
+                "\t- Including user-defined requirements: %s",
+                ", ".join(f"`{r}`" for r in docker_configuration.requirements),
+            )
         else:
             user_requirements = None
-
-        def _printify_requirements(file_content: str) -> str:
-            """Converts a requirements file in a string to be printed.
-
-            Args:
-                file_content: Content of the requirements file.
-
-            Returns:
-                The converted string.
-            """
-            highlighted = [f"`{r}`" for r in file_content.split("\n")]
-            return ", ".join(highlighted)
 
         if user_requirements:
             requirements_files.append(
                 (".zenml_user_requirements", user_requirements)
-            )
-            logger.info(
-                "\t- Including user-defined requirements: %s",
-                _printify_requirements(user_requirements),
             )
 
         # Generate requirements file for all required integrations
@@ -198,7 +204,7 @@ class PipelineDockerImageBuilder(BaseModel):
             )
             logger.info(
                 "\t- Including integration requirements: %s",
-                _printify_requirements(integration_requirements_file),
+                ", ".join(f"`{r}`" for r in integration_requirements),
             )
 
         return requirements_files
@@ -236,7 +242,7 @@ class PipelineDockerImageBuilder(BaseModel):
             lines.append(f"COPY {file} .")
             lines.append(f"RUN pip install --no-cache-dir -r {file}")
 
-        if docker_configuration.copy_source_files:
+        if docker_configuration.copy_files:
             lines.append("COPY . .")
         elif docker_configuration.copy_profile:
             lines.append(f"COPY {DOCKER_IMAGE_ZENML_CONFIG_DIR} .")
@@ -270,6 +276,9 @@ class PipelineDockerImageBuilder(BaseModel):
 
         Raises:
             RuntimeError: If the stack doesn't contain a container registry.
+            ValueError: If no Dockerfile and/or custom parent image is
+                specified and the Docker configuration doesn't require an
+                image build.
         """
         container_registry = stack.container_registry
         if not container_registry:
@@ -294,7 +303,7 @@ class PipelineDockerImageBuilder(BaseModel):
                 docker_configuration.replicate_local_python_environment,
                 docker_configuration.install_stack_requirements,
                 docker_configuration.environment,
-                docker_configuration.copy_source_files,
+                docker_configuration.copy_files,
                 docker_configuration.copy_profile,
             ]
         )
@@ -332,6 +341,19 @@ class PipelineDockerImageBuilder(BaseModel):
                 build_context_root=docker_configuration.build_context_root,
                 **docker_configuration.build_options,
             )
+        else:
+            if not requires_zenml_build:
+                if parent_image == DEFAULT_DOCKER_PARENT_IMAGE:
+                    raise ValueError(
+                        "Unable to run a ZenML pipeline with the given Docker "
+                        "configuration: No Dockerfile or custom parent image "
+                        "specified and no files will be copied or requirements "
+                        "installed."
+                    )
+                else:
+                    docker_utils.tag_image(
+                        parent_image, target=target_image_name
+                    )
 
         if requires_zenml_build:
             requirement_files = self._gather_requirements_files(
@@ -359,7 +381,7 @@ class PipelineDockerImageBuilder(BaseModel):
 
             # Leave the build context empty if we don't want to copy any files
             requires_build_context = (
-                docker_configuration.copy_source_files
+                docker_configuration.copy_files
                 or docker_configuration.copy_profile
             )
             build_context_root = (

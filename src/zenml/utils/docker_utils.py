@@ -189,7 +189,7 @@ def build_image(
     """
     if isinstance(dockerfile, str):
         dockerfile_contents = io_utils.read_file_contents_as_string(dockerfile)
-        logger.info("Using Dockerfile `%s`", os.path.abspath(dockerfile))
+        logger.info("Using Dockerfile `%s`.", os.path.abspath(dockerfile))
     else:
         dockerfile_contents = "\n".join(dockerfile)
 
@@ -224,8 +224,8 @@ def build_image(
     logger.info("Finished building Docker image `%s`.", image_name)
 
 
-def push_docker_image(image_name: str) -> str:
-    """Pushes a docker image to a container registry.
+def push_image(image_name: str) -> str:
+    """Pushes an image to a container registry.
 
     Args:
         image_name: The full name (including a tag) of the image to push.
@@ -254,8 +254,20 @@ def push_docker_image(image_name: str) -> str:
         )
 
 
+def tag_image(image_name: str, target: str) -> None:
+    """Tags an image.
+
+    Args:
+        image_name: The name of the image to tag.
+        target: The full target name including a tag.
+    """
+    docker_client = DockerClient.from_env()
+    image = docker_client.images.get(image_name)
+    image.tag(target)
+
+
 def get_image_digest(image_name: str) -> Optional[str]:
-    """Gets the digest of a docker image.
+    """Gets the digest of an image.
 
     Args:
         image_name: Name of the image to get the digest for.

@@ -50,59 +50,96 @@ class PythonEnvironmentExportMethod(Enum):
 
 
 class DockerConfiguration(BaseModel):
-    """Class for configuring Docker build options.
+    """Configuration for building Docker images to run ZenML pipelines.
+
+    Build process:
+    --------------
+    * No `dockerfile` specified: If any of the configuration options regarding
+    requirements, environment variables or copying files require us to build an
+    image, ZenML will build this image. Otherwise the `parent_image` will be
+    used to run the pipeline.
+    * `dockerfile` specified: ZenML will first build an image based on the
+    specified Dockerfile. If any of the configuration options regarding
+    requirements, environment variables or copying files require an additional
+    image built on top of that, ZenML will build a second image. If not, the
+    image build from the specified Dockerfile will be used to run the pipeline.
+
+    Requirements installation order:
+    --------------------------------
+    Depending on the configuration of this object, requirements will be
+    installed in the following order (each step optional):
+    - The packages installed in your local python environment
+    - The packages specified via the `requirements` attribute
+    - The packages specified via the `required_integrations` and potentially
+      stack requirements
 
     Attributes:
         parent_image: Full name of the Docker image that should be
             used as the parent for the image that will be built. Defaults to
             a ZenML image built for the active Python and ZenML version.
 
-            Additional information to consider:
+            Additional notes:
             * If you specify a custom image here, you need to make sure it has
             ZenML installed.
             * If this is a non-local image, the environment which is running
-            the pipeline needs to be able to pull this image.
+            the pipeline and building the Docker image needs to be able to pull
+            this image.
             * If a custom `dockerfile` is specified for this configuration
             object, this parent image will be ignored.
+        dockerfile: Path to a custom Dockerfile that should be built. Depending
+            on the other values you specify in this configuration, the resulting
+            image will be used directly to run your pipeline or ZenML will use
+            it as a parent image to build on top of. See the general docstring
+            of this class for more information.
 
-        docker_target_repository: Name of the Docker Repository
-
-
-
+            Additional notes:
+            * If you specify this, the `parent_image` attribute will be ignored.
+            * If you specify this, the image built from this Dockerfile needs
+            to have ZenML installed.
+        build_context_root: Build context root for the Docker build, only used
+            when the `dockerfile` attribute is set. If this is left empty, the
+            build context will only contain the Dockerfile.
+        build_options: Additional options that will be passed unmodified to the
+            Docker build call when building an image using the specified
+            `dockerfile`. You can use this to for example specify build
+            args or a target stage. See
+            https://docker-py.readthedocs.io/en/stable/images.html#docker.models.images.ImageCollection.build
+            for a full list of available options.
+        docker_target_repository: Name of the Docker repository to which the
+            image should be pushed. This repository will be appended to the
+            registry URI of the container registry of your stack and should
+            therefore **not** include any registry.
+        replicate_local_python_environment: If not `None`, ZenML will use the
+            specified method to generate a requirements file that replicates
+            the packages installed in the currently running python environment.
+            This requirements file will then be installed in the Docker image.
         requirements: Path to a requirements file or a list of required pip
             packages. During the image build, these requirements will be
             installed using pip. If you need to use a different tool to
             resolve and/or install your packages, please use a custom parent
             image or specify a custom `dockerfile`.
         required_integrations: List of ZenML integrations that should be
-            installed.
-            Each ZenML integration specifies a list of python
-            packages that are required for it to work. `zenml integration requirements <INTEGRATION_NAME>`
-
-        replicate_local_python_environment: If `True`, all packages installed
-            in the currently running python environment will be installed.
-
+            installed. All requirementes for the specified integrations will
+            be installed inside the Docker image.
         install_stack_requirements: If `True`, ZenML will automatically detect
             if components of your active stack are part of a ZenML integration
             and install the corresponding requirements. If you set this to
             `False` or use custom components in your stack, you need to make
             sure these get installed by specifying them in the `requirements`
             attribute.
-        dockerignore: Path to a dockerignore file to use when building Docker
-            images.
-
         environment: Dictionary of environment variables to set inside the
             Docker image.
-
-        dockerfile:
-        build_options: Additional options that will be passed unmodified to the
-            Docker build call when building an image using the specified
-            `dockerfile`. You can use this to for example specify build
-            args or a target stage. See https://docker-py.readthedocs.io/en/stable/images.html#docker.models.images.ImageCollection.build
-            for a full list of available options.
-        build_context_root: Build context root for the Docker build, only used
-            when the `dockerfile` attribute is set. If this is left empty, the
-            build context will only contain the Dockerfile.
+        dockerignore: Path to a dockerignore file to use when building the
+            Docker image.
+        copy_files: If `True`, user files will be copied into the Docker image.
+            If this is set to `False`, ZenML will not copy any of your files
+            into the Docker image and you're responsible that all the files
+            to run your pipeline exist in the right place.
+        copy_profile: If `True`, the configuration of the active profile and
+            stack will be copied into the Docker image. If this is set to
+            `False`, ZenML will not copy this configuration and you're
+            responsible for making sure the right stack is active inside the
+            Docker image.
     """
 
     parent_image: Optional[str] = None
@@ -121,7 +158,7 @@ class DockerConfiguration(BaseModel):
 
     environment: Dict[str, Any] = {}
     dockerignore: Optional[str] = None
-    copy_source_files: bool = True
+    copy_files: bool = True
     copy_profile: bool = True
 
     class Config:
