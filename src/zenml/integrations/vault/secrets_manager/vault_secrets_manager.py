@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the HashiCorp Vault Secrets Manager integration."""
+import re
 from typing import Any, ClassVar, List, Optional, Set
 
 import hvac  # type: ignore[import]
@@ -95,6 +96,24 @@ class VaultSecretsManager(BaseSecretsManager):
         """
         return "/".join(self._get_scoped_secret_path(name))
 
+    @staticmethod
+    def _sanitize_secret_name(secret_name: str) -> str:
+        """Sanitize the secret name to be used in Vault.
+
+        Args:
+            secret_name: The secret name to sanitize.
+
+        Returns:
+            The sanitized secret name.
+        """
+        sanitized_secret_name = re.sub(r"[^0-9a-zA-Z_\.]+", "_", secret_name)
+        if sanitized_secret_name!=secret_name:
+            logger.warning("The Secret name `%s` contains characters that "
+                           "might not be supported. The secret name has been "
+                           "sanitized to: `%s` ", secret_name,
+                           sanitized_secret_name)
+        return sanitized_secret_name
+
     def register_secret(self, secret: BaseSecretSchema) -> None:
         """Registers a new secret.
 
@@ -106,15 +125,18 @@ class VaultSecretsManager(BaseSecretsManager):
         """
         self._ensure_client_is_authenticated()
 
+        sanitized_secret_name = self._sanitize_secret_name(secret.name)
+
         try:
-            self.get_secret(secret.name)
+            self.get_secret(sanitized_secret_name)
             raise SecretExistsError(
-                f"A Secret with the name {secret.name} already exists"
+                f"A Secret with the name '{sanitized_secret_name}' already "
+                f"exists."
             )
         except KeyError:
             pass
 
-        secret_path = self._get_scoped_secret_name(secret.name)
+        secret_path = self._get_scoped_secret_name(sanitized_secret_name)
         secret_value = secret_to_dict(secret, encode=False)
 
         self.CLIENT.secrets.kv.v2.create_or_update_secret(
@@ -140,7 +162,8 @@ class VaultSecretsManager(BaseSecretsManager):
         """
         self._ensure_client_is_authenticated()
 
-        secret_path = self._get_scoped_secret_name(secret_name)
+        sanitized_secret_name = self._sanitize_secret_name(secret_name)
+        secret_path = self._get_scoped_secret_name(sanitized_secret_name)
 
         try:
             secret_items = (
@@ -187,7 +210,9 @@ class VaultSecretsManager(BaseSecretsManager):
 
         secrets_keys = secrets.get("data", {}).get("keys", [])
         for secret_key in secrets_keys:
-            set_of_secrets.add(secret_key)
+            # vault scopes end with / and are not themselves secrets
+            if "/" not in secret_key:
+                set_of_secrets.add(secret_key)
         return list(set_of_secrets)
 
     def update_secret(self, secret: BaseSecretSchema) -> None:
@@ -201,8 +226,10 @@ class VaultSecretsManager(BaseSecretsManager):
         """
         self._ensure_client_is_authenticated()
 
-        if secret.name in self.get_all_secret_keys():
-            secret_path = self._get_scoped_secret_name(secret.name)
+        sanitized_secret_name = self._sanitize_secret_name(secret.name)
+
+        if sanitized_secret_name in self.get_all_secret_keys():
+            secret_path = self._get_scoped_secret_name(sanitized_secret_name)
             secret_value = secret_to_dict(secret, encode=False)
 
             self.CLIENT.secrets.kv.v2.create_or_update_secret(
@@ -212,7 +239,8 @@ class VaultSecretsManager(BaseSecretsManager):
             )
         else:
             raise KeyError(
-                f"A Secret with the name '{secret.name}' does not exist."
+                f"A Secret with the name '{sanitized_secret_name}'"
+                f" does not exist."
             )
 
         logger.info("Updated secret: %s", secret_path)
@@ -226,7 +254,8 @@ class VaultSecretsManager(BaseSecretsManager):
         """
         self._ensure_client_is_authenticated()
 
-        secret_path = self._get_scoped_secret_name(secret_name)
+        sanitized_secret_name = self._sanitize_secret_name(secret_name)
+        secret_path = self._get_scoped_secret_name(sanitized_secret_name)
 
         self.CLIENT.secrets.kv.v2.delete_metadata_and_all_versions(
             path=secret_path,
