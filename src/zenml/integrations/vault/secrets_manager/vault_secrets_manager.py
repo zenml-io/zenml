@@ -17,6 +17,7 @@ import re
 from typing import Any, ClassVar, List, Optional, Set, Dict
 
 import hvac  # type: ignore[import]
+from hvac.exceptions import InvalidPath
 
 from zenml.constants import ZENML_SCHEMA_NAME
 from zenml.exceptions import SecretExistsError
@@ -136,15 +137,18 @@ class VaultSecretsManager(BaseSecretsManager):
         self._ensure_client_is_authenticated()
 
         secret_path = self._get_scoped_secret_name(secret_name)
-        print(secret_path)
-        secret_items = (
-            self.CLIENT.secrets.kv.v2.read_secret_version(
-                path=secret_path,
-                mount_point=self.mount_point,
+
+        try:
+            secret_items = (
+                self.CLIENT.secrets.kv.v2.read_secret_version(
+                    path=secret_path,
+                    mount_point=self.mount_point,
+                )
+                .get("data", {})
+                .get("data", {})
             )
-            .get("data", {})
-            .get("data", {})
-        )
+        except InvalidPath as e:
+            raise KeyError(e)
 
         zenml_schema_name = secret_items.pop(ZENML_SCHEMA_NAME)
 
