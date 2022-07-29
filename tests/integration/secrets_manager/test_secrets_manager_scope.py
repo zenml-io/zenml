@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+import os
 import time
 import uuid
 from contextlib import ExitStack as does_not_raise
@@ -49,6 +49,24 @@ def get_secrets_manager(
         secrets_manager = AWSSecretsManager(
             name=name, region_name="eu-west-2", **kwargs
         )
+    elif flavor == "vault":
+        from zenml.integrations.vault.secrets_manager import VaultSecretsManager
+        url = os.getenv("VAULT_ADDR")
+        token = os.getenv("VAULT_TOKEN")
+        if url and token:
+            secrets_manager = VaultSecretsManager(
+                name=name, url=url,
+                token=token,
+                mount_point="secret/",
+                **kwargs
+            )
+        else:
+            raise RuntimeError("Tests can not be run for the vault secrets"
+                               "manager as the required environment variables "
+                               "are not set. Deploy a vault dev server locally "
+                               "and export the address and token: \n"
+                               "`export VAULT_ADDR=...` \n"
+                               "`export VAULT_TOKEN=...`\n")
     else:
         raise RuntimeError(
             f"Secrets manager flavor {flavor} not covered in unit tests"
