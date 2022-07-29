@@ -18,7 +18,6 @@ from typing import Any, ClassVar, Dict, List, Optional
 
 import boto3
 import botocore
-from pydantic import validator
 
 from zenml.exceptions import SecretExistsError
 from zenml.integrations.aws import AWS_SECRET_MANAGER_FLAVOR
@@ -53,6 +52,7 @@ class AWSSecretsManager(BaseSecretsManager):
 
         Args:
             scope: Scope value.
+            namespace: Optional namespace value.
         """
         if namespace:
             cls.validate_secret_name_or_namespace(namespace)

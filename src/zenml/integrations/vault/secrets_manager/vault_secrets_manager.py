@@ -12,9 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the HashiCorp Vault Secrets Manager integration."""
-import json
-import re
-from typing import Any, ClassVar, List, Optional, Set, Dict
+from typing import Any, ClassVar, List, Optional, Set
 
 import hvac  # type: ignore[import]
 from hvac.exceptions import InvalidPath
@@ -25,8 +23,7 @@ from zenml.integrations.vault import VAULT_SECRETS_MANAGER_FLAVOR
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
-from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager, \
-    ZENML_SCOPE_PATH_PREFIX
+from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.secrets_managers.utils import secret_to_dict
 
 logger = get_logger(__name__)
@@ -45,6 +42,7 @@ class VaultSecretsManager(BaseSecretsManager):
 
     # Class configuration
     FLAVOR: ClassVar[str] = VAULT_SECRETS_MANAGER_FLAVOR
+    SUPPORTS_SCOPING: ClassVar[bool] = True
     CLIENT: ClassVar[Any] = None
 
     url: str
@@ -108,10 +106,13 @@ class VaultSecretsManager(BaseSecretsManager):
         """
         self._ensure_client_is_authenticated()
 
-        if secret.name in self.get_all_secret_keys():
+        try:
+            self.get_secret(secret.name)
             raise SecretExistsError(
-                f"A Secret with the name '{secret.name}' already exists."
+                f"A Secret with the name {secret.name} already exists"
             )
+        except KeyError:
+            pass
 
         secret_path = self._get_scoped_secret_name(secret.name)
         secret_value = secret_to_dict(secret, encode=False)
@@ -133,6 +134,9 @@ class VaultSecretsManager(BaseSecretsManager):
 
         Returns:
             The secret.
+
+        Raises:
+            KeyError: if the secret does not exist
         """
         self._ensure_client_is_authenticated()
 
@@ -170,11 +174,10 @@ class VaultSecretsManager(BaseSecretsManager):
         self._ensure_client_is_authenticated()
 
         set_of_secrets: Set[str] = set()
-        secret_path = '/'.join(self._get_scope_path())
+        secret_path = "/".join(self._get_scope_path())
         try:
             secrets = self.CLIENT.secrets.kv.v2.list_secrets(
-                path=secret_path,
-                mount_point=self.mount_point
+                path=secret_path, mount_point=self.mount_point
             )
         except hvac.exceptions.InvalidPath:
             logger.error(
@@ -220,9 +223,6 @@ class VaultSecretsManager(BaseSecretsManager):
 
         Args:
             secret_name: The name of the secret to delete.
-
-        Raises:
-            KeyError: If the secret does not exist.
         """
         self._ensure_client_is_authenticated()
 

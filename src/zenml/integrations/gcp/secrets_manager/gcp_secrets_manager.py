@@ -12,13 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the GCP Secrets Manager."""
-
+import json
 import re
 from typing import Any, ClassVar, Dict, List, Optional, Tuple
 
-from google.cloud import secretmanager
 from google.api_core import exceptions as google_exceptions
-from pydantic import validator
+from google.cloud import secretmanager
 
 from zenml.exceptions import SecretExistsError
 from zenml.integrations.gcp import GCP_SECRETS_MANAGER_FLAVOR
@@ -26,12 +25,11 @@ from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
 from zenml.secrets_managers.base_secrets_manager import (
-    ZENML_SCOPE_PATH_PREFIX,
     ZENML_SECRET_NAME_LABEL,
     BaseSecretsManager,
     SecretsManagerScope,
 )
-from zenml.secrets_managers.utils import secret_from_json, secret_to_json
+from zenml.secrets_managers.utils import secret_from_dict, secret_to_dict
 
 logger = get_logger(__name__)
 
@@ -93,6 +91,7 @@ class GCPSecretsManager(BaseSecretsManager):
 
         Args:
             scope: Scope value.
+            namespace: Optional namespace value.
         """
         if namespace:
             cls.validate_secret_name_or_namespace(namespace)
@@ -116,7 +115,6 @@ class GCPSecretsManager(BaseSecretsManager):
         and the hyphen (-) and underscore (_) characters
 
         Args:
-            scope: the Secrets Manager scope
             name: the secret name or namespace
 
         Raises:
@@ -134,7 +132,6 @@ class GCPSecretsManager(BaseSecretsManager):
                 f"Invalid secret name or namespace '{name}'. The length is "
                 f"limited to maximum 63 characters."
             )
-
 
     @property
     def parent_name(self) -> str:
@@ -198,7 +195,9 @@ class GCPSecretsManager(BaseSecretsManager):
             return {f"{secret.name}_{k}": v for k, v in secret.content.items()}
 
         return {
-            self._get_scoped_secret_name(secret.name): secret_to_json(secret),
+            self._get_scoped_secret_name(secret.name): json.dumps(
+                secret_to_dict(secret)
+            ),
         }
 
     def _get_secret_labels(
@@ -398,7 +397,9 @@ class GCPSecretsManager(BaseSecretsManager):
                 )
 
             secret_value = response.payload.data.decode("UTF-8")
-            zenml_secret = secret_from_json(secret_value)
+            zenml_secret = secret_from_dict(
+                json.loads(secret_value), secret_name=secret_name
+            )
 
         return zenml_secret
 

@@ -82,15 +82,20 @@ class BaseSecretsManager(StackComponent, ABC):
 
         Returns:
             Values passed to the object constructor
-        """
 
+        Raises:
+            ValueError: If the scope value is not valid.
+        """
         # this is a new Secrets Manager instance
         if "uuid" not in values:
             scope = values.get("scope")
             if scope:
                 # fail if the user tries to explicitly use a scope with a
                 # Secrets Manager that doesn't support scoping
-                if scope != SecretsManagerScope.NONE and not cls.SUPPORTS_SCOPING:
+                if (
+                    scope != SecretsManagerScope.NONE
+                    and not cls.SUPPORTS_SCOPING
+                ):
                     raise ValueError(
                         f"The {cls.FLAVOR} Secrets Manager does not support "
                         f"scoping. You can only use a `none` scope value."

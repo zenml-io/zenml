@@ -14,8 +14,7 @@
 """Utility functions for the ZenML secrets manager module."""
 
 import base64
-import json
-from typing import Dict, Tuple
+from typing import Any, Dict, Tuple
 
 from zenml.constants import ZENML_SCHEMA_NAME
 from zenml.secret.base_secret import BaseSecretSchema
@@ -82,7 +81,9 @@ def decode_secret_dict(
     return decoded_secret, zenml_schema_name
 
 
-def secret_to_dict(secret: BaseSecretSchema, encode: bool = False) -> str:
+def secret_to_dict(
+    secret: BaseSecretSchema, encode: bool = False
+) -> Dict[str, Any]:
     """Converts a secret to a dict representation with the schema.
 
     This includes the schema type in the secret's JSON representation, so that
@@ -106,7 +107,7 @@ def secret_to_dict(secret: BaseSecretSchema, encode: bool = False) -> str:
 
 
 def secret_from_dict(
-    secret_dict: str, secret_name: str = "", decode: bool = False
+    secret_dict: Dict[str, Any], secret_name: str = "", decode: bool = False
 ) -> BaseSecretSchema:
     """Converts a dictionary secret representation into a secret.
 
@@ -123,7 +124,7 @@ def secret_from_dict(
         SecretSchemaClassRegistry,
     )
 
-    secret_contents: Dict[str, str] = json.loads(secret_dict)
+    secret_contents = secret_dict.copy()
 
     if decode:
         secret_contents, zenml_schema_name = decode_secret_dict(secret_contents)

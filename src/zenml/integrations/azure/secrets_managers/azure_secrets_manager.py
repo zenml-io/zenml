@@ -24,7 +24,7 @@ from zenml.integrations.azure import AZURE_SECRETS_MANAGER_FLAVOR
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
-from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager, SecretsManagerScope
+from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 
 logger = get_logger(__name__)
 
@@ -46,24 +46,6 @@ class AzureSecretsManager(BaseSecretsManager):
     # Class configuration
     FLAVOR: ClassVar[str] = AZURE_SECRETS_MANAGER_FLAVOR
     CLIENT: ClassVar[Any] = None
-
-
-    def _validate_scope(cls, scope: SecretsManagerScope) -> None:
-        """Validate the scope value.
-
-        Subclasses should override this method to implement their own scope
-        validation logic (e.g. raise an exception if a scope is not supported
-        or log a warning if a deprecated scope is used).
-
-        Args:
-            scope: Scope value.
-        """
-        if scope != SecretsManagerScope.NONE:
-            logger.warning(
-                f"Unscoped support for the {cls.FLAVOR} Secrets Manager is "
-                f"deprecated and will be removed in a future release. You "
-                f"should use the `global` scope instead."
-            )
 
     @classmethod
     def _ensure_client_connected(cls, vault_name: str) -> None:
