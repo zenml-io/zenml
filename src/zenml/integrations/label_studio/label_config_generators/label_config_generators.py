@@ -46,7 +46,13 @@ def generate_image_classification_label_config(
 
     Returns:
         A tuple of the generated label config and the label config type.
+
+    Raises:
+        ValueError: If no labels are provided.
     """
+    if not labels:
+        raise ValueError("No labels provided")
+
     label_config_type = AnnotationTasks.IMAGE_CLASSIFICATION
 
     label_config_start = """<View>
@@ -78,7 +84,13 @@ def generate_basic_object_detection_bounding_boxes_label_config(
 
     Returns:
         A tuple of the generated label config and the label config type.
+
+    Raises:
+        ValueError: If no labels are provided.
     """
+    if not labels:
+        raise ValueError("No labels provided")
+
     label_config_type = AnnotationTasks.OBJECT_DETECTION_BOUNDING_BOXES
 
     label_config_start = """<View>
