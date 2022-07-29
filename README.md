@@ -42,15 +42,10 @@
 [twitter-url]: https://twitter.com/zenml_io
 [slack-shield]: https://img.shields.io/badge/-Slack-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [slack-url]: https://zenml.io/slack-invite
-
 [build-shield]: https://img.shields.io/github/workflow/status/zenml-io/zenml/Build,%20Lint,%20Unit%20&%20Integration%20Test?logo=github&style=for-the-badge
 [build-url]: https://github.com/zenml-io/zenml/actions/workflows/ci.yml
-
-
 [interrogate-shield]: https://img.shields.io/badge/Interrogate-100%25-brightgreen?style=for-the-badge&logo=interrogate
 [interrogate-url]: https://interrogate.readthedocs.io/en/latest/
-
-
 
 <!-- PROJECT LOGO -->
 <br />
@@ -93,6 +88,8 @@
 
 <br />
 
+# 🤖 Why ZenML?
+
 🤹 Are you an ML engineer or data scientist shipping models to production and juggling a plethora of tools? 
 
 🤷‍♂️ Do you struggle with versioning data, code, and models in your projects? 
@@ -101,28 +98,11 @@
 
 ✅ If you answered yes to any, ZenML is here to help with all that, and more.
 
-<br />
-
-
-# 💡 What is ZenML?
-
-<div align="center">
-    <img src="docs/book/assets/tailor.gif">
-</div>
-
-
-ZenML is an extensible, open-source MLOps framework for creating portable, production-ready MLOps pipelines. It's built for Data Scientists, ML Engineers, and MLOps Developers to collaborate as they develop to production. 
-
-ZenML offers simple, flexible syntax, is cloud- and tool-agnostic, and has interfaces/abstractions that are catered towards ML workflows. ZenML brings together all your favorite tools in one place so you can tailor your workflow to cater your needs.
-
-# 🤖 Why ZenML?
-
 Everyone loves to train ML models, but few talks about shipping them into production, and even fewer can do it well.
-It's no wonder that 85% of ML models fail and 53% don't make it into production, according to a Gartner survey.
+At ZenML, we believe the journey from model development to production doesn't need to be long and painful.
 
 ![The long journey from experimentation to production.](docs/book/assets/1-pipeline-hard-reproduce.png)
 
-At ZenML, we believe the journey from model development to production doesn't need to be long and painful.
 
 With ZenML, you as a data scientist can concentrate on what you do best - developing ML models, and not worry about infrastructure or deployment tools.
 
@@ -137,6 +117,17 @@ ZenML is not built to replace your favorite tools. Rather ZenML bring all of the
 ![ZenML unifies all your tools in one place.](docs/book/assets/sam-side-by-side-full-text.png)
 
 Read more on all tools you can readily use in the [integrations](https://zenml.io/integrations) section. Can't find your tool? You can even [write your own integration](https://docs.zenml.io/developer-guide/advanced-usage/custom-flavors) to extend ZenML.
+
+# 💡 What is ZenML?
+
+<div align="center">
+    <img src="docs/book/assets/tailor.gif">
+</div>
+
+
+ZenML is an extensible, open-source MLOps framework for creating portable, production-ready MLOps pipelines. It's built for Data Scientists, ML Engineers, and MLOps Developers to collaborate as they develop to production. 
+
+ZenML offers simple, flexible syntax, is cloud- and tool-agnostic, and has interfaces/abstractions that are catered towards ML workflows. ZenML brings together all your favorite tools in one place so you can tailor your workflow to cater your needs.
 
 
 # 🎮 Features
