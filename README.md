@@ -86,6 +86,39 @@
   </p>
 </div>
 
+<!-- TABLE OF CONTENTS -->
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li>
+      <a href="#🤖-why-zenml">Why ZenML?</a>
+    </li>
+    <li>
+    <a href="#💡-what-is-zenml">What is ZenML?</a>
+    </li>
+    <li>
+    <a href="#🎮-features">Features</a>
+    </li>
+    <li>
+      <a href="#🤸-getting-started">Getting Started</a>
+      <ul>
+        <li><a href="#💾-installation">Installation</a></li>
+        <li><a href="#🚅-quickstart">Quickstart</a></li>
+      </ul>
+    </li>
+    <li><a href="#🪜-get-a-guided-tour-with-zenml-go">Get a guided tour with zenml go</a></li>
+    <li><a href="#🍰-zenbytes">ZenBytes</a></li>
+    <li><a href="#🗂️-zenfiles">ZenFiles</a></li>
+    <li><a href="#👭-collaborate-with-your-team">Collaborate with your team</a></li>
+    <li><a href="#📖-learn-more">Learn More</a></li>
+    <li><a href="#🗺-roadmap">Roadmap</a></li>
+    <li><a href="#🙋‍♀️-contributing-and-community">Contributing & Community</a></li>
+    <li><a href="#👩‍👩‍👧‍👦-meet-the-team">Meet the Team</a></li>
+    <li><a href="#🆘-where-to-get-help">Where to get help</a></li>
+    <li><a href="#📜-license">License</a></li>
+  </ol>
+</details>
+
 <br />
 
 # 🤖 Why ZenML?
@@ -375,7 +408,7 @@ influence the roadmap as follows:
 - Start a thread in our [Slack channel](https://zenml.io/slack-invite).
 
 
-# 🙋‍♀️ Contributing & Community
+# 🙋‍♀️ Contributing and Community
 
 We would love to develop ZenML together with our community! Best way to get
 started is to select any issue from the [`good-first-issue`
