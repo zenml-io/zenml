@@ -58,8 +58,9 @@ def generate_image_classification_label_config(
     )
     label_config_end = "</Choices>\n</View>"
 
+    label_config = label_config_start + label_config_choices + label_config_end
     return (
-        label_config_start + label_config_choices + label_config_end,
+        label_config,
         label_config_type,
     )
 
@@ -88,8 +89,9 @@ def generate_basic_object_detection_bounding_boxes_label_config(
         f"<Label value='{label}' />\n" for label in labels
     )
     label_config_end = "</RectangleLabels>\n</View>"
+    label_config = label_config_start + label_config_choices + label_config_end
 
     return (
-        label_config_start + label_config_choices + label_config_end,
+        label_config,
         label_config_type,
     )
