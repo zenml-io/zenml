@@ -11,9 +11,9 @@
 [![PyPi][downloads-shield]][downloads-url]
 [![Contributors][contributors-shield]][contributors-url]
 [![License][license-shield]][license-url]
-[![CodeCov][codecov-shield]][codecov-url]
 [![Build][build-shield]][build-url]
 [![Interrogate][interrogate-shield]][interrogate-url]
+<!-- [![CodeCov][codecov-shield]][codecov-url] -->
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
