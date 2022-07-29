@@ -129,10 +129,12 @@ class VaultSecretsManager(BaseSecretsManager):
 
         try:
             self.get_secret(sanitized_secret_name)
-        except KeyError:
             raise SecretExistsError(
-                f"A Secret with the name '{sanitized_secret_name}' already exists."
+                f"A Secret with the name '{sanitized_secret_name}' already "
+                f"exists."
             )
+        except KeyError:
+            pass
 
         secret_path = self._get_scoped_secret_name(sanitized_secret_name)
         secret_value = secret_to_dict(secret, encode=False)
