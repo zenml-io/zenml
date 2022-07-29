@@ -18,7 +18,7 @@ import pytest
 from pydantic import BaseModel
 
 from zenml.integrations.gcp.secrets_manager.gcp_secrets_manager import (
-    prepend_group_name_to_keys,
+    # prepend_group_name_to_keys,
     remove_group_name_from_key,
 )
 from zenml.secret import ArbitrarySecretSchema

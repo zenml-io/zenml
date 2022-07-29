@@ -39,8 +39,7 @@ def get_secrets_manager(
     flavor = request.config.getoption("secrets_manager_flavor")
 
     secrets_manager: BaseSecretsManager
-    name = kwargs.pop("name", f"zenml_pytest_{random_str(16)}")
-    # print(f"secret manager name: {name}")
+    name = kwargs.pop("name", f"zenml_pytest_{random_str(16).lower()}")
     if flavor == "local":
         secrets_manager = LocalSecretsManager(name=name, **kwargs)
     elif flavor == "aws":
@@ -48,6 +47,12 @@ def get_secrets_manager(
 
         secrets_manager = AWSSecretsManager(
             name=name, region_name="eu-west-2", **kwargs
+        )
+    elif flavor == "gcp":
+        from zenml.integrations.gcp.secrets_manager import GCPSecretsManager
+
+        secrets_manager = GCPSecretsManager(
+            name=name, project_id="zenml-secrets-manager", **kwargs
         )
     else:
         raise RuntimeError(
@@ -57,8 +62,7 @@ def get_secrets_manager(
 
 
 def get_arbitrary_secret(name: Optional[str] = None) -> ArbitrarySecretSchema:
-    name = name or f"pytest_{random_str(16)}"
-    # print(f"secret name: {name}")
+    name = name or f"pytest_{random_str(16).lower()}"
     key = f"key_{random_str(16)}"
     value = f"{random_str(64)}"
     secret = ArbitrarySecretSchema(name=name)
@@ -71,7 +75,7 @@ def unscoped_secrets_manager(request: pytest.FixtureRequest):
     """Fixture to yield an unscoped secrets manager."""
     secrets_manager = get_secrets_manager(
         request,
-        name=f"zenml_pytest_{random_str(16)}",
+        name=f"zenml_pytest_{random_str(16).lower()}",
         scope=SecretsManagerScope.NONE,
     )
     old_secrets = secrets_manager.get_all_secret_keys()
@@ -86,7 +90,7 @@ def global_scoped_secrets_manager(request: pytest.FixtureRequest):
     """Fixture to yield a global scoped secrets manager."""
     secrets_manager = get_secrets_manager(
         request,
-        name=f"zenml_pytest_{random_str(16)}",
+        name=f"zenml_pytest_{random_str(16).lower()}",
         scope=SecretsManagerScope.GLOBAL,
     )
     old_secrets = secrets_manager.get_all_secret_keys()
@@ -101,7 +105,7 @@ def component_scoped_secrets_manager(request: pytest.FixtureRequest):
     """Fixture to yield a component scoped secrets manager."""
     secrets_manager = get_secrets_manager(
         request,
-        name=f"zenml_pytest_{random_str(16)}",
+        name=f"zenml_pytest_{random_str(16).lower()}",
         scope=SecretsManagerScope.COMPONENT,
     )
     old_secrets = secrets_manager.get_all_secret_keys()
@@ -116,9 +120,9 @@ def namespace_scoped_secrets_manager(request: pytest.FixtureRequest):
     """Fixture to yield a namespace scoped secrets manager."""
     secrets_manager = get_secrets_manager(
         request,
-        name=f"zenml_pytest_{random_str(16)}",
+        name=f"zenml_pytest_{random_str(16).lower()}",
         scope=SecretsManagerScope.NAMESPACE,
-        namespace=f"pytest_{random_str(8)}",
+        namespace=f"pytest_{random_str(8).lower()}",
     )
     old_secrets = secrets_manager.get_all_secret_keys()
     yield secrets_manager

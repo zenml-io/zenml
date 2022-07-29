@@ -125,7 +125,11 @@ def secret_from_json(
 
     secret_contents: Dict[str, str] = json.loads(secret_json)
 
-    zenml_schema_name = secret_contents.pop(ZENML_SCHEMA_NAME)
+    if decode:
+        secret_contents, zenml_schema_name = decode_secret_dict(secret_contents)
+    else:
+        zenml_schema_name = secret_contents.pop(ZENML_SCHEMA_NAME)
+
     secret_contents["name"] = secret_name
 
     secret_schema = SecretSchemaClassRegistry.get_class(

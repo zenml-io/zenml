@@ -14,16 +14,20 @@
 """Base class for ZenML secrets managers."""
 
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional, cast
 
 from pydantic import root_validator
 
 from zenml.enums import StackComponentType
+from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.stack import StackComponent
 from zenml.utils.enum_utils import StrEnum
 
+logger = get_logger(__name__)
+
 ZENML_SCOPE_PATH_PREFIX = "zenml"
+ZENML_SECRET_NAME_LABEL = "zenml_secret_name"
 
 
 class SecretsManagerScope(StrEnum):
@@ -60,6 +64,7 @@ class BaseSecretsManager(StackComponent, ABC):
     # Class configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.SECRETS_MANAGER
     FLAVOR: ClassVar[str]
+    SUPPORTS_SCOPING: ClassVar[bool] = False
 
     scope: SecretsManagerScope = SecretsManagerScope.COMPONENT
     namespace: Optional[str] = None
@@ -78,18 +83,40 @@ class BaseSecretsManager(StackComponent, ABC):
         Returns:
             Values passed to the object constructor
         """
-        if "uuid" not in values or "scope" in values:
-            # this is a new Secrets Manager instance or the scope has been
-            # explicitly set; just use the new default behavior
+
+        # this is a new Secrets Manager instance
+        if "uuid" not in values:
+            scope = values.get("scope")
+            if scope:
+                # fail if the user tries to explicitly use a scope with a
+                # Secrets Manager that doesn't support scoping
+                if scope != SecretsManagerScope.NONE and not cls.SUPPORTS_SCOPING:
+                    raise ValueError(
+                        f"The {cls.FLAVOR} Secrets Manager does not support "
+                        f"scoping. You can only use a `none` scope value."
+                    )
+                # warn if the user tries to explicitly disable scoping for a
+                # Secrets Manager that does support scoping
+                if scope == SecretsManagerScope.NONE and cls.SUPPORTS_SCOPING:
+                    logger.warning(
+                        f"Unscoped support for the {cls.FLAVOR} Secrets "
+                        f"Manager is deprecated and will be removed in a future "
+                        f"release. You should use the `global` scope instead."
+                    )
+            elif not cls.SUPPORTS_SCOPING:
+                # disable scoping by default for Secrets Managers that don't
+                # support scoping
+                values["scope"] = SecretsManagerScope.NONE
+
             return values
 
-        # for existing Secrets Manager instances, continue to use no scope for
-        # secrets
-        values["scope"] = SecretsManagerScope.NONE
+        # for existing Secrets Manager instances where scope is not yet defined,
+        # continue to use no scope for secrets
+        values.setdefault("scope", SecretsManagerScope.NONE)
         return values
 
     @root_validator
-    def namespace_initializer(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def namespace_validator(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Pydantic root validator for the namespace.
 
         For a namespace scoped Secret Manager, the namespace is required.
@@ -104,14 +131,34 @@ class BaseSecretsManager(StackComponent, ABC):
             ValueError: If a namespace is not configured for a namespace scoped
                 Secret Manager.
         """
-        if values.get(
-            "scope"
-        ) == SecretsManagerScope.NAMESPACE and not values.get("namespace"):
+        scope = cast(SecretsManagerScope, values.get("scope"))
+        if scope == SecretsManagerScope.NAMESPACE and not values.get(
+            "namespace"
+        ):
             raise ValueError(
                 "A `namespace` value is required for a namespace scoped "
                 "Secrets Manager."
             )
+        cls._validate_scope(scope, values.get("namespace"))
         return values
+
+    @classmethod
+    def _validate_scope(
+        cls,
+        scope: SecretsManagerScope,
+        namespace: Optional[str],
+    ) -> None:
+        """Validate the scope and namespace value.
+
+        Subclasses should override this method to implement their own scope
+        and namespace validation logic (e.g. raise an exception if a scope is
+        not supported or if a namespace has an invalid value).
+
+        Args:
+            scope: Scope value.
+            namespace: Namespace value.
+        """
+        ...
 
     def _get_scope_path(self) -> List[str]:
         """Get the secret path for the current scope.
@@ -203,7 +250,7 @@ class BaseSecretsManager(StackComponent, ABC):
             "zenml_scope": self.scope.value,
         }
         if secret_name:
-            metadata["zenml_secret_name"] = secret_name
+            metadata[ZENML_SECRET_NAME_LABEL] = secret_name
         if self.scope == SecretsManagerScope.NAMESPACE and self.namespace:
             metadata["zenml_namespace"] = self.namespace
         if self.scope == SecretsManagerScope.COMPONENT:

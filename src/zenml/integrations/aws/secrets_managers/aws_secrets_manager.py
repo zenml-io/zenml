@@ -40,21 +40,22 @@ class AWSSecretsManager(BaseSecretsManager):
 
     # Class configuration
     FLAVOR: ClassVar[str] = AWS_SECRET_MANAGER_FLAVOR
+    SUPPORTS_SCOPING: ClassVar[bool] = True
     CLIENT: ClassVar[Any] = None
 
-    @validator("namespace")
-    def validate_namespace(cls, namespace: Optional[str]) -> Optional[str]:
-        """Pydantic validator for the namespace value.
+    @classmethod
+    def _validate_scope(
+        cls,
+        scope: SecretsManagerScope,
+        namespace: Optional[str],
+    ) -> None:
+        """Validate the scope and namespace value.
 
         Args:
-            namespace: The namespace value to validate.
-
-        Returns:
-            The validated namespace value.
+            scope: Scope value.
         """
         if namespace:
-            cls.validate_secret_name(namespace)
-        return namespace
+            cls.validate_secret_name_or_namespace(namespace)
 
     @classmethod
     def _ensure_client_connected(cls, region_name: str) -> None:
@@ -71,20 +72,20 @@ class AWSSecretsManager(BaseSecretsManager):
             )
 
     @classmethod
-    def validate_secret_name(cls, name: str) -> None:
-        """Validate a secret name.
+    def validate_secret_name_or_namespace(cls, name: str) -> None:
+        """Validate a secret name or namespace.
 
         AWS secret names must contain only alphanumeric characters and the
         characters /_+=.@-. The `/` character is only used internally to delimit
         scopes.
 
         Args:
-            name: the secret name
+            name: the secret name or namespace
 
         Raises:
-            ValueError: if the secret name is invalid
+            ValueError: if the secret name or namespace is invalid
         """
-        if not re.fullmatch(r"[a-zA-Z0-9_+=\.@\-]+", name):
+        if not re.fullmatch(r"[a-zA-Z0-9_+=\.@\-]*", name):
             raise ValueError(
                 f"Invalid secret name or namespace '{name}'. Must contain "
                 f"only alphanumeric characters and the characters _+=.@-."
@@ -138,7 +139,7 @@ class AWSSecretsManager(BaseSecretsManager):
         scope.
 
         Args:
-            secret_name: Optional secret name to include in the scope metadata.
+            secret_name: Optional secret name to filter for.
 
         Returns:
             A list of AWS filters uniquely identifying all secrets
@@ -175,7 +176,7 @@ class AWSSecretsManager(BaseSecretsManager):
         Raises:
             SecretExistsError: if the secret already exists
         """
-        self.validate_secret_name(secret.name)
+        self.validate_secret_name_or_namespace(secret.name)
         self._ensure_client_connected(self.region_name)
         secret_value = secret_to_json(secret, encode=False)
 
@@ -195,6 +196,8 @@ class AWSSecretsManager(BaseSecretsManager):
 
         self.CLIENT.create_secret(**kwargs)
 
+        logger.debug("Created AWS secret: %s", kwargs["Name"])
+
     def get_secret(self, secret_name: str) -> BaseSecretSchema:
         """Gets a secret.
 
@@ -208,7 +211,7 @@ class AWSSecretsManager(BaseSecretsManager):
             KeyError: if the secret does not exist
             RuntimeError: if an unexpected AWS client error occurs
         """
-        self.validate_secret_name(secret_name)
+        self.validate_secret_name_or_namespace(secret_name)
         self._ensure_client_connected(self.region_name)
 
         try:
@@ -269,8 +272,6 @@ class AWSSecretsManager(BaseSecretsManager):
                 }
             )
 
-        # print(filters)
-
         # TODO [ENG-720]: Deal with pagination in the aws secret manager when
         #  listing all secrets
         # TODO [ENG-721]: take out this magic maxresults number
@@ -296,6 +297,7 @@ class AWSSecretsManager(BaseSecretsManager):
             KeyError: if the secret does not exist
             RuntimeError: if an unexpected AWS client error occurs
         """
+        self.validate_secret_name_or_namespace(secret.name)
         self._ensure_client_connected(self.region_name)
 
         secret_value = secret_to_json(secret)
