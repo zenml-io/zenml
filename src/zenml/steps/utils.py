@@ -60,10 +60,6 @@ from tfx.utils import json_utils
 
 import zenml
 from zenml.artifacts.base_artifact import BaseArtifact
-from zenml.constants import (
-    MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME,
-    ZENML_MLMD_CONTEXT_TYPE,
-)
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -696,13 +692,13 @@ def collect_requirements(
     requirements = stack.requirements()
 
     # Add pipeline requirements from the corresponding node context
-    for context in pipeline_node.contexts.contexts:
-        if context.type.name == ZENML_MLMD_CONTEXT_TYPE:
-            pipeline_requirements = context.properties[
-                MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME
-            ].field_value.string_value.split(" ")
-            requirements.update(pipeline_requirements)
-            break
+    # for context in pipeline_node.contexts.contexts:
+    #     if context.type.name == ZENML_MLMD_CONTEXT_TYPE:
+    #         pipeline_requirements = context.properties[
+    #             MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME
+    #         ].field_value.string_value.split(" ")
+    #         requirements.update(pipeline_requirements)
+    #         break
 
     # TODO [ENG-696]: Find a nice way to set this if the running version of
     #  ZenML is not an official release (e.g. on a development branch)

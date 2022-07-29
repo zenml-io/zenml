@@ -462,10 +462,11 @@ class BaseOrchestrator(StackComponent, ABC):
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ) -> None:
-        """Iterates through each node of a pb2_pipeline.
+        """Adds context to each pipeline node of a pb2_pipeline.
 
         This attaches important contexts to the nodes; namely
-        pipeline.requirements, stack information and the runtime configuration.
+        pipeline.docker_configuration, stack information and the runtime
+        configuration.
 
         Args:
             pipeline: Zenml Pipeline instance
