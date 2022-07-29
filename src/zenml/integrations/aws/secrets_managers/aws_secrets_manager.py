@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the AWS Secrets Manager integration."""
-
+import json
 import re
 from typing import Any, ClassVar, Dict, List, Optional
 
@@ -28,7 +28,7 @@ from zenml.secrets_managers.base_secrets_manager import (
     BaseSecretsManager,
     SecretsManagerScope,
 )
-from zenml.secrets_managers.utils import secret_from_json, secret_to_json
+from zenml.secrets_managers.utils import secret_from_dict, secret_to_dict
 
 logger = get_logger(__name__)
 
@@ -177,7 +177,7 @@ class AWSSecretsManager(BaseSecretsManager):
         """
         self.validate_secret_name(secret.name)
         self._ensure_client_connected(self.region_name)
-        secret_value = secret_to_json(secret, encode=False)
+        secret_value = json.dumps(secret_to_dict(secret, encode=False))
 
         try:
             self.get_secret(secret.name)
@@ -229,8 +229,8 @@ class AWSSecretsManager(BaseSecretsManager):
         if get_secret_value_response is None:
             raise KeyError(f"Can't find the specified secret '{secret_name}'")
 
-        return secret_from_json(
-            get_secret_value_response["SecretString"],
+        return secret_from_dict(
+            json.loads(get_secret_value_response["SecretString"]),
             secret_name=secret_name,
             decode=False,
         )
@@ -298,7 +298,7 @@ class AWSSecretsManager(BaseSecretsManager):
         """
         self._ensure_client_connected(self.region_name)
 
-        secret_value = secret_to_json(secret)
+        secret_value = json.dumps(secret_to_dict(secret))
 
         kwargs = {
             "SecretId": self._get_scoped_secret_name(secret.name),

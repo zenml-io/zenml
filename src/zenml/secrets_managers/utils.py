@@ -82,8 +82,8 @@ def decode_secret_dict(
     return decoded_secret, zenml_schema_name
 
 
-def secret_to_json(secret: BaseSecretSchema, encode: bool = False) -> str:
-    """Converts a secret to a JSON representation.
+def secret_to_dict(secret: BaseSecretSchema, encode: bool = False) -> str:
+    """Converts a secret to a dict representation with the schema.
 
     This includes the schema type in the secret's JSON representation, so that
     the correct SecretSchema can be retrieved when the secret is loaded.
@@ -93,7 +93,7 @@ def secret_to_json(secret: BaseSecretSchema, encode: bool = False) -> str:
         encode: if true, encodes the secret values using base64 encoding
 
     Returns:
-        A JSON representation containing all key-value pairs and the ZenML
+        A dict representation containing all key-value pairs and the ZenML
         schema type.
     """
     if encode:
@@ -102,16 +102,16 @@ def secret_to_json(secret: BaseSecretSchema, encode: bool = False) -> str:
         secret_contents = secret.content
         secret_contents[ZENML_SCHEMA_NAME] = secret.TYPE
 
-    return json.dumps(secret_contents)
+    return secret_contents
 
 
-def secret_from_json(
-    secret_json: str, secret_name: str = "", decode: bool = False
+def secret_from_dict(
+    secret_dict: str, secret_name: str = "", decode: bool = False
 ) -> BaseSecretSchema:
-    """Converts a JSON secret representation into a secret.
+    """Converts a dictionary secret representation into a secret.
 
     Args:
-        secret_json: a JSON representation of a secret
+        secret_dict: a dictionary representation of a secret
         secret_name: optional name for the secret, defaults to empty string
         decode: if true, decodes the secret values using base64
 
@@ -123,7 +123,7 @@ def secret_from_json(
         SecretSchemaClassRegistry,
     )
 
-    secret_contents: Dict[str, str] = json.loads(secret_json)
+    secret_contents: Dict[str, str] = json.loads(secret_dict)
 
     zenml_schema_name = secret_contents.pop(ZENML_SCHEMA_NAME)
     secret_contents["name"] = secret_name
