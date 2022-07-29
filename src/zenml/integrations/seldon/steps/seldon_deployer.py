@@ -14,13 +14,20 @@
 """Implementation of the Seldon Deployer step."""
 
 import os
-from typing import cast
+from typing import Optional, cast
+
+from pydantic import BaseModel, validator
 
 from zenml.artifacts.model_artifact import ModelArtifact
+from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.environment import Environment
+from zenml.exceptions import DoesNotExistException
 from zenml.integrations.seldon.model_deployers.seldon_model_deployer import (
     DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT,
     SeldonModelDeployer,
+)
+from zenml.integrations.seldon.seldon_client import (
+    create_seldon_core_custom_spec,
 )
 from zenml.integrations.seldon.services.seldon_deployment import (
     SeldonDeploymentConfig,
@@ -36,8 +43,41 @@ from zenml.steps import (
 )
 from zenml.steps.step_context import StepContext
 from zenml.utils import io_utils
+from zenml.utils.materializer_utils import save_model_metadata
+from zenml.utils.source_utils import import_class_by_path
 
 logger = get_logger(__name__)
+
+
+class CustomDeployParameters(BaseModel):
+    """Custom model deployer step extra parameters.
+
+    Attributes:
+        predict_function: Path to Python file containing predict function.
+    """
+
+    predict_function: str
+
+    @validator("predict_function")
+    def predict_function_validate(cls, v: str) -> str:
+        """Validate predict function.
+
+        Args:
+            v: predict function path
+
+        Returns:
+            predict function path
+
+        Raises:
+            ValueError: if predict function path is not valid
+        """
+        if not v:
+            raise ValueError("Predict function path is required.")
+        try:
+            import_class_by_path(v)
+        except AttributeError:
+            raise ValueError("Predict function can't be found.")
+        return v
 
 
 class SeldonDeployerStepConfig(BaseStepConfig):
@@ -53,6 +93,7 @@ class SeldonDeployerStepConfig(BaseStepConfig):
     """
 
     service_config: SeldonDeploymentConfig
+    custom_deploy_parameters: Optional[CustomDeployParameters] = None
     timeout: int = DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT
 
 
@@ -188,6 +229,167 @@ def seldon_model_deployer_step(
 
     logger.info(
         f"Seldon deployment service started and reachable at:\n"
+        f"    {service.prediction_url}\n"
+    )
+
+    return service
+
+
+@step(enable_cache=False)
+def seldon_custom_model_deployer_step(
+    deploy_decision: bool,
+    config: SeldonDeployerStepConfig,
+    context: StepContext,
+    model: ModelArtifact,
+) -> SeldonDeploymentService:
+    """Seldon Core custom model deployer pipeline step.
+
+    This step can be used in a pipeline to implement the
+    process required to deploy a custom model with Seldon Core.
+
+    Args:
+        deploy_decision: whether to deploy the model or not
+        config: configuration for the deployer step
+        model: the model artifact to deploy
+        context: the step context
+
+    Returns:
+        Seldon Core deployment service
+
+    Raises:
+        ValueError: if custom deployer is not defined
+        DoesNotExistException: if an entity does not exist raises an exception
+        RuntimeError: if the model files were not found
+    """
+    if not config.custom_deploy_parameters:
+        raise ValueError("Custom deploy parameters are required.")
+
+    model_deployer = SeldonModelDeployer.get_active_model_deployer()
+
+    # get pipeline name, step name, run id and pipeline requirements
+    step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
+    pipeline_name = step_env.pipeline_name
+    pipeline_run_id = step_env.pipeline_run_id
+    step_name = step_env.step_name
+    pipeline_requirements = step_env.pipeline_requirements
+
+    # update the step configuration with the real pipeline runtime information
+    config.service_config.pipeline_name = pipeline_name
+    config.service_config.pipeline_run_id = pipeline_run_id
+    config.service_config.pipeline_step_name = step_name
+
+    # fetch existing services with same pipeline name, step name and
+    # model name
+    existing_services = model_deployer.find_model_server(
+        pipeline_name=pipeline_name,
+        pipeline_step_name=step_name,
+        model_name=config.service_config.model_name,
+    )
+    # even when the deploy decision is negative if an existing model server
+    # is not running for this pipeline/step, we still have to serve the
+    # current model, to ensure that a model server is available at all times
+    if not deploy_decision and existing_services:
+        logger.info(
+            f"Skipping model deployment because the model quality does not "
+            f"meet the criteria. Reusing the last model server deployed by step "
+            f"'{step_name}' and pipeline '{pipeline_name}' for model "
+            f"'{config.service_config.model_name}'..."
+        )
+        service = cast(SeldonDeploymentService, existing_services[0])
+        # even when the deploy decision is negative, we still need to start
+        # the previous model server if it is no longer running, to ensure that
+        # a model server is available at all times
+        if not service.is_running:
+            service.start(timeout=config.timeout)
+        return service
+
+    # entrypoint for starting Seldon microservice deployment for custom model
+    entrypoint_command = [
+        "python",
+        "-m",
+        "zenml.integrations.seldon.custom_deployer.zenml_custom_model",
+        "--model_name",
+        config.service_config.model_name,
+        "--predict_func",
+        config.custom_deploy_parameters.predict_function,
+    ]
+
+    # verify the flavor of the orchestrator.
+    # if the orchestrator is local, then we need to build a docker image with the repo
+    # and requirements and push it to the container registry.
+    # if the orchestrator is remote, then we can use the same image used to run the pipeline.
+    assert context.stack is not None
+    # TODO[medium]: find better way to create a docker image in case of local orchestrator
+    if context.stack.orchestrator.FLAVOR == "local":
+        # more information about stack ..
+        custom_docker_image_name = (
+            model_deployer.prepare_custom_deployment_image(
+                context.stack,
+                pipeline_name,
+                step_name,
+                pipeline_requirements,
+                entrypoint_command,
+            )
+        )
+    else:
+        base_image_name = (
+            f"zenml-{context.stack.orchestrator.FLAVOR}:{pipeline_name}"
+        )
+        container_registry = context.stack.container_registry
+
+        if container_registry:
+            registry_uri = container_registry.uri.rstrip("/")
+            custom_docker_image_name = f"{registry_uri}/{base_image_name}"
+        else:
+            custom_docker_image_name = base_image_name
+
+    # prepare the service config
+    if config.custom_deploy_parameters is None:
+        raise RuntimeError("No custom deploy parameters provided")
+
+    served_model_uri = os.path.join(context.get_output_artifact_uri(), "seldon")
+    fileio.makedirs(served_model_uri)
+    io_utils.copy_dir(model.uri, served_model_uri)
+    # TODO [ENG-773]: determine how to formalize how models are organized into
+    #   folders and sub-folders depending on the model type/format and the
+    #   Seldon Core protocol used to serve the model.
+    if not context.stack:
+        raise DoesNotExistException(
+            "No active stack is available. "
+            "Please make sure that you have registered and set a stack."
+        )
+    stack = context.stack
+    artifact = stack.metadata_store.store.get_artifacts_by_uri(model.uri)
+
+    if not artifact:
+        raise DoesNotExistException("No artifact found at {}".format(model.uri))
+
+    model_metadata_file = save_model_metadata(artifact[0])
+    fileio.copy(
+        model_metadata_file,
+        os.path.join(served_model_uri, MODEL_METADATA_YAML_FILE_NAME),
+    )
+
+    service_config = config.service_config.copy()
+    service_config.model_uri = served_model_uri
+
+    # create specification for the custom deployment
+    service_config.spec = create_seldon_core_custom_spec(
+        model_uri=service_config.model_uri,
+        custom_docker_image=custom_docker_image_name,
+        secret_name=service_config.secret_name,
+        command=entrypoint_command,
+    )
+
+    service = cast(
+        SeldonDeploymentService,
+        model_deployer.deploy_model(
+            service_config, replace=True, timeout=config.timeout
+        ),
+    )
+
+    logger.info(
+        f"Seldon Core deployment service started and reachable at:\n"
         f"    {service.prediction_url}\n"
     )
 

@@ -54,6 +54,8 @@ class SeldonDeploymentConfig(ServiceConfig):
             https://docs.seldon.io/projects/seldon-core/en/latest/reference/apis/metadata.html).
         extra_args: additional arguments to pass to the Seldon Core deployment
             resource configuration.
+        is_custom_deployment: whether the deployment is a custom deployment
+        spec: custom Kubernetes resource specification for the Seldon Core
     """
 
     model_uri: str = ""
@@ -64,6 +66,8 @@ class SeldonDeploymentConfig(ServiceConfig):
     secret_name: Optional[str]
     model_metadata: Dict[str, Any] = Field(default_factory=dict)
     extra_args: Dict[str, Any] = Field(default_factory=dict)
+    is_custom_deployment: Optional[bool] = False
+    spec: Optional[Dict[Any, Any]] = Field(default_factory=dict)
 
     def get_seldon_deployment_labels(self) -> Dict[str, str]:
         """Generate labels for the Seldon Core deployment from the service configuration.
@@ -287,6 +291,8 @@ class SeldonDeploymentService(BaseService):
             secret_name=self.config.secret_name,
             labels=self._get_seldon_deployment_labels(),
             annotations=self.config.get_seldon_deployment_annotations(),
+            is_custom_deployment=self.config.is_custom_deployment,
+            spec=self.config.spec,
         )
         deployment.spec.replicas = self.config.replicas
         deployment.spec.predictors[0].replicas = self.config.replicas
