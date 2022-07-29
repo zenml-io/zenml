@@ -17,7 +17,6 @@ import re
 from typing import Any, ClassVar, Dict, List, Optional
 
 import boto3
-import botocore
 
 from zenml.exceptions import SecretExistsError
 from zenml.integrations.aws import AWS_SECRET_MANAGER_FLAVOR
@@ -167,6 +166,71 @@ class AWSSecretsManager(BaseSecretsManager):
 
         return filters
 
+    def _list_secrets(self, secret_name: Optional[str] = None) -> List[str]:
+        """List all secrets matching a name.
+
+        This method lists all the secrets in the current scope without loading
+        their contents. An optional secret name can be supplied to filter out
+        all but a single secret identified by name.
+
+        Args:
+            secret_name: Optional secret name to filter for.
+
+        Returns:
+            A list of secret names in the current scope and the optional
+            secret name.
+        """
+        self._ensure_client_connected(self.region_name)
+
+        filters: List[Dict[str, Any]] = []
+        prefix: Optional[str] = None
+        if self.scope == SecretsManagerScope.NONE:
+            # unscoped (legacy) secrets don't have tags. We want to filter out
+            # non-legacy secrets
+            filters = [
+                {
+                    "Key": "tag-key",
+                    "Values": [
+                        "!zenml_scope",
+                    ],
+                },
+            ]
+            if secret_name:
+                prefix = secret_name
+        else:
+            filters = self._get_secret_scope_filters()
+            if secret_name:
+                prefix = "/".join(self._get_scoped_secret_path(secret_name))
+            else:
+                # add the name prefix to the filters to account for the fact
+                # that AWS does not do exact matching but prefix-matching on the
+                # filters
+                prefix = "/".join(self._get_scope_path()) + "/"
+
+        if prefix:
+            filters.append(
+                {
+                    "Key": "name",
+                    "Values": [
+                        f"{prefix}",
+                    ],
+                }
+            )
+
+        # TODO [ENG-720]: Deal with pagination in the aws secret manager when
+        #  listing all secrets
+        # TODO [ENG-721]: take out this magic maxresults number
+        response = self.CLIENT.list_secrets(MaxResults=100, Filters=filters)
+        results = []
+        for secret in response["SecretList"]:
+            name = self._get_unscoped_secret_name(secret["Name"])
+            # keep only the names that are in scope and filter by secret name,
+            # if one was given
+            if name and (not secret_name or secret_name == name):
+                results.append(name)
+
+        return results
+
     def register_secret(self, secret: BaseSecretSchema) -> None:
         """Registers a new secret.
 
@@ -180,13 +244,10 @@ class AWSSecretsManager(BaseSecretsManager):
         self._ensure_client_connected(self.region_name)
         secret_value = json.dumps(secret_to_dict(secret, encode=False))
 
-        try:
-            self.get_secret(secret.name)
+        if self._list_secrets(secret.name):
             raise SecretExistsError(
                 f"A Secret with the name {secret.name} already exists"
             )
-        except KeyError:
-            pass
 
         kwargs: Dict[str, Any] = {
             "Name": self._get_scoped_secret_name(secret.name),
@@ -209,28 +270,18 @@ class AWSSecretsManager(BaseSecretsManager):
 
         Raises:
             KeyError: if the secret does not exist
-            RuntimeError: if an unexpected AWS client error occurs
         """
         self.validate_secret_name_or_namespace(secret_name)
         self._ensure_client_connected(self.region_name)
 
-        try:
-            get_secret_value_response = self.CLIENT.get_secret_value(
-                SecretId=self._get_scoped_secret_name(secret_name)
-            )
-            if "SecretString" not in get_secret_value_response:
-                get_secret_value_response = None
-        except botocore.exceptions.ClientError as error:
-            if error.response["Error"]["Code"] == "ResourceNotFoundException":
-                get_secret_value_response = None
-            else:
-                raise RuntimeError(
-                    f"An unexpected failure occurred while reading secret "
-                    f"'{secret_name}'"
-                ) from error
-
-        if get_secret_value_response is None:
+        if not self._list_secrets(secret_name):
             raise KeyError(f"Can't find the specified secret '{secret_name}'")
+
+        get_secret_value_response = self.CLIENT.get_secret_value(
+            SecretId=self._get_scoped_secret_name(secret_name)
+        )
+        if "SecretString" not in get_secret_value_response:
+            get_secret_value_response = None
 
         return secret_from_dict(
             json.loads(get_secret_value_response["SecretString"]),
@@ -244,48 +295,7 @@ class AWSSecretsManager(BaseSecretsManager):
         Returns:
             A list of all secret keys
         """
-        self._ensure_client_connected(self.region_name)
-
-        filters: List[Dict[str, Any]] = []
-        if self.scope == SecretsManagerScope.NONE:
-            # unscoped (legacy) secrets don't have tags. We want to filter out
-            # non-legacy secrets
-            filters = [
-                {
-                    "Key": "tag-key",
-                    "Values": [
-                        "!zenml_scope",
-                    ],
-                },
-            ]
-        else:
-            filters = self._get_secret_scope_filters()
-            # add the name prefix to the filters to account for the fact that
-            # AWS does not do exact matching but prefix-matching on the filters
-            prefix = "/".join(self._get_scope_path())
-            filters.append(
-                {
-                    "Key": "name",
-                    "Values": [
-                        f"{prefix}/",
-                    ],
-                }
-            )
-
-        # TODO [ENG-720]: Deal with pagination in the aws secret manager when
-        #  listing all secrets
-        # TODO [ENG-721]: take out this magic maxresults number
-        response = self.CLIENT.list_secrets(MaxResults=100, Filters=filters)
-        # print(response)
-        results = [
-            self._get_unscoped_secret_name(secret["Name"])
-            for secret in response["SecretList"]
-        ]
-
-        # remove out-of-scope secrets that may have slipped through (i.e.
-        # for which `_get_unscoped_secret_name` returned None) because AWS does
-        # not use exact matching with the filters, but prefix matching instead
-        return list(filter(None, results))
+        return self._list_secrets()
 
     def update_secret(self, secret: BaseSecretSchema) -> None:
         """Update an existing secret.
@@ -295,31 +305,21 @@ class AWSSecretsManager(BaseSecretsManager):
 
         Raises:
             KeyError: if the secret does not exist
-            RuntimeError: if an unexpected AWS client error occurs
         """
         self.validate_secret_name_or_namespace(secret.name)
         self._ensure_client_connected(self.region_name)
+
+        if not self._list_secrets(secret.name):
+            raise KeyError(f"Can't find the specified secret '{secret.name}'")
 
         secret_value = json.dumps(secret_to_dict(secret))
 
         kwargs = {
             "SecretId": self._get_scoped_secret_name(secret.name),
             "SecretString": secret_value,
-            "Tags": self._get_secret_tags(secret),
         }
 
-        try:
-            self.CLIENT.put_secret_value(**kwargs)
-        except botocore.exceptions.ClientError as error:
-            if error.response["Error"]["Code"] == "ResourceNotFoundException":
-                raise KeyError(
-                    f"Can't find the specified secret '{secret.name}'"
-                )
-            else:
-                raise RuntimeError(
-                    f"An unexpected failure occurred while updating secret "
-                    f"'{secret.name}'"
-                ) from error
+        self.CLIENT.put_secret_value(**kwargs)
 
     def delete_secret(self, secret_name: str) -> None:
         """Delete an existing secret.
@@ -329,24 +329,16 @@ class AWSSecretsManager(BaseSecretsManager):
 
         Raises:
             KeyError: if the secret does not exist
-            RuntimeError: if an unexpected AWS client error occurs
         """
         self._ensure_client_connected(self.region_name)
-        try:
-            self.CLIENT.delete_secret(
-                SecretId=self._get_scoped_secret_name(secret_name),
-                ForceDeleteWithoutRecovery=True,
-            )
-        except botocore.exceptions.ClientError as error:
-            if error.response["Error"]["Code"] == "ResourceNotFoundException":
-                raise KeyError(
-                    f"Can't find the specified secret '{secret_name}'"
-                )
-            else:
-                raise RuntimeError(
-                    f"An unexpected failure occurred while deleting secret "
-                    f"'{secret_name}'"
-                ) from error
+
+        if not self._list_secrets(secret_name):
+            raise KeyError(f"Can't find the specified secret '{secret_name}'")
+
+        self.CLIENT.delete_secret(
+            SecretId=self._get_scoped_secret_name(secret_name),
+            ForceDeleteWithoutRecovery=True,
+        )
 
     def delete_all_secrets(self) -> None:
         """Delete all existing secrets.
@@ -355,7 +347,7 @@ class AWSSecretsManager(BaseSecretsManager):
         recover them once this method is called.
         """
         self._ensure_client_connected(self.region_name)
-        for secret_name in self.get_all_secret_keys():
+        for secret_name in self._list_secrets():
             self.CLIENT.delete_secret(
                 SecretId=self._get_scoped_secret_name(secret_name),
                 ForceDeleteWithoutRecovery=True,

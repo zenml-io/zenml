@@ -15,6 +15,7 @@
 import time
 import uuid
 from contextlib import ExitStack as does_not_raise
+from typing import Any, Dict
 
 import pytest
 
@@ -29,6 +30,7 @@ from zenml.secrets_managers.base_secrets_manager import (
 )
 
 
+@pytest.mark.secret_scoping
 def test_scope_defaults_to_component(request: pytest.FixtureRequest):
     """Tests that secrets managers are component-scoped by default."""
     secrets_manager = get_secrets_manager(request)
@@ -36,12 +38,19 @@ def test_scope_defaults_to_component(request: pytest.FixtureRequest):
 
 
 def test_scope_backwards_compatibility(request: pytest.FixtureRequest):
-    """Tests that existing secrets managers are unscoped by default."""
+    """Tests the default scope of existing secrets managers."""
     secrets_manager = get_secrets_manager(request, uuid=uuid.uuid4())
     assert secrets_manager.scope == SecretsManagerScope.NONE
     assert secrets_manager.namespace is None
 
+    with does_not_raise():
+        secrets_manager = get_secrets_manager(
+            request, uuid=uuid.uuid4(), scope=SecretsManagerScope.NONE
+        )
+    assert secrets_manager.scope == SecretsManagerScope.NONE
 
+
+@pytest.mark.secret_scoping
 def test_scope_namespace_required(request: pytest.FixtureRequest):
     """Tests that namespace scoped secrets managers need a namespace."""
     with pytest.raises(ValueError):
@@ -52,7 +61,7 @@ def test_scope_namespace_required(request: pytest.FixtureRequest):
         )
 
 
-@pytest.mark.scope
+@pytest.mark.secret_scoping
 def test_same_secret_different_scopes(
     unscoped_secrets_manager: BaseSecretsManager,
     global_scoped_secrets_manager: BaseSecretsManager,
@@ -122,7 +131,7 @@ def test_same_secret_different_scopes(
     assert namespace_secret.name in namespace_secrets
 
 
-@pytest.mark.scope
+@pytest.mark.secret_scoping
 def test_different_secret_different_scopes(
     unscoped_secrets_manager: BaseSecretsManager,
     global_scoped_secrets_manager: BaseSecretsManager,
@@ -220,3 +229,153 @@ def test_different_secret_different_scopes(
     namespace_secrets = namespace_scoped_secrets_manager.get_all_secret_keys()
     assert len(namespace_secrets) == 1
     assert namespace_secret.name in namespace_secrets
+
+
+@pytest.mark.secret_scoping
+@pytest.mark.parametrize(
+    "secrets_manager",
+    SecretsManagerScope.values(),
+    indirect=True,
+)
+def test_secrets_shared_at_scope_level(
+    secrets_manager: BaseSecretsManager,
+    request: pytest.FixtureRequest,
+):
+    """Tests that secrets managers share secrets if they are in the same scope.
+
+    This test uses two instances of Secrets Manager in the same scope to verify
+    that the secrets added, updated and deleted in one instance are immediately
+    visible in the second instance.
+    """
+    copy_kwargs: Dict[str, Any] = dict(
+        scope=secrets_manager.scope,
+        namespace=secrets_manager.namespace,
+    )
+    # two secrets managers using component scope also have to share the UUID
+    # value to be in the same scope
+    if secrets_manager.scope == SecretsManagerScope.COMPONENT:
+        copy_kwargs["uuid"] = secrets_manager.uuid
+
+    another_secrets_manager = get_secrets_manager(request, **copy_kwargs)
+
+    secret = get_arbitrary_secret()
+
+    with pytest.raises(KeyError):
+        secrets_manager.get_secret(secret.name)
+    with pytest.raises(KeyError):
+        another_secrets_manager.get_secret(secret.name)
+
+    # add a secret
+    secrets_manager.register_secret(secret)
+
+    if secrets_manager.FLAVOR == "aws":
+        # AWS can take some time to make the secrets operationally available
+        time.sleep(5)
+
+    with does_not_raise():
+        secrets_manager.get_secret(secret.name)
+    with does_not_raise():
+        other_secret = another_secrets_manager.get_secret(secret.name)
+
+    assert isinstance(other_secret, ArbitrarySecretSchema)
+    assert other_secret.arbitrary_kv_pairs == secret.arbitrary_kv_pairs
+
+    available_secrets = secrets_manager.get_all_secret_keys()
+    assert len(available_secrets) >= 1
+    assert secret.name in available_secrets
+
+    other_available_secrets = another_secrets_manager.get_all_secret_keys()
+    assert len(other_available_secrets) >= 1
+    assert secret.name in other_available_secrets
+
+    # update the secret
+    new_secret = get_arbitrary_secret(name=secret.name)
+
+    # TODO: the current GCP Secrets Manager implementation has a bug in it
+    # that prevents new keys from being added to an existing secret. We could
+    # fix it, but given that unscoped secrets are deprecated, it's better to
+    # just wait until it is phased out.
+    if secrets_manager.FLAVOR == "gcp_secrets_manager":
+        new_secret.arbitrary_kv_pairs = secret.arbitrary_kv_pairs.copy()
+        new_secret.arbitrary_kv_pairs[
+            list(new_secret.arbitrary_kv_pairs.keys())[0]
+        ] = "new_value"
+    secrets_manager.update_secret(new_secret)
+
+    with does_not_raise():
+        other_secret = another_secrets_manager.get_secret(secret.name)
+
+    assert isinstance(other_secret, ArbitrarySecretSchema)
+    assert other_secret.arbitrary_kv_pairs != secret.arbitrary_kv_pairs
+    assert other_secret.arbitrary_kv_pairs == new_secret.arbitrary_kv_pairs
+
+    # delete the secret
+    secrets_manager.delete_secret(secret.name)
+
+    if secrets_manager.FLAVOR == "aws":
+        # AWS can take some time to delete the secrets
+        time.sleep(10)
+
+    with pytest.raises(KeyError):
+        secrets_manager.get_secret(secret.name)
+    with pytest.raises(KeyError):
+        another_secrets_manager.get_secret(secret.name)
+
+    available_secrets = secrets_manager.get_all_secret_keys()
+    assert secret.name not in available_secrets
+
+    other_available_secrets = another_secrets_manager.get_all_secret_keys()
+    assert secret.name not in other_available_secrets
+
+
+@pytest.mark.secret_scoping
+@pytest.mark.parametrize(
+    "secrets_manager",
+    [SecretsManagerScope.COMPONENT, SecretsManagerScope.NAMESPACE],
+    indirect=True,
+)
+def test_secrets_not_shared_in_different_scopes(
+    secrets_manager: BaseSecretsManager,
+    request: pytest.FixtureRequest,
+):
+    """Tests that secrets managers do not share secrets if they are in different scopes.
+
+    This test uses two instances of Secrets Manager in different scopes to verify
+    that the secrets added, updated and deleted in one instance are not
+    visible in the second instance.
+    """
+    other_namespace = secrets_manager.namespace
+    if other_namespace:
+        other_namespace = other_namespace[::-1]
+
+    another_secrets_manager = get_secrets_manager(
+        request,
+        scope=secrets_manager.scope,
+        namespace=other_namespace,
+    )
+
+    secret = get_arbitrary_secret()
+
+    with pytest.raises(KeyError):
+        secrets_manager.get_secret(secret.name)
+    with pytest.raises(KeyError):
+        another_secrets_manager.get_secret(secret.name)
+
+    # add a secret
+    secrets_manager.register_secret(secret)
+
+    if secrets_manager.FLAVOR == "aws":
+        # AWS can take some time to make the secrets operationally available
+        time.sleep(5)
+
+    with does_not_raise():
+        secrets_manager.get_secret(secret.name)
+    with pytest.raises(KeyError):
+        another_secrets_manager.get_secret(secret.name)
+
+    available_secrets = secrets_manager.get_all_secret_keys()
+    assert len(available_secrets) == 1
+    assert secret.name in available_secrets
+
+    other_available_secrets = another_secrets_manager.get_all_secret_keys()
+    assert len(other_available_secrets) == 0

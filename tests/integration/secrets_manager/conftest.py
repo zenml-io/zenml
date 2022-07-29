@@ -20,7 +20,8 @@ from zenml.utils.string_utils import random_str
 
 def pytest_configure(config):
     config.addinivalue_line(
-        "markers", "scope: mark Secrets Manager tests that test scoping"
+        "markers",
+        "secret_scoping: mark Secrets Manager tests that test secret scoping",
     )
 
 
@@ -29,10 +30,10 @@ def pytest_collection_modifyitems(config, items):
     if flavor in ["local"]:
         # skip scope testing with secrets manager that don't understand scoping
         skip_scope = pytest.mark.skip(
-            reason=f"{flavor} Secrets Manager Does not support scope"
+            reason=f"{flavor} Secrets Manager Does not support scoping"
         )
         for item in items:
-            if "scope" in item.keywords:
+            if "secret_scoping" in item.keywords:
                 item.add_marker(skip_scope)
 
 
@@ -88,6 +89,21 @@ def namespace_scoped_secrets_manager(request: pytest.FixtureRequest):
         request,
         name=f"zenml_pytest_{random_str(16).lower()}",
         scope=SecretsManagerScope.NAMESPACE,
+        namespace=f"pytest_{random_str(8).lower()}",
+    )
+    old_secrets = secrets_manager.get_all_secret_keys()
+    yield secrets_manager
+    new_secrets = secrets_manager.get_all_secret_keys()
+    for secret in set(new_secrets) - set(old_secrets):
+        secrets_manager.delete_secret(secret)
+
+
+@pytest.fixture(scope="function")
+def secrets_manager(request: pytest.FixtureRequest):
+    secrets_manager = get_secrets_manager(
+        request,
+        name=f"zenml_pytest_{random_str(16).lower()}",
+        scope=request.param,
         namespace=f"pytest_{random_str(8).lower()}",
     )
     old_secrets = secrets_manager.get_all_secret_keys()

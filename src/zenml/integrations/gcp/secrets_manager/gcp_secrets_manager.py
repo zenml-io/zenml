@@ -252,6 +252,42 @@ class GCPSecretsManager(BaseSecretsManager):
 
         return " AND ".join(filters)
 
+    def _list_secrets(self, secret_name: Optional[str] = None) -> List[str]:
+        """List all secrets matching a name.
+
+        This method lists all the secrets in the current scope without loading
+        their contents. An optional secret name can be supplied to filter out
+        all but a single secret identified by name.
+
+        Args:
+            secret_name: Optional secret name to filter for.
+
+        Returns:
+            A list of secret names in the current scope and the optional
+            secret name.
+        """
+        self._ensure_client_connected()
+
+        set_of_secrets = set()
+
+        # List all secrets.
+        for secret in self.CLIENT.list_secrets(
+            request={
+                "parent": self.parent_name,
+                "filter": self._get_secret_scope_filters(secret_name),
+            }
+        ):
+            if self.scope == SecretsManagerScope.NONE:
+                name = secret.labels[ZENML_GROUP_KEY]
+            else:
+                name = secret.labels[ZENML_SECRET_NAME_LABEL]
+
+            # filter by secret name, if one was given
+            if name and (not secret_name or name == secret_name):
+                set_of_secrets.add(name)
+
+        return list(set_of_secrets)
+
     def register_secret(self, secret: BaseSecretSchema) -> None:
         """Registers a new secret.
 
@@ -264,13 +300,10 @@ class GCPSecretsManager(BaseSecretsManager):
         self.validate_secret_name_or_namespace(secret.name)
         self._ensure_client_connected()
 
-        try:
-            self.get_secret(secret.name)
+        if not self._list_secrets(secret.name):
             raise SecretExistsError(
                 f"A Secret with the name {secret.name} already exists"
             )
-        except KeyError:
-            pass
 
         adjusted_content = self._convert_secret_content(secret)
         for k, v in adjusted_content.items():
@@ -360,19 +393,13 @@ class GCPSecretsManager(BaseSecretsManager):
         else:
             # Scoped secrets are mapped 1-to-1 with Google secrets
 
-            google_secret_name = "/".join(
-                [
-                    self.parent_name,
-                    "secrets",
-                    self._get_scoped_secret_name(secret_name),
-                ]
+            google_secret_name = self.CLIENT.secret_path(
+                self.project_id, self._get_scoped_secret_name(secret_name)
             )
 
             try:
                 # fetch the latest secret version
-                google_secret = self.CLIENT.get_secret(
-                    name=f"{google_secret_name}"
-                )
+                google_secret = self.CLIENT.get_secret(name=google_secret_name)
             except google_exceptions.NotFound:
                 raise KeyError(
                     f"Can't find the specified secret '{secret_name}'"
@@ -409,44 +436,33 @@ class GCPSecretsManager(BaseSecretsManager):
         Returns:
             A list of all secret keys
         """
-        self._ensure_client_connected()
-
-        set_of_secrets = set()
-
-        # List all secrets.
-        for secret in self.CLIENT.list_secrets(
-            request={
-                "parent": self.parent_name,
-                "filter": self._get_secret_scope_filters(),
-            }
-        ):
-            if self.scope == SecretsManagerScope.NONE:
-                secret_name = secret.labels[ZENML_GROUP_KEY]
-            else:
-                secret_name = secret.labels[ZENML_SECRET_NAME_LABEL]
-            set_of_secrets.add(secret_name)
-
-        return list(set_of_secrets)
+        return self._list_secrets()
 
     def update_secret(self, secret: BaseSecretSchema) -> None:
         """Update an existing secret by creating new versions of the existing secrets.
 
         Args:
             secret: the secret to update
+
+        Raises:
+            KeyError: if the secret does not exist
         """
         self.validate_secret_name_or_namespace(secret.name)
         self._ensure_client_connected()
+
+        if not self._list_secrets(secret.name):
+            raise KeyError(f"Can't find the specified secret '{secret.name}'")
 
         adjusted_content = self._convert_secret_content(secret)
 
         for k, v in adjusted_content.items():
             # Create the secret, this only creates an empty secret with the
             #  supplied name.
-            version_parent = self.CLIENT.secret_path(self.project_id, k)
+            google_secret_name = self.CLIENT.secret_path(self.project_id, k)
             payload = {"data": str(v).encode()}
 
             self.CLIENT.add_secret_version(
-                request={"parent": version_parent, "payload": payload}
+                request={"parent": google_secret_name, "payload": payload}
             )
 
     def delete_secret(self, secret_name: str) -> None:
@@ -461,7 +477,8 @@ class GCPSecretsManager(BaseSecretsManager):
         self.validate_secret_name_or_namespace(secret_name)
         self._ensure_client_connected()
 
-        secret_deleted = False
+        if not self._list_secrets(secret_name):
+            raise KeyError(f"Can't find the specified secret '{secret_name}'")
 
         # Go through all gcp secrets and delete the ones with the secret_name
         # as label.
@@ -471,11 +488,7 @@ class GCPSecretsManager(BaseSecretsManager):
                 "filter": self._get_secret_scope_filters(secret_name),
             }
         ):
-            secret_deleted = True
             self.CLIENT.delete_secret(request={"name": secret.name})
-
-        if not secret_deleted:
-            raise KeyError(f"Can't find the specified secret '{secret_name}'")
 
     def delete_all_secrets(self) -> None:
         """Delete all existing secrets."""
