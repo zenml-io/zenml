@@ -13,7 +13,9 @@ following guide.
 
 ## 🗺 Overview
 
-NOTE: This example currently only runs with a cloud artifact store.
+NOTE: This example currently only runs with a cloud artifact store. [This guide
+by Label Studio](https://labelstud.io/guide/storage.html) contains more details
+if you have trouble understanding the instructions below.
 
 For a full video walkthrough on how to run this email, please check out [our
 community hour demo](https://www.youtube.com/watch?v=bLFGnoApWeU) in which we
@@ -23,29 +25,13 @@ show how to run the various pipelines, in what order, all using an AWS stack.
 
 ## 👣 Step-by-Step
 
-### 📄 Prerequisites
-
-In order to run this example, you need to install and initialize ZenML.
-
-```shell
-# install CLI
-pip install zenml
-
-# pull example
-zenml example pull annotation_label_studio
-cd zenml_examples/annotation_label_studio
-
-# Initialize ZenML repo
-zenml init
-```
-
 ### 🥞 Set up your stack for Microsoft Azure
 
 In order to run this example, you need to install and initialize ZenML and Label
 Studio.
 
 ```shell
-zenml integration install label_studio
+zenml integration install label_studio pytorch azure
 
 # pull example
 zenml example pull annotation_label_studio
@@ -102,7 +88,8 @@ In order to run this example, you need to install and initialize ZenML and Label
 Studio.
 
 ```shell
-zenml integration install label_studio
+pip install zenml
+zenml integration install label_studio pytorch gcp
 
 # pull example
 zenml example pull annotation_label_studio
@@ -172,7 +159,8 @@ In order to run this example, you need to install and initialize ZenML and Label
 Studio.
 
 ```shell
-zenml integration install label_studio
+pip install zenml
+zenml integration install label_studio pytorch s3
 
 # pull example
 zenml example pull annotation_label_studio
