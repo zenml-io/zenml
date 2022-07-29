@@ -34,8 +34,8 @@ Studio.
 zenml integration install label_studio pytorch azure
 
 # pull example
-zenml example pull annotation_label_studio
-cd zenml_examples/annotation_label_studio
+zenml example pull label_studio_annotation
+cd zenml_examples/label_studio_annotation
 
 # Initialize ZenML repo
 zenml init
@@ -92,8 +92,8 @@ pip install zenml
 zenml integration install label_studio pytorch gcp
 
 # pull example
-zenml example pull annotation_label_studio
-cd zenml_examples/annotation_label_studio
+zenml example pull label_studio_annotation
+cd zenml_examples/label_studio_annotation
 
 # Initialize ZenML repo
 zenml init
@@ -163,8 +163,8 @@ pip install zenml
 zenml integration install label_studio pytorch s3
 
 # pull example
-zenml example pull annotation_label_studio
-cd zenml_examples/annotation_label_studio
+zenml example pull label_studio_annotation
+cd zenml_examples/label_studio_annotation
 
 # Initialize ZenML repo
 zenml init
