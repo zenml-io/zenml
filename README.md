@@ -99,8 +99,8 @@
     <li>
       <a href="#-getting-started">Getting Started</a>
       <ul>
-        <li><a href="#💾-installation">Installation</a></li>
-        <li><a href="#🚅-quickstart">Quickstart</a></li>
+        <li><a href="#-installation">Installation</a></li>
+        <li><a href="#-quickstart">Quickstart</a></li>
       </ul>
     </li>
     <li><a href="#-get-a-guided-tour-with-zenml-go">Get a guided tour with zenml go</a></li>
