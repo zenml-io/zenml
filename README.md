@@ -112,11 +112,7 @@ Using ZenML allows data scientists like you to own the entire pipeline - from ex
 This is why we built ZenML. Read more [here](https://blog.zenml.io/why-zenml/).
 
 
-ZenML is not built to replace your favorite tools. Rather ZenML bring all of them together into once place. 
 
-![ZenML unifies all your tools in one place.](docs/book/assets/sam-side-by-side-full-text.png)
-
-Read more on all tools you can readily use in the [integrations](https://zenml.io/integrations) section. Can't find your tool? You can even [write your own integration](https://docs.zenml.io/developer-guide/advanced-usage/custom-flavors) to extend ZenML.
 
 # 💡 What is ZenML?
 
@@ -127,12 +123,18 @@ Read more on all tools you can readily use in the [integrations](https://zenml.i
 
 ZenML is an extensible, open-source MLOps framework for creating portable, production-ready MLOps pipelines. It's built for Data Scientists, ML Engineers, and MLOps Developers to collaborate as they develop to production. 
 
-ZenML offers simple, flexible syntax, is cloud- and tool-agnostic, and has interfaces/abstractions that are catered towards ML workflows. ZenML brings together all your favorite tools in one place so you can tailor your workflow to cater your needs.
+ZenML offers simple, flexible syntax, is cloud- and tool-agnostic, and has interfaces/abstractions that are catered toward ML workflows. 
+With ZenML you'll have all your favorite tools in one place so you can tailor a workflow that caters to your specific needs.
+
+![ZenML unifies all your tools in one place.](docs/book/assets/sam-side-by-side-full-text.png)
+
+Read more on all tools you can readily use in the [integrations](https://zenml.io/integrations) section. Can't find your tool? You can always [write your own integration](https://docs.zenml.io/developer-guide/advanced-usage/custom-flavors) to use it with ZenML.
 
 
 # 🎮 Features
-ZenML is actively under development. 
+ZenML is actively under development.
 Here are 9 most prominent features as of the current release. 
+
 Read more about features [here](https://zenml.io/features).
 
 
@@ -285,13 +287,10 @@ on how to use and extend ZenML.
 
 # 🍰 ZenBytes
 
-[ZenBytes](https://github.com/zenml-io/zenbytes) is a series of short practical
-MLOps lessons through ZenML and its various integrations. It is intended for
-people looking to learn about MLOps generally, and also for ML practitioners who
-want to get started with ZenML.
+ZenBytes is a series of short practical MLOps lessons through ZenML and its various integrations. 
+It is intended for people looking to learn about MLOps generally, and also for ML practitioners who want to get started with ZenML.
 
-After you've run and understood the simple example above, your next port of call
-is probably either the [fully-fleshed-out quickstart
+After you've run and understood the example in [Quickstart](#🚅-quickstart), your next port of call is probably either the [fully-fleshed-out quickstart
 example](https://github.com/zenml-io/zenml/tree/main/examples/quickstart) and
 then to look at [the ZenBytes repository](https://github.com/zenml-io/zenbytes)
 and notebooks.
