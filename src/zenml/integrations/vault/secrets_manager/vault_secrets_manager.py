@@ -43,6 +43,7 @@ class VaultSecretsManager(BaseSecretsManager):
 
     # Class configuration
     FLAVOR: ClassVar[str] = VAULT_SECRETS_MANAGER_FLAVOR
+    SUPPORTS_SCOPING: ClassVar[bool] = True
     CLIENT: ClassVar[Any] = None
 
     url: str
@@ -126,7 +127,9 @@ class VaultSecretsManager(BaseSecretsManager):
 
         sanitized_secret_name = self._sanitize_secret_name(secret.name)
 
-        if sanitized_secret_name in self.get_all_secret_keys():
+        try:
+            self.get_secret(sanitized_secret_name)
+        except KeyError:
             raise SecretExistsError(
                 f"A Secret with the name '{secret.name}' already exists."
             )

@@ -13,6 +13,10 @@
 #  permissions and limitations under the License.
 import pytest
 
+from tests.integration.secrets_manager.utils import get_secrets_manager
+from zenml.secrets_managers.base_secrets_manager import SecretsManagerScope
+from zenml.utils.string_utils import random_str
+
 
 def pytest_configure(config):
     config.addinivalue_line(
@@ -30,3 +34,64 @@ def pytest_collection_modifyitems(config, items):
         for item in items:
             if "scope" in item.keywords:
                 item.add_marker(skip_scope)
+
+
+@pytest.fixture(scope="function")
+def unscoped_secrets_manager(request: pytest.FixtureRequest):
+    """Fixture to yield an unscoped secrets manager."""
+    secrets_manager = get_secrets_manager(
+        request,
+        name=f"zenml_pytest_{random_str(16).lower()}",
+        scope=SecretsManagerScope.NONE,
+    )
+    old_secrets = secrets_manager.get_all_secret_keys()
+    yield secrets_manager
+    new_secrets = secrets_manager.get_all_secret_keys()
+    for secret in set(new_secrets) - set(old_secrets):
+        secrets_manager.delete_secret(secret)
+
+
+@pytest.fixture(scope="function")
+def global_scoped_secrets_manager(request: pytest.FixtureRequest):
+    """Fixture to yield a global scoped secrets manager."""
+    secrets_manager = get_secrets_manager(
+        request,
+        name=f"zenml_pytest_{random_str(16).lower()}",
+        scope=SecretsManagerScope.GLOBAL,
+    )
+    old_secrets = secrets_manager.get_all_secret_keys()
+    yield secrets_manager
+    new_secrets = secrets_manager.get_all_secret_keys()
+    for secret in set(new_secrets) - set(old_secrets):
+        secrets_manager.delete_secret(secret)
+
+
+@pytest.fixture(scope="function")
+def component_scoped_secrets_manager(request: pytest.FixtureRequest):
+    """Fixture to yield a component scoped secrets manager."""
+    secrets_manager = get_secrets_manager(
+        request,
+        name=f"zenml_pytest_{random_str(16).lower()}",
+        scope=SecretsManagerScope.COMPONENT,
+    )
+    old_secrets = secrets_manager.get_all_secret_keys()
+    yield secrets_manager
+    new_secrets = secrets_manager.get_all_secret_keys()
+    for secret in set(new_secrets) - set(old_secrets):
+        secrets_manager.delete_secret(secret)
+
+
+@pytest.fixture(scope="function")
+def namespace_scoped_secrets_manager(request: pytest.FixtureRequest):
+    """Fixture to yield a namespace scoped secrets manager."""
+    secrets_manager = get_secrets_manager(
+        request,
+        name=f"zenml_pytest_{random_str(16).lower()}",
+        scope=SecretsManagerScope.NAMESPACE,
+        namespace=f"pytest_{random_str(8).lower()}",
+    )
+    old_secrets = secrets_manager.get_all_secret_keys()
+    yield secrets_manager
+    new_secrets = secrets_manager.get_all_secret_keys()
+    for secret in set(new_secrets) - set(old_secrets):
+        secrets_manager.delete_secret(secret)
