@@ -207,7 +207,8 @@ making sure to replace `<YOUR_BUCKET_NAME>` with the actual value you used above
 Create a policy using [the `create-policy` CLI command](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_create-cli.html) for IAM to manage the Label Studio access to the S3 bucket. This assumes you are running the command from the same directory in which you saved the policy file.
 
 ```shell
-aws iam create-policy --policy-name <YOUR_POLICY_NAME> --policy-document file://<YOUR_POLICY_FILE_NAME>
+# this token duration is the maximum possible, but you will have to check if your bucket allows this
+aws iam create-policy --policy-name <YOUR_POLICY_NAME> --policy-document file://<YOUR_POLICY_FILE_NAME> --duration_seconds=43200
 ```
 
 Set up cross-origin resource sharing (CORS) access to your bucket, using a policy that allows `GET` access from the same host name as your Label Studio deployment. You can use the CORS file we have pre-populated for you inside the examples repo as follows:
