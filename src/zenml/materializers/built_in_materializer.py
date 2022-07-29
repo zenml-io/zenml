@@ -18,6 +18,7 @@ import shutil
 from typing import Any, Iterable, Type
 
 from zenml.artifacts import DataAnalysisArtifact, DataArtifact
+from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.default_materializer_registry import (
@@ -83,7 +84,7 @@ class BytesMaterializer(BaseMaterializer):
     """Handle `bytes` data type, which is not JSON serializable."""
 
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact, DataAnalysisArtifact)
-    ASSOCIATED_TYPES = [bytes]
+    ASSOCIATED_TYPES = (bytes,)
 
     def __init__(self, artifact: "BaseArtifact"):
         """Define `self.data_path`.
@@ -118,7 +119,7 @@ class BytesMaterializer(BaseMaterializer):
             file_.write(data)
 
 
-def _all_serializable(iterable: Iterable):
+def _all_serializable(iterable: Iterable[Any]) -> bool:
     """For an iterable, check whether all of its elements are JSON-serializable.
 
     Args:
@@ -130,7 +131,7 @@ def _all_serializable(iterable: Iterable):
     return all(_is_serializable(element) for element in iterable)
 
 
-def _is_serializable(obj: Any):
+def _is_serializable(obj: Any) -> bool:
     """Check whether a built-in object is JSON-serializable.
 
     Args:
@@ -284,30 +285,32 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             data = [list(data.keys()), list(data.values())]
 
         # non-serializable list: Materialize each element into a subfolder.
-        # Define metadata and create a list of per-element materializers.
-        metadata = {"length": len(data), "paths": [], "types": []}
-        materializers = []
+        # Get path, type, and corresponding materializer for each element.
+        paths, types, materializers = [], [], []
         for i, element in enumerate(data):
             element_path = os.path.join(self.artifact.uri, str(i))
             os.mkdir(element_path)
             type_ = type(element)
-            metadata["paths"].append(element_path)
-            metadata["types"].append(str(type_))
+            paths.append(element_path)
+            types.append(str(type_))
             materializer_class = default_materializer_registry[type_]
             mock_artifact = DataArtifact()
             mock_artifact.uri = element_path
             materializer = materializer_class(mock_artifact)
             materializers.append(materializer)
-        # Write metadata and materialize each element.
         try:
+            # Write metadata as JSON.
+            metadata = {"length": len(data), "paths": paths, "types": types}
             yaml_utils.write_json(self.metadata_path, metadata)
+            # Materialize each element.
             for element, materializer in zip(data, materializers):
                 materializer.handle_return(element)
-        except Exception as e:  # If an error occurs, delete all created files.
+        # If an error occurs, delete all created files.
+        except Exception as e:
             # Delete metadata
             if os.path.exists(self.metadata_path):
                 os.remove(self.metadata_path)
             # Delete all elements that were already saved.
-            for element_path in metadata["paths"]:
+            for element_path in paths:
                 shutil.rmtree(element_path)
             raise e
