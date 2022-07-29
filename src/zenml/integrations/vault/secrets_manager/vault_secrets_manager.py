@@ -16,7 +16,7 @@ import re
 from typing import Any, ClassVar, List, Optional, Set
 
 import hvac  # type: ignore[import]
-from hvac.exceptions import InvalidPath
+from hvac.exceptions import InvalidPath  # type: ignore[import]
 
 from zenml.constants import ZENML_SCHEMA_NAME
 from zenml.exceptions import SecretExistsError
