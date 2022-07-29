@@ -66,7 +66,7 @@ def shared_kubeflow_profile(
         pid_file: str,
         log_file: Optional[str] = None,
         working_directory: str = "/",
-        **kwargs: Any
+        **kwargs: Any,
     ):
         # run the actual passed function in a daemon thread
         t = threading.Thread(target=daemon_function, args=args, kwargs=kwargs)
@@ -161,7 +161,8 @@ def fix_permissions(func, path, exc_info):
     Usage : ``shutil.rmtree(path, onerror=fix_permissions)``
     """
     import subprocess
-    subprocess.call(f'rm -rf {path}', shell=True)
+
+    subprocess.call(f"rm -rf {path}", shell=True)
 
 
 @pytest.fixture
