@@ -206,9 +206,9 @@ docker run -it zenmldocker/zenml /bin/bash
 > **Warning** 
 > #### Known installation issues for M1 Mac users
 >
-> If you have a M1 Mac machine and you are encountering an error > while trying to install ZenML, 
->please try to setup `brew` and `pyenv` with Rosetta 2 and then install ZenML. The issue arises because some of the dependencies 
->aren’t fully compatible with the vanilla ARM64 Architecture. The following links may be helpful (Thank you @Reid Falconer) :
+> If you have an M1 Mac machine and encounter an installation error, 
+> try setting up `brew` and `pyenv` with Rosetta 2 and then install ZenML. The issue arises because some of the dependencies 
+> aren’t fully compatible with the vanilla ARM64 Architecture. The following links may be helpful (Thank you @Reid Falconer) :
 >
 >- [Pyenv with Apple Silicon](http://sixty-north.com/blog/pyenv-apple-silicon.html)
 >- [Install Python Under Rosetta 2](https://medium.com/thinknum/how-to-install-python-under-rosetta-2-f98c0865e012)
