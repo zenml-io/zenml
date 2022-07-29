@@ -98,7 +98,7 @@ component and integrations. Key differences to note:
 - Label Studio refers to the grouping of a set of annotations / tasks as a
   'Project', whereas most other tools use the term 'Dataset', so ZenML also
   calls this grouping a 'Dataset'.
-- The individual metaunit for 'an annotation + the source data' is referred to
+- The individual meta-unit for 'an annotation + the source data' is referred to
   in different ways, but at ZenML (and with Label Studio) we refer to them as
   'tasks'.
 
