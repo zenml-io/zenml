@@ -91,7 +91,7 @@
       <a href="#🤖-why-zenml">Why ZenML?</a>
     </li>
     <li>
-    <a href="#what-is-zenml">What is ZenML?</a>
+    <a href="#-what-is-zenml">What is ZenML?</a>
     </li>
     <li>
       <a href="#🤸-getting-started">Getting Started</a>
