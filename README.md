@@ -33,7 +33,7 @@
 [twitter-url]: https://twitter.com/zenml_io
 [slack-shield]: https://img.shields.io/badge/-Slack-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [slack-url]: https://zenml.io/slack-invite
-[build-shield]: https://img.shields.io/github/workflow/status/zenml-io/zenml/Build,%20Lint,%20Unit%20&%20Integration%20Test?logo=github&style=for-the-badge
+[build-shield]: https://img.shields.io/github/workflow/status/zenml-io/zenml/Build,%20Lint,%20Unit%20&%20Integration%20Test/develop?logo=github&style=for-the-badge
 [build-url]: https://github.com/zenml-io/zenml/actions/workflows/ci.yml
 [interrogate-shield]: https://img.shields.io/badge/Interrogate-100%25-brightgreen?style=for-the-badge&logo=interrogate
 [interrogate-url]: https://interrogate.readthedocs.io/en/latest/
