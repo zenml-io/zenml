@@ -277,6 +277,7 @@ def seldon_custom_model_deployer_step(
     config.service_config.pipeline_name = pipeline_name
     config.service_config.pipeline_run_id = pipeline_run_id
     config.service_config.pipeline_step_name = step_name
+    config.service_config.is_custom_deployment = True
 
     # fetch existing services with same pipeline name, step name and
     # model name
@@ -377,7 +378,7 @@ def seldon_custom_model_deployer_step(
     service_config.spec = create_seldon_core_custom_spec(
         model_uri=service_config.model_uri,
         custom_docker_image=custom_docker_image_name,
-        secret_name=service_config.secret_name,
+        secret_name=model_deployer.kubernetes_secret_name,
         command=entrypoint_command,
     )
 
