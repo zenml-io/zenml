@@ -118,9 +118,7 @@ def is_azure_url(url: str) -> bool:
 
 def is_gcs_url(url: str) -> bool:
     """Return whether the given URL is an GCS URL."""
-    breakpoint()
-    return "s3.amazonaws" in urlparse(url).netloc
-    # return url.startswith("gs://")
+    return "storage.googleapis.com" in urlparse(url).netloc
 
 
 def get_file_extension(path_str: str) -> str:
