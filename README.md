@@ -9,9 +9,6 @@
 
 [![PyPi][pypi-shield]][pypi-url]
 [![PyPi][downloads-shield]][downloads-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Forks][forks-shield]][forks-url]
-[![Issues][issues-shield]][issues-url]
 [![Contributors][contributors-shield]][contributors-url]
 [![License][license-shield]][license-url]
 [![CodeCov][codecov-shield]][codecov-url]
@@ -28,12 +25,6 @@
 [codecov-url]: https://codecov.io/gh/zenml-io/zenml
 [contributors-shield]: https://img.shields.io/github/contributors/zenml-io/zenml?style=for-the-badge
 [contributors-url]: https://github.com/othneildrew/Best-README-Template/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/zenml-io/zenml?style=for-the-badge
-[forks-url]: https://github.com/zenml-io/zenml/network/members
-[stars-shield]: https://img.shields.io/github/stars/zenml-io/zenml?style=for-the-badge
-[stars-url]: https://github.com/zenml-io/zenml/stargazers
-[issues-shield]: https://img.shields.io/github/issues/zenml-io/zenml?style=for-the-badge
-[issues-url]: https://github.com/zenml-io/zenml/issues
 [license-shield]: https://img.shields.io/github/license/zenml-io/zenml?style=for-the-badge
 [license-url]: https://github.com/zenml-io/zenml/blob/main/LICENSE
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
@@ -215,9 +206,9 @@ docker run -it zenmldocker/zenml /bin/bash
 
 ## 🚅 Quickstart
 
-Let's start by creating a simple pipeline that does the following - 
+Let's start by creating a simple `pipeline` that contains the following `steps` - 
 1. Loads the [digits dataset](https://archive.ics.uci.edu/ml/datasets/Optical+Recognition+of+Handwritten+Digits).
-2. Trains a scikit-learn classifier to classify the images from the dataset.
+2. Trains a [scikit-learn](https://scikit-learn.org/stable/) classifier to classify the images from the dataset.
 3. Evaluates the classifier accuracy on a test set.
 
 ### Step 1: Initialize a ZenML repo
@@ -229,8 +220,8 @@ zenml init
 
 This creates a `.zen` folder in your current directory to store the necessary `zenml` configurations.
 
-### Step 2: Installing the Scikit-learn integration
-We will be using a classifier model from [Scikit-learn](https://scikit-learn.org/stable/), so let's install the `sklearn` integration.
+### Step 2: Installing the scikit-learn integration
+We will be using a classifier model from [scikit-learn](https://scikit-learn.org/stable/), so let's install the `sklearn` integration.
 
 ```bash
 zenml integration install sklearn -y
@@ -247,6 +238,7 @@ from sklearn.base import ClassifierMixin
 from zenml.integrations.sklearn.helpers.digits import get_digits, get_digits_model
 from zenml.pipelines import pipeline
 from zenml.steps import step, Output
+
 
 # Steps definition
 @step
@@ -279,6 +271,7 @@ def evaluator(
     test_acc = model.score(X_test, y_test)
     print(f"Test accuracy: {test_acc}")
     return test_acc
+
 
 # Pipeline definition
 @pipeline
@@ -315,17 +308,17 @@ notebooks, install `zenml` via pip as described above and type:
 zenml go
 ```
 
-This will spin up a Jupyter notebook that showcases the above example plus more
-on how to use and extend ZenML.
+This will spin up a Jupyter notebook that showcases the above example and how to extend ZenML.
 
 # 🍰 ZenBytes
 
-ZenBytes is a series of short practical MLOps lessons through ZenML and its various integrations. 
-It is intended for people looking to learn about MLOps generally, and also for ML practitioners who want to get started with ZenML.
+ZenBytes is a series of short practical MLOps lessons using ZenML and its various integrations. 
+It covers many of the core concepts widely used in ZenML and MLOps in general.
+If you're new to ZenML this is a good place to start.
 
-After you've run and understood the example in [Quickstart](#🚅-quickstart), your next port of call is probably either the [fully-fleshed-out quickstart
+After understanding the example in [Quickstart](#🚅-quickstart), your next port of call is the [fully-fleshed-out quickstart
 example](https://github.com/zenml-io/zenml/tree/main/examples/quickstart) and
-then to look at [the ZenBytes repository](https://github.com/zenml-io/zenbytes)
+then check out [the ZenBytes repository](https://github.com/zenml-io/zenbytes)
 and notebooks.
 
 # 🗂️ ZenFiles
