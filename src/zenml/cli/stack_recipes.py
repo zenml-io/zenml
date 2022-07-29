@@ -94,7 +94,7 @@ class LocalStackRecipe:
         Returns:
             True if the stack_recipe exists at the given path, else False.
         """
-        return fileio.exists(str(self.path)) and fileio.isdir(str(self.path))
+        return fileio.isdir(str(self.path))
 
     def run_stack_recipe(
         self, stack_recipe_runner: List[str], identifier: str
@@ -522,22 +522,16 @@ def clean(git_stack_recipes_handler: GitStackRecipesHandler, path: str) -> None:
         path: The path at which you want to clean the stack_recipe(s).
     """
     stack_recipes_directory = os.path.join(os.getcwd(), path)
-    if (
-        fileio.exists(stack_recipes_directory)
-        and fileio.isdir(stack_recipes_directory)
-        and cli_utils.confirmation(
-            "Do you wish to delete the stack recipes directory? \n"
-            f"{stack_recipes_directory}"
-        )
+    if fileio.isdir(stack_recipes_directory) and cli_utils.confirmation(
+        "Do you wish to delete the stack recipes directory? \n"
+        f"{stack_recipes_directory}"
     ):
         git_stack_recipes_handler.clean_current_stack_recipes()
         cli_utils.declare(
             "Stack recipes directory was deleted from your current working "
             "directory."
         )
-    elif not fileio.exists(stack_recipes_directory) and not fileio.isdir(
-        stack_recipes_directory
-    ):
+    elif not fileio.isdir(stack_recipes_directory):
         logger.error(
             f"Unable to delete the stack recipes directory - "
             f"{stack_recipes_directory} - "
