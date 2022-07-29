@@ -7,110 +7,19 @@ of user-defined steps as well as some built-in steps that ZenML provides.
 
 ## Basic guide to running this example
 
-<!-- # TODO: CHANGE THIS FOR FRESH USER -->
-Running this example on Azure is the quickest way to get going. You can use the
-`annotationartifactstore` storage account and its
-`annotationartifactstoretesting` blob container as a test artifact store.
-
-<!-- # TODO: do this all with secrets managers instead -->
-Make sure to set the following two environment variables prior to running this
-pipeline:
-
-```shell
-export AZURE_STORAGE_ACCOUNT_KEY=<your_azure_account_key>
-export AZURE_STORAGE_ACCOUNT_NAME=<your_azure_account_name>
-```
-
-Then make sure you've installed the relevant integrations and dependencies:
-
-```shell
-zenml integration install label_studio -y
-pip install fastai huggingface_hub -Uqq
-```
-
-Setup your user credentials:
-
-```shell
-# choose a username and password for your label-studio account
-label-studio reset_password --username <username> --password <password>
-# start a temporary / one-off label-studio instance to get your API key
-label-studio start -p 8094
-```
-
-Then visit
-[http://localhost:8094/](http://localhost:8094/) to log in, then visit [http://localhost:8094/user/account](http://localhost:8094/user/account) and get
-your Label Studio API key (from the upper right hand corner). You will need it
-for the next step. `Ctrl-c` out of the Label Studio server that is running on
-the terminal.
-
-Then register your annotator with ZenML:
-
-```shell
-zenml annotator register label_studio --flavor label_studio --api_key="<your_label_studio_api_key_goes_here>"
-```
-
-Set up your (Azure) stack as follows:
-
-<!-- Also add registration of a secret with `zenml secret register azure_creds
---schema=azure --account_name="XXX" --account_key="XXX" -->
-
-```shell
-# using the pre-built blob storage mentioned above
-zenml artifact-store register azure_artifact_store --flavor=azure --path="az://annotationartifactstoretesting" --authentication_secret="azure_creds"
-zenml stack copy default annotation
-zenml stack update annotation -a azure_artifact_store
-zenml stack update annotation -an label_studio -x azure_secrets_manager
-zenml stack set annotation
-zenml stack up
-```
-
-This will initialize the daemon server which Label Studio requires, albeit
-running on a default port of 8093.
-
-Run the pipeline with:
-
-<!-- # TODO: FIX THIS TO WORK WITH ZENML EXAMPLE PULL -->
-```shell
-cd examples/annotation_label_studio/
-python run.py
-```
-
-Once the pipeline has run, you can go to
-[http://localhost:8093/](http://localhost:8093/) and view the project. You can
-do some labeling there and any annotations you make will be imported and used the next
-time you run the pipeline.
-
-
-(There are more elaborate steps required if you want to run this on AWS or GCP.)
-
-## CLI Commands for the Label Studio Integration
-
-Once you've run the pipeline for the first time, you'll be able to use some of
-the ZenML CLI commands to interact with your Label Studio annotations and the
-dataset:
-
-```shell
-# the obvious ones to try
-zenml annotator describe
-zenml annotator dataset list
-zenml annotator dataset stats
-```
-
-
+This example requires a few more steps than usual, given that it requires a
+cloud artifact store. Instructions for Azure, AWS S3 and GCP can be found in the
+following guide.
 
 ## 🗺 Overview
 
-The example pipeline is simple as can be. In our one and only step we access the
-stacks active secret manager and
-query for an example called `example_secret`. We then access the contents of
-this secret and query the secret with the
-unique key: `example_secret_key`.
+NOTE: This example currently only runs with a cloud artifact store.
 
-Similarly, you would be able to pass access keys, password, credentials and so
-on into your pipeline steps to do with as
-you please.
+For a full video walkthrough on how to run this email, please check out [our
+community hour demo](https://www.youtube.com/watch?v=bLFGnoApWeU) in which we
+show how to run the various pipelines, in what order, all using an AWS stack.
 
-# 🖥 Run it locally
+# 🖥 Run the example
 
 ## 👣 Step-by-Step
 
@@ -132,83 +41,278 @@ zenml init
 
 ### 🥞 Set up your stack for Microsoft Azure
 
-To get going with aws make sure to have your aws credential set up locally. We
-recommend this
-[guide](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/setup-credentials.html)
-to make sure everything is
-set up properly.
+In order to run this example, you need to install and initialize ZenML and Label
+Studio.
 
 ```shell
-zenml integration install azure
+zenml integration install label_studio
 
-zenml secrets-manager register aws_secrets_manager --flavor=aws
-zenml stack register secrets_stack -m default -o default -a default -x aws_secrets_manager --set
+# pull example
+zenml example pull annotation_label_studio
+cd zenml_examples/annotation_label_studio
+
+# Initialize ZenML repo
+zenml init
+```
+
+Some setup for your stack is required. This assumes you have a cloud secrets
+manager setup and installed. (See [here](https://docs.zenml.io/mlops-stacks/secrets-managers) for more on how to do that.)
+
+```shell
+zenml stack copy default <ANNOTATION_STACK_NAME>
+
+zenml stack set <ANNOTATION_STACK_NAME>
+
+zenml secrets-manager register <YOUR_SECRETS_MANAGER> --key_vault_name=<YOUR_KEY_VAULT_NAME> -f azure_key_vault
+
+zenml stack update <ANNOTATION_STACK_NAME> -x <YOUR_SECRETS_MANAGER>
+
+zenml secret register <YOUR_AZURE_AUTH_SECRET_NAME> --schema=azure --account_name="<YOUR_AZURE_ACCOUNT_NAME>" --account_key="<YOUR_AZURE_ACCOUNT_KEY>"
+
+zenml artifact-store register azure_artifact_store -f=azure --path="az://<NAME_OF_ARTIFACT_STORE_OR_BLOB_IN_AZURE>" --authentication_secret="<YOUR_AZURE_AUTH_SECRET_NAME>"
+
+zenml stack update <ANNOTATION_STACK_NAME> -a <YOUR_CLOUD_ARTIFACT_STORE>
+```
+
+You will next need to obtain your Label Studio API key. This will give you access to the web annotation interface.
+
+```shell
+# start a temporary / one-off label-studio instance to get your API key
+label-studio start -p 8094
+```
+
+First order of business is to sign up if you haven't done so already, using an email and a password. Then visit [http://localhost:8094/](http://localhost:8094/) to log in, and then visit [http://localhost:8094/user/account](http://localhost:8094/user/account) and get your Label Studio API key (from the upper right hand corner). You will need it for the next step. `Ctrl-c` out of the Label Studio server that is running on the terminal.
+
+```shell
+zenml secret register <LABEL_STUDIO_SECRET_NAME> --api_key="<YOUR_API_KEY>"
+
+zenml annotator register <YOUR_LABEL_STUDIO_ANNOTATOR> --flavor label_studio --authentication_secret="<LABEL_STUDIO_SECRET_NAME>"
+
+zenml stack update <ANNOTATION_STACK_NAME> -an <YOUR_LABEL_STUDIO_ANNOTATOR>
+
+zenml stack up
 ```
 
 ### 🥞 Set up your stack for GCP
 
-To get going with gcp make sure to have gcloud set up locally with a user or 
-ideally a service account with permissions to access the secret manager. 
-[This](https://cloud.google.com/sdk/docs/install-sdk) guide should help you get 
-started. Once everything is set up on your machine, make sure to enable the 
-secrets manager API within your GCP project. You will need to create a project
-and get the `project_id` which will need to be specified when you register the
-secrets manager.
+This setup guide assumes that you have installed and are able to use the
+`gcloud` CLI to run commands.
+
+In order to run this example, you need to install and initialize ZenML and Label
+Studio.
 
 ```shell
-zenml integration install gcp
+zenml integration install label_studio
 
-zenml secrets-manager register gcp_secrets_manager --flavor=gcp_secrets_manager --project_id=PROJECT_ID
-zenml stack register secrets_stack -m default -o default -a default -x gcp_secrets_manager --set
+# pull example
+zenml example pull annotation_label_studio
+cd zenml_examples/annotation_label_studio
+
+# Initialize ZenML repo
+zenml init
 ```
 
-### 🥞 Set up your stack for Azure
-
-To get going with Azure you will need to install and configure the 
-[Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
-with the correct credentials to access the Azure secrets manager.
+Create your artifact store and set up the necessary permissions and service accounts:
 
 ```shell
-zenml integration install azure
+gsutil mb -p <YOUR_GCP_PROJECT_NAME> -l <YOUR_GCP_REGION_NAME> -c standard "gs://<YOUR_BUCKET_NAME>"
 
-zenml secrets-manager register azure_key_vault --flavor=azure_key_vault --key_vault_name=<VAULT-NAME>
-zenml stack register secrets_stack -m default -o default -a default -x azure_key_vault --set
+gcloud iam service-accounts create <YOUR_SERVICE_ACCOUNT_NAME>
+
+gcloud projects add-iam-policy-binding <YOUR_GCP_PROJECT_NAME> --member="serviceAccount:<YOUR_SERVICE_ACCOUNT_NAME>@<YOUR_GCP_PROJECT_NAME>.iam.gserviceaccount.com" --role="roles/storage.admin"
+
+gcloud projects add-iam-policy-binding <YOUR_GCP_PROJECT_NAME> --member="serviceAccount:<YOUR_SERVICE_ACCOUNT_NAME>@<YOUR_GCP_PROJECT_NAME>.iam.gserviceaccount.com" --role="roles/iam.serviceAccountTokenCreator"
+
+gcloud iam service-accounts keys create ls-annotation-credentials.json --iam-account=<YOUR_SERVICE_ACCOUNT_NAME>@<YOUR_GCP_PROJECT_NAME>.iam.gserviceaccount.com
 ```
 
+Now you have a credentials `json` file that you can use to authenticate with
+Label Studio. Make sure to note down the path where this was created.
 
-### 🤫 Create a secret
-
-Here we are creating a secret called `example_secret` which contains a single
-key-value pair:
-{example_secret_key: example_secret_value}
+Now you can set up the rest of your stack:
 
 ```shell
-zenml secret register example_secret --example_secret_key=example_secret_value
+zenml stack copy default <YOUR_ANNOTATION_STACK_NAME>
+
+zenml stack set <YOUR_ANNOTATION_STACK_NAME>
+
+zenml secrets-manager register <YOUR_SECRETS_MANAGER> -f gcp_secrets_manager --project_id="<YOUR_GCP_PROJECT_NAME>"
+
+zenml stack update <YOUR_ANNOTATION_STACK_NAME> -x <YOUR_SECRETS_MANAGER>
+
+zenml secret register <YOUR_GCP_AUTH_SECRETS_NAME> --schema=gcp --token="@PATH/TO/JSON/FILE/CREATED/ABOVE"
+
+zenml artifact-store register gcp_artifact_store -f=gcp --path="gs://<YOUR_BUCKET_NAME>" --authentication_secret="<YOUR_GCP_AUTH_SECRETS_NAME>"
+
+zenml stack update <YOUR_ANNOTATION_STACK_NAME> -a <YOUR_CLOUD_ARTIFACT_STORE>
+```
+
+You will next need to obtain your Label Studio API key. This will give you access to the web annotation interface.
+
+```shell
+# start a temporary / one-off label-studio instance to get your API key
+label-studio start -p 8094
+```
+
+First order of business is to sign up if you haven't done so already, using an email and a password. Then visit [http://localhost:8094/](http://localhost:8094/) to log in, and then visit [http://localhost:8094/user/account](http://localhost:8094/user/account) and get your Label Studio API key (from the upper right hand corner). You will need it for the next step. `Ctrl-c` out of the Label Studio server that is running on the terminal.
+
+```shell
+zenml secret register <LABEL_STUDIO_SECRET_NAME> --api_key="<YOUR_API_KEY>"
+
+zenml annotator register <YOUR_LABEL_STUDIO_ANNOTATOR> --flavor label_studio --authentication_secret="<LABEL_STUDIO_SECRET_NAME>"
+
+zenml stack update <YOUR_ANNOTATION_STACK_NAME> -an <YOUR_LABEL_STUDIO_ANNOTATOR>
+
+zenml stack up
+```
+
+### 🥞 Set up your stack for AWS
+
+In order to run this example, you need to install and initialize ZenML and Label
+Studio.
+
+```shell
+zenml integration install label_studio
+
+# pull example
+zenml example pull annotation_label_studio
+cd zenml_examples/annotation_label_studio
+
+# Initialize ZenML repo
+zenml init
+```
+
+Create your basic S3 bucket via CLI command:
+
+```shell
+REGION=<YOUR_DESIRED_AWS_REGION>
+S3_BUCKET_NAME=<YOUR_DESIRED_S3_BUCKET_NAME>
+
+aws s3api create-bucket --bucket=$S3_BUCKET_NAME --region=$REGION --create-bucket-configuration=LocationConstraint=$REGION
+```
+
+Create a `.json` file on your local hard drive containing the following data,
+making sure to replace `<YOUR_BUCKET_NAME>` with the actual value you used above:
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor1",
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket",
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:DeleteObject"
+            ],
+            "Resource": [
+                "arn:aws:s3:::<YOUR_BUCKET_NAME>",
+                "arn:aws:s3:::<YOUR_BUCKET_NAME>/*"
+            ]
+        }
+    ]
+}
+```
+
+Create a policy using [the `create-policy` CLI command](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_create-cli.html) for IAM to manage the Label Studio access to the S3 bucket. This assumes you are running the command from the same directory in which you saved the policy file.
+
+```shell
+aws iam create-policy --policy-name <YOUR_POLICY_NAME> --policy-document file://<YOUR_POLICY_FILE_NAME>
+```
+
+Set up cross-origin resource sharing (CORS) access to your bucket, using a policy that allows `GET` access from the same host name as your Label Studio deployment. You can use the CORS file we have pre-populated for you inside the examples repo as follows:
+
+```shell
+cd cloud_config/aws
+
+aws s3api put-bucket-cors --bucket $S3_BUCKET_NAME --cors-configuration file://cors.json
+
+cd ../..
+```
+
+Now you can get to the fun part of setting up Label Studio and working with ZenML:
+
+```shell
+zenml stack copy default <YOUR_AWS_ZENML_STACK_NAME>
+
+zenml stack set <YOUR_AWS_ZENML_STACK_NAME>
+
+zenml secrets-manager register <YOUR_SECRETS_MANAGER> --flavor=aws --region_name=<AWS_REGION_NAME>
+
+zenml stack update <YOUR_AWS_ZENML_STACK_NAME> -x <YOUR_SECRETS_MANAGER>
+
+# copy down the credentials output from this command
+aws sts get-session-token --profile=<YOUR_AWS_CONFIG_PROFILE_NAME>
+```
+
+Use the credentials output from the command to get your `<LABEL_STUDIO_ACCESS_KEY_ID>`, `<LABEL_STUDIO_SECRET_ACCESS_KEY>`, and `<LABEL_STUDIO_AWS_SESSION_TOKEN>` which we will use to register a secret.
+
+```shell
+# this secret must be named 'aws_label_studio'
+zenml secret register aws_label_studio --schema=aws_label_studio --aws_access_key_id="<LABEL_STUDIO_ACCESS_KEY_ID>" --aws_secret_access_key="<LABEL_STUDIO_SECRET_ACCESS_KEY>" --aws_session_token="<LABEL_STUDIO_AWS_SESSION_TOKEN>"
+
+# use your standard access key id and secret access key from ~/.aws/credentials here
+zenml secret register <YOUR_AWS_SECRET_NAME> --schema=aws_label_studio--aws_access_key_id="<YOUR_ACCESS_KEY_ID>" --aws_secret_access_key="<YOUR_SECRET_ACCESS_KEY>"
+
+zenml artifact-store register <YOUR_CLOUD_ARTIFACT_STORE> --flavor=s3 --path=s3://<YOUR_S3_BUCKET_NAME> --authentication_secret="<YOUR_AWS_SECRET_NAME>"
+
+zenml stack update <YOUR_AWS_ZENML_STACK_NAME> -a <YOUR_CLOUD_ARTIFACT_STORE>
+```
+
+You will next need to obtain your Label Studio API key. This will give you access to the web annotation interface.
+
+```shell
+# start a temporary / one-off label-studio instance to get your API key
+label-studio start -p 8094
+```
+
+First order of business is to sign up if you haven't done so already, using an email and a password. Then visit http://localhost:8094/ to log in, and then visit http://localhost:8094/user/account and get your Label Studio API key (from the upper right hand corner). You will need it for the next step. Ctrl-c out of the Label Studio server that is running on the terminal.
+
+```shell
+zenml secret register <LABEL_STUDIO_SECRET_NAME> --api_key="<YOUR_API_KEY>"
+
+zenml annotator register <YOUR_LABEL_STUDIO_ANNOTATOR> --flavor label_studio --authentication_secret="<LABEL_STUDIO_SECRET_NAME>"
+
+zenml stack update <YOUR_AWS_ZENML_STACK_NAME> -an <YOUR_LABEL_STUDIO_ANNOTATOR>
+
+zenml stack up
 ```
 
 ### ▶️ Run the Code
 
-Now we're ready. Execute:
 
-```bash
-python run.py
+This will initialize the daemon server which Label Studio requires, albeit running on a default port of 8093.
+
+Run the pipeline with:
+
+```shell
+python run.py aws --train
+python run.py aws --inference
+# Now do some annotation using Label studio
+python run.py aws --train --rerun
+python run.py aws --inference --rerun
 ```
 
-Alternatively, if you want to run based on the config.yaml you can run with:
+## CLI Commands for the Label Studio Integration
 
-```bash
-zenml pipeline run pipelines/secret_loading_pipeline/secret_loading_pipeline.py -c config.yaml 
+Once you've run the pipeline for the first time, you'll be able to use some of
+the ZenML CLI commands to interact with your Label Studio annotations and the
+dataset:
+
+```shell
+# the obvious ones to try
+zenml annotator describe
+zenml annotator dataset list
+zenml annotator dataset <YOUR_DATASET_NAME> stats
 ```
 
 ### 🧽 Clean up
 
-In order to clean up, delete the example secret:
-
-```shell
-  zenml secret delete annotation_label_studio
-```
-
-and the remaining ZenML references.
+In order to clean up, delete any relevant cloud infrastructure that was created
+above (the S3 bucket is the main one, along with any permissions) and the
+remaining ZenML references.
 
 ```shell
 rm -rf zenml_examples
@@ -218,9 +322,8 @@ rm -rf zenml_examples
 
 If you want to learn more about annotation in general or about how to use your
 own annotation tool in ZenML
-check out our [docs](https://docs.zenml.io/extending-zenml/secrets-managers).
+check out our [docs](https://docs.zenml.io/mlops-stacks/annotators).
 
 We also have extensive CLI docs for the
-[secret manager](https://apidocs.zenml.io/latest/cli/#zenml.cli--setting-up-a-secrets-manager)
-and the
-[secrets](https://apidocs.zenml.io/latest/cli/#zenml.cli--using-secrets).
+[annotator](https://apidocs.zenml.io/latest/api_docs/annotators/) stack
+component.
