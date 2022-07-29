@@ -109,7 +109,7 @@
     <li><a href="#-collaborate-with-your-team">Collaborate with your team</a></li>
     <li><a href="#-learn-more">Learn More</a></li>
     <li><a href="#-roadmap">Roadmap</a></li>
-    <li><a href="#-contributing-and-community">Contributing & Community</a></li>
+    <li><a href="#-contributing-and-community">Contributing and Community</a></li>
     <li><a href="#-meet-the-team">Meet the Team</a></li>
     <li><a href="#-where-to-get-help">Where to get help</a></li>
     <li><a href="#-license">License</a></li>
@@ -396,7 +396,7 @@ influence the roadmap as follows:
 - Start a thread in our [Slack channel](https://zenml.io/slack-invite).
 
 
-# 🙋‍♀️ Contributing and Community
+# 🙌 Contributing and Community
 
 We would love to develop ZenML together with our community! Best way to get
 started is to select any issue from the [`good-first-issue`
