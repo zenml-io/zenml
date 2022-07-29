@@ -30,8 +30,6 @@ from zenml.secrets_managers.utils import secret_to_dict
 
 logger = get_logger(__name__)
 
-ZENML_PATH = "zenml"
-
 
 class VaultSecretsManager(BaseSecretsManager):
     """Class to interact with the Vault secrets manager - Key/value Engine.
@@ -168,14 +166,15 @@ class VaultSecretsManager(BaseSecretsManager):
         self._ensure_client_is_authenticated()
 
         set_of_secrets: Set[str] = set()
+        secret_path = '/'.join(self._get_scope_path())
         try:
             secrets = self.CLIENT.secrets.kv.v2.list_secrets(
-                path=f"{'/'.join(self._get_scope_path())}",
+                path=secret_path,
                 mount_point=self.mount_point
             )
         except hvac.exceptions.InvalidPath:
             logger.error(
-                f"There are no secrets created within the path `{ZENML_PATH}` "
+                f"There are no secrets created within the scope `{secret_path}`"
             )
             return list(set_of_secrets)
 
@@ -209,7 +208,7 @@ class VaultSecretsManager(BaseSecretsManager):
                 f"A Secret with the name '{secret.name}' does not exist."
             )
 
-        logger.info("Updated secret: %s", f"{ZENML_PATH}/{secret.name}")
+        logger.info("Updated secret: %s", secret_path)
         logger.info("Added value to secret.")
 
     def delete_secret(self, secret_name: str) -> None:
