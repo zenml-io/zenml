@@ -131,7 +131,7 @@ class VaultSecretsManager(BaseSecretsManager):
             self.get_secret(sanitized_secret_name)
         except KeyError:
             raise SecretExistsError(
-                f"A Secret with the name '{secret.name}' already exists."
+                f"A Secret with the name '{sanitized_secret_name}' already exists."
             )
 
         secret_path = self._get_scoped_secret_name(sanitized_secret_name)
