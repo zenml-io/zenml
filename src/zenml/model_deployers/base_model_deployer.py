@@ -18,9 +18,6 @@ from typing import ClassVar, Dict, Generator, List, Optional
 from uuid import UUID
 
 from zenml.enums import StackComponentType
-from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (
-    CUSTOM_DEPLOYMENT_IMAGE_NAME,
-)
 from zenml.services import BaseService, ServiceConfig
 from zenml.stack import StackComponent
 from zenml.stack.stack import Stack
@@ -28,6 +25,7 @@ from zenml.utils import docker_utils
 from zenml.utils.source_utils import get_source_root_path
 
 DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT = 300
+CUSTOM_DEPLOYMENT_IMAGE_NAME = "zenml-custom-deploy"
 
 
 class BaseModelDeployer(StackComponent, ABC):

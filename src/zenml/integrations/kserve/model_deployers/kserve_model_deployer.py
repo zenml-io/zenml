@@ -36,7 +36,6 @@ from zenml.services.service import BaseService, ServiceConfig
 logger = get_logger(__name__)
 
 DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT = 300
-CUSTOM_DEPLOYMENT_IMAGE_NAME = "zenml-kserve-custom-deploy"
 
 
 class KServeModelDeployer(BaseModelDeployer):
