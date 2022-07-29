@@ -141,7 +141,7 @@ This is why we built ZenML. Read more [here](https://blog.zenml.io/why-zenml/).
 
 
 
-# What is ZenML?
+# 💡 What is ZenML?
 
 <div align="center">
     <img src="docs/book/assets/tailor.gif">
