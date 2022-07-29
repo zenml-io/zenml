@@ -88,28 +88,28 @@
   <summary>🏁 Table of Contents</summary>
   <ol>
     <li>
-      <a href="#🤖-why-zenml">Why ZenML?</a>
+      <a href="#-why-zenml">Why ZenML?</a>
     </li>
     <li>
     <a href="#-what-is-zenml">What is ZenML?</a>
     </li>
     <li>
-      <a href="#🤸-getting-started">Getting Started</a>
+      <a href="#-getting-started">Getting Started</a>
       <ul>
         <li><a href="#💾-installation">Installation</a></li>
         <li><a href="#🚅-quickstart">Quickstart</a></li>
       </ul>
     </li>
-    <li><a href="#🪜-get-a-guided-tour-with-zenml-go">Get a guided tour with zenml go</a></li>
-    <li><a href="#🍰-zenbytes">ZenBytes</a></li>
-    <li><a href="#🗂️-zenfiles">ZenFiles</a></li>
-    <li><a href="#👭-collaborate-with-your-team">Collaborate with your team</a></li>
-    <li><a href="#📖-learn-more">Learn More</a></li>
-    <li><a href="#🗺-roadmap">Roadmap</a></li>
-    <li><a href="#🙋‍♀️-contributing-and-community">Contributing & Community</a></li>
-    <li><a href="#👩‍👩‍👧‍👦-meet-the-team">Meet the Team</a></li>
-    <li><a href="#🆘-where-to-get-help">Where to get help</a></li>
-    <li><a href="#📜-license">License</a></li>
+    <li><a href="#-get-a-guided-tour-with-zenml-go">Get a guided tour with zenml go</a></li>
+    <li><a href="#-zenbytes">ZenBytes</a></li>
+    <li><a href="#-zenfiles">ZenFiles</a></li>
+    <li><a href="#-collaborate-with-your-team">Collaborate with your team</a></li>
+    <li><a href="#-learn-more">Learn More</a></li>
+    <li><a href="#-roadmap">Roadmap</a></li>
+    <li><a href="#-contributing-and-community">Contributing & Community</a></li>
+    <li><a href="#-meet-the-team">Meet the Team</a></li>
+    <li><a href="#-where-to-get-help">Where to get help</a></li>
+    <li><a href="#-license">License</a></li>
   </ol>
 </details>
 
