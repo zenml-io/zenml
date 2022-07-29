@@ -91,7 +91,7 @@
       <a href="#🤖-why-zenml">Why ZenML?</a>
     </li>
     <li>
-    <a href="#💡-what-is-zenml">What is ZenML?</a>
+    <a href="#what-is-zenml">What is ZenML?</a>
     </li>
     <li>
       <a href="#🤸-getting-started">Getting Started</a>
@@ -141,7 +141,7 @@ This is why we built ZenML. Read more [here](https://blog.zenml.io/why-zenml/).
 
 
 
-# 💡 What is ZenML?
+# What is ZenML?
 
 <div align="center">
     <img src="docs/book/assets/tailor.gif">
