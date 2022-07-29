@@ -691,6 +691,7 @@ class BaseStep(metaclass=BaseStepMeta):
             execution_parameter_names=set(execution_parameters),
             step_function=self.entrypoint,
             materializers=materializers,
+            enable_cache=self.enable_cache,
         )
         self._component = component_class(
             **input_artifacts, **execution_parameters
