@@ -188,7 +188,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """
         try:
             contexts, active_context = k8s_config.list_kube_config_contexts()
-        except k8s_config.config_exception.ConfigException as e:
+        except k8s_config.config_exception.ConfigException:
             return [], None
 
         context_names = [c["name"] for c in contexts]
