@@ -14,55 +14,8 @@
 """Utility functions for the Label Studio annotator integration."""
 
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
 from urllib.parse import quote, urlparse
-
-from zenml.io import fileio
-
-
-def parse_azure_url(url: str) -> Tuple[str, str]:
-    """Converts Azure Label Studio URL to path for fileio.
-
-    Args:
-        url: Azure Label Studio URL.
-
-    Returns:
-        Tuple of (full URL, filename).
-    """
-    pth = urlparse(url).path
-    return f"az://{pth}", pth.split("/")[-1]
-
-
-def download_azure_image(url: str, destination: str) -> None:
-    """Downloads an image using fileio.
-
-    Args:
-        url: URL of the image to download.
-        destination: Path to the destination file.
-    """
-    full_url, filename = parse_azure_url(url)
-    destination_path = os.path.join(destination, filename)
-    fileio.copy(full_url, destination_path)
-
-
-# def get_azure_credentials() -> Tuple[Optional[str], Optional[str]]:
-#     """Returns access credentials for Azure from the environment.
-
-#     Returns:
-#         Tuple of (account_name, account_key).
-#     """
-#     account_key = os.environ.get("AZURE_STORAGE_ACCOUNT_KEY")
-#     account_name = os.environ.get("AZURE_STORAGE_ACCOUNT_NAME")
-#     return account_name, account_key
-
-
-def get_gcs_credentials() -> Optional[str]:
-    """Returns access credentials for GCS from the environment.
-
-    Returns:
-        GCS credentials string.
-    """
-    return os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
 
 
 def convert_pred_filenames_to_task_ids(
