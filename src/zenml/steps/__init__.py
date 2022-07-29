@@ -30,7 +30,7 @@ decorator.
 
 from zenml.steps.base_step import BaseStep
 from zenml.steps.base_step_config import BaseStepConfig
-from zenml.steps.resource_configuration import ResourceConfiguration
+from zenml.config.resource_configuration import ResourceConfiguration
 from zenml.steps.step_context import StepContext
 from zenml.steps.step_decorator import step
 from zenml.steps.step_environment import STEP_ENVIRONMENT_NAME, StepEnvironment

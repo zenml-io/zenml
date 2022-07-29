@@ -16,7 +16,7 @@ from contextlib import ExitStack as does_not_raise
 import pytest
 from pydantic import ValidationError
 
-from zenml.steps.resource_configuration import ByteUnit, ResourceConfiguration
+from zenml.config.resource_configuration import ByteUnit, ResourceConfiguration
 
 
 def test_unit_byte_value_defined_for_all_values():

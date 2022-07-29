@@ -50,7 +50,7 @@ from zenml.materializers.default_materializer_registry import (
 )
 from zenml.step_operators.step_executor_operator import StepExecutorOperator
 from zenml.steps.base_step_config import BaseStepConfig
-from zenml.steps.resource_configuration import ResourceConfiguration
+from zenml.config.resource_configuration import ResourceConfiguration
 from zenml.steps.step_context import StepContext
 from zenml.steps.step_output import Output
 from zenml.steps.utils import (

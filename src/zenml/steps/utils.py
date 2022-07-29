@@ -405,6 +405,10 @@ class _FunctionExecutor(BaseExecutor):
             artifact: A TFX artifact type.
             data: The object to be passed to `handle_return()`.
         """
+        # Skip materialization for BaseArtifact and subclasses.
+        if issubclass(type(data), BaseArtifact):
+            return
+
         materializer_class = self.resolve_materializer_with_registry(
             param_name, artifact
         )
@@ -534,11 +538,6 @@ class _FunctionExecutor(BaseExecutor):
             for return_value, (output_name, output_type) in zip(
                 return_values, output_annotations
             ):
-                # Skip materialization if the output is specified as a
-                # BaseArtifact (subclass)
-                if issubclass(output_type, BaseArtifact):
-                    continue
-
                 if not isinstance(return_value, output_type):
                     raise StepInterfaceError(
                         f"Wrong type for output '{output_name}' of step "

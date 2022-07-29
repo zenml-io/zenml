@@ -72,10 +72,10 @@ class ResourceConfiguration(BaseModel):
 
     @property
     def empty(self) -> bool:
-        """Returns if this object is empty (no values configured) or not.
+        """Returns if this object is "empty" (=no values configured) or not.
 
         Returns:
-            True if no values were configured, False otherwise.
+            `True` if no values were configured, `False` otherwise.
         """
         return len(self.__fields_set__) == 0
 
