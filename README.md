@@ -8,6 +8,7 @@
 -->
 
 [![PyPi][pypi-shield]][pypi-url]
+[![PyPi][pypiversion-shield]][pypi-url]
 [![PyPi][downloads-shield]][downloads-url]
 [![Contributors][contributors-shield]][contributors-url]
 [![License][license-shield]][license-url]
@@ -19,6 +20,8 @@
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 [pypi-shield]: https://img.shields.io/pypi/pyversions/zenml?style=for-the-badge
 [pypi-url]: https://pypi.org/project/zenml/
+[pypiversion-shield]: https://img.shields.io/pypi/v/zenml?style=for-the-badge
+
 [downloads-shield]: https://img.shields.io/pypi/dm/zenml?style=for-the-badge
 [downloads-url]: https://pypi.org/project/zenml/
 [codecov-shield]: https://img.shields.io/codecov/c/gh/zenml-io/zenml?style=for-the-badge
