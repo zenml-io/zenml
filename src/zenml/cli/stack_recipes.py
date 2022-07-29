@@ -460,8 +460,7 @@ class GitStackRecipesHandler(object):
         )
 
     def clean_current_stack_recipes(self) -> None:
-        """Deletes the ZenML stack recipes directory from your current working
-        directory."""
+        """Deletes the ZenML stack recipes directory from your current working directory."""
         stack_recipes_directory = os.path.join(
             os.getcwd(), "zenml_stack_recipes"
         )
