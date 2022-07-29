@@ -62,6 +62,8 @@
     <a href="https://zenml.io/discussion">Vote Feature</a>
     ·
     <a href="https://blog.zenml.io/">Read Blog</a>
+    ·
+    <a href="#👩‍👩‍👧‍👦-meet-the-team">Meet the Team</a>
     <br />
     🎉 Version 0.11.0 is out. Check out the release notes
     <a href="https://www.linkedin.com/company/zenml/">here</a>.
@@ -410,12 +412,16 @@ image](https://repobeats.axiom.co/api/embed/635c57b743efe649cadceba6a2e6a956663f
 
 # 👩‍👩‍👧‍👦 Meet the Team
 
+![Meet the Team](./docs/book/assets/meet_the_team.jpeg)
+
 Have a question that's too hard to express on our Slack? Is it just too much effort to say everything on a 
 long GitHub issue? Or are you just curious what ZenML has been up to in the past week? Well, register now for the ZenML Office 
 (Half) Hour to get your answers and more!
 It's free and open to everyone.
 
 Every week, part of the ZenML core team will pop in for 30 minutes to interact directly with the community. Sometimes we'll be presenting a feature, other times just taking questions, and having fun. Join us if you are curious about ZenML, or just want to talk shop about MLOps.
+
+
 
 We will host the gathering every Wednesday 8:30AM PT (5:30PM CET). 
 Register now through [this link](https://www.eventbrite.com/e/zenml-meet-the-community-tickets-354426688767), 
