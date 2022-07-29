@@ -28,7 +28,34 @@ def get_secrets_manager(
     request: pytest.FixtureRequest,
     **kwargs: Any,
 ) -> BaseSecretsManager:
-    """Utility function to create a secrets manager."""
+    """Utility function to create secrets managers of different flavors.
+
+    This function is used to instantiate Secrets Managers of different flavors
+    to use in integration testing:
+
+    For AWS:
+
+    * set up local AWS client and credentials.
+    * run with `pytest tests/integration --secrets-manager-flavor aws`.
+    * the Secrets Manager will use the `eu-west-2` region, which is dedicated to
+    integration testing.
+
+    For GCP:
+
+    * create a GCP service account and a key with full access to the
+    `zenml-secrets-manager` project. Set the `GOOGLE_APPLICATION_CREDENTIALS`
+    environment variable to point to the downloaded key JSON file.
+    * run with `pytest tests/integration --secrets-manager-flavor gcp`.
+
+    For HashiCorp Vault:
+
+    * install vault on your system.
+    * start a vault development instance with `vault server --dev` and note
+    the cluster's address and token
+    * set the VAULT_ADDR and VAULT_TOKEN environment variables to the cluster
+    address and token
+    * run with `pytest tests/integration --secrets-manager-flavor vault`.
+    """
 
     flavor = request.config.getoption("secrets_manager_flavor")
 
@@ -50,22 +77,22 @@ def get_secrets_manager(
         )
     elif flavor == "vault":
         from zenml.integrations.vault.secrets_manager import VaultSecretsManager
+
         url = os.getenv("VAULT_ADDR")
         token = os.getenv("VAULT_TOKEN")
         if url and token:
             secrets_manager = VaultSecretsManager(
-                name=name, url=url,
-                token=token,
-                mount_point="secret/",
-                **kwargs
+                name=name, url=url, token=token, mount_point="secret/", **kwargs
             )
         else:
-            raise RuntimeError("Tests can not be run for the vault secrets"
-                               "manager as the required environment variables "
-                               "are not set. Deploy a vault dev server locally "
-                               "and export the address and token: \n"
-                               "`export VAULT_ADDR=...` \n"
-                               "`export VAULT_TOKEN=...`\n")
+            raise RuntimeError(
+                "Tests can not be run for the vault secrets"
+                "manager as the required environment variables "
+                "are not set. Deploy a vault dev server locally "
+                "and export the address and token: \n"
+                "`export VAULT_ADDR=...` \n"
+                "`export VAULT_TOKEN=...`\n"
+            )
     else:
         raise RuntimeError(
             f"Secrets manager flavor {flavor} not covered in unit tests"

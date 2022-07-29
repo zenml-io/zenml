@@ -107,11 +107,14 @@ class VaultSecretsManager(BaseSecretsManager):
             The sanitized secret name.
         """
         sanitized_secret_name = re.sub(r"[^0-9a-zA-Z_\.]+", "_", secret_name)
-        if sanitized_secret_name!=secret_name:
-            logger.warning("The Secret name `%s` contains characters that "
-                           "might not be supported. The secret name has been "
-                           "sanitized to: `%s` ", secret_name,
-                           sanitized_secret_name)
+        if sanitized_secret_name != secret_name:
+            logger.warning(
+                "The Secret name `%s` contains characters that "
+                "might not be supported. The secret name has been "
+                "sanitized to: `%s` ",
+                secret_name,
+                sanitized_secret_name,
+            )
         return sanitized_secret_name
 
     def register_secret(self, secret: BaseSecretSchema) -> None:
