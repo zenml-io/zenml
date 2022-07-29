@@ -94,9 +94,6 @@
     <a href="#💡-what-is-zenml">What is ZenML?</a>
     </li>
     <li>
-    <a href="#🎮-features">Features</a>
-    </li>
-    <li>
       <a href="#🤸-getting-started">Getting Started</a>
       <ul>
         <li><a href="#💾-installation">Installation</a></li>
