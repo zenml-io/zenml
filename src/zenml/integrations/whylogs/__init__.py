@@ -13,21 +13,44 @@
 #  permissions and limitations under the License.
 """Initialization of the whylogs integration."""
 
+from typing import List
+
+from zenml.enums import StackComponentType
 from zenml.integrations.constants import WHYLOGS
 from zenml.integrations.integration import Integration
+from zenml.zen_stores.models import FlavorWrapper
+
+WHYLOGS_DATA_VALIDATOR_FLAVOR = "whylogs"
 
 
 class WhylogsIntegration(Integration):
     """Definition of [whylogs](https://github.com/whylabs/whylogs) integration for ZenML."""
 
     NAME = WHYLOGS
-    REQUIREMENTS = ["whylogs<=0.7.9", "pybars3>=0.9.7"]
+    REQUIREMENTS = ["whylogs[viz]~=1.0.5", "whylogs[whylabs]~=1.0.5"]
 
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
         from zenml.integrations.whylogs import materializers  # noqa
+        from zenml.integrations.whylogs import secret_schemas  # noqa
         from zenml.integrations.whylogs import visualizers  # noqa
+
+    @classmethod
+    def flavors(cls) -> List[FlavorWrapper]:
+        """Declare the stack component flavors for the Great Expectations integration.
+
+        Returns:
+            List of stack component flavors for this integration.
+        """
+        return [
+            FlavorWrapper(
+                name=WHYLOGS_DATA_VALIDATOR_FLAVOR,
+                source="zenml.integrations.whylogs.data_validators.WhylogsDataValidator",
+                type=StackComponentType.DATA_VALIDATOR,
+                integration=cls.NAME,
+            ),
+        ]
 
 
 WhylogsIntegration.check_installation()

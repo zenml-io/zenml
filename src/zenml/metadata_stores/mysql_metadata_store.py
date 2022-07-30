@@ -13,11 +13,13 @@
 #  permissions and limitations under the License.
 """Implementation of a MySQL metadata store."""
 
+import re
 from pathlib import Path
 from typing import Any, ClassVar, Optional, Union
 
 from ml_metadata.proto import metadata_store_pb2
 from ml_metadata.proto.metadata_store_pb2 import MySQLDatabaseConfig
+from pydantic import validator
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.io import fileio
@@ -26,7 +28,20 @@ from zenml.repository import Repository
 
 
 class MySQLMetadataStore(BaseMetadataStore):
-    """MySQL backend for ZenML metadata store."""
+    """MySQL backend for ZenML metadata store.
+
+    Attributes:
+        port: TCP port where the MySQL server can be accessed.
+        host: MySQL server hostname.
+        database: MySQL database name to use for the metadata store. If not
+            already present on the server, it will be created automatically
+            on first access.
+        secret: The name of a ZenML secret that holds credentials.
+        username: The database username. It can be configured here, or in the
+            referenced ZenML secret (recommended).
+        password: The database password. It can be configured here, or in the
+            referenced ZenML secret (recommended).
+    """
 
     port: int = 3306
     host: str
@@ -37,6 +52,31 @@ class MySQLMetadataStore(BaseMetadataStore):
 
     # Class Configuration
     FLAVOR: ClassVar[str] = "mysql"
+
+    @validator("database")
+    def _ensure_valid_database_name(
+        cls,
+        database: str,
+    ) -> str:
+        """Ensures that the database name is valid.
+
+        Args:
+            database: The database name value to validate.
+
+        Returns:
+            The database name if it is valid.
+
+        Raises:
+            ValueError: If the database name is not valid.
+        """
+        regexp = r"^[^\\/?%*:|\"<>.-]{1,64}$"
+        match = re.match(regexp, database)
+        if not match:
+            raise ValueError(
+                f"The database name does not conform to the required format "
+                f"rules ({regexp}): {database}"
+            )
+        return database
 
     def get_tfx_metadata_config(
         self,
@@ -133,7 +173,7 @@ class MySQLMetadataStore(BaseMetadataStore):
             RuntimeError: If you don't have a secrets manager as part of your stack.
         """
         if self.secret:
-            active_stack = Repository().active_stack
+            active_stack = Repository(skip_repository_check=True).active_stack  # type: ignore[call-arg]
             secret_manager = active_stack.secrets_manager
             if secret_manager is None:
                 raise RuntimeError(

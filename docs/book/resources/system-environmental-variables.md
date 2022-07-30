@@ -1,5 +1,5 @@
 ---
-description: Control ZenML behavior with environmental variables.
+description: How to control ZenML behavior with environmental variables
 ---
 
 # System environmental variables
@@ -15,6 +15,18 @@ ZENML_LOGGING_VERBOSITY=INFO
 Explicit path to the ZenML repository:
 ```bash
 ZENML_REPOSITORY_PATH
+```
+
+Name of the active profile, see 
+[Setting Stacks and Profiles with Environment Variables](../developer-guide/advanced-usage/stack-profile-environment-variables.md):
+```
+ZENML_ACTIVATED_PROFILE
+```
+
+Name of the active stack, see 
+[Setting Stacks and Profiles with Environment Variables](../developer-guide/advanced-usage/stack-profile-environment-variables.md):
+```
+ZENML_ACTIVATED_STACK
 ```
 
 Setting to `false` disables analytics:

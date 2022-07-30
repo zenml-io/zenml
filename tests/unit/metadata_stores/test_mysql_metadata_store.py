@@ -19,7 +19,7 @@ def test_mysql_metadata_store_attributes():
     """Tests that the basic attributes of the mysql metadata store are set
     correctly."""
     metadata_store = MySQLMetadataStore(
-        name="", host="", port=0, database="", username="", password=""
+        name="", host="", port=0, database="zenml", username="", password=""
     )
     assert metadata_store.TYPE == StackComponentType.METADATA_STORE
     assert metadata_store.FLAVOR == "mysql"

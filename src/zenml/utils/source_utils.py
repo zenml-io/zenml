@@ -33,6 +33,7 @@ import site
 import sys
 import types
 from contextlib import contextmanager
+from distutils.sysconfig import get_python_lib
 from types import (
     CodeType,
     FrameType,
@@ -98,7 +99,10 @@ def is_third_party_module(file_path: str) -> bool:
     """
     absolute_file_path = pathlib.Path(file_path).resolve()
 
-    for path in site.getsitepackages() + [site.getusersitepackages()]:
+    for path in site.getsitepackages() + [
+        site.getusersitepackages(),
+        get_python_lib(standard_lib=True),
+    ]:
         if pathlib.Path(path).resolve() in absolute_file_path.parents:
             return True
 
@@ -227,15 +231,31 @@ def get_module_source_from_module(module: ModuleType) -> str:
             root_path,
         )
 
-    # Remove root_path from module_path to get relative path left over
-    module_path = module_path.replace(root_path, "")[1:]
+    root_path = os.path.abspath(root_path)
 
-    # Kick out the .py and replace `/` with `.` to get the module source
-    module_path = module_path.replace(".py", "")
+    # Remove root_path from module_path to get relative path left over
+    module_path = os.path.relpath(module_path, root_path)
+
+    if module_path.startswith(os.pardir):
+        raise RuntimeError(
+            f"Unable to resolve source for module {module}. The module file "
+            f"'{module_path}' does not seem to be inside the source root "
+            f"'{root_path}'."
+        )
+
+    # Remove the file extension and replace the os specific path separators
+    # with `.` to get the module source
+    module_path, file_extension = os.path.splitext(module_path)
+    if file_extension != ".py":
+        raise RuntimeError(
+            f"Unable to resolve source for module {module}. The module file "
+            f"'{module_path}' does not seem to be a python file."
+        )
+
     module_source = module_path.replace(os.path.sep, ".")
 
     logger.debug(
-        f"Resolved module source for module {module} to: {module_source}"
+        f"Resolved module source for module {module} to: `{module_source}`"
     )
 
     return module_source
@@ -460,12 +480,9 @@ def resolve_class(class_: Type[Any]) -> str:
         sys.modules[class_.__module__]
     )
 
-    # ENG-123 Sanitize for Windows OS
-    # module_source = module_source.replace("\\", ".")
-
-    logger.debug(f"Resolved class {class_} to {module_source}")
-
-    return module_source + "." + class_.__name__
+    source = module_source + "." + class_.__name__
+    logger.debug(f"Resolved class {class_} to `{source}`.")
+    return source
 
 
 def import_class_by_path(class_path: str) -> Type[Any]:

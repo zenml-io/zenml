@@ -26,7 +26,7 @@ from zenml.cli.utils import (
     expand_argument_value_from_file,
     parse_unknown_options,
     pretty_print_secret,
-    print_secrets,
+    print_list_items,
     warning,
 )
 from zenml.console import console
@@ -286,7 +286,7 @@ def list_secret(secrets_manager: "BaseSecretsManager") -> None:
     """
     with console.status("Getting secret names..."):
         secret_names = secrets_manager.get_all_secret_keys()
-        print_secrets(secret_names)
+        print_list_items(list_items=secret_names, column_title="SECRET_NAMES")
 
 
 @secret.command(

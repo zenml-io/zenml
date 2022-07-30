@@ -14,6 +14,8 @@
 """Initialization of the Evidently Standard Steps."""
 
 from zenml.integrations.evidently.steps.evidently_profile import (
+    EvidentlyColumnMapping,
     EvidentlyProfileConfig,
     EvidentlyProfileStep,
+    evidently_profile_step,
 )

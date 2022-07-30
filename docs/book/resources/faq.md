@@ -1,5 +1,5 @@
 ---
-description: We answer the most frequently asked questions about ZenML here.
+description: Find answers to the most frequently asked questions about ZenML
 ---
 
 # FAQ
@@ -10,9 +10,9 @@ Not really! An orchestrator in MLOps is the system component that is responsible
 for executing and managing the execution of a ML pipeline. ZenML is a framework
 that allows you to run your pipelines on whatever orchestrator you like, and we
 coordinate with all the other parts of an ML system in production. There are
-[standard orchestrators](../extending-zenml/orchestrators.md) that ZenML supports
-out-of-the-box, but you are encouraged to write your own
-[orchestrator](../extending-zenml/orchestrators.md) in order to gain more control
+[standard orchestrators](../mlops-stacks/orchestrators/orchestrators.md) that ZenML supports
+out-of-the-box, but you are encouraged to 
+[write your own orchestrator](../mlops-stacks/orchestrators/custom.md) in order to gain more control
 as to exactly how your pipelines are executed!
 
 #### Can I use tool X? How does tool Y integrate with ZenML?
@@ -30,7 +30,7 @@ roadmap.
 
 Most importantly, ZenML is extensible and we encourage you to use it with
 whatever other tools you require as part of your ML process and system(s). Check
-out [our documentation on how to get started](../extending-zenml/getting-started.md) with extending ZenML to
+out [our documentation on how to get started](../getting-started/introduction.md) with extending ZenML to
 learn more!
 
 #### How do I install on an M1 Mac
@@ -48,7 +48,7 @@ helpful.
 #### How can I make ZenML work with my custom tool? How can I extend or build on ZenML?
 
 This depends on the tool and its respective MLOps category. We have a full guide
-on this over [here](../advanced-guide/stacks-components-flavors.md)!
+on this over [here](../developer-guide/advanced-usage/custom-flavors.md)!
 
 #### Why did you build ZenML?
 

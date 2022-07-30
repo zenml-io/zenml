@@ -390,6 +390,14 @@ class ExamplesRepo:
             self.delete()
             logger.error("Canceled download of repository.. Rolled back.")
 
+    def pull(self) -> None:
+        """Pull or clone the latest repository version."""
+        if not self.cloning_path.exists():
+            self.clone()
+        else:
+            logger.info("Fetching latest examples repository")
+            self.repo.git.pull()
+
     def delete(self) -> None:
         """Delete `cloning_path` if it exists.
 
@@ -517,11 +525,9 @@ class GitExamplesHandler(object):
         """
         from git.exc import GitCommandError
 
-        if not self.examples_repo.is_cloned:
-            self.examples_repo.clone()
-        elif force:
+        if self.examples_repo.is_cloned and force:
             self.examples_repo.delete()
-            self.examples_repo.clone()
+        self.examples_repo.pull()
 
         try:
             self.examples_repo.checkout(branch=branch)

@@ -178,7 +178,7 @@ def copy_dir(
             copy_dir(source_path, destination_path, overwrite)
         else:
             create_dir_recursive_if_not_exists(
-                str(Path(destination_path).parent)
+                os.path.dirname(destination_path)
             )
             copy(str(source_path), str(destination_path), overwrite)
 

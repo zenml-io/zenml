@@ -15,6 +15,7 @@
 
 import os
 from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
@@ -34,6 +35,7 @@ from zenml.constants import (
     STACK_CONFIGURATIONS,
     STACKS,
     STACKS_EMPTY,
+    STORE_ASSOCIATIONS,
     TEAMS,
     USERS,
 )
@@ -53,6 +55,7 @@ from zenml.zen_stores.models import (
     Role,
     RoleAssignment,
     StackWrapper,
+    StoreAssociation,
     Team,
     User,
 )
@@ -125,6 +128,7 @@ app = FastAPI(title="ZenML", version=zenml.__version__)
 authed = APIRouter(
     dependencies=[Depends(authorize)], responses={401: error_response}
 )
+
 
 # to run this file locally, execute:
 # uvicorn zenml.zen_server.zen_server_api:app --reload
@@ -862,6 +866,42 @@ async def role_assignments() -> List[RoleAssignment]:
         All role assignments.
     """
     return zen_store.role_assignments
+
+
+@authed.get(STORE_ASSOCIATIONS, response_model=List[StoreAssociation])
+async def store_associations() -> List[StoreAssociation]:
+    """Returns all store associations.
+
+    Returns:
+        All store associations.
+    """
+    return zen_store.store_associations
+
+
+@authed.delete(
+    STORE_ASSOCIATIONS + "/{artifact_store_uuid}/{metadata_store_uuid}",
+    responses={404: error_response},
+)
+async def delete_store_association(
+    artifact_store_uuid: UUID,
+    metadata_store_uuid: UUID,
+) -> None:
+    """Deletes a store association.
+
+    Args:
+        artifact_store_uuid: The UUID of the selected artifact store.
+        metadata_store_uuid: The UUID of the selected metadata store.
+
+    Raises:
+        not_found: when none are found
+    """
+    try:
+        zen_store.delete_store_association_for_artifact_and_metadata_store(
+            artifact_store_uuid=artifact_store_uuid,
+            metadata_store_uuid=metadata_store_uuid,
+        )
+    except KeyError as error:
+        raise not_found(error) from error
 
 
 @authed.post(

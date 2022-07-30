@@ -60,7 +60,7 @@ class ComponentWrapper(BaseModel):
         )
 
     def to_component(self) -> "StackComponent":
-        """Converts the ComponentWrapper into an actual instance of a Stack Component.
+        """Converts the ComponentWrapper into an instance of a Stack Component.
 
         Returns:
             a StackComponent

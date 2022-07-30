@@ -7,6 +7,7 @@ theme:
   name: material
   locale: en
   favicon: _assets/favicon.png
+  custom_dir: mkdocs/overrides
 
 repo_url: https://github.com/zenml-io/zenml
 edit_uri: https://github.com/zenml-io/zenml/docs/

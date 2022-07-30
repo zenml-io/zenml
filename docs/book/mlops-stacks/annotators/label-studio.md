@@ -1,0 +1,186 @@
+---
+description: How to annotate data using Label Studio with ZenML
+---
+
+Label Studio is one of the leading open-source annotation platforms available to
+data scientists and ML practitioners. It is used to create or edit datasets that
+you can then use as part of training or validation workflows. It supports a
+broad range of annotation types, including:
+
+- Computer Vision (image classification, object detection, semantic
+  segmentation)
+- Audio & Speech (classification, speaker diarization, emotion recognition,
+  audio transcription)
+- Text / NLP (classification, NER, question answering, sentiment analysis)
+- Time Series (classification, segmentation, event recognition)
+- Multi Modal / Domain (dialogue processing, OCR, time series with reference)
+
+## When would you want to use it?
+
+If you need to label data as part of your ML workflow, that is the point at
+which you could consider adding in the optional annotator stack component as
+part of your ZenML stack.
+
+We currently support the use of annotation at the various stages described in
+[the main annotators docs page](./annotators.md), and also offer custom utility
+functions to generate Label Studio label config files for image classification
+and object detection. (More will follow in due course.)
+
+The Label Studio integration currently is built to support workflows using the
+following three cloud artifact stores: AWS S3, GCP/GCS and Azure Blob Storage.
+Purely local stacks will currently *not* work if you want to do add the
+annotation stack component as part of your stack.
+
+{% hint style="info" %} COMING SOON: The Label Studio Integration supports the
+use of annotations in an ML workflow, but we do not currently handle the
+universal conversion between data formats as part of the training workflow. Our
+initial use case was built to support image classification and object detection,
+but we will add helper steps and functions for other use cases in due course. We
+will update the docs when we enable this functionality. {% endhint %}
+
+## How to deploy it?
+
+The Label Studio Annotator flavor is provided by the Label Studio ZenML
+integration, you need to install it, to be able to register it as an Annotator
+and add it to your stack:
+
+```shell
+zenml integration install label_studio
+```
+
+Before registering a `label_studio` flavor stack component as part of your
+stack, you'll need to have registered a cloud artifact store and a secrets
+manager to handle authentication with Label Studio as well as any secrets
+required for the Artifact Store. (See the docs on how to register and [setup a
+cloud artifact store](../artifact-stores/artifact-stores.md) as well as [a
+secrets manager](../secrets-managers/secrets-managers.md).)
+
+Be sure to register an secret schema for whichever artifact store you choose,
+and then you should make sure to pass the name of that secret into the artifact
+store as the `--authentication_secret` as [described in this
+guide](../artifact-stores/amazon-s3.md#advanced-configuration), for example in
+the case of AWS.
+
+You will next need to obtain your Label Studio API key. This will give you
+access to the web annotation interface.
+
+```shell
+# choose a username and password for your label-studio account
+label-studio reset_password --username <USERNAME> --password <PASSWORD>
+# start a temporary / one-off label-studio instance to get your API key
+label-studio start -p 8094
+```
+
+Then visit [http://localhost:8094/](http://localhost:8094/) to log in, and then
+visit [http://localhost:8094/user/account](http://localhost:8094/user/account)
+and get your Label Studio API key (from the upper right hand corner). You will
+need it for the next step. `Ctrl-c` out of the Label Studio server that is
+running on the terminal.
+
+At this point you should register the API key with your secrets manager under a
+custom secret name, making sure to replace the two parts in `<>` with whatever
+you choose:
+
+```shell
+zenml secret register <LABEL_STUDIO_SECRET_NAME> --api_key="<your_label_studio_api_key>"
+```
+
+Then register your annotator with ZenML:
+
+```shell
+zenml annotator register label_studio --flavor label_studio --authentication_secret="<LABEL_STUDIO_SECRET_NAME>"
+```
+
+Finally, add all these components to a stack and set it as your active stack.
+For example:
+
+```shell
+zenml stack copy annotation
+zenml stack update annotation -x <YOUR_SECRETS_MANAGER> -a <YOUR_CLOUD_ARTIFACT_STORE>
+# this must be done separately so that the other required stack components are first registered
+zenml stack update annotation -an <YOUR_LABEL_STUDIO_ANNOTATOR>
+zenml stack set annotation
+# optionally also
+zenml stack describe
+```
+
+Now if you run a simple CLI command like `zenml annotator dataset list` this
+should work without any errors. You're ready to use your annotator in your ML
+workflow!
+
+## How do you use it?
+
+ZenML assumes that users have registered a cloud artifact store, a secrets
+manager and an annotator as described above. ZenML currently only supports this
+setup, but we will add in the fully local stack option in the future.
+
+ZenML supports access to your data and annotations via the `zenml annotator...`
+CLI command.
+
+You can access information about the datasets you're using with the `zenml
+annotator dataset list`. To work on annotation for a particular dataset, you can
+run `zenml annotator dataset annotate <dataset_name>`.
+
+[Our full continuous annotation / training example](#coming-soon) is the best
+place to see how all the pieces of making this integration work fit together.
+What follows is an overview of some of the key components to the Label Studio
+integration and how it can be used.
+
+### Label Studio Annotator Stack Component
+
+Our Label Studio annotator component inherits from the `BaseAnnotator` class.
+There are some methods that are core methods that must be defined, like being
+able to register or get a dataset. Most annotators handle things like the
+storage of state and have their own custom features, so there are quite a few
+extra methods specific to Label Studio.
+
+The core Label Studio functionality that's currently enabled includes a way to
+register your datasets, export any annotations for use in separate steps as well
+as to start the annotator daemon process. (Label Studio requires a server to be
+running in order to use the web interface, and ZenML handles the provisioning of
+this server locally using the details you passed in when registering the
+component.)
+
+### Standard Steps
+
+ZenML offers some standard steps (and their associated config objects) which
+will get you up and running with the Label Studio integration quickly. These
+include:
+
+- `LabelStudioDatasetRegistrationConfig` - a step config object to be used when
+  registering a dataset with Label studio using the `get_or_create_dataset` step
+- `LabelStudioDatasetSyncConfig` - a step config object to be used when
+  registering a dataset with Label studio using the
+  `sync_new_data_to_label_studio` step. Note that this requires a secret schema
+  to have been pre-registered with your artifact store as being the one that
+  holds authentication secrets specific to your particular cloud provider.
+  (Label Studio provides some documentation on what permissions these secrets
+  require [here](https://labelstud.io/guide/tasks.html).)
+- `get_or_create_dataset` step - This takes a
+  `LabelStudioDatasetRegistrationConfig` config object which includes the name
+  of the dataset. If it exists, this step will return the name, but if it
+  doesn't exist then ZenML will register the dataset along with the appropriate
+  label config with Label Studio.
+- `get_labeled_data` step - This step will get all labeled data available for a
+  particular dataset. Note that these are output in a Label Studio annotation
+  format, which will subsequently converted into a format appropriate for your
+  specific use case.
+- `sync_new_data_to_label_studio` step - This step is for ensuring that ZenML is
+  handling the annotations and the files being used are stored and synced with
+  the ZenML cloud artifact store. This is an important step as part of a
+  continuous annotation workflow since you want all the subsequent steps of your
+  workflow to remain in sync with whatever new annotations are being made or
+  have been created.
+
+### Helper Functions
+
+Label Studio requires the use of what it calls 'label config' when you are
+creating/registering your dataset. These are strings containing HTML-like syntax
+that allow you to define a custom interface for your annotation. ZenML provides
+two helper functions that will construct these label config strings in the case
+of object detection and image classification. See the
+`integrations.label_studio.label_config_generators` module for those two
+functions.
+
+A concrete example of using the Label Studio annotator can be found
+[here](#coming-soon).

@@ -30,29 +30,41 @@
 # runner implementation of tfx
 """Base orchestrator class."""
 
+import hashlib
 import json
+import os
 import time
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar, List, Optional
 
+from pydantic.json import pydantic_encoder
 from tfx.dsl.compiler.compiler import Compiler
 from tfx.dsl.compiler.constants import PIPELINE_RUN_ID_PARAMETER_NAME
+from tfx.dsl.io.fileio import NotFoundError
 from tfx.orchestration import metadata
 from tfx.orchestration.local import runner_utils
 from tfx.orchestration.portable import (
     data_types,
     launcher,
+    outputs_utils,
     runtime_parameter_utils,
 )
 from tfx.proto.orchestration import executable_spec_pb2
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 
-from zenml.enums import MetadataContextTypes, StackComponentType
+from zenml.constants import (
+    MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME,
+    MLMD_CONTEXT_RUNTIME_CONFIG_PROPERTY_NAME,
+    MLMD_CONTEXT_STACK_PROPERTY_NAME,
+    ZENML_MLMD_CONTEXT_TYPE,
+)
+from zenml.enums import StackComponentType
 from zenml.exceptions import DuplicateRunNameError
+from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.orchestrators import context_utils
 from zenml.orchestrators.utils import (
+    add_context_to_node,
     create_tfx_pipeline,
     get_cache_status,
     get_step_for_node,
@@ -68,6 +80,44 @@ if TYPE_CHECKING:
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
+
+
+### TFX PATCH
+# The following code patches a function in tfx which leads to an OSError on
+# Windows.
+def _patched_remove_stateful_working_dir(stateful_working_dir: str) -> None:
+    """Deletes the stateful working directory if it exists.
+
+    Args:
+        stateful_working_dir: Stateful working directory to delete.
+    """
+    # The original implementation uses
+    # `os.path.abspath(os.path.join(stateful_working_dir, os.pardir))` to
+    # compute the parent directory that needs to be deleted. This however
+    # doesn't work with our artifact store paths (e.g. s3://my-artifact-store)
+    # which would get converted to something like this:
+    # /path/to/current/working/directory/s3:/my-artifact-store. In order to
+    # avoid that we use `os.path.dirname` instead as the stateful working dir
+    # should already be an absolute path anyway.
+    stateful_working_dir = os.path.dirname(stateful_working_dir)
+    try:
+        fileio.rmtree(stateful_working_dir)
+    except NotFoundError:
+        logger.debug(
+            "Unable to find stateful working directory '%s'.",
+            stateful_working_dir,
+        )
+
+
+assert hasattr(
+    outputs_utils, "remove_stateful_working_dir"
+), "Unable to find tfx function."
+setattr(
+    outputs_utils,
+    "remove_stateful_working_dir",
+    _patched_remove_stateful_working_dir,
+)
+### END OF TFX PATCH
 
 
 class BaseOrchestrator(StackComponent, ABC):
@@ -426,24 +476,29 @@ class BaseOrchestrator(StackComponent, ABC):
         for node in pb2_pipeline.nodes:
             pipeline_node: PipelineNode = node.pipeline_node
 
-            # Add pipeline requirements to the step context
             requirements = " ".join(sorted(pipeline.requirements))
-            context_utils.add_context_to_node(
-                pipeline_node,
-                type_=MetadataContextTypes.PIPELINE_REQUIREMENTS.value,
-                name=str(hash(requirements)),
-                properties={"pipeline_requirements": requirements},
+            stack_json = json.dumps(stack.dict(), sort_keys=True)
+
+            # Copy and remove the run name so an otherwise identical run reuses
+            # our MLMD context
+            runtime_config_copy = runtime_configuration.copy()
+            runtime_config_copy.pop("run_name")
+            runtime_config_json = json.dumps(
+                runtime_config_copy, sort_keys=True, default=pydantic_encoder
             )
 
-            # Add the zenml stack to the step context
-            context_utils.add_context_to_node(
-                pipeline_node,
-                type_=MetadataContextTypes.STACK.value,
-                name=str(hash(json.dumps(stack.dict(), sort_keys=True))),
-                properties=stack.dict(),
-            )
+            context_properties = {
+                MLMD_CONTEXT_STACK_PROPERTY_NAME: stack_json,
+                MLMD_CONTEXT_RUNTIME_CONFIG_PROPERTY_NAME: runtime_config_json,
+                MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME: requirements,
+            }
 
-            # Add all Pydantic objects from runtime_configuration to the context
-            context_utils.add_runtime_configuration_to_node(
-                pipeline_node, runtime_configuration
+            properties_json = json.dumps(context_properties, sort_keys=True)
+            context_name = hashlib.md5(properties_json.encode()).hexdigest()
+
+            add_context_to_node(
+                pipeline_node,
+                type_=ZENML_MLMD_CONTEXT_TYPE,
+                name=context_name,
+                properties=context_properties,
             )

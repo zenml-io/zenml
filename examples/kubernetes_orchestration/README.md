@@ -37,7 +37,7 @@ an ECR container registry, and a S3 bucket for artifact storage.
 If you want to follow this example line by line, you need to spin up each of
 the corresponding AWS resources first.
 You can either provision these resources manually by following the
-[ZenML cloud guide](https://docs.zenml.io/advanced-guide/execute-pipelines-in-cloud)
+[ZenML cloud guide](https://docs.zenml.io/cloud-guide/overview)
 or you can use our `eks-s3-seldon-mlflow` Terraform recipe from our 
 [mlops-stacks repository](https://github.com/zenml-io/mlops-stacks).
 For detailed instructions, see our

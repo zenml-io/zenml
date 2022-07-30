@@ -14,6 +14,7 @@
 """Implementation of the ZenML AzureML Step Operator."""
 
 import os
+from pathlib import PurePosixPath
 from typing import ClassVar, List, Optional
 
 from azureml.core import (
@@ -53,9 +54,9 @@ class AzureMLStepOperator(BaseStepOperator):
         compute_target_name: The name of the configured ComputeTarget.
             An instance of it has to be created on the portal if it doesn't
             exist already.
-        environment_name: [Optional] The name of the environment if there
+        environment_name: The name of the environment if there
             already exists one.
-        docker_base_image: [Optional] The custom docker base image that the
+        docker_base_image: The custom docker base image that the
             environment should use.
         tenant_id: The Azure Tenant ID.
         service_principal_id: The ID for the service principal that is created
@@ -196,9 +197,10 @@ class AzureMLStepOperator(BaseStepOperator):
             # active profile contents into the build context, to have
             # the configured stacks accessible from within the Azure ML
             # environment.
+            load_config_path = PurePosixPath(f"./{CONTAINER_ZENML_CONFIG_DIR}")
             GlobalConfiguration().copy_active_configuration(
                 config_path,
-                load_config_path=f"./{CONTAINER_ZENML_CONFIG_DIR}",
+                load_config_path=load_config_path,
             )
 
             environment = self._prepare_environment(

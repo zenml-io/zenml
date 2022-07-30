@@ -52,7 +52,8 @@ class AuthenticationMixin(BaseModel):
         if not self.authentication_secret:
             return None
 
-        secrets_manager = Repository().active_stack.secrets_manager
+        active_stack = Repository(skip_repository_check=True).active_stack  # type: ignore[call-arg]
+        secrets_manager = active_stack.secrets_manager
         if not secrets_manager:
             raise RuntimeError(
                 f"Unable to retrieve secret '{self.authentication_secret}' "

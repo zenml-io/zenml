@@ -43,6 +43,7 @@ class StackComponentType(StrEnum):
     """All possible types a `StackComponent` can have."""
 
     ALERTER = "alerter"
+    ANNOTATOR = "annotator"
     ARTIFACT_STORE = "artifact_store"
     CONTAINER_REGISTRY = "container_registry"
     DATA_VALIDATOR = "data_validator"
@@ -67,13 +68,6 @@ class StackComponentType(StrEnum):
         return f"{self.value}s"
 
 
-class MetadataContextTypes(Enum):
-    """All possible types that contexts can have within pipeline nodes."""
-
-    STACK = "stack"
-    PIPELINE_REQUIREMENTS = "pipeline_requirements"
-
-
 class StoreType(StrEnum):
     """Repository Store Backend Types."""
 
@@ -90,7 +84,6 @@ class ContainerRegistryFlavor(StrEnum):
     DOCKERHUB = "dockerhub"
     GCP = "gcp"
     AZURE = "azure"
-    GITLAB = "gitlab"
 
 
 class CliCategories(StrEnum):
@@ -106,3 +99,10 @@ class CliCategories(StrEnum):
     MANAGEMENT_TOOLS = "Management Tools"
     IDENTITY_AND_SECURITY = "Identity and Security"
     OTHER_COMMANDS = "Other Commands"
+
+
+class AnnotationTasks(StrEnum):
+    """Supported annotation tasks."""
+
+    IMAGE_CLASSIFICATION = "image_classification"
+    OBJECT_DETECTION_BOUNDING_BOXES = "object_detection_bounding_boxes"

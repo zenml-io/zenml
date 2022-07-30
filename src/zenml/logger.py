@@ -24,6 +24,7 @@ from typing import Any, Dict, Iterator
 from absl import logging as absl_logging
 from rich.traceback import install as rich_tb_install
 
+import zenml
 from zenml.constants import (
     ABSL_LOGGING_VERBOSITY,
     APP_NAME,
@@ -238,3 +239,21 @@ def disable_logging(log_level: int) -> Iterator[None]:
         yield
     finally:
         logging.disable(old_level)
+
+
+def get_apidocs_link(docs_section: str, caller_path: str) -> str:
+    """Get link to api_docs of the caller.
+
+    Args:
+        docs_section: Main section of the API docs, that the caller path is
+            part of.
+        caller_path: Path to the class, method or function to which the api
+            doc-link should point.
+
+    Returns:
+        Link to the api docs for the given caller_path
+    """
+    return (
+        f"https://apidocs.zenml.io/{zenml.__version__}/api_docs/"
+        f"{docs_section}/#{caller_path}"
+    )

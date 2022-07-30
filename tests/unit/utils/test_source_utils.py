@@ -15,6 +15,7 @@
 import inspect
 import os
 import sys
+from collections import OrderedDict
 from contextlib import ExitStack as does_not_raise
 from pathlib import Path
 from typing import Callable
@@ -32,6 +33,9 @@ def test_is_third_party_module():
 
     non_third_party_file = inspect.getfile(source_utils)
     assert not source_utils.is_third_party_module(non_third_party_file)
+
+    standard_lib_file = inspect.getfile(OrderedDict)
+    assert source_utils.is_third_party_module(standard_lib_file)
 
 
 class EmptyClass:
