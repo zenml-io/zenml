@@ -565,7 +565,7 @@ class Stack:
                                 f"lead to various problems. In order to solve "
                                 f"this issue, you can either create and use "
                                 f"another artifact store instance or use the "
-                                f"'-r' flag when you register/update a stack "
+                                f"'--decouple_stores' flag when you register/update a stack "
                                 f"to reset the associations of these "
                                 f"components."
                             )
@@ -606,7 +606,7 @@ class Stack:
                                 f"lead to various problems. In order to solve "
                                 f"this issue, you can either create and use "
                                 f"another artifact store instance or use the "
-                                f"'-r' flag when you register/update a stack "
+                                f"'--decouple_stores' flag when you register/update a stack "
                                 f"to reset the associations of these "
                                 f"components."
                             )

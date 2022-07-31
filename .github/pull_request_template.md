@@ -5,7 +5,7 @@ I implemented/fixed _ to achieve _.
 Please ensure you have done the following:
 - [ ] I have read the **CONTRIBUTING.md** document.
 - [ ] If my change requires a change to docs, I have updated the documentation accordingly.
-- [ ] If I have added an integration, I have updated the [integrations](https://docs.zenml.io/advanced-guide/integrations) table and the [corresponding website section](https://zenml.io/integrations).
+- [ ] If I have added an integration, I have updated the [integrations](https://docs.zenml.io/mlops-stacks/integrations) table and the [corresponding website section](https://zenml.io/integrations).
 - [ ] I have added tests to cover my changes.
 
 ## Types of changes
