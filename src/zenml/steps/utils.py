@@ -134,6 +134,36 @@ def resolve_type_annotation(obj: Any) -> Any:
             return obj
 
 
+def parse_return_type_annotations(
+    step_annotations: Dict[str, Any]
+) -> Dict[str, Any]:
+    """Parse the returns of a step function into a dict of resolved types.
+
+    Called within `BaseStepMeta.__new__()` to define `cls.OUTPUT_SIGNATURE`.
+    Called within `Do()` to resolve type annotations.
+
+    Args:
+        step_annotations: Type annotations of the step function.
+
+    Returns:
+        Output signature of the new step class.
+    """
+    return_type = step_annotations.get("return", None)
+    if return_type is None:
+        return {}
+
+    # Cast simple output types to `Output`.
+    if not isinstance(return_type, Output):
+        return_type = Output(**{SINGLE_RETURN_OUT_NAME: return_type})
+
+    # Resolve type annotations of all outputs and save in new dict.
+    output_signature = {
+        output_name: resolve_type_annotation(output_type)
+        for output_name, output_type in return_type.items()
+    }
+    return output_signature
+
+
 def generate_component_spec_class(
     step_name: str,
     input_spec: Dict[str, Type[BaseArtifact]],
@@ -552,13 +582,8 @@ class _FunctionExecutor(BaseExecutor):
             return_values = self._FUNCTION(**function_params)
 
         spec = inspect.getfullargspec(inspect.unwrap(self._FUNCTION))
-        return_type: Type[Any] = spec.annotations.get("return", None)
-        if return_type is not None:
-            if isinstance(return_type, Output):
-                output_annotations = list(return_type.items())
-            else:
-                output_annotations = [(SINGLE_RETURN_OUT_NAME, return_type)]
-
+        output_annotations = parse_return_type_annotations(spec.annotations)
+        if len(output_annotations) > 0:
             # if there is only one output annotation (either directly specified
             # or contained in an `Output` tuple) we treat the step function
             # return value as the return for that output
@@ -584,7 +609,7 @@ class _FunctionExecutor(BaseExecutor):
                 )
 
             for return_value, (output_name, output_type) in zip(
-                return_values, output_annotations
+                return_values, output_annotations.items()
             ):
                 if not isinstance(return_value, output_type):
                     raise StepInterfaceError(
