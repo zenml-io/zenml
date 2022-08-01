@@ -15,6 +15,7 @@
 from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.steps import step
 
+
 @step
 def model_deployer_mock(deploy_decision: bool, model: ModelArtifact) -> None:
     pass

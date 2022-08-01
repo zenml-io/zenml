@@ -23,15 +23,24 @@ show how to run the various pipelines, in what order, all using an AWS stack.
 
 # 🖥 Run the example
 
-## 👣 Step-by-Step
+You will need to obtain your Label Studio API key. This will give you access to the web annotation interface.
 
-### 🥞 Set up your stack for Microsoft Azure
+```shell
+# start a temporary / one-off label-studio instance to get your API key
+label-studio start -p 8094
+```
+
+First order of business is to sign up if you haven't done so already, using an
+email and a password. Then visit http://localhost:8094/ to log in, and then
+visit http://localhost:8094/user/account and get your Label Studio API key (from
+the upper right hand corner). You will need it for later. Ctrl-c out of the
+Label Studio server that is running on the terminal.
 
 In order to run this example, you need to install and initialize ZenML and Label
 Studio.
 
 ```shell
-zenml integration install label_studio pytorch azure
+pip install zenml
 
 # pull example
 zenml example pull label_studio_annotation
@@ -39,6 +48,16 @@ cd zenml_examples/label_studio_annotation
 
 # Initialize ZenML repo
 zenml init
+```
+
+## 👣 Step-by-Step
+
+### 🥞 Set up your stack for Microsoft Azure
+
+You should install the relevant integrations:
+
+```shell
+zenml integration install label_studio pytorch azure
 ```
 
 Some setup for your stack is required. This assumes you have a cloud secrets
@@ -58,18 +77,7 @@ zenml secret register <YOUR_AZURE_AUTH_SECRET_NAME> --schema=azure --account_nam
 zenml artifact-store register azure_artifact_store -f=azure --path="az://<NAME_OF_ARTIFACT_STORE_OR_BLOB_IN_AZURE>" --authentication_secret="<YOUR_AZURE_AUTH_SECRET_NAME>"
 
 zenml stack update <ANNOTATION_STACK_NAME> -a <YOUR_CLOUD_ARTIFACT_STORE>
-```
 
-You will next need to obtain your Label Studio API key. This will give you access to the web annotation interface.
-
-```shell
-# start a temporary / one-off label-studio instance to get your API key
-label-studio start -p 8094
-```
-
-First order of business is to sign up if you haven't done so already, using an email and a password. Then visit [http://localhost:8094/](http://localhost:8094/) to log in, and then visit [http://localhost:8094/user/account](http://localhost:8094/user/account) and get your Label Studio API key (from the upper right hand corner). You will need it for the next step. `Ctrl-c` out of the Label Studio server that is running on the terminal.
-
-```shell
 zenml secret register <LABEL_STUDIO_SECRET_NAME> --api_key="<YOUR_API_KEY>"
 
 zenml annotator register <YOUR_LABEL_STUDIO_ANNOTATOR> --flavor label_studio --authentication_secret="<LABEL_STUDIO_SECRET_NAME>"
@@ -79,25 +87,18 @@ zenml stack update <ANNOTATION_STACK_NAME> -an <YOUR_LABEL_STUDIO_ANNOTATOR>
 zenml stack up
 ```
 
+This will initialize the daemon server which Label Studio requires, albeit running on a default port of 8093.
+
 ### 🥞 Set up your stack for GCP
+
+You should install the relevant integrations:
+
+```shell
+zenml integration install label_studio pytorch gcp
+```
 
 This setup guide assumes that you have installed and are able to use the
 `gcloud` CLI to run commands.
-
-In order to run this example, you need to install and initialize ZenML and Label
-Studio.
-
-```shell
-pip install zenml
-zenml integration install label_studio pytorch gcp
-
-# pull example
-zenml example pull label_studio_annotation
-cd zenml_examples/label_studio_annotation
-
-# Initialize ZenML repo
-zenml init
-```
 
 Create your artifact store and set up the necessary permissions and service accounts:
 
@@ -132,18 +133,7 @@ zenml secret register <YOUR_GCP_AUTH_SECRETS_NAME> --schema=gcp --token="@PATH/T
 zenml artifact-store register gcp_artifact_store -f=gcp --path="gs://<YOUR_BUCKET_NAME>" --authentication_secret="<YOUR_GCP_AUTH_SECRETS_NAME>"
 
 zenml stack update <YOUR_ANNOTATION_STACK_NAME> -a <YOUR_CLOUD_ARTIFACT_STORE>
-```
 
-You will next need to obtain your Label Studio API key. This will give you access to the web annotation interface.
-
-```shell
-# start a temporary / one-off label-studio instance to get your API key
-label-studio start -p 8094
-```
-
-First order of business is to sign up if you haven't done so already, using an email and a password. Then visit [http://localhost:8094/](http://localhost:8094/) to log in, and then visit [http://localhost:8094/user/account](http://localhost:8094/user/account) and get your Label Studio API key (from the upper right hand corner). You will need it for the next step. `Ctrl-c` out of the Label Studio server that is running on the terminal.
-
-```shell
 zenml secret register <LABEL_STUDIO_SECRET_NAME> --api_key="<YOUR_API_KEY>"
 
 zenml annotator register <YOUR_LABEL_STUDIO_ANNOTATOR> --flavor label_studio --authentication_secret="<LABEL_STUDIO_SECRET_NAME>"
@@ -153,21 +143,14 @@ zenml stack update <YOUR_ANNOTATION_STACK_NAME> -an <YOUR_LABEL_STUDIO_ANNOTATOR
 zenml stack up
 ```
 
+This will initialize the daemon server which Label Studio requires, albeit running on a default port of 8093.
+
 ### 🥞 Set up your stack for AWS
 
-In order to run this example, you need to install and initialize ZenML and Label
-Studio.
+You should install the relevant integrations:
 
 ```shell
-pip install zenml
 zenml integration install label_studio pytorch s3
-
-# pull example
-zenml example pull label_studio_annotation
-cd zenml_examples/label_studio_annotation
-
-# Initialize ZenML repo
-zenml init
 ```
 
 Create your basic S3 bucket via CLI command:
@@ -248,18 +231,7 @@ zenml secret register <YOUR_AWS_SECRET_NAME> --schema=aws_label_studio--aws_acce
 zenml artifact-store register <YOUR_CLOUD_ARTIFACT_STORE> --flavor=s3 --path=s3://<YOUR_S3_BUCKET_NAME> --authentication_secret="<YOUR_AWS_SECRET_NAME>"
 
 zenml stack update <YOUR_AWS_ZENML_STACK_NAME> -a <YOUR_CLOUD_ARTIFACT_STORE>
-```
 
-You will next need to obtain your Label Studio API key. This will give you access to the web annotation interface.
-
-```shell
-# start a temporary / one-off label-studio instance to get your API key
-label-studio start -p 8094
-```
-
-First order of business is to sign up if you haven't done so already, using an email and a password. Then visit http://localhost:8094/ to log in, and then visit http://localhost:8094/user/account and get your Label Studio API key (from the upper right hand corner). You will need it for the next step. Ctrl-c out of the Label Studio server that is running on the terminal.
-
-```shell
 zenml secret register <LABEL_STUDIO_SECRET_NAME> --api_key="<YOUR_API_KEY>"
 
 zenml annotator register <YOUR_LABEL_STUDIO_ANNOTATOR> --flavor label_studio --authentication_secret="<LABEL_STUDIO_SECRET_NAME>"
@@ -269,10 +241,10 @@ zenml stack update <YOUR_AWS_ZENML_STACK_NAME> -an <YOUR_LABEL_STUDIO_ANNOTATOR>
 zenml stack up
 ```
 
-### ▶️ Run the Code
-
-
 This will initialize the daemon server which Label Studio requires, albeit running on a default port of 8093.
+
+
+### ▶️ Run the Code
 
 Run the pipeline with:
 
@@ -300,7 +272,8 @@ zenml annotator dataset <YOUR_DATASET_NAME> stats
 ### 🧽 Clean up
 
 In order to clean up, delete any relevant cloud infrastructure that was created
-above (the S3 bucket is the main one, along with any permissions) and the
+above (the cloud storage bucket is the main one, along with any permissions and
+whatever secrets or secrets vaults you created) and the
 remaining ZenML references.
 
 ```shell
