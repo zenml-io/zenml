@@ -42,6 +42,7 @@ from tfx.types.channel import Channel
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.artifacts.type_registry import type_registry
+from zenml.config.resource_configuration import ResourceConfiguration
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -50,7 +51,6 @@ from zenml.materializers.default_materializer_registry import (
 )
 from zenml.step_operators.step_executor_operator import StepExecutorOperator
 from zenml.steps.base_step_config import BaseStepConfig
-from zenml.config.resource_configuration import ResourceConfiguration
 from zenml.steps.step_context import StepContext
 from zenml.steps.step_output import Output
 from zenml.steps.utils import (
