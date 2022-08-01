@@ -51,7 +51,6 @@ from zenml.materializers.default_materializer_registry import (
 )
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_context import StepContext
-from zenml.steps.step_output import Output
 from zenml.steps.utils import (
     INSTANCE_CONFIGURATION,
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
@@ -60,9 +59,9 @@ from zenml.steps.utils import (
     PARAM_ENABLE_CACHE,
     PARAM_PIPELINE_PARAMETER_NAME,
     PARAM_RESOURCE_CONFIGURATION,
-    SINGLE_RETURN_OUT_NAME,
     _ZenMLSimpleComponent,
     generate_component_class,
+    parse_return_type_annotations,
     resolve_type_annotation,
 )
 from zenml.utils.source_utils import get_hashed_source
@@ -74,8 +73,9 @@ class BaseStepMeta(type):
     """Metaclass for `BaseStep`.
 
     Checks whether everything passed in:
-    * Has a matching materializer.
-    * Is a subclass of the Config class
+    * Has a matching materializer,
+    * Is a subclass of the Config class,
+    * Is typed correctly.
     """
 
     def __new__(
@@ -180,22 +180,14 @@ class BaseStepMeta(type):
         # Parse the returns of the step function
         if "return" not in step_function_signature.annotations:
             raise StepInterfaceError(
-                f"Missing return type annotation when "
-                f"trying to create step '{name}'. Please make sure to "
-                f"include type annotations for all your step inputs "
-                f"and outputs. If your step returns nothing, please annotate it with `-> None`."
+                "Missing return type annotation when trying to create step "
+                f"'{name}'. Please make sure to include type annotations for "
+                "all your step inputs and outputs. If your step returns "
+                "nothing, please annotate it with `-> None`."
             )
-        return_type = step_function_signature.annotations.get("return", None)
-        if return_type is not None:
-            if isinstance(return_type, Output):
-                cls.OUTPUT_SIGNATURE = {
-                    name: resolve_type_annotation(type_)
-                    for (name, type_) in return_type.items()
-                }
-            else:
-                cls.OUTPUT_SIGNATURE[
-                    SINGLE_RETURN_OUT_NAME
-                ] = resolve_type_annotation(return_type)
+        cls.OUTPUT_SIGNATURE = parse_return_type_annotations(
+            step_function_signature.annotations,
+        )
 
         # Raise an exception if input and output names of a step overlap as
         # tfx requires them to be unique

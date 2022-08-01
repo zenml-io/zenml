@@ -179,22 +179,17 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
         return values
 
-    def get_kubernetes_contexts(self) -> Tuple[List[str], str]:
+    def get_kubernetes_contexts(self) -> Tuple[List[str], Optional[str]]:
         """Get the list of configured Kubernetes contexts and the active context.
 
         Returns:
             A tuple containing the list of configured Kubernetes contexts and
             the active context.
-
-        Raises:
-            RuntimeError: if the Kubernetes configuration cannot be loaded
         """
         try:
             contexts, active_context = k8s_config.list_kube_config_contexts()
-        except k8s_config.config_exception.ConfigException as e:
-            raise RuntimeError(
-                "Could not load the Kubernetes configuration"
-            ) from e
+        except k8s_config.config_exception.ConfigException:
+            return [], None
 
         context_names = [c["name"] for c in contexts]
         active_context_name = active_context["name"]
@@ -231,7 +226,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                         f"contexts, run:\n\n"
                         f"  `kubectl config get-contexts`\n"
                     )
-            elif self.kubernetes_context != active_context:
+            elif active_context and self.kubernetes_context != active_context:
                 logger.warning(
                     f"The Kubernetes context '{self.kubernetes_context}' "
                     f"configured for the Kubeflow orchestrator is not the "

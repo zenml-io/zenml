@@ -53,16 +53,22 @@ from tfx.dsl.component.experimental.decorators import _SimpleComponent
 from tfx.dsl.components.base.base_executor import BaseExecutor
 from tfx.dsl.components.base.executor_spec import ExecutorClassSpec
 from tfx.orchestration.portable import outputs_utils
-from tfx.proto.orchestration import execution_result_pb2
+from tfx.proto.orchestration import execution_result_pb2, pipeline_pb2
 from tfx.types import component_spec
 from tfx.types.channel import Channel
 from tfx.utils import json_utils
 
+import zenml
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.constants import (
+    MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME,
+    ZENML_MLMD_CONTEXT_TYPE,
+)
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.repository import Repository
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_context import StepContext
 from zenml.steps.step_environment import StepEnvironment
@@ -70,6 +76,7 @@ from zenml.steps.step_output import Output
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
+    from zenml.stack import Stack
     from zenml.steps.base_step import BaseStep
 
 logger = get_logger(__name__)
@@ -111,6 +118,36 @@ def resolve_type_annotation(obj: Any) -> Any:
             return obj.__origin__
         else:
             return obj
+
+
+def parse_return_type_annotations(
+    step_annotations: Dict[str, Any]
+) -> Dict[str, Any]:
+    """Parse the returns of a step function into a dict of resolved types.
+
+    Called within `BaseStepMeta.__new__()` to define `cls.OUTPUT_SIGNATURE`.
+    Called within `Do()` to resolve type annotations.
+
+    Args:
+        step_annotations: Type annotations of the step function.
+
+    Returns:
+        Output signature of the new step class.
+    """
+    return_type = step_annotations.get("return", None)
+    if return_type is None:
+        return {}
+
+    # Cast simple output types to `Output`.
+    if not isinstance(return_type, Output):
+        return_type = Output(**{SINGLE_RETURN_OUT_NAME: return_type})
+
+    # Resolve type annotations of all outputs and save in new dict.
+    output_signature = {
+        output_name: resolve_type_annotation(output_type)
+        for output_name, output_type in return_type.items()
+    }
+    return output_signature
 
 
 def generate_component_spec_class(
@@ -435,6 +472,7 @@ class _FunctionExecutor(BaseExecutor):
             StepInterfaceError: if the step interface is not implemented.
         """
         step_name = getattr(self, PARAM_STEP_NAME)
+        stack = Repository().active_stack
 
         # remove all ZenML internal execution properties
         exec_properties = {
@@ -501,16 +539,14 @@ class _FunctionExecutor(BaseExecutor):
             pipeline_run_id=self._context.pipeline_run_id,
             step_name=step_name,
             cache_enabled=getattr(self, PARAM_ENABLE_CACHE),
+            pipeline_requirements=collect_requirements(
+                stack=stack, pipeline_node=self._context.pipeline_node
+            ),
         ):
             return_values = self._FUNCTION(**function_params)
 
-        return_type: Type[Any] = spec.annotations.get("return", None)
-        if return_type is not None:
-            if isinstance(return_type, Output):
-                output_annotations = list(return_type.items())
-            else:
-                output_annotations = [(SINGLE_RETURN_OUT_NAME, return_type)]
-
+        output_annotations = parse_return_type_annotations(spec.annotations)
+        if len(output_annotations) > 0:
             # if there is only one output annotation (either directly specified
             # or contained in an `Output` tuple) we treat the step function
             # return value as the return for that output
@@ -536,7 +572,7 @@ class _FunctionExecutor(BaseExecutor):
                 )
 
             for return_value, (output_name, output_type) in zip(
-                return_values, output_annotations
+                return_values, output_annotations.items()
             ):
                 if not isinstance(return_value, output_type):
                     raise StepInterfaceError(
@@ -630,3 +666,35 @@ def clone_step(step: Type["BaseStep"], step_name: str) -> Type["BaseStep"]:
 
     mod.__dict__[step_name] = step_clone
     return step_clone
+
+
+def collect_requirements(
+    stack: "Stack",
+    pipeline_node: pipeline_pb2.PipelineNode,
+) -> List[str]:
+    """Collects all requirements necessary to run a step.
+
+    Args:
+        stack: Stack on which the step is being executed.
+        pipeline_node: Pipeline node info for a step.
+
+    Returns:
+        Alphabetically sorted list of pip requirements.
+    """
+    requirements = stack.requirements()
+
+    # Add pipeline requirements from the corresponding node context
+    for context in pipeline_node.contexts.contexts:
+        if context.type.name == ZENML_MLMD_CONTEXT_TYPE:
+            pipeline_requirements = context.properties[
+                MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME
+            ].field_value.string_value.split(" ")
+            requirements.update(pipeline_requirements)
+            break
+
+    # TODO [ENG-696]: Find a nice way to set this if the running version of
+    #  ZenML is not an official release (e.g. on a development branch)
+    # Add the current ZenML version as a requirement
+    requirements.add(f"zenml=={zenml.__version__}")
+
+    return sorted(requirements)
