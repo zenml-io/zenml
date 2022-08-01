@@ -97,7 +97,7 @@ def served_models(ctx: click.Context) -> None:
 @click.option(
     "--running",
     is_flag=True,
-    help="Show only model servers that are currently runing.",
+    help="Show only model servers that are currently running.",
 )
 @click.pass_obj
 def list_models(
@@ -181,10 +181,17 @@ def get_url(
             prediction_url = model_deployer.get_model_server_info(
                 served_models[0]
             ).get("PREDICTION_URL")
+            prediction_hostname = (
+                model_deployer.get_model_server_info(served_models[0]).get(
+                    "PREDICTION_HOSTNAME"
+                )
+                or "No hostname specified for this service"
+            )
             declare(
                 f"  Prediction URL of Served Model {served_model_uuid} "
                 f"is:\n"
-                f"  {prediction_url}"
+                f"  {prediction_url}\n"
+                f"  and the hostname is: {prediction_hostname}"
             )
         except KeyError:
             warning("The deployed model instance has no 'prediction_url'.")

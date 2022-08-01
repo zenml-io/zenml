@@ -95,7 +95,7 @@ your project, you get the following benefits:
 | 🙋‍♀️ **[Contribute]** | How to contribute to the ZenML project and code base. |
 
 [ZenML 101]: https://docs.zenml.io/
-[Core Concepts]: https://docs.zenml.io/core-concepts
+[Core Concepts]: https://docs.zenml.io/getting-started/core-concepts
 [API Guide]: https://docs.zenml.io/v/docs/developer-guide/steps-and-pipelines/functional-vs-class-based-api
 [New in v0.11.0]: https://github.com/zenml-io/zenml/releases
 [Vote for Features]: https://zenml.io/discussion
@@ -132,14 +132,14 @@ cloud](docs/book/assets/core_concepts/concepts-3.png)
 
 Once code is organized into a ZenML pipeline, you can supercharge your ML
 development with [powerful
-integrations](https://docs.zenml.io/advanced-guide/integrations) on multiple [MLOps
-stacks](https://docs.zenml.io/core-concepts). There are lots of moving parts for
+integrations](https://docs.zenml.io/mlops-stacks/integrations) on multiple [MLOps
+stacks](https://docs.zenml.io/mlops-stacks/categories). There are lots of moving parts for
 all the MLOps tooling and infrastructure you require for ML in production and
 ZenML aims to bring it all together under one roof.
 
 We already support common use cases and integrations to standard ML tools via
 our stack components, from orchestrators like Airflow and Kubeflow to model
-deployment via MLflow or Seldon Core, to custom infrastructure for training your
+deployment via MLflow, Seldon Core or KServe, to custom infrastructure for training your
 models in the cloud and so on. If you want to learn more about our integrations,
 check out [our Examples](https://github.com/zenml-io/zenml/tree/main/examples)
 to see how they work.
@@ -182,7 +182,7 @@ ZenML enabled CT/CD by enabling the model preparation and model training with mo
 With the built-in functionalities like Schedules, Model Deployers and Services you can 
 create end-to-end ML workflows with Continuous Training and Deployment that deploys your 
 model in a local environment with MLFlow integration or even in a production-grade environment 
-like Kubernetes with our Seldon Core integration. You can also listed served models with the CLI:
+like Kubernetes with our Seldon Core or KServe integration. You can also listed served models with the CLI:
 
 ![CI/CD/CT in ZenML](docs/book/assets/ct_cd_zenml.gif)
 
