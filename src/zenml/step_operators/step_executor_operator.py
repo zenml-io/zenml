@@ -146,6 +146,8 @@ class StepExecutorOperator(BaseExecutorOperator):
 
         Raises:
             RuntimeError: If the step class loading failed.
+            TypeError: If the step source doesn't resolve to a BaseStep
+                subclass.
         """
         step_type = cast(str, pipeline_node.node_info.type.name)
         step_module_path, step_class_name = step_type.rsplit(".", maxsplit=1)
