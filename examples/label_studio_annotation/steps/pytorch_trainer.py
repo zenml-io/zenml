@@ -24,8 +24,8 @@ from zenml.utils import io_utils
 
 LABEL_MAPPING = {label: idx for idx, label in enumerate(LABELS)}
 
-PIPELINE_NAME = "training_pipeline"  # TODO: cleanup
-PIPELINE_STEP_NAME = "model_trainer"  # TODO: cleanup
+PIPELINE_NAME = "training_pipeline"
+PIPELINE_STEP_NAME = "model_trainer"
 
 
 def train_model(
@@ -84,6 +84,8 @@ def train_model(
 
 
 class CustomDataset:
+    """Creates a dataset to be used in the PyTorch model training."""
+
     def __init__(
         self, image_urls, labels, transforms, artifact_store_path: str
     ) -> None:
@@ -202,6 +204,7 @@ def pytorch_model_trainer(
     config: PytorchModelTrainerConfig,
     context: StepContext,
 ) -> nn.Module:
+    """ZenML step which finetunes or loads a pretrained mobilenetv3 model."""
 
     # Try to load a model from a previous run, otherwise use a pretrained net
     model = _load_last_model(context=context)

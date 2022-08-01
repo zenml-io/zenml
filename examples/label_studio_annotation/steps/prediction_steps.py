@@ -9,12 +9,12 @@ from zenml.steps.step_context import StepContext
 
 REVERSE_LABEL_MAPPING = {value: key for key, value in LABEL_MAPPING.items()}
 PIPELINE_NAME = "training_pipeline"
-PIPELINE_STEP_NAME = "model_trainer"  # TODO: change to "model_deployer"
+PIPELINE_STEP_NAME = "model_trainer"
 
 
 class PredictionServiceLoaderConfig(BaseStepConfig):
     training_pipeline_name = "training_pipeline"
-    training_pipeline_step_name = "model_trainer"  # TODO: "model_deployer"?
+    training_pipeline_step_name = "model_trainer"
 
 
 @step
