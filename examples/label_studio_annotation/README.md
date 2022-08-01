@@ -313,6 +313,5 @@ If you want to learn more about annotation in general or about how to use your
 own annotation tool in ZenML
 check out our [docs](https://docs.zenml.io/mlops-stacks/annotators).
 
-We also have extensive CLI docs for the
-[annotator](https://apidocs.zenml.io/latest/api_docs/annotators/) stack
-component.
+To explore other available CLI commands related to the annotator stack components, check out the
+[CLI docs annotator section](https://apidocs.zenml.io/latest/api_docs/repository/#zenml.repository.Repository).
