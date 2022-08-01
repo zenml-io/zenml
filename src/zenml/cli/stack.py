@@ -986,7 +986,7 @@ def up_stack() -> None:
 )
 def down_stack(force: bool = False, old_force: bool = False) -> None:
     """Suspends resources of the active stack deployment.
-    
+
     Args:
         force: Deprovisions local resources instead of suspending them.
         old_force: DEPRECATED: Deprovisions local resources instead of
