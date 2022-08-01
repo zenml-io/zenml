@@ -17,7 +17,7 @@ NOTE: This example currently only runs with a cloud artifact store. [This guide
 by Label Studio](https://labelstud.io/guide/storage.html) contains more details
 if you have trouble understanding the instructions below.
 
-For a full video walkthrough on how to run this email, please check out [our
+For a full video walkthrough on how to run this example, please check out [our
 community hour demo](https://www.youtube.com/watch?v=bLFGnoApWeU) in which we
 show how to run the various pipelines, in what order, all using an AWS stack.
 
