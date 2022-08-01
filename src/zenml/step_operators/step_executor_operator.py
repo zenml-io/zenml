@@ -37,6 +37,7 @@ from zenml.constants import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.repository import Repository
+from zenml.steps import BaseStep
 from zenml.steps.utils import (
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
     PARAM_CUSTOM_STEP_OPERATOR,
@@ -46,7 +47,6 @@ from zenml.utils import source_utils, yaml_utils
 if TYPE_CHECKING:
     from zenml.stack import Stack
     from zenml.step_operators import BaseStepOperator
-    from zenml.steps import BaseStep
 
 logger = get_logger(__name__)
 
@@ -198,7 +198,13 @@ class StepExecutorOperator(BaseExecutorOperator):
         except (KeyError, AttributeError):
             raise RuntimeError(f"Unable to load step {step_type}.")
 
-        return step_class()
+        if not issubclass(step_class, BaseStep):
+            raise TypeError(
+                f"Step source `{step_type}` does not point to a `BaseStep` "
+                "subclass."
+            )
+
+        return cast(BaseStep, step_class())
 
     @staticmethod
     def _get_step_operator(
