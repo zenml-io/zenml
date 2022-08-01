@@ -14,6 +14,7 @@
 
 import glob
 import os
+from pathlib import Path
 from typing import Dict
 
 from PIL import Image
@@ -24,7 +25,7 @@ from zenml.steps.step_context import StepContext
 
 
 class LoadImageDataConfig(BaseStepConfig):
-    base_path = os.path.join(os.getcwd(), "data")
+    base_path = Path(__file__).parent.absolute().parent.absolute() / "data"
     dir_name = "batch_1"
 
 
