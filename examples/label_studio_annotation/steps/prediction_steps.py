@@ -12,34 +12,6 @@ PIPELINE_NAME = "training_pipeline"
 PIPELINE_STEP_NAME = "model_trainer"  # TODO: change to "model_deployer"
 
 
-# @step(enable_cache=False)
-# def prediction_service_loader() -> BaseService:
-#     """Load the model service of our train_evaluate_deploy_pipeline."""
-#     repo = Repository(skip_repository_check=True)
-#     model_deployer = repo.active_stack.model_deployer
-#     services = model_deployer.find_model_server(
-#         pipeline_name=PIPELINE_NAME,
-#         pipeline_step_name=PIPELINE_STEP_NAME,
-#         running=True,
-#     )
-#     service = services[0]
-#     return service
-
-
-# @step
-# def predictor(
-#     service: BaseService,
-#     data: np.ndarray,  # TODO
-# ) -> Output(predictions=list):
-#     """Run a inference request against a prediction service"""
-#     service.start(timeout=10)  # should be a NOP if already started
-#     # TODO: iterate over images, convert predictions to label studio format
-#     prediction = service.predict(data)
-#     prediction = prediction.argmax(axis=-1)
-#     print(f"Prediction is: {[prediction.tolist()]}")
-#     return [prediction.tolist()]
-
-
 class PredictionServiceLoaderConfig(BaseStepConfig):
     training_pipeline_name = "training_pipeline"
     training_pipeline_step_name = "model_trainer"  # TODO: "model_deployer"?
