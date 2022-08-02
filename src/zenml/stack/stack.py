@@ -524,6 +524,35 @@ class Stack:
             if component.validator:
                 component.validator.validate(stack=self)
 
+        secret_validation_level = os.environ.get(
+            "ZENML_SECRET_VALIDATION_LEVEL", "FULL"
+        )
+        import itertools
+
+        required_secrets = itertools.chain.from_iterable(
+            c.required_secrets for c in self.components.values()
+        )
+
+        if required_secrets:
+            if secret_validation_level == "FULL":
+                # check that secret + key exist
+                if not self.secrets_manager:
+                    raise RuntimeError()
+
+                for name, key in required_secrets:
+                    s = self.secrets_manager.get_secret(name)
+                    if key not in s.content:
+                        raise RuntimeError()
+
+            elif secret_validation_level == "EXIST":
+                if not self.secrets_manager:
+                    raise RuntimeError()
+
+                existing_secrets = self.secrets_manager.get_all_secret_keys()
+                for secret_name, _ in required_secrets:
+                    if secret_name not in existing_secrets:
+                        raise RuntimeError()
+
         if not ZENML_IGNORE_STORE_COUPLINGS:
             from zenml.cli.utils import warning
             from zenml.repository import Repository

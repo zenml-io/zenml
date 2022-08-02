@@ -48,6 +48,26 @@ def uuid_factory() -> UUID:
     return uuid
 
 
+import re
+from typing import List, Tuple
+
+
+def is_secret_reference(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+
+    return re.fullmatch(r"\$\{.*\..*\}", value)
+
+
+def split_secret_reference(reference: str) -> Tuple[str, str]:
+    reference = reference[2:]
+    reference = reference[:-1]
+    reference = reference.strip()
+
+    secret_name, secret_key = reference.split(".", 1)
+    return secret_name, secret_key
+
+
 class StackComponent(BaseModel, ABC):
     """Abstract StackComponent class for all components of a ZenML stack.
 
@@ -62,6 +82,39 @@ class StackComponent(BaseModel, ABC):
     # Class Configuration
     TYPE: ClassVar[StackComponentType]
     FLAVOR: ClassVar[str]
+
+    def __getattribute__(self, key: str) -> Any:
+        value = super().__getattribute__(key)
+
+        if is_secret_reference(value):
+            # This is a secret value, we resolve it
+            from zenml.repository import Repository
+
+            stack = Repository().active_stack
+            if stack.components[self.TYPE] != self:
+                raise RuntimeError("Component not part of active stack")
+
+            secrets_manager = Repository().active_stack.secrets_manager
+
+            if not secrets_manager:
+                raise RuntimeError("No secrets manager in active stack")
+
+            secret_name, secret_key = split_secret_reference(value)
+            secret = secrets_manager.get_secret(secret_name)
+
+            new_value = secret.content[secret_key]
+            assert isinstance(new_value, str)
+            return new_value
+        else:
+            return value
+
+    @property
+    def required_secrets(self) -> List[Tuple[str, str]]:
+        return [
+            split_secret_reference(v)
+            for v in self.dict().values()
+            if is_secret_reference(v)
+        ]
 
     @property
     def log_file(self) -> Optional[str]:
