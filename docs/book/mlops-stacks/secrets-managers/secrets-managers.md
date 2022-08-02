@@ -189,6 +189,13 @@ to compete over the names of secrets that they store there. Secrets Manager
 scoping basically controls how the ZenML secret namespace is mapped to the
 underlying backend namespace.
 
+The following diagram depicts the available secret scopes that you can configure
+for your Secrets Manager instance, if the flavor supports secret scoping. Note
+how the different secret namespaces are isolated from each other:
+
+![Secret Scoping](../../assets/secrets-manager/secret-scoping.png)
+
+
 ### Secret Scope Configuration
 
 All Secrets Managers have two configuration attributes that determine how and if
