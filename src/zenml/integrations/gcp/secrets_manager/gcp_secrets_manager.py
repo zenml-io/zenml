@@ -35,6 +35,7 @@ logger = get_logger(__name__)
 
 ZENML_SCHEMA_NAME = "zenml-schema-name"
 ZENML_GROUP_KEY = "zenml-group-key"
+ZENML_GCP_SECRET_SCOPE_PATH_SEPARATOR = "-"
 
 
 def remove_group_name_from_key(combined_key_name: str, group_name: str) -> str:
@@ -142,29 +143,6 @@ class GCPSecretsManager(BaseSecretsManager):
         """
         return f"projects/{self.project_id}"
 
-    def _get_scoped_secret_name(self, name: str) -> str:
-        """Convert a ZenML secret name into a Google scoped secret name.
-
-        Args:
-            name: the name of the secret
-
-        Returns:
-            The Google scoped secret name
-        """
-        return "-".join(self._get_scoped_secret_path(name))
-
-    def _get_unscoped_secret_name(self, name: str) -> Optional[str]:
-        """Extract the name of a ZenML secret from a Google scoped secret name.
-
-        Args:
-            name: the name of the Google scoped secret
-
-        Returns:
-            The ZenML secret name or None, if the input secret name does not
-            belong to the current scope.
-        """
-        return self._get_secret_name_from_path(name.split("-"))
-
     def _convert_secret_content(
         self, secret: BaseSecretSchema
     ) -> Dict[str, str]:
@@ -195,9 +173,9 @@ class GCPSecretsManager(BaseSecretsManager):
             return {f"{secret.name}_{k}": v for k, v in secret.content.items()}
 
         return {
-            self._get_scoped_secret_name(secret.name): json.dumps(
-                secret_to_dict(secret)
-            ),
+            self._get_scoped_secret_name(
+                secret.name, separator=ZENML_GCP_SECRET_SCOPE_PATH_SEPARATOR
+            ): json.dumps(secret_to_dict(secret)),
         }
 
     def _get_secret_labels(
@@ -300,7 +278,7 @@ class GCPSecretsManager(BaseSecretsManager):
         self.validate_secret_name_or_namespace(secret.name)
         self._ensure_client_connected()
 
-        if not self._list_secrets(secret.name):
+        if self._list_secrets(secret.name):
             raise SecretExistsError(
                 f"A Secret with the name {secret.name} already exists"
             )
@@ -394,7 +372,10 @@ class GCPSecretsManager(BaseSecretsManager):
             # Scoped secrets are mapped 1-to-1 with Google secrets
 
             google_secret_name = self.CLIENT.secret_path(
-                self.project_id, self._get_scoped_secret_name(secret_name)
+                self.project_id,
+                self._get_scoped_secret_name(
+                    secret_name, separator=ZENML_GCP_SECRET_SCOPE_PATH_SEPARATOR
+                ),
             )
 
             try:
@@ -408,6 +389,8 @@ class GCPSecretsManager(BaseSecretsManager):
             # make sure the secret has the correct scope labels to filter out
             # unscoped secrets with similar names
             scope_labels = self._get_secret_scope_metadata(secret_name)
+            # all scope labels need to be included in the google secret labels,
+            # otherwise the secret does not belong to the current scope
             if not scope_labels.items() <= google_secret.labels.items():
                 raise KeyError(
                     f"Can't find the specified secret '{secret_name}'"

@@ -85,17 +85,6 @@ class VaultSecretsManager(BaseSecretsManager):
         else:
             pass
 
-    def _get_scoped_secret_name(self, name: str) -> str:
-        """Convert a ZenML secret name into a Vault scoped secret name.
-
-        Args:
-            name: the name of the secret
-
-        Returns:
-            The Vault scoped secret name
-        """
-        return "/".join(self._get_scoped_secret_path(name))
-
     @staticmethod
     def _sanitize_secret_name(secret_name: str) -> str:
         """Sanitize the secret name to be used in Vault.

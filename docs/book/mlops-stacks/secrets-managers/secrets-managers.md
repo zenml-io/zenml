@@ -218,7 +218,9 @@ values:
   * `component`: secrets are not visible outside a Secrets Manager instance.
   This is the default for new instances of Secrets Manager flavors that support
   scoping. Use this scope if you don't intend to share your secrets with other
-  projects or stacks.
+  projects or stacks. The component scope means that only stacks with a
+  Secrets Manager with the exact UUID as your stack can access your secrets.
+  The global or namespace scope are more suitable for sharing access to secrets.
 
   * `namespace`: secrets in a namespace scope are shared only by Secrets Manager
   instances that connect to the same backend and have the same `namespace`

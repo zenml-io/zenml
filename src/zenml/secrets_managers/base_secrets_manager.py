@@ -28,6 +28,7 @@ logger = get_logger(__name__)
 
 ZENML_SCOPE_PATH_PREFIX = "zenml"
 ZENML_SECRET_NAME_LABEL = "zenml_secret_name"
+ZENML_DEFAULT_SECRET_SCOPE_PATH_SEPARATOR = "/"
 
 
 class SecretsManagerScope(StrEnum):
@@ -179,7 +180,7 @@ class BaseSecretsManager(StackComponent, ABC):
         if self.scope == SecretsManagerScope.NONE:
             return []
 
-        path = [ZENML_SCOPE_PATH_PREFIX]
+        path = [ZENML_SCOPE_PATH_PREFIX, self.scope]
         if self.scope == SecretsManagerScope.COMPONENT:
             path.append(str(self.uuid))
         elif self.scope == SecretsManagerScope.NAMESPACE and self.namespace:
@@ -227,6 +228,69 @@ class BaseSecretsManager(StackComponent, ABC):
             return None
 
         return secret_name
+
+    def _get_scoped_secret_name_prefix(
+        self,
+        separator: str = ZENML_DEFAULT_SECRET_SCOPE_PATH_SEPARATOR,
+    ) -> str:
+        """Convert the ZenML secret scope into a scoped secret name prefix.
+
+        This utility method can be used with Secrets Managers that can map
+        the concept of a scope to a hierarchical path to compose a scoped
+        secret name prefix from the scope path.
+
+        Args:
+            separator: the path separator to use when constructing a scoped
+                secret prefix from a scope path
+
+        Returns:
+            The scoped secret name prefix
+        """
+        return separator.join(self._get_scope_path()) + separator
+
+    def _get_scoped_secret_name(
+        self,
+        name: str,
+        separator: str = ZENML_DEFAULT_SECRET_SCOPE_PATH_SEPARATOR,
+    ) -> str:
+        """Convert a ZenML secret name into a scoped secret name.
+
+        This utility method can be used with Secrets Managers that can map
+        the concept of a scope to a hierarchical path to compose a scoped
+        secret name that includes the scope path from a ZenML secret name.
+
+        Args:
+            name: the name of the secret
+            separator: the path separator to use when constructing a scoped
+                secret name from a scope path
+
+        Returns:
+            The scoped secret name
+        """
+        return separator.join(self._get_scoped_secret_path(name))
+
+    def _get_unscoped_secret_name(
+        self,
+        name: str,
+        separator: str = ZENML_DEFAULT_SECRET_SCOPE_PATH_SEPARATOR,
+    ) -> Optional[str]:
+        """Extract the name of a ZenML secret from a scoped secret name.
+
+        This utility method can be used with Secrets Managers that can map
+        the concept of a scope to a hierarchical path to extract the original
+        ZenML secret name from a scoped secret name that includes the scope
+        path.
+
+        Args:
+            name: the name of the scoped secret
+            separator: the path separator to use when constructing a scoped
+                secret name from a scope path
+
+        Returns:
+            The ZenML secret name or None, if the input secret name does not
+            belong to the current scope.
+        """
+        return self._get_secret_name_from_path(name.split(separator))
 
     def _get_secret_scope_metadata(
         self, secret_name: Optional[str] = None

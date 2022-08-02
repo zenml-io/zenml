@@ -90,29 +90,6 @@ class AWSSecretsManager(BaseSecretsManager):
                 f"only alphanumeric characters and the characters _+=.@-."
             )
 
-    def _get_scoped_secret_name(self, name: str) -> str:
-        """Convert a ZenML secret name into an AWS scoped secret name.
-
-        Args:
-            name: the name of the secret
-
-        Returns:
-            The AWS scoped secret name
-        """
-        return "/".join(self._get_scoped_secret_path(name))
-
-    def _get_unscoped_secret_name(self, name: str) -> Optional[str]:
-        """Extract the name of a ZenML secret from an AWS scoped secret name.
-
-        Args:
-            name: the name of the AWS scoped secret
-
-        Returns:
-            The ZenML secret name or None, if the input secret name does not
-            belong to the current scope.
-        """
-        return self._get_secret_name_from_path(name.split("/"))
-
     def _get_secret_tags(
         self, secret: BaseSecretSchema
     ) -> List[Dict[str, str]]:
@@ -135,7 +112,62 @@ class AWSSecretsManager(BaseSecretsManager):
 
         These filters can be used when querying the AWS Secrets Manager
         for all secrets or for a single secret available in the configured
-        scope.
+        scope. For more information see: https://docs.aws.amazon.com/secretsmanager/latest/userguide/manage_search-secret.html
+
+        Example AWS filters for all secrets in the current (namespace) scope:
+
+        ```python
+        [
+            {
+                "Key: "tag-key",
+                "Values": ["zenml_scope"],
+            },
+            {
+                "Key: "tag-value",
+                "Values": ["namespace"],
+            },
+            {
+                "Key: "tag-key",
+                "Values": ["zenml_namespace"],
+            },
+            {
+                "Key: "tag-value",
+                "Values": ["my_namespace"],
+            },
+        ]
+        ```
+
+        Example AWS filters for a particular secret in the current (namespace)
+        scope:
+
+        ```python
+        [
+            {
+                "Key: "tag-key",
+                "Values": ["zenml_secret_name"],
+            },
+            {
+                "Key: "tag-value",
+                "Values": ["my_secret"],
+            },
+            {
+                "Key: "tag-key",
+                "Values": ["zenml_scope"],
+            },
+            {
+                "Key: "tag-value",
+                "Values": ["namespace"],
+            },
+            {
+                "Key: "tag-key",
+                "Values": ["zenml_namespace"],
+            },
+            {
+                "Key: "tag-value",
+                "Values": ["my_namespace"],
+            },
+        ]
+        ```
 
         Args:
             secret_name: Optional secret name to filter for.
@@ -200,12 +232,12 @@ class AWSSecretsManager(BaseSecretsManager):
         else:
             filters = self._get_secret_scope_filters()
             if secret_name:
-                prefix = "/".join(self._get_scoped_secret_path(secret_name))
+                prefix = self._get_scoped_secret_name(secret_name)
             else:
                 # add the name prefix to the filters to account for the fact
                 # that AWS does not do exact matching but prefix-matching on the
                 # filters
-                prefix = "/".join(self._get_scope_path()) + "/"
+                prefix = self._get_scoped_secret_name_prefix()
 
         if prefix:
             filters.append(
@@ -242,13 +274,13 @@ class AWSSecretsManager(BaseSecretsManager):
         """
         self.validate_secret_name_or_namespace(secret.name)
         self._ensure_client_connected(self.region_name)
-        secret_value = json.dumps(secret_to_dict(secret, encode=False))
 
         if self._list_secrets(secret.name):
             raise SecretExistsError(
                 f"A Secret with the name {secret.name} already exists"
             )
 
+        secret_value = json.dumps(secret_to_dict(secret, encode=False))
         kwargs: Dict[str, Any] = {
             "Name": self._get_scoped_secret_name(secret.name),
             "SecretString": secret_value,
