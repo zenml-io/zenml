@@ -57,6 +57,7 @@ from zenml.constants import (
     MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME,
     MLMD_CONTEXT_RUNTIME_CONFIG_PROPERTY_NAME,
     MLMD_CONTEXT_STACK_PROPERTY_NAME,
+    MLMD_CONTEXT_STEP_RESOURCES_PROPERTY_NAME,
     ZENML_MLMD_CONTEXT_TYPE,
 )
 from zenml.enums import StackComponentType
@@ -428,6 +429,26 @@ class BaseOrchestrator(StackComponent, ABC):
         return upstream_steps
 
     @staticmethod
+    def requires_resources_in_orchestration_environment(
+        step: "BaseStep",
+    ) -> bool:
+        """Checks if the orchestrator should run this step on special resources.
+
+        Args:
+            step: The step that will be checked.
+
+        Returns:
+            True if the step requires special resources in the orchestration
+            environment, False otherwise.
+        """
+        # If the step requires custom resources and doesn't run with a step
+        # operator, it would need these requirements in the orchestrator
+        # environment
+        return not (
+            step.custom_step_operator or step.resource_configuration.empty
+        )
+
+    @staticmethod
     def _get_node_with_step_name(
         step_name: str, pb2_pipeline: Pb2Pipeline
     ) -> PipelineNode:
@@ -473,32 +494,42 @@ class BaseOrchestrator(StackComponent, ABC):
             stack: The stack the pipeline was run on
             runtime_configuration: The Runtime configuration of the current run
         """
+        requirements = " ".join(sorted(pipeline.requirements))
+        stack_json = json.dumps(stack.dict(), sort_keys=True)
+
+        # Copy and remove the run name so an otherwise identical run reuses
+        # our MLMD context
+        runtime_config_copy = runtime_configuration.copy()
+        runtime_config_copy.pop("run_name")
+        runtime_config_json = json.dumps(
+            runtime_config_copy, sort_keys=True, default=pydantic_encoder
+        )
+
+        context_properties = {
+            MLMD_CONTEXT_STACK_PROPERTY_NAME: stack_json,
+            MLMD_CONTEXT_RUNTIME_CONFIG_PROPERTY_NAME: runtime_config_json,
+            MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME: requirements,
+        }
+
         for node in pb2_pipeline.nodes:
             pipeline_node: PipelineNode = node.pipeline_node
 
-            requirements = " ".join(sorted(pipeline.requirements))
-            stack_json = json.dumps(stack.dict(), sort_keys=True)
-
-            # Copy and remove the run name so an otherwise identical run reuses
-            # our MLMD context
-            runtime_config_copy = runtime_configuration.copy()
-            runtime_config_copy.pop("run_name")
-            runtime_config_json = json.dumps(
-                runtime_config_copy, sort_keys=True, default=pydantic_encoder
+            step = get_step_for_node(
+                pipeline_node, steps=list(pipeline.steps.values())
             )
+            step_context_properties = context_properties.copy()
+            step_context_properties[
+                MLMD_CONTEXT_STEP_RESOURCES_PROPERTY_NAME
+            ] = step.resource_configuration.json(sort_keys=True)
 
-            context_properties = {
-                MLMD_CONTEXT_STACK_PROPERTY_NAME: stack_json,
-                MLMD_CONTEXT_RUNTIME_CONFIG_PROPERTY_NAME: runtime_config_json,
-                MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME: requirements,
-            }
-
-            properties_json = json.dumps(context_properties, sort_keys=True)
+            properties_json = json.dumps(
+                step_context_properties, sort_keys=True
+            )
             context_name = hashlib.md5(properties_json.encode()).hexdigest()
 
             add_context_to_node(
                 pipeline_node,
                 type_=ZENML_MLMD_CONTEXT_TYPE,
                 name=context_name,
-                properties=context_properties,
+                properties=step_context_properties,
             )

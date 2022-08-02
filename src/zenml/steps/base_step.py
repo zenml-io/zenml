@@ -42,13 +42,13 @@ from tfx.types.channel import Channel
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.artifacts.type_registry import type_registry
+from zenml.config.resource_configuration import ResourceConfiguration
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.default_materializer_registry import (
     default_materializer_registry,
 )
-from zenml.step_operators.step_executor_operator import StepExecutorOperator
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_context import StepContext
 from zenml.steps.utils import (
@@ -58,6 +58,7 @@ from zenml.steps.utils import (
     PARAM_CUSTOM_STEP_OPERATOR,
     PARAM_ENABLE_CACHE,
     PARAM_PIPELINE_PARAMETER_NAME,
+    PARAM_RESOURCE_CONFIGURATION,
     _ZenMLSimpleComponent,
     generate_component_class,
     parse_return_type_annotations,
@@ -257,6 +258,9 @@ class BaseStep(metaclass=BaseStepMeta):
 
         self.requires_context = bool(self.CONTEXT_PARAMETER_NAME)
         self.custom_step_operator = kwargs.pop(PARAM_CUSTOM_STEP_OPERATOR, None)
+        self._resource_configuration = (
+            kwargs.pop(PARAM_RESOURCE_CONFIGURATION) or ResourceConfiguration()
+        )
 
         enable_cache = kwargs.pop(PARAM_ENABLE_CACHE, None)
         if enable_cache is None:
@@ -699,6 +703,15 @@ class BaseStep(metaclass=BaseStepMeta):
             return returns
 
     @property
+    def resource_configuration(self) -> ResourceConfiguration:
+        """The resource configuration for this step.
+
+        Returns:
+            The (potentially empty) resource configuration for this step.
+        """
+        return self._resource_configuration
+
+    @property
     def component(self) -> _ZenMLSimpleComponent:
         """Returns a TFX component.
 
@@ -724,6 +737,10 @@ class BaseStep(metaclass=BaseStepMeta):
             A TFX executor operator class.
         """
         if self.custom_step_operator:
+            from zenml.step_operators.step_executor_operator import (
+                StepExecutorOperator,
+            )
+
             return StepExecutorOperator
         else:
             return PythonExecutorOperator

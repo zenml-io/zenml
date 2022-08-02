@@ -29,7 +29,6 @@
 # Minor parts of the `prepare_or_run_pipeline()` method of this file are
 # inspired by the kubeflow dag runner implementation of tfx
 """Implementation of the Kubeflow orchestrator."""
-
 import os
 import re
 import sys
@@ -75,7 +74,8 @@ if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
     from zenml.stack import Stack
-    from zenml.steps import BaseStep
+    from zenml.steps import BaseStep, ResourceConfiguration
+
 
 logger = get_logger(__name__)
 
@@ -537,6 +537,32 @@ class KubeflowOrchestrator(BaseOrchestrator):
         # Mounts configmap containing Metadata gRPC server configuration.
         container_op.apply(utils.mount_config_map_op("metadata-grpc-configmap"))
 
+    @staticmethod
+    def _configure_container_resources(
+        container_op: dsl.ContainerOp,
+        resource_configuration: "ResourceConfiguration",
+    ) -> None:
+        """Adds resource requirements to the container.
+
+        Args:
+            container_op: The kubeflow container operation to configure.
+            resource_configuration: The resource configuration to use for this
+                container.
+        """
+        if resource_configuration.cpu_count is not None:
+            container_op = container_op.set_cpu_limit(
+                str(resource_configuration.cpu_count)
+            )
+
+        if resource_configuration.gpu_count is not None:
+            container_op = container_op.set_gpu_limit(
+                resource_configuration.gpu_count
+            )
+
+        if resource_configuration.memory is not None:
+            memory_limit = resource_configuration.memory[:-1]
+            container_op = container_op.set_memory_limit(memory_limit)
+
     def prepare_or_run_pipeline(
         self,
         sorted_steps: List["BaseStep"],
@@ -649,6 +675,12 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 # Mounts persistent volumes, configmaps and adds labels to the
                 # container op
                 self._configure_container_op(container_op=container_op)
+
+                if self.requires_resources_in_orchestration_environment(step):
+                    self._configure_container_resources(
+                        container_op=container_op,
+                        resource_configuration=step.resource_configuration,
+                    )
 
                 # Find the upstream container ops of the current step and
                 # configure the current container op to run after them

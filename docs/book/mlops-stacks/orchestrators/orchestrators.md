@@ -55,3 +55,12 @@ using the orchestrator is as simple as executing a python file which
 ```shell
 python file_that_runs_a_zenml_pipeline.py
 ```
+
+### Specifying per-step resources
+
+If some of your steps require the orchestrator to execute them on specific hardware, 
+you can specify them on your steps as described
+[here](../../developer-guide/advanced-usage/specify-step-resources.md).
+
+If your orchestrator of choice or the underlying hardware doesn't support this, you
+can also take a look at [step operators](../step-operators/step-operators.md).

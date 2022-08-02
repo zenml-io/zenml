@@ -37,6 +37,7 @@ from zenml.steps.utils import (
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
     PARAM_CUSTOM_STEP_OPERATOR,
     collect_requirements,
+    collect_step_resources,
 )
 from zenml.utils import source_utils, yaml_utils
 
@@ -242,11 +243,17 @@ class StepExecutorOperator(BaseExecutorOperator):
             requirements,
             entrypoint_command,
         )
+
+        resource_configuration = collect_step_resources(
+            pipeline_node=execution_info.pipeline_node
+        )
+
         step_operator.launch(
             pipeline_name=execution_info.pipeline_info.id,
             run_name=execution_info.pipeline_run_id,
             requirements=requirements,
             entrypoint_command=entrypoint_command,
+            resource_configuration=resource_configuration,
         )
 
         return _read_executor_output(execution_info.execution_output_uri)
