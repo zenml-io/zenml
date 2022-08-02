@@ -62,15 +62,6 @@ class LocalStackRecipe:
         self.path = path
 
     @property
-    def needs_manual_user_setup(self) -> bool:
-        """Checks if manual setup is required from the user.
-
-        Returns:
-            True if manual setup required, False else
-        """
-        raise NotImplementedError
-
-    @property
     def recipes_deploy_bash_script(self) -> str:
         """Path to the bash script that deploys the recipe.
 
@@ -773,9 +764,9 @@ def destroy(
         git_stack_recipes_handler: The GitStackRecipesHandler instance.
         stack_recipe_name: The name of the stack_recipe.
         path: The path at which you want to install the stack_recipe(s).
-        force: Force the run of the stack_recipe.
-        shell_executable: Manually specify the path to the executable that
-            runs .sh files.
+
+    Raises:
+        ModuleNotFoundError: If the recipe is found at the given path.
     """
     stack_recipes_dir = Path(os.getcwd()) / path
 
