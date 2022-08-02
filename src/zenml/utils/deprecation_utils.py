@@ -73,8 +73,8 @@ def deprecate_pydantic_attributes(
             values: All values passed at model initialization.
 
         Raises:
-            AssertionError: If either the deprecated or replacement attribute don't
-                exist.
+            AssertionError: If either the deprecated or replacement attribute
+                don't exist.
             TypeError: If the deprecated attribute is a required attribute.
             ValueError: If the deprecated attribute and replacement attribute
                 contain different values.
@@ -83,14 +83,14 @@ def deprecate_pydantic_attributes(
             Input values with potentially migrated values.
         """
         previous_deprecation_warnings = getattr(
-            cls, "__previous_deprecation_warnings", set()
+            cls, PREVIOUS_DEPRECATION_WARNINGS_ATTRIBUTE, set()
         )
 
         def _warn(message: str, attribute: str) -> None:
             """Logs and raises a warning for a deprecated attribute.
 
             Args:
-                message: The warning message. 
+                message: The warning message.
                 attribute: The name of the attribute.
             """
             if attribute not in previous_deprecation_warnings:
