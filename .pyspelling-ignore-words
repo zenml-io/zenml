@@ -391,6 +391,7 @@ RIL
 RL
 RedPill
 Reproducibility
+ResourceConfiguration
 RichHandler
 Roadmap
 RoleBinding
@@ -606,6 +607,7 @@ apiVersion
 apidocs
 apis
 arg
+argmax
 argo
 argoproj
 argparse
@@ -780,6 +782,8 @@ filepath
 filesize
 filesystem
 finetune
+finetuned
+finetunes
 fn
 formatter
 fromisoformat
@@ -922,6 +926,7 @@ mlops
 mlserver
 mnist
 mnist
+mobilenetv
 modelUri
 msi
 mypy
@@ -1099,6 +1104,7 @@ subnetIds
 subnets
 subpath
 subprocess
+subscripted
 subtypes
 superclass
 superclasses
@@ -1124,6 +1130,7 @@ tokenize
 tokenized
 tokenizer
 tokenizers
+tolist
 topdown
 torchvision
 touchpoint
