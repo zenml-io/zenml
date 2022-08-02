@@ -172,7 +172,7 @@ ZenML is available for easy installation into your environment via [PyPI](https:
 pip install zenml
 ```
 
-Alternatively, if you’re feeling adventurous, try out the bleeding edge installation:
+Alternatively, if you’re feeling adventurous, try out the bleeding-edge installation:
 > **Warning** - Proceed at your own risk, no guarantees are given!
 ```bash
 pip install git+https://github.com/zenml-io/zenml.git@develop --upgrade
