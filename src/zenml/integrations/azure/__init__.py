@@ -40,7 +40,7 @@ class AzureIntegration(Integration):
         "azure-keyvault-keys",
         "azure-keyvault-secrets",
         "azure-identity",
-        "azureml-core==1.39.0.post1",
+        "azureml-core==1.42.0.post1",
     ]
 
     @classmethod

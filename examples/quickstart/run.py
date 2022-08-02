@@ -16,8 +16,10 @@
 from pipelines import inference_pipeline, training_pipeline
 from steps import (
     deployment_trigger,
+    drift_detector,
     evaluator,
     inference_data_loader,
+    model_deployer,
     prediction_service_loader,
     predictor,
     skew_comparison,
@@ -28,24 +30,13 @@ from steps import (
 from zenml.integrations.dash.visualizers.pipeline_run_lineage_visualizer import (
     PipelineRunLineageVisualizer,
 )
-from zenml.integrations.evidently.steps import (
-    EvidentlyProfileConfig,
-    EvidentlyProfileStep,
-)
 from zenml.integrations.evidently.visualizers import EvidentlyVisualizer
 from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
     FacetStatisticsVisualizer,
 )
-from zenml.integrations.mlflow.steps import mlflow_model_deployer_step
 
 
 def main():
-
-    # configure drift detector
-    evidently_profile_config = EvidentlyProfileConfig(
-        column_mapping=None, profile_sections=["datadrift"]
-    )
-    drift_detector = EvidentlyProfileStep(config=evidently_profile_config)
 
     # initialize and run training pipeline
     training_p = training_pipeline(
@@ -54,9 +45,8 @@ def main():
         trainer=svc_trainer_mlflow(),
         evaluator=evaluator(),
         deployment_trigger=deployment_trigger(),
-        model_deployer=mlflow_model_deployer_step(),
-    )
-    training_p.run()
+        model_deployer=model_deployer,
+    ).run()
 
     # initialize and run inference pipeline
     inference_p = inference_pipeline(

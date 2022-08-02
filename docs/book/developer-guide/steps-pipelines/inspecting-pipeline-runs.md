@@ -115,6 +115,32 @@ last_run = runs[-1]
 run = example_pipeline.get_run(run_name=...)
 ```
 
+Each run has a collection of useful metadata which you can access:
+
+**git_sha**
+The Git commit SHA that the pipeline run was performed on. This will only be set 
+if the pipeline code is in a git repository and there are no uncommitted files 
+when running the pipeline.
+```python
+commit = run.git_sha
+```
+
+**status**
+The status of a pipeline run can also be found here. There are four 
+possible states: failed, completed, running, cached:
+```python
+status = run.status
+```
+
+**runtime_configuration**
+Currently the runtime configuration contains information about the schedule that
+was used for the run, the run_name and the path to the file containing the 
+pipeline. 
+```python
+runtime_config = run.runtime_configuration
+```
+
+
 ### Steps
 
 Within a given pipeline run you can now further zoom in on individual steps
