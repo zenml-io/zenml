@@ -24,7 +24,10 @@ from zenml.integrations.vault import VAULT_SECRETS_MANAGER_FLAVOR
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
-from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
+from zenml.secrets_managers.base_secrets_manager import (
+    BaseSecretsManager,
+    SecretsManagerScope,
+)
 from zenml.secrets_managers.utils import secret_to_dict
 
 logger = get_logger(__name__)
@@ -85,26 +88,40 @@ class VaultSecretsManager(BaseSecretsManager):
         else:
             pass
 
-    @staticmethod
-    def _sanitize_secret_name(secret_name: str) -> str:
-        """Sanitize the secret name to be used in Vault.
+    @classmethod
+    def _validate_scope(
+        cls,
+        scope: SecretsManagerScope,
+        namespace: Optional[str],
+    ) -> None:
+        """Validate the scope and namespace value.
 
         Args:
-            secret_name: The secret name to sanitize.
-
-        Returns:
-            The sanitized secret name.
+            scope: Scope value.
+            namespace: Optional namespace value.
         """
-        sanitized_secret_name = re.sub(r"[^0-9a-zA-Z_\.]+", "_", secret_name)
-        if sanitized_secret_name != secret_name:
-            logger.warning(
-                "The Secret name `%s` contains characters that "
-                "might not be supported. The secret name has been "
-                "sanitized to: `%s` ",
-                secret_name,
-                sanitized_secret_name,
+        if namespace:
+            cls.validate_secret_name_or_namespace(namespace)
+
+    @classmethod
+    def validate_secret_name_or_namespace(cls, name: str) -> None:
+        """Validate a secret name or namespace.
+
+        For compatibility across secret managers the secret names should contain
+        only alphanumeric characters and the characters /_+=.@-. The `/`
+        character is only used internally to delimit scopes.
+
+        Args:
+            name: the secret name or namespace
+
+        Raises:
+            ValueError: if the secret name or namespace is invalid
+        """
+        if not re.fullmatch(r"[a-zA-Z0-9_+=\.@\-]*", name):
+            raise ValueError(
+                f"Invalid secret name or namespace '{name}'. Must contain "
+                f"only alphanumeric characters and the characters _+=.@-."
             )
-        return sanitized_secret_name
 
     def register_secret(self, secret: BaseSecretSchema) -> None:
         """Registers a new secret.
@@ -117,18 +134,17 @@ class VaultSecretsManager(BaseSecretsManager):
         """
         self._ensure_client_is_authenticated()
 
-        sanitized_secret_name = self._sanitize_secret_name(secret.name)
+        self.validate_secret_name_or_namespace(secret.name)
 
         try:
-            self.get_secret(sanitized_secret_name)
+            self.get_secret(secret.name)
             raise SecretExistsError(
-                f"A Secret with the name '{sanitized_secret_name}' already "
-                f"exists."
+                f"A Secret with the name '{secret.name}' already " f"exists."
             )
         except KeyError:
             pass
 
-        secret_path = self._get_scoped_secret_name(sanitized_secret_name)
+        secret_path = self._get_scoped_secret_name(secret.name)
         secret_value = secret_to_dict(secret, encode=False)
 
         self.CLIENT.secrets.kv.v2.create_or_update_secret(
@@ -154,8 +170,7 @@ class VaultSecretsManager(BaseSecretsManager):
         """
         self._ensure_client_is_authenticated()
 
-        sanitized_secret_name = self._sanitize_secret_name(secret_name)
-        secret_path = self._get_scoped_secret_name(sanitized_secret_name)
+        secret_path = self._get_scoped_secret_name(secret_name)
 
         try:
             secret_items = (
@@ -218,10 +233,10 @@ class VaultSecretsManager(BaseSecretsManager):
         """
         self._ensure_client_is_authenticated()
 
-        sanitized_secret_name = self._sanitize_secret_name(secret.name)
+        self.validate_secret_name_or_namespace(secret.name)
 
-        if sanitized_secret_name in self.get_all_secret_keys():
-            secret_path = self._get_scoped_secret_name(sanitized_secret_name)
+        if secret.name in self.get_all_secret_keys():
+            secret_path = self._get_scoped_secret_name(secret.name)
             secret_value = secret_to_dict(secret, encode=False)
 
             self.CLIENT.secrets.kv.v2.create_or_update_secret(
@@ -231,8 +246,7 @@ class VaultSecretsManager(BaseSecretsManager):
             )
         else:
             raise KeyError(
-                f"A Secret with the name '{sanitized_secret_name}'"
-                f" does not exist."
+                f"A Secret with the name '{secret.name}'" f" does not exist."
             )
 
         logger.info("Updated secret: %s", secret_path)
@@ -246,8 +260,7 @@ class VaultSecretsManager(BaseSecretsManager):
         """
         self._ensure_client_is_authenticated()
 
-        sanitized_secret_name = self._sanitize_secret_name(secret_name)
-        secret_path = self._get_scoped_secret_name(sanitized_secret_name)
+        secret_path = self._get_scoped_secret_name(secret_name)
 
         self.CLIENT.secrets.kv.v2.delete_metadata_and_all_versions(
             path=secret_path,
