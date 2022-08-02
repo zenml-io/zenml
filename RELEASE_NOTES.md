@@ -1,3 +1,47 @@
+# 0.12.0
+
+The 0.12.0 release comes with the third implementation of the ZenML Model Deployer abstraction: The [KServe](https://github.com/zenml-io/zenml/tree/main/examples/kserve_deployment) integration allows you to deploy any PyTorch, TensorFlow or SKLearn from within your ZenML pipelines!
+
+We also added functionality to specify hardware resources on a step level to control the amount of memory, CPUs and GPUs that
+each ZenML step has access to. This is curretly limited to the Kubeflow and Vertex orchestrator but will be expanded in upcoming releases.
+
+Additionally, we've added support for scoped secrets in our AWS, GCP and Vault Secrets Managers. These updated Secrets Managers allow
+you to configure a scope which determines if secrets are shared with other ZenML Secrets Managers using the same backend.
+
+As always, we've also included various bug fixes and lots of improvements to the documentation and our examples.
+
+## What's Changed
+* Fix Links on the examples by @safoinme in https://github.com/zenml-io/zenml/pull/782
+* Fix broken links in source code by @schustmi in https://github.com/zenml-io/zenml/pull/784
+* Invalidating artifact/metadata store if there is a change in one of them by @bcdurak in https://github.com/zenml-io/zenml/pull/719
+* Fixed broken link in README by @htahir1 in https://github.com/zenml-io/zenml/pull/785
+* Embed Cheat Sheet in a separate docs page by @fa9r in https://github.com/zenml-io/zenml/pull/790
+* Add data validation documentation by @stefannica in https://github.com/zenml-io/zenml/pull/789
+* Add local path for mlflow experiment tracker by @schustmi in https://github.com/zenml-io/zenml/pull/786
+* Improve Docker build logs. by @fa9r in https://github.com/zenml-io/zenml/pull/793
+* Allow standard library types in steps  by @stefannica in https://github.com/zenml-io/zenml/pull/799
+* Added small description by @AlexejPenner in https://github.com/zenml-io/zenml/pull/801
+* Replace the restriction to use Repository inside step with a warning by @stefannica in https://github.com/zenml-io/zenml/pull/792
+* Adjust quickstart to data validators by @fa9r in https://github.com/zenml-io/zenml/pull/797
+* Add utility function to deprecate pydantic attributes by @schustmi in https://github.com/zenml-io/zenml/pull/778
+* Fix the mismatch KFP version between Kubeflow and GCP integration by @safoinme in https://github.com/zenml-io/zenml/pull/796
+* Made mlflow more verbose by @htahir1 in https://github.com/zenml-io/zenml/pull/802
+* Fix links by @dnth in https://github.com/zenml-io/zenml/pull/798
+* KServe model deployer integration by @stefannica in https://github.com/zenml-io/zenml/pull/655
+* retrieve pipeline requirement within running step by @safoinme in https://github.com/zenml-io/zenml/pull/805
+* Fix `--decouple_stores` error message by @strickvl in https://github.com/zenml-io/zenml/pull/814
+* Support subscripted generic step output types by @fa9r in https://github.com/zenml-io/zenml/pull/806
+* Allow empty kubeconfig when using local kubeflow orchestrator by @schustmi in https://github.com/zenml-io/zenml/pull/809
+* fix the secret register command in kserve docs page by @safoinme in https://github.com/zenml-io/zenml/pull/815
+* Annotation example (+ stack component update) by @strickvl in https://github.com/zenml-io/zenml/pull/813
+* Per-step resource configuration by @schustmi in https://github.com/zenml-io/zenml/pull/794
+* Scoped secrets by @stefannica in https://github.com/zenml-io/zenml/pull/803
+* Adjust examples and docs to new pipeline and step fetching syntax by @fa9r in https://github.com/zenml-io/zenml/pull/795
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.11.0...temp
+
+
 # 0.11.0
 
 Our 0.11.0 release contains our new annotation workflow and stack component. We've been blogging about this for a few weeks, and even started maintaining our own repository of open-source annotation tools. With ZenML 0.11.0 you can bring data labeling into your MLOps pipelines and workflows as a first-class citizen. We've started our first iteration of this functionality by integrating with [Label Studio](https://labelstud.io/), a leader in the open-source annotation tool space.
