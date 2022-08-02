@@ -47,7 +47,6 @@ class FlavorRegistry:
             DockerHubContainerRegistry,
             GCPContainerRegistry,
             GitHubContainerRegistry,
-            GitLabContainerRegistry,
         )
         from zenml.metadata_stores import (
             MySQLMetadataStore,
@@ -66,7 +65,6 @@ class FlavorRegistry:
             DockerHubContainerRegistry,
             GCPContainerRegistry,
             GitHubContainerRegistry,
-            GitLabContainerRegistry,
             LocalSecretsManager,
         ]
         for flavor in default_flavors:

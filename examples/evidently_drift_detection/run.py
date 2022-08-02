@@ -10,7 +10,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import json
 
 from pipelines.drift_detection_pipeline.drift_detection_pipeline import (
     drift_detection_pipeline,
@@ -46,8 +45,5 @@ if __name__ == "__main__":
     last_run = pipeline.runs[-1]
     drift_analysis_step = last_run.get_step(name="drift_analyzer")
     print(f"Data drift detected: {drift_analysis_step.output.read()}")
-
-    drift_detection_step = last_run.get_step(name="drift_detector")
-    print(json.dumps(drift_detection_step.outputs["profile"].read(), indent=2))
 
     visualize_statistics()

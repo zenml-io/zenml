@@ -14,6 +14,7 @@
 """Stack wrapper implementation."""
 
 from typing import List, Optional
+from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -78,3 +79,15 @@ class StackWrapper(BaseModel):
                 return component_wrapper
 
         return None
+
+
+class StoreAssociation(BaseModel):
+    """Model for the association between an artifact store and a metadata store.
+
+    Args:
+        artifact_store_uuid: The UUID of the artifact store.
+        metadata_store_uuid: The UUID of the metadata store.
+    """
+
+    artifact_store_uuid: UUID
+    metadata_store_uuid: UUID

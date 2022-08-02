@@ -39,6 +39,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 from pydantic import root_validator
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
+from zenml.environment import Environment
 from zenml.integrations.airflow import AIRFLOW_ORCHESTRATOR_FLAVOR
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -167,6 +168,13 @@ class AirflowOrchestrator(BaseOrchestrator):
             # Create callable that will be used by airflow to execute the step
             # within the orchestrated environment
             def _step_callable(step_instance: "BaseStep", **kwargs):
+                if self.requires_resources_in_orchestration_environment(step):
+                    logger.warning(
+                        "Specifying step resources is not yet supported for "
+                        "the Airflow orchestrator, ignoring resource "
+                        "configuration for step %s.",
+                        step.name,
+                    )
                 # Extract run name for the kwargs that will be passed to the
                 # callable
                 run_name = kwargs["ti"].get_dagrun().run_id
@@ -339,6 +347,15 @@ class AirflowOrchestrator(BaseOrchestrator):
             raise RuntimeError(
                 "Airflow orchestrator is currently not running. Run `zenml "
                 "stack up` to provision resources for the active stack."
+            )
+
+        if Environment.in_notebook():
+            raise RuntimeError(
+                "Unable to run the Airflow orchestrator from within a "
+                "notebook. Airflow requires a python file which contains a "
+                "global Airflow DAG object and therefore does not work with "
+                "notebooks. Please copy your ZenML pipeline code in a python "
+                "file and try again."
             )
 
         try:

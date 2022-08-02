@@ -22,7 +22,7 @@ MLOps lessons through ZenML and its various integrations. It is intended for
 people looking to learn about MLOps generally, and also for ML practitioners who
 want to get started with ZenML.
 
-After you've run and understood the simple example above, your next port of call
+After you've run and understood the example above, your next port of call
 is probably either the [fully-fleshed-out quickstart
 example](https://github.com/zenml-io/zenml/tree/main/examples/quickstart) and
 then to look at [the ZenBytes repository](https://github.com/zenml-io/zenbytes)

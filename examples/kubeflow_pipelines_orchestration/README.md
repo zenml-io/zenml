@@ -17,7 +17,7 @@ without wanting to fiddle around with all the individual installation and
 configuration steps, just run the following:
 
 ```shell
-zenml example run kubeflow_pipelines_orchestrator
+zenml example run kubeflow_pipelines_orchestration
 ```
 
 
@@ -49,8 +49,8 @@ pip install notebook  # if you want to run the example on the notebook
 zenml integration install kubeflow tensorflow
 
 # Pull the kubeflow example
-zenml example pull kubeflow_pipelines_orchestrator
-cd zenml_examples/kubeflow_pipelines_orchestrator
+zenml example pull kubeflow_pipelines_orchestration
+cd zenml_examples/kubeflow_pipelines_orchestration
 
 # Initialize a ZenML repository
 zenml init
@@ -105,7 +105,7 @@ python run.py --stop-tensorboard
 ### 🥞 Create a local Kubeflow Pipelines Stack
 
 Now with all the installation and initialization out of the way, all that's left
-to do is configuring our ZenML [stack](https://docs.zenml.io/core-concepts#stacks-components-and-stores). For
+to do is configuring our ZenML [stack](https://docs.zenml.io/getting-started/core-concepts). For
 this example, the stack we create consists of the following four parts:
 * The **local artifact store** stores step outputs on your hard disk. 
 * The **local metadata store** stores metadata like the pipeline name and step
@@ -249,6 +249,22 @@ python run.py
 That's it! If everything went as planned this pipeline should now be running in the cloud, and we are one step 
 closer to a production pipeline!
 
+### 💻 Specifying per-step resources
+
+If you're using the Kubeflow orchestrator and some of your pipelines steps have certain
+hardware requirements, you can specify them using the step decorator as follows:
+
+```python
+from zenml.steps import step, ResourceConfiguration
+
+@step(resource_configuration=ResourceConfiguration(cpu_count=8, memory="16GB"))
+def my_step(...) -> ...:
+    ...
+```
+
+This will make sure that your step runs on a machine with the specified resources as long
+as such a machine is available in the Kubernetes cluster you're using.
+
 ### 🧽 Clean up
 Once you're done experimenting, you can stop the port forwarding and delete the example files by calling:
 
@@ -259,7 +275,7 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the Kubeflow orchestrator integration can be found [here](https://docs.zenml.io/advanced-guide/execute-pipelines-in-cloud).
+Our docs regarding the Kubeflow orchestrator integration can be found [here](https://docs.zenml.io/mlops-stacks/orchestrators/kubeflow).
 
 If you want to learn more about orchestrators in general or about how to build your own orchestrators in ZenML
-check out our [docs](https://docs.zenml.io/extending-zenml/orchestrators).
+check out our [docs](https://docs.zenml.io/mlops-stacks/orchestrators/custom).

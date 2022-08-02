@@ -15,7 +15,7 @@
 
 from zenml.zen_stores.models.component_wrapper import ComponentWrapper
 from zenml.zen_stores.models.flavor_wrapper import FlavorWrapper
-from zenml.zen_stores.models.stack_wrapper import StackWrapper
+from zenml.zen_stores.models.stack_wrapper import StackWrapper, StoreAssociation
 from zenml.zen_stores.models.user_management_models import (
     Project,
     Role,
@@ -39,4 +39,5 @@ __all__ = [
     "Role",
     "RoleAssignment",
     "FlavorWrapper",
+    "StoreAssociation",
 ]

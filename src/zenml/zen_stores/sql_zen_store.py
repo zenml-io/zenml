@@ -37,6 +37,7 @@ from zenml.zen_stores.models import (
     Role,
     RoleAssignment,
     StackWrapper,
+    StoreAssociation,
     Team,
     User,
 )
@@ -85,8 +86,9 @@ class ZenStack(SQLModel, table=True):
 class ZenStackComponent(SQLModel, table=True):
     """SQL Model for stack components."""
 
-    component_type: StackComponentType = Field(primary_key=True)
-    name: str = Field(primary_key=True)
+    id: UUID = Field(primary_key=True)
+    component_type: StackComponentType
+    name: str
     component_flavor: str
     configuration: bytes  # e.g. base64 encoded json string
 
@@ -158,6 +160,17 @@ class RoleAssignmentTable(RoleAssignment, SQLModel, table=True):
     team_id: Optional[UUID] = Field(default=None, foreign_key="teamtable.id")
     project_id: Optional[UUID] = Field(
         default=None, foreign_key="projecttable.id"
+    )
+
+
+class StoreAssociationTable(SQLModel, table=True):
+    """SQL Model for team assignments."""
+
+    artifact_store_uuid: UUID = Field(
+        primary_key=True, foreign_key="zenstackcomponent.id"
+    )
+    metadata_store_uuid: UUID = Field(
+        primary_key=True, foreign_key="zenstackcomponent.id"
     )
 
 
@@ -443,6 +456,7 @@ class SqlZenStore(BaseZenStore):
                     f"existing stack component with this name."
                 )
             new_component = ZenStackComponent(
+                id=component.uuid,
                 component_type=component.type,
                 name=component.name,
                 component_flavor=component.flavor,
@@ -1359,6 +1373,174 @@ class SqlZenStore(BaseZenStore):
                 RoleAssignment(**assignment.dict())
                 for assignment in session.exec(statement).all()
             ]
+
+    @property
+    def store_associations(self) -> List[StoreAssociation]:
+        """Fetches all artifact/metadata store associations.
+
+        Returns:
+            A list of all artifact/metadata store associations.
+        """
+        with Session(self.engine) as session:
+            return [
+                StoreAssociation(**association.dict())
+                for association in session.exec(
+                    select(StoreAssociationTable)
+                ).all()
+            ]
+
+    def create_store_association(
+        self,
+        artifact_store_uuid: UUID,
+        metadata_store_uuid: UUID,
+    ) -> StoreAssociation:
+        """Creates an association between an artifact- and a metadata store.
+
+        Args:
+            artifact_store_uuid: The UUID of the artifact store.
+            metadata_store_uuid: The UUID of the metadata store.
+
+        Returns:
+            The newly created store association.
+        """
+        with Session(self.engine) as session:
+            existing_association = session.exec(
+                select(StoreAssociationTable)
+                .where(
+                    StoreAssociationTable.artifact_store_uuid
+                    == artifact_store_uuid
+                )
+                .where(
+                    StoreAssociationTable.metadata_store_uuid
+                    == metadata_store_uuid
+                )
+            ).first()
+
+            if existing_association:
+                return StoreAssociation(**existing_association.dict())
+            else:
+                sql_association = StoreAssociationTable(
+                    artifact_store_uuid=artifact_store_uuid,
+                    metadata_store_uuid=metadata_store_uuid,
+                )
+                new_association = StoreAssociation(**sql_association.dict())
+
+                session.add(sql_association)
+                session.commit()
+
+        return new_association
+
+    def get_store_associations_for_artifact_store(
+        self,
+        artifact_store_uuid: UUID,
+    ) -> List[StoreAssociation]:
+        """Fetches all associations for a given artifact store.
+
+        Args:
+            artifact_store_uuid: The UUID of the selected artifact store.
+
+        Returns:
+            A list of store associations for the given artifact store.
+        """
+        with Session(self.engine) as session:
+            existing_associations = session.exec(
+                select(StoreAssociationTable).where(
+                    StoreAssociationTable.artifact_store_uuid
+                    == artifact_store_uuid
+                )
+            ).all()
+            return [
+                StoreAssociation(**association.dict())
+                for association in existing_associations
+            ]
+
+    def get_store_associations_for_metadata_store(
+        self,
+        metadata_store_uuid: UUID,
+    ) -> List[StoreAssociation]:
+        """Fetches all associations for a given metadata store.
+
+        Args:
+            metadata_store_uuid: The UUID of the selected metadata store.
+
+        Returns:
+            A list of store associations for the given metadata store.
+        """
+        with Session(self.engine) as session:
+            existing_associations = session.exec(
+                select(StoreAssociationTable).where(
+                    StoreAssociationTable.metadata_store_uuid
+                    == metadata_store_uuid
+                )
+            ).all()
+            return [
+                StoreAssociation(**association.dict())
+                for association in existing_associations
+            ]
+
+    def get_store_associations_for_artifact_and_metadata_store(
+        self,
+        artifact_store_uuid: UUID,
+        metadata_store_uuid: UUID,
+    ) -> List[StoreAssociation]:
+        """Fetches all associations for a given artifact/metadata store pair.
+
+        Args:
+            artifact_store_uuid: The UUID of the selected artifact store.
+            metadata_store_uuid: The UUID of the selected metadata store.
+
+        Returns:
+            A list of store associations for the given combination.
+        """
+        with Session(self.engine) as session:
+            existing_associations = session.exec(
+                select(StoreAssociationTable)
+                .where(
+                    StoreAssociationTable.artifact_store_uuid
+                    == artifact_store_uuid
+                )
+                .where(
+                    StoreAssociationTable.metadata_store_uuid
+                    == metadata_store_uuid
+                )
+            ).all()
+            return [
+                StoreAssociation(**association.dict())
+                for association in existing_associations
+            ]
+
+    def delete_store_association_for_artifact_and_metadata_store(
+        self,
+        artifact_store_uuid: UUID,
+        metadata_store_uuid: UUID,
+    ) -> None:
+        """Deletes associations between a given artifact/metadata store pair.
+
+        Args:
+            artifact_store_uuid: The UUID of the selected artifact store.
+            metadata_store_uuid: The UUID of the selected metadata store.
+
+        Raises:
+            KeyError: If an association with the given pair is not found.
+        """
+        with Session(self.engine) as session:
+            try:
+                association = session.exec(
+                    select(StoreAssociationTable)
+                    .where(
+                        StoreAssociationTable.artifact_store_uuid
+                        == artifact_store_uuid
+                    )
+                    .where(
+                        StoreAssociationTable.metadata_store_uuid
+                        == metadata_store_uuid
+                    )
+                ).one()
+            except NoResultFound as error:
+                raise KeyError from error
+
+            session.delete(association)
+            session.commit()
 
     # Pipelines and pipeline runs
 

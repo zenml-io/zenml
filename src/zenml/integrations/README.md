@@ -84,7 +84,7 @@ Generally the outer repository structure
 integration folder: `integrations/<name-of-integration>/<stack-component>/<custom-component-impl.py`
 
 Here you'll be able to extend and build out the implementation. See the docs on 
-extensibility of the different components [here](https://docs.zenml.io/extending-zenml) or get inspired by the many 
+extensibility of the different components [here](https://docs.zenml.io/developer-guide/advanced-usage/custom-flavors) or get inspired by the many 
 integrations that are already implemented, for example the 
 [mlflow experiment tracker](mlflow/experiment_trackers/mlflow_experiment_tracker.py)
 

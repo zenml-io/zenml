@@ -81,6 +81,7 @@ def create_executor_class(
         execution_parameter_names=set(execution_parameters),
         step_function=step_instance.entrypoint,
         materializers=materializers,
+        enable_cache=step_instance.enable_cache,
     )
 
     return cast(
@@ -158,6 +159,10 @@ def main(
     # materializers and stack components
     integration_registry.activate_integrations()
     importlib.import_module(main_module)
+    # create an instance of the active stack. This makes sure the artifact
+    # store is created and registered in `fileio` so we can read the entrypoint
+    # inputs
+    stack = Repository().active_stack
 
     input_artifact_type_mapping = yaml_utils.read_json(
         input_artifact_types_path
@@ -167,7 +172,6 @@ def main(
         input_artifact_type_mapping=input_artifact_type_mapping,
     )
 
-    stack = Repository().active_stack
     execution_info = load_execution_info(execution_info_path)
     executor = configure_executor(executor_class, execution_info=execution_info)
 

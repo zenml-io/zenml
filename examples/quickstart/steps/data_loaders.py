@@ -10,10 +10,10 @@ def training_data_loader() -> Output(
 ):
     """Loads the digits dataset as normal numpy arrays."""
     X_train, X_test, y_train, y_test = get_digits()
-    return X_train, X_test, y_train, y_test
+    return X_train / 255.0, X_test / 255.0, y_train, y_test
 
 
 @step
 def inference_data_loader() -> np.ndarray:
     """Load some (random) inference data."""
-    return np.random.rand(1, 64)  # flattened 8x8 random noise image
+    return np.random.rand(10, 64)  # flattened 8x8 random noise image

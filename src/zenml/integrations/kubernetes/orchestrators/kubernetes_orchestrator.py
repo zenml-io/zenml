@@ -307,6 +307,15 @@ class KubernetesOrchestrator(BaseOrchestrator):
 
         assert runtime_configuration.run_name, "Run name must be set"
 
+        for step in sorted_steps:
+            if self.requires_resources_in_orchestration_environment(step):
+                logger.warning(
+                    "Specifying step resources is not yet supported for "
+                    "the Kubernetes orchestrator, ignoring resource "
+                    "configuration for step %s.",
+                    step.name,
+                )
+
         run_name = runtime_configuration.run_name
         pipeline_name = pipeline.name
         pod_name = kube_utils.sanitize_pod_name(run_name)

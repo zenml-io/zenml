@@ -66,7 +66,7 @@ if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
     from zenml.stack import Stack
-    from zenml.steps import BaseStep
+    from zenml.steps import BaseStep, ResourceConfiguration
 
 logger = get_logger(__name__)
 
@@ -123,6 +123,29 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         synchronous: If `True`, running a pipeline using this orchestrator will
             block until all steps finished running on Vertex AI Pipelines
             service.
+        cpu_limit: The maximum CPU limit for this operator. This string value
+            can be a number (integer value for number of CPUs) as string,
+            or a number followed by "m", which means 1/1000. You can specify
+            at most 96 CPUs.
+            (see. https://cloud.google.com/vertex-ai/docs/pipelines/machine-types)
+        memory_limit: The maximum memory limit for this operator. This string
+            value can be a number, or a number followed by "K" (kilobyte),
+            "M" (megabyte), or "G" (gigabyte). At most 624GB is supported.
+        node_selector_constraint: Each constraint is a key-value pair label.
+            For the container to be eligible to run on a node, the node must have
+            each of the constraints appeared as labels.
+            For example a GPU type can be providing by one of the following tuples:
+                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_A100")
+                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_K80")
+                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_P4")
+                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_P100")
+                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_T4")
+                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_V100")
+            Hint: the selected region (location) must provide the requested accelerator
+            (see https://cloud.google.com/compute/docs/gpus/gpu-regions-zones).
+        gpu_limit: The GPU limit (positive number) for the operator.
+            For more information about GPU resources, see:
+            https://cloud.google.com/vertex-ai/docs/training/configure-compute#specifying_gpus
     """
 
     custom_docker_base_image_name: Optional[str] = None
@@ -134,6 +157,11 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
     workload_service_account: Optional[str] = None
     network: Optional[str] = None
     synchronous: bool = False
+
+    cpu_limit: Optional[str] = None
+    memory_limit: Optional[str] = None
+    node_selector_constraint: Optional[Tuple[str, str]] = None
+    gpu_limit: Optional[int] = None
 
     _pipeline_root: str
 
@@ -293,6 +321,41 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         )
         container_registry.push_image(image_name)
 
+    def _configure_container_resources(
+        self,
+        container_op: dsl.ContainerOp,
+        resource_configuration: "ResourceConfiguration",
+    ) -> None:
+        """Adds resource requirements to the container.
+
+        Args:
+            container_op: The kubeflow container operation to configure.
+            resource_configuration: The resource configuration to use for this
+                container.
+        """
+        # Set optional CPU, RAM and GPU constraints for the pipeline
+        cpu_limit = resource_configuration.cpu_count or self.cpu_limit
+        if cpu_limit is not None:
+            container_op = container_op.set_cpu_limit(str(cpu_limit))
+
+        memory_limit = (
+            resource_configuration.memory[:-1]
+            if resource_configuration.memory
+            else self.memory_limit
+        )
+        if memory_limit is not None:
+            container_op = container_op.set_memory_limit(memory_limit)
+
+        if self.node_selector_constraint is not None:
+            container_op = container_op.add_node_selector_constraint(
+                label_name=self.node_selector_constraint[0],
+                value=self.node_selector_constraint[1],
+            )
+
+        gpu_limit = resource_configuration.gpu_count or self.gpu_limit
+        if gpu_limit is not None:
+            container_op = container_op.set_gpu_limit(gpu_limit)
+
     def prepare_or_run_pipeline(
         self,
         sorted_steps: List["BaseStep"],
@@ -413,6 +476,11 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                         upstream_step_name
                     ]
                     container_op.after(upstream_container_op)
+
+                self._configure_container_resources(
+                    container_op=container_op,
+                    resource_configuration=step.resource_configuration,
+                )
 
                 step_name_to_container_op[step.name] = container_op
 

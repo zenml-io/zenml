@@ -5,7 +5,7 @@ name: Publish API Docs
 on:
   push:
     branches:
-      - 'release/**'
+      - "release/**"
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -16,43 +16,43 @@ jobs:
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
-      PYTHONIOENCODING: 'utf-8'
+      PYTHONIOENCODING: "utf-8"
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: Get the version from the github branch name
-      id: get_version
-      run: |
-        BRANCH='${{github.ref_name}}'
-        echo ::set-output name=VERSION::${BRANCH#release/}
+      - name: Get the version from the github branch name
+        id: get_version
+        run: |
+          BRANCH='${{github.ref_name}}'
+          echo ::set-output name=VERSION::${BRANCH#release/}
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
 
-    - uses: actions/setup-node@v2
-      with:
-        node-version: '14'
-    - run: npm install
-    - run: npm install html-minifier -g
+      - uses: actions/setup-node@v2
+        with:
+          node-version: "14"
+      - run: npm install
+      - run: npm install html-minifier -g
 
-    - name: Setup environment with Poetry
-      uses: ./.github/actions/setup_environment
-      with:
-        cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+      - name: Setup environment with Poetry
+        uses: ./.github/actions/setup_environment
+        with:
+          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
 
-    - name: Install Dependencies
-      run: |
-        source $VENV
-        zenml integration install -y --ignore-integration feast
-        pip install click~=8.0.3
+      - name: Install Dependencies
+        run: |
+          source $VENV
+          zenml integration install -y --ignore-integration feast --ignore-integration label_studio
+          pip install click~=8.0.3
 
-    - name: Setup git user
-      run: |
-        git config --global user.name 'Code Monkey'
-        git config --global user.email 'codemonkey@zenml.io'
+      - name: Setup git user
+        run: |
+          git config --global user.name 'Code Monkey'
+          git config --global user.email 'codemonkey@zenml.io'
 
-    - name: Runs docs generation
-      run: poetry run bash scripts/generate-docs.sh -s src/zenml/ --push --latest -v ${{ steps.get_version.outputs.VERSION }}
+      - name: Runs docs generation
+        run: poetry run bash scripts/generate-docs.sh -s src/zenml/ --push --latest -v ${{ steps.get_version.outputs.VERSION }}

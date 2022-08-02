@@ -18,7 +18,7 @@ from abc import ABC
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Set
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field, root_validator
+from pydantic import BaseModel, Extra, Field, root_validator
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackComponentInterfaceError
@@ -27,6 +27,25 @@ if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
     from zenml.stack import Stack, StackValidator
+
+
+def uuid_factory() -> UUID:
+    """Generates a UUID whose hex string does not start with a '0'.
+
+    Returns:
+        A UUID whose hex string does not start with a '0'.
+    """
+    # TODO [MEDIUM]: This is a replica of the fix which is applied
+    #   to the zen_store.sql_zen_store.SQLZenStore. Since the UUID for
+    #   stack components get created upon the creation of the
+    #   pydantic instance, the same logic must apply here in order to
+    #   save it within the ZenStore.
+    # SQLModel crashes when a UUID hex string starts with '0'
+    # (see: https://github.com/tiangolo/sqlmodel/issues/25)
+    uuid = uuid4()
+    while uuid.hex[0] == "0":
+        uuid = uuid4()
+    return uuid
 
 
 class StackComponent(BaseModel, ABC):
@@ -38,7 +57,7 @@ class StackComponent(BaseModel, ABC):
     """
 
     name: str
-    uuid: UUID = Field(default_factory=uuid4)
+    uuid: UUID = Field(default_factory=uuid_factory)
 
     # Class Configuration
     TYPE: ClassVar[StackComponentType]
@@ -339,3 +358,5 @@ class StackComponent(BaseModel, ABC):
         # all attributes with leading underscore are private and therefore
         # are mutable and not included in serialization
         underscore_attrs_are_private = True
+        # prevent extra attributes during model initialization
+        extra = Extra.forbid

@@ -18,7 +18,7 @@ import webbrowser
 from abc import abstractmethod
 from typing import Any
 
-from zenml.artifacts import DataAnalysisArtifact
+from zenml.artifacts.data_artifact import DataArtifact
 from zenml.environment import Environment
 from zenml.logger import get_logger
 from zenml.post_execution import StepView
@@ -40,9 +40,9 @@ class EvidentlyVisualizer(BaseStepVisualizer):
             **kwargs: Additional keyword arguments.
         """
         for artifact_view in object.outputs.values():
-            # filter out anything but data analysis artifacts
+            # filter out anything but data artifacts
             if (
-                artifact_view.type == DataAnalysisArtifact.__name__
+                artifact_view.type == DataArtifact.__name__
                 and artifact_view.data_type == "builtins.str"
             ):
                 artifact = artifact_view.read()

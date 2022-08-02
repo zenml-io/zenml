@@ -135,6 +135,19 @@ returned to the run logs. It will look something like this:
 
 ![Vertex AI UI](assets/vertex_ai_ui.png)
 
+### 💻 Specifying per-step resources
+
+If you're using the Vertex orchestrator and some of your pipelines steps have certain
+hardware requirements, you can specify them using the step decorator as follows:
+
+```python
+from zenml.steps import step, ResourceConfiguration
+
+@step(resource_configuration=ResourceConfiguration(cpu_count=8, memory="16GB"))
+def my_step(...) -> ...:
+    ...
+```
+
 ### 🧽 Clean up
 
 Once you're done experimenting, you can stop the port forwarding and delete the
@@ -150,6 +163,8 @@ costs for storage of artifacts, containers, metadata or secrets.
 
 # 📜 Learn more
 
+Our docs regarding the VertexAI integration can be found [here](https://docs.zenml.io/mlops-stacks/orchestrators/gcloud-vertexai).
+
 If you want to learn more about orchestrators in general or about how to build
 your own orchestrators in ZenML
-check out our [docs](https://docs.zenml.io/extending-zenml/orchestrators).
+check out our [docs](https://docs.zenml.io/mlops-stacks/orchestrators/custom).

@@ -22,15 +22,43 @@ dashboard (visualized as an html file or in your Jupyter notebook), or as a JSON
 file.
 """
 
+from typing import List
+
+from zenml.enums import StackComponentType
 from zenml.integrations.constants import EVIDENTLY
 from zenml.integrations.integration import Integration
+from zenml.zen_stores.models import FlavorWrapper
+
+EVIDENTLY_DATA_VALIDATOR_FLAVOR = "evidently"
 
 
 class EvidentlyIntegration(Integration):
     """[Evidently](https://github.com/evidentlyai/evidently) integration for ZenML."""
 
     NAME = EVIDENTLY
-    REQUIREMENTS = ["evidently==v0.1.41.dev0"]
+    REQUIREMENTS = ["evidently==0.1.52dev0"]
+
+    @staticmethod
+    def activate() -> None:
+        """Activate the Deepchecks integration."""
+        from zenml.integrations.evidently import materializers  # noqa
+        from zenml.integrations.evidently import visualizers  # noqa
+
+    @classmethod
+    def flavors(cls) -> List[FlavorWrapper]:
+        """Declare the stack component flavors for the Great Expectations integration.
+
+        Returns:
+            List of stack component flavors for this integration.
+        """
+        return [
+            FlavorWrapper(
+                name=EVIDENTLY_DATA_VALIDATOR_FLAVOR,
+                source="zenml.integrations.evidently.data_validators.EvidentlyDataValidator",
+                type=StackComponentType.DATA_VALIDATOR,
+                integration=cls.NAME,
+            ),
+        ]
 
 
 EvidentlyIntegration.check_installation()
