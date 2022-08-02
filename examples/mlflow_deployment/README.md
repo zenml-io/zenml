@@ -88,7 +88,7 @@ class MLFlowDeploymentLoaderStepConfig(BaseStepConfig):
     step_name: str
     running: bool = True
     
-model_deployer = mlflow_deployer_step(step="model_deployer")
+model_deployer = mlflow_deployer_step(name="model_deployer")
 
 ...
 

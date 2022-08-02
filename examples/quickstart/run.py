@@ -46,7 +46,8 @@ def main():
         evaluator=evaluator(),
         deployment_trigger=deployment_trigger(),
         model_deployer=model_deployer,
-    ).run()
+    )
+    training_pipeline_instance.run()
 
     # initialize and run inference pipeline
     inference_pipeline_instance = inference_pipeline(
