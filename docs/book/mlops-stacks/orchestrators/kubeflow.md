@@ -131,6 +131,17 @@ cluster.
 * A [local container registry](../container-registries/default.md) as part of your stack.
 
 {% hint style="warning" %}
+If you're using the Kubeflow orchestrator locally in combination with a
+[local metadata store](../metadata-stores/sqlite.md), you need to make sure the SQLite
+database is writable from inside the Kubeflow Pods. To do so, first figure our where
+your global config directory is using [this guide](../../resources/global-config.md#the-global-config)
+and then run:
+```shell
+chmod -R a+rw <GLOBAL_CONFIG_DIR>/local_stores
+```
+{% endhint %}
+
+{% hint style="warning" %}
 The local Kubeflow Pipelines deployment requires more than 2 GB of RAM,
 so if you're using Docker Desktop make sure to update the resource
 limits in the preferences.
