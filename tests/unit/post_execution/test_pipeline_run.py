@@ -64,10 +64,10 @@ def test_get_step_returns_stepview(
     assert sample_stepview._name == returned_sv._name
 
 
-def test_get_step_raises_runtime_exception(
+def test_get_step_raises_key_error(
     sample_pipeline_run_view: PipelineRunView,
 ):
-    """Test that the `get_step` method raises runtime error with wrong step."""
+    """Test that `get_step()` raises a key error for wrong step names."""
 
     class NonStep:
         pass
@@ -75,13 +75,20 @@ def test_get_step_raises_runtime_exception(
     input_args = [
         {"step": NonStep},  # calling with a class
         {"step": NonStep()},  # calling with a class instance
-        {"useless_arg": "some_pipeline"},  # calling with wrong kwarg
         {"step": 1234},  # calling kwarg with wrong data type
     ]
 
     for input_arg in input_args:
-        with pytest.raises(RuntimeError):
+        with pytest.raises(KeyError):
             sample_pipeline_run_view.get_step(**input_arg)
+
+
+def test_get_step_raises_runtime_error(
+    sample_pipeline_run_view: PipelineRunView,
+):
+    """Test that `get_step()` raises a runtime error for invalid kwargs."""
+    with pytest.raises(RuntimeError):
+        sample_pipeline_run_view.get_step(useless_kwarg="some_pipeline")
 
 
 def test_get_step_raises_keyerror_exception(

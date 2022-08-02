@@ -190,33 +190,38 @@ class PipelineRunView:
             "post_execution",
             "zenml.post_execution.pipeline_run.PipelineRunView" ".get_step",
         )
-        try:
-            if step:
-                return self._steps[step]
-            elif "name" in kwargs and isinstance(kwargs.get("name"), str):
-                logger.warning(
-                    "Using 'name' to get a step from "
-                    "'PipelineRunView.get_step()' is deprecated and "
-                    "will be removed in the future. Instead please "
-                    "use 'step' to access a step from your past "
-                    "pipeline runs. Learn more in our API docs: %s",
-                    api_doc_link,
-                )
-                step = kwargs.pop("name")
-                return self._steps[step]
-            else:
-                raise RuntimeError(
-                    "No step specified. Please specify a step using "
-                    "pipeline_run_view.get_step(step=`step_name`). "
-                    f"Please refer to the API docs to learn more: "
-                    f"{api_doc_link}"
-                )
-        except KeyError:
+        step_name = kwargs.get("name", None)
+
+        # Raise an error if neither `step` nor `name` args were provided.
+        if not step and not isinstance(step_name, str):
+            raise RuntimeError(
+                "No step specified. Please specify a step using "
+                "pipeline_run_view.get_step(step=`step_name`). "
+                f"Please refer to the API docs to learn more: "
+                f"{api_doc_link}"
+            )
+
+        # If `name` was provided but not `step`, print a depreciation warning.
+        if not step:
+            logger.warning(
+                "Using 'name' to get a step from "
+                "'PipelineRunView.get_step()' is deprecated and "
+                "will be removed in the future. Instead please "
+                "use 'step' to access a step from your past "
+                "pipeline runs. Learn more in our API docs: %s",
+                api_doc_link,
+            )
+            step = step_name
+
+        # Raise an error if there is no such step in the given pipeline run.
+        if step not in self._steps:
             raise KeyError(
                 f"No step found for name `{step}`. This pipeline "
                 f"run only has steps with the following "
                 f"names: `{self.get_step_names()}`"
             )
+
+        return self._steps[step]
 
     def _ensure_steps_fetched(self) -> None:
         """Fetches all steps for this pipeline run from the metadata store."""
