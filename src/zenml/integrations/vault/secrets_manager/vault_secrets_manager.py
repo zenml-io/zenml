@@ -97,7 +97,7 @@ class VaultSecretsManager(BaseSecretsManager):
         return "/".join(self._get_scoped_secret_path(name))
 
     @classmethod
-    def validate_secret_name_or_namespace(cls, name: str) -> str:
+    def validate_secret_name_or_namespace(cls, name: str) -> None:
         """Validate a secret name or namespace.
 
         For compatibility across secret managers the secret names should contain
@@ -132,8 +132,7 @@ class VaultSecretsManager(BaseSecretsManager):
         try:
             self.get_secret(secret.name)
             raise SecretExistsError(
-                f"A Secret with the name '{secret.name}' already "
-                f"exists."
+                f"A Secret with the name '{secret.name}' already " f"exists."
             )
         except KeyError:
             pass
@@ -240,8 +239,7 @@ class VaultSecretsManager(BaseSecretsManager):
             )
         else:
             raise KeyError(
-                f"A Secret with the name '{secret.name}'"
-                f" does not exist."
+                f"A Secret with the name '{secret.name}'" f" does not exist."
             )
 
         logger.info("Updated secret: %s", secret_path)
