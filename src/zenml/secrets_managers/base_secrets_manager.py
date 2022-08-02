@@ -89,25 +89,25 @@ class BaseSecretsManager(StackComponent, ABC):
         """
         scope = values.get("scope")
 
-        # this is a new Secrets Manager instance
-        if "uuid" not in values:
-            if scope:
-                # fail if the user tries to explicitly use a scope with a
-                # Secrets Manager that doesn't support scoping
-                if (
-                    scope != SecretsManagerScope.NONE
-                    and not cls.SUPPORTS_SCOPING
-                ):
-                    raise ValueError(
-                        f"The {cls.FLAVOR} Secrets Manager does not support "
-                        f"scoping. You can only use a `none` scope value."
-                    )
-            elif not cls.SUPPORTS_SCOPING:
-                # disable scoping by default for Secrets Managers that don't
-                # support scoping
-                values["scope"] = SecretsManagerScope.NONE
+        if scope:
+            # fail if the user tries to explicitly use a scope with a
+            # Secrets Manager that doesn't support scoping
+            if scope != SecretsManagerScope.NONE and not cls.SUPPORTS_SCOPING:
+                raise ValueError(
+                    f"The {cls.FLAVOR} Secrets Manager does not support "
+                    f"scoping. You can only use a `none` scope value."
+                )
+        elif not cls.SUPPORTS_SCOPING:
+            # disable scoping by default for Secrets Managers that don't
+            # support scoping
+            values["scope"] = SecretsManagerScope.NONE
 
-            return values
+        elif "uuid" in values:
+            # this is an existing Secrets Manager instance without a scope
+            # explicitly set (i.e. a legacy Secrets Manager that was already
+            # in operation before scoping was introduced). Continue to use
+            # unscoped secrets.
+            values["scope"] = SecretsManagerScope.NONE
 
         # warn if the user tries to explicitly disable scoping for a
         # Secrets Manager that does support scoping
@@ -118,9 +118,6 @@ class BaseSecretsManager(StackComponent, ABC):
                 f"release. You should use the `global` scope instead."
             )
 
-        # for existing Secrets Manager instances where scope is not yet defined,
-        # continue to use no scope for secrets
-        values.setdefault("scope", SecretsManagerScope.NONE)
         return values
 
     @root_validator
