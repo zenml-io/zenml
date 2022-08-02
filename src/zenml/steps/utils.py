@@ -60,8 +60,10 @@ from tfx.utils import json_utils
 
 import zenml
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.config.resource_configuration import ResourceConfiguration
 from zenml.constants import (
     MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME,
+    MLMD_CONTEXT_STEP_RESOURCES_PROPERTY_NAME,
     ZENML_MLMD_CONTEXT_TYPE,
 )
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
@@ -698,3 +700,27 @@ def collect_requirements(
     requirements.add(f"zenml=={zenml.__version__}")
 
     return sorted(requirements)
+
+
+def collect_step_resources(
+    pipeline_node: pipeline_pb2.PipelineNode,
+) -> ResourceConfiguration:
+    """Collects the resource config of a step.
+
+    Args:
+        pipeline_node: Pipeline node info for a step.
+
+    Returns:
+        The resource configuration for that step.
+
+    Raises:
+        RuntimeError: If no resource configuration was found.
+    """
+    for context in pipeline_node.contexts.contexts:
+        if context.type.name == ZENML_MLMD_CONTEXT_TYPE:
+            config_json = context.properties[
+                MLMD_CONTEXT_STEP_RESOURCES_PROPERTY_NAME
+            ].field_value.string_value
+            return ResourceConfiguration.parse_raw(config_json)
+    else:
+        raise RuntimeError("Unable to find resource configuration.")
