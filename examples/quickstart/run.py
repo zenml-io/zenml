@@ -39,7 +39,7 @@ from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
 def main():
 
     # initialize and run training pipeline
-    training_p = training_pipeline(
+    training_pipeline_instance = training_pipeline(
         training_data_loader=training_data_loader(),
         skew_comparison=skew_comparison(),
         trainer=svc_trainer_mlflow(),
@@ -49,7 +49,7 @@ def main():
     ).run()
 
     # initialize and run inference pipeline
-    inference_p = inference_pipeline(
+    inference_pipeline_instance = inference_pipeline(
         inference_data_loader=inference_data_loader(),
         prediction_service_loader=prediction_service_loader(),
         predictor=predictor(),
@@ -57,11 +57,11 @@ def main():
         skew_comparison=skew_comparison(),
         drift_detector=drift_detector,
     )
-    inference_p.run()
+    inference_pipeline_instance.run()
 
     # fetch latest runs for each pipeline
-    train_run = training_p.get_runs()[-1]
-    inf_run = inference_p.get_runs()[-1]
+    train_run = training_pipeline_instance.get_runs()[-1]
+    inf_run = inference_pipeline_instance.get_runs()[-1]
 
     # visualize training pipeline
     PipelineRunLineageVisualizer().visualize(train_run)

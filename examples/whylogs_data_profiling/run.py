@@ -56,14 +56,14 @@ def visualize_statistics(
 
 if __name__ == "__main__":
 
-    p = data_profiling_pipeline(
+    pipeline_instance = data_profiling_pipeline(
         data_loader=data_loader(),
         data_splitter=data_splitter(),
         train_data_profiler=train_data_profiler,
         test_data_profiler=test_data_profiler,
     )
 
-    p.run()
+    pipeline_instance.run()
 
     visualize_statistics("data_loader")
     visualize_statistics("train_data_profiler", "test_data_profiler")

@@ -22,14 +22,14 @@ logger = get_logger(__name__)
 
 
 if __name__ == "__main__":
-    p = feast_pipeline(
+    pipeline_instance = feast_pipeline(
         get_features=get_features,
         feature_printer=print_historical_features(),
     )
 
-    p.run()
+    pipeline_instance.run()
 
-    last_run = p.get_runs()[-1]
+    last_run = pipeline_instance.get_runs()[-1]
     historical_features_step = last_run.get_step(step="feature_printer")
     print("HISTORICAL FEATURES:")
     print(historical_features_step.output.read())

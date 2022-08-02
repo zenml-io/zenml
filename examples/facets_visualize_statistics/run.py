@@ -31,11 +31,11 @@ def visualize_statistics():
 
 if __name__ == "__main__":
     # Run the pipeline
-    p = facets_pipeline(
+    pipeline_instance = facets_pipeline(
         importer=importer(),
         trainer=trainer(),
         evaluator=evaluator(),
     )
-    p.run()
+    pipeline_instance.run()
 
     visualize_statistics()

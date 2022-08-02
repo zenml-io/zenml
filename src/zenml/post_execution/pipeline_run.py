@@ -170,7 +170,7 @@ class PipelineRunView:
         ```python
         # Get the step by name
         pipeline_run_view.get_step("first_step")
-        ``
+        ```
 
         Args:
             step: Class or class instance of the step

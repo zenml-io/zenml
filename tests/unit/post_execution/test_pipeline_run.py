@@ -73,10 +73,10 @@ def test_get_step_raises_runtime_exception(
         pass
 
     input_args = [
-        {"name": NonStep},  # calling with a class
-        {"name": NonStep()},  # calling with a class instance
+        {"step": NonStep},  # calling with a class
+        {"step": NonStep()},  # calling with a class instance
         {"useless_arg": "some_pipeline"},  # calling with wrong kwarg
-        {"name": 1234},  # calling kwarg with wrong data type
+        {"step": 1234},  # calling kwarg with wrong data type
     ]
 
     for input_arg in input_args:

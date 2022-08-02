@@ -32,15 +32,15 @@ def visualize_statistics():
 
 
 if __name__ == "__main__":
-    p = drift_detection_pipeline(
+    pipeline_instance = drift_detection_pipeline(
         data_loader=data_loader(),
         data_splitter=data_splitter(),
         drift_detector=drift_detector,
         drift_analyzer=analyze_drift(),
     )
-    p.run()
+    pipeline_instance.run()
 
-    last_run = p.get_runs()[-1]
+    last_run = pipeline_instance.get_runs()[-1]
     drift_analysis_step = last_run.get_step(step="drift_analyzer")
     print(f"Data drift detected: {drift_analysis_step.output.read()}")
 

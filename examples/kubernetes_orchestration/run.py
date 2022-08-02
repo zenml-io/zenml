@@ -20,15 +20,15 @@ from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
 )
 
 if __name__ == "__main__":
-    p = kubernetes_example_pipeline(
+    pipeline_instance = kubernetes_example_pipeline(
         importer=importer(),
         trainer=svc_trainer(),
         evaluator=evaluator(),
         skew_comparison=skew_comparison(),
     )
-    p.run()
+    pipeline_instance.run()
 
-    last_run = p.get_runs()[-1]
+    last_run = pipeline_instance.get_runs()[-1]
     train_test_skew_step = last_run.get_step(step="skew_comparison")
     FacetStatisticsVisualizer().visualize(train_test_skew_step)
 
