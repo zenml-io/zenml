@@ -49,6 +49,10 @@ zenml stack update -x <NAME>
 
 You can now [register, update or delete secrets](./secrets-managers.md#in-the-cli) using the CLI or [fetch secret values inside your steps](./secrets-managers.md#in-a-zenml-step).
 
+You can use [secret scoping](./secrets-managers.md#secret-scopes) with the Vault
+Secrets Manager to manage multiple Secrets Manager namespaces on top of a
+single Vault service instance.
+
 A concrete example of using the HashiCorp Vault secrets manager can be found 
 [here](https://github.com/zenml-io/zenml/tree/main/examples/cloud_secrets_manager).
 

@@ -259,7 +259,8 @@ class BaseStep(metaclass=BaseStepMeta):
         self.requires_context = bool(self.CONTEXT_PARAMETER_NAME)
         self.custom_step_operator = kwargs.pop(PARAM_CUSTOM_STEP_OPERATOR, None)
         self._resource_configuration = (
-            kwargs.pop(PARAM_RESOURCE_CONFIGURATION) or ResourceConfiguration()
+            kwargs.pop(PARAM_RESOURCE_CONFIGURATION, None)
+            or ResourceConfiguration()
         )
 
         enable_cache = kwargs.pop(PARAM_ENABLE_CACHE, None)

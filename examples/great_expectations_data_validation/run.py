@@ -30,7 +30,7 @@ def visualize_results(pipeline_name: str, step_name: str) -> None:
     repo = Repository()
     pipeline = repo.get_pipeline(pipeline_name)
     last_run = pipeline.runs[-1]
-    validation_step = last_run.get_step(name=step_name)
+    validation_step = last_run.get_step(step=step_name)
     GreatExpectationsVisualizer().visualize(validation_step)
 
 

@@ -1,4 +1,5 @@
 "\nTo"
+ADDR
 AIPlatform
 AKS
 APIs
@@ -849,6 +850,7 @@ init
 initializations
 initializer
 initializers
+instantiation
 integrations
 interdependencies
 io
@@ -934,6 +936,7 @@ myregistry
 mysql
 mysqlclient
 namespace
+namespaces
 natively
 ndarray
 ner
@@ -1149,6 +1152,7 @@ unlinking
 unprovisioned
 unregister
 unregistering
+unscoped
 unstaged
 untracked
 untyped

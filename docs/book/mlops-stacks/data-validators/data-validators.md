@@ -59,7 +59,7 @@ ZenML pipelines:
 | [Great Expectations](./great-expectations.md) | data profiling<br>data quality | tabular: `pandas.DataFrame` | N/A | Perform data testing, documentation and profiling with Great Expectations | `great_expectations` |
 | [Whylogs/WhyLabs](./whylogs.md) | data drift | tabular: `pandas.DataFrame` | N/A | Generate data profiles with whylogs and upload them to WhyLabs | `whylogs` |
 
-If you would like to see the available flavors of Experiment Tracker, you can 
+If you would like to see the available flavors of Data Validator, you can 
 use the command:
 
 ```shell

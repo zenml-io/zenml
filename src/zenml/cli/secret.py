@@ -31,6 +31,7 @@ from zenml.cli.utils import (
 )
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
+from zenml.exceptions import SecretExistsError
 from zenml.repository import Repository
 from zenml.secret import ARBITRARY_SECRET_SCHEMA_TYPE
 
@@ -248,7 +249,10 @@ def register_secret(
     pretty_print_secret(secret=secret, hide_secret=True)
 
     with console.status(f"Saving secret `{name}`..."):
-        secrets_manager.register_secret(secret=secret)
+        try:
+            secrets_manager.register_secret(secret=secret)
+        except SecretExistsError:
+            error(f"A secret with name '{name}' already exists.")
 
 
 @secret.command("get", help="Get a secret, given its name.")
@@ -426,7 +430,7 @@ def update_secret(
     help="Skip asking for confirmation.",
 )
 @click.pass_obj
-def delete_secret_set(
+def delete_secret(
     secrets_manager: "BaseSecretsManager",
     name: str,
     yes: bool = False,

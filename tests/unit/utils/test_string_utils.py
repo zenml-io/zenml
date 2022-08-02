@@ -12,6 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from typing import List
+
 from zenml.utils import string_utils
 
 
@@ -35,3 +37,12 @@ def test_get_human_readable_filesize_formats_correctly() -> None:
         string_utils.get_human_readable_filesize(int(1.5 * 1024 * 1024 * 1024))
         == "1.50 GiB"
     )
+
+
+def test_random_str_is_random() -> None:
+    """Test that random_str returns a random string."""
+    l: List[str] = []
+    for i in range(10000):
+        new_str = string_utils.random_str(16)
+        assert new_str not in l
+        l.append(new_str)
