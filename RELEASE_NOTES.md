@@ -39,7 +39,7 @@ As always, we've also included various bug fixes and lots of improvements to the
 * Adjust examples and docs to new pipeline and step fetching syntax by @fa9r in https://github.com/zenml-io/zenml/pull/795
 
 
-**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.11.0...temp
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.11.0...0.12.0
 
 
 # 0.11.0
