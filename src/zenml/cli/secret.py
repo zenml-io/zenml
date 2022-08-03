@@ -14,7 +14,7 @@
 """Functionality to manage or use your secrets via a SecretsManager stack component."""
 
 import getpass
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, List
 
 import click
 from pydantic import ValidationError
@@ -34,7 +34,6 @@ from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import SecretExistsError
 from zenml.repository import Repository
 from zenml.secret import ARBITRARY_SECRET_SCHEMA_TYPE
-from zenml.secret.arbitrary_secret_schema import ArbitrarySecretSchema
 
 if TYPE_CHECKING:
     from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
@@ -69,7 +68,7 @@ def secret(ctx: click.Context) -> None:
     context_settings={"ignore_unknown_options": True},
     help="Register a secret with the given name and schema.",
 )
-@click.argument("name", type=click.STRING, default="test")
+@click.argument("name", type=click.STRING)
 @click.option(
     "--schema",
     "-s",
@@ -86,7 +85,6 @@ def secret(ctx: click.Context) -> None:
     help="Use interactive mode to enter the secret values.",
     type=click.BOOL,
 )
-@click.option("--for-component", "component", type=(str, str), required=False)
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 @click.pass_obj
 def register_secret(
@@ -95,7 +93,6 @@ def register_secret(
     secret_schema_type: str,
     interactive: bool,
     args: List[str],
-    component: Optional[Tuple[str, str]] = None,
 ) -> None:
     """Register a secret with the given name and schema.
 
@@ -168,36 +165,6 @@ def register_secret(
             "Secret names cannot start with '--' The first argument must be."
             "the secret name."
         )
-
-    if component:
-        type_, name = component
-
-        stack_component = Repository().get_stack_component(
-            component_type=StackComponentType(type_), name=name
-        )
-        required_secrets = stack_component.required_secrets
-        from collections import defaultdict
-
-        a = defaultdict(list)
-        for n, k in required_secrets:
-            a[n].append(k)
-
-        for n, keys in a.items():
-            secret_contents = {}
-
-            for k in keys:
-                v = getpass.getpass(f"Value for secret: {n}.{k}:")
-                if not v:
-                    raise ValueError()
-
-                secret_contents[k] = expand_argument_value_from_file(
-                    name=k, value=v
-                )
-
-            s = ArbitrarySecretSchema(name=n, **secret_contents)
-            secrets_manager.register_secret(s)
-
-        return
 
     if "name" in parsed_args:
         error("Secret names cannot be passed as arguments.")
