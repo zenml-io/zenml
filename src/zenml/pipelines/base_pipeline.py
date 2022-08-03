@@ -137,7 +137,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self.secrets = kwargs.pop(PARAM_SECRETS, [])
 
         self.docker_configuration = (
-            kwargs.pop(PARAM_DOCKER_CONFIGURATION) or DockerConfiguration()
+            kwargs.pop(PARAM_DOCKER_CONFIGURATION, None) or DockerConfiguration()
         )
         self._migrate_to_docker_config(kwargs)
 
