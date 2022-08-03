@@ -18,15 +18,18 @@ are most often used to handle the input or output of ZenML steps, and can be
 extended by building on the `BaseMaterializer` class.
 """
 
-
 from zenml.materializers.built_in_materializer import BuiltInMaterializer
 from zenml.materializers.numpy_materializer import NumpyMaterializer
 from zenml.materializers.pandas_materializer import PandasMaterializer
+from zenml.materializers.pillow_image_materializer import (
+    PillowImageMaterializer,
+)
 from zenml.materializers.service_materializer import ServiceMaterializer
 
 __all__ = [
     "BuiltInMaterializer",
     "NumpyMaterializer",
     "PandasMaterializer",
+    "PillowImageMaterializer",
     "ServiceMaterializer",
 ]
