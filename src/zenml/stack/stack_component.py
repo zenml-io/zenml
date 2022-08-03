@@ -49,7 +49,12 @@ def uuid_factory() -> UUID:
 
 
 import re
-from typing import List, Tuple
+from typing import NamedTuple
+
+
+class SecretReference(NamedTuple):
+    secret_name: str
+    key: str
 
 
 def is_secret_reference(value: Any) -> bool:
@@ -59,13 +64,13 @@ def is_secret_reference(value: Any) -> bool:
     return re.fullmatch(r"\$\{.*\..*\}", value)
 
 
-def split_secret_reference(reference: str) -> Tuple[str, str]:
+def split_secret_reference(reference: str) -> SecretReference:
     reference = reference[2:]
     reference = reference[:-1]
     reference = reference.strip()
 
     secret_name, secret_key = reference.split(".", 1)
-    return secret_name, secret_key
+    return SecretReference(secret_name=secret_name, key=secret_key)
 
 
 class StackComponent(BaseModel, ABC):
@@ -109,12 +114,17 @@ class StackComponent(BaseModel, ABC):
             return value
 
     @property
-    def required_secrets(self) -> List[Tuple[str, str]]:
-        return [
+    def required_secrets(self) -> Set[SecretReference]:
+        """All required secrets for this stack component.
+
+        Returns:
+            The required secrets of this stack component.
+        """
+        return {
             split_secret_reference(v)
             for v in self.dict().values()
             if is_secret_reference(v)
-        ]
+        }
 
     @property
     def log_file(self) -> Optional[str]:

@@ -28,8 +28,11 @@ from typing import (
 )
 
 from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import ZENML_IGNORE_STORE_COUPLINGS
-from zenml.enums import StackComponentType
+from zenml.constants import (
+    ENV_ZENML_SECRET_VALIDATION_LEVEL,
+    ZENML_IGNORE_STORE_COUPLINGS,
+)
+from zenml.enums import SecretValidationLevel, StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.logger import get_logger
 from zenml.runtime_configuration import (
@@ -54,7 +57,9 @@ if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
     from zenml.secrets_managers import BaseSecretsManager
     from zenml.stack import StackComponent
+    from zenml.stack.stack_component import SecretReference
     from zenml.step_operators import BaseStepOperator
+
 
 logger = get_logger(__name__)
 
@@ -500,21 +505,109 @@ class Stack:
         ]
         return set.union(*requirements) if requirements else set()
 
-    def validate(self, decouple_stores: bool = False) -> None:
+    @property
+    def required_secrets(self) -> Set["SecretReference"]:
+        """All required secrets for this stack.
+
+        Returns:
+            The required secrets of this stack.
+        """
+        secrets = [
+            component.required_secrets for component in self.components.values()
+        ]
+        return set.union(*secrets) if secrets else set()
+
+    def _validate_secrets(self, raise_exception: bool) -> None:
+        """Validates that all secrets of the stack exists.
+
+        Args:
+            raise_execption: If `True`, raises an exception if the stack has
+                no secrets manager or a secret is misssing. Otherwise a
+                warning is logged.
+
+        Raises:
+            StackValidationError: If the stack has no secrets manager or a
+                secret is missing.
+        """
+        env_value = os.getenv(
+            ENV_ZENML_SECRET_VALIDATION_LEVEL,
+            default=SecretValidationLevel.SECRET_AND_KEY_EXISTS.value,
+        )
+        secret_validation_level = SecretValidationLevel(env_value)
+
+        required_secrets = self.required_secrets
+        if (
+            secret_validation_level != SecretValidationLevel.NONE
+            and required_secrets
+        ):
+
+            def _handle_error(message: str) -> None:
+                if raise_exception:
+                    raise StackValidationError(message)
+                else:
+                    message += (
+                        " You need to solve this issue before running "
+                        "a pipeline on this stack."
+                    )
+                    logger.warning(message)
+
+            if not self.secrets_manager:
+                _handle_error(
+                    f"Some component in stack `{self.name}` reference secret "
+                    "values, but there is no secrets manager in this stack."
+                )
+
+            missing = []
+            existing_secrets = set(self.secrets_manager.get_all_secret_keys())
+            for secret_ref in required_secrets:
+                if (
+                    secret_validation_level
+                    == SecretValidationLevel.SECRET_AND_KEY_EXISTS
+                ):
+                    try:
+                        _ = self.secrets_manager.get_secret(
+                            secret_ref.secret_name
+                        ).content[secret_ref.key]
+                    except KeyError:
+                        missing.append(secret_ref)
+                elif (
+                    secret_validation_level
+                    == SecretValidationLevel.SECRET_EXISTS
+                ):
+                    if secret_ref.secret_name not in existing_secrets:
+                        missing.append(secret_ref.secret_name)
+
+            if missing:
+                _handle_error(
+                    f"Missing secrets for stack: {missing}. If you want to "
+                    "adjust the degree to which ZenML validates the existence "
+                    "of secrets in your stack, you can do so by setting the "
+                    f"environment variable {ENV_ZENML_SECRET_VALIDATION_LEVEL} "
+                    "to one of the following values: "
+                    f"{SecretValidationLevel.values()}"
+                )
+
+    def validate(
+        self,
+        decouple_stores: bool = False,
+        fail_if_secrets_missing: bool = False,
+    ) -> None:
         """Checks whether the stack configuration is valid.
 
         To check if a stack configuration is valid, the following criteria must
         be met:
-        - all components must support the execution mode (either local or
-            remote execution) specified by the orchestrator of the stack
         - the `StackValidator` of each stack component has to validate the
             stack to make sure all the components are compatible with each other
         - the stack must either have a properly associated artifact/metadata
             store pair or reset the association.
+        - the required secrets of all components need to exist
 
         Args:
             decouple_stores: Flag to reset the previous associations between
                 an artifact store and a metadata store
+            fail_if_secrets_missing: If this is `True`, an error will be raised
+                if a secret for a component is missing. Otherwise, only a
+                warning will be logged.
 
         Raises:
             StackValidationError: If the artifact store and the metadata store
@@ -524,34 +617,7 @@ class Stack:
             if component.validator:
                 component.validator.validate(stack=self)
 
-        secret_validation_level = os.environ.get(
-            "ZENML_SECRET_VALIDATION_LEVEL", "FULL"
-        )
-        import itertools
-
-        required_secrets = itertools.chain.from_iterable(
-            c.required_secrets for c in self.components.values()
-        )
-
-        if required_secrets:
-            if secret_validation_level == "FULL":
-                # check that secret + key exist
-                if not self.secrets_manager:
-                    raise RuntimeError()
-
-                for name, key in required_secrets:
-                    s = self.secrets_manager.get_secret(name)
-                    if key not in s.content:
-                        raise RuntimeError()
-
-            elif secret_validation_level == "EXIST":
-                if not self.secrets_manager:
-                    raise RuntimeError()
-
-                existing_secrets = self.secrets_manager.get_all_secret_keys()
-                for secret_name, _ in required_secrets:
-                    if secret_name not in existing_secrets:
-                        raise RuntimeError()
+        self._validate_secrets(raise_exception=fail_if_secrets_missing)
 
         if not ZENML_IGNORE_STORE_COUPLINGS:
             from zenml.cli.utils import warning
@@ -700,7 +766,7 @@ class Stack:
         Raises:
             StackValidationError: If the stack configuration is not valid.
         """
-        self.validate()
+        self.validate(fail_if_secrets_missing=True)
 
         for component in self.components.values():
             if not component.is_running:
