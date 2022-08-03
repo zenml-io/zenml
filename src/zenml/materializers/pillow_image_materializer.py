@@ -26,6 +26,7 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
 
 logger = get_logger(__name__)
+IMAGE_FILENAME = "image.png"
 
 
 class PillowImageMaterializer(BaseMaterializer):
@@ -62,11 +63,10 @@ class PillowImageMaterializer(BaseMaterializer):
         """Write to artifact store"""
         super().handle_return(image)
         temp_dir = tempfile.TemporaryDirectory()
+        temp_image_path = os.path.join(temp_dir.name, IMAGE_FILENAME)
         # save the image in a temporary directory
-        image_name = ""
-        image.save(os.path.join(temp_dir.name, image_name))
+        image.save(temp_image_path)
 
         # copy the saved image to the artifact store
-        temp_image_path = os.path.join(".")
         io_utils.copy(temp_image_path, self.artifact.uri)
         fileio.remove(temp_image_path)
