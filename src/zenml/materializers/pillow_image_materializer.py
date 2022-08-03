@@ -15,7 +15,7 @@
 
 import os
 import tempfile
-from typing import Dict, Type, Any
+from typing import Type
 
 import PIL
 
@@ -26,7 +26,7 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
 
 logger = get_logger(__name__)
-IMAGE_FILENAME = "image.png"
+DEFAULT_IMAGE_FILENAME = "image.png"
 
 
 class PillowImageMaterializer(BaseMaterializer):
@@ -39,33 +39,39 @@ class PillowImageMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (PIL.Image.Image,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
-    def handle_input(
-        self, data_type: Type[PIL.Image.Image]
-    ) -> PIL.Image.Image:
-        """Read from artifact store"""
+    def handle_input(self, data_type: Type[PIL.Image.Image]) -> PIL.Image.Image:
+        """Read from artifact store.
+
+        Args:
+            data_type: A PIL.Image.Image type.
+
+        Returns:
+            A PIL.Image.Image object.
+        """
         super().handle_input(data_type)
-        temp_dir = tempfile.TemporaryDirectory()
-        io_utils.copy_dir(self.artifact.uri, temp_dir.name)
+        filepath = os.path.join(self.artifact.uri, DEFAULT_IMAGE_FILENAME)
 
-        files = [
-            f"{temp_dir.name}/{filename}"
-            for filename in fileio.listdir(temp_dir.name)
-        ]
-        images_dict = {}
-        for filename in files:
-            with fileio.open(filename, "rb") as f:
-                image = PIL.Image.open(f)
-                image.load()
-                images_dict[filename] = image
+        # create a temporary folder
+        temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
+        temp_file = os.path.join(str(temp_dir), DEFAULT_IMAGE_FILENAME)
 
-        fileio.rmtree(temp_dir.name)
-        return images_dict
+        # copy from artifact store to temporary file
+        fileio.copy(filepath, temp_file)
+        image = PIL.Image.open(temp_file)
+
+        # Cleanup and return
+        fileio.rmtree(temp_dir)
+        return image
 
     def handle_return(self, image: PIL.Image.Image) -> None:
-        """Write to artifact store"""
+        """Write to artifact store.
+
+        Args:
+            image: A PIL.Image.Image object.
+        """
         super().handle_return(image)
         temp_dir = tempfile.TemporaryDirectory()
-        temp_image_path = os.path.join(temp_dir.name, IMAGE_FILENAME)
+        temp_image_path = os.path.join(temp_dir.name, DEFAULT_IMAGE_FILENAME)
         # save the image in a temporary directory
         image.save(temp_image_path)
 
