@@ -495,7 +495,6 @@ class BaseOrchestrator(StackComponent, ABC):
             stack: The stack the pipeline was run on
             runtime_configuration: The Runtime configuration of the current run
         """
-        " ".join(sorted(pipeline.requirements))
         stack_json = json.dumps(stack.dict(), sort_keys=True)
 
         # Copy and remove the run name so an otherwise identical run reuses

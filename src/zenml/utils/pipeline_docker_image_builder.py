@@ -181,8 +181,10 @@ class PipelineDockerImageBuilder(BaseModel):
             integration_requirements.update(stack.requirements())
 
         if integration_requirements:
-            integration_requirements = sorted(integration_requirements)
-            integration_requirements_file = "\n".join(integration_requirements)
+            integration_requirements_list = sorted(integration_requirements)
+            integration_requirements_file = "\n".join(
+                integration_requirements_list
+            )
             requirements_files.append(
                 (
                     ".zenml_integration_requirements",
@@ -191,7 +193,7 @@ class PipelineDockerImageBuilder(BaseModel):
             )
             logger.info(
                 "\t- Including integration requirements: %s",
-                ", ".join(f"`{r}`" for r in integration_requirements),
+                ", ".join(f"`{r}`" for r in integration_requirements_list),
             )
 
         return requirements_files
@@ -327,7 +329,6 @@ class PipelineDockerImageBuilder(BaseModel):
                 # The image we'll build from the custom Dockerfile will be
                 # used directly, so we tag it with the requested target name.
                 user_image_name = target_image_name
-                parent_image = None
 
             docker_utils.build_image(
                 image_name=user_image_name,

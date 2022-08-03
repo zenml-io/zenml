@@ -38,8 +38,8 @@ from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.step_operators import BaseStepOperator
 from zenml.utils import deprecation_utils
-from zenml.utils.docker_utils import CONTAINER_ZENML_CONFIG_DIR
 from zenml.utils.pipeline_docker_image_builder import (
+    DOCKER_IMAGE_ZENML_CONFIG_DIR,
     PipelineDockerImageBuilder,
     _include_active_profile,
 )
@@ -195,7 +195,7 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
 
         environment_variables[
             ENV_ZENML_CONFIG_PATH
-        ] = f"./{CONTAINER_ZENML_CONFIG_DIR}"
+        ] = f"./{DOCKER_IMAGE_ZENML_CONFIG_DIR}"
         environment_variables.update(docker_configuration.environment)
 
         environment.environment_variables = environment_variables

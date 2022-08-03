@@ -21,6 +21,7 @@ from zenml.enums import StackComponentType
 from zenml.integrations.aws import AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
 from zenml.logger import get_logger
 from zenml.repository import Repository
+from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 from zenml.utils import deprecation_utils
@@ -110,7 +111,7 @@ class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
             pipeline_name=pipeline_name,
             docker_configuration=docker_configuration,
             stack=Repository().active_stack,
-            runtime_configuration={},
+            runtime_configuration=RuntimeConfiguration(),
             entrypoint=" ".join(entrypoint_command),
         )
 

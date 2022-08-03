@@ -131,6 +131,7 @@ DefaultContainerRegistry
 Deprovision
 Deprovisions
 Deregisters
+DockerConfiguration
 DockerHub
 DockerHubContainerRegistry
 Dockerfile

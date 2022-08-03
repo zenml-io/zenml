@@ -708,7 +708,6 @@ def collect_docker_configuration(
     Raises:
         RuntimeError: If no Docker configuration was found.
     """
-
     for context in pipeline_node.contexts.contexts:
         if context.type.name == ZENML_MLMD_CONTEXT_TYPE:
             config_json = context.properties[

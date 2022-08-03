@@ -278,9 +278,6 @@ class VertexOrchestrator(
             pipeline: The pipeline to be deployed.
             stack: The stack that will be used to deploy the pipeline.
             runtime_configuration: The runtime configuration for the pipeline.
-
-        Raises:
-            RuntimeError: If the container registry is missing.
         """
         self.build_and_push_docker_image(
             pipeline_name=pipeline.name,
