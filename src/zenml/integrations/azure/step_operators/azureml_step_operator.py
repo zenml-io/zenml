@@ -30,6 +30,7 @@ from azureml.core.authentication import (
 )
 from azureml.core.conda_dependencies import CondaDependencies
 
+import zenml
 from zenml.constants import ENV_ZENML_CONFIG_PATH
 from zenml.environment import Environment as ZenMLEnvironment
 from zenml.integrations.azure import AZUREML_STEP_OPERATOR_FLAVOR
@@ -143,6 +144,7 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
                 r[1].split("\n") for r in requirements_files
             )
         )
+        requirements.append(f"zenml=={zenml.__version__}")
         logger.info(
             "Using requirements for AzureML step operator environment: %s",
             requirements,
