@@ -15,7 +15,7 @@
 
 import os
 import tempfile
-from typing import Dict, Type
+from typing import Dict, Type, Any
 
 import PIL
 
@@ -36,10 +36,12 @@ class PillowImageMaterializer(BaseMaterializer):
     PIL image objects.
     """
 
-    ASSOCIATED_TYPES = (PIL.Image,)
+    ASSOCIATED_TYPES = (PIL.Image.Image,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
-    def handle_input(self, data_type: Type[PIL.Image]) -> "PIL.Image":
+    def handle_input(
+        self, data_type: Type[PIL.Image.Image]
+    ) -> PIL.Image.Image:
         """Read from artifact store"""
         super().handle_input(data_type)
         temp_dir = tempfile.TemporaryDirectory()
@@ -59,7 +61,7 @@ class PillowImageMaterializer(BaseMaterializer):
         fileio.rmtree(temp_dir.name)
         return images_dict
 
-    def handle_return(self, image: PIL.Image) -> None:
+    def handle_return(self, image: PIL.Image.Image) -> None:
         """Write to artifact store"""
         super().handle_return(image)
         temp_dir = tempfile.TemporaryDirectory()
