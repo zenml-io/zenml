@@ -32,7 +32,6 @@ from zenml.logger import get_logger
 from zenml.utils import docker_utils, io_utils, source_utils
 
 if TYPE_CHECKING:
-    from zenml.pipelines.base_pipeline import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
     from zenml.stack import Stack
 
@@ -207,11 +206,11 @@ class PipelineDockerImageBuilder(BaseModel):
         """Generates a Dockerfile.
 
         Args:
-            parent_image: The image to use as parent for the dockerfile.
+            parent_image: The image to use as parent for the Dockerfile.
             docker_configuration: Docker configuration for this image build.
             requirements_files: Paths of requirements files to install.
             entrypoint: The default entrypoint command that gets executed when
-                running a container of an image created by this dockerfile.
+                running a container of an image created by this Dockerfile.
 
         Returns:
             Lines of the generated Dockerfile.
@@ -244,9 +243,11 @@ class PipelineDockerImageBuilder(BaseModel):
 
     def build_and_push_docker_image(
         self,
-        pipeline: "BasePipeline",
+        pipeline_name: str,
+        docker_configuration: DockerConfiguration,
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
+        entrypoint: Optional[str] = None,
     ) -> str:
         """Builds and pushes a Docker image to run a pipeline.
 
@@ -254,10 +255,15 @@ class PipelineDockerImageBuilder(BaseModel):
         reference the pushed image in order to pull or run it.
 
         Args:
-            pipeline: The pipeline for which the image should be built.
+            pipeline_name: Name of the pipeline for which the image(s) should
+                be built.
+            docker_configuration: Docker configuration that specifies what
+                should be included in the image.
             stack: The stack on which the pipeline will be executed.
             runtime_configuration: The runtime configuration for the pipeline
                 run.
+            entrypoint: Entrypoint to use for the final image. If left empty,
+                no entrypoint will be included in the image.
 
         Returns:
             The Docker repository digest of the pushed image.
@@ -276,12 +282,11 @@ class PipelineDockerImageBuilder(BaseModel):
             )
 
         logger.info(
-            "Building Docker image(s) for pipeline `%s`.", pipeline.name
+            "Building Docker image(s) for pipeline `%s`.", pipeline_name
         )
-        docker_configuration = pipeline.docker_configuration
         target_image_name = (
             f"{container_registry.uri}/"
-            f"{docker_configuration.target_repository}:{pipeline.name}"
+            f"{docker_configuration.target_repository}:{pipeline_name}"
         )
 
         requires_zenml_build = any(
@@ -293,6 +298,7 @@ class PipelineDockerImageBuilder(BaseModel):
                 docker_configuration.environment,
                 docker_configuration.copy_files,
                 docker_configuration.copy_profile,
+                entrypoint,
             ]
         )
 
@@ -315,7 +321,7 @@ class PipelineDockerImageBuilder(BaseModel):
                 # We will build an additional image on top of this one later
                 # to include user files and/or install requirements. The image
                 # we build now will be used as the parent for the next build.
-                user_image_name = f"zenml-intermediate-build:{pipeline.name}"
+                user_image_name = f"zenml-intermediate-build:{pipeline_name}"
                 parent_image = user_image_name
             else:
                 # The image we'll build from the custom Dockerfile will be
@@ -352,6 +358,7 @@ class PipelineDockerImageBuilder(BaseModel):
                 parent_image=parent_image,
                 docker_configuration=docker_configuration,
                 requirements_files=requirements_file_names,
+                entrypoint=entrypoint,
             )
 
             if parent_image == DEFAULT_DOCKER_PARENT_IMAGE:

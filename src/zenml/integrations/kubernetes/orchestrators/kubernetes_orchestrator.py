@@ -240,7 +240,8 @@ class KubernetesOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             runtime_configuration: The runtime configuration of the pipeline.
         """
         self.build_and_push_docker_image(
-            pipeline=pipeline,
+            pipeline_name=pipeline.name,
+            docker_configuration=pipeline.docker_configuration,
             stack=stack,
             runtime_configuration=runtime_configuration,
         )

@@ -51,7 +51,6 @@ if TYPE_CHECKING:
 
 from zenml.enums import StackComponentType
 from zenml.integrations.github import GITHUB_ORCHESTRATOR_FLAVOR
-from zenml.repository import Repository
 from zenml.stack import StackValidator
 
 logger = get_logger(__name__)
@@ -201,20 +200,6 @@ class GitHubActionsOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             custom_validation_function=_validate_local_requirements,
         )
 
-    def get_docker_image_name(self, pipeline_name: str) -> str:
-        """Returns the full docker image name including registry and tag.
-
-        Args:
-            pipeline_name: Name of the pipeline for which to generate a docker
-                image name.
-
-        Returns:
-            The docker image name.
-        """
-        container_registry = Repository().active_stack.container_registry
-        assert container_registry  # should never happen due to validation
-        return f"{container_registry.uri}/zenml-github-actions:{pipeline_name}"
-
     def _docker_login_step(
         self,
         container_registry: BaseContainerRegistry,
@@ -330,7 +315,8 @@ class GitHubActionsOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             )
 
         self.build_and_push_docker_image(
-            pipeline=pipeline,
+            pipeline_name=pipeline.name,
+            docker_configuration=pipeline.docker_configuration,
             stack=stack,
             runtime_configuration=runtime_configuration,
         )

@@ -54,7 +54,6 @@ from zenml.integrations.gcp.orchestrators.vertex_entrypoint_configuration import
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
-from zenml.repository import Repository
 from zenml.stack.stack_validator import StackValidator
 from zenml.utils import deprecation_utils
 from zenml.utils.io_utils import get_global_config_directory
@@ -244,24 +243,6 @@ class VertexOrchestrator(
             custom_validation_function=_validate_stack_requirements,
         )
 
-    def get_docker_image_name(self, pipeline_name: str) -> str:
-        """Returns the full docker image name including registry and tag.
-
-        Args:
-            pipeline_name: The name of the pipeline.
-
-        Returns:
-            The full docker image name including registry and tag.
-        """
-        base_image_name = f"zenml-vertex:{pipeline_name}"
-        container_registry = Repository().active_stack.container_registry
-
-        if container_registry:
-            registry_uri = container_registry.uri.rstrip("/")
-            return f"{registry_uri}/{base_image_name}"
-
-        return base_image_name
-
     @property
     def root_directory(self) -> str:
         """Returns path to the root directory for files for this orchestrator.
@@ -302,7 +283,8 @@ class VertexOrchestrator(
             RuntimeError: If the container registry is missing.
         """
         self.build_and_push_docker_image(
-            pipeline=pipeline,
+            pipeline_name=pipeline.name,
+            docker_configuration=pipeline.docker_configuration,
             stack=stack,
             runtime_configuration=runtime_configuration,
         )

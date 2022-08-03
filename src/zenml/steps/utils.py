@@ -530,17 +530,9 @@ class _FunctionExecutor(BaseExecutor):
                 "Cannot retrieve pipeline runtime information."
             )
 
-        # Fetch docker config from the MLMD contexts
-        for context in self._context.pipeline_node.contexts.contexts:
-            if context.type.name == ZENML_MLMD_CONTEXT_TYPE:
-                config_json = context.properties[
-                    MLMD_CONTEXT_DOCKER_CONFIGURATION_PROPERTY_NAME
-                ].field_value.string_value
-
-                docker_config = DockerConfiguration.parse_raw(config_json)
-                break
-        else:
-            raise RuntimeError("Unable to find Docker configuration.")
+        docker_config = collect_docker_configuration(
+            pipeline_node=self._context.pipeline_node
+        )
 
         # Wrap the execution of the step function in a step environment
         # that the step function code can access to retrieve information about
@@ -700,3 +692,29 @@ def collect_step_resources(
             return ResourceConfiguration.parse_raw(config_json)
     else:
         raise RuntimeError("Unable to find resource configuration.")
+
+
+def collect_docker_configuration(
+    pipeline_node: pipeline_pb2.PipelineNode,
+) -> DockerConfiguration:
+    """Collects the Docker config of a step.
+
+    Args:
+        pipeline_node: Pipeline node info for a step.
+
+    Returns:
+        The Docker configuration for that step.
+
+    Raises:
+        RuntimeError: If no Docker configuration was found.
+    """
+
+    for context in pipeline_node.contexts.contexts:
+        if context.type.name == ZENML_MLMD_CONTEXT_TYPE:
+            config_json = context.properties[
+                MLMD_CONTEXT_DOCKER_CONFIGURATION_PROPERTY_NAME
+            ].field_value.string_value
+
+            return DockerConfiguration.parse_raw(config_json)
+    else:
+        raise RuntimeError("Unable to find Docker configuration.")
