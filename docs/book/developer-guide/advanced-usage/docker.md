@@ -90,6 +90,7 @@ additional packages that should be installed:
 * Install all the packages in your local python environment (This will use the `pip` or `poetry`
 package manager to get a list of your local packages):
     ```python
+    # or use "poetry_export"
     docker_config = DockerConfiguration(replicate_local_python_environment="pip_freeze")
 
     @pipeline(docker_configuration=docker_config)
