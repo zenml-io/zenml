@@ -413,11 +413,10 @@ image](https://repobeats.axiom.co/api/embed/635c57b743efe649cadceba6a2e6a956663f
 ![Meet the Team](./docs/book/assets/meet_the_team.jpeg)
 
 Have a question that's too hard to express on our Slack? Is it just too much effort to say everything on a 
-long GitHub issue? Or are you just curious about what ZenML has been up to in the past week? Well, register now for the ZenML Office 
-(Half) Hour to get your answers and more!
+long GitHub issue? Or are you just curious about what ZenML has been up to in the past week? Well, register now for the ZenML Office (Half) Hour to get your answers and more!
 It's free and open to everyone.
 
-Every week, part of the ZenML core team will pop in for 30 minutes to interact directly with the community. Sometimes we'll be presenting a feature, other times just taking questions, and having fun. Join us if you are curious about ZenML, or just want to talk shop about MLOps.
+Every week, part of the ZenML [core team](https://zenml.io/company#CompanyTeam) will pop in for 30 minutes to interact directly with the community. Sometimes we'll be presenting a feature, other times just taking questions, and having fun. Join us if you are curious about ZenML, or just want to talk shop about MLOps.
 
 
 
@@ -429,7 +428,7 @@ before every community gathering.
 # 🆘 Where to get help
 
 The first point of call should be [our Slack group](https://zenml.io/slack-invite/).
-Ask your questions about bugs or specific use cases and someone from the core team will respond.
+Ask your questions about bugs or specific use cases and someone from the [core team](https://zenml.io/company#CompanyTeam) will respond.
 Or if you prefer, [open an issue](https://github.com/zenml-io/zenml/issues/new/choose) on our GitHub repo.
 
 
