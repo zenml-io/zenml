@@ -137,7 +137,7 @@ At ZenML, we believe the journey from model development to production doesn't ne
 With ZenML, as a data scientist you can concentrate on what you do best - developing ML models, and not worry about infrastructure or deployment tools.
 
 If you come from unstructured notebooks or scripts with lots of manual processes, ZenML will make the path to production easier and faster for you and your team.
-Using ZenML allows data scientists like you to own the entire pipeline - from experimentation to production.
+Using ZenML allows you to own the entire pipeline - from experimentation to production.
 
 This is why we built ZenML. Read more [here](https://blog.zenml.io/why-zenml/).
 
