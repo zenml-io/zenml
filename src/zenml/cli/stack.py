@@ -1142,27 +1142,17 @@ def _import_stack_component(
 @click.argument("stack_name", type=str, required=True)
 @click.argument("filename", type=str, required=False)
 @click.option(
-    "--yes",
-    "-y",
-    "force",
+    "--ignore-version-mismatch",
     is_flag=True,
-    help="Force the import of stack components irrespective of ZenML version matching.",
-)
-@click.option(
-    "--force",
-    "-f",
-    "old_force",
-    is_flag=True,
-    help="DEPRECATED: Force the import of stack components irrespective of ZenML version matching"
-    "Use `-y/--yes` instead.",
+    help="Import stack components even if the installed version of ZenML "
+    "is different from the one specified in the stack YAML file"
 )
 @click.pass_context
 def import_stack(
     ctx: click.Context,
     stack_name: str,
     filename: Optional[str],
-    force: bool,
-    old_force: bool,
+    ignore_version_mismatch: bool,
 ) -> None:
     """Import a stack from YAML.
 
@@ -1176,13 +1166,6 @@ def import_stack(
             irrespective of ZenML version matching. Use `-y/--yes` instead.
     """
     track_event(AnalyticsEvent.IMPORT_STACK)
-
-    if old_force:
-        force = old_force
-        cli_utils.warning(
-            "The `--force` flag will soon be deprecated. Use `--yes` "
-            "or `-y` instead."
-        )
 
     # handle 'zenml stack import file.yaml' calls
     if stack_name.endswith(".yaml") and filename is None:
@@ -1201,7 +1184,7 @@ def import_stack(
 
     # assert zenml version is the same if force is false
     if data["zenml_version"] != zenml.__version__:
-        if force:
+        if ignore_version_mismatch:
             cli_utils.warning(
                 f"The stack that will be installed is using ZenML version "
                 f"{data['zenml_version']}. You have version "
