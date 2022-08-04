@@ -87,10 +87,12 @@ class LocalStackRecipe:
             Path of the stack config YAML file created as part of recipe deployment.
         """
         stack_info_file = open(self.path / STACK_INFO_FILE, "r")
-        file_name = stack_info_file.read()
+        file_name = stack_info_file.read().replace("\"", "")
+        file_name = file_name[2:]
         stack_info_file.close()
-
-        return self.path / file_name
+        
+        return os.path.join(self.path, file_name.replace("\n", ""))
+        
 
     def is_present(self) -> bool:
         """Checks if the stack_recipe exists at the given path.
