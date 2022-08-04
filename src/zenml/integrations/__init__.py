@@ -23,6 +23,7 @@ from zenml.integrations.aws import AWSIntegration  # noqa
 from zenml.integrations.azure import AzureIntegration  # noqa
 from zenml.integrations.dash import DashIntegration  # noqa
 from zenml.integrations.deepchecks import DeepchecksIntegration  # noqa
+from zenml.integrations.dvc import DVCIntegration  # noqa
 from zenml.integrations.evidently import EvidentlyIntegration  # noqa
 from zenml.integrations.facets import FacetsIntegration  # noqa
 from zenml.integrations.feast import FeastIntegration  # noqa
