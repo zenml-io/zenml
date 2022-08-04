@@ -353,6 +353,7 @@ Paperspace
 Parametrizes
 PathType
 PermissionError
+PillowImageMaterializer
 PipelineConfigurationError
 PipelineInterfaceError
 PipelineNode
