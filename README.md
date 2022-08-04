@@ -339,7 +339,7 @@ before every community gathering.
 
 The first point of call should be [our Slack group](https://zenml.io/slack-invite/).
 Ask your questions about bugs or specific use cases, and someone from the [core team](https://zenml.io/company#CompanyTeam) will respond.
-Or if you prefer, [open an issue](https://github.com/zenml-io/zenml/issues/new/choose) on our GitHub repo.
+Or, if you prefer, [open an issue](https://github.com/zenml-io/zenml/issues/new/choose) on our GitHub repo.
 
 
 # 📜 License
