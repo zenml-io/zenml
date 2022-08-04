@@ -27,7 +27,7 @@ from rich.text import Text
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup
-from zenml.cli.stack import stack
+from zenml.cli.stack import  import_stack, stack
 from zenml.console import console
 from zenml.exceptions import GitNotFoundError
 from zenml.io import fileio
@@ -45,6 +45,7 @@ RECIPE_DESTROY_SCRIPT = "destroy_recipe.sh"
 RECIPE_DEPLOY_IDENTIFIER = "deploy"
 RECIPE_DESTROY_INDENTIFIER = "destroy"
 SHELL_EXECUTABLE = "SHELL_EXECUTABLE"
+STACK_INFO_FILE = "stack_info.txt"
 
 
 class LocalStackRecipe:
@@ -78,6 +79,20 @@ class LocalStackRecipe:
             Path to the bash script that destroys the recipe.
         """
         return os.path.join(self.path, RECIPE_DESTROY_SCRIPT)
+
+    # define the property here
+    @property
+    def stack_yaml_file(self) -> str:
+        """Path of the stack config YAML file created as part of recipe deployment.
+        
+        Returns:
+            Path of the stack config YAML file created as part of recipe deployment.
+        """
+        stack_info_file = open(self.path / STACK_INFO_FILE, "r")
+        file_name = stack_info_file.read()
+        stack_info_file.close()
+
+        return self.path / file_name
 
     def is_present(self) -> bool:
         """Checks if the stack_recipe exists at the given path.
@@ -670,6 +685,15 @@ def pull(
     "Can be helpful for compatibility with Windows or minimal linux "
     "distros without bash.",
 )
+@click.option(
+    "--stack-name",
+    "-n",
+    type=click.STRING,
+    required=False,
+    help="Set a name for the ZenML stack that will be imported from the YAML"
+    "configuration file which gets generated after deploying the stack recipe."
+    "Defaults to the name of the stack recipe being deployed."
+)
 @pass_git_stack_recipes_handler
 @click.pass_context
 def deploy(
@@ -679,6 +703,7 @@ def deploy(
     path: str,
     force: bool,
     shell_executable: Optional[str],
+    stack_name: Optional[str],
 ) -> None:
     """Run the stack_recipe at the specified relative path.
 
