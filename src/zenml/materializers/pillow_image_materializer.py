@@ -26,20 +26,24 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import io_utils
 
 logger = get_logger(__name__)
-DEFAULT_IMAGE_FILENAME = "image_file.png"
+
+DEFAULT_IMAGE_FILENAME = "image_file"
 
 
 class PillowImageMaterializer(BaseMaterializer):
-    """Materializer for PIL.Image objects.
+    """Materializer for PIL.Image.Image objects.
 
-    This materializer takes a dictionary of files and returns a dictionary of
-    PIL image objects.
+    This materializer takes a PIL image object and returns a PIL image object.
+    It handles all the source image formats supported by PIL as listed here:
+    https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html.
     """
 
     ASSOCIATED_TYPES = (PIL.Image.Image,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
-    def handle_input(self, data_type: Type[PIL.Image.Image]) -> PIL.Image.Image:
+    def handle_input(
+        self, data_type: Type[PIL.Image.Image]
+    ) -> PIL.Image.Image:
         """Read from artifact store.
 
         Args:
@@ -49,11 +53,17 @@ class PillowImageMaterializer(BaseMaterializer):
             A PIL.Image.Image object.
         """
         super().handle_input(data_type)
-        filepath = os.path.join(self.artifact.uri, DEFAULT_IMAGE_FILENAME)
+        files = io_utils.find_files(
+            self.artifact.uri, f"{DEFAULT_IMAGE_FILENAME}.*"
+        )
+        filepath = [file for file in files if not fileio.isdir(file)][0]
 
         # create a temporary folder
         temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
-        temp_file = os.path.join(str(temp_dir), DEFAULT_IMAGE_FILENAME)
+        temp_file = os.path.join(
+            str(temp_dir),
+            f"{DEFAULT_IMAGE_FILENAME}{os.path.splitext(filepath)[1]}",
+        )
 
         # copy from artifact store to temporary file
         fileio.copy(filepath, temp_file)
@@ -71,10 +81,10 @@ class PillowImageMaterializer(BaseMaterializer):
         """
         super().handle_return(image)
         temp_dir = tempfile.TemporaryDirectory()
-        temp_image_path = os.path.join(temp_dir.name, DEFAULT_IMAGE_FILENAME)
-        artifact_store_path = os.path.join(
-            self.artifact.uri, DEFAULT_IMAGE_FILENAME
-        )
+        file_extension = image.format.lower()
+        full_filename = f"{DEFAULT_IMAGE_FILENAME}.{file_extension}"
+        temp_image_path = os.path.join(temp_dir.name, full_filename)
+        artifact_store_path = os.path.join(self.artifact.uri, full_filename)
 
         # save the image in a temporary directory
         image.save(temp_image_path)
