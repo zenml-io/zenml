@@ -3,7 +3,7 @@ name: Check Markdown links
 on: 
   push:
     branches:
-    - develop
+    - master
 
 jobs:
   markdown-link-check:
