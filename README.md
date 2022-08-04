@@ -228,7 +228,7 @@ Already comfortable with ZenML and wish to elevate your pipeline into production
 ZenML is built to support teams working together. 
 The underlying infrastructure on which your ML workflows run can be shared, as can the data, assets, and artifacts in your workflow. 
 
-You can quickly share your stack with anyone with ZenML by exporting them with:
+In ZenML, a Stack represents a set of configurations for your MLOps tools and infrastructure. You can quickly share your ZenML stack with anyone by exporting the stack:
 
 ```
 zenml stack export <STACK_NAME> <FILENAME.yaml>
