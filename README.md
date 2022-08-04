@@ -153,7 +153,7 @@ This is why we built ZenML. Read more [here](https://blog.zenml.io/why-zenml/).
 
 ZenML is an extensible, open-source MLOps framework for creating portable, production-ready MLOps pipelines. It's built for Data Scientists, ML Engineers, and MLOps Developers to collaborate as they develop to production. 
 
-ZenML offers simple, flexible syntax, is cloud- and tool-agnostic, and has interfaces/abstractions that are catered toward ML workflows. 
+ZenML offers a simple and flexible syntax, is cloud- and tool-agnostic, and has interfaces/abstractions that are catered toward ML workflows. 
 With ZenML you'll have all your favorite tools in one place so you can tailor a workflow that caters to your specific needs.
 
 ![ZenML unifies all your tools in one place.](docs/book/assets/sam-side-by-side-full-text.png)
