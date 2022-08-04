@@ -103,7 +103,7 @@
         <li><a href="#-quickstart">Quickstart</a></li>
       </ul>
     </li>
-    <li><a href="#-first-run">Get a guided tour with zenml go</a></li>
+    <li><a href="#-first-run">First run</a></li>
     <li><a href="#-zenbytes">ZenBytes</a></li>
     <li><a href="#-zenfiles">ZenFiles</a></li>
     <li><a href="#-collaborate-with-your-team">Collaborate with your team</a></li>
