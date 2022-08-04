@@ -348,8 +348,8 @@ class GitStackRecipesHandler(object):
             if (
                 not name.startswith(".")
                 and not name.startswith("__")
-                and not name.startswith("README")
                 and not name == "LICENSE"
+                and not name.endswith(".md")
                 and not name.endswith(".sh")
             )
         ]
