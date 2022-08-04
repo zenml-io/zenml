@@ -79,7 +79,8 @@ class PillowImageMaterializer(BaseMaterializer):
         """
         super().handle_return(image)
         temp_dir = tempfile.TemporaryDirectory()
-        file_extension = image.format.lower()
+        file_extension = image.format
+
         full_filename = f"{DEFAULT_IMAGE_FILENAME}.{file_extension}"
         temp_image_path = os.path.join(temp_dir.name, full_filename)
         artifact_store_path = os.path.join(self.artifact.uri, full_filename)
@@ -88,5 +89,5 @@ class PillowImageMaterializer(BaseMaterializer):
         image.save(temp_image_path)
 
         # copy the saved image to the artifact store
-        io_utils.copy(temp_image_path, artifact_store_path, overwrite=True)
+        io_utils.copy(temp_image_path, artifact_store_path, overwrite=True)  # type: ignore[attr-defined]
         fileio.remove(temp_image_path)
