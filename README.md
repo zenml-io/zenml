@@ -126,7 +126,7 @@
 
 👀 Have you had trouble replicating production pipelines and monitoring models in production?
 
-✅ If you answered yes to any, ZenML is here to help with all that, and more.
+✅ If you answered yes to any of the above, ZenML is here to help with all that, and more...
 
 Everyone loves to train ML models, but few talks about shipping them into production, and even fewer can do it well.
 At ZenML, we believe the journey from model development to production doesn't need to be long and painful.
