@@ -742,31 +742,30 @@ def deploy(
             local_stack_recipe.run_stack_recipe(
                 stack_recipe_runner=stack_recipe_runner,
             )
+            logger.info(
+                "A stack configuration YAML file has been generated as "
+                f"part of the deployment of the {stack_recipe_name} recipe. "
+                f"Find it at {local_stack_recipe.stack_yaml_file}."
+            )
+
+            import_stack_name = stack_name if stack_name else stack_recipe_name
+            logger.info(
+                f"Importing a new stack with the name {import_stack_name}."
+            )
+
+            # import deployed resources as ZenML stack
+            ctx.invoke(
+                import_stack, 
+                stack_name = stack_name,
+                filename = local_stack_recipe.stack_yaml_file,
+                ignore_version_mismatch = True,
+            )
+
         except NotImplementedError as e:
             cli_utils.error(
                 f"No run_recipe.sh script found for the recipe "
                 f"{stack_recipe_name}.{str(e)}"
             )
-
-        logger.info(
-            "A stack configuration YAML file has been generated as "
-            f"part of the deployment of the {stack_recipe_name} recipe."
-            f"Find it at {local_stack_recipe.stack_yaml_file}."
-        )
-
-        import_stack_name = stack_name if stack_name else stack_recipe_name
-        logger.info(
-            f"Importing a new stack with the name {import_stack_name}."
-        )
-
-        # import deployed resources as ZenML stack
-        import_stack(
-            ctx = ctx,
-            stack_name = import_stack_name,
-            filename = local_stack_recipe.stack_yaml_file,
-            ignore_version_mismatch = True,
-        )
-
 
 @stack_recipe.command(
     help="Destroy the stack components created previously with "
