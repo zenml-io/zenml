@@ -321,9 +321,7 @@ and notebooks.
 ZenFiles are production-grade ML use-cases powered by ZenML. They are fully
 fleshed out, end-to-end, projects that showcase ZenML's capabilities. They can
 also serve as a template from which to start similar projects.
-
-The ZenFiles project is fully maintained and can be viewed as a sister
-repository of ZenML. Check it out [here](https://github.com/zenml-io/zenfiles).
+Check out ZenFiles [here](https://github.com/zenml-io/zenfiles)!
 
 # 👭 Collaborate with your team
 
