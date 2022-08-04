@@ -125,16 +125,14 @@ class LocalStackRecipe:
                 )
             except RuntimeError:
                 raise NotImplementedError(
-                    f"Currently the recipe {self.name} "
-                    "has no implementation for the "
-                    "called method"
+                    f"Please raise an issue at "
+                    "https://github.com/zenml-io/mlops-stacks"
                 )
             except subprocess.CalledProcessError as e:
                 if e.returncode == 38:
                     raise NotImplementedError(
-                        f"Currently the recipe {self.name} "
-                        "has no implementation for the "
-                        "called method"
+                        f"Please raise an issue at "
+                        "https://github.com/zenml-io/mlops-stacks"
                     )
                 raise
         else:
@@ -745,7 +743,10 @@ def deploy(
                 stack_recipe_runner=stack_recipe_runner,
             )
         except NotImplementedError as e:
-            cli_utils.error(str(e))
+            cli_utils.error(
+                f"No run_recipe.sh script found for the recipe "
+                f"{stack_recipe_name}.{str(e)}"
+            )
 
         logger.info(
             "A stack configuration YAML file has been generated as "
@@ -840,4 +841,7 @@ def destroy(
                 stack_recipe_runner=stack_recipe_runner,
             )
         except NotImplementedError as e:
-            cli_utils.error(str(e))
+            cli_utils.error(
+                f"No destroy_recipe.sh script found for the recipe "
+                f"{stack_recipe_name}.{str(e)}"
+            )
