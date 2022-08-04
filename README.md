@@ -429,8 +429,9 @@ before every community gathering.
 # 🆘 Where to get help
 
 The first point of call should be [our Slack group](https://zenml.io/slack-invite/).
-Ask your questions about bugs or specific use cases and someone from the core
-team will respond.
+Ask your questions about bugs or specific use cases and someone from the core team will respond.
+Or if you prefer, [open an issue](https://github.com/zenml-io/zenml/issues/new/choose) on our GitHub repo.
+
 
 # 📜 License
 
