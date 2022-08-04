@@ -747,6 +747,25 @@ def deploy(
         except NotImplementedError as e:
             cli_utils.error(str(e))
 
+        logger.info(
+            "A stack configuration YAML file has been generated as "
+            f"part of the deployment of the {stack_recipe_name} recipe."
+            f"Find it at {local_stack_recipe.stack_yaml_file}."
+        )
+
+        import_stack_name = stack_name if stack_name else stack_recipe_name
+        logger.info(
+            f"Importing a new stack with the name {import_stack_name}."
+        )
+
+        # import deployed resources as ZenML stack
+        import_stack(
+            ctx = ctx,
+            stack_name = import_stack_name,
+            filename = local_stack_recipe.stack_yaml_file,
+            ignore_version_mismatch = True,
+        )
+
 
 @stack_recipe.command(
     help="Destroy the stack components created previously with "
