@@ -345,7 +345,6 @@ Read more about collaboration in ZenML [here](https://docs.zenml.io/collaborate/
 | ------------- | - |
 | 🧘‍♀️ **[ZenML 101]** | New to ZenML? Here's everything you need to know! |
 | ⚛️ **[Core Concepts]** | Some key terms and concepts we use. |
-| 🗃 **[API Guide]** | Build production ML pipelines using class-based or functional API. |
 | 🚀 **[Our latest release]** | New features, bug fixes. |
 | 🗳 **[Vote for Features]** | Pick what we work on next! |
 | 📓 **[Docs]** | Full documentation for creating your own ZenML pipelines. |
