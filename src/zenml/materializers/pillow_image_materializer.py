@@ -41,9 +41,7 @@ class PillowImageMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (PIL.Image.Image,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
-    def handle_input(
-        self, data_type: Type[PIL.Image.Image]
-    ) -> PIL.Image.Image:
+    def handle_input(self, data_type: Type[PIL.Image.Image]) -> PIL.Image.Image:
         """Read from artifact store.
 
         Args:
