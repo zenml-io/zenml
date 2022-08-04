@@ -103,7 +103,7 @@
         <li><a href="#-quickstart">Quickstart</a></li>
       </ul>
     </li>
-    <li><a href="#-get-a-guided-tour-with-zenml-go">Get a guided tour with zenml go</a></li>
+    <li><a href="#-first-run">Get a guided tour with zenml go</a></li>
     <li><a href="#-zenbytes">ZenBytes</a></li>
     <li><a href="#-zenfiles">ZenFiles</a></li>
     <li><a href="#-collaborate-with-your-team">Collaborate with your team</a></li>
@@ -218,13 +218,13 @@ By the end, you'll get a glimpse on how to use ZenML to:
 ## 🍰 ZenBytes
 New to MLOps? Get up to speed by visiting the [ZenBytes](https://github.com/zenml-io/zenbytes) repo.
 
-ZenBytes are a series of short practical MLOps lessons taught using ZenML. 
-It covers many of the [core concepts](https://docs.zenml.io/getting-started/core-concepts) widely used in ZenML and MLOps in general.
+>ZenBytes are a series of short practical MLOps lessons taught using ZenML. 
+>It covers many of the [core concepts](https://docs.zenml.io/getting-started/core-concepts) widely used in ZenML and MLOps in general.
 
 ## 📜 ZenFiles
 Already comfortable with ZenML and wish to elevate your pipeline into production mode? Check out [ZenFiles](https://github.com/zenml-io/zenfiles).
 
-ZenFiles are a collection of production-grade ML use-cases powered by ZenML. They are fully fleshed out, end-to-end projects that showcase ZenML's capabilities. They can also serve as a template from which to start similar projects.
+>ZenFiles are a collection of production-grade ML use-cases powered by ZenML. They are fully fleshed out, end-to-end projects that showcase ZenML's capabilities. They can also serve as a template from which to start similar projects.
 
 # 👭 Collaborate with your team
 
