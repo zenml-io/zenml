@@ -162,31 +162,29 @@ Read more on all tools you can readily use in the [integrations](https://zenml.i
 # 🤸 Getting Started
 
 ## 💾 Installation
-
-Install ZenML via [PyPI](https://pypi.org/project/zenml/):
+**Option 1** - Install ZenML via [PyPI](https://pypi.org/project/zenml/):
 
 ```bash
 pip install zenml
 ```
-> **Note** - ZenML supports Python 3.7, 3.8, and 3.9.
+> 🗒 **Note** - ZenML supports Python 3.7, 3.8, and 3.9.
 
-Alternatively, if you’re feeling adventurous, try out the bleeding-edge installation:
+**Option 2** - If you’re feeling adventurous, try out the bleeding-edge installation:
 
 ```bash
 pip install git+https://github.com/zenml-io/zenml.git@develop --upgrade
 ```
 
-> **Warning** - Proceed at your own risk, no guarantees are given!
+> ⚠ **Warning** - Fire dragons ahead. Proceed at your own risk!
 
-ZenML is also available as a Docker image hosted publicly on
-[DockerHub](https://hub.docker.com/r/zenmldocker/zenml). Use the following
-command to get started in a bash environment:
+**Option 3** - Install via a Docker image hosted publicly on
+[DockerHub](https://hub.docker.com/r/zenmldocker/zenml):
 
 ```shell
 docker run -it zenmldocker/zenml /bin/bash
 ```
 
-> **Warning** 
+> ⚠ **Warning** 
 > #### Known installation issues for M1 Mac users
 >
 > If you have an M1 Mac machine and encounter an installation error, 
