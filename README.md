@@ -111,7 +111,7 @@
     <li><a href="#-roadmap">Roadmap</a></li>
     <li><a href="#-contributing-and-community">Contributing and Community</a></li>
     <li><a href="#-meet-the-team">Meet the Team</a></li>
-    <li><a href="#-where-to-get-help">Where to get help</a></li>
+    <li><a href="#-getting-help">Getting Help</a></li>
     <li><a href="#-license">License</a></li>
   </ol>
 </details>
