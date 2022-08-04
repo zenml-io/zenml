@@ -126,7 +126,7 @@ def deprecate_pydantic_attributes(
                     "annotation."
                 )
 
-            if deprecated_attribute not in values:
+            if values.get(deprecated_attribute, None) is None:
                 continue
 
             if replacement_attribute is None:
@@ -144,7 +144,7 @@ def deprecate_pydantic_attributes(
                 attribute=deprecated_attribute,
             )
 
-            if replacement_attribute not in values:
+            if values.get(replacement_attribute, None) is None:
                 logger.debug(
                     "Migrating value of deprecated attribute %s to "
                     "replacement attribute %s.",
