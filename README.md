@@ -167,7 +167,7 @@ Read more on all tools you can readily use in the [integrations](https://zenml.i
 ```bash
 pip install zenml
 ```
-> 🗒 **Note** - ZenML supports Python 3.7, 3.8, and 3.9.
+> **Note** - ZenML supports Python 3.7, 3.8, and 3.9.
 
 **Option 2** - If you’re feeling adventurous, try out the bleeding-edge installation:
 
@@ -175,7 +175,7 @@ pip install zenml
 pip install git+https://github.com/zenml-io/zenml.git@develop --upgrade
 ```
 
-> ⚠ **Warning** - Fire dragons ahead. Proceed at your own risk!
+> **Warning** - Fire dragons ahead. Proceed at your own risk!
 
 **Option 3** - Install via a Docker image hosted publicly on
 [DockerHub](https://hub.docker.com/r/zenmldocker/zenml):
@@ -184,7 +184,7 @@ pip install git+https://github.com/zenml-io/zenml.git@develop --upgrade
 docker run -it zenmldocker/zenml /bin/bash
 ```
 
-> ⚠ **Warning** 
+> **Warning** 
 > #### Known installation issues for M1 Mac users
 >
 > If you have an M1 Mac machine and encounter an installation error, 
