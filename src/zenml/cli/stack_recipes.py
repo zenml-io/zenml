@@ -42,8 +42,6 @@ STACK_RECIPES_GITHUB_REPO = "https://github.com/zenml-io/mlops-stacks.git"
 STACK_RECIPES_REPO_DIR = "zenml_stack_recipes"
 RECIPE_RUN_SCRIPT = "run_recipe.sh"
 RECIPE_DESTROY_SCRIPT = "destroy_recipe.sh"
-RECIPE_DEPLOY_IDENTIFIER = "deploy"
-RECIPE_DESTROY_INDENTIFIER = "destroy"
 SHELL_EXECUTABLE = "SHELL_EXECUTABLE"
 
 
@@ -88,14 +86,13 @@ class LocalStackRecipe:
         return fileio.isdir(str(self.path))
 
     def run_stack_recipe(
-        self, stack_recipe_runner: List[str], identifier: str
+        self, stack_recipe_runner: List[str]
     ) -> None:
         """Run the local stack recipe using the bash script at the supplied location.
 
         Args:
             stack_recipe_runner: Sequence of locations of executable file(s)
                             to run the stack_recipe
-            identifier: String to identify if deploy or destroy is being run
 
         Raises:
             NotImplementedError: If the stack_recipe hasn't been implement yet.
@@ -115,32 +112,20 @@ class LocalStackRecipe:
                 raise NotImplementedError(
                     f"Currently the recipe {self.name} "
                     "has no implementation for the "
-                    f"{identifier} method"
+                    "called method"
                 )
             except subprocess.CalledProcessError as e:
                 if e.returncode == 38:
                     raise NotImplementedError(
                         f"Currently the recipe {self.name} "
                         "has no implementation for the "
-                        f"{identifier} method"
+                        "called method"
                     )
                 raise
         else:
             raise FileNotFoundError(
                 "Bash File(s) to run recipes not found at"
                 f"{stack_recipe_runner}"
-            )
-
-        # Telemetry
-        if identifier == "deploy":
-            track_event(
-                AnalyticsEvent.RUN_STACK_RECIPE,
-                {"stack_recipe_name": self.name},
-            )
-        else:
-            track_event(
-                AnalyticsEvent.DESTROY_STACK_RECIPE,
-                {"stack_recipe_name": self.name},
             )
 
 
@@ -726,9 +711,13 @@ def deploy(
             [] if shell_executable is None else [shell_executable]
         ) + [local_stack_recipe.recipes_deploy_bash_script]
         try:
+            # Telemetry
+            track_event(
+                AnalyticsEvent.RUN_STACK_RECIPE,
+                {"stack_recipe_name": stack_recipe_name},
+            )
             local_stack_recipe.run_stack_recipe(
                 stack_recipe_runner=stack_recipe_runner,
-                identifier=RECIPE_DEPLOY_IDENTIFIER,
             )
         except NotImplementedError as e:
             cli_utils.error(str(e))
@@ -798,9 +787,13 @@ def destroy(
 
         stack_recipe_runner = [local_stack_recipe.recipes_destroy_bash_script]
         try:
+            # Telemetry
+            track_event(
+                AnalyticsEvent.DESTROY_STACK_RECIPE,
+                {"stack_recipe_name": stack_recipe_name},
+            )
             local_stack_recipe.run_stack_recipe(
                 stack_recipe_runner=stack_recipe_runner,
-                identifier=RECIPE_DESTROY_INDENTIFIER,
             )
         except NotImplementedError as e:
             cli_utils.error(str(e))
