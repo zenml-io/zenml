@@ -332,7 +332,7 @@ manage and switch between your stacks. The ZenML Server handles all the
 interaction and sharing and you can host it wherever you'd like.
 
 ```
-# Make sure to install ZenML with all necessary requirements for the ZenServer
+# Make sure to install ZenML with all requirements for the ZenServer
 pip install zenml[server]
 zenml server up
 ```
@@ -414,7 +414,7 @@ image](https://repobeats.axiom.co/api/embed/635c57b743efe649cadceba6a2e6a956663f
 ![Meet the Team](./docs/book/assets/meet_the_team.jpeg)
 
 Have a question that's too hard to express on our Slack? Is it just too much effort to say everything on a 
-long GitHub issue? Or are you just curious what ZenML has been up to in the past week? Well, register now for the ZenML Office 
+long GitHub issue? Or are you just curious about what ZenML has been up to in the past week? Well, register now for the ZenML Office 
 (Half) Hour to get your answers and more!
 It's free and open to everyone.
 
@@ -429,7 +429,7 @@ before every community gathering.
 
 # 🆘 Where to get help
 
-First point of call should be [our Slack group](https://zenml.io/slack-invite/).
+The first point of call should be [our Slack group](https://zenml.io/slack-invite/).
 Ask your questions about bugs or specific use cases and someone from the core
 team will respond.
 
