@@ -326,7 +326,7 @@ Have a question that's too hard to express on our Slack? Is it just too much eff
 long GitHub issue? Or are you just curious about what ZenML has been up to in the past week? Well, register now for the ZenML Office (Half) Hour to get your answers and more!
 It's free and open to everyone.
 
-Every week, part of the ZenML [core team](https://zenml.io/company#CompanyTeam) will pop in for 30 minutes to interact directly with the community. Sometimes we'll be presenting a feature. Other times just take questions and have fun. Join us if you are curious about ZenML, or just want to talk shop about MLOps.
+Every week, part of the ZenML [core team](https://zenml.io/company#CompanyTeam) will pop in for 30 minutes to interact directly with the community. Sometimes we'll be presenting a feature. Other times we just take questions and have fun. Join us if you are curious about ZenML, or just want to talk shop about MLOps.
 
 
 
