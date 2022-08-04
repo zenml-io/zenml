@@ -106,7 +106,7 @@ class StepView:
 
         Examples:
             # the step entrypoint_name will be "my_step"
-            @step(name="my_step")
+            @step(step="my_step")
             def my_step_function(...)
 
             # the step entrypoint_name will be "my_step_function"

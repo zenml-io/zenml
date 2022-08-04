@@ -19,7 +19,7 @@ google_cloud_ai_platform/training_clients.py
 """
 
 import time
-from typing import ClassVar, List, Optional, Tuple
+from typing import TYPE_CHECKING, ClassVar, List, Optional, Tuple
 
 from google.cloud import aiplatform
 from pydantic import validator as property_validator
@@ -44,6 +44,8 @@ from zenml.step_operators import BaseStepOperator
 from zenml.utils import docker_utils
 from zenml.utils.source_utils import get_source_root_path
 
+if TYPE_CHECKING:
+    from zenml.steps import ResourceConfiguration
 logger = get_logger(__name__)
 
 
@@ -55,14 +57,14 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
 
     Attributes:
         region: Region name, e.g., `europe-west1`.
-        project: [Optional] GCP project name. If left None, inferred from the
+        project: GCP project name. If left None, inferred from the
             environment.
-        accelerator_type: [Optional] Accelerator type from list: https://cloud.google.com/vertex-ai/docs/reference/rest/v1/MachineSpec#AcceleratorType
-        accelerator_count: [Optional] Defines number of accelerators to be
+        accelerator_type: Accelerator type from list: https://cloud.google.com/vertex-ai/docs/reference/rest/v1/MachineSpec#AcceleratorType
+        accelerator_count: Defines number of accelerators to be
             used for the job.
-        machine_type: [Optional] Machine type specified here: https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
-        base_image: [Optional] Base image for building the custom job container.
-        encryption_spec_key_name: [Optional]: Encryption spec key name.
+        machine_type: Machine type specified here: https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
+        base_image: Base image for building the custom job container.
+        encryption_spec_key_name: Encryption spec key name.
     """
 
     region: str
@@ -166,6 +168,7 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
         run_name: str,
         requirements: List[str],
         entrypoint_command: List[str],
+        resource_configuration: "ResourceConfiguration",
     ) -> None:
         """Launches a step on Vertex AI.
 
@@ -177,11 +180,23 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
             entrypoint_command: Command that executes the step.
             requirements: List of pip requirements that must be installed
                 inside the step operator environment.
+            resource_configuration: The resource configuration for this step.
 
         Raises:
             RuntimeError: If the run fails.
             ConnectionError: If the run fails due to a connection error.
         """
+        if resource_configuration.cpu_count or resource_configuration.memory:
+            logger.warning(
+                "Specifying cpus or memory is not supported for "
+                "the Vertex step operator. If you want to run this step "
+                "operator on specific resources, you can do so by configuring "
+                "a different machine_type type like this: "
+                "`zenml step-operator update %s "
+                "--machine_type=<MACHINE_TYPE>`",
+                self.name,
+            )
+
         job_labels = {"source": f"zenml-{__version__.replace('.', '_')}"}
 
         # Step 1: Authenticate with Google
@@ -212,6 +227,9 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
         client = aiplatform.gapic.JobServiceClient(
             credentials=credentials, client_options=client_options
         )
+        accelerator_count = (
+            resource_configuration.gpu_count or self.accelerator_count
+        )
         custom_job = {
             "display_name": run_name,
             "job_spec": {
@@ -220,7 +238,7 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
                         "machine_spec": {
                             "machine_type": self.machine_type,
                             "accelerator_type": self.accelerator_type,
-                            "accelerator_count": self.accelerator_count
+                            "accelerator_count": accelerator_count
                             if self.accelerator_type
                             else 0,
                         },
