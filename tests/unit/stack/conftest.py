@@ -11,8 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from uuid import uuid4
-
 import pytest
 
 from zenml.artifact_stores import BaseArtifactStore
@@ -22,7 +20,6 @@ from zenml.orchestrators import BaseOrchestrator
 from zenml.stack import Stack, StackComponent, StackValidator
 
 MOCK_FLAVOR = "mock_flavor"
-MOCK_UUID = uuid4()
 
 
 @pytest.fixture
@@ -32,19 +29,16 @@ def stack_with_mock_components(mocker):
         spec=BaseOrchestrator,
         type=StackComponentType.ORCHESTRATOR,
         flavor=MOCK_FLAVOR,
-        uuid=MOCK_UUID,
     )
     metadata_store = mocker.Mock(
         spec=BaseMetadataStore,
         type=StackComponentType.METADATA_STORE,
         flavor=MOCK_FLAVOR,
-        uuid=MOCK_UUID,
     )
     artifact_store = mocker.Mock(
         spec=BaseArtifactStore,
         type=StackComponentType.ARTIFACT_STORE,
         flavor=MOCK_FLAVOR,
-        uuid=MOCK_UUID,
     )
 
     return Stack(

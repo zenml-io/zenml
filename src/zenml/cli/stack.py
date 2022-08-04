@@ -28,7 +28,7 @@ from zenml.cli.stack_components import (
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
-from zenml.exceptions import ProvisioningError, StackValidationError
+from zenml.exceptions import ProvisioningError
 from zenml.repository import Repository
 from zenml.stack import Stack
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
@@ -153,13 +153,6 @@ def stack() -> None:
     help="Immediately set this stack as active.",
     type=click.BOOL,
 )
-@click.option(
-    "--decouple_stores",
-    "decouple_stores",
-    is_flag=True,
-    help="Decouple the given artifact/metadata store from prior associations.",
-    type=click.BOOL,
-)
 def register_stack(
     stack_name: str,
     metadata_store_name: str,
@@ -175,7 +168,6 @@ def register_stack(
     annotator_name: Optional[str] = None,
     data_validator_name: Optional[str] = None,
     set_stack: bool = False,
-    decouple_stores: bool = False,
 ) -> None:
     """Register a stack.
 
@@ -194,8 +186,6 @@ def register_stack(
         annotator_name: Name of the annotator for this stack.
         data_validator_name: Name of the data validator for this stack.
         set_stack: Immediately set this stack as active.
-        decouple_stores: Resets the previous couplings of the given
-            artifact/metadata stores and creates a new one.
     """
     cli_utils.print_active_profile()
 
@@ -288,11 +278,7 @@ def register_stack(
         stack_ = Stack.from_components(
             name=stack_name, components=stack_components
         )
-        try:
-            repo.register_stack(stack_, decouple_stores=decouple_stores)
-        except StackValidationError as e:
-            cli_utils.error(e)  # type: ignore[arg-type]
-
+        repo.register_stack(stack_)
         cli_utils.declare(f"Stack '{stack_name}' successfully registered!")
 
     if set_stack:
@@ -401,13 +387,6 @@ def register_stack(
     type=str,
     required=False,
 )
-@click.option(
-    "--decouple_stores",
-    "decouple_stores",
-    is_flag=True,
-    help="Decouple the given artifact/metadata store from prior associations.",
-    type=click.BOOL,
-)
 def update_stack(
     stack_name: Optional[str],
     metadata_store_name: Optional[str] = None,
@@ -422,7 +401,6 @@ def update_stack(
     alerter_name: Optional[str] = None,
     annotator_name: Optional[str] = None,
     data_validator_name: Optional[str] = None,
-    decouple_stores: bool = False,
 ) -> None:
     """Update a stack.
 
@@ -434,8 +412,7 @@ def update_stack(
         container_registry_name: Name of the new container registry for this
             stack.
         step_operator_name: Name of the new step operator for this stack.
-        secrets_manager_name: Name of the new secrets manager for this
-            stack.
+        secrets_manager_name: Name of the new secrets manager for this stack.
         feature_store_name: Name of the new feature store for this stack.
         model_deployer_name: Name of the new model deployer for this stack.
         experiment_tracker_name: Name of the new experiment tracker for this
@@ -443,8 +420,6 @@ def update_stack(
         alerter_name: Name of the new alerter for this stack.
         annotator_name: Name of the new annotator for this stack.
         data_validator_name: Name of the new data validator for this stack.
-        decouple_stores: Resets the previous couplings of the given
-            artifact/metadata stores and creates a new one.
     """
     cli_utils.print_active_profile()
 
@@ -559,15 +534,7 @@ def update_stack(
         stack_ = Stack.from_components(
             name=stack_name, components=stack_components
         )
-        try:
-            repo.update_stack(
-                name=stack_name,
-                stack=stack_,
-                decouple_stores=decouple_stores,
-            )
-        except StackValidationError as e:
-            cli_utils.error(e)  # type: ignore[arg-type]
-
+        repo.update_stack(stack_name, stack_)
         cli_utils.declare(f"Stack `{stack_name}` successfully updated!")
 
 

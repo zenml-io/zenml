@@ -25,7 +25,6 @@ from zenml.zen_stores.models import (
     Project,
     Role,
     RoleAssignment,
-    StoreAssociation,
     Team,
     User,
 )
@@ -87,7 +86,6 @@ class ZenStoreModel(FileSyncModel):
         role_assignments: All role assignments.
         team_assignments: Maps team names to names of users that are part of
             the team.
-        store_associations: All artifact/metadata store associations
     """
 
     stacks: Dict[str, Dict[StackComponentType, str]] = Field(
@@ -105,7 +103,6 @@ class ZenStoreModel(FileSyncModel):
     team_assignments: DefaultDict[str, Set[str]] = Field(
         default=defaultdict(set)
     )
-    store_associations: List[StoreAssociation] = Field(default_factory=list)
 
     @validator("stack_components")
     def _construct_stack_components_defaultdict(

@@ -857,9 +857,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         """
         return self.zen_store.get_stack(name).to_stack()
 
-    def register_stack(
-        self, stack: Stack, decouple_stores: bool = False
-    ) -> None:
+    def register_stack(self, stack: Stack) -> None:
         """Registers a stack and its components.
 
         If any of the stack's components aren't registered in the repository
@@ -867,31 +865,22 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
         Args:
             stack: The stack to register.
-            decouple_stores: Flag to reset the previous associations between
-                an artifact store and a metadata store.
         """
         from zenml.zen_stores.models import StackWrapper
 
-        stack.validate(decouple_stores=decouple_stores)
+        stack.validate()
         self.zen_store.register_stack(StackWrapper.from_stack(stack))
 
-    def update_stack(
-        self,
-        name: str,
-        stack: Stack,
-        decouple_stores: bool = False,
-    ) -> None:
+    def update_stack(self, name: str, stack: Stack) -> None:
         """Updates a stack and its components.
 
         Args:
             name: The original name of the stack.
             stack: The new stack to use as the updated version.
-            decouple_stores: Flag to reset the previous associations between
-                an artifact store and a metadata store.
         """
         from zenml.zen_stores.models import StackWrapper
 
-        stack.validate(decouple_stores=decouple_stores)
+        stack.validate()
         self.zen_store.update_stack(name, StackWrapper.from_stack(stack))
         if self.active_stack_name == name:
             self.activate_stack(stack.name)
