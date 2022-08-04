@@ -125,15 +125,15 @@
 
 👀 Have you had trouble replicating production pipelines and monitoring models in production?
 
-✅ If you answered yes to any of the above, ZenML is here to help with all that, and more...
+✅ If you answered yes to any of the above, ZenML is here to help with all that and more...
 
-Everyone loves to train ML models, but few talk about shipping them into production, and even fewer can do it well.
+Everyone loves to train ML models, but few talks about shipping them into production, and even fewer can do it well.
 At ZenML, we believe the journey from model development to production doesn't need to be long and painful.
 
 ![The long journey from experimentation to production.](docs/book/assets/1-pipeline-hard-reproduce.png)
 
 
-With ZenML, as a data scientist you can concentrate on what you do best - developing ML models, and not worry about infrastructure or deployment tools.
+With ZenML, you can concentrate on what you do best - developing ML models and not worry about infrastructure or deployment tools.
 
 If you come from unstructured notebooks or scripts with lots of manual processes, ZenML will make the path to production easier and faster for you and your team.
 Using ZenML allows you to own the entire pipeline - from experimentation to production.
@@ -152,7 +152,7 @@ This is why we built ZenML. Read more [here](https://blog.zenml.io/why-zenml/).
 
 ZenML is an extensible, open-source MLOps framework for creating portable, production-ready MLOps pipelines. It's built for Data Scientists, ML Engineers, and MLOps Developers to collaborate as they develop to production. 
 
-ZenML offers a simple and flexible syntax, is cloud- and tool-agnostic, and has interfaces/abstractions that are catered toward ML workflows. 
+ZenML offers a simple and flexible syntax, is cloud- and tool-agnostic, and has interfaces/abstractions catered toward ML workflows. 
 With ZenML you'll have all your favorite tools in one place so you can tailor a workflow that caters to your specific needs.
 
 ![ZenML unifies all your tools in one place.](docs/book/assets/sam-side-by-side-full-text.png)
@@ -207,7 +207,7 @@ zenml go
 
 This spins up a Jupyter notebook that walks you through various functionalities of ZenML at a high level.
 
-By the end, you'll get a glimpse on how to use ZenML to:
+By the end, you'll get a glimpse of how to use ZenML to:
 
 + Train, evaluate, deploy, and embed a model in an inference pipeline.
 + Automatically track and version data, models, and other artifacts.
@@ -217,18 +217,18 @@ By the end, you'll get a glimpse on how to use ZenML to:
 ## 🍰 ZenBytes
 New to MLOps? Get up to speed by visiting the [ZenBytes](https://github.com/zenml-io/zenbytes) repo.
 
->ZenBytes are a series of short practical MLOps lessons taught using ZenML. 
+>ZenBytes is a series of short practical MLOps lessons taught using ZenML. 
 >It covers many of the [core concepts](https://docs.zenml.io/getting-started/core-concepts) widely used in ZenML and MLOps in general.
 
 ## 📜 ZenFiles
 Already comfortable with ZenML and wish to elevate your pipeline into production mode? Check out [ZenFiles](https://github.com/zenml-io/zenfiles).
 
->ZenFiles are a collection of production-grade ML use-cases powered by ZenML. They are fully fleshed out, end-to-end projects that showcase ZenML's capabilities. They can also serve as a template from which to start similar projects.
+>ZenFiles is a collection of production-grade ML use-cases powered by ZenML. They are fully fleshed out, end-to-end projects that showcase ZenML's capabilities. They can also serve as a template from which to start similar projects.
 
 # 👭 Collaborate with your team
 
 ZenML is built to support teams working together. 
-The underlying infrastructure on which your ML workflows run can be shared, as can the data, assets and artifacts that you need to enable your work. 
+The underlying infrastructure on which your ML workflows run can be shared, as can the data, assets, and artifacts in your workflow. 
 
 You can quickly share your stack with anyone with ZenML by exporting them with:
 
@@ -244,10 +244,10 @@ zenml stack import <STACK_NAME> <FILENAME.yaml>
 Learn more on importing/exporting stacks [here](https://docs.zenml.io/collaborate/stack-export-import).
 
 
-The [ZenML Profiles](https://docs.zenml.io/collaborate/zenml-store) offer an easy way to manage and switch between your stacks. All your stacks, components and other classes of ZenML objects can be stored in a central location and shared across multiple users, teams and automated systems such as CI/CD processes.
+The [ZenML Profiles](https://docs.zenml.io/collaborate/zenml-store) offer an easy way to manage and switch between your stacks. All your stacks, components, and other classes of ZenML objects can be stored in a central location and shared across multiple users, teams, and automated systems such as CI/CD processes.
 
 With the [ZenServer](https://docs.zenml.io/collaborate/zenml-server) 
-you can deploy ZenML as a centralized service and connect entire teams and organizations to an easy to manage collaboration platform that provides a unified view on the MLOps processes, tools and technologies that support your entire AI/ML project lifecycle.
+you can deploy ZenML as a centralized service and connect entire teams and organizations to an easy-to-manage collaboration platform that provides a unified view of the MLOps processes, tools, and technologies that support your entire AI/ML project lifecycle.
 
 Read more about using ZenML for collboration [here](https://docs.zenml.io/collaborate/collaborate-with-zenml).
 
@@ -328,7 +328,7 @@ Have a question that's too hard to express on our Slack? Is it just too much eff
 long GitHub issue? Or are you just curious about what ZenML has been up to in the past week? Well, register now for the ZenML Office (Half) Hour to get your answers and more!
 It's free and open to everyone.
 
-Every week, part of the ZenML [core team](https://zenml.io/company#CompanyTeam) will pop in for 30 minutes to interact directly with the community. Sometimes we'll be presenting a feature, other times just taking questions, and having fun. Join us if you are curious about ZenML, or just want to talk shop about MLOps.
+Every week, part of the ZenML [core team](https://zenml.io/company#CompanyTeam) will pop in for 30 minutes to interact directly with the community. Sometimes we'll be presenting a feature. Other times just take questions and have fun. Join us if you are curious about ZenML, or just want to talk shop about MLOps.
 
 
 
@@ -340,7 +340,7 @@ before every community gathering.
 # 🆘 Getting Help
 
 The first point of call should be [our Slack group](https://zenml.io/slack-invite/).
-Ask your questions about bugs or specific use cases and someone from the [core team](https://zenml.io/company#CompanyTeam) will respond.
+Ask your questions about bugs or specific use cases, and someone from the [core team](https://zenml.io/company#CompanyTeam) will respond.
 Or if you prefer, [open an issue](https://github.com/zenml-io/zenml/issues/new/choose) on our GitHub repo.
 
 
