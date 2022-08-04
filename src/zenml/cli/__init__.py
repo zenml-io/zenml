@@ -39,18 +39,18 @@ If you were instead looking to know more about a specific command, you
 can type something like this:
 
 ```bash
-   zenml metadata-store register --help
+   zenml artifact-store register --help
 ```
 
-This will give you information about how to register a metadata store.
+This will give you information about how to register an artifact store.
 (See below for more on that).
 
 If you want to instead understand what the concept behind a group is, you 
 can use the `explain` sub-command. For example, to see more details behind 
-what a `metadata-store` is, you can type:
+what a `artifact-store` is, you can type:
 
 ```bash
-zenml metadata-store explain
+zenml artifact-store explain
 ```
 
 This will give you an explanation of that concept in more detail.
@@ -191,31 +191,6 @@ Uninstalling a specific integration is as simple as typing:
 
 ```bash
 zenml integration uninstall INTEGRATION_NAME
-```
-
-Customizing your Metadata Store
--------------------------------
-
-The configuration of each pipeline, step, backend, and produced
-artifacts are all tracked within the metadata store. By default, ZenML
-initializes your repository with a metadata store kept on your local
-machine. If you wish to register a new metadata store, do so with the
-``register`` command:
-
-```bash
-zenml metadata-store register METADATA_STORE_NAME --flavor=METADATA_STORE_FLAVOR [--OPTIONS]
-```
-If you wish to list the metadata stores that have already been
-registered within your ZenML project / repository, type:
-
-```bash
-zenml metadata-store list
-```
-If you wish to delete a particular metadata store, pass the name of the
-metadata store into the CLI with the following command:
-
-```bash
-zenml metadata-store delete METADATA_STORE_NAME
 ```
 
 Customizing your Artifact Store
@@ -533,10 +508,10 @@ zenml served-models delete <UUID>
 Administering the Stack
 -----------------------
 
-The stack is a grouping of your artifact store, your metadata store and
-your orchestrator. With the ZenML tool, switching from a local stack to
-a distributed cloud environment can be accomplished with just a few CLI
-commands.
+The stack is a grouping of your artifact store, your orchestrator. and other
+optional MLOps tools like experiment trackers or model deployers.
+With the ZenML tool, switching from a local stack to a distributed cloud
+environment can be accomplished with just a few CLI commands.
 
 To register a new stack, you must already have registered the individual
 components of the stack using the commands listed above.
@@ -546,13 +521,12 @@ takes four arguments as in the following example:
 
 ```bash
 zenml stack register STACK_NAME \
-       -m METADATA_STORE_NAME \
        -a ARTIFACT_STORE_NAME \
        -o ORCHESTRATOR_NAME
 ```
 
 Each corresponding argument should be the name you passed in as an
-identifier for the artifact store, metadata store or orchestrator when
+identifier for the artifact store or orchestrator when
 you originally registered it. (If you want to use your secrets manager, you
 should pass its name in with the `-x` option flag.)
 
@@ -560,7 +534,7 @@ If you want to immediately set this newly created stack as your active stack,
 simply pass along the `--set` flag.
 
 ```bash
-zenml stack register STACK_NAME -m METADATA_STORE_NAME ... --set
+zenml stack register STACK_NAME ... --set
 ```
 
 To list the stacks that you have registered within your current ZenML
