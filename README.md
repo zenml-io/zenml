@@ -164,20 +164,20 @@ Read more on all tools you can readily use in the [integrations](https://zenml.i
 
 ## 💾 Installation
 
-> **Note** - ZenML supports Python 3.7, 3.8, and 3.9.
-
-ZenML is available for easy installation into your environment via [PyPI](https://pypi.org/project/zenml/):
+Install ZenML via [PyPI](https://pypi.org/project/zenml/):
 
 ```bash
 pip install zenml
 ```
+> **Note** - ZenML supports Python 3.7, 3.8, and 3.9.
 
 Alternatively, if you’re feeling adventurous, try out the bleeding-edge installation:
-> **Warning** - Proceed at your own risk, no guarantees are given!
+
 ```bash
 pip install git+https://github.com/zenml-io/zenml.git@develop --upgrade
 ```
 
+> **Warning** - Proceed at your own risk, no guarantees are given!
 
 ZenML is also available as a Docker image hosted publicly on
 [DockerHub](https://hub.docker.com/r/zenmldocker/zenml). Use the following
@@ -186,7 +186,6 @@ command to get started in a bash environment:
 ```shell
 docker run -it zenmldocker/zenml /bin/bash
 ```
-
 
 > **Warning** 
 > #### Known installation issues for M1 Mac users
@@ -198,146 +197,60 @@ docker run -it zenmldocker/zenml /bin/bash
 >- [Pyenv with Apple Silicon](http://sixty-north.com/blog/pyenv-apple-silicon.html)
 >- [Install Python Under Rosetta 2](https://medium.com/thinknum/how-to-install-python-under-rosetta-2-f98c0865e012)
 
-## 🚅 Quickstart
 
-Let's start by creating a simple `pipeline` that contains the following `steps`:
-1. Loads the [digits dataset](https://archive.ics.uci.edu/ml/datasets/Optical+Recognition+of+Handwritten+Digits).
-2. Trains a [scikit-learn](https://scikit-learn.org/stable/) classifier to classify the images from the dataset.
-3. Evaluates the classifier accuracy on a test set.
+## 🏇 First run
 
-### Step 1: Initialize a ZenML repo
-In your terminal run
-
-```bash
-zenml init
-```
-
-This creates a `.zen` folder in your current directory to store the necessary `zenml` configurations.
-
-### Step 2: Installing the scikit-learn integration
-We will be using a classifier model from [scikit-learn](https://scikit-learn.org/stable/), so let's install the `sklearn` integration.
-
-```bash
-zenml integration install sklearn -y
-```
-
-### Step 3: Defining steps and running the pipeline.
-In ZenML, steps and pipelines are defined using Python decorators.
-Put a `@step` or `@pipeline` decorator above a function to define a `step` or `pipeline`.
-
-```python
-import numpy as np
-from sklearn.base import ClassifierMixin
-
-from zenml.integrations.sklearn.helpers.digits import get_digits, get_digits_model
-from zenml.pipelines import pipeline
-from zenml.steps import step, Output
-
-
-# Steps definition
-@step
-def importer() -> Output(
-    X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
-):
-    """Loads the digits array as normal numpy arrays."""
-    X_train, X_test, y_train, y_test = get_digits()
-    return X_train, X_test, y_train, y_test
-
-
-@step
-def trainer(
-    X_train: np.ndarray,
-    y_train: np.ndarray,
-) -> ClassifierMixin:
-    """Train a simple sklearn classifier for the digits dataset."""
-    model = get_digits_model()
-    model.fit(X_train, y_train)
-    return model
-
-
-@step
-def evaluator(
-    X_test: np.ndarray,
-    y_test: np.ndarray,
-    model: ClassifierMixin,
-) -> float:
-    """Calculate the accuracy on the test set"""
-    test_acc = model.score(X_test, y_test)
-    print(f"Test accuracy: {test_acc}")
-    return test_acc
-
-
-# Pipeline definition
-@pipeline
-def mnist_pipeline(
-    importer,
-    trainer,
-    evaluator,
-):
-    """Links all the steps together in a pipeline"""
-    X_train, X_test, y_train, y_test = importer()
-    model = trainer(X_train=X_train, y_train=y_train)
-    evaluator(X_test=X_test, y_test=y_test, model=model)
-
-
-pipeline = mnist_pipeline(
-    importer=importer(), # Step 1
-    trainer=trainer(), # Step 2
-    evaluator=evaluator(), # Step 3
-)
-
-# Run the pipeline locally.
-pipeline.run()
-```
-
-This runs the pipeline locally on your machine following the steps defined in the pipeline.
-You can scale this up to run on a full-fledged cloud platform by [switching stacks](https://docs.zenml.io/getting-started/core-concepts) with minimal (or no) code changes!
-
-# 🏇 Get a guided tour with `zenml go`
-
-For a more in-depth introduction to ZenML, taught through Jupyter
-notebooks, install `zenml` via pip as described above and type:
+If you're here for the first time, we recommend running:
 
 ```shell
 zenml go
 ```
 
-This will spin up a Jupyter notebook that showcases the above example and how to extend ZenML.
+This spins up a Jupyter notebook that walks you through various functionalities of ZenML at a high level.
 
-# 🍰 ZenBytes
+By the end, you'll get a glimpse on how to use ZenML to:
 
-ZenBytes is a series of short practical MLOps lessons using ZenML and its various integrations. 
-It covers many of the core concepts widely used in ZenML and MLOps in general.
-If you're new to ZenML this is a good place to start.
++ Train, evaluate, deploy, and embed a model in an inference pipeline.
++ Automatically track and version data, models, and other artifacts.
++ Track model hyperparameters and metrics with experiment tracking tools.
++ Measure and visualize train-test skew, training-serving skew, and data drift.
 
-After understanding the example in [Quickstart](#🚅-quickstart), your next port of call is the [fully-fleshed-out quickstart
-example](https://github.com/zenml-io/zenml/tree/main/examples/quickstart) and
-then check out [the ZenBytes repository](https://github.com/zenml-io/zenbytes)
-and notebooks.
+## 🍰 ZenBytes
+New to MLOps? Get up to speed by visiting the [ZenBytes](https://github.com/zenml-io/zenbytes) repo.
 
+ZenBytes are a series of short practical MLOps lessons taught using ZenML. 
+It covers many of the [core concepts](https://docs.zenml.io/getting-started/core-concepts) widely used in ZenML and MLOps in general.
 
-# 📜 ZenFiles
+## 📜 ZenFiles
+Already comfortable with ZenML and wish to elevate your pipeline into production mode? Check out [ZenFiles](https://github.com/zenml-io/zenfiles).
 
-ZenFiles are production-grade ML use-cases powered by ZenML. They are fully
-fleshed out, end-to-end, projects that showcase ZenML's capabilities. They can
-also serve as a template from which to start similar projects.
-Check out ZenFiles [here](https://github.com/zenml-io/zenfiles)!
+ZenFiles are a collection of production-grade ML use-cases powered by ZenML. They are fully fleshed out, end-to-end projects that showcase ZenML's capabilities. They can also serve as a template from which to start similar projects.
 
 # 👭 Collaborate with your team
 
-ZenML is built to support teams working together. The underlying infrastructure
-on which your ML workflows run can be shared, as can the data, assets and
-artifacts that you need to enable your work. ZenML Profiles offer an easy way to
-manage and switch between your stacks. The ZenML Server handles all the
-interaction and sharing and you can host it wherever you'd like.
+ZenML is built to support teams working together. 
+The underlying infrastructure on which your ML workflows run can be shared, as can the data, assets and artifacts that you need to enable your work. 
+
+You can quickly share your stack with anyone with ZenML by exporting them with:
 
 ```
-# Make sure to install ZenML with all requirements for the ZenServer
-pip install zenml[server]
-zenml server up
+zenml stack export <STACK_NAME> <FILENAME.yaml>
 ```
 
-Read more about collaboration in ZenML [here](https://docs.zenml.io/collaborate/collaborate-with-zenml).
+Similarly, you can import a stack by running:
+```
+zenml stack import <STACK_NAME> <FILENAME.yaml>
+```
+
+Learn more on importing/exporting stacks [here](https://docs.zenml.io/collaborate/stack-export-import).
+
+
+The [ZenML Profiles](https://docs.zenml.io/collaborate/zenml-store) offer an easy way to manage and switch between your stacks. All your stacks, components and other classes of ZenML objects can be stored in a central location and shared across multiple users, teams and automated systems such as CI/CD processes.
+
+With the [ZenServer](https://docs.zenml.io/collaborate/zenml-server) 
+you can deploy ZenML as a centralized service and connect entire teams and organizations to an easy to manage collaboration platform that provides a unified view on the MLOps processes, tools and technologies that support your entire AI/ML project lifecycle.
+
+Read more about using ZenML for collboration [here](https://docs.zenml.io/collaborate/collaborate-with-zenml).
 
 # 📖 Learn More
 
@@ -425,7 +338,7 @@ Register now through [this link](https://www.eventbrite.com/e/zenml-meet-the-com
 or subscribe to the [public events calendar](https://calendar.google.com/calendar/u/0/r?cid=Y19iaDJ0Zm44ZzdodXBlbnBzaWplY3UwMmNjZ0Bncm91cC5jYWxlbmRhci5nb29nbGUuY29t) to get notified 
 before every community gathering.
 
-# 🆘 Where to get help
+# 🆘 Getting Help
 
 The first point of call should be [our Slack group](https://zenml.io/slack-invite/).
 Ask your questions about bugs or specific use cases and someone from the [core team](https://zenml.io/company#CompanyTeam) will respond.
