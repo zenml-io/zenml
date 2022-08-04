@@ -200,7 +200,7 @@ docker run -it zenmldocker/zenml /bin/bash
 
 ## 🚅 Quickstart
 
-Let's start by creating a simple `pipeline` that contains the following `steps` - 
+Let's start by creating a simple `pipeline` that contains the following `steps`:
 1. Loads the [digits dataset](https://archive.ics.uci.edu/ml/datasets/Optical+Recognition+of+Handwritten+Digits).
 2. Trains a [scikit-learn](https://scikit-learn.org/stable/) classifier to classify the images from the dataset.
 3. Evaluates the classifier accuracy on a test set.
