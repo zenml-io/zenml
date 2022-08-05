@@ -1145,7 +1145,7 @@ def _import_stack_component(
     "--ignore-version-mismatch",
     is_flag=True,
     help="Import stack components even if the installed version of ZenML "
-    "is different from the one specified in the stack YAML file"
+    "is different from the one specified in the stack YAML file",
 )
 @click.pass_context
 def import_stack(
@@ -1160,10 +1160,9 @@ def import_stack(
         ctx: The click context.
         stack_name: The name of the stack to import.
         filename: The filename to import the stack from.
-        force: If True, stack components should be imported
-            irrespective of ZenML version matching.
-        old_force: DEPRECATED: If True, stack components should be imported
-            irrespective of ZenML version matching. Use `-y/--yes` instead.
+        ignore_version_mismatch: Import stack components even if
+            the installed version of ZenML is different from the
+            one specified in the stack YAML file.
     """
     track_event(AnalyticsEvent.IMPORT_STACK)
 
