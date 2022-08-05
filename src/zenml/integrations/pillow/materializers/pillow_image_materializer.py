@@ -71,13 +71,9 @@ class PillowImageMaterializer(BaseMaterializer):
             image: A PIL.Image.Image object.
         """
         super().handle_return(image)
-        file_extension = image.format
-        # handle images generated in Pillow itself
-        if file_extension is None:
-            file_extension = "PNG"
 
+        file_extension = image.format or "PNG"
         full_filename = f"{DEFAULT_IMAGE_FILENAME}.{file_extension}"
-
         artifact_store_path = os.path.join(self.artifact.uri, full_filename)
 
         # save the image in a temporary file
