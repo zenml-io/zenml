@@ -522,7 +522,7 @@ class Stack:
 
         Args:
             raise_exception: If `True`, raises an exception if the stack has
-                no secrets manager or a secret is misssing. Otherwise a
+                no secrets manager or a secret is missing. Otherwise a
                 warning is logged.
 
         # noqa: DAR402

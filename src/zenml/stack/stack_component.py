@@ -127,7 +127,7 @@ class StackComponent(BaseModel, ABC):
             KeyError: If the secret or secret key don't exist.
 
         Returns:
-            The (potentially resolved) attribtue value.
+            The (potentially resolved) attribute value.
         """
         value = super().__getattribute__(key)
 
