@@ -11,21 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import os
 from contextlib import ExitStack as does_not_raise
 
 import PIL
 
-from zenml.materializers.pillow_image_materializer import (
+from zenml.integrations.pillow.materializers.pillow_image_materializer import (
     PillowImageMaterializer,
 )
 from zenml.pipelines import pipeline
 from zenml.steps import step
-
-JPEG_FILE_PATH = os.path.join(
-    "/".join(os.path.dirname(__file__).split("/")[:-3]),
-    "examples/label_studio_annotation/data/batch_1/2dc5fe08-152d-47d0-bdd4-f70ddbfb6486.jpeg",
-)
 
 
 def test_materializer_works_for_image_files(clean_repo):
@@ -34,7 +28,7 @@ def test_materializer_works_for_image_files(clean_repo):
     @step
     def read_image() -> PIL.Image.Image:
         """Reads and materializes an image file."""
-        return PIL.Image.open(JPEG_FILE_PATH)
+        return PIL.Image.new("RGB", (10, 10), color="red")
 
     @pipeline
     def test_pipeline(image_reader) -> None:

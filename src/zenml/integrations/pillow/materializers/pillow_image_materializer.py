@@ -80,6 +80,9 @@ class PillowImageMaterializer(BaseMaterializer):
         super().handle_return(image)
         temp_dir = tempfile.TemporaryDirectory()
         file_extension = image.format
+        # handle images generated in Pillow itself
+        if file_extension is None:
+            file_extension = "PNG"
 
         full_filename = f"{DEFAULT_IMAGE_FILENAME}.{file_extension}"
         temp_image_path = os.path.join(temp_dir.name, full_filename)
