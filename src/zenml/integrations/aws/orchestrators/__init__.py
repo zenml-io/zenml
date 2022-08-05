@@ -13,6 +13,6 @@
 #  permissions and limitations under the License.
 """Initialization for the AWS VM orchestrator."""
 
-from zenml.integrations.aws.orchestrators.gcp_vm_orchestrator import (  # noqa
+from zenml.integrations.aws.orchestrators.aws_vm_orchestrator import (  # noqa
     AWSVMOrchestrator,
 )
