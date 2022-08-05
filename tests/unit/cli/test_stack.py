@@ -28,7 +28,6 @@ from zenml.cli.stack import (
     update_stack,
 )
 from zenml.enums import StackComponentType
-from zenml.metadata_stores import SQLiteMetadataStore
 from zenml.orchestrators import LocalOrchestrator
 from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManager,
@@ -78,7 +77,6 @@ def test_updating_non_active_stack_succeeds(clean_repo) -> None:
     new_stack = Stack(
         name="arias_new_stack",
         orchestrator=registered_stack.orchestrator,
-        metadata_store=registered_stack.metadata_store,
         artifact_store=registered_stack.artifact_store,
     )
     clean_repo.register_stack(new_stack)
@@ -159,7 +157,6 @@ def test_renaming_non_active_stack_succeeds(clean_repo) -> None:
     new_stack = Stack(
         name="arias_stack",
         orchestrator=registered_stack.orchestrator,
-        metadata_store=registered_stack.metadata_store,
         artifact_store=registered_stack.artifact_store,
     )
     clean_repo.register_stack(new_stack)
@@ -217,7 +214,6 @@ def test_deleting_stack_with_flag_succeeds(clean_repo) -> None:
     new_stack = Stack(
         name="arias_new_stack",
         orchestrator=clean_repo.active_stack.orchestrator,
-        metadata_store=clean_repo.active_stack.metadata_store,
         artifact_store=clean_repo.active_stack.artifact_store,
     )
     clean_repo.register_stack(new_stack)
@@ -242,9 +238,6 @@ def test_stack_export_delete_import(clean_repo) -> None:
     artifact_store_name = "arias_artifact_store"
     artifact_store = LocalArtifactStore(name=artifact_store_name, path="path/")
     clean_repo.register_stack_component(artifact_store)
-    metadata_store_name = "arias_metadata_store"
-    metadata_store = SQLiteMetadataStore(name=metadata_store_name, uri="uri")
-    clean_repo.register_stack_component(metadata_store)
     orchestrator_name = "arias_orchestrator"
     orchestrator = LocalOrchestrator(name=orchestrator_name)
     clean_repo.register_stack_component(orchestrator)
@@ -252,7 +245,6 @@ def test_stack_export_delete_import(clean_repo) -> None:
     stack = Stack(
         name=stack_name,
         orchestrator=orchestrator,
-        metadata_store=metadata_store,
         artifact_store=artifact_store,
     )
     clean_repo.register_stack(stack)
@@ -268,9 +260,6 @@ def test_stack_export_delete_import(clean_repo) -> None:
     clean_repo.deregister_stack(stack_name)
     clean_repo.deregister_stack_component(
         StackComponentType.ARTIFACT_STORE, artifact_store_name
-    )
-    clean_repo.deregister_stack_component(
-        StackComponentType.METADATA_STORE, metadata_store_name
     )
     clean_repo.deregister_stack_component(
         StackComponentType.ORCHESTRATOR, orchestrator_name

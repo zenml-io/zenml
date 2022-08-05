@@ -20,7 +20,6 @@ from zenml.container_registries import DefaultContainerRegistry
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
 from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
-from zenml.metadata_stores import SQLiteMetadataStore
 from zenml.stack import Stack
 
 
@@ -42,7 +41,6 @@ def test_kubeflow_orchestrator_stack_validation(mocker):
     )
 
     orchestrator = KubeflowOrchestrator(name="")
-    metadata_store = SQLiteMetadataStore(name="", uri="./metadata.db")
     artifact_store = LocalArtifactStore(name="", path=".")
     container_registry = DefaultContainerRegistry(name="", uri="localhost:5000")
 
@@ -51,7 +49,6 @@ def test_kubeflow_orchestrator_stack_validation(mocker):
         Stack(
             name="",
             orchestrator=orchestrator,
-            metadata_store=metadata_store,
             artifact_store=artifact_store,
         ).validate()
 
@@ -60,7 +57,6 @@ def test_kubeflow_orchestrator_stack_validation(mocker):
         Stack(
             name="",
             orchestrator=orchestrator,
-            metadata_store=metadata_store,
             artifact_store=artifact_store,
             container_registry=container_registry,
         ).validate()

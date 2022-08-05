@@ -34,7 +34,7 @@ class StepContextOutput(NamedTuple):
 class StepContext:
     """Provides additional context inside a step function.
 
-    This class is used to access pipelines, materializers, and artifacts 
+    This class is used to access pipelines, materializers, and artifacts
     inside a step function. To use it, add a `StepContext` object
     to the signature of your step function like this:
 

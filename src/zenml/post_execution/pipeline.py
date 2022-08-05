@@ -15,7 +15,6 @@
 
 from typing import TYPE_CHECKING, Any, List, Optional
 
-from zenml.enums import StackComponentType
 from zenml.logger import get_logger
 from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
 

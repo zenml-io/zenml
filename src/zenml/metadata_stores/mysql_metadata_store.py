@@ -15,7 +15,7 @@
 
 import re
 from pathlib import Path
-from typing import Any, ClassVar, Optional, Union
+from typing import Any, Optional, Union
 
 from ml_metadata.proto import metadata_store_pb2
 from ml_metadata.proto.metadata_store_pb2 import MySQLDatabaseConfig

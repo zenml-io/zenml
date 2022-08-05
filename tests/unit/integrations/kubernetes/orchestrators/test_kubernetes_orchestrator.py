@@ -23,7 +23,6 @@ from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
 from zenml.integrations.gcp.artifact_stores import GCPArtifactStore
 from zenml.integrations.kubernetes.orchestrators import KubernetesOrchestrator
-from zenml.metadata_stores import MySQLMetadataStore, SQLiteMetadataStore
 from zenml.stack import Stack
 
 
@@ -37,14 +36,6 @@ def test_kubernetes_orchestrator_attributes() -> None:
 def test_kubernetes_orchestrator_remote_stack() -> None:
     """Test that the kubernetes orchestrator works with remote stacks."""
     orchestrator = KubernetesOrchestrator(name="", skip_config_loading=True)
-    remote_metadata_store = MySQLMetadataStore(
-        name="",
-        username="",
-        password="",
-        host="",
-        port=0,
-        database="zenml",
-    )
     remote_container_registry = DefaultContainerRegistry(
         name="", uri="gcr.io/my-project"
     )
@@ -53,7 +44,6 @@ def test_kubernetes_orchestrator_remote_stack() -> None:
         Stack(
             name="",
             orchestrator=orchestrator,
-            metadata_store=remote_metadata_store,
             artifact_store=remote_artifact_store,
             container_registry=remote_container_registry,
         ).validate()
@@ -65,13 +55,11 @@ def test_kubernetes_orchestrator_local_stack() -> None:
     local_container_registry = DefaultContainerRegistry(
         name="", uri="localhost:5000"
     )
-    local_metadata_store = SQLiteMetadataStore(name="", uri="metadata.db")
     local_artifact_store = LocalArtifactStore(name="", path="artifacts/")
     with pytest.raises(StackValidationError):
         Stack(
             name="",
             orchestrator=orchestrator,
-            metadata_store=local_metadata_store,
             artifact_store=local_artifact_store,
             container_registry=local_container_registry,
         ).validate()

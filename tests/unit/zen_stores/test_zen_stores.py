@@ -48,12 +48,7 @@ from zenml.secrets_managers.local.local_secrets_manager import (
 )
 from zenml.stack import Stack
 from zenml.utils.networking_utils import scan_for_available_port
-from zenml.zen_stores import (
-    BaseZenStore,
-    LocalZenStore,
-    RestZenStore,
-    SqlZenStore,
-)
+from zenml.zen_stores import BaseZenStore, RestZenStore, SqlZenStore
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 from zenml.zen_stores.models import ComponentWrapper, StackWrapper
 from zenml.zen_stores.models.pipeline_models import (
@@ -66,7 +61,7 @@ logger = get_logger(__name__)
 test_rest = (
     platform.system() != "Windows" and "ZENML_SKIP_TEST_REST" not in os.environ
 )
-store_types = [StoreType.LOCAL, StoreType.SQL] + [StoreType.REST] * test_rest
+store_types = [StoreType.SQL] + [StoreType.REST] * test_rest
 
 
 @pytest.fixture(params=store_types)
@@ -79,13 +74,13 @@ def fresh_zen_store(
 
     global_cfg = GlobalConfiguration()
 
-    if store_type == StoreType.LOCAL:
-        yield LocalZenStore().initialize(str(tmp_path))
-    elif store_type == StoreType.SQL:
+    if store_type == StoreType.SQL:
         yield SqlZenStore().initialize(f"sqlite:///{tmp_path / 'store.db'}")
     elif store_type == StoreType.REST:
         # create temporary zen store and profile configuration for unit tests
-        backing_zen_store = LocalZenStore().initialize(str(tmp_path))
+        backing_zen_store = SqlZenStore().initialize(
+            f"sqlite:///{tmp_path / 'store.db'}"
+        )
         store_profile = ProfileConfiguration(
             name=f"test_profile_{hash(str(tmp_path))}",
             store_url=backing_zen_store.url,
@@ -166,7 +161,6 @@ def test_register_deregister_stacks(fresh_zen_store):
     stack_configuration = zen_store.get_stack_configuration(stack.name)
     assert set(stack_configuration) == {
         "orchestrator",
-        "metadata_store",
         "artifact_store",
     }
     assert stack_configuration[StackComponentType.ORCHESTRATOR] == "default"
@@ -196,7 +190,6 @@ def test_register_deregister_components(fresh_zen_store):
     """Test adding and removing stack components."""
     required_components = {
         StackComponentType.ARTIFACT_STORE,
-        StackComponentType.METADATA_STORE,
         StackComponentType.ORCHESTRATOR,
     }
 
@@ -487,9 +480,6 @@ def test_update_stack_with_new_component(fresh_zen_store):
     updated_stack = Stack(
         name="default",
         orchestrator=new_orchestrator,
-        metadata_store=fresh_zen_store.get_stack_component(
-            StackComponentType.METADATA_STORE, "default"
-        ).to_component(),
         artifact_store=fresh_zen_store.get_stack_component(
             StackComponentType.ARTIFACT_STORE, "default"
         ).to_component(),
@@ -532,9 +522,6 @@ def test_update_stack_when_component_not_part_of_stack(
         orchestrator=fresh_zen_store.get_stack_component(
             StackComponentType.ORCHESTRATOR, "default"
         ).to_component(),
-        metadata_store=fresh_zen_store.get_stack_component(
-            StackComponentType.METADATA_STORE, "default"
-        ).to_component(),
         artifact_store=fresh_zen_store.get_stack_component(
             StackComponentType.ARTIFACT_STORE, "default"
         ).to_component(),
@@ -574,9 +561,6 @@ def test_update_non_existent_stack_raises_error(
         name="aria_is_a_cat_not_a_stack",
         orchestrator=fresh_zen_store.get_stack_component(
             StackComponentType.ORCHESTRATOR, "default"
-        ).to_component(),
-        metadata_store=fresh_zen_store.get_stack_component(
-            StackComponentType.METADATA_STORE, "default"
         ).to_component(),
         artifact_store=fresh_zen_store.get_stack_component(
             StackComponentType.ARTIFACT_STORE, "default"

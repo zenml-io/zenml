@@ -475,7 +475,7 @@ def pytest_addoption(parser):
     parser.addoption(
         "--store-type",
         action="store",
-        default="local",
+        default="sql",
         help="The type of store back-end to use for profiles (local, sql, etc)",
     )
     parser.addoption(

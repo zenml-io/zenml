@@ -59,7 +59,6 @@ def test_validator_with_required_components():
     successful_validator = StackValidator(
         required_components={
             StackComponentType.ORCHESTRATOR,
-            StackComponentType.METADATA_STORE,
         }
     )
     with does_not_raise():

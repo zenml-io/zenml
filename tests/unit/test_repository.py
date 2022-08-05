@@ -27,7 +27,7 @@ from zenml.exceptions import (
     StackExistsError,
 )
 from zenml.io import fileio
-from zenml.metadata_stores import MySQLMetadataStore, SQLiteMetadataStore
+from zenml.metadata_stores import SQLiteMetadataStore
 from zenml.orchestrators import LocalOrchestrator
 from zenml.pipelines import pipeline
 from zenml.repository import Repository
@@ -38,7 +38,6 @@ from zenml.utils import io_utils
 def _create_local_stack(
     stack_name: str,
     orchestrator_name: Optional[str] = None,
-    metadata_store_name: Optional[str] = None,
     artifact_store_name: Optional[str] = None,
 ):
     """Creates a local stack with components with the given names. If the
@@ -48,19 +47,14 @@ def _create_local_stack(
         return "".join(random.choices(string.ascii_letters, k=10))
 
     orchestrator_name = orchestrator_name or _random_name()
-    metadata_store_name = metadata_store_name or _random_name()
     artifact_store_name = artifact_store_name or _random_name()
 
     orchestrator = LocalOrchestrator(name=orchestrator_name)
     artifact_store = LocalArtifactStore(name=artifact_store_name, path="stack")
-    metadata_store = SQLiteMetadataStore(
-        name=metadata_store_name, uri="./metadata.db"
-    )
 
     return Stack(
         name=stack_name,
         orchestrator=orchestrator,
-        metadata_store=metadata_store,
         artifact_store=artifact_store,
     )
 
@@ -88,7 +82,6 @@ def test_initializing_repo_creates_directory_and_uses_default_stack(
 
     stack = repo.active_stack
     assert isinstance(stack.orchestrator, LocalOrchestrator)
-    assert isinstance(stack.metadata_store, SQLiteMetadataStore)
     assert isinstance(stack.artifact_store, LocalArtifactStore)
     assert stack.container_registry is None
 
@@ -245,9 +238,6 @@ def test_registering_a_new_stack_with_already_registered_components(
     registered_orchestrators = clean_repo.get_stack_components(
         StackComponentType.ORCHESTRATOR
     )
-    registered_metadata_stores = clean_repo.get_stack_components(
-        StackComponentType.METADATA_STORE
-    )
     registered_artifact_stores = clean_repo.get_stack_components(
         StackComponentType.ARTIFACT_STORE
     )
@@ -259,9 +249,6 @@ def test_registering_a_new_stack_with_already_registered_components(
     # new component should have been registered
     assert registered_orchestrators == clean_repo.get_stack_components(
         StackComponentType.ORCHESTRATOR
-    )
-    assert registered_metadata_stores == clean_repo.get_stack_components(
-        StackComponentType.METADATA_STORE
     )
     assert registered_artifact_stores == clean_repo.get_stack_components(
         StackComponentType.ARTIFACT_STORE
@@ -277,7 +264,6 @@ def test_updating_a_stack_with_new_components(clean_repo):
     updated_stack = Stack(
         name=current_stack.name,
         orchestrator=new_orchestrator,
-        metadata_store=current_stack.metadata_store,
         artifact_store=current_stack.artifact_store,
     )
 
@@ -295,7 +281,6 @@ def test_renaming_stack_with_update_method_succeeds(clean_repo):
     updated_stack = Stack(
         name=new_stack_name,
         orchestrator=current_stack.orchestrator,
-        metadata_store=current_stack.metadata_store,
         artifact_store=current_stack.artifact_store,
     )
 
@@ -313,7 +298,6 @@ def test_registering_a_stack_registers_unregistered_components(clean_repo):
     new_stack = Stack(
         name="new_stack_name",
         orchestrator=new_orchestrator,
-        metadata_store=registered_stack.metadata_store,
         artifact_store=registered_stack.artifact_store,
     )
 
@@ -331,7 +315,6 @@ def test_registering_a_stack_registers_unregistered_components(clean_repo):
     another_new_stack = Stack(
         name="another_new_stack_name",
         orchestrator=another_new_orchestrator,
-        metadata_store=registered_stack.metadata_store,
         artifact_store=registered_stack.artifact_store,
     )
 
@@ -437,43 +420,15 @@ def test_deregistering_a_stack_component_that_is_part_of_a_registered_stack(
 
 def test_get_pipelines_forwards_to_metadata_store(clean_repo, mocker):
     """Tests that getting post-execution pipelines forwards calls to the
-    metadata store of the (active) stack."""
-    # register a stack with a mysql metadata store
-    active_stack = clean_repo.active_stack
-    new_metadata_store = MySQLMetadataStore(
-        name="new_metadata_store_name",
-        host="",
-        port=0,
-        database="zenml",
-        username="",
-        password="",
-    )
-    new_stack = Stack(
-        name="new_stack_name",
-        orchestrator=active_stack.orchestrator,
-        metadata_store=new_metadata_store,
-        artifact_store=active_stack.artifact_store,
-    )
-    clean_repo.register_stack(new_stack)
-
+    metadata store of the ZenStore."""
     mocker.patch.object(SQLiteMetadataStore, "get_pipelines", return_value=[])
     mocker.patch.object(SQLiteMetadataStore, "get_pipeline", return_value=None)
-
-    mocker.patch.object(MySQLMetadataStore, "get_pipelines", return_value=[])
-    mocker.patch.object(MySQLMetadataStore, "get_pipeline", return_value=None)
 
     # calling without a stack name calls the metadata store of the active stack
     clean_repo.get_pipelines()
     clean_repo.get_pipeline(pipeline_name="whatever")
     SQLiteMetadataStore.get_pipelines.assert_called_once()
     SQLiteMetadataStore.get_pipeline.assert_called_once()
-    assert not MySQLMetadataStore.get_pipelines.called
-    assert not MySQLMetadataStore.get_pipeline.called
-
-    clean_repo.get_pipeline(pipeline_name="whatever", stack_name=new_stack.name)
-    clean_repo.get_pipelines(stack_name=new_stack.name)
-    MySQLMetadataStore.get_pipelines.assert_called_once()
-    MySQLMetadataStore.get_pipeline.assert_called_once()
 
 
 def test_get_pipeline_forwards_to_metadata_store(clean_repo, mocker):
