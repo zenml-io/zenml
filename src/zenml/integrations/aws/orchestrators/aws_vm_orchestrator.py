@@ -139,7 +139,7 @@ def get_startup_script(region: str, image_name: str, c_params: str) -> str:
 def create_instance(
     executor_image_name: str,
     c_params: str,
-    iam_role: str,
+    # iam_role: str,
     instance_type: str,
     instance_image: str,
     region: str,
@@ -165,7 +165,7 @@ def create_instance(
     args = {
         "ImageId": instance_image,
         "InstanceType": instance_type,
-        "IamInstanceProfile": iam_role,
+        # "IamInstanceProfile": iam_role,
         "MaxCount": max_count,
         "MinCount": min_count,
         "UserData": startup,
@@ -192,7 +192,7 @@ def setup_session():
 
 
 class AWSVMOrchestrator(BaseOrchestrator):
-    iam_role: str
+    # iam_role: str
     instance_type: str = "t2.micro"
     instance_image: str = None  # ami-02e9f4e447e4cda79
     custom_executor_image_name: str = None
@@ -286,7 +286,7 @@ class AWSVMOrchestrator(BaseOrchestrator):
         else:
             security_group = self.security_group
 
-        iam_role = {"Name": self.iam_role}
+        # iam_role = {"Name": self.iam_role}
 
         run_name = runtime_configuration.run_name
         assert run_name
@@ -306,7 +306,7 @@ class AWSVMOrchestrator(BaseOrchestrator):
             instance = create_instance(
                 executor_image_name,
                 c_params,
-                iam_role,
+                # iam_role,
                 self.instance_type,
                 instance_image,
                 self.region,
