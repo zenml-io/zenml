@@ -332,10 +332,9 @@ class BaseOrchestrator(StackComponent, ABC):
             deployment_config, step.name
         )
 
-        # At this point the active metadata store is queried for the
-        # metadata_connection
+        # Query the ZenStore for the metadata connection
         repo = Repository()
-        metadata_store = repo.active_stack.metadata_store
+        metadata_store = repo.zen_store._metadata_store
         metadata_connection = metadata.Metadata(
             metadata_store.get_tfx_metadata_config()
         )

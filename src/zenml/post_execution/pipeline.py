@@ -149,8 +149,7 @@ class PipelineView:
         """Gets a ZenStore run for the given run name.
 
         This will filter all ZenStore runs by the pipeline name of this
-        pipeline view, the run name passed in as an argument and the metadata
-        store that this pipeline run is associated with.
+        pipeline view and the run name passed in as an argument.
 
         Args:
             run_name: The name of the run to get.
@@ -165,13 +164,7 @@ class PipelineView:
             run_wrapper = repo.zen_store.get_pipeline_run(
                 pipeline_name=self.name, run_name=run_name
             )
-            metadata_store_wrapper = run_wrapper.stack.get_component_wrapper(
-                StackComponentType.METADATA_STORE
-            )
-            if metadata_store_wrapper and (
-                metadata_store_wrapper.uuid == self._metadata_store.uuid
-            ):
-                return run_wrapper
+            return run_wrapper
         except KeyError:
             pass
 

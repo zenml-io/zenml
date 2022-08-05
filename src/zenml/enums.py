@@ -49,7 +49,6 @@ class StackComponentType(StrEnum):
     DATA_VALIDATOR = "data_validator"
     EXPERIMENT_TRACKER = "experiment_tracker"
     FEATURE_STORE = "feature_store"
-    METADATA_STORE = "metadata_store"
     MODEL_DEPLOYER = "model_deployer"
     ORCHESTRATOR = "orchestrator"
     SECRETS_MANAGER = "secrets_manager"

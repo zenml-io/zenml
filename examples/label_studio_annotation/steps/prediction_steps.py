@@ -21,9 +21,7 @@ class PredictionServiceLoaderConfig(BaseStepConfig):
 def prediction_service_loader(
     config: PredictionServiceLoaderConfig, context: StepContext
 ) -> torch.nn.Module:
-    train_run = context.metadata_store.get_pipeline(
-        config.training_pipeline_name
-    ).runs[-1]
+    train_run = context.get_pipeline(config.training_pipeline_name).runs[-1]
     return train_run.get_step(config.training_pipeline_step_name).output.read()
 
 

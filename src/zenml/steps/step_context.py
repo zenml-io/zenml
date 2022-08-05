@@ -21,7 +21,6 @@ from zenml.repository import Repository
 if TYPE_CHECKING:
     from zenml.artifacts.base_artifact import BaseArtifact
     from zenml.materializers.base_materializer import BaseMaterializer
-    from zenml.metadata_stores.base_metadata_store import BaseMetadataStore
     from zenml.stack import Stack
 
 
@@ -35,8 +34,8 @@ class StepContextOutput(NamedTuple):
 class StepContext:
     """Provides additional context inside a step function.
 
-    This class is used to access the metadata store, materializers and
-    artifacts inside a step function. To use it, add a `StepContext` object
+    This class is used to access pipelines, materializers, and artifacts 
+    inside a step function. To use it, add a `StepContext` object
     to the signature of your step function like this:
 
     ```python
@@ -91,7 +90,7 @@ class StepContext:
             )
             for key in output_materializers.keys()
         }
-        self._metadata_store = Repository().active_stack.metadata_store
+        self._metadata_store = Repository().zen_store._metadata_store
         self._stack = Repository().active_stack
 
     def _get_output(
@@ -139,19 +138,6 @@ class StepContext:
             return next(iter(self._outputs.values()))
 
     @property
-    def metadata_store(self) -> "BaseMetadataStore":
-        """Returns the metadata store.
-
-        Returns an instance of the metadata store that is used to store
-        metadata about the step (and the corresponding pipeline) which is
-        being executed.
-
-        Returns:
-            The metadata store.
-        """
-        return self._metadata_store
-
-    @property
     def stack(self) -> Optional["Stack"]:
         """Returns the current active stack.
 
@@ -159,6 +145,9 @@ class StepContext:
             The current active stack or None.
         """
         return self._stack
+
+    def get_pipeline(self, pipeline_name):
+        return self._metadata_store.get_pipeline(pipeline_name)
 
     def get_output_materializer(
         self,

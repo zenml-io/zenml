@@ -23,6 +23,8 @@ import yaml
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.logger import get_logger
+from zenml.metadata_stores.base_metadata_store import BaseMetadataStore
+from zenml.post_execution.pipeline import PipelineView
 from zenml.stack import Stack
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.zen_stores.models import (
@@ -185,6 +187,14 @@ class BaseZenStore(ABC):
         """
 
     # Private interface (must be implemented, not to be called by user):
+
+    @abstractmethod
+    def _get_metadata_store(self) -> BaseMetadataStore:
+        """Get the metadata store of this ZenStore.
+
+        Returns:
+            The metadata store of this ZenStore.
+        """
 
     @abstractmethod
     def _register_stack_component(
@@ -634,6 +644,25 @@ class BaseZenStore(ABC):
     # Pipelines and pipeline runs
 
     @abstractmethod
+    def get_pipeline(self, pipeline_name: str) -> Optional[PipelineView]:
+        """Returns a pipeline for the given name.
+
+        Args:
+            pipeline_name: Name of the pipeline.
+
+        Returns:
+            PipelineView if found, None otherwise.
+        """
+
+    @abstractmethod
+    def get_pipelines(self) -> List[PipelineView]:
+        """Returns a list of all pipelines stored in this ZenStore.
+
+        Returns:
+            A list of all pipelines stored in this ZenStore.
+        """
+
+    @abstractmethod
     def get_pipeline_run(
         self,
         pipeline_name: str,
@@ -952,8 +981,8 @@ class BaseZenStore(ABC):
     def register_default_stack(self) -> None:
         """Populates the store with the default Stack.
 
-        The default stack contains a local orchestrator,
-        a local artifact store and a local SQLite metadata store.
+        The default stack contains a local orchestrator and a local artifact
+        store.
         """
         stack = Stack.default_local_stack()
         sw = StackWrapper.from_stack(stack)

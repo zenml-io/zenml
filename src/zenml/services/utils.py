@@ -51,9 +51,7 @@ def load_last_service_from_step(
         repo = Repository()
         pipeline = repo.get_pipeline(pipeline_name)
     else:
-        pipeline = step_context.metadata_store.get_pipeline(
-            pipeline_name=pipeline_name
-        )
+        pipeline = step_context.get_pipeline(pipeline_name=pipeline_name)
     if pipeline is None:
         raise KeyError(f"No pipeline with name `{pipeline_name}` was found")
 

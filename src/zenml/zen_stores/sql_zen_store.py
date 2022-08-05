@@ -16,6 +16,7 @@
 import datetime as dt
 import json
 from datetime import datetime
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID, uuid4
@@ -28,6 +29,9 @@ from sqlmodel.sql.expression import Select, SelectOfScalar
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import EntityExistsError, StackComponentExistsError
 from zenml.logger import get_logger
+from zenml.metadata_stores.base_metadata_store import BaseMetadataStore
+from zenml.metadata_stores.sqlite_metadata_store import SQLiteMetadataStore
+from zenml.post_execution.pipeline import PipelineView
 from zenml.utils import io_utils
 from zenml.zen_stores import BaseZenStore
 from zenml.zen_stores.models import (
@@ -251,6 +255,11 @@ class SqlZenStore(BaseZenStore):
         local_path = self.get_path_from_url(url)
         if local_path:
             io_utils.create_dir_recursive_if_not_exists(str(local_path.parent))
+
+        metadata_store_path = os.path.join(
+            os.path.dirname(local_path), "metadata.db"
+        )
+        self._metadata_store = SQLiteMetadataStore(uri=metadata_store_path)
 
         # we need to remove `skip_default_registrations` from the kwargs,
         # because SQLModel will raise an error if it is present
@@ -549,6 +558,14 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
     # Private interface implementations:
+
+    def _get_metadata_store(self) -> BaseMetadataStore:
+        """Get the metadata store of this ZenStore.
+
+        Returns:
+            The metadata store of this ZenStore.
+        """
+        return self._metadata_store
 
     def _save_stack(
         self,
@@ -1361,6 +1378,25 @@ class SqlZenStore(BaseZenStore):
             ]
 
     # Pipelines and pipeline runs
+
+    def get_pipeline(self, pipeline_name: str) -> Optional[PipelineView]:
+        """Returns a pipeline for the given name.
+
+        Args:
+            pipeline_name: Name of the pipeline.
+
+        Returns:
+            PipelineView if found, None otherwise.
+        """
+        return self._metadata_store.get_pipeline(pipeline_name)
+
+    def get_pipelines(self) -> List[PipelineView]:
+        """Returns a list of all pipelines stored in this ZenStore.
+
+        Returns:
+            A list of all pipelines stored in this ZenStore.
+        """
+        return self._metadata_store.get_pipelines()
 
     def get_pipeline_run(
         self,

@@ -257,8 +257,7 @@ class GitHubSecretsManager(BaseSecretsManager):
             raise RuntimeError(
                 "Getting GitHub secrets is only possible within a GitHub "
                 "Actions workflow. If you need this secret to access "
-                "stack components (e.g. your metadata store to fetch pipelines "
-                "during the post-execution workflow) locally, you need to "
+                "stack components locally, you need to "
                 "register this secret in a different secrets manager. "
                 "You can do this by running the following commands: \n\n"
                 + "\n".join(commands)

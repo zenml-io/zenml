@@ -17,11 +17,13 @@ import json
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from json import JSONDecodeError
-from typing import ClassVar, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
+from uuid import UUID, uuid4
 
 from ml_metadata import proto
 from ml_metadata.metadata_store import metadata_store
 from ml_metadata.proto import metadata_store_pb2
+from pydantic import BaseModel, Field
 from tfx.dsl.compiler.constants import (
     PIPELINE_CONTEXT_TYPE_NAME,
     PIPELINE_RUN_CONTEXT_TYPE_NAME,
@@ -31,7 +33,7 @@ from zenml.artifacts.constants import (
     DATATYPE_PROPERTY_KEY,
     MATERIALIZER_PROPERTY_KEY,
 )
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.post_execution import (
     ArtifactView,
@@ -39,7 +41,6 @@ from zenml.post_execution import (
     PipelineView,
     StepView,
 )
-from zenml.stack import StackComponent
 from zenml.steps.utils import (
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
     PARAM_PIPELINE_PARAMETER_NAME,
@@ -48,12 +49,10 @@ from zenml.steps.utils import (
 logger = get_logger(__name__)
 
 
-class BaseMetadataStore(StackComponent, ABC):
+class BaseMetadataStore(BaseModel, ABC):
     """Base class for all ZenML metadata stores."""
 
-    # Class Configuration
-    TYPE: ClassVar[StackComponentType] = StackComponentType.METADATA_STORE
-
+    uuid: UUID = Field(default_factory=uuid4)
     upgrade_migration_enabled: bool = True
     _store: Optional[metadata_store.MetadataStore] = None
 

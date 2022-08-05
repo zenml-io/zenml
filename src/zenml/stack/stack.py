@@ -48,7 +48,6 @@ if TYPE_CHECKING:
         BaseExperimentTracker,
     )
     from zenml.feature_stores import BaseFeatureStore
-    from zenml.metadata_stores import BaseMetadataStore
     from zenml.model_deployers import BaseModelDeployer
     from zenml.orchestrators import BaseOrchestrator
     from zenml.pipelines import BasePipeline
@@ -65,7 +64,7 @@ class Stack:
 
     A ZenML stack is a collection of multiple stack components that are
     required to run ZenML pipelines. Some of these components (orchestrator,
-    metadata store and artifact store) are required to run any kind of
+    and artifact store) are required to run any kind of
     pipeline, other components like the container registry are only required
     if other stack components depend on them.
     """
@@ -75,7 +74,6 @@ class Stack:
         name: str,
         *,
         orchestrator: "BaseOrchestrator",
-        metadata_store: "BaseMetadataStore",
         artifact_store: "BaseArtifactStore",
         container_registry: Optional["BaseContainerRegistry"] = None,
         secrets_manager: Optional["BaseSecretsManager"] = None,
@@ -94,7 +92,6 @@ class Stack:
         Args:
             name: Name of the stack.
             orchestrator: Orchestrator component of the stack.
-            metadata_store: Metadata store component of the stack.
             artifact_store: Artifact store component of the stack.
             container_registry: Container registry component of the stack.
             secrets_manager: Secrets manager component of the stack.
@@ -111,7 +108,6 @@ class Stack:
         """
         self._name = name
         self._orchestrator = orchestrator
-        self._metadata_store = metadata_store
         self._artifact_store = artifact_store
         self._container_registry = container_registry
         self._step_operator = step_operator
@@ -149,7 +145,6 @@ class Stack:
         from zenml.data_validators import BaseDataValidator
         from zenml.experiment_trackers import BaseExperimentTracker
         from zenml.feature_stores import BaseFeatureStore
-        from zenml.metadata_stores import BaseMetadataStore
         from zenml.model_deployers import BaseModelDeployer
         from zenml.orchestrators import BaseOrchestrator
         from zenml.secrets_managers import BaseSecretsManager
@@ -176,10 +171,6 @@ class Stack:
         orchestrator = components.get(StackComponentType.ORCHESTRATOR)
         if not isinstance(orchestrator, BaseOrchestrator):
             _raise_type_error(orchestrator, BaseOrchestrator)
-
-        metadata_store = components.get(StackComponentType.METADATA_STORE)
-        if not isinstance(metadata_store, BaseMetadataStore):
-            _raise_type_error(metadata_store, BaseMetadataStore)
 
         artifact_store = components.get(StackComponentType.ARTIFACT_STORE)
         if not isinstance(artifact_store, BaseArtifactStore):
@@ -242,7 +233,6 @@ class Stack:
         return Stack(
             name=name,
             orchestrator=orchestrator,
-            metadata_store=metadata_store,
             artifact_store=artifact_store,
             container_registry=container_registry,
             secrets_manager=secrets_manager,
@@ -263,7 +253,6 @@ class Stack:
             A stack instance configured to run locally.
         """
         from zenml.artifact_stores import LocalArtifactStore
-        from zenml.metadata_stores import SQLiteMetadataStore
         from zenml.orchestrators import LocalOrchestrator
 
         orchestrator = LocalOrchestrator(name="default")
@@ -281,15 +270,9 @@ class Stack:
             path=artifact_store_path,
         )
 
-        metadata_store_path = os.path.join(artifact_store_path, "metadata.db")
-        metadata_store = SQLiteMetadataStore(
-            name="default", uri=metadata_store_path
-        )
-
         return cls(
             name="default",
             orchestrator=orchestrator,
-            metadata_store=metadata_store,
             artifact_store=artifact_store,
         )
 
@@ -304,7 +287,6 @@ class Stack:
             component.TYPE: component
             for component in [
                 self.orchestrator,
-                self.metadata_store,
                 self.artifact_store,
                 self.container_registry,
                 self.secrets_manager,
@@ -336,15 +318,6 @@ class Stack:
             The orchestrator of the stack.
         """
         return self._orchestrator
-
-    @property
-    def metadata_store(self) -> "BaseMetadataStore":
-        """The metadata store of the stack.
-
-        Returns:
-            The metadata store of the stack.
-        """
-        return self._metadata_store
 
     @property
     def artifact_store(self) -> "BaseArtifactStore":

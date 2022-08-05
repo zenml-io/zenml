@@ -41,6 +41,8 @@ from zenml.exceptions import (
     StackExistsError,
 )
 from zenml.logger import get_logger
+from zenml.metadata_stores.base_metadata_store import BaseMetadataStore
+from zenml.post_execution.pipeline import PipelineView
 from zenml.zen_stores import BaseZenStore
 from zenml.zen_stores.models import (
     ComponentWrapper,
@@ -210,6 +212,16 @@ class RestZenStore(BaseZenStore):
             key: self._parse_stack_configuration(value)
             for key, value in body.items()
         }
+
+    # Private interface implementations:
+
+    def _get_metadata_store(self) -> BaseMetadataStore:
+        """Get the metadata store of this ZenStore.
+
+        Returns:
+            The metadata store of this ZenStore.
+        """
+        pass  # TODO
 
     def _register_stack_component(
         self,
@@ -786,6 +798,25 @@ class RestZenStore(BaseZenStore):
         ]
 
     # Pipelines and pipeline runs
+
+    def get_pipeline(self, pipeline_name: str) -> Optional[PipelineView]:
+        """Returns a pipeline for the given name.
+
+        Args:
+            pipeline_name: Name of the pipeline.
+
+        Returns:
+            PipelineView if found, None otherwise.
+        """
+        pass  # TODO
+
+    def get_pipelines(self) -> List[PipelineView]:
+        """Returns a list of all pipelines stored in this ZenStore.
+
+        Returns:
+            A list of all pipelines stored in this ZenStore.
+        """
+        pass  # TODO
 
     def get_pipeline_run(
         self,

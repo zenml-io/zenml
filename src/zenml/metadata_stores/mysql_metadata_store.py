@@ -50,9 +50,6 @@ class MySQLMetadataStore(BaseMetadataStore):
     username: Optional[str] = None
     password: Optional[str] = None
 
-    # Class Configuration
-    FLAVOR: ClassVar[str] = "mysql"
-
     @validator("database")
     def _ensure_valid_database_name(
         cls,
@@ -104,7 +101,7 @@ class MySQLMetadataStore(BaseMetadataStore):
         if self.username:
             if secret and secret.user:
                 raise RuntimeError(
-                    f"Both the metadata store {self.name} and the secret "
+                    f"Both the metadata store and the secret "
                     f"{self.secret} within your secrets manager define "
                     f"a username `{self.username}` and `{secret.user}`. Please "
                     f"make sure that you only use one."
@@ -125,7 +122,7 @@ class MySQLMetadataStore(BaseMetadataStore):
         if self.password:
             if secret and secret.password:
                 raise RuntimeError(
-                    f"Both the metadata store {self.name} and the secret "
+                    f"Both the metadata store and the secret "
                     f"{self.secret} within your secrets manager define "
                     f"a password. Please make sure that you only use one."
                 )
@@ -177,7 +174,7 @@ class MySQLMetadataStore(BaseMetadataStore):
             secret_manager = active_stack.secrets_manager
             if secret_manager is None:
                 raise RuntimeError(
-                    f"The metadata store `{self.name}` that you are using "
+                    f"The metadata store that you are using "
                     f"requires a secret. However, your stack "
                     f"`{active_stack.name}` does not have a secrets manager."
                 )
@@ -199,7 +196,7 @@ class MySQLMetadataStore(BaseMetadataStore):
             except KeyError:
                 raise RuntimeError(
                     f"The secret `{self.secret}` used for your MySQL metadata "
-                    f"store `{self.name}` does not exist in your secrets "
+                    f"store does not exist in your secrets "
                     f"manager `{secret_manager.name}`."
                 )
         return None

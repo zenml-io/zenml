@@ -19,7 +19,6 @@ MLOps platform.
 A stack is made up of multiple components. Some examples are:
 
 - An Artifact Store
-- A Metadata Store
 - An Orchestrator
 - A Step Operator (Optional)
 - A Container Registry (Optional)
