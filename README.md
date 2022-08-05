@@ -188,7 +188,7 @@ docker run -it zenmldocker/zenml /bin/bash
 > #### Known installation issues for M1 Mac users
 >
 > If you have an M1 Mac machine and encounter an installation error, 
-> try setting up `brew` and `pyenv` with Rosetta 2 and then install ZenML. The issue arises because some of the dependencies 
+> try setting up `brew` and `pyenv` with Rosetta 2 and then install ZenML. The issue arises because some dependencies 
 > aren’t fully compatible with the vanilla ARM64 Architecture. The following links may be helpful (Thank you @Reid Falconer) :
 >
 >- [Pyenv with Apple Silicon](http://sixty-north.com/blog/pyenv-apple-silicon.html)
@@ -247,7 +247,7 @@ The [ZenML Profiles](https://docs.zenml.io/collaborate/zenml-store) offer an eas
 With the [ZenServer](https://docs.zenml.io/collaborate/zenml-server) 
 you can deploy ZenML as a centralized service and connect entire teams and organizations to an easy-to-manage collaboration platform that provides a unified view of the MLOps processes, tools, and technologies that support your entire AI/ML project lifecycle.
 
-Read more about using ZenML for collboration [here](https://docs.zenml.io/collaborate/collaborate-with-zenml).
+Read more about using ZenML for collaboration [here](https://docs.zenml.io/collaborate/collaborate-with-zenml).
 
 # 📖 Learn More
 
@@ -258,7 +258,7 @@ Read more about using ZenML for collboration [here](https://docs.zenml.io/collab
 | 🚀 **[Our latest release]** | New features, bug fixes. |
 | 🗳 **[Vote for Features]** | Pick what we work on next! |
 | 📓 **[Docs]** | Full documentation for creating your own ZenML pipelines. |
-| 📒 **[API Reference]** | The detailed reference for ZenML's API. |
+| 📒 **[API Reference]** | Detailed reference on ZenML's API. |
 | 🍰 **[ZenBytes]** | A guided and in-depth tutorial on MLOps and ZenML. |
 | 🗂️️ **[ZenFiles]** | End-to-end projects using ZenML. |
 | ⚽️ **[Examples]** | Learn best through examples where ZenML is used? We've got you covered. |
@@ -301,7 +301,7 @@ influence the roadmap as follows:
 - Vote on your most wanted feature on our [Discussion
   board](https://zenml.io/discussion).
 - Start a thread in our [Slack channel](https://zenml.io/slack-invite).
-- [Create an issue]((https://github.com/zenml-io/zenml/issues/new/choose)) on our Github repo.
+- [Create an issue](https://github.com/zenml-io/zenml/issues/new/choose) on our Github repo.
 
 
 
