@@ -206,6 +206,7 @@ def init_logging() -> None:
             "apache_beam.io.gcp.bigquery",
             "backoff",
             "segment",
+            "botocore.credentials",
         ]
         for logger_name in disabled_logger_names:
             logging.getLogger(logger_name).setLevel(logging.WARNING)
