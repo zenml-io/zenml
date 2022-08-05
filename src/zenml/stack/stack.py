@@ -556,7 +556,7 @@ class Stack:
                     raise StackValidationError(message)
                 else:
                     message += (
-                        " You need to solve this issue before running "
+                        "\nYou need to solve this issue before running "
                         "a pipeline on this stack."
                     )
                     logger.warning(message)
@@ -595,7 +595,7 @@ class Stack:
                     "of secrets in your stack, you can do so by setting the "
                     f"environment variable {ENV_ZENML_SECRET_VALIDATION_LEVEL} "
                     "to one of the following values: "
-                    f"{SecretValidationLevel.values()}"
+                    f"{SecretValidationLevel.values()}."
                 )
 
     def validate(
