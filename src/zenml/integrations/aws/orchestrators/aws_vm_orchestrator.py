@@ -44,7 +44,9 @@ AWS_SECRET_ACCESS_KEY = "AWS_SECRET_ACCESS_KEY"
 AWS_REGION = "AWS_REGION"
 
 
-def stream_logs(instance_id: Any, seconds_before: int = 10) -> None:
+def stream_logs(
+    instance_id: Any, seconds_before: int = 10
+) -> None:
     """Streams logs onto the logger"""
     pass
 
@@ -139,7 +141,7 @@ def get_startup_script(region: str, image_name: str, c_params: str) -> str:
 def create_instance(
     executor_image_name: str,
     c_params: str,
-    # iam_role: str,
+    iam_role: str,
     instance_type: str,
     instance_image: str,
     region: str,
@@ -165,7 +167,7 @@ def create_instance(
     args = {
         "ImageId": instance_image,
         "InstanceType": instance_type,
-        # "IamInstanceProfile": iam_role,
+        "IamInstanceProfile": iam_role,
         "MaxCount": max_count,
         "MinCount": min_count,
         "UserData": startup,
@@ -192,7 +194,7 @@ def setup_session():
 
 
 class AWSVMOrchestrator(BaseOrchestrator):
-    # iam_role: str
+    iam_role: str = "ec2_vm_role"
     instance_type: str = "t2.micro"
     instance_image: str = None  # ami-02e9f4e447e4cda79
     custom_executor_image_name: str = None
@@ -202,20 +204,17 @@ class AWSVMOrchestrator(BaseOrchestrator):
     min_count: int = 1
     max_count: int = 1
     """
-    Base class for the orchestrator on AWS
+    Base class for the orchestrator on AWS.
     
-    :param iam_role: the name of the role created in AWS IAM
-    :param instance_type: the type of the EC2 instance, defaults to
-    t2.micro
-    :param instance_image: the image for the EC2 instance, defaults to the
-    public image: AWS Deep Learning Base AMI GPU CUDA 11
-    :param custom_executor_image_name: refers to the image with ZenML
-    :param region: the name of the region that AWS is working on
-    :param key_name: the name of the key to be used whilst creating the
-    instance on EC2
-    :param security_group: the name of a selected security group
-    :param min_count: the minimum number of instances, defaults to 1
-    :param max_count: the maximum number of instances, defaults to 1
+    iam_role: the name of the role created in AWS IAM, defaults to ec2_vm_role
+    instance_type: the type of the EC2 instance, defaults to t2.micro  instance on EC2
+    instance_image: the image for the EC2 instance, defaults to the public image: AWS Deep Learning Base AMI GPU CUDA 11
+    custom_executor_image_name: refers to the image with ZenML
+    region: the name of the region that AWS is working on
+    key_name: the name of the key to be used whilst creating the
+    security_group: the name of a selected security group
+    min_count: the minimum number of instances, defaults to 1
+    max_count: the maximum number of instances, defaults to 1
     """
 
     # Class Configuration
@@ -286,7 +285,7 @@ class AWSVMOrchestrator(BaseOrchestrator):
         else:
             security_group = self.security_group
 
-        # iam_role = {"Name": self.iam_role}
+        iam_role = {"Name": self.iam_role}
 
         run_name = runtime_configuration.run_name
         assert run_name
@@ -306,7 +305,7 @@ class AWSVMOrchestrator(BaseOrchestrator):
             instance = create_instance(
                 executor_image_name,
                 c_params,
-                # iam_role,
+                iam_role,
                 self.instance_type,
                 instance_image,
                 self.region,
@@ -320,15 +319,15 @@ class AWSVMOrchestrator(BaseOrchestrator):
                 f"Instance {instance.name} is now running the pipeline. Logs will be streamed soon..."
             )
             time.sleep(1000)
-            # seconds_wait = 10
-            # while instance.status == "RUNNING":
-            #     instance = get_instance(
-            #         self.project_id, self.zone, instance.name
-            #     )
-            #     stream_logs(
-            #         instance, self.project_id, seconds_before=seconds_wait
-            #     )
-            #     time.sleep(seconds_wait)
-            # stream_logs(
-            #     instance, self.project_id, seconds_before=seconds_wait * 2
-            # )
+            seconds_wait = 10
+            while instance.status == "RUNNING":
+                instance = get_instance(
+                    self.project_id, self.zone, instance.name
+                )
+                stream_logs(
+                    instance, self.project_id, seconds_before=seconds_wait
+                )
+                time.sleep(seconds_wait)
+            stream_logs(
+                instance, self.project_id, seconds_before=seconds_wait * 2
+            )
