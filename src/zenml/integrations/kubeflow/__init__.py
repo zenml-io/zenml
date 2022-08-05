@@ -24,7 +24,6 @@ from zenml.integrations.constants import KUBEFLOW
 from zenml.integrations.integration import Integration
 from zenml.zen_stores.models import FlavorWrapper
 
-KUBEFLOW_METADATA_STORE_FLAVOR = "kubeflow"
 KUBEFLOW_ORCHESTRATOR_FLAVOR = "kubeflow"
 
 
@@ -42,12 +41,6 @@ class KubeflowIntegration(Integration):
             List of stack component flavors for this integration.
         """
         return [
-            FlavorWrapper(
-                name=KUBEFLOW_METADATA_STORE_FLAVOR,
-                source="zenml.integrations.kubeflow.metadata_stores.KubeflowMetadataStore",
-                type=StackComponentType.METADATA_STORE,
-                integration=cls.NAME,
-            ),
             FlavorWrapper(
                 name=KUBEFLOW_ORCHESTRATOR_FLAVOR,
                 source="zenml.integrations.kubeflow.orchestrators.KubeflowOrchestrator",
