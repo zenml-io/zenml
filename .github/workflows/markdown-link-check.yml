@@ -14,4 +14,5 @@ jobs:
       with:
         use-quiet-mode: 'no'
         config-file: 'markdown_check_config.json'
+        folder-path: 'docs/'
     
