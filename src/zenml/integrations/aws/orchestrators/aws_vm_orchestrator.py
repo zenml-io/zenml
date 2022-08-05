@@ -158,7 +158,6 @@ def get_startup_script(
     return (
         f"#!/bin/bash -xe\n"
         f"exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1\n"
-        f"sudo apt-get install ec2-instance-connect\n"
         f"aws ecr get-login-password --region {region} | docker login --username AWS --password-stdin {registry_name}\n"
         f"mkdir -p /tmp/aws_config\n"
         f"touch /tmp/aws_config/config\n"
