@@ -22,8 +22,8 @@ from zenml.pipelines import pipeline
 from zenml.steps import step
 
 
-def test_materializer_works_for_image_files(clean_repo):
-    """Check the materializer is able to materialize and dematerialize images."""
+def test_materializer_works_for_pillow_image_objects(clean_repo):
+    """Check the materializer is able to handle PIL image objects."""
 
     @step
     def read_image() -> PIL.Image.Image:
