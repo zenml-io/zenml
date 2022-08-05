@@ -1,3 +1,5 @@
+<!-- markdown-link-check-disable -->
+
 # 0.12.0
 
 The 0.12.0 release comes with the third implementation of the ZenML Model Deployer abstraction: The [KServe](https://github.com/zenml-io/zenml/tree/main/examples/kserve_deployment) integration allows you to deploy any PyTorch, TensorFlow or SKLearn from within your ZenML pipelines!
