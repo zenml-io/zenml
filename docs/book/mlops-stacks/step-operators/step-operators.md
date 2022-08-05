@@ -61,3 +61,9 @@ from zenml.steps import step
 def my_step(...) -> ...:
     ...
 ```
+
+### Specifying per-step resources
+
+If some of your steps require additional hardware resources,
+you can specify them on your steps as described
+[here](../../developer-guide/advanced-usage/specify-step-resources.md).

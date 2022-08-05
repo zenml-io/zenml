@@ -249,6 +249,22 @@ python run.py
 That's it! If everything went as planned this pipeline should now be running in the cloud, and we are one step 
 closer to a production pipeline!
 
+### 💻 Specifying per-step resources
+
+If you're using the Kubeflow orchestrator and some of your pipelines steps have certain
+hardware requirements, you can specify them using the step decorator as follows:
+
+```python
+from zenml.steps import step, ResourceConfiguration
+
+@step(resource_configuration=ResourceConfiguration(cpu_count=8, memory="16GB"))
+def my_step(...) -> ...:
+    ...
+```
+
+This will make sure that your step runs on a machine with the specified resources as long
+as such a machine is available in the Kubernetes cluster you're using.
+
 ### 🧽 Clean up
 Once you're done experimenting, you can stop the port forwarding and delete the example files by calling:
 

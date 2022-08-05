@@ -24,18 +24,18 @@ from zenml.repository import Repository
 
 def visualize_statistics():
     repo = Repository()
-    pipe = repo.get_pipeline(pipeline_name="facets_pipeline")
-    importer_outputs = pipe.runs[-1].get_step(name="importer")
+    pipe = repo.get_pipeline(pipeline="facets_pipeline")
+    importer_outputs = pipe.runs[-1].get_step(step="importer")
     FacetStatisticsVisualizer().visualize(importer_outputs)
 
 
 if __name__ == "__main__":
     # Run the pipeline
-    p = facets_pipeline(
+    pipeline_instance = facets_pipeline(
         importer=importer(),
         trainer=trainer(),
         evaluator=evaluator(),
     )
-    p.run()
+    pipeline_instance.run()
 
     visualize_statistics()
