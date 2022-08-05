@@ -60,7 +60,7 @@ class PillowImageMaterializer(BaseMaterializer):
         file_extension = os.path.splitext(filepath)[-1]
         with tempfile.NamedTemporaryFile(suffix=file_extension) as f:
             # copy from artifact store to temporary file
-            io_utils.copy(filepath, f.name, overwrite=True)
+            io_utils.copy(filepath, f.name, overwrite=True)  # type: ignore[attr-defined]
             image = PIL.Image.open(f.name)
         return image
 
