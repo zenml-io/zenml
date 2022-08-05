@@ -153,9 +153,7 @@ class KubernetesSparkStepOperator(BaseStepOperator):
     def _create_configurations(self, image_name: str):
         """Build the configuration parameters for the spark-submit command."""
         configurations = [
-            "--conf",
-            f"spark.kubernetes.container.image={image_name}",
-            "--packages org.apache.hadoop:hadoop-aws:3.2.2"
+            f"--conf spark.kubernetes.container.image={image_name}",
         ]
         if self.kubernetes_namespace:
             configurations.extend(

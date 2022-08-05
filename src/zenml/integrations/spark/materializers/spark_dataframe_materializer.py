@@ -37,7 +37,7 @@ class SparkDataFrameMaterializer(BaseMaterializer):
 
         # Read the data
         path = os.path.join(self.artifact.uri, DEFAULT_FILEPATH)
-        return spark.read.csv(path)
+        return spark.read.csv(path, header=True)
 
     def handle_return(self, df: DataFrame) -> None:
         """Writes a spark dataframe.
@@ -48,4 +48,4 @@ class SparkDataFrameMaterializer(BaseMaterializer):
 
         # Write the dataframe to the artifact store
         path = os.path.join(self.artifact.uri, DEFAULT_FILEPATH)
-        df.write.csv(path)
+        df.write.csv(path, header=True)
