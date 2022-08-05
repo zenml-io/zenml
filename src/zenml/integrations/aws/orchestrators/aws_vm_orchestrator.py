@@ -238,7 +238,7 @@ def setup_session():
 
 class AWSVMOrchestrator(BaseOrchestrator):
     iam_role: str = "ec2_vm_role"
-    instance_type: str = "t2.micro"
+    instance_type: str = "t3.large"
     instance_image: str = None  # ami-02e9f4e447e4cda79
     custom_executor_image_name: str = None
     region: str = "us-east-1"
