@@ -14,3 +14,6 @@
 from zenml.integrations.spark.materializers.spark_dataframe_materializer import (
     SparkDataFrameMaterializer,
 )
+from zenml.integrations.spark.materializers.spark_model_materializer import (
+    SparkModelMaterializer,
+)
