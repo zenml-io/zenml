@@ -14,6 +14,7 @@
 
 import os
 import time
+from datetime import datetime, timedelta, timezone
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any, ClassVar, List
 
@@ -45,11 +46,31 @@ logger = get_logger(__name__)
 AWS_ACCESS_KEY_ID = "AWS_ACCESS_KEY_ID"
 AWS_SECRET_ACCESS_KEY = "AWS_SECRET_ACCESS_KEY"
 AWS_REGION = "AWS_REGION"
+AWS_LOGS_GROUP_NAME = "zenmlpipelines"
 
 
-def stream_logs(instance_id: Any, seconds_before: int = 10) -> None:
+def stream_logs(stream_name: str, seconds_before: int = 10) -> None:
     """Streams logs onto the logger"""
-    pass
+    now = datetime.now(timezone.utc)
+    before = now - timedelta(seconds=seconds_before)
+
+    session = setup_session()
+    ec2_client = session.client("logs")
+
+    try:
+        response = ec2_client.get_log_events(
+            logGroupName=AWS_LOGS_GROUP_NAME,
+            logStreamName=stream_name,
+            startTime=int(before.timestamp() * 1000),
+            endTime=int(now.timestamp() * 1000),
+            startFromHead=True,
+        )
+    except Exception:
+        return
+
+    # query and print all matching logs
+    for entry in response["events"]:
+        logger.info(entry["message"])
 
 
 def sanitize_aws_vm_name(bad_name: str) -> str:
@@ -108,13 +129,22 @@ def get_instance(
     Args:
         instance_id (str): ID of the instance.
     """
-    instance_client = compute_v1.InstancesClient()
-    return instance_client.get(
-        project=project_id, zone=zone, instance=instance_name
+    session = setup_session()
+    ec2_resource = session.resource("ec2")
+    instances = ec2_resource.instances.filter(
+        Filters=[{"Name": "instance-id", "Values": [f"{instance_id}"]}]
     )
+    for instance in instances:
+        return instance
 
 
-def get_startup_script(region: str, image_name: str, c_params: str) -> str:
+def get_startup_script(
+    region: str,
+    image_name: str,
+    c_params: str,
+    registry_name: str,
+    log_stream_name: str,
+) -> str:
     """Generates a startup script for the VM.
 
     Args:
@@ -126,16 +156,22 @@ def get_startup_script(region: str, image_name: str, c_params: str) -> str:
         script (str): String to attach to VM on launch.
     """
     return (
-        f"#!/bin/bash\n"
+        f"#!/bin/bash -xe\n"
+        f"exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1\n"
+        f"sudo apt-get install ec2-instance-connect\n"
+        f"aws ecr get-login-password --region {region} | docker login --username AWS --password-stdin {registry_name}\n"
         f"mkdir -p /tmp/aws_config\n"
         f"touch /tmp/aws_config/config\n"
         f'echo "[default]">>/tmp/aws_config/config\n'
         f'echo "region = {region}">>/tmp/aws_config/config\n'
-        f"sudo HOME=/home/root docker run --net=host "
+        f"docker run --log-driver=awslogs --net=host "
+        f"--log-opt awslogs-region={region} --log-opt awslogs-group={AWS_LOGS_GROUP_NAME} "
+        f"--log-opt awslogs-create-group=true "
+        f"--log-opt awslogs-stream={log_stream_name} "
         f"--env AWS_REGION={region} -v /tmp/aws_config:/root/.aws "
         f"{image_name} {c_params}\n"
         f"instanceId=$(curl http://169.254.169.254/latest/meta-data/instance-id/)\n"
-        f"/usr/bin/aws ec2 terminate-instances --instance-ids $instanceId --region {region}"
+        f"aws ec2 terminate-instances --instance-ids $instanceId --region {region}"
     )
 
 
@@ -150,6 +186,8 @@ def create_instance(
     security_group: str,
     min_count: str,
     max_count: str,
+    registry_name: str,
+    log_stream_name: str,
 ) -> dict:
     """
     Send an instance creation request to the Compute Engine API and wait for it to complete.
@@ -160,10 +198,14 @@ def create_instance(
         project_id: project ID or project number of the Cloud project you want to use.
         zone: name of the zone to create the instance in. For example: "us-west3-b"
         instance_name: name of the new virtual machine (VM) instance.
+        registry_name: name of the registry where image is stored
+        log_stream_name: name of stream
     Returns:
         Instance object.
     """
-    startup = get_startup_script(region, executor_image_name, c_params)
+    startup = get_startup_script(
+        region, executor_image_name, c_params, registry_name, log_stream_name
+    )
 
     args = {
         "ImageId": instance_image,
@@ -183,7 +225,8 @@ def create_instance(
     # Create the VM
     session = setup_session()
     ec2_resource = session.resource("ec2")
-    return ec2_resource.create_instances(**args)
+    instances = ec2_resource.create_instances(**args)
+    return instances[0]
 
 
 def setup_session():
@@ -311,7 +354,9 @@ class AWSVMOrchestrator(BaseOrchestrator):
                 },
             )
             c_params = " ".join(command + arguments)
-
+            registry_uri = (
+                Repository().active_stack.container_registry.uri.rstrip("/")
+            )
             ###############################################################
             # TODO: Launch a VM with the docker image `image_name` which  #
             # *syncronously executes the `command` with `arguments`       #
@@ -326,21 +371,24 @@ class AWSVMOrchestrator(BaseOrchestrator):
                 security_group,
                 self.min_count,
                 self.max_count,
+                registry_uri,
+                run_name,
             )
 
+            instance_id = instance.id
+
             logger.info(
-                f"Instance {instance.name} is now running the pipeline. Logs will be streamed soon..."
+                f"Instance {instance_id} is booting up. This might take a few minutes..."
             )
-            time.sleep(1000)
+
+            instance.wait_until_running()
+            logger.info(
+                f"Instance {instance_id} is now running the pipeline. Logs will be streamed soon..."
+            )
+            instance = get_instance(instance_id)
             seconds_wait = 10
-            while instance.status == "RUNNING":
-                instance = get_instance(
-                    self.project_id, self.zone, instance.name
-                )
-                stream_logs(
-                    instance, self.project_id, seconds_before=seconds_wait
-                )
+            while instance.state["Name"] not in ["stopped", "terminated"]:
+                instance = get_instance(instance_id)
+                stream_logs(run_name, seconds_before=seconds_wait)
                 time.sleep(seconds_wait)
-            stream_logs(
-                instance, self.project_id, seconds_before=seconds_wait * 2
-            )
+            stream_logs(run_name, seconds_before=seconds_wait)

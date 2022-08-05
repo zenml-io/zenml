@@ -25,7 +25,6 @@ from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.integrations.registry import integration_registry
 from zenml.repository import Repository
 from zenml.steps import BaseStep
-from zenml.steps import utils as step_utils
 from zenml.utils import source_utils, string_utils, yaml_utils
 
 DEFAULT_SINGLE_STEP_CONTAINER_ENTRYPOINT_COMMAND = [
