@@ -150,6 +150,45 @@ def read_json(file_path: str) -> Any:
         raise FileNotFoundError(f"{file_path} does not exist.")
 
 
+def write_json_string(
+    file_path: str,
+    contents: str,
+) -> None:
+    """Write contents as JSON format to file_path.
+
+    Args:
+        file_path: Path to JSON file.
+        contents: Contents of JSON file as str.
+
+    Raises:
+        FileNotFoundError: if directory does not exist.
+    """
+    if not io_utils.is_remote(file_path):
+        dir_ = str(Path(file_path).parent)
+        if not fileio.isdir(dir_):
+            # Check if it is a local path, if it doesn't exist, raise Exception.
+            raise FileNotFoundError(f"Directory {dir_} does not exist.")
+    io_utils.write_file_contents_as_string(file_path, contents)
+
+
+def read_json_string(file_path: str) -> Any:
+    """Read JSON on file path and returns contents as json string.
+
+    Args:
+        file_path: Path to JSON file.
+
+    Returns:
+        Contents of the file in a string.
+
+    Raises:
+        FileNotFoundError: if file does not exist.
+    """
+    if fileio.exists(file_path):
+        return io_utils.read_file_contents_as_string(file_path)
+    else:
+        raise FileNotFoundError(f"{file_path} does not exist.")
+
+
 class UUIDEncoder(json.JSONEncoder):
     """JSON encoder for UUID objects."""
 

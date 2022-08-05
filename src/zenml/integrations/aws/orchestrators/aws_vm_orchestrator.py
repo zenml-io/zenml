@@ -18,16 +18,19 @@ from operator import itemgetter
 from typing import TYPE_CHECKING, Any, ClassVar, List
 
 import boto3
+from google.protobuf import json_format
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
 from zenml.integrations.aws import AWS_VM_ORCHESTRATOR_FLAVOR
 from zenml.integrations.aws.orchestrators.aws_vm_entrypoint_configuration import (
+    PB2_PIPELINE_JSON_FILE_PATH,
     RUN_NAME_OPTION,
     AWSVMEntrypointConfiguration,
 )
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.repository import Repository
+from zenml.utils import yaml_utils
 from zenml.utils.docker_utils import get_image_digest
 from zenml.utils.source_utils import get_source_root_path
 
@@ -44,9 +47,7 @@ AWS_SECRET_ACCESS_KEY = "AWS_SECRET_ACCESS_KEY"
 AWS_REGION = "AWS_REGION"
 
 
-def stream_logs(
-    instance_id: Any, seconds_before: int = 10
-) -> None:
+def stream_logs(instance_id: Any, seconds_before: int = 10) -> None:
     """Streams logs onto the logger"""
     pass
 
@@ -187,9 +188,9 @@ def create_instance(
 
 def setup_session():
     session = boto3.Session()
-    credentials = session.get_credentials()
-    os.environ[AWS_ACCESS_KEY_ID] = credentials.access_key
-    os.environ[AWS_SECRET_ACCESS_KEY] = credentials.secret_key
+    # credentials = session.get_credentials()
+    # os.environ[AWS_ACCESS_KEY_ID] = credentials.access_key
+    # os.environ[AWS_SECRET_ACCESS_KEY] = credentials.secret_key
     return session
 
 
@@ -198,7 +199,7 @@ class AWSVMOrchestrator(BaseOrchestrator):
     instance_type: str = "t2.micro"
     instance_image: str = None  # ami-02e9f4e447e4cda79
     custom_executor_image_name: str = None
-    region: str = None
+    region: str = "us-east-1"
     key_name: str = None
     security_group: str = None
     min_count: int = 1
@@ -223,7 +224,7 @@ class AWSVMOrchestrator(BaseOrchestrator):
     def get_docker_image_name(self, pipeline_name: str) -> str:
         """Returns the full docker image name including registry and tag."""
 
-        base_image_name = f"zenml-aws-vm:{pipeline_name}"
+        base_image_name = f"aws-vm-orchestrator:{pipeline_name}"
         container_registry = Repository().active_stack.container_registry
 
         if container_registry:
@@ -290,12 +291,24 @@ class AWSVMOrchestrator(BaseOrchestrator):
         run_name = runtime_configuration.run_name
         assert run_name
 
+        # Write pb2 pipeline to artifact store
+        artifact_store = Repository().active_stack.artifact_store
+        pb2_pipeline_json_file_path = os.path.join(
+            artifact_store.path, run_name, "pipeline.json"
+        )
+        yaml_utils.write_json_string(
+            pb2_pipeline_json_file_path, json_format.MessageToJson(pb2_pipeline)
+        )
+
         for step in sorted_steps:
             command = AWSVMEntrypointConfiguration.get_entrypoint_command()
             arguments = AWSVMEntrypointConfiguration.get_entrypoint_arguments(
                 step=step,
                 pb2_pipeline=pb2_pipeline,
-                **{RUN_NAME_OPTION: run_name},
+                **{
+                    RUN_NAME_OPTION: run_name,
+                    PB2_PIPELINE_JSON_FILE_PATH: pb2_pipeline_json_file_path,
+                },
             )
             c_params = " ".join(command + arguments)
 
