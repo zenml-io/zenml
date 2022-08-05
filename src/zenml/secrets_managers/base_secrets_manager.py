@@ -74,6 +74,9 @@ class BaseSecretsManager(StackComponent, ABC):
     def __init__(self, **kwargs: Any) -> None:
         """Ensures that no attributes are specified as a secret reference.
 
+        Args:
+            **kwargs: Arguments to initialize this secrets manager.
+
         Raises:
             ValueError: If any of the secrets manager attributes are specified
                 as a secret reference.

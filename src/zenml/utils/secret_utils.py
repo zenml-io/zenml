@@ -15,7 +15,7 @@
 import re
 from typing import Any, NamedTuple
 
-_secret_reference_expression = re.compile("\$\{ ?\S*?\.\S* ?\}")
+_secret_reference_expression = re.compile(r"\$\{ ?\S+?\.\S+ ?\}")
 
 
 def is_secret_reference(value: Any) -> bool:

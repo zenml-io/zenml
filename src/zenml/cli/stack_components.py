@@ -1264,11 +1264,11 @@ def generate_stack_component_register_secret_command(
             secret_contents = {}
 
             for key in keys:
-                value = getpass.getpass(
-                    f"Value for secret {secret_name}.{key}:"
-                )
-                if not value:
-                    raise ValueError()
+                value = None
+                while not value:
+                    value = getpass.getpass(
+                        f"Value for secret {secret_name}.{key}:"
+                    )
 
                 secret_contents[key] = value
 

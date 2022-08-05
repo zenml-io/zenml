@@ -521,10 +521,11 @@ class Stack:
         """Validates that all secrets of the stack exists.
 
         Args:
-            raise_execption: If `True`, raises an exception if the stack has
+            raise_exception: If `True`, raises an exception if the stack has
                 no secrets manager or a secret is misssing. Otherwise a
                 warning is logged.
 
+        # noqa: DAR402
         Raises:
             StackValidationError: If the stack has no secrets manager or a
                 secret is missing.
@@ -542,6 +543,15 @@ class Stack:
         ):
 
             def _handle_error(message: str) -> None:
+                """Handles the error by raising an exception or logging.
+
+                Args:
+                    message: The error message.
+
+                Raises:
+                    StackValidationError: If called and `raise_exception` of
+                        the outer method is `True`.
+                """
                 if raise_exception:
                     raise StackValidationError(message)
                 else:
@@ -556,6 +566,7 @@ class Stack:
                     f"Some component in stack `{self.name}` reference secret "
                     "values, but there is no secrets manager in this stack."
                 )
+                return
 
             missing = []
             existing_secrets = set(self.secrets_manager.get_all_secret_keys())
@@ -566,7 +577,7 @@ class Stack:
                 ):
                     try:
                         _ = self.secrets_manager.get_secret(
-                            secret_ref.secret_name
+                            secret_ref.name
                         ).content[secret_ref.key]
                     except KeyError:
                         missing.append(secret_ref)
@@ -574,8 +585,8 @@ class Stack:
                     secret_validation_level
                     == SecretValidationLevel.SECRET_EXISTS
                 ):
-                    if secret_ref.secret_name not in existing_secrets:
-                        missing.append(secret_ref.secret_name)
+                    if secret_ref.name not in existing_secrets:
+                        missing.append(secret_ref)
 
             if missing:
                 _handle_error(

@@ -76,6 +76,9 @@ class StackComponent(BaseModel, ABC):
         unexpected behavior. This method ensures that no attributes that require
         custom pydantic validation are set as secret references.
 
+        Args:
+            **kwargs: Arguments to initialize this stack component.
+
         Raises:
             ValueError: If an attribute that requires custom pydantic validation
                 is passed as a secret reference, or if the `name` attribute
