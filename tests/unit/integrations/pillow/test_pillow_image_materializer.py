@@ -23,7 +23,7 @@ from zenml.steps import step
 
 
 def test_materializer_works_for_image_files(clean_repo):
-    """..."""
+    """Check the materializer is able to materialize and dematerialize images."""
 
     @step
     def read_image() -> PIL.Image.Image:
@@ -42,10 +42,6 @@ def test_materializer_works_for_image_files(clean_repo):
             )
         ).run()
 
-    image = (
-        clean_repo.get_pipeline("test_pipeline")
-        .runs[-1]
-        .steps[-1]
-        .output.read()
-    )
+    last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
+    image = last_run.steps[-1].output.read()
     assert isinstance(image, PIL.Image.Image)
