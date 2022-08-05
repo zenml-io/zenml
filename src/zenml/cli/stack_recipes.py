@@ -27,7 +27,7 @@ from rich.text import Text
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup
-from zenml.cli.stack import  import_stack, stack
+from zenml.cli.stack import import_stack, stack
 from zenml.console import console
 from zenml.exceptions import GitNotFoundError
 from zenml.io import fileio
@@ -82,17 +82,16 @@ class LocalStackRecipe:
     @property
     def stack_yaml_file(self) -> str:
         """Path of the stack config YAML file created as part of recipe deployment.
-        
+
         Returns:
             Path of the stack config YAML file created as part of recipe deployment.
         """
         stack_info_file = open(self.path / STACK_INFO_FILE, "r")
-        file_name = stack_info_file.read().replace("\"", "")
+        file_name = stack_info_file.read().replace('"', "")
         file_name = file_name[2:]
         stack_info_file.close()
-        
+
         return os.path.join(self.path, file_name.replace("\n", ""))
-        
 
     def is_present(self) -> bool:
         """Checks if the stack_recipe exists at the given path.
@@ -102,9 +101,7 @@ class LocalStackRecipe:
         """
         return fileio.isdir(str(self.path))
 
-    def run_stack_recipe(
-        self, stack_recipe_runner: List[str]
-    ) -> None:
+    def run_stack_recipe(self, stack_recipe_runner: List[str]) -> None:
         """Run the local stack recipe using the bash script at the supplied location.
 
         Args:
@@ -127,13 +124,13 @@ class LocalStackRecipe:
                 )
             except RuntimeError:
                 raise NotImplementedError(
-                    f"Please raise an issue at "
+                    "Please raise an issue at "
                     "https://github.com/zenml-io/mlops-stacks"
                 )
             except subprocess.CalledProcessError as e:
                 if e.returncode == 38:
                     raise NotImplementedError(
-                        f"Please raise an issue at "
+                        "Please raise an issue at "
                         "https://github.com/zenml-io/mlops-stacks"
                     )
                 raise
@@ -677,7 +674,13 @@ def pull(
     required=False,
     help="Set a name for the ZenML stack that will be imported from the YAML"
     "configuration file which gets generated after deploying the stack recipe."
-    "Defaults to the name of the stack recipe being deployed."
+    "Defaults to the name of the stack recipe being deployed.",
+)
+@click.option(
+    "--no-import",
+    is_flag=True,
+    help="Don't import the stack automatically after the recipe is deployed. The "
+    "stack configuration file is still generated and can be imported manually.",
 )
 @pass_git_stack_recipes_handler
 @click.pass_context
@@ -687,6 +690,7 @@ def deploy(
     stack_recipe_name: str,
     path: str,
     force: bool,
+    no_import: bool,
     shell_executable: Optional[str],
     stack_name: Optional[str],
 ) -> None:
@@ -703,6 +707,11 @@ def deploy(
         force: Force the run of the stack_recipe.
         shell_executable: Manually specify the path to the executable that
             runs .sh files.
+        stack_name: A name for the ZenML stack that gets imported as a result
+            of the recipe deployment.
+        no_import: Don't import the stack automatically after the recipe is
+            deployed. The stack configuration file is still generated and
+            can be imported manually.
     """
     stack_recipes_dir = Path(os.getcwd()) / path
 
@@ -750,24 +759,28 @@ def deploy(
                 f"Find it at {local_stack_recipe.stack_yaml_file}."
             )
 
-            import_stack_name = stack_name if stack_name else stack_recipe_name
-            logger.info(
-                f"Importing a new stack with the name {import_stack_name}."
-            )
+            if not no_import:
+                import_stack_name = (
+                    stack_name if stack_name else stack_recipe_name
+                )
+                cli_utils.declare(
+                    f"Importing a new stack with the name {import_stack_name}."
+                )
 
-            # import deployed resources as ZenML stack
-            ctx.invoke(
-                import_stack, 
-                stack_name = stack_name,
-                filename = local_stack_recipe.stack_yaml_file,
-                ignore_version_mismatch = True,
-            )
+                # import deployed resources as ZenML stack
+                ctx.invoke(
+                    import_stack,
+                    stack_name=stack_name,
+                    filename=local_stack_recipe.stack_yaml_file,
+                    ignore_version_mismatch=True,
+                )
 
         except NotImplementedError as e:
             cli_utils.error(
                 f"No run_recipe.sh script found for the recipe "
                 f"{stack_recipe_name}.{str(e)}"
             )
+
 
 @stack_recipe.command(
     help="Destroy the stack components created previously with "
@@ -841,6 +854,16 @@ def destroy(
             local_stack_recipe.run_stack_recipe(
                 stack_recipe_runner=stack_recipe_runner,
             )
+
+            cli_utils.declare(
+                "\n" + "Your active stack might now be invalid. Please run:"
+            )
+            text = Text("zenml stack describe", style="markdown.code_block")
+            cli_utils.declare(text)
+            cli_utils.declare(
+                "\n" + "to investigate and switch to a new stack if needed."
+            )
+
         except NotImplementedError as e:
             cli_utils.error(
                 f"No destroy_recipe.sh script found for the recipe "
