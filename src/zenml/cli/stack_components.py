@@ -1258,11 +1258,9 @@ def generate_stack_component_register_secret_command(
         secrets_manager = secrets_manager_wrapper.to_component()
 
         # TODO: handle existing secrets, or existing keys in secrets
-        secret_names = {s.secret_name for s in required_secrets}
+        secret_names = {s.name for s in required_secrets}
         for secret_name in secret_names:
-            keys = {
-                s.key for s in required_secrets if s.secret_name == secret_name
-            }
+            keys = {s.key for s in required_secrets if s.name == secret_name}
             secret_contents = {}
 
             for key in keys:

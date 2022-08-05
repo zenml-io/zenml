@@ -57,8 +57,8 @@ if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
     from zenml.secrets_managers import BaseSecretsManager
     from zenml.stack import StackComponent
-    from zenml.stack.stack_component import SecretReference
     from zenml.step_operators import BaseStepOperator
+    from zenml.utils import secret_utils
 
 
 logger = get_logger(__name__)
@@ -506,7 +506,7 @@ class Stack:
         return set.union(*requirements) if requirements else set()
 
     @property
-    def required_secrets(self) -> Set["SecretReference"]:
+    def required_secrets(self) -> Set["secret_utils.SecretReference"]:
         """All required secrets for this stack.
 
         Returns:
