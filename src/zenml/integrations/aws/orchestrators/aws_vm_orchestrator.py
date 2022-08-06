@@ -342,52 +342,56 @@ class AWSVMOrchestrator(BaseOrchestrator):
             pb2_pipeline_json_file_path, json_format.MessageToJson(pb2_pipeline)
         )
 
-        for step in sorted_steps:
-            command = AWSVMEntrypointConfiguration.get_entrypoint_command()
-            arguments = AWSVMEntrypointConfiguration.get_entrypoint_arguments(
-                step=step,
-                pb2_pipeline=pb2_pipeline,
-                **{
-                    RUN_NAME_OPTION: run_name,
-                    PB2_PIPELINE_JSON_FILE_PATH: pb2_pipeline_json_file_path,
-                },
-            )
-            c_params = " ".join(command + arguments)
-            registry_uri = (
-                Repository().active_stack.container_registry.uri.rstrip("/")
-            )
-            ###############################################################
-            # TODO: Launch a VM with the docker image `image_name` which  #
-            # *syncronously executes the `command` with `arguments`       #
-            instance = create_instance(
-                executor_image_name,
-                c_params,
-                iam_role,
-                self.instance_type,
-                instance_image,
-                self.region,
-                self.key_name,
-                security_group,
-                self.min_count,
-                self.max_count,
-                registry_uri,
-                run_name,
-            )
+        command = AWSVMEntrypointConfiguration.get_entrypoint_command()
+        arguments = AWSVMEntrypointConfiguration.get_entrypoint_arguments(
+            steps=sorted_steps,
+            pb2_pipeline=pb2_pipeline,
+            **{
+                RUN_NAME_OPTION: run_name,
+                PB2_PIPELINE_JSON_FILE_PATH: pb2_pipeline_json_file_path,
+            },
+        )
+        c_params = " ".join(command + arguments)
+        registry_uri = Repository().active_stack.container_registry.uri.rstrip(
+            "/"
+        )
+        ###############################################################
+        # TODO: Launch a VM with the docker image `image_name` which  #
+        # *syncronously executes the `command` with `arguments`       #
+        instance = create_instance(
+            executor_image_name,
+            c_params,
+            iam_role,
+            self.instance_type,
+            instance_image,
+            self.region,
+            self.key_name,
+            security_group,
+            self.min_count,
+            self.max_count,
+            registry_uri,
+            run_name,
+        )
 
-            instance_id = instance.id
+        instance_id = instance.id
 
-            logger.info(
-                f"Instance {instance_id} is booting up. This might take a few minutes..."
-            )
+        logger.info(
+            f"Instance {instance_id} is booting up. This might take a few minutes..."
+        )
 
-            instance.wait_until_running()
-            logger.info(
-                f"Instance {instance_id} is now running the pipeline. Logs will be streamed soon..."
-            )
+        instance.wait_until_running()
+        logger.info(
+            f"Instance {instance_id} is now running the pipeline. Logs will be streamed soon..."
+        )
+        instance = get_instance(instance_id)
+        seconds_wait = 10
+        while instance.state["Name"] not in [
+            "stopped",
+            "terminated",
+            "stopping",
+            "shutting-down",
+        ]:
             instance = get_instance(instance_id)
-            seconds_wait = 10
-            while instance.state["Name"] not in ["stopped", "terminated"]:
-                instance = get_instance(instance_id)
-                stream_logs(run_name, seconds_before=seconds_wait)
-                time.sleep(seconds_wait)
             stream_logs(run_name, seconds_before=seconds_wait)
+            time.sleep(seconds_wait)
+        stream_logs(run_name, seconds_before=seconds_wait)

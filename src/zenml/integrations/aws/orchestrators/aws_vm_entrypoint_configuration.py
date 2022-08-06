@@ -35,9 +35,7 @@ DEFAULT_SINGLE_STEP_CONTAINER_ENTRYPOINT_COMMAND = [
 # Constants for all the ZenML default entrypoint options
 ENTRYPOINT_CONFIG_SOURCE_OPTION = "entrypoint_config_source"
 MAIN_MODULE_SOURCE_OPTION = "main_module_source"
-STEP_SOURCE_OPTION = "step_source"
-INPUT_ARTIFACT_SOURCES_OPTION = "input_artifact_sources"
-MATERIALIZER_SOURCES_OPTION = "materializer_sources"
+SOURCES_DICT = "sources_dict"
 DEFAULT_SINGLE_STEP_CONTAINER_ENTRYPOINT_COMMAND = [
     "python",
     "-m",
@@ -68,23 +66,22 @@ class AWSVMEntrypointConfiguration(StepEntrypointConfiguration):
             # to run a pipeline. This will be imported inside the entrypoint to
             # make sure all custom materializer/artifact types are registered.
             MAIN_MODULE_SOURCE_OPTION,
-            # Importable source pointing to the ZenML step class that should be
+            # The following dict is a collection of these options:
+            # 1. Importable source pointing to the ZenML step class that should be
             # run inside the entrypoint. This will be used to recreate the tfx
             # executor class that is required to run the step function.
-            STEP_SOURCE_OPTION,
-            # Base64 encoded json dictionary mapping the step input names to
+            # 2. Base64 encoded json dictionary mapping the step input names to
             # importable sources pointing to
             # `zenml.artifacts.base_artifact.BaseArtifact` subclasses.
             # These classes are needed to recreate the tfx executor
             # class and can't be inferred as we do not have access to the
             # output artifacts from previous steps.
-            INPUT_ARTIFACT_SOURCES_OPTION,
-            # Base64 encoded json dictionary mapping the step output names to
+            # 3. Base64 encoded json dictionary mapping the step output names to
             # importable sources pointing to
             # `zenml.materializers.base_materializer.BaseMaterializer`
             # subclasses. These classes are needed to recreate the tfx executor
             # class if custom materializers were specified for the step.
-            MATERIALIZER_SOURCES_OPTION,
+            SOURCES_DICT,
         }
         custom_options = cls.get_custom_entrypoint_options()
         return zenml_options.union(custom_options)
@@ -96,7 +93,7 @@ class AWSVMEntrypointConfiguration(StepEntrypointConfiguration):
     @classmethod
     def get_entrypoint_arguments(
         cls,
-        step: BaseStep,
+        steps: List[BaseStep],
         pb2_pipeline: Pb2Pipeline,
         **kwargs: Any,
     ) -> List[str]:
@@ -113,7 +110,7 @@ class AWSVMEntrypointConfiguration(StepEntrypointConfiguration):
             this one if they require custom arguments.
 
         Args:
-            step: The step that the entrypoint should run using the arguments
+            steps: The list of steps that the entrypoint should run using the arguments
                 returned by this method.
             pb2_pipeline: The protobuf representation of the pipeline to which
                 the `step` belongs.
@@ -159,21 +156,29 @@ class AWSVMEntrypointConfiguration(StepEntrypointConfiguration):
         # Resolve the entrypoint config source
         entrypoint_config_source = _resolve_class(cls)
 
-        # Resolve the step class
-        step_source = _resolve_class(step.__class__)
+        sources_dict = {}
+        for step in steps:
+            # Resolve the step class
+            step_source = _resolve_class(step.__class__)
 
-        # Resolve the input artifact classes
-        input_artifact_sources = {
-            input_name: _resolve_class(input_type)
-            for input_name, input_type in step.INPUT_SPEC.items()
-        }
+            # Resolve the input artifact classes
+            input_artifact_sources = {
+                input_name: _resolve_class(input_type)
+                for input_name, input_type in step.INPUT_SPEC.items()
+            }
 
-        # Resolve the output materializer classes
-        materializer_classes = step.get_materializers(ensure_complete=True)
-        materializer_sources = {
-            output_name: _resolve_class(materializer_class)
-            for output_name, materializer_class in materializer_classes.items()
-        }
+            # Resolve the output materializer classes
+            materializer_classes = step.get_materializers(ensure_complete=True)
+            materializer_sources = {
+                output_name: _resolve_class(materializer_class)
+                for output_name, materializer_class in materializer_classes.items()
+            }
+            # Put it all in one dict to pass to the entrypoint
+            sources_dict[step.name] = (
+                step_source,
+                materializer_sources,
+                input_artifact_sources,
+            )
 
         # See `get_entrypoint_options()` for an in -depth explanation of all
         # these arguments.
@@ -182,14 +187,10 @@ class AWSVMEntrypointConfiguration(StepEntrypointConfiguration):
             entrypoint_config_source,
             f"--{MAIN_MODULE_SOURCE_OPTION}",
             main_module_source,
-            f"--{STEP_SOURCE_OPTION}",
-            step_source,
+            f"--{SOURCES_DICT}",
             # Base64 encode the json strings to make sure there are no issues
             # when passing these arguments
-            f"--{INPUT_ARTIFACT_SOURCES_OPTION}",
-            string_utils.b64_encode(json.dumps(input_artifact_sources)),
-            f"--{MATERIALIZER_SOURCES_OPTION}",
-            string_utils.b64_encode(json.dumps(materializer_sources)),
+            string_utils.b64_encode(json.dumps(sources_dict)),
         ]
 
         custom_arguments = cls.get_custom_entrypoint_arguments(
@@ -247,26 +248,13 @@ class AWSVMEntrypointConfiguration(StepEntrypointConfiguration):
         json_format.Parse(pb2_pipeline_json, pb2_pipeline)
 
         main_module_source = self.entrypoint_args[MAIN_MODULE_SOURCE_OPTION]
-        step_source = self.entrypoint_args[STEP_SOURCE_OPTION]
-        input_artifact_sources = json.loads(
-            string_utils.b64_decode(
-                self.entrypoint_args[INPUT_ARTIFACT_SOURCES_OPTION]
-            )
-        )
-        materializer_sources = json.loads(
-            string_utils.b64_decode(
-                self.entrypoint_args[MATERIALIZER_SOURCES_OPTION]
-            )
+        sources_dict = json.loads(
+            string_utils.b64_decode(self.entrypoint_args[SOURCES_DICT])
         )
 
         # Get some common values that will be used throughout the remainder of
         # this method
         pipeline_name = pb2_pipeline.pipeline_info.id
-        if "@" in step_source:
-            # Get rid of potential ZenML version pins if the source looks like
-            # this `zenml.some_module.SomeClass@zenml_0.9.9`
-            step_source, _ = step_source.split("@", 1)
-        step_module, step_name = step_source.rsplit(".", 1)
 
         # Allow subclasses to run custom code before user code is imported and
         # the step is executed.
@@ -293,58 +281,69 @@ class AWSVMEntrypointConfiguration(StepEntrypointConfiguration):
         # in the containers they create.
         constants.USER_MAIN_MODULE = main_module_source
 
-        # Create an instance of the ZenML step that this entrypoint should run.
-        step_class = source_utils.load_source_path_class(step_source)
-        if not issubclass(step_class, BaseStep):
-            raise TypeError(
-                f"The step source `{step_source}` passed to the "
-                f"entrypoint is not pointing to a `{BaseStep}` subclass."
-            )
-
-        step = step_class()
-
-        # Compute the name of the module in which the step was in when the
-        # pipeline run was started. This could potentially differ from the
-        # module part of `STEP_SOURCE_OPTION` if the step was defined in
-        # the `__main__` module (e.g. the step was defined in `run.py` and the
-        # pipeline run was started by the call `python run.py`).
-        # Why we need this: The executor source is stored inside the protobuf
-        # pipeline representation object `pb2_pipeline` which was passed to
-        # this entrypoint. Tfx will try to load the executor class from that
-        # source, so we need to recreate the executor class in the same module.
-        original_step_module = (
-            "__main__" if step_module == main_module_source else step_module
-        )
-
-        # Make sure the `__module__` attribute of our step instance points to
-        # this original module so the executor class gets created in the
-        # correct module.
-        step.__module__ = original_step_module
-
-        # Create the executor class that is responsible for running the step
-        # function. This method call dynamically creates an executor class
-        # which will later be used when `orchestrator.run_step(...)` is running
-        # the step.
-        self._create_executor_class(
-            step=step,
-            input_artifact_sources=input_artifact_sources,
-            materializer_sources=materializer_sources,
-        )
-
-        # Execute the actual step code.
         run_name = self.get_run_name(pipeline_name=pipeline_name)
 
-        execution_info = orchestrator.run_step(
-            step=step, run_name=run_name, pb2_pipeline=pb2_pipeline
-        )
+        for step_name, (
+            step_source,
+            materializer_sources,
+            input_artifact_sources,
+        ) in sources_dict.items():
+            # Get rid of potential ZenML version pins if the source looks like
+            # this `zenml.some_module.SomeClass@zenml_0.9.9`
+            if "@" in step_source:
+                step_source, _ = step_source.split("@", 1)
+            step_module, step_name = step_source.rsplit(".", 1)
 
-        # Allow subclasses to run custom code after the step finished executing.
-        pipeline_node = orchestrator._get_node_with_step_name(
-            step_name=step_name, pb2_pipeline=pb2_pipeline
-        )
-        self.post_run(
-            pipeline_name=pipeline_name,
-            step_name=step_name,
-            pipeline_node=pipeline_node,
-            execution_info=execution_info,
-        )
+            # Create an instance of the ZenML step that this entrypoint should run.
+            step_class = source_utils.load_source_path_class(step_source)
+            if not issubclass(step_class, BaseStep):
+                raise TypeError(
+                    f"The step source `{step_source}` passed to the "
+                    f"entrypoint is not pointing to a `{BaseStep}` subclass."
+                )
+
+            step = step_class()
+
+            # Compute the name of the module in which the step was in when the
+            # pipeline run was started. This could potentially differ from the
+            # module part of `STEP_SOURCE_OPTION` if the step was defined in
+            # the `__main__` module (e.g. the step was defined in `run.py` and the
+            # pipeline run was started by the call `python run.py`).
+            # Why we need this: The executor source is stored inside the protobuf
+            # pipeline representation object `pb2_pipeline` which was passed to
+            # this entrypoint. Tfx will try to load the executor class from that
+            # source, so we need to recreate the executor class in the same module.
+            original_step_module = (
+                "__main__" if step_module == main_module_source else step_module
+            )
+
+            # Make sure the `__module__` attribute of our step instance points to
+            # this original module so the executor class gets created in the
+            # correct module.
+            step.__module__ = original_step_module
+
+            # Create the executor class that is responsible for running the step
+            # function. This method call dynamically creates an executor class
+            # which will later be used when `orchestrator.run_step(...)` is running
+            # the step.
+            self._create_executor_class(
+                step=step,
+                input_artifact_sources=input_artifact_sources,
+                materializer_sources=materializer_sources,
+            )
+
+            # Execute the actual step code.
+            execution_info = orchestrator.run_step(
+                step=step, run_name=run_name, pb2_pipeline=pb2_pipeline
+            )
+
+            # Allow subclasses to run custom code after the step finished executing.
+            pipeline_node = orchestrator._get_node_with_step_name(
+                step_name=step_name, pb2_pipeline=pb2_pipeline
+            )
+            self.post_run(
+                pipeline_name=pipeline_name,
+                step_name=step_name,
+                pipeline_node=pipeline_node,
+                execution_info=execution_info,
+            )
