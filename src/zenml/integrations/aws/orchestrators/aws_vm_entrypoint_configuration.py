@@ -258,7 +258,7 @@ class AWSVMEntrypointConfiguration(StepEntrypointConfiguration):
 
         # Allow subclasses to run custom code before user code is imported and
         # the step is executed.
-        self.setup(pipeline_name=pipeline_name, step_name=step_name)
+        self.setup(pipeline_name=pipeline_name, step_name=None)
 
         # Activate all the integrations. This makes sure that all materializers
         # and stack component flavors are registered.
