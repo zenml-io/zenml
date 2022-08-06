@@ -168,7 +168,7 @@ def get_startup_script(
         f"--log-opt awslogs-create-group=true "
         f"--log-opt awslogs-stream={log_stream_name} "
         f"--env AWS_REGION={region} -v /tmp/aws_config:/root/.aws "
-        f"{image_name} {c_params}\n"
+        f"{image_name} {c_params} || true\n"
         f"instanceId=$(curl http://169.254.169.254/latest/meta-data/instance-id/)\n"
         f"aws ec2 terminate-instances --instance-ids $instanceId --region {region}"
     )
