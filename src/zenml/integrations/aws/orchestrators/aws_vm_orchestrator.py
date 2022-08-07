@@ -46,7 +46,7 @@ logger = get_logger(__name__)
 AWS_ACCESS_KEY_ID = "AWS_ACCESS_KEY_ID"
 AWS_SECRET_ACCESS_KEY = "AWS_SECRET_ACCESS_KEY"
 AWS_REGION = "AWS_REGION"
-AWS_LOGS_GROUP_NAME = "zenmlpipelines"
+AWS_LOGS_GROUP_NAME = "/zenml/ec2/pipelines"
 
 
 def stream_logs(stream_name: str, seconds_before: int = 10) -> None:
@@ -376,22 +376,38 @@ class AWSVMOrchestrator(BaseOrchestrator):
         instance_id = instance.id
 
         logger.info(
-            f"Instance {instance_id} is booting up. This might take a few minutes..."
+            f"Instance {instance_id} is booting up. "
+            "This might take a few minutes..."
         )
 
         instance.wait_until_running()
-        logger.info(
-            f"Instance {instance_id} is now running the pipeline. Logs will be streamed soon..."
+
+        group_name_sanitized = AWS_LOGS_GROUP_NAME.replace("/", "$252F")
+        logs_url = (
+            f"https://{self.region}.console.aws.amazon.com/"
+            f"cloudwatch/home?region={self.region}#logsV2:log-groups/log-group/"
+            f"{group_name_sanitized}/log-events/{run_name}"
         )
+        logger.info(
+            f"Instance {instance_id} is now running the pipeline. Logs will be streamed soon. "
+            f"You can also view the logs directly at: {logs_url}"
+        )
+
         instance = get_instance(instance_id)
         seconds_wait = 10
-        while instance.state["Name"] not in [
-            "stopped",
-            "terminated",
-            "stopping",
-            "shutting-down",
-        ]:
-            instance = get_instance(instance_id)
+        try:
+            while instance.state["Name"] not in [
+                "stopped",
+                "terminated",
+                "stopping",
+                "shutting-down",
+            ]:
+                instance = get_instance(instance_id)
+                stream_logs(run_name, seconds_before=seconds_wait)
+                time.sleep(seconds_wait)
             stream_logs(run_name, seconds_before=seconds_wait)
-            time.sleep(seconds_wait)
-        stream_logs(run_name, seconds_before=seconds_wait)
+        except KeyboardInterrupt:
+            logger.info(
+                f"Keyboard interupt detected! Exiting logs streaming. "
+                f"Please view logs directly at {logs_url}"
+            )
