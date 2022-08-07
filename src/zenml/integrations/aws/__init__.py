@@ -28,7 +28,7 @@ from zenml.zen_stores.models import FlavorWrapper
 AWS_SECRET_MANAGER_FLAVOR = "aws"
 AWS_CONTAINER_REGISTRY_FLAVOR = "aws"
 AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR = "sagemaker"
-AWS_VM_ORCHESTRATOR_FLAVOR = "aws"
+AWS_VM_ORCHESTRATOR_FLAVOR = "aws_vm"
 
 
 class AWSIntegration(Integration):
