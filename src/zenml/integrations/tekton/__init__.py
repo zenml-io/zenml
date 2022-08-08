@@ -20,18 +20,17 @@ the CLI tool.
 from typing import List
 
 from zenml.enums import StackComponentType
-from zenml.integrations.constants import KUBEFLOW
+from zenml.integrations.constants import TEKTON
 from zenml.integrations.integration import Integration
 from zenml.zen_stores.models import FlavorWrapper
 
-KUBEFLOW_METADATA_STORE_FLAVOR = "tekton"
-KUBEFLOW_ORCHESTRATOR_FLAVOR = "tekton"
+TEKTON_ORCHESTRATOR_FLAVOR = "tekton"
 
 
 class TektonIntegration(Integration):
     """Definition of Tekton Integration for ZenML."""
 
-    NAME = KUBEFLOW
+    NAME = TEKTON
     REQUIREMENTS = ["kfp-tekton==1.3.0"]
 
     @classmethod
@@ -43,13 +42,7 @@ class TektonIntegration(Integration):
         """
         return [
             FlavorWrapper(
-                name=KUBEFLOW_METADATA_STORE_FLAVOR,
-                source="zenml.integrations.tekton.metadata_stores.TektonMetadataStore",
-                type=StackComponentType.METADATA_STORE,
-                integration=cls.NAME,
-            ),
-            FlavorWrapper(
-                name=KUBEFLOW_ORCHESTRATOR_FLAVOR,
+                name=TEKTON_ORCHESTRATOR_FLAVOR,
                 source="zenml.integrations.tekton.orchestrators.TektonOrchestrator",
                 type=StackComponentType.ORCHESTRATOR,
                 integration=cls.NAME,

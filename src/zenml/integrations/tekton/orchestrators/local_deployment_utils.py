@@ -33,27 +33,19 @@ logger = get_logger(__name__)
 
 
 def check_prerequisites(
-    skip_k3d: bool = False, skip_kubectl: bool = False
+    skip_kubectl: bool = False
 ) -> bool:
     """Checks prerequisites for a local tekton pipelines deployment.
 
     It makes sure they are installed.
 
     Args:
-        skip_k3d: Whether to skip the check for the k3d command.
         skip_kubectl: Whether to skip the check for the kubectl command.
 
     Returns:
         Whether all prerequisites are installed.
     """
-    k3d_installed = skip_k3d or shutil.which("k3d") is not None
-    kubectl_installed = skip_kubectl or shutil.which("kubectl") is not None
-    logger.debug(
-        "Local tekton deployment prerequisites: K3D - %s, Kubectl - %s",
-        k3d_installed,
-        kubectl_installed,
-    )
-    return k3d_installed and kubectl_installed
+    return skip_kubectl or shutil.which("kubectl") is not None
 
 
 def write_local_registry_yaml(
@@ -407,7 +399,7 @@ def add_hostpath_to_tekton_pipelines(
     logger.info("Finished patching Tekton Pipelines setup.")
 
 
-def start_kfp_ui_daemon(
+def start_tekton_ui_daemon(
     pid_file_path: str,
     log_file_path: str,
     port: int,
@@ -430,10 +422,10 @@ def start_kfp_ui_daemon(
         "--context",
         kubernetes_context,
         "--namespace",
-        "tekton",
+        "tekton-pipelines",
         "port-forward",
-        "svc/ml-pipeline-ui",
-        f"{port}:80",
+        "svc/tekton-dashboard",
+        f"{port}:9097",
     ]
 
     if not networking_utils.port_available(port):
@@ -476,8 +468,8 @@ def start_kfp_ui_daemon(
         )
 
 
-def stop_kfp_ui_daemon(pid_file_path: str) -> None:
-    """Stops the KFP UI daemon process if it is running.
+def stop_tekton_ui_daemon(pid_file_path: str) -> None:
+    """Stops the Tekton UI daemon process if it is running.
 
     Args:
         pid_file_path: Path to the file with the daemons process ID.

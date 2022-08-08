@@ -49,7 +49,7 @@ from zenml.artifact_stores import LocalArtifactStore
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.exceptions import ProvisioningError
-from zenml.integrations.tekton import KUBEFLOW_ORCHESTRATOR_FLAVOR
+from zenml.integrations.tekton import TEKTON_ORCHESTRATOR_FLAVOR
 from zenml.integrations.tekton.orchestrators import (
     local_deployment_utils,
     utils,
@@ -79,7 +79,7 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-DEFAULT_KFP_UI_PORT = 8080
+DEFAULT_TEKTON_UI_PORT = 8080
 KFP_POD_LABELS = {
     "add-pod-env": "true",
     "pipelines.tekton.org/pipeline-sdk-type": "zenml",
@@ -97,7 +97,7 @@ class TektonOrchestrator(BaseOrchestrator):
             otherwise the pipeline execution will fail. For that reason, you
             might want to extend the ZenML docker images found here:
             https://hub.docker.com/r/zenmldocker/zenml/
-        tekton_pipelines_ui_port: A local port to which the KFP UI will be
+        tekton_ui_port: A local port to which the KFP UI will be
             forwarded.
         tekton_hostname: The hostname to use to talk to the Tekton Pipelines
             API. If not set, the hostname will be derived from the Kubernetes
@@ -110,23 +110,21 @@ class TektonOrchestrator(BaseOrchestrator):
             block until all steps finished running on KFP.
         skip_local_validations: If `True`, the local validations will be
             skipped.
-        skip_cluster_provisioning: If `True`, the k3d cluster provisioning will
-            be skipped.
         skip_ui_daemon_provisioning: If `True`, provisioning the KFP UI daemon
             will be skipped.
     """
 
     custom_docker_base_image_name: Optional[str] = None
-    tekton_pipelines_ui_port: int = DEFAULT_KFP_UI_PORT
+    tekton_ui_port: int = DEFAULT_TEKTON_UI_PORT
     tekton_hostname: Optional[str] = None
     kubernetes_context: Optional[str] = None
+    kubernetes_namespace: Optional[str] = None
     synchronous: bool = False
     skip_local_validations: bool = False
-    skip_cluster_provisioning: bool = False
     skip_ui_daemon_provisioning: bool = False
 
     # Class Configuration
-    FLAVOR: ClassVar[str] = KUBEFLOW_ORCHESTRATOR_FLAVOR
+    FLAVOR: ClassVar[str] = TEKTON_ORCHESTRATOR_FLAVOR
 
     @staticmethod
     def _get_k3d_cluster_name(uuid: UUID) -> str:
@@ -640,9 +638,7 @@ class TektonOrchestrator(BaseOrchestrator):
             for step in sorted_steps:
                 # The command will be needed to eventually call the python step
                 # within the docker container
-                command = (
-                    TektonEntrypointConfiguration.get_entrypoint_command()
-                )
+                command = TektonEntrypointConfiguration.get_entrypoint_command()
 
                 # The arguments are passed to configure the entrypoint of the
                 # docker container when the step is called.
@@ -703,21 +699,27 @@ class TektonOrchestrator(BaseOrchestrator):
             self.pipeline_directory, f"{runtime_configuration.run_name}.yaml"
         )
 
-        # write the argo pipeline yaml
-        KFPCompiler()._create_and_write_workflow(
-            pipeline_func=_construct_kfp_pipeline,
-            pipeline_name=pipeline.name,
-            package_path=pipeline_file_path,
-        )
+        from kfp_tekton.compiler import TektonCompiler
 
-        # using the kfp client uploads the pipeline to tekton pipelines and
-        # runs it there
-        self._upload_and_run_pipeline(
-            pipeline_name=pipeline.name,
-            pipeline_file_path=pipeline_file_path,
-            runtime_configuration=runtime_configuration,
-            enable_cache=pipeline.enable_cache,
-        )
+        # write the tekton pipeline yaml
+        TektonCompiler().compile(_construct_kfp_pipeline, pipeline_file_path)
+
+        # # write the argo pipeline yaml
+        # KFPCompiler()._create_and_write_workflow(
+        #     pipeline_func=_construct_kfp_pipeline,
+        #     pipeline_name=pipeline.name,
+        #     package_path=pipeline_file_path,
+        # )
+
+        # # using the kfp client uploads the pipeline to tekton pipelines and
+        # # runs it there
+        # self._upload_and_run_pipeline(
+        #     pipeline_name=pipeline.name,
+        #     pipeline_file_path=pipeline_file_path,
+        #     runtime_configuration=runtime_configuration,
+        #     enable_cache=pipeline.enable_cache,
+        # )
+
 
     def _upload_and_run_pipeline(
         self,
@@ -858,55 +860,21 @@ class TektonOrchestrator(BaseOrchestrator):
         """
         return os.path.join(self.root_directory, "k3d_registry.yaml")
 
-    def _get_kfp_ui_daemon_port(self) -> int:
-        """Port to use for the KFP UI daemon.
+    def _get_tekton_ui_daemon_port(self) -> int:
+        """Port to use for the Tekton UI daemon.
 
         Returns:
-            Port to use for the KFP UI daemon.
+            Port to use for the Tekton UI daemon.
         """
-        port = self.tekton_pipelines_ui_port
-        if port == DEFAULT_KFP_UI_PORT and not networking_utils.port_available(
-            port
+        port = self.tekton_ui_port
+        if (
+            port == DEFAULT_TEKTON_UI_PORT
+            and not networking_utils.port_available(port)
         ):
             # if the user didn't specify a specific port and the default
             # port is occupied, fallback to a random open port
             port = networking_utils.find_available_port()
         return port
-
-    def list_manual_setup_steps(
-        self, container_registry_name: str, container_registry_path: str
-    ) -> None:
-        """Logs manual steps needed to setup the Tekton local orchestrator.
-
-        Args:
-            container_registry_name: Name of the container registry.
-            container_registry_path: Path to the container registry.
-        """
-        if not self.is_local:
-            # Make sure we're not telling users to deploy Tekton on their
-            # remote clusters
-            logger.warning(
-                "This Tekton orchestrator is configured to use a non-local "
-                f"Kubernetes context {self.kubernetes_context}. Manually "
-                f"deploying Tekton Pipelines is only possible for local "
-                f"Tekton orchestrators."
-            )
-            return
-
-        global_config_dir_path = io_utils.get_global_config_directory()
-        tekton_commands = [
-            f"> k3d cluster create {self._k3d_cluster_name} --image {local_deployment_utils.K3S_IMAGE_NAME} --registry-create {container_registry_name} --registry-config {container_registry_path} --volume {global_config_dir_path}:{global_config_dir_path}\n",
-            f"> kubectl --context {self.kubernetes_context} apply -k github.com/tekton/pipelines/manifests/kustomize/cluster-scoped-resources?ref={KFP_VERSION}&timeout=5m",
-            f"> kubectl --context {self.kubernetes_context} wait --timeout=60s --for condition=established crd/applications.app.k8s.io",
-            f"> kubectl --context {self.kubernetes_context} apply -k github.com/tekton/pipelines/manifests/kustomize/env/platform-agnostic-pns?ref={KFP_VERSION}&timeout=5m",
-            f"> kubectl --context {self.kubernetes_context} --namespace tekton port-forward svc/ml-pipeline-ui {self.tekton_pipelines_ui_port}:80",
-        ]
-
-        logger.info(
-            "If you wish to spin up this Tekton local orchestrator manually, "
-            "please enter the following commands:\n"
-        )
-        logger.info("\n".join(tekton_commands))
 
     @property
     def is_provisioned(self) -> bool:
@@ -916,28 +884,22 @@ class TektonOrchestrator(BaseOrchestrator):
             True if a local k3d cluster exists, False otherwise.
         """
         if not local_deployment_utils.check_prerequisites(
-            skip_k3d=self.skip_cluster_provisioning or not self.is_local,
-            skip_kubectl=self.skip_cluster_provisioning
-            and self.skip_ui_daemon_provisioning,
+            skip_kubectl=self.skip_ui_daemon_provisioning,
         ):
             # if any prerequisites are missing there is certainly no
             # local deployment running
             return False
 
-        return self.is_cluster_provisioned
+        return True
 
     @property
     def is_running(self) -> bool:
-        """Checks if the local k3d cluster and UI daemon are both running.
+        """Checks if the local UI daemon is running.
 
         Returns:
-            True if the local k3d cluster and UI daemon for this orchestrator are both running.
+            True if the local UI daemon for this orchestrator is running.
         """
-        return (
-            self.is_provisioned
-            and self.is_cluster_running
-            and self.is_daemon_running
-        )
+        return self.is_provisioned and self.is_daemon_running
 
     @property
     def is_suspended(self) -> bool:
@@ -946,42 +908,8 @@ class TektonOrchestrator(BaseOrchestrator):
         Returns:
             True if the cluster and daemon for this orchestrator are both stopped, False otherwise.
         """
-        return (
-            self.is_provisioned
-            and (self.skip_cluster_provisioning or not self.is_cluster_running)
-            and (self.skip_ui_daemon_provisioning or not self.is_daemon_running)
-        )
-
-    @property
-    def is_cluster_provisioned(self) -> bool:
-        """Returns if the local k3d cluster for this orchestrator is provisioned.
-
-        For remote (i.e. not managed by ZenML) Tekton Pipelines installations,
-        this always returns True.
-
-        Returns:
-            True if the local k3d cluster is provisioned, False otherwise.
-        """
-        if self.skip_cluster_provisioning or not self.is_local:
-            return True
-        return local_deployment_utils.k3d_cluster_exists(
-            cluster_name=self._k3d_cluster_name
-        )
-
-    @property
-    def is_cluster_running(self) -> bool:
-        """Returns if the local k3d cluster for this orchestrator is running.
-
-        For remote (i.e. not managed by ZenML) Tekton Pipelines installations,
-        this always returns True.
-
-        Returns:
-            True if the local k3d cluster is running, False otherwise.
-        """
-        if self.skip_cluster_provisioning or not self.is_local:
-            return True
-        return local_deployment_utils.k3d_cluster_running(
-            cluster_name=self._k3d_cluster_name
+        return self.is_provisioned and (
+            self.skip_ui_daemon_provisioning or not self.is_daemon_running
         )
 
     @property
@@ -1001,102 +929,13 @@ class TektonOrchestrator(BaseOrchestrator):
         else:
             return True
 
-    def provision(self) -> None:
-        """Provisions a local Tekton Pipelines deployment.
-
-        Raises:
-            ProvisioningError: If the provisioning fails.
-        """
-        if self.skip_cluster_provisioning:
-            return
-
-        if self.is_running:
-            logger.info(
-                "Found already existing local Tekton Pipelines deployment. "
-                "If there are any issues with the existing deployment, please "
-                "run 'zenml stack down --force' to delete it."
-            )
-            return
-
-        if not local_deployment_utils.check_prerequisites():
-            raise ProvisioningError(
-                "Unable to provision local Tekton Pipelines deployment: "
-                "Please install 'k3d' and 'kubectl' and try again."
-            )
-
-        container_registry = Repository().active_stack.container_registry
-
-        # should not happen, because the stack validation takes care of this,
-        # but just in case
-        assert container_registry is not None
-
-        fileio.makedirs(self.root_directory)
-
-        if not self.is_local:
-            # don't provision any resources if using a remote KFP installation
-            return
-
-        logger.info("Provisioning local Tekton Pipelines deployment...")
-
-        container_registry_port = int(container_registry.uri.split(":")[-1])
-        container_registry_name = self._get_k3d_registry_name(
-            port=container_registry_port
-        )
-        local_deployment_utils.write_local_registry_yaml(
-            yaml_path=self._k3d_registry_config_path,
-            registry_name=container_registry_name,
-            registry_uri=container_registry.uri,
-        )
-
-        try:
-            local_deployment_utils.create_k3d_cluster(
-                cluster_name=self._k3d_cluster_name,
-                registry_name=container_registry_name,
-                registry_config_path=self._k3d_registry_config_path,
-            )
-            kubernetes_context = self.kubernetes_context
-
-            # will never happen, but mypy doesn't know that
-            assert kubernetes_context is not None
-
-            local_deployment_utils.deploy_tekton_pipelines(
-                kubernetes_context=kubernetes_context
-            )
-
-            artifact_store = Repository().active_stack.artifact_store
-            if isinstance(artifact_store, LocalArtifactStore):
-                local_deployment_utils.add_hostpath_to_tekton_pipelines(
-                    kubernetes_context=kubernetes_context,
-                    local_path=artifact_store.path,
-                )
-        except Exception as e:
-            logger.error(e)
-            logger.error(
-                "Unable to spin up local Tekton Pipelines deployment."
-            )
-
-            self.list_manual_setup_steps(
-                container_registry_name, self._k3d_registry_config_path
-            )
-            self.deprovision()
-
     def deprovision(self) -> None:
         """Deprovisions a local Tekton Pipelines deployment."""
-        if self.skip_cluster_provisioning:
-            return
 
         if not self.skip_ui_daemon_provisioning and self.is_daemon_running:
-            local_deployment_utils.stop_kfp_ui_daemon(
+            local_deployment_utils.stop_tekton_ui_daemon(
                 pid_file_path=self._pid_file_path
             )
-
-        if self.is_local:
-            # don't deprovision any resources if using a remote KFP installation
-            local_deployment_utils.delete_k3d_cluster(
-                cluster_name=self._k3d_cluster_name
-            )
-
-            logger.info("Local tekton pipelines deployment deprovisioned.")
 
         if fileio.exists(self.log_file):
             fileio.remove(self.log_file)
@@ -1122,25 +961,11 @@ class TektonOrchestrator(BaseOrchestrator):
         # will never happen, but mypy doesn't know that
         assert kubernetes_context is not None
 
-        if (
-            not self.skip_cluster_provisioning
-            and self.is_local
-            and not self.is_cluster_running
-        ):
-            # don't resume any resources if using a remote KFP installation
-            local_deployment_utils.start_k3d_cluster(
-                cluster_name=self._k3d_cluster_name
-            )
-
-            local_deployment_utils.wait_until_tekton_pipelines_ready(
-                kubernetes_context=kubernetes_context
-            )
-
         if not self.is_daemon_running:
-            local_deployment_utils.start_kfp_ui_daemon(
+            local_deployment_utils.start_tekton_ui_daemon(
                 pid_file_path=self._pid_file_path,
                 log_file_path=self.log_file,
-                port=self._get_kfp_ui_daemon_port(),
+                port=self._get_tekton_ui_daemon_port(),
                 kubernetes_context=kubernetes_context,
             )
 
@@ -1151,18 +976,8 @@ class TektonOrchestrator(BaseOrchestrator):
             return
 
         if not self.skip_ui_daemon_provisioning and self.is_daemon_running:
-            local_deployment_utils.stop_kfp_ui_daemon(
+            local_deployment_utils.stop_tekton_ui_daemon(
                 pid_file_path=self._pid_file_path
-            )
-
-        if (
-            not self.skip_cluster_provisioning
-            and self.is_local
-            and self.is_cluster_running
-        ):
-            # don't suspend any resources if using a remote KFP installation
-            local_deployment_utils.stop_k3d_cluster(
-                cluster_name=self._k3d_cluster_name
             )
 
     def _get_environment_vars_from_secrets(
