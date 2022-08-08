@@ -260,7 +260,7 @@ class SqlZenStore(BaseZenStore):
             io_utils.create_dir_recursive_if_not_exists(str(local_path.parent))
 
         metadata_store_path = os.path.join(
-            os.path.dirname(local_path), "metadata.db"
+            os.path.dirname(str(local_path)), "metadata.db"
         )
         self._metadata_store = SQLiteMetadataStore(uri=metadata_store_path)
 
