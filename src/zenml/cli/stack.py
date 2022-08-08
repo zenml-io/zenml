@@ -1282,7 +1282,7 @@ def copy_stack(
     help="Interactively register all required secrets for a stack.",
 )
 @click.argument("stack_name", type=str, required=False)
-def register_secrets_stack_component_command(
+def register_secrets(
     stack_name: Optional[str] = None,
 ) -> None:
     """Interactively registers all required secrets for a stack.
@@ -1338,13 +1338,22 @@ def register_secrets_stack_component_command(
                     f"Value for secret `{name}.{key}` "
                     "(Leave empty to use existing value):"
                 )
-                value = value or existing_value
+                if value:
+                    value = cli_utils.expand_argument_value_from_file(
+                        name=key, value=value
+                    )
+                else:
+                    value = existing_value
+
                 # only need to update if the value changed
                 needs_update = needs_update or value != existing_value
             else:
                 value = None
                 while not value:
                     value = getpass.getpass(f"Value for secret `{name}.{key}`:")
+                value = cli_utils.expand_argument_value_from_file(
+                    name=key, value=value
+                )
 
             secret_content[key] = value
 
