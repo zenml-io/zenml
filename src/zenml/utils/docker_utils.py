@@ -234,6 +234,10 @@ def build_docker_image(
         base_image: The image to use as base for the docker image.
     """
     config_path = os.path.join(build_context_path, CONTAINER_ZENML_CONFIG_DIR)
+    if os.path.exists(config_path):
+        logger.warning(f"Cleaning up previous leftover folder: {config_path}")
+        fileio.rmtree(config_path)
+
     try:
         logger.info("Building Docker image `%s`:", image_name)
 
