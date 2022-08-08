@@ -90,7 +90,6 @@ class StepContext:
             )
             for key in output_materializers.keys()
         }
-        self._metadata_store = Repository().zen_store._metadata_store
         self._stack = Repository().active_stack
 
     def _get_output(
@@ -145,9 +144,6 @@ class StepContext:
             The current active stack or None.
         """
         return self._stack
-
-    def get_pipeline(self, pipeline_name):
-        return self._metadata_store.get_pipeline(pipeline_name)
 
     def get_output_materializer(
         self,
