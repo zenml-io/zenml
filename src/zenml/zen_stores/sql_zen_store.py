@@ -18,9 +18,10 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 from uuid import UUID, uuid4
 
+from ml_metadata.proto import metadata_store_pb2
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.exc import ArgumentError, NoResultFound
 from sqlmodel import Field, Session, SQLModel, create_engine, select
@@ -29,7 +30,6 @@ from sqlmodel.sql.expression import Select, SelectOfScalar
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import EntityExistsError, StackComponentExistsError
 from zenml.logger import get_logger
-from zenml.metadata_stores.base_metadata_store import BaseMetadataStore
 from zenml.metadata_stores.sqlite_metadata_store import SQLiteMetadataStore
 from zenml.post_execution.pipeline import PipelineView
 from zenml.utils import io_utils
@@ -559,13 +559,18 @@ class SqlZenStore(BaseZenStore):
 
     # Private interface implementations:
 
-    def _get_metadata_store(self) -> BaseMetadataStore:
-        """Get the metadata store of this ZenStore.
+    def _get_tfx_metadata_config(
+        self,
+    ) -> Union[
+        metadata_store_pb2.ConnectionConfig,
+        metadata_store_pb2.MetadataStoreClientConfig,
+    ]:
+        """Get the TFX metadata config of this ZenStore.
 
         Returns:
-            The metadata store of this ZenStore.
+            The TFX metadata config of this ZenStore.
         """
-        return self._metadata_store
+        return self._metadata_store.get_tfx_metadata_config()
 
     def _save_stack(
         self,

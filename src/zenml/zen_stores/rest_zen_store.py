@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import requests
+from ml_metadata.proto import metadata_store_pb2
 from pydantic import BaseModel
 
 from zenml.constants import (
@@ -41,7 +42,6 @@ from zenml.exceptions import (
     StackExistsError,
 )
 from zenml.logger import get_logger
-from zenml.metadata_stores.base_metadata_store import BaseMetadataStore
 from zenml.post_execution.pipeline import PipelineView
 from zenml.zen_stores import BaseZenStore
 from zenml.zen_stores.models import (
@@ -215,11 +215,16 @@ class RestZenStore(BaseZenStore):
 
     # Private interface implementations:
 
-    def _get_metadata_store(self) -> BaseMetadataStore:
-        """Get the metadata store of this ZenStore.
+    def _get_tfx_metadata_config(
+        self,
+    ) -> Union[
+        metadata_store_pb2.ConnectionConfig,
+        metadata_store_pb2.MetadataStoreClientConfig,
+    ]:
+        """Get the TFX metadata config of this ZenStore.
 
         Returns:
-            The metadata store of this ZenStore.
+            The TFX metadata config of this ZenStore.
         """
         pass  # TODO
 

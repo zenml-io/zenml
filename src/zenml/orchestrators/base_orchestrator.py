@@ -41,7 +41,6 @@ from pydantic.json import pydantic_encoder
 from tfx.dsl.compiler.compiler import Compiler
 from tfx.dsl.compiler.constants import PIPELINE_RUN_ID_PARAMETER_NAME
 from tfx.dsl.io.fileio import NotFoundError
-from tfx.orchestration import metadata
 from tfx.orchestration.local import runner_utils
 from tfx.orchestration.portable import (
     data_types,
@@ -334,10 +333,8 @@ class BaseOrchestrator(StackComponent, ABC):
 
         # Query the ZenStore for the metadata connection
         repo = Repository()
-        metadata_store = repo.zen_store._metadata_store
-        metadata_connection = metadata.Metadata(
-            metadata_store.get_tfx_metadata_config()
-        )
+        metadata_connection = repo.zen_store._get_tfx_metadata_config()
+
         custom_executor_operators = {
             executable_spec_pb2.PythonClassExecutableSpec: step.executor_operator
         }
