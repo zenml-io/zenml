@@ -31,6 +31,7 @@
 """Implementation of the Tekton orchestrator."""
 import os
 import re
+import subprocess
 import sys
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
 from uuid import UUID
@@ -720,18 +721,27 @@ class TektonOrchestrator(BaseOrchestrator):
         #     enable_cache=pipeline.enable_cache,
         # )
         namespace = self.kubernetes_namespace or "default"
-        subprocess.check_call(
-            [
-                "kubectl",
-                "--context",
-                self.kubernetes_context,
-                "-n",
-                namespace,
-                "apply",
-                "-f",
-                pipeline_file_path,
-            ]
-        )
+        try:
+            subprocess.check_call(
+                [
+                    "kubectl",
+                    "--context",
+                    self.kubernetes_context,
+                    "-n",
+                    namespace,
+                    "apply",
+                    "-f",
+                    pipeline_file_path,
+                ]
+            )
+        except subprocess.CalledProcessError as e:
+            logger.warning(
+                f"Failed to upload Tekton pipeline: %s. "
+                f"Please make sure your kubernetes config is present and the "
+                f"{self.kubernetes_context} kubernetes context is configured "
+                f"correctly.",
+                e,
+            )
 
     def _upload_and_run_pipeline(
         self,
