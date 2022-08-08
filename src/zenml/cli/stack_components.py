@@ -1219,67 +1219,6 @@ def generate_stack_component_explain_command(
     return explain_stack_components_command
 
 
-def generate_stack_component_register_secret_command(
-    component_type: StackComponentType,
-) -> Callable[[], None]:
-    """Generates a `register-secret` command for the stack component type.
-
-    Args:
-        component_type: Type of the component to generate the command for.
-
-    Returns:
-        A function that can be used as a `click` command.
-    """
-    import getpass
-
-    from zenml.secret import ArbitrarySecretSchema
-
-    def register_secrets_stack_component_command() -> None:
-        """Registers secrets for a stack component."""
-        cli_utils.print_active_profile()
-        cli_utils.print_active_stack()
-
-        component_wrapper, _ = _get_stack_component_wrapper(component_type)
-        if not component_wrapper:
-            return
-
-        display_name = _component_display_name(component_type)
-        required_secrets = component_wrapper.to_component().required_secrets
-        if not required_secrets:
-            cli_utils.declare(
-                f"No secrets required for the active {display_name}."
-            )
-            return
-
-        secrets_manager_wrapper, _ = _get_stack_component_wrapper(
-            StackComponentType.SECRETS_MANAGER
-        )
-        assert secrets_manager_wrapper
-        secrets_manager = secrets_manager_wrapper.to_component()
-
-        # TODO: handle existing secrets, or existing keys in secrets
-        secret_names = {s.name for s in required_secrets}
-        for secret_name in secret_names:
-            keys = {s.key for s in required_secrets if s.name == secret_name}
-            secret_contents = {}
-
-            for key in keys:
-                value = None
-                while not value:
-                    value = getpass.getpass(
-                        f"Value for secret {secret_name}.{key}:"
-                    )
-
-                secret_contents[key] = value
-
-            secret = ArbitrarySecretSchema(name=secret_name, **secret_contents)
-            cli_utils.declare("Registering the following secret:")
-            cli_utils.pretty_print_secret(secret=secret, hide_secret=True)
-            secrets_manager.register_secret(secret)
-
-    return register_secrets_stack_component_command
-
-
 def register_single_stack_component_cli_commands(
     component_type: StackComponentType, parent_group: click.Group
 ) -> None:
@@ -1420,15 +1359,6 @@ def register_single_stack_component_cli_commands(
     command_group.command(
         "explain", help=f"Explaining the {plural_display_name}."
     )(explain_command)
-
-    # zenml stack-component register-secrets
-    secret_registration_command = (
-        generate_stack_component_register_secret_command(component_type)
-    )
-    command_group.command(
-        "register-secrets",
-        help=f"Registering all required secrets for the {singular_display_name}.",
-    )(secret_registration_command)
 
 
 def register_annotator_subcommands() -> None:
