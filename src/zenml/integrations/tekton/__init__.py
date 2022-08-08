@@ -32,7 +32,7 @@ class TektonIntegration(Integration):
     """Definition of Tekton Integration for ZenML."""
 
     NAME = KUBEFLOW
-    REQUIREMENTS = ["kfp==1.8.9"]
+    REQUIREMENTS = ["kfp-tekton==1.3.0"]
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
