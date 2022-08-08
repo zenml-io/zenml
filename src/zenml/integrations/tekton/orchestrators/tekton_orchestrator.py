@@ -699,6 +699,11 @@ class TektonOrchestrator(BaseOrchestrator):
         from kfp_tekton.compiler import TektonCompiler
 
         # write the tekton pipeline yaml
+        setattr(
+            _construct_kfp_pipeline,
+            "_component_human_name",
+            runtime_configuration.run_name,
+        )
         TektonCompiler().compile(_construct_kfp_pipeline, pipeline_file_path)
 
         # # write the argo pipeline yaml
