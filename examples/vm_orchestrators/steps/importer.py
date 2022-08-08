@@ -16,9 +16,10 @@ import numpy as np
 import pandas as pd
 from zenml.integrations.sklearn.helpers.digits import get_digits
 from zenml.steps import Output, step
+from zenml.config.resource_configuration import ResourceConfiguration
 
 
-@step
+@step(resource_configuration=ResourceConfiguration(cpu_count=1, memory="256MB"))
 def importer() -> Output(
     X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
 ):
