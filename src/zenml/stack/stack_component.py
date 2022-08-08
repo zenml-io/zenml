@@ -22,12 +22,15 @@ from pydantic import BaseModel, Extra, Field, root_validator
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackComponentInterfaceError
+from zenml.logger import get_logger
 from zenml.utils import secret_utils
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
     from zenml.stack import Stack, StackValidator
+
+logger = get_logger(__name__)
 
 
 def uuid_factory() -> UUID:
@@ -85,7 +88,25 @@ class StackComponent(BaseModel, ABC):
                 was passed as a secret reference.
         """
         for key, value in kwargs.items():
+            try:
+                field = self.__class__.__fields__[key]
+            except KeyError:
+                # Value for a private attribute or non-existing field, this
+                # will fail during the upcoming pydantic validation
+                continue
+
             if not secret_utils.is_secret_reference(value):
+                if secret_utils.is_secret_field(field):
+                    logger.warning(
+                        "You specified a plain-text value for the sensitive "
+                        f"attribute `{key}` of a stack component "
+                        f"`{self.__class__.__name__}`. "
+                        "This is currently only a warning, but future versions "
+                        "of ZenML will require you to pass in senstive "
+                        "information as secrets. Check out the documentation "
+                        "on how to configure your stack components with "
+                        "secrets here: TODO."
+                    )
                 continue
 
             if key == "name":
@@ -93,13 +114,6 @@ class StackComponent(BaseModel, ABC):
                     "Passing the `name` attribute of a stack component as a "
                     "secret reference is not allowed."
                 )
-
-            try:
-                field = self.__class__.__fields__[key]
-            except KeyError:
-                # Value for a non-existing field, this will fail during the
-                # upcoming pydantic validation
-                continue
 
             requires_validation = field.pre_validators or field.post_validators
             if requires_validation:

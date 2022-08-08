@@ -38,6 +38,7 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.step_operators import BaseStepOperator
 from zenml.utils.docker_utils import CONTAINER_ZENML_CONFIG_DIR
+from zenml.utils.secret_utils import SecretField
 from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
@@ -81,9 +82,9 @@ class AzureMLStepOperator(BaseStepOperator):
 
     # Service principal authentication
     # https://docs.microsoft.com/en-us/azure/machine-learning/how-to-setup-authentication#configure-a-service-principal
-    tenant_id: Optional[str] = None
-    service_principal_id: Optional[str] = None
-    service_principal_password: Optional[str] = None
+    tenant_id: Optional[str] = SecretField()
+    service_principal_id: Optional[str] = SecretField()
+    service_principal_password: Optional[str] = SecretField()
 
     # Class Configuration
     FLAVOR: ClassVar[str] = AZUREML_STEP_OPERATOR_FLAVOR

@@ -13,9 +13,16 @@
 #  permissions and limitations under the License.
 """Utility functions for secrets and secret references."""
 import re
-from typing import Any, NamedTuple
+from typing import TYPE_CHECKING, Any, NamedTuple
+
+from pydantic import Field
+
+if TYPE_CHECKING:
+    from pydantic.fields import ModelField
 
 _secret_reference_expression = re.compile(r"\$\{ ?\S+?\.\S+ ?\}")
+
+PYDANTIC_SENSITIVE_FIELD_MARKER = "sensitive"
 
 
 def is_secret_reference(value: Any) -> bool:
@@ -64,3 +71,31 @@ def parse_secret_reference(reference: str) -> SecretReference:
 
     secret_name, secret_key = reference.split(".", 1)
     return SecretReference(name=secret_name, key=secret_key)
+
+
+def SecretField(*args: Any, **kwargs: Any) -> Any:
+    """Marks a pydantic field as something containing sensitive information.
+
+    Args:
+        *args: Positional arguments which will be forwarded
+            to `pydantic.Field(...)`.
+        **kwargs: Keyword arguments which will be forwarded to
+            `pydantic.Field(...)`.
+
+    Returns:
+        Pydantic field info.
+    """
+    kwargs[PYDANTIC_SENSITIVE_FIELD_MARKER] = True
+    return Field(*args, **kwargs)
+
+
+def is_secret_field(field: "ModelField") -> bool:
+    """Returns whether a pydantic field contains sensitive information or not.
+
+    Args:
+        field: The field to check.
+
+    Returns:
+        `True` if the field contains sensitive information, `False` otherwise.
+    """
+    return field.field_info.extra.get(PYDANTIC_SENSITIVE_FIELD_MARKER, False)
