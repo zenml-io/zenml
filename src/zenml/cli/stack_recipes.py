@@ -22,7 +22,7 @@ from typing import Any, Dict, List, Optional, cast
 
 import click
 from packaging.version import Version, parse
-from python_terraform import Terraform, TerraformCommandError
+import python_terraform
 from rich.markdown import Markdown
 from rich.text import Text
 
@@ -53,7 +53,7 @@ class Terraform:
 
     def __init__(self) -> None:
         """Creates a client that can be used to call terraform commands."""
-        self.tf = Terraform()
+        self.tf = python_terraform.Terraform()
 
     def check_installation(self) -> None:
         """Checks if terraform is installed on the host system.
@@ -148,6 +148,10 @@ class Terraform:
             f.close()
             return variables
 
+    def set_log_level(self, log_level: str) -> None:
+        # check if log_level is one of TRACE, DEBUG, INFO, WARN or ERROR.
+        # set TF_LOG environment variable to value from log_level.
+        pass
 
 class LocalStackRecipe:
     """Class to encapsulate the local stack that can be run from the CLI."""
@@ -904,7 +908,7 @@ def deploy(
                 "to a timeout error. In that case, please"
                 f"run zenml stack recipe deploy {stack_recipe_name} again"
             )
-        except TerraformCommandError as e:
+        except python_terraform.TerraformCommandError as e:
             cli_utils.error(
                 f"Error running recipe {stack_recipe_name}: {str(e.err)} "
                 "Please look at the error message to figure out why the "
