@@ -47,6 +47,11 @@ def get_secrets_manager(
     environment variable to point to the downloaded key JSON file.
     * run with `pytest tests/integration/secrets_manager --secrets-manager-flavor gcp`.
 
+    For Azure:
+
+    * set up local Azure client and credentials.
+    * run with `pytest tests/integration/secrets_manager --secrets-manager-flavor azure`.
+
     For HashiCorp Vault:
 
     * install vault on your system.
@@ -74,6 +79,12 @@ def get_secrets_manager(
 
         secrets_manager = GCPSecretsManager(
             name=name, project_id="zenml-secrets-manager", **kwargs
+        )
+    elif flavor == "azure":
+        from zenml.integrations.azure.secrets_manager import AzureSecretsManager
+
+        secrets_manager = AzureSecretsManager(
+            name=name, key_vault_name="zenml-pytest", **kwargs
         )
     elif flavor == "vault":
         from zenml.integrations.vault.secrets_manager import VaultSecretsManager
