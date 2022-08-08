@@ -13,16 +13,29 @@
 #  permissions and limitations under the License.
 """Implementation of the Tekton entrypoint configuration."""
 
-import os
+from typing import Any, List, Set
 
 from zenml.entrypoints import StepEntrypointConfiguration
+from zenml.steps import BaseStep
+
+RUN_NAME_OPTION = "run_name"
 
 
 class TektonEntrypointConfiguration(StepEntrypointConfiguration):
-    """Entrypoint configuration for running steps on tekton.
+    """Entrypoint configuration for running steps on tekton."""
 
-    This class writes a markdown file that will be displayed in the KFP UI.
-    """
+    @classmethod
+    def get_custom_entrypoint_options(cls) -> Set[str]:
+        return {RUN_NAME_OPTION}
+
+    @classmethod
+    def get_custom_entrypoint_arguments(
+        cls, step: BaseStep, *args: Any, **kwargs: Any
+    ) -> List[str]:
+        return [
+            f"--{RUN_NAME_OPTION}",
+            kwargs[RUN_NAME_OPTION],
+        ]
 
     def get_run_name(self, pipeline_name: str) -> str:
         """Returns the Tekton pipeline run name.
@@ -33,4 +46,4 @@ class TektonEntrypointConfiguration(StepEntrypointConfiguration):
         Returns:
             The Tekton pipeline run name.
         """
-        return os.environ.get("TEKTON_RUN_ID", "construct-kfp-pipeline")
+        return self.entrypoint_args[RUN_NAME_OPTION]

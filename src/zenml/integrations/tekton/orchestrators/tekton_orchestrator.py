@@ -56,9 +56,9 @@ from zenml.integrations.tekton.orchestrators import (
     utils,
 )
 from zenml.integrations.tekton.orchestrators.tekton_entrypoint_configuration import (
+    RUN_NAME_OPTION,
     TektonEntrypointConfiguration,
 )
-
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
@@ -645,6 +645,9 @@ class TektonOrchestrator(BaseOrchestrator):
                     TektonEntrypointConfiguration.get_entrypoint_arguments(
                         step=step,
                         pb2_pipeline=pb2_pipeline,
+                        **{
+                            RUN_NAME_OPTION: runtime_configuration.run_name,
+                        },
                     )
                 )
 

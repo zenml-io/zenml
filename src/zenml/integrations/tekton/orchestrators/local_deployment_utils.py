@@ -32,9 +32,7 @@ K3S_IMAGE_NAME = "rancher/k3s:v1.23.5-k3s1"
 logger = get_logger(__name__)
 
 
-def check_prerequisites(
-    skip_kubectl: bool = False
-) -> bool:
+def check_prerequisites(skip_kubectl: bool = False) -> bool:
     """Checks prerequisites for a local tekton pipelines deployment.
 
     It makes sure they are installed.
