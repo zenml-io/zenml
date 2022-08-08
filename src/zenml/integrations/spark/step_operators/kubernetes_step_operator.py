@@ -13,8 +13,10 @@
 #  permissions and limitations under the License.
 import os
 import subprocess
-from typing import AbstractSet, ClassVar, Dict, List, Optional
 import tempfile
+from typing import AbstractSet, ClassVar, Dict, List, Optional, Any, Union
+
+from pydantic import validator
 from zenml.constants import ENV_ZENML_CONFIG_PATH
 from zenml.integrations.spark import SPARK_KUBERNETES_STEP_OPERATOR
 from zenml.io.fileio import copy
@@ -22,7 +24,11 @@ from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.step_operators import BaseStepOperator, entrypoint
 from zenml.utils.docker_utils import build_docker_image, get_image_digest
-from zenml.utils.io_utils import write_file_contents_as_string, create_file_if_not_exists
+from zenml.utils.io_utils import (
+    write_file_contents_as_string,
+    create_file_if_not_exists
+)
+import json
 from zenml.utils.source_utils import get_source_root_path
 
 logger = get_logger(__name__)
@@ -85,7 +91,6 @@ class KubernetesSparkStepOperator(BaseStepOperator):
     # Instance parameters
     master: str
     deploy_mode: str = "cluster"
-    configuration_properties: List[str] = []
 
     # Parameters for the docker images
     spark_base_image_name: str = None
@@ -94,8 +99,45 @@ class KubernetesSparkStepOperator(BaseStepOperator):
     kubernetes_namespace: Optional[str] = None
     kubernetes_service_account: Optional[str] = None
 
+    # Additional parameters for the spark submit
+    submit_args: Optional[List[str]] = None
+
     # Class configuration
     FLAVOR: ClassVar[str] = SPARK_KUBERNETES_STEP_OPERATOR
+
+    @validator("submit_args", pre=True)
+    def _convert_json_string(
+        cls, value: Union[None, str, List[str]]
+    ) -> Optional[List[str]]:
+        """Converts potential JSON strings passed via the CLI to a list.
+
+        Args:
+            value: The value to convert.
+
+        Returns:
+            The converted value.
+
+        Raises:
+            TypeError: If the value is not a `str`, `List` or `None`.
+            ValueError: If the value is an invalid json string or a json string
+                that does not decode into a list.
+        """
+        if isinstance(value, str):
+            try:
+                list_ = json.loads(value)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Invalid json string '{value}'") from e
+
+            if not isinstance(list_, List):
+                raise ValueError(
+                    f"Json string '{value}' did not decode into a list."
+                )
+
+            return list_
+        elif isinstance(value, List) or value is None:
+            return value
+        else:
+            raise TypeError(f"{value} is not a json string or a list.")
 
     def _build_docker_image(
         self,
@@ -120,7 +162,7 @@ class KubernetesSparkStepOperator(BaseStepOperator):
             "Dockerfile"
         )
         create_file_if_not_exists(dockerfile_path)
-        write_file_contents_as_string(dockerfile_path, dockerfile_content,)
+        write_file_contents_as_string(dockerfile_path, dockerfile_content, )
 
         # Build the image and push it to the repository
         repo = Repository()
@@ -170,8 +212,50 @@ class KubernetesSparkStepOperator(BaseStepOperator):
                 ]
             )
 
+        repo = Repository()
+        artifact_store = repo.active_stack.artifact_store
+
+        from zenml.integrations.s3 import S3_ARTIFACT_STORE_FLAVOR
+
+        if artifact_store.FLAVOR == S3_ARTIFACT_STORE_FLAVOR:
+            configurations.extend(
+                [
+                    "--conf spark.hadoop.fs.s3a.fast.upload=true"
+                    "--conf spark.hadoop.fs.s3.impl=org.apache.hadoop.fs.s3a.S3AFileSystem"
+                    "--conf spark.hadoop.fs.AbstractFileSystem.s3.impl=org.apache.hadoop.fs.s3a.S3A"
+                    "--conf spark.hadoop.fs.s3a.aws.credentials.provider=com.amazonaws.auth.DefaultAWSCredentialsProviderChain"
+                ]
+            )
+            key, secret, _ = artifact_store._get_credentials()
+            if key and secret:
+                configurations.extend(
+                    [
+                        f"--conf spark.hadoop.fs.s3a.access.key={key}",
+                        f"--conf spark.hadoop.fs.s3a.secret.key={secret}",
+                    ]
+                )
+            else:
+                raise RuntimeError(
+                    "When you use an Spark step operator with an S3 artifact "
+                    "store, please make sure that your artifact store has"
+                    "defined the required credentials namely the access key "
+                    "and the secret access key."
+                )
+
+        else:
+            logger.warning(
+                "In most cases, the spark step operator requires additional "
+                "configuration based on the artifact store flavor you are "
+                "using. With this in mind, when you use this step operator "
+                "with certain artifact store flavor, ZenML takes care of the "
+                "preconfiguration. However, the artifact store flavor "
+                f"'{artifact_store.FLAVOR}' featured in this stack is not "
+                f"known to this step operator and it might require additional "
+                f"configuration."
+            )
+
         for o in self.configuration_properties:
-            configurations.extend(["--conf", o])
+            configurations.append(f"--conf {o}")
 
         return configurations
 
