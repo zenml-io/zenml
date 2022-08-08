@@ -1,20 +1,13 @@
 {
-    "ignorePatterns": [
-		{
-			"pattern": "^http:\/\/localhost.*"
-		},
-		{
-			"pattern": "^https:\/\/docs\.stackpulse\.io\b"
-		}
-	],
-    "replacementPatterns": [
-        {
-            "pattern": "^/",
-            "replacement": "/github/workspace/"
-        }
-    ],
-    "aliveStatusCodes": [
-        200,
-        429
-    ]
+  "ignorePatterns": [
+    {
+      "pattern": "^https://github.com/pyroscope-io/pyroscope/issues/"
+    },
+    {
+      "pattern": "^https://github.com/pyroscope-io/pyroscope/commit/"
+    },
+    {
+      "pattern": "^http://localhost"
+    }
+  ]
 }
