@@ -147,6 +147,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self._verify_arguments(*args, **kwargs)
 
     def _migrate_to_docker_config(self, kwargs: Dict[str, Any]) -> None:
+        """Migrates legacy requirements to the new Docker configuration.
+
+        Args:
+            kwargs: Keyword arguments passed during pipeline initialization.
+        """
         attributes = [
             (PARAM_REQUIREMENTS, "requirements"),
             (PARAM_REQUIRED_INTEGRATIONS, "required_integrations"),
