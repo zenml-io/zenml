@@ -519,7 +519,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
             The pipeline object that this method was called on.
         """
         config_yaml = yaml_utils.read_yaml(config_file)
-        breakpoint()
 
         if PipelineConfigurationKeys.STEPS in config_yaml:
             self._read_config_steps(
