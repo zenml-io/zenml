@@ -122,22 +122,19 @@ class LocalStackRecipe:
                     shell=click._compat.WIN,
                     env=os.environ.copy(),
                 )
-            except RuntimeError:
-                raise NotImplementedError(
-                    "Please raise an issue at "
-                    "https://github.com/zenml-io/mlops-stacks"
-                )
             except subprocess.CalledProcessError as e:
                 if e.returncode == 38:
                     raise NotImplementedError(
                         "Please raise an issue at "
-                        "https://github.com/zenml-io/mlops-stacks"
+                        f"{STACK_RECIPES_GITHUB_REPO}."
                     )
                 raise
         else:
             raise FileNotFoundError(
-                "Bash File(s) to run recipes not found at"
-                f"{stack_recipe_runner}"
+                "Bash File(s) to run recipe not found at"
+                f"{stack_recipe_runner}. Check if the file exists "
+                "and the path is correct. If not, please raise an "
+                f"issue at {STACK_RECIPES_GITHUB_REPO}."
             )
 
 
