@@ -56,12 +56,9 @@ from zenml.integrations.tekton.orchestrators import (
     utils,
 )
 from zenml.integrations.tekton.orchestrators.tekton_entrypoint_configuration import (
-    METADATA_UI_PATH_OPTION,
     TektonEntrypointConfiguration,
 )
-from zenml.integrations.tekton.orchestrators.local_deployment_utils import (
-    KFP_VERSION,
-)
+
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
@@ -648,7 +645,6 @@ class TektonOrchestrator(BaseOrchestrator):
                     TektonEntrypointConfiguration.get_entrypoint_arguments(
                         step=step,
                         pb2_pipeline=pb2_pipeline,
-                        **{METADATA_UI_PATH_OPTION: metadata_ui_path},
                     )
                 )
 
