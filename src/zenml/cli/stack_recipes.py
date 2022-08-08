@@ -18,10 +18,11 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import List, Optional, cast
+from typing import Any, Dict, List, Optional, cast
 
 import click
 from packaging.version import Version, parse
+from python_terraform import Terraform, TerraformCommandError
 from rich.markdown import Markdown
 from rich.text import Text
 
@@ -42,8 +43,110 @@ STACK_RECIPES_GITHUB_REPO = "https://github.com/zenml-io/mlops-stacks.git"
 STACK_RECIPES_REPO_DIR = "zenml_stack_recipes"
 RECIPE_RUN_SCRIPT = "run_recipe.sh"
 RECIPE_DESTROY_SCRIPT = "destroy_recipe.sh"
+VARIABLES_FILE = "values.tfvars.json"
 SHELL_EXECUTABLE = "SHELL_EXECUTABLE"
 STACK_INFO_FILE = "stack_info.txt"
+
+
+class Terraform:
+    """Class to represent terraform applications."""
+
+    def __init__(self) -> None:
+        """Creates a client that can be used to call terraform commands."""
+        self.tf = Terraform()
+
+    def check_installation(self) -> None:
+        """Checks if terraform is installed on the host system.
+        
+        Raises:
+            RuntimeError: if terraform is not installed.
+        """
+        if not self._is_installed():
+            raise RuntimeError(
+                "Terraform is required for stack recipes to run and was not "
+                "found installed on your machine. Please visit "
+                "https://learn.hashicorp.com/tutorials/terraform/install-cli "
+                "to install it."
+            )
+    
+    def _is_installed(self) -> bool:
+        """Checks if terraform is installed on the host system.
+        
+        Returns:
+            True if terraform is installed, false otherwise.
+        """
+        # check terraform version to verify installation. 
+        ret_code, _, _ = self.tf.cmd("-version")
+        return ret_code == 0
+
+    def apply(self, path: str) -> str:
+        """Function to call terraform init and terraform apply.
+
+        The init call is not repeated if any successful execution has
+        happened already, to save time.
+
+        Args:
+            path: the path to the terraform module to be applied.
+
+        Returns:
+            The path to the stack YAML configuration file as a string.
+
+        Raises:
+            RuntimeError: if terraform init fails.
+            TerraformCommandError: if terraform apply fails.
+
+            TODO # expect this to be caught in the CLI command and add
+            the line "please run the deploy function again".
+            Keep only one exception going forward. Choose which is 
+            more descriptive.
+        """
+        # this directory gets created after a successful init
+        previous_run_dir = os.path.join(path, ".ignoreme")
+        if fileio.exists(previous_run_dir):
+            logger.info(
+                "Terraform already initialized, "
+                "terraform init will not be executed."
+            )
+        else:
+            ret_code, _, _ = self.tf.init(path, capture_output=False)
+            if ret_code != 0:
+                raise RuntimeError(
+                    "The command 'terraform init' failed."
+                )
+            fileio.mkdir(previous_run_dir)
+
+        # get variables from the recipe as a python dictionary
+        vars = self._get_vars(path)
+
+        # once init is successful, call terraform apply
+        _, _, _ = self.tf.apply(
+                            path,
+                            var=vars,
+                            input=False,
+                            capture_output=False,
+                            raise_on_error=True,
+                        )
+
+        # return the path of the stack yaml file
+        _, stack_file_path, _ = self.tf.output("stack-yaml-path")
+        return stack_file_path
+
+    def _get_vars(self, path: str) -> Dict[str, Any]:
+        """Get variables as a dictionary from values.tfvars.json"""
+        import json
+
+        variables_file_path = os.path.join(path, VARIABLES_FILE)
+        if not fileio.exists(variables_file_path):
+            raise FileNotFoundError(
+                "The file values.tfvars.json was not found in the "
+                "recipe's directory. Please verify if it exists."
+            )
+
+        # read values into a dict and return
+        with fileio.open(variables_file_path, "r") as f:
+            variables = json.load(f)
+            f.close()
+            return variables
 
 
 class LocalStackRecipe:
@@ -710,6 +813,14 @@ def deploy(
             deployed. The stack configuration file is still generated and
             can be imported manually.
     """
+    # initialize the Terraform class
+    tf_client = Terraform()
+    # check if terraform is installed
+    try:
+        tf_client.check_installation()
+    except RuntimeError as e:
+        cli_utils.error(str(e))
+
     stack_recipes_dir = Path(os.getcwd()) / path
 
     if sys.platform == "win32":
@@ -738,25 +849,29 @@ def deploy(
                 force=force,
             )
 
-        stack_recipe_runner = (
-            [] if shell_executable is None else [shell_executable]
-        ) + [local_stack_recipe.recipes_deploy_bash_script]
         try:
             # Telemetry
             track_event(
                 AnalyticsEvent.RUN_STACK_RECIPE,
                 {"stack_recipe_name": stack_recipe_name},
             )
-            local_stack_recipe.run_stack_recipe(
-                stack_recipe_runner=stack_recipe_runner,
+            # use the terraform client to apply recipe
+            stack_yaml_file = os.path.join(
+                local_stack_recipe.path,
+                tf_client.apply(path=local_stack_recipe.path),
             )
+
             logger.info(
-                "A stack configuration YAML file has been generated as "
+                "\nA stack configuration YAML file has been generated as "
                 f"part of the deployment of the {stack_recipe_name} recipe. "
-                f"Find it at {local_stack_recipe.stack_yaml_file}."
+                f"Find it at {stack_yaml_file}."
             )
 
             if not no_import:
+                logger.info(
+                    "\nThe flag --no-import is not set. Proceeding "
+                    "to import a new ZenML stack from the created resources."
+                )
                 import_stack_name = (
                     stack_name if stack_name else stack_recipe_name
                 )
@@ -768,14 +883,36 @@ def deploy(
                 ctx.invoke(
                     import_stack,
                     stack_name=stack_name,
-                    filename=local_stack_recipe.stack_yaml_file,
+                    filename=stack_yaml_file,
                     ignore_version_mismatch=True,
                 )
 
-        except NotImplementedError as e:
+                cli_utils.declare(
+                    "Please consider creating any secrets that your stack "
+                    "components like the metadata store might need. "
+                    "You can inspect the fields of a stack component by "
+                    "running a describe command on them."
+                )
+
+        except RuntimeError as e:
             cli_utils.error(
-                f"No run_recipe.sh script found for the recipe "
-                f"{stack_recipe_name}.{str(e)}"
+                f"Error running recipe {stack_recipe_name}: {str(e)} "
+                "Please look at the error message to figure out why the "
+                "command failed. If the error is due some wrong configuration, "
+                "please consider checking the locals.tf file to verify if the "
+                "inputs are correct. Most commonly, the command can fail due "
+                "to a timeout error. In that case, please"
+                f"run zenml stack recipe deploy {stack_recipe_name} again"
+            )
+        except TerraformCommandError as e:
+            cli_utils.error(
+                f"Error running recipe {stack_recipe_name}: {str(e.err)} "
+                "Please look at the error message to figure out why the "
+                "command failed. If the error is due some wrong configuration, "
+                "please consider checking the locals.tf file to verify if the "
+                "inputs are correct. Most commonly, the command can fail due "
+                "to a timeout error. In that case, please"
+                f"run zenml stack recipe deploy {stack_recipe_name} again"
             )
 
 
