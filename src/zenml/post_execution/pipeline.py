@@ -152,7 +152,7 @@ class PipelineView:
 
         repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
         try:
-            run_wrapper = repo.zen_store.get_pipeline_run(
+            run_wrapper = repo.zen_store.get_pipeline_run_wrapper(
                 pipeline_name=self.name, run_name=run_name
             )
             return run_wrapper

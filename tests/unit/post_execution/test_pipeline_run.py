@@ -45,7 +45,9 @@ def sample_stepview(sample_step: "BaseStep") -> StepView:
 def sample_pipeline_run_view(sample_stepview: StepView) -> PipelineRunView:
     """Return sample pipeline run view for testing purposes"""
     sample_pipeline_run_view = PipelineRunView(
-        id_=1, name="sample_run_name", executions=None,
+        id_=1,
+        name="sample_run_name",
+        executions=None,
     )
     setattr(sample_pipeline_run_view, "_steps", {"some_step": sample_stepview})
     return sample_pipeline_run_view

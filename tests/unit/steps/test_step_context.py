@@ -19,7 +19,6 @@ from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.exceptions import StepContextError
 from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.repository import Repository
 from zenml.steps import StepContext
 
 

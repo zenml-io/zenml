@@ -23,7 +23,7 @@ from uuid import UUID, uuid4
 from ml_metadata import proto
 from ml_metadata.metadata_store import metadata_store
 from ml_metadata.proto import metadata_store_pb2
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Extra, Field
 from tfx.dsl.compiler.constants import (
     PIPELINE_CONTEXT_TYPE_NAME,
     PIPELINE_RUN_CONTEXT_TYPE_NAME,
@@ -467,3 +467,14 @@ class BaseMetadataStore(BaseModel, ABC):
         )
         execution = self.store.get_executions_by_id(executions_ids)[0]
         return self._get_step_view_from_execution(execution)
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # public attributes are immutable
+        allow_mutation = False
+        # all attributes with leading underscore are private and therefore
+        # are mutable and not included in serialization
+        underscore_attrs_are_private = True
+        # prevent extra attributes during model initialization
+        extra = Extra.forbid
