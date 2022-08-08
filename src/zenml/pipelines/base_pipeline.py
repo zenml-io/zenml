@@ -519,6 +519,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             The pipeline object that this method was called on.
         """
         config_yaml = yaml_utils.read_yaml(config_file)
+        breakpoint()
 
         if PipelineConfigurationKeys.STEPS in config_yaml:
             self._read_config_steps(
@@ -559,8 +560,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
             parameters = step_dict.get(StepConfigurationKeys.PARAMETERS_, {})
             # pop the enable_cache
-            if "enable_cache" in parameters.keys():
-                enable_cache = parameters.pop("enable_cache")
+            if PARAM_ENABLE_CACHE in parameters:
+                enable_cache = parameters.pop(PARAM_ENABLE_CACHE)
                 self.steps[step_name].enable_cache = enable_cache
 
             for parameter, value in parameters.items():
