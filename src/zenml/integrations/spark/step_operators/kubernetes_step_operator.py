@@ -220,9 +220,9 @@ class KubernetesSparkStepOperator(BaseStepOperator):
         if artifact_store.FLAVOR == S3_ARTIFACT_STORE_FLAVOR:
             configurations.extend(
                 [
-                    "--conf spark.hadoop.fs.s3a.fast.upload=true"
-                    "--conf spark.hadoop.fs.s3.impl=org.apache.hadoop.fs.s3a.S3AFileSystem"
-                    "--conf spark.hadoop.fs.AbstractFileSystem.s3.impl=org.apache.hadoop.fs.s3a.S3A"
+                    "--conf spark.hadoop.fs.s3a.fast.upload=true",
+                    "--conf spark.hadoop.fs.s3.impl=org.apache.hadoop.fs.s3a.S3AFileSystem",
+                    "--conf spark.hadoop.fs.AbstractFileSystem.s3.impl=org.apache.hadoop.fs.s3a.S3A",
                     "--conf spark.hadoop.fs.s3a.aws.credentials.provider=com.amazonaws.auth.DefaultAWSCredentialsProviderChain"
                 ]
             )
@@ -248,14 +248,15 @@ class KubernetesSparkStepOperator(BaseStepOperator):
                 "configuration based on the artifact store flavor you are "
                 "using. With this in mind, when you use this step operator "
                 "with certain artifact store flavor, ZenML takes care of the "
-                "preconfiguration. However, the artifact store flavor "
+                "pre-configuration. However, the artifact store flavor "
                 f"'{artifact_store.FLAVOR}' featured in this stack is not "
                 f"known to this step operator and it might require additional "
                 f"configuration."
             )
 
-        for o in self.configuration_properties:
-            configurations.append(f"--conf {o}")
+        if self.submit_args:
+            for submit_arg in self.submit_args:
+                configurations.append(f"--conf {submit_arg}")
 
         return configurations
 
