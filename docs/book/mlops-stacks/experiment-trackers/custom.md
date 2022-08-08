@@ -35,7 +35,7 @@ specific integration modules. You can use them as examples of how you can extend
 the [base Experiment Tracker class](https://apidocs.zenml.io/latest/api_docs/experiment_trackers/#zenml.experiment_trackers.base_experiment_tracker.BaseExperimentTracker)
 to implement your own custom Experiment Tracker:
 
-|                                                                                                                                                                                   | Flavor   | Integration |
-|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|-------------|
-| [MLFlowExperimentTracker](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker.MLFlowExperimentTracker) | mlflow   | mlflow      |
-| [WandbExperimentTracker](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.wandb.experiment_trackers.wandb_experiment_tracker.WandbExperimentTracker)     | wandb    | wandb       |
+| Experiment Tracker | Implementation  |
+|--------------------|-----------------|
+| [MLflow](./mlflow.mdd) | [MLFlowExperimentTracker](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/experiment_trackers/mlflow_experiment_tracker.py) |
+| [Weights & Biases](./wandb.md) | [WandbExperimentTracker](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/wandb/experiment_trackers/wandb_experiment_tracker.py) |

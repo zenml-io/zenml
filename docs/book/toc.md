@@ -31,6 +31,7 @@
   * [Pass Custom Data Types through Steps](./developer-guide/advanced-usage/materializer.md)
   * [Access the Active Stack within Steps](./developer-guide/advanced-usage/step-fixtures.md)
   * [Access Global Info within Steps](./developer-guide/advanced-usage/environment.md)
+  * [Specify Step Resources](./developer-guide/advanced-usage/specify-step-resources.md)
   * [Manage External Services](./developer-guide/advanced-usage/manage-external-services.md)
   * [Manage Docker Images](./developer-guide/advanced-usage/docker.md)
   * [Set Stacks and Profiles with Environment Variables](./developer-guide/advanced-usage/stack-profile-environment-variables.md)
@@ -75,6 +76,12 @@
   * [Github Secrets Manager](./mlops-stacks/secrets-managers/github.md)
   * [HashiCorp Vault Secrets Manager](./mlops-stacks/secrets-managers/hashicorp-vault.md)
   * [Develop a Custom Secrets Manager](./mlops-stacks/secrets-managers/custom.md)
+* [Data Validators](mlops-stacks/data-validators/data-validators.md)
+  * [Great Expectations](mlops-stacks/data-validators/great-expectations.md)
+  * [Deepchecks](mlops-stacks/data-validators/deepchecks.md)
+  * [Evidently](mlops-stacks/data-validators/evidently.md)
+  * [Whylogs](mlops-stacks/data-validators/whylogs.md)
+  * [Develop a Custom Data Validator](mlops-stacks/data-validators/custom.md)
 * [Experiment Trackers](./mlops-stacks/experiment-trackers/experiment-trackers.md)
   * [MLflow](./mlops-stacks/experiment-trackers/mlflow.md)
   * [Weights & Biases](./mlops-stacks/experiment-trackers/wandb.md)
@@ -82,6 +89,7 @@
 * [Model Deployers](./mlops-stacks/model-deployers/model-deployers.md)
   * [MLflow](./mlops-stacks/model-deployers/mlflow.md)
   * [Seldon](./mlops-stacks/model-deployers/seldon.md)
+  * [KServe](./mlops-stacks/model-deployers/kserve.md)
   * [Develop a Custom Model Deployer](./mlops-stacks/model-deployers/custom.md)
 * [Step Operators](./mlops-stacks/step-operators/step-operators.md)
   * [Amazon SageMaker](./mlops-stacks/step-operators/amazon-sagemaker.md)
@@ -97,15 +105,6 @@
 * [Annotators](./mlops-stacks/annotators/annotators.md)
   * [Label Studio](./mlops-stacks/annotators/label-studio.md)
   * [Develop a Custom Annotator](./mlops-stacks/annotators/custom.md)
-<!---
-* [Data Validators](mlops_stacks/data_validators/overview.md)
-  * [Great Expectations](mlops_stacks/data_validators/great_expectations.md)
-  * [Deepchecks](mlops_stacks/data_validators/deepchecks.md)
-  * [Evidently](mlops_stacks/data_validators/evidently.md)
-  * [WhyLabs](mlops_stacks/data_validators/whylogs.md)
-  * [Facets](mlops_stacks/data_validators/facets.md)
-  * [Develop a Custom Data Validator](mlops_stacks/data_validators/custom.md)
--->
 
 ## Cloud Guide
 
@@ -144,6 +143,6 @@
 ## Reference
 
 * [Glossary](reference/glossary.md)
-* [CLI Cheat Sheet](https://storage.googleapis.com/zenml-public-bucket/zenml_cheat_sheet.pdf)
+* [CLI Cheat Sheet](reference/cheat-sheet.md)
 * [CLI Reference](https://apidocs.zenml.io/latest/cli/)
 * [API Reference](https://apidocs.zenml.io/latest/)

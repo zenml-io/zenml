@@ -14,67 +14,8 @@
 """Utility functions for the Label Studio annotator integration."""
 
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
 from urllib.parse import quote, urlparse
-
-from zenml.io import fileio
-
-
-def parse_azure_url(url: str) -> Tuple[str, str]:
-    """Converts Azure Label Studio URL to path for fileio.
-
-    Args:
-        url: Azure Label Studio URL.
-
-    Returns:
-        Tuple of (full URL, filename).
-    """
-    pth = urlparse(url).path
-    return f"az://{pth}", pth.split("/")[-1]
-
-
-def download_azure_image(url: str, destination: str) -> None:
-    """Downloads an image using fileio.
-
-    Args:
-        url: URL of the image to download.
-        destination: Path to the destination file.
-    """
-    full_url, filename = parse_azure_url(url)
-    destination_path = os.path.join(destination, filename)
-    fileio.copy(full_url, destination_path)
-
-
-# def get_azure_credentials() -> Tuple[Optional[str], Optional[str]]:
-#     """Returns access credentials for Azure from the environment.
-
-#     Returns:
-#         Tuple of (account_name, account_key).
-#     """
-#     account_key = os.environ.get("AZURE_STORAGE_ACCOUNT_KEY")
-#     account_name = os.environ.get("AZURE_STORAGE_ACCOUNT_NAME")
-#     return account_name, account_key
-
-
-def get_gcs_credentials() -> Optional[str]:
-    """Returns access credentials for GCS from the environment.
-
-    Returns:
-        GCS credentials string.
-    """
-    return os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
-
-
-# def get_s3_credentials() -> Tuple[Optional[str], Optional[str], Optional[str]]:
-#     """Returns access credentials for S3 from the environment.
-
-#     Returns:
-#         Tuple of (access_key_id, secret_access_key, session_token).
-#     """
-#     access_key_id = os.environ.get("AWS_ACCESS_KEY_ID")
-#     secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
-#     session_token = os.environ.get("AWS_SESSION_TOKEN")
-#     return access_key_id, secret_access_key, session_token
 
 
 def convert_pred_filenames_to_task_ids(
@@ -100,7 +41,6 @@ def convert_pred_filenames_to_task_ids(
         ]
         for task in tasks
     }
-
     # GCS and S3 URL encodes filenames containing spaces, requiring this
     # separate encoding step
     if storage_type in {"gcs", "s3"}:
@@ -108,7 +48,6 @@ def convert_pred_filenames_to_task_ids(
             {"filename": quote(pred["filename"]), "result": pred["result"]}
             for pred in preds
         ]
-
     return [
         {
             "task": int(
@@ -118,3 +57,51 @@ def convert_pred_filenames_to_task_ids(
         }
         for pred in preds
     ]
+
+
+def is_s3_url(url: str) -> bool:
+    """Return whether the given URL is an S3 URL.
+
+    Args:
+        url: URL to check.
+
+    Returns:
+        True if the URL is an S3 URL, False otherwise.
+    """
+    return "s3.amazonaws" in urlparse(url).netloc
+
+
+def is_azure_url(url: str) -> bool:
+    """Return whether the given URL is an Azure URL.
+
+    Args:
+        url: URL to check.
+
+    Returns:
+        True if the URL is an Azure URL, False otherwise.
+    """
+    return "blob.core.windows.net" in urlparse(url).netloc
+
+
+def is_gcs_url(url: str) -> bool:
+    """Return whether the given URL is an GCS URL.
+
+    Args:
+        url: URL to check.
+
+    Returns:
+        True if the URL is an GCS URL, False otherwise.
+    """
+    return "storage.googleapis.com" in urlparse(url).netloc
+
+
+def get_file_extension(path_str: str) -> str:
+    """Return the file extension of the given filename.
+
+    Args:
+        path_str: Path to the file.
+
+    Returns:
+        File extension.
+    """
+    return os.path.splitext(urlparse(path_str).path)[1]

@@ -12,13 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import uuid
 from typing import Dict, List, Optional, Type
 
 import pytest
 from pydantic import BaseModel
 
 from zenml.integrations.gcp.secrets_manager.gcp_secrets_manager import (
-    prepend_group_name_to_keys,
+    GCPSecretsManager,
     remove_group_name_from_key,
 )
 from zenml.secret import ArbitrarySecretSchema
@@ -121,6 +122,12 @@ ZENML_SECRET = [
 
 @pytest.mark.parametrize("parametrized_input", ZENML_SECRET)
 def test_prepend_group_name_to_keys(parametrized_input: ZenMLSecret):
+    secrets_manager = GCPSecretsManager(
+        name="test",
+        scope="none",
+        uuid=uuid.uuid4(),
+        project_id="fake_project",
+    )
     secret_schema = ArbitrarySecretSchema(
         name=parametrized_input.zenml_secret_name
     )
@@ -128,5 +135,5 @@ def test_prepend_group_name_to_keys(parametrized_input: ZenMLSecret):
     for k in parametrized_input.zenml_secret_keys:
         secret_schema.arbitrary_kv_pairs[k] = ""
 
-    actual_result_key = prepend_group_name_to_keys(secret_schema)
+    actual_result_key = secrets_manager._convert_secret_content(secret_schema)
     assert actual_result_key == parametrized_input.expected_combined_keys

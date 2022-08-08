@@ -1,94 +1,86 @@
 ---
-description: Guard against data drift with our Evidently integration.
+description: How to enhance and maintain the quality of your data and the performance of your models with data profiling and validation
 ---
 
-- `What is it, what does it do`
-- `Why would you want to use it`
-- `When should you start adding this to your stack`
-- `Overview of flavors, tradeoffs, when to use which flavor (table)`
+Without good data, even the best machine learning models will yield questionable
+results. A lot of effort goes into ensuring and maintaining data quality not
+only in the initial stages of model development, but throughout the entire
+machine learning project lifecycle. Data Validators are a category of ML
+libraries, tools and frameworks that grant a wide range of features and best
+practices that should be employed in the ML pipelines to keep data quality in
+check and to monitor model performance to keep it from degrading over time.
 
-# Perform Drift Detection
+Data profiling, data integrity testing, data and model drift detection
+are all ways of employing data validation techniques at different points in your
+ML pipelines where data is concerned: data ingestion, model training and
+evaluation and online or batch inference. Data profiles and model performance
+evaluation results can be visualized and analyzed to detect problems and take
+preventive or correcting actions.
 
-Data drift is something you often want to guard against in your pipelines.
-Machine learning pipelines are built on top of data inputs, so it is worth
-checking for drift if you have a model that was trained on a certain
-distribution of data. What follows is an example of how we use one drift
-detection tool that ZenML has currently integrated with. This takes the form of
-a standard step that you can use to make the relevant calculations.
+Related concepts:
 
-## 🗺 Overview
+* the Data Validator is an optional type of Stack Component that needs to be
+registered as part of your ZenML [Stack](../../developer-guide/stacks-profiles-repositories/stack.md).
+* Data Validators used in ZenML pipelines usually generate data profiles and
+data quality check reports that are versioned and stored in the [Artifact Store](../artifact-stores/artifact-stores.md).
+They can be retrieved and inspected using [the post-execution workflow API](../../developer-guide/steps-pipelines/inspecting-pipeline-runs.md).
 
-[`Evidently`](https://github.com/evidentlyai/evidently) is a useful open-source library to painlessly check for data drift (among other features). At its core, Evidently's drift detection takes in a reference data set and compares it against another comparison dataset. These are both input in the form of a Pandas `DataFrame`, though CSV inputs are also possible. You can receive these results in the form of a standard dictionary object containing all the relevant information, or as a visualization. ZenML supports both outputs.
+## When to use it
 
-ZenML implements this functionality in the form of several standardized steps. You select which of the profile sections you want to use in your step by passing a string into the `EvidentlyProfileConfig`. Possible options supported by Evidently are:
+[Data-centric AI practices](https://blog.zenml.io/data-centric-mlops/) are
+quickly becoming mainstream and using Data Validators are an easy way to
+incorporate them into your workflow. These are some common cases where you
+may consider employing the use of Data Validators in your pipelines:
 
-* "datadrift"
-* "categoricaltargetdrift"
-* "numericaltargetdrift"
-* "classificationmodelperformance"
-* "regressionmodelperformance"
-* "probabilisticmodelperformance"
-* "dataquality" (NOT CURRENTLY IMPLEMENTED)
+* early on, even if it's just to keep a log of the quality state of your
+data and the performance of your models at different stages of development.
+* if you have pipelines that regularly ingest new data, you should use data
+validation to run regular data integrity checks to signal problems before
+they are propagated downstream.
+* in continuous training pipelines, you should use data validation techniques to
+compare new training data against a data reference and to compare the
+performance of newly trained models against previous ones.
+* when you have pipelines that automate batch inference or if you regularly
+collect data used as input in online inference, you should use data validation
+to run data drift analyses and detect training-serving skew, data drift and
+model drift.
 
-## 🧰 How to validate data inside a ZenML step
+### Data Validator Flavors
 
-With Evidently, we compare two separate DataFrames. ZenML provides custom steps which you can set up for drift detection as in the following code:
+Data Validator are optional stack components provided by integrations. The
+following table lists the currently available Data Validators and summarizes
+their features and the data types and model types that they can be used with in
+ZenML pipelines:
 
-```python
-from zenml.integrations.evidently.steps import (
-    EvidentlyProfileConfig,
-    EvidentlyProfileStep,
-)
+| Data Validator | Validation Features | Data Types | Model Types | Notes | Flavor/Integration |
+|----------------|---------------------|------------|-------------|-------|--------------------|
+| [Deepchecks](./deepchecks.md) | data quality<br>data drift<br>model drift<br>model performance | tabular: `pandas.DataFrame`<br>CV: `torch.utils.data.dataloader.DataLoader`| tabular: `sklearn.base.ClassifierMixin`<br>CV: `torch.nn.Module` | Add Deepchecks data and model validation tests to your pipelines | `deepchecks` |
+| [Evidently](./evidently.md) | data quality<br>data drift<br>model drift<br>model performance | tabular: `pandas.DataFrame` | N/A | Use Evidently to generate a variety of data quality and data/model drift reports and visualizations | `evidently` |
+| [Great Expectations](./great-expectations.md) | data profiling<br>data quality | tabular: `pandas.DataFrame` | N/A | Perform data testing, documentation and profiling with Great Expectations | `great_expectations` |
+| [Whylogs/WhyLabs](./whylogs.md) | data drift | tabular: `pandas.DataFrame` | N/A | Generate data profiles with whylogs and upload them to WhyLabs | `whylogs` |
 
-# instead of defining the step yourself, we have done it for you
-drift_detector = EvidentlyProfileStep(
-    EvidentlyProfileConfig(
-        column_mapping=None,
-        profile_section="datadrift",
-    )
-)
+If you would like to see the available flavors of Data Validator, you can 
+use the command:
+
+```shell
+zenml data-validator flavor list
 ```
 
-Here you can see how to define the step using our class-based interface. 
-Then you just have to pass in the two dataframes for the comparison to take place.
+## How to use it
 
-This could be done at the point when you are defining your pipeline:
+Every Data Validator has different data profiling and testing capabilities and
+uses a slightly different way of analyzing your data and your models, but it
+generally works as follows:
 
-```python
-from zenml.integrations.constants import EVIDENTLY, SKLEARN
-from zenml.pipelines import pipeline
+* first, you have to configure and add an Data Validator to your ZenML stack
+* every integration includes one or more builtin data validation steps that you
+can add to your pipelines. Of course, you can also use the libraries directly in
+your own custom pipeline steps and simply return the results (e.g. data profiles,
+test reports) as artifacts that are versioned and stored by ZenML in its Artifact
+Store.
+* you can access the data validation artifacts in subsequent pipeline steps or
+you can load them in the [the post-execution workflow](../../developer-guide/steps-pipelines/inspecting-pipeline-runs.md) to process them or visualize them as needed.
 
-@pipeline(required_integrations=[EVIDENTLY, SKLEARN])
-def drift_detection_pipeline(
-        data_loader,
-        data_splitter,
-        drift_detector,
-        drift_analyzer,
-):
-    """Links all the steps together in a pipeline"""
-    data = data_loader()
-    reference_dataset, comparison_dataset = data_splitter(data)
-    drift_report, _ = drift_detector(
-        reference_dataset=reference_dataset,
-        comparison_dataset=comparison_dataset,
-    )
-    drift_analyzer(drift_report)
-```
-
-For the full context of this code, please visit our `drift_detection` example [here](https://github.com/zenml-io/zenml/tree/main/examples/evidently_drift_detection). The key part of the pipeline definition above is when we use the datasets derived from the `data_splitter` step (i.e. function) and pass them in as arguments to the `drift_detector` function as part of the pipeline.
-
-We even allow you to use the Evidently visualization tool to display data drift diagrams in your browser or within a Jupyter notebook:
-
-![Evidently drift visualization UI](../../assets/evidently/drift-visualization.png)
-
-Simple code like this would allow you to access the Evidently visualizer based on the completed pipeline run:
-
-```python
-from zenml.integrations.evidently.visualizers import EvidentlyVisualizer
-from zenml.repository import Repository
-
-repo = Repository()
-pipe = repo.get_pipelines()[-1]
-evidently_outputs = pipe.runs[-1].get_step(name="drift_detector")
-EvidentlyVisualizer().visualize(evidently_outputs)
-```
+Consult the documentation for the particular [Data Validator flavor](#data-validator-flavors)
+that you plan on using or are using in your stack for detailed information about
+how to use it in your ZenML pipelines.

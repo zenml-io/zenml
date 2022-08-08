@@ -323,15 +323,15 @@ class DeepchecksDataValidator(BaseDataValidator):
         `DeepchecksDataIntegrityCheck` and `DeepchecksDataDriftCheck` enum
         values. If omitted:
 
-            * if the `comparison_dataset` is omitted, a suite with all available
-            data integrity checks will be performed on the input data. See
-            `DeepchecksDataIntegrityCheck` for a list of Deepchecks builtin
-            checks that are compatible with this method.
+        * if the `comparison_dataset` is omitted, a suite with all available
+        data integrity checks will be performed on the input data. See
+        `DeepchecksDataIntegrityCheck` for a list of Deepchecks builtin
+        checks that are compatible with this method.
 
-            * if the `comparison_dataset` is supplied, a suite with all
-            available data drift checks will be performed on the input
-            data. See `DeepchecksDataDriftCheck` for a list of Deepchecks
-            builtin checks that are compatible with this method.
+        * if the `comparison_dataset` is supplied, a suite with all
+        available data drift checks will be performed on the input
+        data. See `DeepchecksDataDriftCheck` for a list of Deepchecks
+        builtin checks that are compatible with this method.
 
         Args:
             dataset: Target dataset to be validated.

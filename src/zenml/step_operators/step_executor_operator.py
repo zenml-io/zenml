@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Custom definition of a Step Executor Operator which can be passed into the Step Operator."""
+"""Custom definition of a Step Executor Operator which can be passed into
+the Step Operator."""
 
 import json
 import os
@@ -30,16 +31,14 @@ from tfx.proto.orchestration import (
 
 import zenml
 import zenml.constants
-from zenml.constants import (
-    MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME,
-    ZENML_MLMD_CONTEXT_TYPE,
-)
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.steps.utils import (
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
     PARAM_CUSTOM_STEP_OPERATOR,
+    collect_requirements,
+    collect_step_resources,
 )
 from zenml.utils import source_utils, yaml_utils
 
@@ -102,40 +101,6 @@ class StepExecutorOperator(BaseExecutorOperator):
         executable_spec_pb2.PythonClassExecutableSpec
     ]
     SUPPORTED_PLATFORM_CONFIG_TYPE: List[Any] = []
-
-    @staticmethod
-    def _collect_requirements(
-        stack: "Stack",
-        pipeline_node: pipeline_pb2.PipelineNode,
-    ) -> List[str]:
-        """Collects all requirements necessary to run a step.
-
-        Args:
-            stack: Stack on which the step is being executed.
-            pipeline_node: Pipeline node info for a step.
-
-        Returns:
-            Alphabetically sorted list of pip requirements.
-        """
-        requirements = stack.requirements()
-
-        # Add pipeline requirements from the corresponding node context
-        for context in pipeline_node.contexts.contexts:
-            if context.type.name == ZENML_MLMD_CONTEXT_TYPE:
-                pipeline_requirements = context.properties[
-                    MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME
-                ].field_value.string_value.split(" ")
-                requirements.update(pipeline_requirements)
-                break
-
-        # TODO [ENG-696]: Find a nice way to set this if the running version of
-        #  ZenML is not an official release (e.g. on a development branch)
-        # Add the current ZenML version as a requirement
-        # requirements.add(f"zenml=={zenml.__version__}")
-        requirements.add(
-            f"git+https://github.com/zenml-io/zenml.git@feature/ENG-908-distributed-processing-spark"
-        )
-        return sorted(requirements)
 
     @staticmethod
     def _resolve_user_modules(
@@ -230,7 +195,7 @@ class StepExecutorOperator(BaseExecutorOperator):
             stack=stack, execution_info=execution_info
         )
 
-        requirements = self._collect_requirements(
+        requirements = collect_requirements(
             stack=stack, pipeline_node=execution_info.pipeline_node
         )
 
@@ -279,11 +244,17 @@ class StepExecutorOperator(BaseExecutorOperator):
             requirements,
             entrypoint_command,
         )
+
+        resource_configuration = collect_step_resources(
+            pipeline_node=execution_info.pipeline_node
+        )
+
         step_operator.launch(
             pipeline_name=execution_info.pipeline_info.id,
             run_name=execution_info.pipeline_run_id,
             requirements=requirements,
             entrypoint_command=entrypoint_command,
+            resource_configuration=resource_configuration,
         )
 
         return _read_executor_output(execution_info.execution_output_uri)

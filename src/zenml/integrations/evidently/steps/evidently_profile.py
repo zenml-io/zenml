@@ -92,21 +92,22 @@ class EvidentlyColumnMapping(BaseModel):
 class EvidentlyProfileConfig(BaseDriftDetectionConfig):
     """Config class for Evidently profile steps.
 
-    column_mapping: properties of the DataFrame columns used
-    profile_sections: a list identifying the Evidently profile sections to be
-        used. The following are valid options supported by Evidently:
-        - "datadrift"
-        - "categoricaltargetdrift"
-        - "numericaltargetdrift"
-        - "classificationmodelperformance"
-        - "regressionmodelperformance"
-        - "probabilisticmodelperformance"
-    verbose_level: Verbosity level for the Evidently dashboards. Use
-        0 for a brief dashboard, 1 for a detailed dashboard.
-    profile_options: Optional list of options to pass to the
-        profile constructor. See `EvidentlyDataValidator._unpack_options`.
-    dashboard_options: Optional list of options to pass to the
-        dashboard constructor. See `EvidentlyDataValidator._unpack_options`.
+    Attributes:
+        column_mapping: properties of the DataFrame columns used
+        profile_sections: a list identifying the Evidently profile sections to be
+            used. The following are valid options supported by Evidently:
+            - "datadrift"
+            - "categoricaltargetdrift"
+            - "numericaltargetdrift"
+            - "classificationmodelperformance"
+            - "regressionmodelperformance"
+            - "probabilisticmodelperformance"
+        verbose_level: Verbosity level for the Evidently dashboards. Use
+            0 for a brief dashboard, 1 for a detailed dashboard.
+        profile_options: Optional list of options to pass to the
+            profile constructor. See `EvidentlyDataValidator._unpack_options`.
+        dashboard_options: Optional list of options to pass to the
+            dashboard constructor. See `EvidentlyDataValidator._unpack_options`.
     """
 
     column_mapping: Optional[EvidentlyColumnMapping] = None

@@ -16,8 +16,10 @@
 from pipelines import inference_pipeline, training_pipeline
 from steps import (
     deployment_trigger,
+    drift_detector,
     evaluator,
     inference_data_loader,
+    model_deployer,
     prediction_service_loader,
     predictor,
     skew_comparison,
@@ -28,50 +30,39 @@ from steps import (
 from zenml.integrations.dash.visualizers.pipeline_run_lineage_visualizer import (
     PipelineRunLineageVisualizer,
 )
-from zenml.integrations.evidently.steps import (
-    EvidentlyProfileConfig,
-    EvidentlyProfileStep,
-)
 from zenml.integrations.evidently.visualizers import EvidentlyVisualizer
 from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
     FacetStatisticsVisualizer,
 )
-from zenml.integrations.mlflow.steps import mlflow_model_deployer_step
-from zenml.repository import Repository
 
 
 def main():
 
-    # configure drift detector
-    evidently_profile_config = EvidentlyProfileConfig(
-        column_mapping=None, profile_sections=["datadrift"]
-    )
-    drift_detector = EvidentlyProfileStep(config=evidently_profile_config)
-
     # initialize and run training pipeline
-    training_pipeline(
+    training_pipeline_instance = training_pipeline(
         training_data_loader=training_data_loader(),
         skew_comparison=skew_comparison(),
         trainer=svc_trainer_mlflow(),
         evaluator=evaluator(),
         deployment_trigger=deployment_trigger(),
-        model_deployer=mlflow_model_deployer_step(),
-    ).run()
+        model_deployer=model_deployer,
+    )
+    training_pipeline_instance.run()
 
     # initialize and run inference pipeline
-    inference_pipeline(
+    inference_pipeline_instance = inference_pipeline(
         inference_data_loader=inference_data_loader(),
         prediction_service_loader=prediction_service_loader(),
         predictor=predictor(),
         training_data_loader=training_data_loader(),
         skew_comparison=skew_comparison(),
         drift_detector=drift_detector,
-    ).run()
+    )
+    inference_pipeline_instance.run()
 
     # fetch latest runs for each pipeline
-    repo = Repository()
-    train_run = repo.get_pipeline(pipeline_name="training_pipeline").runs[-1]
-    inf_run = repo.get_pipeline(pipeline_name="inference_pipeline").runs[-1]
+    train_run = training_pipeline_instance.get_runs()[-1]
+    inf_run = inference_pipeline_instance.get_runs()[-1]
 
     # visualize training pipeline
     PipelineRunLineageVisualizer().visualize(train_run)
@@ -80,15 +71,15 @@ def main():
     PipelineRunLineageVisualizer().visualize(inf_run)
 
     # visualize train-test skew
-    train_test_skew_step = train_run.get_step(name="skew_comparison")
+    train_test_skew_step = train_run.get_step(step="skew_comparison")
     FacetStatisticsVisualizer().visualize(train_test_skew_step)
 
     # visualize training-serving skew
-    training_serving_skew_step = inf_run.get_step(name="skew_comparison")
+    training_serving_skew_step = inf_run.get_step(step="skew_comparison")
     FacetStatisticsVisualizer().visualize(training_serving_skew_step)
 
     # visualize data drift
-    drift_detection_step = inf_run.get_step(name="drift_detector")
+    drift_detection_step = inf_run.get_step(step="drift_detector")
     EvidentlyVisualizer().visualize(drift_detection_step)
 
 

@@ -40,7 +40,7 @@ The repository contains a collection of all created pipelines with at least one
 run sorted by the time of their first run from oldest to newest.
 
 You can either access this collection via the `get_pipelines()` method or query
-a specific pipeline by name using `get_pipeline(pipeline_name=...)`:
+a specific pipeline by name using `get_pipeline(pipeline=...)`:
 
 ```python
 # get all pipelines from all stacks
@@ -93,12 +93,20 @@ itself.
 ```python
 from zenml.pipelines import pipeline
 
+# Definition of pipeline
 @pipeline
 def example_pipeline(...):
     ...
 
-# get all runs of a pipeline chronologically ordered
+# Instantiation and execution of pipeline
+pipe = example_pipeline(...)
+pipe.run()
+
+# get all runs of the defined pipeline chronologically ordered
 runs = example_pipeline.get_runs()
+
+# get all runs of the instantiated pipeline chronologically ordered
+runs = pipe.get_runs()
 
 # get the last run by index, runs are ordered by execution time in ascending order
 last_run = runs[-1]
@@ -107,11 +115,37 @@ last_run = runs[-1]
 run = example_pipeline.get_run(run_name=...)
 ```
 
+Each run has a collection of useful metadata which you can access:
+
+**git_sha**
+The Git commit SHA that the pipeline run was performed on. This will only be set 
+if the pipeline code is in a git repository and there are no uncommitted files 
+when running the pipeline.
+```python
+commit = run.git_sha
+```
+
+**status**
+The status of a pipeline run can also be found here. There are four 
+possible states: failed, completed, running, cached:
+```python
+status = run.status
+```
+
+**runtime_configuration**
+Currently the runtime configuration contains information about the schedule that
+was used for the run, the run_name and the path to the file containing the 
+pipeline. 
+```python
+runtime_config = run.runtime_configuration
+```
+
+
 ### Steps
 
 Within a given pipeline run you can now further zoom in on individual steps
 using the `steps` attribute or by querying a specific step using the
-`get_step(name=...)` method.
+`get_step(step=...)` method.
 
 ```python
 # get all steps of a pipeline for a given run
@@ -122,9 +156,28 @@ first_step = steps[0]
 
 # or get a specific step by name
 step = run.get_step(step="first_step")
+```
 
-# or even use the step class
-step = run.get_step(step=first_step)
+{% hint style="warning" %}
+The step `name` refers to the pipeline attribute and not the class name of the
+steps that implement the step for a pipeline instance. 
+{% endhint %}
+
+```python
+# Definition of pipeline
+@pipeline
+def example_pipeline(step_1, step_2):
+    ...
+
+# Initialize a new pipeline run
+pipe = example_pipeline(step_1=first_step(), step_2=second_step())
+pipe.run()
+
+# Get the first step
+pipe.get_runs()[-1].get_step(step="step_1")
+
+# This won't work:
+# pipe.get_runs()[-1].get_step(step="first_step")
 ```
 
 {% hint style="info" %}
@@ -177,8 +230,24 @@ of our example pipeline from the previous sections:
 from zenml.repository import Repository
 
 repo = Repository()
-pipeline = repo.get_pipeline(pipeline_name="first_pipeline")
+pipeline = repo.get_pipeline(pipeline="first_pipeline")
 last_run = pipeline.runs[-1]
 last_step = last_run.steps[-1]
 model = last_step.output.read()
+```
+
+or alternatively:
+
+```python
+# Definition of pipeline
+@pipeline
+def example_pipeline(step_1, step_2):
+    ...
+# Initialize a new pipeline run
+pipe = example_pipeline(step_1=first_step(), step_2=second_step())
+pipe.run()
+
+# Get the first step
+step_1 = pipe.get_runs()[-1].get_step(step="step_1")
+output = step_1.output.read()
 ```

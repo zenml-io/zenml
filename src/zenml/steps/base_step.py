@@ -42,16 +42,15 @@ from tfx.types.channel import Channel
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.artifacts.type_registry import type_registry
+from zenml.config.resource_configuration import ResourceConfiguration
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.default_materializer_registry import (
     default_materializer_registry,
 )
-from zenml.step_operators.step_executor_operator import StepExecutorOperator
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_context import StepContext
-from zenml.steps.step_output import Output
 from zenml.steps.utils import (
     INSTANCE_CONFIGURATION,
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
@@ -59,9 +58,10 @@ from zenml.steps.utils import (
     PARAM_CUSTOM_STEP_OPERATOR,
     PARAM_ENABLE_CACHE,
     PARAM_PIPELINE_PARAMETER_NAME,
-    SINGLE_RETURN_OUT_NAME,
+    PARAM_RESOURCE_CONFIGURATION,
     _ZenMLSimpleComponent,
     generate_component_class,
+    parse_return_type_annotations,
     resolve_type_annotation,
 )
 from zenml.utils.source_utils import get_hashed_source
@@ -73,8 +73,9 @@ class BaseStepMeta(type):
     """Metaclass for `BaseStep`.
 
     Checks whether everything passed in:
-    * Has a matching materializer.
-    * Is a subclass of the Config class
+    * Has a matching materializer,
+    * Is a subclass of the Config class,
+    * Is typed correctly.
     """
 
     def __new__(
@@ -179,22 +180,14 @@ class BaseStepMeta(type):
         # Parse the returns of the step function
         if "return" not in step_function_signature.annotations:
             raise StepInterfaceError(
-                f"Missing return type annotation when "
-                f"trying to create step '{name}'. Please make sure to "
-                f"include type annotations for all your step inputs "
-                f"and outputs. If your step returns nothing, please annotate it with `-> None`."
+                "Missing return type annotation when trying to create step "
+                f"'{name}'. Please make sure to include type annotations for "
+                "all your step inputs and outputs. If your step returns "
+                "nothing, please annotate it with `-> None`."
             )
-        return_type = step_function_signature.annotations.get("return", None)
-        if return_type is not None:
-            if isinstance(return_type, Output):
-                cls.OUTPUT_SIGNATURE = {
-                    name: resolve_type_annotation(type_)
-                    for (name, type_) in return_type.items()
-                }
-            else:
-                cls.OUTPUT_SIGNATURE[
-                    SINGLE_RETURN_OUT_NAME
-                ] = resolve_type_annotation(return_type)
+        cls.OUTPUT_SIGNATURE = parse_return_type_annotations(
+            step_function_signature.annotations,
+        )
 
         # Raise an exception if input and output names of a step overlap as
         # tfx requires them to be unique
@@ -265,6 +258,10 @@ class BaseStep(metaclass=BaseStepMeta):
 
         self.requires_context = bool(self.CONTEXT_PARAMETER_NAME)
         self.custom_step_operator = kwargs.pop(PARAM_CUSTOM_STEP_OPERATOR, None)
+        self._resource_configuration = (
+            kwargs.pop(PARAM_RESOURCE_CONFIGURATION, None)
+            or ResourceConfiguration()
+        )
 
         enable_cache = kwargs.pop(PARAM_ENABLE_CACHE, None)
         if enable_cache is None:
@@ -691,6 +688,7 @@ class BaseStep(metaclass=BaseStepMeta):
             execution_parameter_names=set(execution_parameters),
             step_function=self.entrypoint,
             materializers=materializers,
+            enable_cache=self.enable_cache,
         )
         self._component = component_class(
             **input_artifacts, **execution_parameters
@@ -704,6 +702,15 @@ class BaseStep(metaclass=BaseStepMeta):
             return returns[0]
         else:
             return returns
+
+    @property
+    def resource_configuration(self) -> ResourceConfiguration:
+        """The resource configuration for this step.
+
+        Returns:
+            The (potentially empty) resource configuration for this step.
+        """
+        return self._resource_configuration
 
     @property
     def component(self) -> _ZenMLSimpleComponent:
@@ -731,6 +738,10 @@ class BaseStep(metaclass=BaseStepMeta):
             A TFX executor operator class.
         """
         if self.custom_step_operator:
+            from zenml.step_operators.step_executor_operator import (
+                StepExecutorOperator,
+            )
+
             return StepExecutorOperator
         else:
             return PythonExecutorOperator

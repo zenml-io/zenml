@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.11.0"
+version = "0.12.0"
 packages = [
     { include = "zenml", from = "src" },
 ]
@@ -29,13 +29,13 @@ classifiers = [
     "Typing :: Typed",
 ]
 exclude = [
-    "docs",
+    "tests.*",
     "*.tests",
     "*.tests.*",
-    "tests.*",
+    "docs",
+    "tests",
     "tests",
     "legacy",
-    "tests",
     "examples"
 ]
 include = [
@@ -230,6 +230,7 @@ module = [
     "docker.*",
     "kfp.*",
     "kubernetes.*",
+    "kserve.*",
     "urllib3.*",
     "kfp_server_api.*",
     "sagemaker.*",
@@ -244,7 +245,8 @@ module = [
     "botocore.*",
     "jupyter_dash.*",
     "slack_sdk.*",
-    "azure-keyvault-keys.*"
+    "azure-keyvault-keys.*",
+    "model_archiver.*"
 ]
 ignore_missing_imports = true
 

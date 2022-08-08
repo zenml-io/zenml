@@ -313,7 +313,7 @@ of which Kubeflow pipelines are running to allow the ZenML workloads to create,
 update and delete secrets. You can do so with the below command:
 
 ```bash
-kubectl -n kubeflow patch role pipeline-runner --type='json' -p='[{"op": "add", "path": "/rules/0", "value": {"apiGroups": [""], "resources": ["secrets"], "verbs": ["*"]}}]'
+kubectl -n kubeflow patch role pipeline-runner --type='json' -p='[{"op": "add", "path": "/rules/0", "value": {"apiGroups": [""], "resources": ["secrets","serviceaccounts"], "verbs": ["*"]}}]'
 ```
 
 As the last step in setting up the stack, we need to configure a ZenML secret

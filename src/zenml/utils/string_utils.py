@@ -100,4 +100,5 @@ def random_str(length: int) -> str:
     Returns:
         Random human-readable string.
     """
+    random.seed()
     return "".join(random.choices(string.ascii_letters, k=length))
