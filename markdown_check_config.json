@@ -1,7 +1,7 @@
 {
     "ignorePatterns": [
 		{
-			"pattern": "^http:\/\/localhost\b"
+			"pattern": "^http:\/\/localhost.*"
 		},
 		{
 			"pattern": "^https:\/\/docs\.stackpulse\.io\b"
