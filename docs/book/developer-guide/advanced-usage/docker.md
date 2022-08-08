@@ -85,7 +85,7 @@ you're on your own and need to copy a stack configuration to the correct path yo
 ### How to install additional pip dependencies
 
 By default, ZenML will automatically install all the packages required by your
-active ZenML stack. There are however many additional ways in which you can specify
+active ZenML stack. There are, however, various ways in which you can specify
 additional packages that should be installed:
 * Install all the packages in your local python environment (This will use the `pip` or `poetry`
 package manager to get a list of your local packages):
