@@ -152,8 +152,10 @@ you can either specify a custom pre-built parent image or a Dockerfile which Zen
 build a parent image for you.
 
 {% hint style="info" %}
-If you're going to use a custom parent image, you need to make sure that it has Python, pip and 
-ZenML installed for it to work.
+If you're going to use a custom parent image (either pre-built or by specifying a Dockerfile),
+you need to make sure that it has Python, pip and ZenML installed for it to work. If you need 
+a starting point, you can take a look at the Dockerfile that ZenML uses
+[here](https://github.com/zenml-io/zenml/blob/main/docker/base.Dockerfile).
 {% endhint %}
 
 ### Using a pre-built parent image
