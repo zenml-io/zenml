@@ -1282,12 +1282,23 @@ def copy_stack(
     help="Interactively register all required secrets for a stack.",
 )
 @click.argument("stack_name", type=str, required=False)
+@click.option(
+    "--skip-existing",
+    "skip_existing",
+    is_flag=True,
+    default=False,
+    help="Skip secrets with existing values.",
+    type=bool,
+)
 def register_secrets(
+    skip_existing: bool,
     stack_name: Optional[str] = None,
 ) -> None:
     """Interactively registers all required secrets for a stack.
 
     Args:
+        skip_existing: If `True`, skip asking for secret values that already
+            exist.
         stack_name: Name of the stack for which to register secrets. If empty,
             the active stack will be used.
     """
@@ -1334,6 +1345,9 @@ def register_secrets(
             existing_value = secret_content.get(key, None)
 
             if existing_value:
+                if skip_existing:
+                    continue
+
                 value = getpass.getpass(
                     f"Value for secret `{name}.{key}` "
                     "(Leave empty to use existing value):"
@@ -1354,6 +1368,7 @@ def register_secrets(
                 value = cli_utils.expand_argument_value_from_file(
                     name=key, value=value
                 )
+                needs_update = True
 
             secret_content[key] = value
 
