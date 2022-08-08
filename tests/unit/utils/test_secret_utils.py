@@ -15,6 +15,7 @@ import random
 
 from hypothesis import given
 from hypothesis.strategies import from_regex
+from pydantic import BaseModel, Field
 
 from zenml.utils import secret_utils
 
@@ -52,3 +53,23 @@ def test_secret_reference_parsing(name, key):
     ref = secret_utils.parse_secret_reference(value)
     assert ref.name == name
     assert ref.key == key
+
+
+def test_secret_field():
+    """Tests that the secret field inserts the correct property into the
+    pydantic field info."""
+    field_info = secret_utils.SecretField()
+    assert (
+        field_info.extra[secret_utils.PYDANTIC_SENSITIVE_FIELD_MARKER] is True
+    )
+
+
+def test_secret_field_detection():
+    """Tests that secret fields get correctly detected."""
+
+    class Model(BaseModel):
+        non_secret: str = Field()
+        secret: str = secret_utils.SecretField()
+
+    assert secret_utils.is_secret_field(Model.__fields__["non_secret"]) is False
+    assert secret_utils.is_secret_field(Model.__fields__["secret"]) is True
