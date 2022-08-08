@@ -207,7 +207,6 @@ class BaseMetadataStore(BaseModel, ABC):
             entrypoint_name=impl_name,
             name=step_name,
             parameters=step_parameters,
-            metadata_store=self,
         )
 
     def get_pipelines(self) -> List[PipelineView]:
@@ -223,7 +222,6 @@ class BaseMetadataStore(BaseModel, ABC):
             pipeline = PipelineView(
                 id_=pipeline_context.id,
                 name=pipeline_context.name,
-                metadata_store=self,
             )
             pipelines.append(pipeline)
 
@@ -247,7 +245,6 @@ class BaseMetadataStore(BaseModel, ABC):
             return PipelineView(
                 id_=pipeline_context.id,
                 name=pipeline_context.name,
-                metadata_store=self,
             )
         else:
             logger.info("No pipelines found for name '%s'", pipeline_name)
@@ -278,7 +275,6 @@ class BaseMetadataStore(BaseModel, ABC):
                     id_=run.id,
                     name=run.name,
                     executions=executions,
-                    metadata_store=self,
                 )
                 runs[run.name] = run_view
 
@@ -317,7 +313,6 @@ class BaseMetadataStore(BaseModel, ABC):
                 id_=run.id,
                 name=run.name,
                 executions=executions,
-                metadata_store=self,
             )
 
         logger.info("No pipeline run found for name '%s'", run_name)
@@ -439,7 +434,6 @@ class BaseMetadataStore(BaseModel, ABC):
                 uri=artifact_proto.uri,
                 materializer=materializer,
                 data_type=data_type,
-                metadata_store=self,
                 parent_step_id=parent_step_id,
             )
 
@@ -457,20 +451,18 @@ class BaseMetadataStore(BaseModel, ABC):
 
         return inputs, outputs
 
-    def get_producer_step_from_artifact(
-        self, artifact: ArtifactView
-    ) -> StepView:
+    def get_producer_step_from_artifact(self, artifact_id: int) -> StepView:
         """Returns original StepView from an ArtifactView.
 
         Args:
-            artifact: ArtifactView to be queried.
+            artifact_id: ID of the ArtifactView to be queried.
 
         Returns:
             Original StepView that produced the artifact.
         """
         executions_ids = set(
             event.execution_id
-            for event in self.store.get_events_by_artifact_ids([artifact.id])
+            for event in self.store.get_events_by_artifact_ids([artifact_id])
             if event.type == event.OUTPUT
         )
         execution = self.store.get_executions_by_id(executions_ids)[0]

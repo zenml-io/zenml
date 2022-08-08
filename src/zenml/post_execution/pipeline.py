@@ -16,24 +16,19 @@
 from typing import TYPE_CHECKING, Any, List, Optional
 
 from zenml.logger import get_logger
+from zenml.repository import Repository
 from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
 
 if TYPE_CHECKING:
-    from zenml.metadata_stores import BaseMetadataStore
     from zenml.post_execution.pipeline_run import PipelineRunView
 
 logger = get_logger(__name__)
 
 
 class PipelineView:
-    """Post-execution pipeline class.
+    """Post-execution pipeline class."""
 
-    This can be used to query pipeline-related information from the metadata store.
-    """
-
-    def __init__(
-        self, id_: int, name: str, metadata_store: "BaseMetadataStore"
-    ):
+    def __init__(self, id_: int, name: str):
         """Initializes a post-execution pipeline object.
 
         In most cases `PipelineView` objects should not be created manually
@@ -43,12 +38,9 @@ class PipelineView:
         Args:
             id_: The context id of this pipeline.
             name: The name of this pipeline.
-            metadata_store: The metadata store which should be used to fetch
-                additional information related to this pipeline.
         """
         self._id = id_
         self._name = name
-        self._metadata_store = metadata_store
 
     @property
     def name(self) -> str:
@@ -71,10 +63,10 @@ class PipelineView:
         """
         # Do not cache runs as new runs might appear during this objects
         # lifecycle
-        runs = list(self._metadata_store.get_pipeline_runs(self).values())
+        runs = list(Repository().zen_store.get_pipeline_runs(self).values())
 
         for run in runs:
-            run._run_wrapper = self._get_zenstore_run(run_name=run.name)
+            run._run_wrapper = self._get_run_wrapper(run_name=run.name)
 
         return runs
 
@@ -86,7 +78,7 @@ class PipelineView:
         """
         # Do not cache runs as new runs might appear during this objects
         # lifecycle
-        runs = self._metadata_store.get_pipeline_runs(self)
+        runs = Repository().zen_store.get_pipeline_runs(self)
         return list(runs.keys())
 
     def get_run(self, name: str) -> "PipelineRunView":
@@ -101,7 +93,7 @@ class PipelineView:
         Raises:
             KeyError: If there is no run with the given name.
         """
-        run = self._metadata_store.get_pipeline_run(self, name)
+        run = Repository().zen_store.get_pipeline_run(self, name)
 
         if not run:
             raise KeyError(
@@ -110,7 +102,7 @@ class PipelineView:
                 f"names: `{self.get_run_names()}`"
             )
 
-        run._run_wrapper = self._get_zenstore_run(run_name=name)
+        run._run_wrapper = self._get_run_wrapper(run_name=name)
         return run
 
     def get_run_for_completed_step(self, step_name: str) -> "PipelineRunView":
@@ -144,17 +136,17 @@ class PipelineView:
 
         return orig_pipeline_run
 
-    def _get_zenstore_run(self, run_name: str) -> Optional[PipelineRunWrapper]:
-        """Gets a ZenStore run for the given run name.
+    def _get_run_wrapper(self, run_name: str) -> Optional[PipelineRunWrapper]:
+        """Gets a run wrapper for the given run name.
 
-        This will filter all ZenStore runs by the pipeline name of this
+        This will filter all run wrappers by the pipeline name of this
         pipeline view and the run name passed in as an argument.
 
         Args:
             run_name: The name of the run to get.
 
         Returns:
-            The ZenStore run with the given name, if found.
+            The run wrapper with the given name, if found.
         """
         from zenml.repository import Repository
 
@@ -191,8 +183,5 @@ class PipelineView:
             False otherwise.
         """
         if isinstance(other, PipelineView):
-            return (
-                self._id == other._id
-                and self._metadata_store.uuid == other._metadata_store.uuid
-            )
+            return self._id == other._id
         return NotImplemented

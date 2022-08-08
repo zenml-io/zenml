@@ -16,11 +16,11 @@
 from typing import TYPE_CHECKING, Any, Optional, Type
 
 from zenml.logger import get_logger
+from zenml.repository import Repository
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
     from zenml.materializers.base_materializer import BaseMaterializer
-    from zenml.metadata_stores import BaseMetadataStore
     from zenml.post_execution.step import StepView
 
 logger = get_logger(__name__)
@@ -40,7 +40,6 @@ class ArtifactView:
         uri: str,
         materializer: str,
         data_type: str,
-        metadata_store: "BaseMetadataStore",
         parent_step_id: int,
     ):
         """Initializes a post-execution artifact object.
@@ -57,8 +56,6 @@ class ArtifactView:
             data_type: The type of data that was passed to the materializer
                 when writing that artifact. Will be used as a default type
                 to read the artifact.
-            metadata_store: The metadata store which should be used to fetch
-                additional information related to this pipeline.
             parent_step_id: The ID of the parent step.
         """
         self._id = id_
@@ -66,7 +63,6 @@ class ArtifactView:
         self._uri = uri
         self._materializer = materializer
         self._data_type = data_type
-        self._metadata_store = metadata_store
         self._parent_step_id = parent_step_id
 
     @property
@@ -123,9 +119,7 @@ class ArtifactView:
         Returns:
             The original StepView that produced the artifact.
         """
-        # TODO [ENG-174]: Replace with artifact.id instead of passing self if
-        #  required.
-        return self._metadata_store.get_producer_step_from_artifact(self)
+        return Repository().zen_store.get_producer_step_from_artifact(self.id)
 
     @property
     def is_cached(self) -> bool:
@@ -134,7 +128,7 @@ class ArtifactView:
         Returns:
             True if artifact was cached in a previous run, else False.
         """
-        # self._metadata_store.
+        # TODO: query from ZenAPI?
         return self.producer_step.id != self.parent_step_id
 
     def read(

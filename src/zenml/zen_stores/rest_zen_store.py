@@ -34,7 +34,7 @@ from zenml.constants import (
     TEAMS,
     USERS,
 )
-from zenml.enums import StackComponentType, StoreType
+from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.exceptions import (
     DoesNotExistException,
     EntityExistsError,
@@ -42,7 +42,10 @@ from zenml.exceptions import (
     StackExistsError,
 )
 from zenml.logger import get_logger
+from zenml.post_execution.artifact import ArtifactView
 from zenml.post_execution.pipeline import PipelineView
+from zenml.post_execution.pipeline_run import PipelineRunView
+from zenml.post_execution.step import StepView
 from zenml.zen_stores import BaseZenStore
 from zenml.zen_stores.models import (
     ComponentWrapper,
@@ -824,6 +827,33 @@ class RestZenStore(BaseZenStore):
         pass  # TODO
 
     def get_pipeline_run(
+        self, pipeline: PipelineView, run_name: str
+    ) -> Optional[PipelineRunView]:
+        """Gets a specific run for the given pipeline.
+
+        Args:
+            pipeline: The pipeline for which to get the run.
+            run_name: The name of the run to get.
+
+        Returns:
+            The pipeline run with the given name.
+        """
+        pass  # TODO
+
+    def get_pipeline_runs(
+        self, pipeline: PipelineView
+    ) -> Dict[str, PipelineRunView]:
+        """Gets all runs for the given pipeline.
+
+        Args:
+            pipeline: a Pipeline object for which you want the runs.
+
+        Returns:
+            A dictionary of pipeline run names to PipelineRunView.
+        """
+        pass  # TODO
+
+    def get_pipeline_run_wrapper(
         self,
         pipeline_name: str,
         run_name: str,
@@ -847,7 +877,7 @@ class RestZenStore(BaseZenStore):
         body = self.get(path)
         return PipelineRunWrapper.parse_obj(body)
 
-    def get_pipeline_runs(
+    def get_pipeline_run_wrappers(
         self, pipeline_name: str, project_name: Optional[str] = None
     ) -> List[PipelineRunWrapper]:
         """Gets pipeline runs.
@@ -873,6 +903,67 @@ class RestZenStore(BaseZenStore):
                 f"Bad API Response. Expected list, got {type(body)}"
             )
         return [PipelineRunWrapper.parse_obj(dict_) for dict_ in body]
+
+    def get_pipeline_run_steps(
+        self, pipeline_run: PipelineRunView
+    ) -> Dict[str, StepView]:
+        """Gets all steps for the given pipeline run.
+
+        Args:
+            pipeline_run: The pipeline run to get the steps for.
+
+        Returns:
+            A dictionary of step names to step views.
+        """
+        pass  # TODO
+
+    def get_step_by_id(self, step_id: int) -> StepView:
+        """Gets a `StepView` by its ID.
+
+        Args:
+            step_id (int): The ID of the step to get.
+
+        Returns:
+            StepView: The `StepView` with the given ID.
+        """
+        pass  # TODO
+
+    def get_step_status(self, step: StepView) -> ExecutionStatus:
+        """Gets the execution status of a single step.
+
+        Args:
+            step (StepView): The step to get the status for.
+
+        Returns:
+            ExecutionStatus: The status of the step.
+        """
+        pass  # TODO
+
+    def get_step_artifacts(
+        self, step: StepView
+    ) -> Tuple[Dict[str, ArtifactView], Dict[str, ArtifactView]]:
+        """Returns input and output artifacts for the given step.
+
+        Args:
+            step: The step for which to get the artifacts.
+
+        Returns:
+            A tuple (inputs, outputs) where inputs and outputs
+            are both Dicts mapping artifact names
+            to the input and output artifacts respectively.
+        """
+        pass  # TODO
+
+    def get_producer_step_from_artifact(self, artifact_id: int) -> StepView:
+        """Returns original StepView from an ArtifactView.
+
+        Args:
+            artifact_id: ID of the ArtifactView to be queried.
+
+        Returns:
+            Original StepView that produced the artifact.
+        """
+        pass  # TODO
 
     def register_pipeline_run(
         self,

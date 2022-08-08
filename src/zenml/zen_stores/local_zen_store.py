@@ -921,7 +921,7 @@ class LocalZenStore(BaseZenStore):
 
     # Pipelines and pipeline runs
 
-    def get_pipeline_run(
+    def get_pipeline_run_wrapper(
         self,
         pipeline_name: str,
         run_name: str,
@@ -960,7 +960,7 @@ class LocalZenStore(BaseZenStore):
             f"'{pipeline_name}'{project_message}"
         )
 
-    def get_pipeline_runs(
+    def get_pipeline_run_wrappers(
         self, pipeline_name: str, project_name: Optional[str] = None
     ) -> List[PipelineRunWrapper]:
         """Gets pipeline runs.
