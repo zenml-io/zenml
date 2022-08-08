@@ -20,7 +20,7 @@ from pydantic import Field
 if TYPE_CHECKING:
     from pydantic.fields import ModelField
 
-_secret_reference_expression = re.compile(r"\$\{ ?\S+?\.\S+ ?\}")
+_secret_reference_expression = re.compile(r"\{\{\S+?\.\S+\}\}")
 
 PYDANTIC_SENSITIVE_FIELD_MARKER = "sensitive"
 
@@ -66,8 +66,7 @@ def parse_secret_reference(reference: str) -> SecretReference:
         The parsed secret reference.
     """
     reference = reference[2:]
-    reference = reference[:-1]
-    reference = reference.strip()
+    reference = reference[:-2]
 
     secret_name, secret_key = reference.split(".", 1)
     return SecretReference(name=secret_name, key=secret_key)

@@ -114,15 +114,15 @@ def test_stack_component_prevents_secret_references_for_some_attributes():
     attribute and all attributes with associated pydantic validators."""
     with pytest.raises(ValueError):
         # Can't have a secret reference for the name
-        StubOrchestrator(name="${ secret.key }")
+        StubOrchestrator(name="{{secret.key}}")
 
     with pytest.raises(ValueError):
         # Can't have a secret reference for an attribute that requires
         # pydantic validation
-        StubOrchestrator(name="", attribute_with_validator="${ secret.key }")
+        StubOrchestrator(name="", attribute_with_validator="{{secret.key}}")
 
     with does_not_raise():
-        StubOrchestrator(name="", attribute_without_validator="${ secret.key }")
+        StubOrchestrator(name="", attribute_without_validator="{{secret.key}}")
 
 
 def test_stack_component_secret_reference_resolving(
@@ -130,7 +130,7 @@ def test_stack_component_secret_reference_resolving(
 ):
     """Tests that the stack component resolves secrets if possible."""
     component = StubOrchestrator(
-        name="", attribute_without_validator="${ secret.key }"
+        name="", attribute_without_validator="{{secret.key}}"
     )
     with pytest.raises(RuntimeError):
         # not part of the active stack

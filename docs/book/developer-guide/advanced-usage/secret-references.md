@@ -9,15 +9,15 @@ a secure way by not specifying the value directly but instead referencing a secr
 To reference a secret in any string attribute of your stack components, simply specify
 the attribute value using the following syntax:
 ```shell
-${ secret_name.secret_key }
+{{<SECRET_NAME>.<SECRET_KEY>}}
 ```
 
 For example:
 ```shell
 zenml metadata-store register secure_metadata_store \
     --flavor=mysql \
-    --username='${ mysql_secret.username }' \
-    --password='${ mysql_secret.password }' \
+    --username='{{mysql_secret.username}}' \
+    --password='{{mysql_secret.password}}' \
     ...
 ```
 

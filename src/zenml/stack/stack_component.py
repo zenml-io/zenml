@@ -71,7 +71,7 @@ class StackComponent(BaseModel, ABC):
         """Ensures that secret references don't clash with pydantic validation.
 
         StackComponents allow the specification of all their string attributes
-        using secret references of the form `${ secret_name.key }`. This however
+        using secret references of the form `{{secret_name.key}}`. This however
         is only possible when the stack component does not perform any explicit
         validation of this attribute using pydantic validators. If this were
         the case, the validation would run on the secret reference and would
@@ -95,17 +95,20 @@ class StackComponent(BaseModel, ABC):
                 # will fail during the upcoming pydantic validation
                 continue
 
+            if value is None:
+                continue
+
             if not secret_utils.is_secret_reference(value):
                 if secret_utils.is_secret_field(field):
                     logger.warning(
                         "You specified a plain-text value for the sensitive "
-                        f"attribute `{key}` of a stack component "
-                        f"`{self.__class__.__name__}`. "
-                        "This is currently only a warning, but future versions "
-                        "of ZenML will require you to pass in senstive "
-                        "information as secrets. Check out the documentation "
-                        "on how to configure your stack components with "
-                        "secrets here: https://docs.zenml.io/developer-guide/advanced-usage/secret-references"
+                        f"attribute `{key}` for a `{self.__class__.__name__}` "
+                        "stack component. This is currently only a warning, "
+                        "but future versions of ZenML will require you to pass "
+                        "in senstive information as secrets. Check out the "
+                        "documentation on how to configure your stack "
+                        "components with secrets here: "
+                        "https://docs.zenml.io/developer-guide/advanced-usage/secret-references"
                     )
                 continue
 

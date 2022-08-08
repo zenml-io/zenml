@@ -43,11 +43,10 @@ class StubSecretsManager(BaseSecretsManager):
 
 
 def test_base_secrets_manager_prevents_secret_references():
-    """Tests that the stack component prevents secret references for the name
-    attribute and all attributes with associated pydantic validators."""
+    """Tests that the secrets manager prevents all secret references"""
 
     with pytest.raises(ValueError):
-        StubSecretsManager(name="", attribute="${ secret.key }")
+        StubSecretsManager(name="", attribute="{{secret.key}}")
 
     with does_not_raise():
         StubSecretsManager(name="", attribute="not_a_secret_ref")

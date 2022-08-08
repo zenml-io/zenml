@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import random
 
 from hypothesis import given
 from hypothesis.strategies import from_regex
@@ -25,22 +24,15 @@ strategy = from_regex(r"[^.\s]{1,100}", fullmatch=True)
 @given(name=strategy, key=strategy)
 def test_is_secret_reference(name, key):
     """Check that secret reference detection works correctly."""
-
-    # valid references
-    for value in [
-        f"${{ {name}.{key} }}",
-        f"${{{name}.{key} }}",
-        f"${{ {name}.{key}}}",
-        f"${{{name}.{key}}}",
-    ]:
-        assert secret_utils.is_secret_reference(value)
+    assert secret_utils.is_secret_reference(f"{{{{{name}.{key}}}}}")
 
     # invalid references
     for value in [
-        f"{{ {name}.{key} }}",
+        f"{{{{ {name}.{key} }}}}",  # spaces
+        f"{{{name}.{key}}}",  # single {}
         f"${name}.{key}",
-        f"{name}.{key}",
-        "${ namekeynodot }",
+        f"${{{{{name}.{key}}}}}",  # leading dollar
+        "{{namekeynodot}}",  # no dot
     ]:
         assert not secret_utils.is_secret_reference(value)
 
@@ -48,8 +40,7 @@ def test_is_secret_reference(name, key):
 @given(name=strategy, key=strategy)
 def test_secret_reference_parsing(name, key):
     """Tests that secret reference parsing works correctly."""
-    space = " " if random.random() > 0.5 else ""
-    value = f"${{{space}{name}.{key}{space}}}"
+    value = "{{" + f"{name}.{key}" + "}}"
     ref = secret_utils.parse_secret_reference(value)
     assert ref.name == name
     assert ref.key == key
