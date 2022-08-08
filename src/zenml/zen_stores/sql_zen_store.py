@@ -163,8 +163,12 @@ class RoleAssignmentTable(RoleAssignment, SQLModel, table=True):
 class StoreAssociationTable(SQLModel, table=True):
     """SQL Model for team assignments."""
 
-    artifact_store_uuid: UUID = Field(primary_key=True)
-    metadata_store_uuid: UUID = Field(primary_key=True)
+    artifact_store_uuid: UUID = Field(
+        primary_key=True, foreign_key="zenstackcomponent.id"
+    )
+    metadata_store_uuid: UUID = Field(
+        primary_key=True, foreign_key="zenstackcomponent.id"
+    )
 
 
 class PipelineRunTable(SQLModel, table=True):
