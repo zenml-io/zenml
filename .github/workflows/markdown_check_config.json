@@ -3,10 +3,10 @@
 {
   "ignorePatterns": [
     {
-      "pattern": "^https://github.com/pyroscope-io/pyroscope/issues/"
+      "pattern": "^http://0.0.0.0"
     },
     {
-      "pattern": "^https://github.com/pyroscope-io/pyroscope/commit/"
+      "pattern": "^http://127.0.0.1"
     },
     {
       "pattern": "^http://localhost"
