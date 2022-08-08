@@ -719,7 +719,19 @@ class TektonOrchestrator(BaseOrchestrator):
         #     runtime_configuration=runtime_configuration,
         #     enable_cache=pipeline.enable_cache,
         # )
-
+        namespace = self.kubernetes_namespace or "default"
+        subprocess.check_call(
+            [
+                "kubectl",
+                "--context",
+                self.kubernetes_context,
+                "-n",
+                namespace,
+                "apply",
+                "-f",
+                pipeline_file_path,
+            ]
+        )
 
     def _upload_and_run_pipeline(
         self,
