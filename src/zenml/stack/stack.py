@@ -590,7 +590,9 @@ class Stack:
 
             if missing:
                 _handle_error(
-                    f"Missing secrets for stack: {missing}. If you want to "
+                    f"Missing secrets for stack: {missing}.\nTo register the "
+                    "missing secrets for this stack, run `zenml stack "
+                    f"register-secrets {self.name}`\nIf you want to "
                     "adjust the degree to which ZenML validates the existence "
                     "of secrets in your stack, you can do so by setting the "
                     f"environment variable {ENV_ZENML_SECRET_VALIDATION_LEVEL} "

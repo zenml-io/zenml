@@ -105,7 +105,7 @@ class StackComponent(BaseModel, ABC):
                         "of ZenML will require you to pass in senstive "
                         "information as secrets. Check out the documentation "
                         "on how to configure your stack components with "
-                        "secrets here: TODO."
+                        "secrets here: https://docs.zenml.io/developer-guide/advanced-usage/secret-references"
                     )
                 continue
 

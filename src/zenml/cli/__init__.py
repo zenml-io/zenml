@@ -693,6 +693,13 @@ zenml STACK_COMPONENT remove-attribute STACK_COMPONENT_NAME --ATTRIBUTE_NAME [--
 
 Note that you can only remove optional attributes.
 
+If you want to register secrets for all secret references in a stack, use the
+following command:
+
+```shell
+zenml stack register-secrets [<STACK_NAME>]
+```
+
 Managing users, teams, projects and roles
 -----------------------------------------
 

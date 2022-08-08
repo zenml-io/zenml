@@ -157,6 +157,14 @@ their default value if omitted
 the schema (i.e. that can be converted to the type indicated) or an error will
 be raised
 
+## Secret References
+
+Secret references work with any secrets mananger and allow you to securely
+specify sensitive configurations for your
+[stack components](../../developer-guide/stacks-profiles-repositories/stack.md#stack-components).
+
+Check out the corresponding [documentation page](../../developer-guide/advanced-usage/secret-references.md)
+for more information.
 ## Secret Scopes
 
 Examples of situations in which Secrets Manager scoping can be useful:
