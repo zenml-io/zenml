@@ -712,20 +712,20 @@ def test_pipeline_run_management(
 
     fresh_zen_store.register_pipeline_run(run)
 
-    registered_runs = fresh_zen_store.get_pipeline_runs(
+    registered_runs = fresh_zen_store.get_pipeline_run_wrappers(
         pipeline_name=pipeline.name
     )
     assert len(registered_runs) == 1
     assert registered_runs[0] == run
 
     assert (
-        fresh_zen_store.get_pipeline_run(
+        fresh_zen_store.get_pipeline_run_wrapper(
             pipeline_name=pipeline.name, run_name=run.name
         )
         == run
     )
     assert (
-        fresh_zen_store.get_pipeline_run(
+        fresh_zen_store.get_pipeline_run_wrapper(
             pipeline_name=pipeline.name,
             run_name=run.name,
             project_name=run.project_name,
@@ -734,11 +734,11 @@ def test_pipeline_run_management(
     )
 
     # Filtering for the wrong projects doesn't return any runs
-    assert not fresh_zen_store.get_pipeline_runs(
+    assert not fresh_zen_store.get_pipeline_run_wrappers(
         pipeline_name=pipeline.name, project_name="not_the_correct_project"
     )
     with pytest.raises(KeyError):
-        fresh_zen_store.get_pipeline_run(
+        fresh_zen_store.get_pipeline_run_wrapper(
             pipeline_name=pipeline.name,
             run_name=run.name,
             project_name="not_the_correct_project",

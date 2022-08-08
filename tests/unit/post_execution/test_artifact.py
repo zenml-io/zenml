@@ -26,7 +26,6 @@ def _create_artifact_view(materializer: str, data_type: str) -> ArtifactView:
         uri="",
         materializer=materializer,
         data_type=data_type,
-        metadata_store=None,
         parent_step_id=0,
     )
 

@@ -93,7 +93,7 @@ def test_pipeline_storing_context_in_the_metadata_store():
     pipeline_.run()
 
     repo = Repository()
-    contexts = repo.zen_store._get_metadata_store().store.get_contexts_by_type(
+    contexts = repo.zen_store._metadata_store.store.get_contexts_by_type(
         ZENML_MLMD_CONTEXT_TYPE
     )
 

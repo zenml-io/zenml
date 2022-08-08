@@ -128,14 +128,3 @@ def test_step_context_returns_instance_of_custom_materializer_class(
         custom_materializer_class=BuiltInMaterializer
     )
     assert isinstance(materializer, BuiltInMaterializer)
-
-
-def test_step_context_returns_metadata_store_of_zen_store():
-    """Tests that the step context returns the metadata store of the active
-    stack."""
-    context = StepContext(
-        step_name="some_step_name", output_materializers={}, output_artifacts={}
-    )
-    assert (
-        Repository().zen_store._get_metadata_store() == context._metadata_store
-    )
