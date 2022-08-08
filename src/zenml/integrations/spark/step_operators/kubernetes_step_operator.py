@@ -11,12 +11,17 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import json
 import os
 import subprocess
 import tempfile
-from typing import AbstractSet, ClassVar, Dict, List, Optional, Any, Union
+from typing import (
+    AbstractSet, ClassVar, Dict, List, Optional, Union,
+    TYPE_CHECKING
+)
 
 from pydantic import validator
+
 from zenml.constants import ENV_ZENML_CONFIG_PATH
 from zenml.integrations.spark import SPARK_KUBERNETES_STEP_OPERATOR
 from zenml.io.fileio import copy
@@ -28,9 +33,10 @@ from zenml.utils.io_utils import (
     write_file_contents_as_string,
     create_file_if_not_exists
 )
-import json
 from zenml.utils.source_utils import get_source_root_path
 
+if TYPE_CHECKING:
+    from zenml.steps import ResourceConfiguration
 logger = get_logger(__name__)
 
 LOCAL_ENTRYPOINT = entrypoint.__file__
@@ -284,6 +290,7 @@ class KubernetesSparkStepOperator(BaseStepOperator):
         run_name: str,
         requirements: List[str],
         entrypoint_command: List[str],
+        resource_configuration: "ResourceConfiguration",
     ) -> None:
         """Launch the spark job with spark-submit."""
         # Build the docker image to use for spark on Kubernetes
