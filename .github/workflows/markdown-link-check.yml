@@ -14,5 +14,5 @@ jobs:
       with:
         use-quiet-mode: 'no'
         use-verbose-mode: 'no'
-        config-file: '.markdown_check_config.json'
+        config-file: .github/workflows/markdown_check_config.json
     
