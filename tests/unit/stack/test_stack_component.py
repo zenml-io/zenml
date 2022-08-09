@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import json
 from contextlib import ExitStack as does_not_raise
 from typing import Iterator
 
@@ -171,3 +172,18 @@ def test_stack_component_secret_reference_resolving(
 
     with does_not_raise():
         assert component.attribute_without_validator == "value"
+
+
+def test_stack_component_serialization_does_not_resolve_secrets():
+    """Tests that all the serialization methods of a stack component don't
+    resolve secret references."""
+    secret_ref = "{{name.key}}"
+    component = StubOrchestrator(
+        name="", attribute_without_validator=secret_ref
+    )
+    assert component.dict()["attribute_without_validator"] == secret_ref
+    assert dict(component)["attribute_without_validator"] == secret_ref
+    assert (
+        json.loads(component.json())["attribute_without_validator"]
+        == secret_ref
+    )

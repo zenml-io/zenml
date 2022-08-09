@@ -1323,8 +1323,8 @@ def register_secrets(
     secrets_manager = stack_.secrets_manager
     if not secrets_manager:
         cli_utils.error(
-            "Unable to register secrets because the stack contains no secrets "
-            "manager."
+            "Unable to register secrets because the stack doesn't contain a "
+            "secrets manager."
         )
 
     secrets_to_register = []
