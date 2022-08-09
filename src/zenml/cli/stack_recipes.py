@@ -152,6 +152,40 @@ class Terraform:
         # set TF_LOG env var to the log_level provided by the user.
         os.environ["TF_LOG"] = log_level
 
+    def destroy(self, path: str) -> None:
+        """Function to call terraform destroy on the given path.
+        
+        Args:
+            path: the path to the terraform module to be destroyed.
+
+        Raises:
+            TerrformCommandError: raises if the destroy command fails.
+            subprocess.CalledProcessError: if the kubernetes cleanup fails.
+        """
+        # if the recipe is aws-minimal, perform extra cleanup
+        if "aws-minimal" in path:
+            self.tf.destroy(
+                path,
+                capture_output=False,
+                raise_on_error=True
+            )
+            cleanup_k8s = subprocess.check_call(
+                              ["kubectl", "delete", "node", "--all"]
+                          )
+            self.tf.destroy(
+                path,
+                input=False,
+                capture_output=False,
+                raise_on_error=True
+            )
+        else:
+            self.tf.destroy(
+                path,
+                capture_output=False,
+                raise_on_error=True
+            )
+
+
 class LocalStackRecipe:
     """Class to encapsulate the local stack that can be run from the CLI."""
 
@@ -944,13 +978,22 @@ def deploy(
     default="zenml_stack_recipes",
     help="Relative path at which you want to install the stack_recipe(s)",
 )
+@click.option(
+    '--log-level',
+    type=click.Choice(['TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR'], case_sensitive=False),
+    help="Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case insensitive) as "
+    "log level for the destroy operation."
+)
 @pass_git_stack_recipes_handler
+@pass_tf_client
 @click.pass_context
 def destroy(
     ctx: click.Context,
     git_stack_recipes_handler: GitStackRecipesHandler,
+    tf_client: Terraform,
     stack_recipe_name: str,
     path: str,
+    log_level: str,
 ) -> None:
     """Destroy all resources from the stack_recipe at the specified relative path.
 
@@ -960,12 +1003,24 @@ def destroy(
     Args:
         ctx: The click context.
         git_stack_recipes_handler: The GitStackRecipesHandler instance.
+        tf_client: The Terraform class instance to use for operations.
         stack_recipe_name: The name of the stack_recipe.
         path: The path at which you want to install the stack_recipe(s).
+        log_level: Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case insensitive)
+            as log level for the deploy operation.
 
     Raises:
         ModuleNotFoundError: If the recipe is found at the given path.
     """
+    # check if terraform is installed
+    try:
+        tf_client.check_installation()
+    except RuntimeError as e:
+        cli_utils.error(str(e))
+
+    # set terraform log level
+    tf_client.set_log_level(log_level=log_level)
+    
     stack_recipes_dir = Path(os.getcwd()) / path
 
     if sys.platform == "win32":
@@ -994,16 +1049,14 @@ def destroy(
                 f"followed by `zenml stack recipe deploy {stack_recipe_name}` first."
             )
 
-        stack_recipe_runner = [local_stack_recipe.recipes_destroy_bash_script]
         try:
             # Telemetry
             track_event(
                 AnalyticsEvent.DESTROY_STACK_RECIPE,
                 {"stack_recipe_name": stack_recipe_name},
             )
-            local_stack_recipe.run_stack_recipe(
-                stack_recipe_runner=stack_recipe_runner,
-            )
+            # use the terraform client to call destroy on the recipe
+            tf_client.destroy(path=local_stack_recipe.path)
 
             cli_utils.declare(
                 "\n" + "Your active stack might now be invalid. Please run:"
@@ -1014,8 +1067,20 @@ def destroy(
                 "\n" + "to investigate and switch to a new stack if needed."
             )
 
-        except NotImplementedError as e:
+        except python_terraform.TerraformCommandError as e:
             cli_utils.error(
-                f"No destroy_recipe.sh script found for the recipe "
-                f"{stack_recipe_name}.{str(e)}"
+                f"Error destroying recipe {stack_recipe_name}: {str(e.err)}"
+                "Most commonly, the error occurs if there's some resource "
+                "that can't be deleted instantly, for example, MySQL stores "
+                "with backups. In such cases, please try again after "
+                "around 30 minutes. If the issue persists, kindly raise an "
+                f"issue at {STACK_RECIPES_GITHUB_REPO}."
+            )
+        except subprocess.CalledProcessError as e:
+            cli_utils.warning(
+                f"Error destroying recipe {stack_recipe_name}: {str(e.err)}"
+                "The kubernetes cluster couldn't be removed due to the error "
+                "above. Please verify if the cluster has already been deleted by "
+                "running kubectl get nodes to check if there's any active nodes."
+                "Ignore this warning if there are no active nodes."
             )
