@@ -417,9 +417,9 @@ def get_model_service_logs(
     ):
         # don't pretty-print log lines that are already pretty-printed
         if raw or line.startswith("\x1b["):
-            print(line)
+            console.print(line, markup=False)
         else:
             try:
                 console.print(line)
             except MarkupError:
-                print(line)
+                console.print(line, markup=False)
