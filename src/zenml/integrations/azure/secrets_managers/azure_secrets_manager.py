@@ -301,7 +301,6 @@ class AzureSecretsManager(BaseSecretsManager):
             KeyError: if the secret does not exist
         """
         self.validate_secret_name(secret.name)
-        self._create_or_update_secret(secret)
         self._ensure_client_connected(self.key_vault_name)
 
         if secret.name not in self.get_all_secret_keys():
