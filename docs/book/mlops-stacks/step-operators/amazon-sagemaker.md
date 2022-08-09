@@ -32,6 +32,7 @@ To use the SageMaker step operator, we need:
 for detailed instructions.
 * An [AWS container registry](../container-registries/amazon-ecr.md) as part of our stack.
 Take a look [here](../container-registries/amazon-ecr.md#how-to-deploy-it) for a guide on how to set that up.
+* A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack.
 * The `aws` cli set up and authenticated. Make sure you have the permissions to create 
 and manage SageMaker runs.
 * An instance type that we want to execute our steps on.

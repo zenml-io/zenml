@@ -35,6 +35,7 @@ for detailed instructions.
 * (Optional) A machine type that we want to execute our steps on (this defaults to `n1-standard-4`).
 See [here](https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types)
 for a list of available machine types.
+* A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack.
 
 We can then register the step operator and use it in our active stack:
 ```shell

@@ -31,6 +31,7 @@ To use the AzureML step operator, we need:
     ```
 * An AzureML compute cluster and environment. See the [deployment section](#how-do-you-deploy-it)
 for detailed instructions.
+* A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack.
 
 We can then register the step operator and use it in our active stack:
 ```shell
