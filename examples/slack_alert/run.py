@@ -12,7 +12,12 @@
 #  permissions and limitations under the License.
 
 from pipelines.post_pipeline import slack_post_pipeline
-from steps import data_loader, evaluator, svc_trainer, test_acc_post_formatter
+from steps import (
+    digits_data_loader,
+    evaluator,
+    svc_trainer,
+    test_acc_post_formatter,
+)
 
 from zenml.integrations.slack.steps.slack_alerter_post_step import (
     slack_alerter_post_step,
@@ -20,7 +25,7 @@ from zenml.integrations.slack.steps.slack_alerter_post_step import (
 
 if __name__ == "__main__":
     slack_post_pipeline(
-        data_loader=data_loader(),
+        data_loader=digits_data_loader(),
         trainer=svc_trainer(),
         evaluator=evaluator(),
         formatter=test_acc_post_formatter(),
