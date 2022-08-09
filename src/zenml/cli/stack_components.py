@@ -1449,7 +1449,7 @@ def register_secrets_manager_subcommands() -> None:
             If a schema is indicated, the secret key-value pairs will be validated
             against the schema.
 
-            Whenzenml secrets-manager secret mmand line arguments, the secret field values may also be
+            When passed as command line arguments, the secret field values may also be
             loaded from files instead of being issued inline, by prepending the field
             name with a `@` sign. For example, the following command line:
                 zenml secrets-manager secret register my_secret --secret_token=@/path/to/file.json
