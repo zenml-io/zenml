@@ -24,6 +24,12 @@ from zenml.integrations.label_studio.label_studio_utils import (
     convert_pred_filenames_to_task_ids,
 )
 from zenml.logger import get_logger
+from zenml.secret.schemas import (
+    AWSSecretSchema,
+    AzureSecretSchema,
+    GCPSecretSchema,
+)
+from zenml.stack.authentication_mixin import AuthenticationMixin
 from zenml.steps import BaseStepConfig, StepContext, step
 
 logger = get_logger(__name__)
@@ -247,28 +253,53 @@ def sync_new_data_to_label_studio(
     base_uri = urlparse(uri).netloc
 
     # gets the secret used for authentication
-    authentication_secret_name = artifact_store.authentication_secret  # type: ignore[union-attr]
     if config.storage_type == "azure":
-        config.azure_account_name = secrets_manager.get_secret(  # type: ignore[union-attr]
-            authentication_secret_name
-        ).account_name
-        config.azure_account_key = secrets_manager.get_secret(  # type: ignore[union-attr]
-            authentication_secret_name
-        ).account_key
+        if not isinstance(artifact_store, AuthenticationMixin):
+            raise TypeError(
+                "The artifact store must inherit from "
+                f"{AuthenticationMixin.__name__} to work with a Label Studio "
+                f"`{config.storage_type}` storage."
+            )
+
+        azure_secret = artifact_store.get_authentication_secret(
+            expected_schema_type=AzureSecretSchema
+        )
+
+        if not azure_secret:
+            raise ValueError(
+                "Missing secret to authenticate cloud storage for Label Studio."
+            )
+
+        config.azure_account_name = azure_secret.account_name
+        config.azure_account_key = azure_secret.account_key
     elif config.storage_type == "gcs":
-        config.google_application_credentials = secrets_manager.get_secret(  # type: ignore[union-attr]
-            authentication_secret_name
-        ).token
+        if not isinstance(artifact_store, AuthenticationMixin):
+            raise TypeError(
+                "The artifact store must inherit from "
+                f"{AuthenticationMixin.__name__} to work with a Label Studio "
+                f"`{config.storage_type}` storage."
+            )
+
+        gcp_secret = artifact_store.get_authentication_secret(
+            expected_schema_type=GCPSecretSchema
+        )
+        if not gcp_secret:
+            raise ValueError(
+                "Missing secret to authenticate cloud storage for Label Studio."
+            )
+
+        config.google_application_credentials = gcp_secret.token
     elif config.storage_type == "s3":
-        config.aws_access_key_id = secrets_manager.get_secret(  # type: ignore[union-attr]
-            LABEL_STUDIO_AWS_SECRET_NAME
-        ).aws_access_key_id
-        config.aws_secret_access_key = secrets_manager.get_secret(  # type: ignore[union-attr]
-            LABEL_STUDIO_AWS_SECRET_NAME
-        ).aws_secret_access_key
-        config.aws_session_token = secrets_manager.get_secret(  # type: ignore[union-attr]
-            LABEL_STUDIO_AWS_SECRET_NAME
-        ).aws_session_token
+        aws_secret = secrets_manager.get_secret(LABEL_STUDIO_AWS_SECRET_NAME)
+        if not isinstance(aws_secret, AWSSecretSchema):
+            raise TypeError(
+                f"The secret `{LABEL_STUDIO_AWS_SECRET_NAME}` needs to be "
+                f"an `aws` schema secret."
+            )
+
+        config.aws_access_key_id = aws_secret.aws_access_key_id
+        config.aws_secret_access_key = aws_secret.aws_secret_access_key
+        config.aws_session_token = aws_secret.aws_session_token
 
     if annotator and annotator._connection_available():
         # TODO: get existing (CHECK!) or create the sync connection
