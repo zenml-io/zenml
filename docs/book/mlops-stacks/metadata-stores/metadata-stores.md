@@ -79,6 +79,9 @@ the Metadata Store.
 * use [the post-execution workflow API](../../developer-guide/steps-pipelines/inspecting-pipeline-runs.md)
 to retrieve information about your pipeline runs from the active Metadata Store
 after a pipeline run is complete.
+
+<!-- markdown-link-check-disable -->
+
 <!---
 * use ZenML [Visualizers](../../developer-guide/visualizer.md) to retrieve the
 information stored in the Metadata Store about the artifacts produced by a

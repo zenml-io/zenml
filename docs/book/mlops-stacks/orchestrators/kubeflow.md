@@ -178,7 +178,7 @@ zenml stack update -o <NAME>
 {% hint style="info" %}
 ZenML will build a Docker image called `zenml-kubeflow` which includes your code and use it
 to run your pipeline steps in Kubeflow. Check out
-[this page](../../developer-guide/advanced-concepts/docker.md)
+[this page](../../developer-guide/advanced-usage/docker.md)
 if you want to learn more about how ZenML builds these images and
 how you can customize them.
 
