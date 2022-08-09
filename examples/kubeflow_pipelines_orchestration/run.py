@@ -45,13 +45,13 @@ def main(epochs: int, lr: float, stop_tensorboard: bool):
         return
 
     # Run the pipeline
-    p = mnist_pipeline(
+    pipeline_instance = mnist_pipeline(
         importer=importer(),
         normalizer=normalizer(),
         trainer=trainer(config=TrainerConfig(epochs=epochs, lr=lr)),
         evaluator=evaluator(),
     )
-    p.run()
+    pipeline_instance.run()
 
     visualize_tensorboard(
         pipeline_name="mnist_pipeline",
@@ -63,7 +63,7 @@ def main(epochs: int, lr: float, stop_tensorboard: bool):
     #
     # from zenml.pipelines import Schedule
     #
-    # p.run(
+    # pipeline_instance.run(
     #     schedule=Schedule(
     #         start_time=datetime.now(),
     #         end_time=datetime.now() + timedelta(minutes=10),

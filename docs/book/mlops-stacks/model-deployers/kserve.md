@@ -114,9 +114,7 @@ The following is an example of registering an GS secret with the KServe model de
 $ zenml secret register -s kserve_gs kserve_secret \
     --namespace="zenml-workloads" \
     --credentials="@~/sa-deployment-temp.json" \
-```
 
-The following secret will be registered.
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
 ┃             SECRET_KEY             │ SECRET_VALUE ┃
 ┠────────────────────────────────────┼──────────────┨
@@ -124,6 +122,7 @@ The following secret will be registered.
 ┃              namespace             │ ***          ┃
 ┃             credentials            │ ***          ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+```
 
 ```bash
 $ zenml secret get kserve_secret

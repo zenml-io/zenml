@@ -20,14 +20,14 @@ or you want to access secret values inside your pipeline steps.
 Out of the box, ZenML comes with a `local` secrets manager that stores secrets in local 
 files. Additional cloud secrets managers are provided by integrations:
 
-| Secrets Manager | Flavor | Integration | Notes             |
-|----------------|--------|-------------|-------------------|
-| [Local](./local.md) | `local` | _built-in_ | Uses local files to store secrets |
-| [AWS](./aws.md) | `aws` | `aws` |  Uses AWS to store secrets |
-| [GCP](./gcp.md) | `gcp_secrets_manager` | `gcp` |  Uses GCP to store secretes |
-| [Azure](./azure.md) | `azure_key_vault` | `azure` |  Uses Azure Key Vaults to store secrets |
-| [HashiCorp Vault](./hashicorp-vault.md) | `vault` | `vault` |  Uses HashiCorp Vault to store secrets |
-| [Custom Implementation](./custom.md) | _custom_ | | Extend the secrets manager abstraction and provide your own implementation |
+| Secrets Manager | Flavor | Integration | Scoping Support | Notes             |
+|----------------|--------|-------------|-------------------|------------------|
+| [Local](./local.md) | `local` | _built-in_ | No | Uses local files to store secrets |
+| [AWS](./aws.md) | `aws` | `aws` | Yes | Uses AWS to store secrets |
+| [GCP](./gcp.md) | `gcp_secrets_manager` | `gcp` | Yes | Uses GCP to store secretes |
+| [Azure](./azure.md) | `azure_key_vault` | `azure` | No | Uses Azure Key Vaults to store secrets |
+| [HashiCorp Vault](./hashicorp-vault.md) | `vault` | `vault` | Yes | Uses HashiCorp Vault to store secrets |
+| [Custom Implementation](./custom.md) | _custom_ | | No | Extend the secrets manager abstraction and provide your own implementation |
 
 If you would like to see the available flavors of secrets managers, you can 
 use the command:
@@ -156,3 +156,82 @@ their default value if omitted
 * all values must be a valid string representation of the data type indicated in
 the schema (i.e. that can be converted to the type indicated) or an error will
 be raised
+
+## Secret Scopes
+
+Examples of situations in which Secrets Manager scoping can be useful:
+
+* you want to control whether a secret configured in a Secrets Manager stack
+component is visible in another Secrets Manager stack component. This is useful
+when you want to share secrets without necessarily [sharing stack components](https://docs.zenml.io/collaborate/collaborate-with-zenml).
+* you want to be able to configure two or more secrets with the same name but
+with different values in different Secrets Manager stack components.
+* you want to emulate multiple virtual Secrets Manager instances on top of a
+single infrastructure secret management service
+
+The scope determines how secrets are shared across different _Secrets Manager
+instances_ that use the same _backend domain_ (e.g. the same AWS region, GCP
+project or Azure Key Vault). To understand if and how that is important for you,
+we first need to define what these terms mean:
+
+* a _Secrets Manager instance_ is created by running `zenml secrets-manager register`.
+An instance is uniquely identified by its UUID (not by its name).
+* a _Secrets Manager backend domain_ can generally be thought of as the bucket
+where a Secrets Manager instance stores its secrets. Every Secrets Manager
+flavor uses a different implementation specific backend domain (e.g. an AWS
+region, a GCP project or an Azure Key Vault). This is usually reflected in
+the attributes that need to be configured for the Secrets Manager stack
+component.
+
+All secrets in a backend domain share one global namespace, meaning that all
+Secrets Manager instances configured to use the same backend domain have
+to compete over the names of secrets that they store there. Secrets Manager
+scoping basically controls how the ZenML secret namespace is mapped to the
+underlying backend namespace.
+
+The following diagram depicts the available secret scopes that you can configure
+for your Secrets Manager instance, if the flavor supports secret scoping. Note
+how the different secret namespaces are isolated from each other:
+
+![Secret Scoping](../../assets/secrets-manager/secret-scoping.png)
+
+
+### Secret Scope Configuration
+
+All Secrets Managers have two configuration attributes that determine how and if
+a Secrets Manager instance shares secrets with other Secrets Manager instances
+connected to the same back-end domain:
+
+* `scope` determines the secret scope and can be set to one of the following
+values:
+
+  * `none`: no secret scoping is used when this scope value is configured. This
+  essentially means that all secrets use the same global namespace that is
+  shared not only with other ZenML Secrets Manager instances using a `none`
+  scope, but also with other applications and users that configure secrets
+  directly in the backend. This mode of operation is only used to preserve
+  backwards compatibility with Secrets Manager instances that were already in
+  use prior to the ZenML release 0.12.0 that introduced the concept of scoping.
+  It is not recommended to use this scope with Secrets Manager instances that
+  support scoping, as it will be deprecated and phased out in future ZenML
+  versions.
+
+  * `global`: secrets are shared across all Secrets Manager instances that
+  connect to the same backend and have a `global` scope. You should use this
+  scope if you want to share your secrets with everyone using ZenML in
+  your team or organization and are not interested in micro-managing the
+  access to these secrets.
+
+  * `component`: secrets are not visible outside a Secrets Manager instance.
+  This is the default for new instances of Secrets Manager flavors that support
+  scoping. Use this scope if you don't intend to share your secrets with other
+  projects or stacks. The component scope means that only stacks with a
+  Secrets Manager with the exact UUID as your stack can access your secrets.
+  The global or namespace scope are more suitable for sharing access to secrets.
+
+  * `namespace`: secrets in a namespace scope are shared only by Secrets Manager
+  instances that connect to the same backend and have the same `namespace`
+  attribute value configured (see below). Use a namespace scope when you want to
+  fine-tune the visibility of secrets across stacks and projects.
+
+* `namespace` is a scope namespace value to use with the namespace scope

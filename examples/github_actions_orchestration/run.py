@@ -15,13 +15,13 @@ from pipelines import github_example_pipeline
 from steps import get_first_num, get_random_int, subtract_numbers
 
 if __name__ == "__main__":
-    p = github_example_pipeline(
+    pipeline_instance = github_example_pipeline(
         first_step=get_first_num(),
         second_step=get_random_int(),
         third_step=subtract_numbers(),
     )
 
-    p.run()
+    pipeline_instance.run()
 
     # If you want to run your pipeline on a schedule instead, you need to pass
     # in a `Schedule` object with a cron expression. Note that for the schedule
@@ -29,6 +29,6 @@ if __name__ == "__main__":
     # GitHub default branch. To see it in action, uncomment the following lines:
 
     # from zenml.pipelines import Schedule
-    # p.run(
+    # pipeline_instance.run(
     #     schedule=Schedule(cron_expression="* 1 * * *")
     # )

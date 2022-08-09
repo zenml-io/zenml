@@ -25,7 +25,7 @@ from typing import ClassVar, List
 
 from zenml.enums import StackComponentType
 from zenml.stack import StackComponent
-
+from zenml.steps import ResourceConfiguration
 
 class BaseStepOperator(StackComponent, ABC):
     """Base class for all ZenML step operators."""
@@ -40,6 +40,7 @@ class BaseStepOperator(StackComponent, ABC):
         run_name: str,
         requirements: List[str],
         entrypoint_command: List[str],
+        resource_configuration: ResourceConfiguration
     ) -> None:
         """Abstract method to execute a step.
 
@@ -79,6 +80,8 @@ If you want to create a custom step operator, you can follow these steps:
    was set up correctly (see the previous bullet point), you can run the step 
    using the command provided via the `entrypoint_command` argument of the 
    `launch()` method.
+4. If your step operator allows specification of per-step resources, make sure
+   to handle the options in the `ResourceConfiguration` passed to the `launch()` method.
 
 Once you are done with the implementation, you can register it through the CLI 
 as:
