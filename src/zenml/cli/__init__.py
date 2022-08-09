@@ -817,7 +817,6 @@ from zenml.cli.config import *  # noqa
 from zenml.cli.example import *  # noqa
 from zenml.cli.integration import *  # noqa
 from zenml.cli.pipeline import *  # noqa
-from zenml.cli.served_models import *  # noqa
 from zenml.cli.server import *  # noqa
 from zenml.cli.stack import *  # noqa
 from zenml.cli.stack_components import *  # noqa
