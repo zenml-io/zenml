@@ -128,75 +128,79 @@ class StackComponent(BaseModel, ABC):
 
         super().__init__(**kwargs)
 
-    def __getattribute__(self, key: str) -> Any:
-        """Returns the (potentially resolve) attribute value for the given key.
+    if not TYPE_CHECKING:
+        # When defining __getattribute__, mypy allows accessing non-existent
+        # attributes without failing
+        # (see https://github.com/python/mypy/issues/13319).
+        def __getattribute__(self, key: str) -> Any:
+            """Returns the (potentially resolve) attribute value for the given key.
 
-        An attribute value may be either specified directly, or as a secret
-        reference. In case of a secret reference, this method resolves the
-        reference and returns the secret value instead.
+            An attribute value may be either specified directly, or as a secret
+            reference. In case of a secret reference, this method resolves the
+            reference and returns the secret value instead.
 
-        Args:
-            key: The key for which to get the attribute value.
+            Args:
+                key: The key for which to get the attribute value.
 
-        Raises:
-            RuntimeError: If the stack component is not part of the active
-                stack, or the active stack is missing a secrets manager.
-            KeyError: If the secret or secret key don't exist.
+            Raises:
+                RuntimeError: If the stack component is not part of the active
+                    stack, or the active stack is missing a secrets manager.
+                KeyError: If the secret or secret key don't exist.
 
-        Returns:
-            The (potentially resolved) attribute value.
-        """
-        value = super().__getattribute__(key)
+            Returns:
+                The (potentially resolved) attribute value.
+            """
+            value = super().__getattribute__(key)
 
-        if secret_utils.is_secret_reference(value):
-            from zenml.repository import Repository
+            if secret_utils.is_secret_reference(value):
+                from zenml.repository import Repository
 
-            stack = Repository().active_stack
+                stack = Repository().active_stack
 
-            # A stack component can be part of many stacks, and currently a
-            # secrets manager is associated with a stack. This means we're
-            # not able to identify the 'correct' secrets manager that the user
-            # wanted to resolve the secrets in a general way. We therefore
-            # limit secret resolving to components of the active stack.
-            if stack.components[self.TYPE] != self:
-                raise RuntimeError(
-                    f"Failed to resolve secret reference for attribute {key} "
-                    f"of stack component `{self}`: The stack component is not "
-                    "part of the active stack and therefore can't have it's "
-                    "secret references resolved."
-                )
+                # A stack component can be part of many stacks, and currently a
+                # secrets manager is associated with a stack. This means we're
+                # not able to identify the 'correct' secrets manager that the user
+                # wanted to resolve the secrets in a general way. We therefore
+                # limit secret resolving to components of the active stack.
+                if stack.components[self.TYPE] != self:
+                    raise RuntimeError(
+                        f"Failed to resolve secret reference for attribute {key} "
+                        f"of stack component `{self}`: The stack component is not "
+                        "part of the active stack and therefore can't have it's "
+                        "secret references resolved."
+                    )
 
-            secrets_manager = Repository().active_stack.secrets_manager
-            if not secrets_manager:
-                raise RuntimeError(
-                    f"Failed to resolve secret reference for attribute {key} "
-                    f"of stack component `{self}`: The active stack does not "
-                    "have a secrets manager."
-                )
+                secrets_manager = Repository().active_stack.secrets_manager
+                if not secrets_manager:
+                    raise RuntimeError(
+                        f"Failed to resolve secret reference for attribute {key} "
+                        f"of stack component `{self}`: The active stack does not "
+                        "have a secrets manager."
+                    )
 
-            secret_ref = secret_utils.parse_secret_reference(value)
-            try:
-                secret = secrets_manager.get_secret(secret_ref.name)
-            except KeyError:
-                raise KeyError(
-                    f"Failed to resolve secret reference for attribute {key} "
-                    f"of stack component `{self}`: The secret "
-                    f"{secret_ref.name} does not exist."
-                )
+                secret_ref = secret_utils.parse_secret_reference(value)
+                try:
+                    secret = secrets_manager.get_secret(secret_ref.name)
+                except KeyError:
+                    raise KeyError(
+                        f"Failed to resolve secret reference for attribute {key} "
+                        f"of stack component `{self}`: The secret "
+                        f"{secret_ref.name} does not exist."
+                    )
 
-            try:
-                secret_value = secret.content[secret_ref.key]
-            except KeyError:
-                raise KeyError(
-                    f"Failed to resolve secret reference for attribute {key} "
-                    f"of stack component `{self}`: The secret "
-                    f"{secret_ref.name} does not contain a value for key "
-                    f"{secret_ref.key}. Available keys: {set(secret.content)}."
-                )
+                try:
+                    secret_value = secret.content[secret_ref.key]
+                except KeyError:
+                    raise KeyError(
+                        f"Failed to resolve secret reference for attribute {key} "
+                        f"of stack component `{self}`: The secret "
+                        f"{secret_ref.name} does not contain a value for key "
+                        f"{secret_ref.key}. Available keys: {set(secret.content)}."
+                    )
 
-            return str(secret_value)
-        else:
-            return value
+                return str(secret_value)
+            else:
+                return value
 
     @property
     def required_secrets(self) -> Set[secret_utils.SecretReference]:
