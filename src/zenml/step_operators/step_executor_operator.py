@@ -37,7 +37,7 @@ from zenml.repository import Repository
 from zenml.steps.utils import (
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
     PARAM_CUSTOM_STEP_OPERATOR,
-    collect_requirements,
+    collect_docker_configuration,
     collect_step_resources,
 )
 from zenml.utils import source_utils, yaml_utils
@@ -195,10 +195,6 @@ class StepExecutorOperator(BaseExecutorOperator):
             stack=stack, execution_info=execution_info
         )
 
-        requirements = collect_requirements(
-            stack=stack, pipeline_node=execution_info.pipeline_node
-        )
-
         # Write the execution info to a temporary directory inside the artifact
         # store so the step operator entrypoint can load it
         execution_info_path = os.path.join(
@@ -239,20 +235,18 @@ class StepExecutorOperator(BaseExecutorOperator):
             step_operator.name,
             step_name,
         )
-        logger.debug(
-            "Step operator requirements: %s, entrypoint command: %s.",
-            requirements,
-            entrypoint_command,
-        )
 
         resource_configuration = collect_step_resources(
+            pipeline_node=execution_info.pipeline_node
+        )
+        docker_configuration = collect_docker_configuration(
             pipeline_node=execution_info.pipeline_node
         )
 
         step_operator.launch(
             pipeline_name=execution_info.pipeline_info.id,
             run_name=execution_info.pipeline_run_id,
-            requirements=requirements,
+            docker_configuration=docker_configuration,
             entrypoint_command=entrypoint_command,
             resource_configuration=resource_configuration,
         )

@@ -49,10 +49,9 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
 )
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
-from zenml.repository import Repository
 from zenml.stack import StackValidator
-from zenml.utils.docker_utils import get_image_digest
-from zenml.utils.source_utils import get_source_root_path
+from zenml.utils import deprecation_utils
+from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
@@ -63,7 +62,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class KubernetesOrchestrator(BaseOrchestrator):
+class KubernetesOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
     """Orchestrator for running ZenML pipelines using native Kubernetes.
 
     Attributes:
@@ -97,6 +96,10 @@ class KubernetesOrchestrator(BaseOrchestrator):
     _k8s_rbac_api: k8s_client.RbacAuthorizationV1Api = None
 
     FLAVOR: ClassVar[str] = KUBERNETES_ORCHESTRATOR_FLAVOR
+
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
+        ("custom_docker_base_image_name", "docker_parent_image")
+    )
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize the Pydantic object the Kubernetes clients.
@@ -223,20 +226,6 @@ class KubernetesOrchestrator(BaseOrchestrator):
             custom_validation_function=_validate_local_requirements,
         )
 
-    def get_docker_image_name(self, pipeline_name: str) -> str:
-        """Return the full Docker image name including registry and tag.
-
-        Args:
-            pipeline_name: Name of a ZenML pipeline.
-
-        Returns:
-            Docker image name.
-        """
-        container_registry = Repository().active_stack.container_registry
-        assert container_registry
-        registry_uri = container_registry.uri.rstrip("/")
-        return f"{registry_uri}/zenml-kubernetes:{pipeline_name}"
-
     def prepare_pipeline_deployment(
         self,
         pipeline: "BasePipeline",
@@ -250,29 +239,12 @@ class KubernetesOrchestrator(BaseOrchestrator):
             stack: A ZenML stack.
             runtime_configuration: The runtime configuration of the pipeline.
         """
-        from zenml.utils import docker_utils
-
-        image_name = self.get_docker_image_name(pipeline.name)
-
-        requirements = {*stack.requirements(), *pipeline.requirements}
-
-        logger.debug("Kubernetes container requirements: %s", requirements)
-
-        docker_utils.build_docker_image(
-            build_context_path=get_source_root_path(),
-            image_name=image_name,
-            dockerignore_path=pipeline.dockerignore_file,
-            requirements=requirements,
-            base_image=self.custom_docker_base_image_name,
+        self.build_and_push_docker_image(
+            pipeline_name=pipeline.name,
+            docker_configuration=pipeline.docker_configuration,
+            stack=stack,
+            runtime_configuration=runtime_configuration,
         )
-
-        assert stack.container_registry  # should never happen due to validation
-        stack.container_registry.push_image(image_name)
-
-        # Store the Docker image digest in the runtime configuration so it gets
-        # tracked in the ZenStore
-        image_digest = docker_utils.get_image_digest(image_name) or image_name
-        runtime_configuration["docker_image"] = image_digest
 
     def prepare_or_run_pipeline(
         self,
@@ -321,8 +293,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
         pod_name = kube_utils.sanitize_pod_name(run_name)
 
         # Get Docker image name (for all pods).
-        image_name = self.get_docker_image_name(pipeline.name)
-        image_name = get_image_digest(image_name) or image_name
+        image_name = runtime_configuration["docker_image"]
 
         # Get pipeline DAG as dict {"step": ["upstream_step_1", ...], ...}
         pipeline_dag: Dict[str, List[str]] = {
