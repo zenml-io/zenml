@@ -149,9 +149,8 @@ class Terraform:
             return variables
 
     def set_log_level(self, log_level: str) -> None:
-        # check if log_level is one of TRACE, DEBUG, INFO, WARN or ERROR.
-        # set TF_LOG environment variable to value from log_level.
-        pass
+        # set TF_LOG env var to the log_level provided by the user.
+        os.environ["TF_LOG"] = log_level
 
 class LocalStackRecipe:
     """Class to encapsulate the local stack that can be run from the CLI."""
@@ -562,6 +561,9 @@ class GitStackRecipesHandler(object):
 pass_git_stack_recipes_handler = click.make_pass_decorator(
     GitStackRecipesHandler, ensure=True
 )
+pass_tf_client = click.make_pass_decorator(
+    Terraform, ensure=True
+)
 
 
 @stack.group("recipe", cls=TagGroup)
@@ -786,16 +788,24 @@ def pull(
     help="Don't import the stack automatically after the recipe is deployed. The "
     "stack configuration file is still generated and can be imported manually.",
 )
+@click.option(
+    '--log-level',
+    type=click.Choice(['TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR'], case_sensitive=False),
+    help="Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case insensitive) as "
+    "log level for the deploy operation."
+)
 @pass_git_stack_recipes_handler
+@pass_tf_client
 @click.pass_context
 def deploy(
     ctx: click.Context,
     git_stack_recipes_handler: GitStackRecipesHandler,
+    tf_client: Terraform,
     stack_recipe_name: str,
     path: str,
     force: bool,
     no_import: bool,
-    shell_executable: Optional[str],
+    log_level: str,
     stack_name: Optional[str],
 ) -> None:
     """Run the stack_recipe at the specified relative path.
@@ -806,24 +816,26 @@ def deploy(
     Args:
         ctx: The click context.
         git_stack_recipes_handler: The GitStackRecipesHandler instance.
+        tf_client: The Terraform class instance to use for operations.
         stack_recipe_name: The name of the stack_recipe.
         path: The path at which you want to install the stack_recipe(s).
         force: Force the run of the stack_recipe.
-        shell_executable: Manually specify the path to the executable that
-            runs .sh files.
         stack_name: A name for the ZenML stack that gets imported as a result
             of the recipe deployment.
         no_import: Don't import the stack automatically after the recipe is
             deployed. The stack configuration file is still generated and
             can be imported manually.
+        log_level: Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case insensitive)
+            as log level for the deploy operation.
     """
-    # initialize the Terraform class
-    tf_client = Terraform()
     # check if terraform is installed
     try:
         tf_client.check_installation()
     except RuntimeError as e:
         cli_utils.error(str(e))
+
+    # set terraform log level
+    tf_client.set_log_level(log_level=log_level)
 
     stack_recipes_dir = Path(os.getcwd()) / path
 
