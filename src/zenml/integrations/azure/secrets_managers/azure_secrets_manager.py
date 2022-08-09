@@ -78,10 +78,14 @@ class AzureSecretsManager(BaseSecretsManager):
             namespace: Optional namespace value.
         """
         if namespace:
-            cls.validate_secret_name_or_namespace(namespace)
+            cls.validate_secret_name_or_namespace(namespace, scope)
 
     @classmethod
-    def validate_secret_name_or_namespace(cls, name: str) -> None:
+    def validate_secret_name_or_namespace(
+        cls,
+        name: str,
+        scope: SecretsManagerScope,
+    ) -> None:
         """Validate a secret name or namespace.
 
         Azure secret names must contain only alphanumeric characters and the
@@ -94,10 +98,16 @@ class AzureSecretsManager(BaseSecretsManager):
 
         Args:
             name: the secret name or namespace
+            scope: the current scope
 
         Raises:
             ValueError: if the secret name or namespace is invalid
         """
+        if scope == SecretsManagerScope.NONE:
+            # to preserve backwards compatibility, we don't validate the
+            # secret name for unscoped secrets.
+            return
+
         if not re.fullmatch(r"[0-9a-zA-Z-]+", name):
             raise ValueError(
                 f"Invalid secret name or namespace '{name}'. Must contain "
@@ -109,6 +119,14 @@ class AzureSecretsManager(BaseSecretsManager):
                 f"Invalid secret name or namespace '{name}'. The length is "
                 f"limited to maximum 100 characters."
             )
+
+    def validate_secret_name(self, name: str) -> None:
+        """Validate a secret name.
+
+        Args:
+            name: the secret name
+        """
+        self.validate_secret_name_or_namespace(name, self.scope)
 
     def _create_or_update_secret(self, secret: BaseSecretSchema) -> None:
         """Creates a new secret or updated an existing one.
@@ -159,7 +177,7 @@ class AzureSecretsManager(BaseSecretsManager):
         Raises:
             SecretExistsError: if the secret already exists
         """
-        self.validate_secret_name_or_namespace(secret.name)
+        self.validate_secret_name(secret.name)
         self._ensure_client_connected(self.key_vault_name)
 
         if secret.name in self.get_all_secret_keys():
@@ -182,7 +200,7 @@ class AzureSecretsManager(BaseSecretsManager):
             KeyError: if the secret does not exist
             ValueError: if the secret is named 'name'
         """
-        self.validate_secret_name_or_namespace(secret_name)
+        self.validate_secret_name(secret_name)
         self._ensure_client_connected(self.key_vault_name)
         zenml_secret: Optional[BaseSecretSchema] = None
 
@@ -282,7 +300,7 @@ class AzureSecretsManager(BaseSecretsManager):
         Raises:
             KeyError: if the secret does not exist
         """
-        self.validate_secret_name_or_namespace(secret.name)
+        self.validate_secret_name(secret.name)
         self._create_or_update_secret(secret)
         self._ensure_client_connected(self.key_vault_name)
 
@@ -300,7 +318,7 @@ class AzureSecretsManager(BaseSecretsManager):
         Raises:
             KeyError: if the secret no longer exists
         """
-        self.validate_secret_name_or_namespace(secret_name)
+        self.validate_secret_name(secret_name)
         self._ensure_client_connected(self.key_vault_name)
 
         if self.scope == SecretsManagerScope.NONE:
