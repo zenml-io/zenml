@@ -1372,14 +1372,9 @@ def register_all_stack_component_cli_commands() -> None:
             component_type, parent_group=cli
         )
 
-        if component_type == StackComponentType.ANNOTATOR:
-            register_annotator_subcommands()
-        elif component_type == StackComponentType.SECRETS_MANAGER:
-            register_secrets_manager_subcommands()
-        elif component_type == StackComponentType.FEATURE_STORE:
-            register_feature_store_subcommands()
-        elif component_type == StackComponentType.MODEL_DEPLOYER:
-            register_model_deployer_subcommands()
-
 
 register_all_stack_component_cli_commands()
+register_annotator_subcommands()
+register_secrets_manager_subcommands()
+register_feature_store_subcommands()
+register_model_deployer_subcommands()
