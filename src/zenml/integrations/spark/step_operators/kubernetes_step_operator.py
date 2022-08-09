@@ -31,6 +31,7 @@ from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 from zenml.utils.source_utils import get_source_root_path
 
 from zenml.config.docker_configuration import DockerConfiguration
+
 if TYPE_CHECKING:
     from zenml.config.resource_configuration import ResourceConfiguration
 logger = get_logger(__name__)
@@ -120,7 +121,11 @@ class KubernetesSparkStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
         ]
         return command
 
-    def _create_configurations(self, image_name: str):
+    def _create_configurations(
+        self,
+        image_name: str,
+        resource_configuration: "ResourceConfiguration"
+    ):
         """Build the configuration parameters for the spark-submit command."""
         configurations = [
             f"--conf spark.kubernetes.container.image={image_name}",
@@ -138,6 +143,18 @@ class KubernetesSparkStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
                     "--conf",
                     f"spark.kubernetes.authenticate.driver.serviceAccountName={self.kubernetes_service_account}",
                 ]
+            )
+
+        if resource_configuration.cpu_count:
+            configurations.append(
+                f"--conf spark.executor.cores={resource_configuration.cpu_count}"
+            )
+
+        if resource_configuration.memory:
+            # TODO[LOW]: Fix the convertion of the memory unit with a new
+            #   type of resource configuration.
+            configurations.append(
+                f"--conf spark.executor.cores={resource_configuration.memory.lower().strip('b')}"
             )
 
         repo = Repository()
@@ -234,7 +251,10 @@ class KubernetesSparkStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
         base_command = self._create_base_command()
 
         # Add configurations
-        configurations = self._create_configurations(image_name=image_name)
+        configurations = self._create_configurations(
+            image_name=image_name,
+            resource_configuration=resource_configuration,
+        )
         base_command.extend(configurations)
 
         # Add the spark app
