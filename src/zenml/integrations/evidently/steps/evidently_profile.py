@@ -94,6 +94,7 @@ class EvidentlyProfileConfig(BaseDriftDetectionConfig):
 
     Attributes:
         column_mapping: properties of the DataFrame columns used
+        ignore_cols: columns to ignore during evidently profile step
         profile_sections: a list identifying the Evidently profile sections to be
             used. The following are valid options supported by Evidently:
             - "datadrift"
@@ -111,6 +112,7 @@ class EvidentlyProfileConfig(BaseDriftDetectionConfig):
     """
 
     column_mapping: Optional[EvidentlyColumnMapping] = None
+    ignore_cols: Optional[List[str]] = None
     profile_sections: Optional[Sequence[str]] = None
     verbose_level: int = 1
     profile_options: Sequence[Tuple[str, Dict[str, Any]]] = Field(
@@ -129,7 +131,6 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
         reference_dataset: pd.DataFrame,
         comparison_dataset: pd.DataFrame,
         config: EvidentlyProfileConfig,
-        ignored_columns: Tuple[str] = (),
     ) -> Output(  # type:ignore[valid-type]
         profile=Profile, dashboard=str
     ):
@@ -140,11 +141,11 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
             comparison_dataset: a Pandas DataFrame of new data you wish to
                 compare against the reference data
             config: the configuration for the step
-            ignored_columns: columns to ignore when creating evidently profile
 
         Raises:
             TypeError: If ignore cols is of incorrect type
                 or if list elements are not of type string.
+            ValueError: If ignore cols is an empty list
             ValueError: If column is not found in reference or comparison
                 dataset
 
@@ -153,12 +154,44 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
             dashboard: HTML report extracted from an Evidently Dashboard
               generated for the data drift
         """
-        
         data_validator = cast(
             EvidentlyDataValidator,
             EvidentlyDataValidator.get_active_data_validator(),
         )
         column_mapping = None
+        if config.ignore_cols is not None and not (
+            isinstance(config.ignore_cols, list)
+        ):
+            raise TypeError(
+                f"Expects a List of columns but got type {type(config.ignore_cols)}"
+            )
+        elif len(config.ignore_cols) == 0:
+            raise ValueError(
+                f"Expects None or list of columns in strings, but got {config.ignore_cols}"
+            )
+
+        elif not (all((isinstance(ele, str) for ele in config.ignore_cols))):
+            raise TypeError(
+                "One or more columns to be ignored are not type string"
+            )
+
+        elif not (
+            set(config.ignore_cols).issubset(set(reference_dataset.columns))
+        ) or not (
+            set(config.ignore_cols).issubset(set(comparison_dataset.columns))
+        ):
+            raise ValueError(
+                "Column name is not found in reference or comparison datasets"
+            )
+
+        else:
+            reference_dataset = reference_dataset.drop(
+                labels=list(config.ignore_cols), axis=1
+            )
+            comparison_dataset = comparison_dataset.drop(
+                labels=list(config.ignore_cols), axis=1
+            )
+
         if config.column_mapping:
             column_mapping = config.column_mapping.to_evidently_column_mapping()
         profile, dashboard = data_validator.data_profiling(

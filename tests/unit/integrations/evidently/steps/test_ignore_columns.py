@@ -16,7 +16,7 @@ import pandas as pd
 import pytest
 
 from zenml.integrations.evidently.steps.evidently_profile import (
-    ColumnMapping,
+    EvidentlyColumnMapping,
     EvidentlyProfileConfig,
     EvidentlyProfileStep,
 )
@@ -36,20 +36,20 @@ comp["var_A"] = [0, 27, 3, 4, 8]
 comp["var_B"] = [0.12, -0.54, 0.08, 1.78, 0.03]
 
 
-def test_ignore_features() -> None:
+def test_ignore_feat() -> None:
     """Tests ignore cols parameter with features ignore_col and var_C
     to be ignored"""
 
-    col_list = ["target"]
-
-    clmn_map = ColumnMapping(*col_list)
+    clmn_map = EvidentlyColumnMapping(target_names=["target"])
 
     profile_config = EvidentlyProfileConfig(
         profile_sections=["datadrift"], column_mapping=clmn_map
     )
 
+    print("config created sucessfully")
     profile_step = EvidentlyProfileStep()
 
+    print(" step created sucessfully")
     drift_obj, dash_obj = profile_step.entrypoint(
         reference_dataset=ref,
         comparison_dataset=comp,
@@ -75,9 +75,7 @@ def test_default_ignore_cols() -> None:
     """Tests ignore cols parameter with nothing to ignore
     i.e pass all features"""
 
-    col_list = ["target"]
-
-    clmn_map = ColumnMapping(*col_list)
+    clmn_map = EvidentlyColumnMapping(target_names=["target"])
 
     profile_config = EvidentlyProfileConfig(
         profile_sections=["datadrift"], column_mapping=clmn_map
@@ -110,8 +108,7 @@ def test_non_existing_col() -> None:
     """Tests ignore cols parameter for non existing
     features and raises Error"""
 
-    col_list = ["target"]
-    clmn_map = ColumnMapping(*col_list)
+    clmn_map = EvidentlyColumnMapping(target_names=["target"])
     profile_config = EvidentlyProfileConfig(
         profile_sections=["datadrift"], column_mapping=clmn_map
     )
@@ -131,8 +128,7 @@ def test_incorrect_datatype() -> None:
     """Tests ignore cols parameter for incorrect datatype
     and raises Error"""
 
-    col_list = ["target"]
-    clmn_map = ColumnMapping(*col_list)
+    clmn_map = EvidentlyColumnMapping(target_names=["target"])
     profile_config = EvidentlyProfileConfig(
         profile_sections=["datadrift"], column_mapping=clmn_map
     )
@@ -152,8 +148,7 @@ def test_ignored_cols_elements() -> None:
     """Tests ignore cols parameter for type of its elements
     and raises Error"""
 
-    col_list = ["target"]
-    clmn_map = ColumnMapping(*col_list)
+    clmn_map = EvidentlyColumnMapping(target_names=["target"])
     profile_config = EvidentlyProfileConfig(
         profile_sections=["datadrift"], column_mapping=clmn_map
     )
