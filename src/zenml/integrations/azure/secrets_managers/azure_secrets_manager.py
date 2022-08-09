@@ -28,6 +28,7 @@ from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
 from zenml.secrets_managers.base_secrets_manager import (
+    ZENML_SECRET_NAME_LABEL,
     BaseSecretsManager,
     SecretsManagerScope,
 )
@@ -103,7 +104,7 @@ class AzureSecretsManager(BaseSecretsManager):
                 f"only alphanumeric characters and the character -."
             )
 
-        if len(name) > 10:
+        if len(name) > 100:
             raise ValueError(
                 f"Invalid secret name or namespace '{name}'. The length is "
                 f"limited to maximum 100 characters."
@@ -158,6 +159,7 @@ class AzureSecretsManager(BaseSecretsManager):
         Raises:
             SecretExistsError: if the secret already exists
         """
+        self.validate_secret_name_or_namespace(secret.name)
         self._ensure_client_connected(self.key_vault_name)
 
         if secret.name in self.get_all_secret_keys():
@@ -180,6 +182,7 @@ class AzureSecretsManager(BaseSecretsManager):
             KeyError: if the secret does not exist
             ValueError: if the secret is named 'name'
         """
+        self.validate_secret_name_or_namespace(secret_name)
         self._ensure_client_connected(self.key_vault_name)
         zenml_secret: Optional[BaseSecretSchema] = None
 
@@ -266,7 +269,7 @@ class AzureSecretsManager(BaseSecretsManager):
             # all scope tags need to be included in the Azure secret tags,
             # otherwise the secret does not belong to the current scope
             if scope_tags.items() <= tags.items():
-                set_of_secrets.add(secret_property.name)
+                set_of_secrets.add(tags.get(ZENML_SECRET_NAME_LABEL))
 
         return list(set_of_secrets)
 
@@ -279,6 +282,7 @@ class AzureSecretsManager(BaseSecretsManager):
         Raises:
             KeyError: if the secret does not exist
         """
+        self.validate_secret_name_or_namespace(secret.name)
         self._create_or_update_secret(secret)
         self._ensure_client_connected(self.key_vault_name)
 
@@ -296,6 +300,7 @@ class AzureSecretsManager(BaseSecretsManager):
         Raises:
             KeyError: if the secret no longer exists
         """
+        self.validate_secret_name_or_namespace(secret_name)
         self._ensure_client_connected(self.key_vault_name)
 
         if self.scope == SecretsManagerScope.NONE:

@@ -81,7 +81,9 @@ def get_secrets_manager(
             name=name, project_id="zenml-secrets-manager", **kwargs
         )
     elif flavor == "azure":
-        from zenml.integrations.azure.secrets_manager import AzureSecretsManager
+        from zenml.integrations.azure.secrets_managers import (
+            AzureSecretsManager,
+        )
 
         secrets_manager = AzureSecretsManager(
             name=name, key_vault_name="zenml-pytest", **kwargs
@@ -112,7 +114,7 @@ def get_secrets_manager(
 
 
 def get_arbitrary_secret(name: Optional[str] = None) -> ArbitrarySecretSchema:
-    name = name or f"pytest_{random_str(16).lower()}"
+    name = name or f"pytest{random_str(16).lower()}"
     key = f"key_{random_str(16)}"
     value = f"{random_str(64)}"
     secret = ArbitrarySecretSchema(name=name)
