@@ -381,7 +381,7 @@ zenml metadata-store register gcp_metadata_store --flavor=mysql \
 zenml stack register gcp_vertex_stack -m gcp_metadata_store \
       -a gcp_artifact_store -o vertex_orchestrator -c gcp_registry \
       -x gcp_secrets_manager --set
-zenml secret register mysql_secret --schema=mysql \
+zenml secrets-manager secret register mysql_secret --schema=mysql \
       --user=root --password=$DB_PASSWORD \
       --ssl_ca="@"$SERVER_CERT_PATH --ssl_cert="@"$CLIENT_CERT_PATH \
       --ssl_key="@"$CLIENT_KEY_PATH
@@ -582,7 +582,7 @@ zenml stack register $STACK_NAME -o $ORCHESTRATOR_NAME \
       -c $CONTAINER_REGISTRY_NAME -x $SECRET_MANAGER_NAME \
       -a $ARTIFACT_STORE_NAME -m $METADATA_STORE_NAME --set
       
-zenml secret register mysql_secret --schema=mysql \
+zenml secrets-manager secret register mysql_secret --schema=mysql \
       --user=root --password=$DB_PASSWORD \
       --ssl_ca="@"$SERVER_CERT_PATH --ssl_cert="@"$CLIENT_CERT_PATH --ssl_key="@"$CLIENT_KEY_PATH
 ```

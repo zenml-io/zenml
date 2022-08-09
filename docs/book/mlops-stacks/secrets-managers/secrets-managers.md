@@ -57,14 +57,14 @@ wish to do so interactively, passing the secret name in as an argument
 (as in the following example) will initiate an interactive process:
 
 ```shell
-zenml secret register SECRET_NAME -i
+zenml secrets-manager secret register SECRET_NAME -i
 ```
 
 If you wish to specify key-value pairs using command line arguments, you can do
 so instead:
 
 ```shell
-zenml secret register SECRET_NAME --key1=value1 --key2=value2
+zenml secrets-manager secret register SECRET_NAME --key1=value1 --key2=value2
 ```
 
 For secret values that are too big to pass as a command line argument, or have
@@ -72,7 +72,7 @@ special characters, you can also use the special `@` syntax to indicate to ZenML
 that the value needs to be read from a file:
 
 ```bash
-zenml secret register SECRET_NAME --attr_from_literal=value \
+zenml secrets-manager secret register SECRET_NAME --attr_from_literal=value \
    --attr_from_file=@path/to/file.txt ...
 ```
 
@@ -140,10 +140,10 @@ class MYSQLSecretSchema(BaseSecretSchema):
 ```
 
 To register a secret regulated by a schema, the `--schema` argument must be
-passed to the `zenml secret register` command:
+passed to the `zenml secrets-manager secret register` command:
 
 ```shell
-zenml secret register mysql_secret --schema=mysql --user=user --password=password
+zenml secrets-manager secret register mysql_secret --schema=mysql --user=user --password=password
 --ssl_ca=@./ca.pem --ssl_verify_server_cert=true
 ```
 

@@ -1449,36 +1449,36 @@ def register_secrets_manager_subcommands() -> None:
             If a schema is indicated, the secret key-value pairs will be validated
             against the schema.
 
-            When passed as command line arguments, the secret field values may also be
+            Whenzenml secrets-manager secret mmand line arguments, the secret field values may also be
             loaded from files instead of being issued inline, by prepending the field
             name with a `@` sign. For example, the following command line:
-                zenml secret register my_secret --secret_token=@/path/to/file.json
+                zenml secrets-manager secret register my_secret --secret_token=@/path/to/file.json
             will load the value for the field `secret_token` from the file
             `/path/to/file.json`.
             To use the `@` sign as the first character of a field name without pointing
             to a file, double the `@` sign. For example, the following command line:
-                zenml secret register my_secret --username=zenml --password=@@password
+                zenml secrets-manager secret register my_secret --username=zenml --password=@@password
             will interpret the value of the field `password` as the literal string
             `@password`.
 
             Examples:
             - register a secret with the name `secret_one` and configure its values
             interactively:
-                zenml secret register secret_one -i
+                zenml secrets-manager secret -manager secret register secret_one -i
             - register a secret with the name `secret_two` and configure its values
             via command line arguments:
-                zenml secret register secret_two --username=admin --password=secret
+                zenml secrets-manager secret register secret_two --username=admin --password=secret
             - register a secret with the name `secret_three` interactively and
             conforming to a schema named `aws` (which is defined in the `aws`
             integration):
                 zenml integration install aws
-                zenml secret register secret_three -i --schema=aws
+                zenml secrets-manager secret register secret_three -i --schema=aws
             - register a secret with the name `secret_four` from command line arguments
             and conforming to a schema named `aws` (which is defined in the `aws`
             integration). Also load the value for the field `secret_token` from a
             local file:
                 zenml integration install aws
-                zenml secret register secret_four --schema=aws \
+                zenml secrets-manager secret register secret_four --schema=aws \
                     --aws_access_key_id=1234567890 \
                     --aws_secret_access_key=abcdefghij \
                     --aws_session_token=@/path/to/token.txt
@@ -1493,7 +1493,7 @@ def register_secrets_manager_subcommands() -> None:
             """
             # flake8: noqa: C901
 
-            # TODO [ENG-871]: Formatting for `zenml secret register --help` currently
+            # TODO [ENG-871]: Formatting for `zenml secrets-manager secret register --help` currently
             #  broken.
             # TODO [ENG-725]: Allow passing in json/dict when registering a secret as an
             #   additional option for the user on top of the interactive
@@ -1570,7 +1570,7 @@ def register_secrets_manager_subcommands() -> None:
                         else:
                             warning(
                                 f"Key {k} already in this secret. Please restart this "
-                                f"process or use 'zenml secret update {name} --{k}=...' "
+                                f"process or use 'zenml secrets-manager secret update {name} --{k}=...' "
                                 f"to update this key after the secret is registered. "
                                 f"Skipping ..."
                             )
@@ -1676,23 +1676,23 @@ def register_secrets_manager_subcommands() -> None:
             When passed as command line arguments, the secret field values may also be
             loaded from files instead of being issued inline, by prepending the field
             name with a `@` sign. For example, the following command line:
-                zenml secret update my_secret --secret_token=@/path/to/file.json
+                zenml secrets-manager secret update my_secret --secret_token=@/path/to/file.json
             will load the value for the field `secret_token` from the file
             `/path/to/file.json`.
             To use the `@` sign as the first character of a field name without pointing
             to a file, double the `@` sign. For example, the following command line:
-                zenml secret update my_secret --username=zenml --password=@@password
+                zenml secrets-manager secret update my_secret --username=zenml --password=@@password
             will interpret the value of the field `password` as the literal string
             `@password`.
             
             Examples:
             - update a secret with the name `secret_one` and configure its values
             interactively:
-                zenml secret update secret_one -i
+                zenml secrets-manager secret update secret_one -i
             - update a secret with the name `secret_two` from command line arguments
             and load the value for the field `secret_token` from a
             local file:
-                zenml secret update secret_four \
+                zenml secrets-manager secret update secret_four \
                     --aws_access_key_id=1234567890 \
                     --aws_secret_access_key=abcdefghij \
                     --aws_session_token=@/path/to/token.txt

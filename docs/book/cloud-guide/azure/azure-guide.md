@@ -331,7 +331,7 @@ az aks create -g $RESOURCE_GROUP -n $AKS_CLUSTER_NAME --node-count 1 \
 
 - Register the secret for authenticating with your MySQL database:
     ```shell
-    zenml secret register azure_authentication \
+    zenml secrets-manager secret register azure_authentication \
         --schema=mysql \
         --user=$MYSQL_USERNAME \
         --password=$MYSQL_PASSWORD
@@ -427,7 +427,7 @@ zenml stack register kubernetes_stack \
     -x azure_secrets_manager \
     --set
 
-zenml secret register azure_authentication \
+zenml secrets-manager secret register azure_authentication \
     --schema=mysql \
     --user=$MYSQL_USERNAME \
     --password=$MYSQL_PASSWORD
