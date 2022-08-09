@@ -14,92 +14,37 @@
 import json
 import os
 import subprocess
-import tempfile
 from typing import (
-    AbstractSet, ClassVar, Dict, List, Optional, Union,
-    TYPE_CHECKING
+    ClassVar, List, Optional, Union,
+    TYPE_CHECKING, Sequence
 )
 
 from pydantic import validator
 
-from zenml.constants import ENV_ZENML_CONFIG_PATH
 from zenml.integrations.spark import SPARK_KUBERNETES_STEP_OPERATOR
 from zenml.io.fileio import copy
 from zenml.logger import get_logger
 from zenml.repository import Repository
+from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.step_operators import BaseStepOperator, entrypoint
-from zenml.utils.docker_utils import build_docker_image, get_image_digest
-from zenml.utils.io_utils import (
-    write_file_contents_as_string,
-    create_file_if_not_exists
-)
+from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 from zenml.utils.source_utils import get_source_root_path
 
+from zenml.config.docker_configuration import DockerConfiguration
 if TYPE_CHECKING:
-    from zenml.steps import ResourceConfiguration
+    from zenml.config.resource_configuration import ResourceConfiguration
 logger = get_logger(__name__)
 
 LOCAL_ENTRYPOINT = entrypoint.__file__
-ZENML_DIR = "/zenml/"
 APP_DIR = "/app/"
 CONTAINER_ZENML_CONFIG_DIR = ".zenconfig"
 ENTRYPOINT_NAME = "zenml_spark_entrypoint.py"
 
 
-def generate_dockerfile_contents(
-    base_image: str,
-    requirements: Optional[AbstractSet[str]] = None,
-    environment_vars: Optional[Dict[str, str]] = None,
-) -> str:
-    """Generates a Dockerfile.
-
-    Args:
-        base_image: The image to use as base for the dockerfile.
-        requirements: Optional list of pip requirements to install.
-        environment_vars: Optional dict of environment variables to set.
-
-    Returns:
-        Contents of a dockerfile.
-    """
-    # Create the base
-    lines = [
-        f"FROM {base_image}",
-        "USER root",  # required to install the requirements
-        "RUN apt-get -y update",  # TODO: To be removed
-        "RUN apt-get -y install git",  # TODO: To be removed
-    ]
-
-    # Add env variables
-    if environment_vars:
-        for key, value in environment_vars.items():
-            lines.append(f"ENV {key.upper()}={value}")
-
-    # Install requirements
-    if requirements:
-        lines.append(
-            f"RUN pip install --user --no-cache {' '.join(sorted(requirements))}"
-        )
-
-    # Copy the repo and config
-    lines.extend(
-        [
-            f"WORKDIR {APP_DIR}",
-            "COPY . .",
-            "RUN chmod -R a+rw .",
-            f"ENV {ENV_ZENML_CONFIG_PATH}={APP_DIR}{CONTAINER_ZENML_CONFIG_DIR}",
-        ]
-    )
-
-    return "\n".join(lines)
-
-
-class KubernetesSparkStepOperator(BaseStepOperator):
+class KubernetesSparkStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
     # Instance parameters
     master: str
     deploy_mode: str = "cluster"
-
-    # Parameters for the docker images
-    spark_base_image_name: str = None
 
     # Parameters for kubernetes
     kubernetes_namespace: Optional[str] = None
@@ -145,47 +90,24 @@ class KubernetesSparkStepOperator(BaseStepOperator):
         else:
             raise TypeError(f"{value} is not a json string or a list.")
 
-    def _build_docker_image(
-        self,
-        pipeline_name,
-        requirements,
-    ):
-        """Create the proper image to use for spark on k8s."""
-        # Copy over the entrypoint first
-        entrypoint_path = os.path.join(
-            get_source_root_path(),
-            ENTRYPOINT_NAME
+    @staticmethod
+    def _generate_zenml_pipeline_dockerfile(
+        parent_image: str,
+        docker_configuration: DockerConfiguration,
+        requirements_files: Sequence[str] = (),
+        entrypoint: Optional[str] = None,
+    ) -> List[str]:
+        dockerfile = PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
+            parent_image,
+            docker_configuration,
+            requirements_files,
+            entrypoint,
         )
-        copy(LOCAL_ENTRYPOINT, entrypoint_path, overwrite=True)
-
-        # Create a dockerfile and save it to a temp directory
-        dockerfile_content = generate_dockerfile_contents(
-            base_image=self.spark_base_image_name,
-            requirements=requirements
-        )
-        dockerfile_path = os.path.join(
-            tempfile.TemporaryDirectory().name,
-            "Dockerfile"
-        )
-        create_file_if_not_exists(dockerfile_path)
-        write_file_contents_as_string(dockerfile_path, dockerfile_content, )
-
-        # Build the image and push it to the repository
-        repo = Repository()
-        container_registry = repo.active_stack.container_registry
-        if not container_registry:
-            raise RuntimeError("Missing container registry")
-        registry_uri = container_registry.uri.rstrip("/")
-        image_name = f"{registry_uri}/zenml-spark:{pipeline_name}"
-
-        build_docker_image(
-            image_name=image_name,
-            build_context_path=get_source_root_path(),
-            dockerfile_path=dockerfile_path,
-        )
-
-        container_registry.push_image(image_name)
-        return get_image_digest(image_name) or image_name
+        return [dockerfile[0]] + [
+            "USER root",  # required to install the requirements
+            "RUN apt-get -y update",  # TODO: To be removed
+            "RUN apt-get -y install git",  # TODO: To be removed
+        ] + dockerfile[1:]
 
     def _create_base_command(self):
         """Create the base command for spark-submit."""
@@ -288,13 +210,25 @@ class KubernetesSparkStepOperator(BaseStepOperator):
         self,
         pipeline_name: str,
         run_name: str,
-        requirements: List[str],
         entrypoint_command: List[str],
         resource_configuration: "ResourceConfiguration",
+        docker_configuration: "DockerConfiguration"
     ) -> None:
         """Launch the spark job with spark-submit."""
         # Build the docker image to use for spark on Kubernetes
-        image_name = self._build_docker_image(pipeline_name, requirements)
+
+        entrypoint_path = os.path.join(
+            get_source_root_path(),
+            ENTRYPOINT_NAME
+        )
+        copy(LOCAL_ENTRYPOINT, entrypoint_path, overwrite=True)
+
+        image_name = self.build_and_push_docker_image(
+            pipeline_name=pipeline_name,
+            docker_configuration=docker_configuration,
+            stack=Repository().active_stack,
+            runtime_configuration=RuntimeConfiguration(),
+        )
 
         # Base command
         base_command = self._create_base_command()
