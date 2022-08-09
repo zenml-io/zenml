@@ -7,7 +7,6 @@ def inference_pipeline(
     prediction_service_loader,
     predictor,
     training_data_loader,
-    skew_comparison,
     drift_detector,
 ):
     """Inference pipeline with skew and drift detection."""
@@ -15,5 +14,4 @@ def inference_pipeline(
     model_deployment_service = prediction_service_loader()
     predictor(model_deployment_service, inference_data)
     training_data, _, _, _ = training_data_loader()
-    reference, comparison = skew_comparison(training_data, inference_data)
-    drift_detector(reference, comparison)
+    drift_detector(training_data, inference_data)
