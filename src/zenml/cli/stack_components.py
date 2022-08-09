@@ -2515,6 +2515,8 @@ def register_all_stack_component_cli_commands() -> None:
             register_secrets_manager_subcommands()
         elif component_type == StackComponentType.FEATURE_STORE:
             register_feature_store_subcommands()
+        elif component_type == StackComponentType.MODEL_DEPLOYER:
+            register_model_deployer_subcommands()
 
 
 register_all_stack_component_cli_commands()
