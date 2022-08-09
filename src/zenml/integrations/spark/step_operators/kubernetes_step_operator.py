@@ -147,14 +147,14 @@ class KubernetesSparkStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
 
         if resource_configuration.cpu_count:
             configurations.append(
-                f"--conf spark.executor.cores={resource_configuration.cpu_count}"
+                f"--conf spark.executor.cores={int(resource_configuration.cpu_count)}"
             )
 
         if resource_configuration.memory:
             # TODO[LOW]: Fix the convertion of the memory unit with a new
             #   type of resource configuration.
             configurations.append(
-                f"--conf spark.executor.cores={resource_configuration.memory.lower().strip('b')}"
+                f"--conf spark.executor.memory={resource_configuration.memory.lower().strip('b')}"
             )
 
         repo = Repository()
