@@ -17,6 +17,7 @@ import uuid
 from typing import TYPE_CHECKING, Optional
 
 import click
+from rich.errors import MarkupError
 
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
@@ -418,4 +419,7 @@ def get_model_service_logs(
         if raw or line.startswith("\x1b["):
             print(line)
         else:
-            console.print(line)
+            try:
+                console.print(line)
+            except MarkupError:
+                print(line)
