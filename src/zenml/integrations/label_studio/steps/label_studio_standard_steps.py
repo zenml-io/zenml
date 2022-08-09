@@ -257,7 +257,7 @@ def sync_new_data_to_label_studio(
         if not isinstance(artifact_store, AuthenticationMixin):
             raise TypeError(
                 "The artifact store must inherit from "
-                f"{AuthenticationMixin.__name__} to work with a LabelStudio "
+                f"{AuthenticationMixin.__name__} to work with a Label Studio "
                 f"`{config.storage_type}` storage."
             )
 
@@ -267,7 +267,7 @@ def sync_new_data_to_label_studio(
 
         if not azure_secret:
             raise ValueError(
-                "Missing secret to authenticate label studio storage."
+                "Missing secret to authenticate cloud storage for Label Studio."
             )
 
         config.azure_account_name = azure_secret.account_name
@@ -276,7 +276,7 @@ def sync_new_data_to_label_studio(
         if not isinstance(artifact_store, AuthenticationMixin):
             raise TypeError(
                 "The artifact store must inherit from "
-                f"{AuthenticationMixin.__name__} to work with a LabelStudio "
+                f"{AuthenticationMixin.__name__} to work with a Label Studio "
                 f"`{config.storage_type}` storage."
             )
 
@@ -285,7 +285,7 @@ def sync_new_data_to_label_studio(
         )
         if not gcp_secret:
             raise ValueError(
-                "Missing secret to authenticate label studio storage."
+                "Missing secret to authenticate cloud storage for Label Studio."
             )
 
         config.google_application_credentials = gcp_secret.token
