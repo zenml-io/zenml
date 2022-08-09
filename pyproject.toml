@@ -140,6 +140,7 @@ isolated_build = True
 skipsdist = true
 envlist = py36,py37,py38,py39
 
+
 [testenv]
 whitelist_externals = poetry
 commands =
