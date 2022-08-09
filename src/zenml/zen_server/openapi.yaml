@@ -3,7 +3,7 @@ info:
   title: ZenML
   version: 0.xx.0
   description: >-
-    The Zen API allows access to ZenML programmatically.
+    The Zen API allows access to ZenML programmatically. These docs DO NOT represent the status quo but instead are the Design that is being aimed at.
 
 tags:
   - name: health
@@ -281,7 +281,8 @@ paths:
       tags:
         - pipeline
       description: |-
-        Create a run for a pipeline.
+        Create a run for a pipeline. This endpoint is not meant to be used explicitley once ZenML follows the 
+        centralized paradigm where runs are authored by the ZenServer and not on the users machine.
       operationId: create_pipeline_run_for_pipeline
       parameters:
         - $ref: '#/components/parameters/pipelineId'
@@ -1915,6 +1916,7 @@ components:
         - stack
         - runtime_configuration
         - user_id
+        - project_name
       type: object
       properties:
         name:
