@@ -34,12 +34,12 @@ from zenml.integrations.tensorflow.services.tensorboard_service import (
 from zenml.logger import get_logger
 from zenml.post_execution import StepView
 from zenml.repository import Repository
-from zenml.visualizers import BaseStepVisualizer
+from zenml.visualizers import BaseVisualizer
 
 logger = get_logger(__name__)
 
 
-class TensorboardVisualizer(BaseStepVisualizer):
+class TensorboardVisualizer(BaseVisualizer):
     """The implementation of a Whylogs Visualizer."""
 
     @classmethod

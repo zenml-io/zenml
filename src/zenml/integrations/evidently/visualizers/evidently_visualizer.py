@@ -22,12 +22,12 @@ from zenml.artifacts.data_artifact import DataArtifact
 from zenml.environment import Environment
 from zenml.logger import get_logger
 from zenml.post_execution import StepView
-from zenml.visualizers import BaseStepVisualizer
+from zenml.visualizers import BaseVisualizer
 
 logger = get_logger(__name__)
 
 
-class EvidentlyVisualizer(BaseStepVisualizer):
+class EvidentlyVisualizer(BaseVisualizer):
     """The implementation of an Evidently Visualizer."""
 
     @abstractmethod
