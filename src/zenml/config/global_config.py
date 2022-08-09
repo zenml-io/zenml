@@ -219,43 +219,43 @@ class GlobalConfiguration(
             return
         self._write_config()
 
+    def __custom_getattribute__(self, key: str) -> Any:
+        """Gets an attribute value for a specific key.
+
+        If a value for this attribute was specified using an environment
+        variable called `$(CONFIG_ENV_VAR_PREFIX)$(ATTRIBUTE_NAME)` and its
+        value can be parsed to the attribute type, the value from this
+        environment variable is returned instead.
+
+        Args:
+            key: The attribute name.
+
+        Returns:
+            The attribute value.
+        """
+        value = super().__getattribute__(key)
+        if key.startswith("_"):
+            return value
+
+        environment_variable_name = f"{CONFIG_ENV_VAR_PREFIX}{key.upper()}"
+        try:
+            environment_variable_value = os.environ[environment_variable_name]
+            # set the environment variable value to leverage Pydantic's type
+            # conversion and validation
+            super().__setattr__(key, environment_variable_value)
+            return_value = super().__getattribute__(key)
+            # set back the old value as we don't want to permanently store
+            # the environment variable value here
+            super().__setattr__(key, value)
+            return return_value
+        except (ValidationError, KeyError, TypeError):
+            return value
+
     if not TYPE_CHECKING:
         # When defining __getattribute__, mypy allows accessing non-existent
         # attributes without failing
         # (see https://github.com/python/mypy/issues/13319).
-        def __getattribute__(self, key: str) -> Any:
-            """Gets an attribute value for a specific key.
-
-            If a value for this attribute was specified using an environment
-            variable called `$(CONFIG_ENV_VAR_PREFIX)$(ATTRIBUTE_NAME)` and its
-            value can be parsed to the attribute type, the value from this
-            environment variable is returned instead.
-
-            Args:
-                key: The attribute name.
-
-            Returns:
-                The attribute value.
-            """
-            value = super().__getattribute__(key)
-            if key.startswith("_"):
-                return value
-
-            environment_variable_name = f"{CONFIG_ENV_VAR_PREFIX}{key.upper()}"
-            try:
-                environment_variable_value = os.environ[
-                    environment_variable_name
-                ]
-                # set the environment variable value to leverage Pydantic's type
-                # conversion and validation
-                super().__setattr__(key, environment_variable_value)
-                return_value = super().__getattribute__(key)
-                # set back the old value as we don't want to permanently store
-                # the environment variable value here
-                super().__setattr__(key, value)
-                return return_value
-            except (ValidationError, KeyError, TypeError):
-                return value
+        __getattribute__ = __custom_getattribute__
 
     def _migrate_config(self) -> None:
         """Migrates the global config to the latest version."""
