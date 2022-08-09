@@ -46,6 +46,8 @@ logger = get_logger(__name__)
 AWS_ACCESS_KEY_ID = "AWS_ACCESS_KEY_ID"
 AWS_SECRET_ACCESS_KEY = "AWS_SECRET_ACCESS_KEY"
 AWS_REGION = "AWS_REGION"
+
+# TODO: Make this configurable
 AWS_LOGS_GROUP_NAME = "/zenml/ec2/pipelines"
 
 
@@ -159,16 +161,19 @@ def get_startup_script(
         f"#!/bin/bash -xe\n"
         f"exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1\n"
         f"aws ecr get-login-password --region {region} | docker login --username AWS --password-stdin {registry_name}\n"
+
         f"mkdir -p /tmp/aws_config\n"
         f"touch /tmp/aws_config/config\n"
         f'echo "[default]">>/tmp/aws_config/config\n'
         f'echo "region = {region}">>/tmp/aws_config/config\n'
+
         f"docker run --log-driver=awslogs --net=host "
         f"--log-opt awslogs-region={region} --log-opt awslogs-group={AWS_LOGS_GROUP_NAME} "
         f"--log-opt awslogs-create-group=true "
         f"--log-opt awslogs-stream={log_stream_name} "
         f"--env AWS_REGION={region} -v /tmp/aws_config:/root/.aws "
         f"{image_name} {c_params} || true\n"
+        
         f"instanceId=$(curl http://169.254.169.254/latest/meta-data/instance-id/)\n"
         f"aws ec2 terminate-instances --instance-ids $instanceId --region {region}"
     )
@@ -206,6 +211,7 @@ def create_instance(
         region, executor_image_name, c_params, registry_name, log_stream_name
     )
 
+    # TODO: Maybe add more args here or less
     args = {
         "ImageId": instance_image,
         "InstanceType": instance_type,
@@ -244,9 +250,11 @@ class AWSVMOrchestrator(BaseOrchestrator):
     region: str = "us-east-1"
     key_name: str = None
     security_group: str = None
+    # TODO: Remove these
     min_count: int = 1
     max_count: int = 1
     """
+    # TODO: Re-write these, and add other arguments
     Base class for the orchestrator on AWS.
     
     iam_role: the name of the role created in AWS IAM, defaults to ec2_vm_role
@@ -323,6 +331,7 @@ class AWSVMOrchestrator(BaseOrchestrator):
 
         instance_image = self.instance_image or get_image_from_family()
 
+        # TODO: Get rid of this
         if self.security_group is not None:
             security_group = [self.security_group]
         else:
