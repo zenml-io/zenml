@@ -29,94 +29,95 @@ if TYPE_CHECKING:
 def register_feature_store_subcommands() -> None:
     """Registers CLI subcommands for the Feature Store."""
     feature_store_group = cast(TagGroup, cli.commands.get("feature-store"))
-    if feature_store_group:
+    if not feature_store_group:
+        return
 
-        @feature_store_group.group(
-            cls=TagGroup,
-            help="Commands for interacting with your features.",
+    @feature_store_group.group(
+        cls=TagGroup,
+        help="Commands for interacting with your features.",
+    )
+    @click.pass_context
+    def feature(ctx: click.Context) -> None:
+        """Features as obtained from a feature store.
+
+        Args:
+            ctx: The click context.
+        """
+        repo = Repository()
+        active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
+        feature_store_wrapper = active_stack.get_component_wrapper(
+            StackComponentType.FEATURE_STORE
         )
-        @click.pass_context
-        def feature(ctx: click.Context) -> None:
-            """Features as obtained from a feature store.
-
-            Args:
-                ctx: The click context.
-            """
-            repo = Repository()
-            active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
-            feature_store_wrapper = active_stack.get_component_wrapper(
-                StackComponentType.FEATURE_STORE
+        if feature_store_wrapper is None:
+            error(
+                "No active feature store found. Please create a feature store "
+                "first and add it to your stack."
             )
-            if feature_store_wrapper is None:
-                error(
-                    "No active feature store found. Please create a feature store "
-                    "first and add it to your stack."
-                )
-                return
-            ctx.obj = feature_store_wrapper.to_component()
+            return
+        ctx.obj = feature_store_wrapper.to_component()
 
-        @feature.command("get-data-sources")
-        @click.pass_obj
-        def get_data_sources(feature_store: "BaseFeatureStore") -> None:
-            """Get all data sources from the feature store.
+    @feature.command("get-data-sources")
+    @click.pass_obj
+    def get_data_sources(feature_store: "BaseFeatureStore") -> None:
+        """Get all data sources from the feature store.
 
-            Args:
-                feature_store: The feature store.
-            """
-            data_sources = feature_store.get_data_sources()
-            declare(f"Data sources: {data_sources}")
+        Args:
+            feature_store: The feature store.
+        """
+        data_sources = feature_store.get_data_sources()
+        declare(f"Data sources: {data_sources}")
 
-        @feature.command("get-entities")
-        @click.pass_obj
-        def get_entities(feature_store: "BaseFeatureStore") -> None:
-            """Get all entities from the feature store.
+    @feature.command("get-entities")
+    @click.pass_obj
+    def get_entities(feature_store: "BaseFeatureStore") -> None:
+        """Get all entities from the feature store.
 
-            Args:
-                feature_store: The feature store.
-            """
-            entities = feature_store.get_entities()
-            declare(f"Entities: {entities}")
+        Args:
+            feature_store: The feature store.
+        """
+        entities = feature_store.get_entities()
+        declare(f"Entities: {entities}")
 
-        @feature.command("get-feature-services")
-        @click.pass_obj
-        def get_feature_services(feature_store: "BaseFeatureStore") -> None:
-            """Get all feature services from the feature store.
+    @feature.command("get-feature-services")
+    @click.pass_obj
+    def get_feature_services(feature_store: "BaseFeatureStore") -> None:
+        """Get all feature services from the feature store.
 
-            Args:
-                feature_store: The feature store.
-            """
-            feature_services = feature_store.get_feature_services()
-            declare(f"Feature services: {feature_services}")
+        Args:
+            feature_store: The feature store.
+        """
+        feature_services = feature_store.get_feature_services()
+        declare(f"Feature services: {feature_services}")
 
-        @feature.command("get-feature-views")
-        @click.pass_obj
-        def get_feature_views(feature_store: "BaseFeatureStore") -> None:
-            """Get all feature views from the feature store.
+    @feature.command("get-feature-views")
+    @click.pass_obj
+    def get_feature_views(feature_store: "BaseFeatureStore") -> None:
+        """Get all feature views from the feature store.
 
-            Args:
-                feature_store: The feature store.
-            """
-            feature_views = feature_store.get_feature_views()
-            declare(f"Feature views: {feature_views}")
+        Args:
+            feature_store: The feature store.
+        """
+        feature_views = feature_store.get_feature_views()
+        declare(f"Feature views: {feature_views}")
 
-        @feature.command("get-project")
-        @click.pass_obj
-        def get_project(feature_store: "BaseFeatureStore") -> None:
-            """Get the current project name from the feature store.
+    @feature.command("get-project")
+    @click.pass_obj
+    def get_project(feature_store: "BaseFeatureStore") -> None:
+        """Get the current project name from the feature store.
 
-            Args:
-                feature_store: The feature store.
-            """
-            project = feature_store.get_project()
-            declare(f"Project name: {project}")
+        Args:
+            feature_store: The feature store.
+        """
+        project = feature_store.get_project()
+        declare(f"Project name: {project}")
 
-        @feature.command("get-feast-version")
-        @click.pass_obj
-        def get_feast_version(feature_store: "BaseFeatureStore") -> None:
-            """Get the current Feast version being used.
+    @feature.command("get-feast-version")
+    @click.pass_obj
+    def get_feast_version(feature_store: "BaseFeatureStore") -> None:
+        """Get the current Feast version being used.
 
-            Args:
-                feature_store: The feature store.
-            """
-            version = feature_store.get_feast_version()
-            declare(f"Feast version: {version}")
+        Args:
+            feature_store: The feature store.
+        """
+        version = feature_store.get_feast_version()
+        declare(f"Feast version: {version}")
