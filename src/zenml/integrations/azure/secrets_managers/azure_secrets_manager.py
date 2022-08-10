@@ -153,7 +153,10 @@ class AzureSecretsManager(BaseSecretsManager):
                     },
                 )
 
-                logger.debug("Secret `%s` written to the Azure Key Vault.", azure_secret_name)
+                logger.debug(
+                    "Secret `%s` written to the Azure Key Vault.",
+                    azure_secret_name,
+                )
         else:
             azure_secret_name = self._get_scoped_secret_name(
                 secret.name,
