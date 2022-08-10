@@ -17,7 +17,7 @@ import os
 import tempfile
 from typing import Type
 
-import PIL
+from PIL import Image
 
 from zenml.artifacts import DataArtifact
 from zenml.io import fileio
@@ -31,24 +31,24 @@ DEFAULT_IMAGE_FILENAME = "image_file"
 
 
 class PillowImageMaterializer(BaseMaterializer):
-    """Materializer for PIL.Image.Image objects.
+    """Materializer for Image.Image objects.
 
     This materializer takes a PIL image object and returns a PIL image object.
     It handles all the source image formats supported by PIL as listed here:
     https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html.
     """
 
-    ASSOCIATED_TYPES = (PIL.Image.Image,)
+    ASSOCIATED_TYPES = (Image.Image,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
-    def handle_input(self, data_type: Type[PIL.Image.Image]) -> PIL.Image.Image:
+    def handle_input(self, data_type: Type[Image.Image]) -> Image.Image:
         """Read from artifact store.
 
         Args:
-            data_type: A PIL.Image.Image type.
+            data_type: An Image.Image type.
 
         Returns:
-            A PIL.Image.Image object.
+            An Image.Image object.
         """
         super().handle_input(data_type)
         files = io_utils.find_files(
@@ -61,14 +61,14 @@ class PillowImageMaterializer(BaseMaterializer):
         with tempfile.NamedTemporaryFile(suffix=file_extension) as f:
             # copy from artifact store to temporary file
             io_utils.copy(filepath, f.name, overwrite=True)  # type: ignore[attr-defined]
-            image = PIL.Image.open(f.name)
+            image = Image.open(f.name)
         return image
 
-    def handle_return(self, image: PIL.Image.Image) -> None:
+    def handle_return(self, image: Image.Image) -> None:
         """Write to artifact store.
 
         Args:
-            image: A PIL.Image.Image object.
+            image: An Image.Image object.
         """
         super().handle_return(image)
 
