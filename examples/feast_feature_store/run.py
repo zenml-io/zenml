@@ -17,22 +17,19 @@ from steps.getter.get_features_step import get_features
 from steps.printer.printer_step import print_historical_features
 
 from zenml.logger import get_logger
-from zenml.repository import Repository
 
 logger = get_logger(__name__)
 
 
 if __name__ == "__main__":
-    pipeline = feast_pipeline(
+    pipeline_instance = feast_pipeline(
         get_features=get_features,
         feature_printer=print_historical_features(),
     )
 
-    pipeline.run()
+    pipeline_instance.run()
 
-    repo = Repository()
-    pipeline = repo.get_pipeline("feast_pipeline")
-    last_run = pipeline.runs[-1]
-    historical_features_step = last_run.get_step(name="feature_printer")
+    last_run = pipeline_instance.get_runs()[-1]
+    historical_features_step = last_run.get_step(step="feature_printer")
     print("HISTORICAL FEATURES:")
     print(historical_features_step.output.read())

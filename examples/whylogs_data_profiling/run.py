@@ -40,8 +40,8 @@ def visualize_statistics(
             profiles are required.
     """
     repo = Repository()
-    pipe = repo.get_pipeline(pipeline_name="data_profiling_pipeline")
-    whylogs_step = pipe.runs[-1].get_step(name=step_name)
+    pipe = repo.get_pipeline(pipeline="data_profiling_pipeline")
+    whylogs_step = pipe.runs[-1].get_step(step=step_name)
     whylogs_reference_step = None
     if reference_step_name:
         whylogs_reference_step = pipe.runs[-1].get_step(
@@ -56,14 +56,14 @@ def visualize_statistics(
 
 if __name__ == "__main__":
 
-    p = data_profiling_pipeline(
+    pipeline_instance = data_profiling_pipeline(
         data_loader=data_loader(),
         data_splitter=data_splitter(),
         train_data_profiler=train_data_profiler,
         test_data_profiler=test_data_profiler,
     )
 
-    p.run()
+    pipeline_instance.run()
 
     visualize_statistics("data_loader")
     visualize_statistics("train_data_profiler", "test_data_profiler")

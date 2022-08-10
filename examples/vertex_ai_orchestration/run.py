@@ -17,11 +17,11 @@ from steps import get_first_num, get_random_int, subtract_numbers
 
 if __name__ == "__main__":
     # Initialize a new pipeline run
-    p = vertex_example_pipeline(
+    pipeline_instance = vertex_example_pipeline(
         first_step=get_first_num(),
         second_step=get_random_int(),
         third_step=subtract_numbers(),
     )
 
     # Run the new pipeline
-    p.run()
+    pipeline_instance.run()

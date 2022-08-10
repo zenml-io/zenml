@@ -87,9 +87,9 @@ class ZenStackComponent(SQLModel, table=True):
     """SQL Model for stack components."""
 
     id: UUID = Field(primary_key=True)
-    component_type: StackComponentType
+    type: StackComponentType
     name: str
-    component_flavor: str
+    flavor: str
     configuration: bytes  # e.g. base64 encoded json string
 
 
@@ -109,11 +109,8 @@ class ZenStackDefinition(SQLModel, table=True):
     """
 
     stack_name: str = Field(primary_key=True, foreign_key="zenstack.name")
-    component_type: StackComponentType = Field(
-        primary_key=True, foreign_key="zenstackcomponent.component_type"
-    )
-    component_name: str = Field(
-        primary_key=True, foreign_key="zenstackcomponent.name"
+    component_id: UUID = Field(
+        primary_key=True, foreign_key="zenstackcomponent.id"
     )
 
 
@@ -187,13 +184,12 @@ class PipelineRunTable(SQLModel, table=True):
     runtime_configuration: str
 
     user_id: UUID = Field(foreign_key="usertable.id")
-    project_name: Optional[str] = Field(
-        default=None, foreign_key="projecttable.name"
-    )
+    project_name: Optional[str] = Field(default=None)
 
     @classmethod
     def from_pipeline_run_wrapper(
-        cls, wrapper: PipelineRunWrapper
+        cls,
+        wrapper: PipelineRunWrapper,
     ) -> "PipelineRunTable":
         """Creates a PipelineRunTable from a PipelineRunWrapper.
 
@@ -406,17 +402,11 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             definitions_and_components = session.exec(
                 select(ZenStackDefinition, ZenStackComponent)
-                .where(
-                    ZenStackDefinition.component_type
-                    == ZenStackComponent.component_type
-                )
-                .where(
-                    ZenStackDefinition.component_name == ZenStackComponent.name
-                )
+                .where(ZenStackDefinition.component_id == ZenStackComponent.id)
                 .where(ZenStackDefinition.stack_name == name)
             )
             params = {
-                component.component_type: component.name
+                component.type: component.name
                 for _, component in definitions_and_components
             }
         return {StackComponentType(typ): name for typ, name in params.items()}
@@ -447,7 +437,7 @@ class SqlZenStore(BaseZenStore):
             existing_component = session.exec(
                 select(ZenStackComponent)
                 .where(ZenStackComponent.name == component.name)
-                .where(ZenStackComponent.component_type == component.type)
+                .where(ZenStackComponent.type == component.type)
             ).first()
             if existing_component is not None:
                 raise StackComponentExistsError(
@@ -457,9 +447,9 @@ class SqlZenStore(BaseZenStore):
                 )
             new_component = ZenStackComponent(
                 id=component.uuid,
-                component_type=component.type,
+                type=component.type,
                 name=component.name,
-                component_flavor=component.flavor,
+                flavor=component.flavor,
                 configuration=component.config,
             )
             session.add(new_component)
@@ -489,7 +479,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             updated_component = session.exec(
                 select(ZenStackComponent)
-                .where(ZenStackComponent.component_type == component_type)
+                .where(ZenStackComponent.type == component_type)
                 .where(ZenStackComponent.name == name)
             ).first()
 
@@ -502,7 +492,7 @@ class SqlZenStore(BaseZenStore):
 
             new_name_component = session.exec(
                 select(ZenStackComponent)
-                .where(ZenStackComponent.component_type == component_type)
+                .where(ZenStackComponent.type == component_type)
                 .where(ZenStackComponent.name == component.name)
             ).first()
             if (name != component.name) and new_name_component is not None:
@@ -516,16 +506,6 @@ class SqlZenStore(BaseZenStore):
 
             # handle any potential renamed component
             updated_component.name = component.name
-
-            # rename components inside stacks
-            updated_stack_definitions = session.exec(
-                select(ZenStackDefinition)
-                .where(ZenStackDefinition.component_type == component_type)
-                .where(ZenStackDefinition.component_name == name)
-            ).all()
-            for stack_definition in updated_stack_definitions:
-                stack_definition.component_name = component.name
-                session.add(stack_definition)
 
             session.add(updated_component)
             session.commit()
@@ -574,6 +554,10 @@ class SqlZenStore(BaseZenStore):
         Args:
             name: The name to save the stack as.
             stack_configuration: Dict[StackComponentType, str] to persist.
+
+        Raises:
+            KeyError: If a stack components in the stack configuration could not
+                be found.
         """
         with Session(self.engine) as session:
             stack = session.exec(
@@ -592,25 +576,24 @@ class SqlZenStore(BaseZenStore):
                     session.delete(result)
 
             for ctype, cname in stack_configuration.items():
-                statement = (
-                    select(ZenStackDefinition)
-                    .where(ZenStackDefinition.stack_name == name)
-                    .where(ZenStackDefinition.component_type == ctype)
-                )
-                results = session.exec(statement)
-                component = results.one_or_none()
-                if component is None:
-                    session.add(
-                        ZenStackDefinition(
-                            stack_name=name,
-                            component_type=ctype,
-                            component_name=cname,
-                        )
+                try:
+                    component = session.exec(
+                        select(ZenStackComponent)
+                        .where(ZenStackComponent.type == ctype)
+                        .where(ZenStackComponent.name == cname)
+                    ).one()
+                except NoResultFound:
+                    raise KeyError(
+                        "Unable to find a stack component (type: "
+                        f"{ctype.value}) with name '{cname}': No stack "
+                        "component exists with this name."
                     )
-                else:
-                    component.component_name = cname
-                    component.component_type = ctype
-                    session.add(component)
+                session.add(
+                    ZenStackDefinition(
+                        stack_name=name,
+                        component_id=component.id,
+                    )
+                )
             session.commit()
 
     def _get_component_flavor_and_config(
@@ -632,7 +615,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             component = session.exec(
                 select(ZenStackComponent)
-                .where(ZenStackComponent.component_type == component_type)
+                .where(ZenStackComponent.type == component_type)
                 .where(ZenStackComponent.name == name)
             ).one_or_none()
             if component is None:
@@ -640,7 +623,7 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to find stack component (type: {component_type}) "
                     f"with name '{name}'."
                 )
-        return component.component_flavor, component.configuration
+        return component.flavor, component.configuration
 
     def _get_stack_component_names(
         self, component_type: StackComponentType
@@ -655,7 +638,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             statement = select(ZenStackComponent).where(
-                ZenStackComponent.component_type == component_type
+                ZenStackComponent.type == component_type
             )
             return [component.name for component in session.exec(statement)]
 
@@ -674,7 +657,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             component = session.exec(
                 select(ZenStackComponent)
-                .where(ZenStackComponent.component_type == component_type)
+                .where(ZenStackComponent.type == component_type)
                 .where(ZenStackComponent.name == name)
             ).first()
             if component is not None:

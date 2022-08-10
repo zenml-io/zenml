@@ -8,6 +8,8 @@ steps:
     source:
       file: steps/trainers
       name: trainer
+    parameters:
+      enable_cache: False
   evaluator:
     source:
       file: steps/evaluators

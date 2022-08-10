@@ -12,9 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the GCP Secrets Manager."""
+import json
+import re
+from typing import Any, ClassVar, Dict, List, Optional, Tuple
 
-from typing import Any, ClassVar, Dict, List
-
+from google.api_core import exceptions as google_exceptions
 from google.cloud import secretmanager
 
 from zenml.exceptions import SecretExistsError
@@ -22,26 +24,18 @@ from zenml.integrations.gcp import GCP_SECRETS_MANAGER_FLAVOR
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
-from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
+from zenml.secrets_managers.base_secrets_manager import (
+    ZENML_SECRET_NAME_LABEL,
+    BaseSecretsManager,
+    SecretsManagerScope,
+)
+from zenml.secrets_managers.utils import secret_from_dict, secret_to_dict
 
 logger = get_logger(__name__)
 
 ZENML_SCHEMA_NAME = "zenml-schema-name"
 ZENML_GROUP_KEY = "zenml-group-key"
-
-
-def prepend_group_name_to_keys(secret: BaseSecretSchema) -> Dict[str, str]:
-    """Adds the secret group name to the keys of each secret key-value pair.
-
-    This allows using the same key across multiple secrets.
-
-    Args:
-        secret: The ZenML Secret schema
-
-    Returns:
-        A dictionary with the keys prepended with the group name
-    """
-    return {f"{secret.name}_{k}": v for k, v in secret.content.items()}
+ZENML_GCP_SECRET_SCOPE_PATH_SEPARATOR = "-"
 
 
 def remove_group_name_from_key(combined_key_name: str, group_name: str) -> str:
@@ -80,12 +74,65 @@ class GCPSecretsManager(BaseSecretsManager):
 
     # Class configuration
     FLAVOR: ClassVar[str] = GCP_SECRETS_MANAGER_FLAVOR
+    SUPPORTS_SCOPING: ClassVar[bool] = True
     CLIENT: ClassVar[Any] = None
 
     @classmethod
     def _ensure_client_connected(cls) -> None:
         if cls.CLIENT is None:
             cls.CLIENT = secretmanager.SecretManagerServiceClient()
+
+    @classmethod
+    def _validate_scope(
+        cls,
+        scope: SecretsManagerScope,
+        namespace: Optional[str],
+    ) -> None:
+        """Validate the scope and namespace value.
+
+        Args:
+            scope: Scope value.
+            namespace: Optional namespace value.
+        """
+        if namespace:
+            cls.validate_secret_name_or_namespace(namespace)
+
+    @classmethod
+    def validate_secret_name_or_namespace(
+        cls,
+        name: str,
+    ) -> None:
+        """Validate a secret name or namespace.
+
+        A Google secret ID is a string with a maximum length of 255 characters
+        and can contain uppercase and lowercase letters, numerals, and the
+        hyphen (-) and underscore (_) characters. For scoped secrets, we have to
+        limit the size of the name and namespace even further to allow space for
+        both in the Google secret ID.
+
+        Given that we also save secret names and namespaces as labels, we are
+        also limited by the limitation that Google imposes on label values: max
+        63 characters and must and must only contain lowercase letters, numerals
+        and the hyphen (-) and underscore (_) characters
+
+        Args:
+            name: the secret name or namespace
+
+        Raises:
+            ValueError: if the secret name or namespace is invalid
+        """
+        if not re.fullmatch(r"[a-z0-9_\-]+", name):
+            raise ValueError(
+                f"Invalid secret name or namespace '{name}'. Must contain "
+                f"only lowercase alphanumeric characters and the hyphen (-) and "
+                f"underscore (_) characters."
+            )
+
+        if name and len(name) > 63:
+            raise ValueError(
+                f"Invalid secret name or namespace '{name}'. The length is "
+                f"limited to maximum 63 characters."
+            )
 
     @property
     def parent_name(self) -> str:
@@ -96,6 +143,129 @@ class GCPSecretsManager(BaseSecretsManager):
         """
         return f"projects/{self.project_id}"
 
+    def _convert_secret_content(
+        self, secret: BaseSecretSchema
+    ) -> Dict[str, str]:
+        """Convert the secret content into a Google compatible representation.
+
+        This method implements two currently supported modes of adapting between
+        the naming schemas used for ZenML secrets and Google secrets:
+
+        * for a scoped Secrets Manager, a Google secret is created for each
+        ZenML secret with a name that reflects the ZenML secret name and scope
+        and a value that contains all its key-value pairs in JSON format.
+
+        * for an unscoped (i.e. legacy) Secrets Manager, this method creates
+        multiple Google secret entries for a single ZenML secret by adding the
+        secret name to the key name of each secret key-value pair. This allows
+        using the same key across multiple secrets. This is only kept for
+        backwards compatibility and will be removed some time in the future.
+
+        Args:
+            secret: The ZenML secret
+
+        Returns:
+            A dictionary with the Google secret name as key and the secret
+            contents as value.
+        """
+        if self.scope == SecretsManagerScope.NONE:
+            # legacy per-key secret mapping
+            return {f"{secret.name}_{k}": v for k, v in secret.content.items()}
+
+        return {
+            self._get_scoped_secret_name(
+                secret.name, separator=ZENML_GCP_SECRET_SCOPE_PATH_SEPARATOR
+            ): json.dumps(secret_to_dict(secret)),
+        }
+
+    def _get_secret_labels(
+        self, secret: BaseSecretSchema
+    ) -> List[Tuple[str, str]]:
+        """Return a list of Google secret label values for a given secret.
+
+        Args:
+            secret: the secret object
+
+        Returns:
+            A list of Google secret label values
+        """
+        if self.scope == SecretsManagerScope.NONE:
+            # legacy per-key secret labels
+            return [
+                (ZENML_GROUP_KEY, secret.name),
+                (ZENML_SCHEMA_NAME, secret.TYPE),
+            ]
+
+        metadata = self._get_secret_metadata(secret)
+        return list(metadata.items())
+
+    def _get_secret_scope_filters(
+        self,
+        secret_name: Optional[str] = None,
+    ) -> str:
+        """Return a Google filter expression for the entire scope or just a scoped secret.
+
+        These filters can be used when querying the Google Secrets Manager
+        for all secrets or for a single secret available in the configured
+        scope (see https://cloud.google.com/secret-manager/docs/filtering).
+
+        Args:
+            secret_name: Optional secret name to include in the scope metadata.
+
+        Returns:
+            Google filter expression uniquely identifying all secrets
+            or a named secret within the configured scope.
+        """
+        if self.scope == SecretsManagerScope.NONE:
+            # legacy per-key secret label filters
+            if secret_name:
+                return f"labels.{ZENML_GROUP_KEY}={secret_name}"
+            else:
+                return f"labels.{ZENML_GROUP_KEY}:*"
+
+        metadata = self._get_secret_scope_metadata(secret_name)
+        filters = [f"labels.{l}={v}" for (l, v) in metadata.items()]
+        if secret_name:
+            filters.append(f"name:{secret_name}")
+
+        return " AND ".join(filters)
+
+    def _list_secrets(self, secret_name: Optional[str] = None) -> List[str]:
+        """List all secrets matching a name.
+
+        This method lists all the secrets in the current scope without loading
+        their contents. An optional secret name can be supplied to filter out
+        all but a single secret identified by name.
+
+        Args:
+            secret_name: Optional secret name to filter for.
+
+        Returns:
+            A list of secret names in the current scope and the optional
+            secret name.
+        """
+        self._ensure_client_connected()
+
+        set_of_secrets = set()
+
+        # List all secrets.
+        for secret in self.CLIENT.list_secrets(
+            request={
+                "parent": self.parent_name,
+                "filter": self._get_secret_scope_filters(secret_name),
+            }
+        ):
+            if self.scope == SecretsManagerScope.NONE:
+                name = secret.labels[ZENML_GROUP_KEY]
+            else:
+                name = secret.labels[ZENML_SECRET_NAME_LABEL]
+
+            # filter by secret name, if one was given
+            if name and (not secret_name or name == secret_name):
+                set_of_secrets.add(name)
+
+        return list(set_of_secrets)
+
     def register_secret(self, secret: BaseSecretSchema) -> None:
         """Registers a new secret.
 
@@ -105,14 +275,15 @@ class GCPSecretsManager(BaseSecretsManager):
         Raises:
             SecretExistsError: if the secret already exists
         """
+        self.validate_secret_name_or_namespace(secret.name)
         self._ensure_client_connected()
 
-        if secret.name in self.get_all_secret_keys():
+        if self._list_secrets(secret.name):
             raise SecretExistsError(
-                f"A Secret with the name {secret.name} already exists."
+                f"A Secret with the name {secret.name} already exists"
             )
 
-        adjusted_content = prepend_group_name_to_keys(secret)
+        adjusted_content = self._convert_secret_content(secret)
         for k, v in adjusted_content.items():
             # Create the secret, this only creates an empty secret with the
             #  supplied name.
@@ -122,10 +293,7 @@ class GCPSecretsManager(BaseSecretsManager):
                     "secret_id": k,
                     "secret": {
                         "replication": {"automatic": {}},
-                        "labels": [
-                            (ZENML_GROUP_KEY, secret.name),
-                            (ZENML_SCHEMA_NAME, secret.TYPE),
-                        ],
+                        "labels": self._get_secret_labels(secret),
                     },
                 }
             )
@@ -151,23 +319,28 @@ class GCPSecretsManager(BaseSecretsManager):
             The secret.
 
         Raises:
-            RuntimeError: if the secret does not exist
+            KeyError: if the secret does not exist
         """
+        self.validate_secret_name_or_namespace(secret_name)
         self._ensure_client_connected()
 
-        secret_contents = {}
-        zenml_schema_name = ""
+        zenml_secret: Optional[BaseSecretSchema] = None
 
-        # List all secrets.
-        for secret in self.CLIENT.list_secrets(
-            request={"parent": self.parent_name}
-        ):
-            if (
-                ZENML_GROUP_KEY in secret.labels
-                and secret_name == secret.labels[ZENML_GROUP_KEY]
+        if self.scope == SecretsManagerScope.NONE:
+            # Legacy secrets are mapped to multiple Google secrets, one for
+            # each secret key
+
+            secret_contents = {}
+            zenml_schema_name = ""
+
+            # List all secrets.
+            for google_secret in self.CLIENT.list_secrets(
+                request={
+                    "parent": self.parent_name,
+                    "filter": self._get_secret_scope_filters(secret_name),
+                }
             ):
-
-                secret_version_name = secret.name + "/versions/latest"
+                secret_version_name = google_secret.name + "/versions/latest"
 
                 response = self.CLIENT.access_secret_version(
                     request={"name": secret_version_name}
@@ -176,22 +349,69 @@ class GCPSecretsManager(BaseSecretsManager):
                 secret_value = response.payload.data.decode("UTF-8")
 
                 secret_key = remove_group_name_from_key(
-                    secret.name.split("/")[-1], secret_name
+                    google_secret.name.split("/")[-1], secret_name
                 )
 
                 secret_contents[secret_key] = secret_value
 
-                zenml_schema_name = secret.labels[ZENML_SCHEMA_NAME]
+                zenml_schema_name = google_secret.labels[ZENML_SCHEMA_NAME]
 
-        if not secret_contents:
-            raise RuntimeError(f"No secrets found within the {secret_name}")
+            if not secret_contents:
+                raise KeyError(
+                    f"Can't find the specified secret '{secret_name}'"
+                )
 
-        secret_contents["name"] = secret_name
+            secret_contents["name"] = secret_name
 
-        secret_schema = SecretSchemaClassRegistry.get_class(
-            secret_schema=zenml_schema_name
-        )
-        return secret_schema(**secret_contents)
+            secret_schema = SecretSchemaClassRegistry.get_class(
+                secret_schema=zenml_schema_name
+            )
+            zenml_secret = secret_schema(**secret_contents)
+
+        else:
+            # Scoped secrets are mapped 1-to-1 with Google secrets
+
+            google_secret_name = self.CLIENT.secret_path(
+                self.project_id,
+                self._get_scoped_secret_name(
+                    secret_name, separator=ZENML_GCP_SECRET_SCOPE_PATH_SEPARATOR
+                ),
+            )
+
+            try:
+                # fetch the latest secret version
+                google_secret = self.CLIENT.get_secret(name=google_secret_name)
+            except google_exceptions.NotFound:
+                raise KeyError(
+                    f"Can't find the specified secret '{secret_name}'"
+                )
+
+            # make sure the secret has the correct scope labels to filter out
+            # unscoped secrets with similar names
+            scope_labels = self._get_secret_scope_metadata(secret_name)
+            # all scope labels need to be included in the google secret labels,
+            # otherwise the secret does not belong to the current scope
+            if not scope_labels.items() <= google_secret.labels.items():
+                raise KeyError(
+                    f"Can't find the specified secret '{secret_name}'"
+                )
+
+            try:
+                # fetch the latest secret version
+                response = self.CLIENT.access_secret_version(
+                    name=f"{google_secret_name}/versions/latest"
+                )
+            except google_exceptions.NotFound:
+                raise KeyError(
+                    f"Can't find the specified secret '{secret_name}'"
+                )
+
+            secret_value = response.payload.data.decode("UTF-8")
+            zenml_secret = secret_from_dict(
+                json.loads(secret_value), secret_name=secret_name
+            )
+
+        return zenml_secret
 
     def get_all_secret_keys(self) -> List[str]:
         """Get all secret keys.
@@ -199,63 +419,59 @@ class GCPSecretsManager(BaseSecretsManager):
         Returns:
             A list of all secret keys
         """
-        self._ensure_client_connected()
-
-        set_of_secrets = set()
-
-        # List all secrets.
-        for secret in self.CLIENT.list_secrets(
-            request={"parent": self.parent_name}
-        ):
-            if ZENML_GROUP_KEY in secret.labels:
-                group_key = secret.labels[ZENML_GROUP_KEY]
-                set_of_secrets.add(group_key)
-
-        return list(set_of_secrets)
+        return self._list_secrets()
 
     def update_secret(self, secret: BaseSecretSchema) -> None:
         """Update an existing secret by creating new versions of the existing secrets.
 
         Args:
             secret: the secret to update
+
+        Raises:
+            KeyError: if the secret does not exist
         """
+        self.validate_secret_name_or_namespace(secret.name)
         self._ensure_client_connected()
 
-        adjusted_content = prepend_group_name_to_keys(secret)
+        if not self._list_secrets(secret.name):
+            raise KeyError(f"Can't find the specified secret '{secret.name}'")
+
+        adjusted_content = self._convert_secret_content(secret)
 
         for k, v in adjusted_content.items():
             # Create the secret, this only creates an empty secret with the
             #  supplied name.
-            version_parent = self.CLIENT.secret_path(self.project_id, k)
+            google_secret_name = self.CLIENT.secret_path(self.project_id, k)
             payload = {"data": str(v).encode()}
 
             self.CLIENT.add_secret_version(
-                request={"parent": version_parent, "payload": payload}
+                request={"parent": google_secret_name, "payload": payload}
             )
 
     def delete_secret(self, secret_name: str) -> None:
         """Delete an existing secret by name.
 
-        In GCP a secret is a single k-v
-        pair. Within ZenML a secret is a collection of k-v pairs. As such,
-        deleting a secret will iterate through all secrets and delete the ones
-        with the secret_name as label.
-
         Args:
             secret_name: the name of the secret to delete
+
+        Raises:
+            KeyError: if the secret no longer exists
         """
+        self.validate_secret_name_or_namespace(secret_name)
         self._ensure_client_connected()
 
+        if not self._list_secrets(secret_name):
+            raise KeyError(f"Can't find the specified secret '{secret_name}'")
+
         # Go through all gcp secrets and delete the ones with the secret_name
-        #  as label.
+        # as label.
         for secret in self.CLIENT.list_secrets(
-            request={"parent": self.parent_name}
+            request={
+                "parent": self.parent_name,
+                "filter": self._get_secret_scope_filters(secret_name),
+            }
         ):
-            if (
-                ZENML_GROUP_KEY in secret.labels
-                and secret_name == secret.labels[ZENML_GROUP_KEY]
-            ):
-                self.CLIENT.delete_secret(request={"name": secret.name})
+            self.CLIENT.delete_secret(request={"name": secret.name})
 
     def delete_all_secrets(self) -> None:
         """Delete all existing secrets."""
@@ -263,15 +479,10 @@ class GCPSecretsManager(BaseSecretsManager):
 
         # List all secrets.
         for secret in self.CLIENT.list_secrets(
-            request={"parent": self.parent_name}
+            request={
+                "parent": self.parent_name,
+                "filter": self._get_secret_scope_filters(),
+            }
         ):
-            if (
-                ZENML_GROUP_KEY in secret.labels
-                or ZENML_SCHEMA_NAME in secret.labels
-            ):
-                logger.info(
-                    "Deleted key-value pair {`%s`, `***`} from secret " "`%s`",
-                    secret.name.split("/")[-1],
-                    secret.labels[ZENML_GROUP_KEY],
-                )
-                self.CLIENT.delete_secret(request={"name": secret.name})
+            logger.info(f"Deleting Google secret {secret.name}")
+            self.CLIENT.delete_secret(request={"name": secret.name})

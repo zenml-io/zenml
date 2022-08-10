@@ -58,7 +58,7 @@ def load_last_service_from_step(
         raise KeyError(f"No pipeline with name `{pipeline_name}` was found")
 
     for run in reversed(pipeline.runs):
-        step = run.get_step(name=step_name)
+        step = run.get_step(step=step_name)
         for artifact_view in step.outputs.values():
             # filter out anything but service artifacts
             if artifact_view.type == "ServiceArtifact":
