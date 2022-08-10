@@ -88,7 +88,7 @@ custom secret name, making sure to replace the two parts in `<>` with whatever
 you choose:
 
 ```shell
-zenml secret register <LABEL_STUDIO_SECRET_NAME> --api_key="<your_label_studio_api_key>"
+zenml secrets-manager secret register <LABEL_STUDIO_SECRET_NAME> --api_key="<your_label_studio_api_key>"
 ```
 
 Then register your annotator with ZenML:

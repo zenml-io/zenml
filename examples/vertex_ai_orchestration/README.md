@@ -111,7 +111,7 @@ zenml stack register gcp_vertex_stack -m gcp_metadata_store -a gcp_artifact_stor
 # With the stack up and running, we can now supply the credentials for the 
 #  mysql metadata store. The SSL certificates have to be generated and downloaded
 #  from within the CloudSQL UI
-zenml secret register mysql_secret --schema=mysql --user=<DB_USER> --password=<PWD> \
+zenml secrets-manager secret register mysql_secret --schema=mysql --user=<DB_USER> --password=<PWD> \
   --ssl_ca=@</PATH/TO/DOWNLOADED/SERVER-CERT> \
   --ssl_cert=@</PATH/TO/DOWNLOADED/CLIENT-CERT> \
   --ssl_key=@</PATH/TO/DOWNLOADED/CLIENT-KEY>
