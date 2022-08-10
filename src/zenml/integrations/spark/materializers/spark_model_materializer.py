@@ -15,7 +15,7 @@
 import os
 from typing import Any, Type, Union
 
-from pyspark.ml import Estimator, Transformer
+from pyspark.ml import Estimator, Transformer, Model
 
 from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -26,12 +26,12 @@ DEFAULT_FILEPATH = "model"
 class SparkModelMaterializer(BaseMaterializer):
     """Materializer to read/write NeuralProphet models."""
 
-    ASSOCIATED_TYPES = (Transformer, Estimator)
+    ASSOCIATED_TYPES = (Transformer, Estimator, Model)
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
     def handle_input(
         self, model_type: Type[Any]
-    ) -> Union[Transformer, Estimator]:
+    ) -> Union[Transformer, Estimator, Model]:
         """Reads and returns a Spark ML model.
 
         Returns:
@@ -41,7 +41,10 @@ class SparkModelMaterializer(BaseMaterializer):
         path = os.path.join(self.artifact.uri, DEFAULT_FILEPATH)
         return model_type.load(path)  # noqa
 
-    def handle_return(self, model: Union[Transformer, Estimator]) -> None:
+    def handle_return(
+        self,
+        model: Union[Transformer, Estimator, Model]
+    ) -> None:
         """Writes a spark model.
 
         Args:
