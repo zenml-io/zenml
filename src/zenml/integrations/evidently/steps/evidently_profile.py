@@ -165,7 +165,7 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
             raise TypeError(
                 f"Expects a List of columns but got type {type(config.ignored_cols)}"
             )
-        elif len(config.ignored_cols) == 0:
+        elif not config.ignored_cols:
             raise ValueError(
                 f"Expects None or list of columns in strings, but got {config.ignored_cols}"
             )
