@@ -74,7 +74,7 @@ zenml secrets-manager register secrets_manager \
 zenml stack register custom_stack -dv whylogs_data_validator -x secrets_manager ... --set
 
 # Create the secret referenced in the data validator
-zenml secret register whylabs_secret -s whylogs \
+zenml secrets-manager secret register whylabs_secret -s whylogs \
     --whylabs_default_org_id=<YOUR-WHYLOGS-ORGANIZATION-ID> \
     --whylabs_api_key=<YOUR-WHYLOGS-API-KEY>
 ```

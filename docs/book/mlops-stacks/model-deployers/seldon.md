@@ -97,7 +97,7 @@ you can use `seldon_s3` for AWS S3 or `seldon_gs` for GCS and `seldon_az` for Az
 The following is an example of registering an S3 secret with the Seldon Core model deployer:
 
 ```shell
-$ zenml secret register -s seldon_s3 s3-store \
+$ zenml secrets-manager secret register -s seldon_s3 s3-store \
     --rclone_config_s3_env_auth=False \
     --rclone_config_s3_access_key_id='ASAK2NSJVO4HDQC7Z25F' \ --rclone_config_s3_secret_access_key='AhkFSfhjj23fSDFfjklsdfj34hkls32SDfscsaf+' \
     --rclone_config_s3_session_token=@./aws_session_token.txt \
@@ -117,7 +117,7 @@ The following secret will be registered.
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
 INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
 
-$ zenml secret get s3-store
+$ zenml secrets-manager secret get s3-store
 INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             SECRET_KEY             │ SECRET_VALUE                           ┃

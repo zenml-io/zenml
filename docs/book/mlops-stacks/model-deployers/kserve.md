@@ -111,7 +111,7 @@ The recommended way to pass the credentails to the KServe model depployer is to 
 The following is an example of registering an GS secret with the KServe model deployer:
 
 ```bash
-$ zenml secret register -s kserve_gs kserve_secret \
+$ zenml secrets-manager secret register -s kserve_gs kserve_secret \
     --namespace="zenml-workloads" \
     --credentials="@~/sa-deployment-temp.json" \
 
@@ -125,7 +125,7 @@ $ zenml secret register -s kserve_gs kserve_secret \
 ```
 
 ```bash
-$ zenml secret get kserve_secret
+$ zenml secrets-manager secret get kserve_secret
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃    SECRET_KEY    │ SECRET_VALUE              ┃
 ┠──────────────────┼───────────────────────────┨

@@ -238,10 +238,10 @@ to perform an online prediction. To run the inference pipeline:
 python run.py --config predict
 ```
 
-The `zenml served-models list` CLI command can be run to list the active model servers:
+The `zenml model-deployer models list` CLI command can be run to list the active model servers:
 
 ```
-$ zenml served-models list
+$ zenml model-deployer models list
 ┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━┓
 ┃ STATUS │ UUID                                 │ PIPELINE_NAME                  │ PIPELINE_STEP_NAME         │ MODEL_NAME ┃
 ┠────────┼──────────────────────────────────────┼────────────────────────────────┼────────────────────────────┼────────────┨
@@ -250,10 +250,10 @@ $ zenml served-models list
 ```
 
 To get more information about a specific model server, such as the prediction URL,
-the `zenml served-models describe <uuid>` CLI command can be run:
+the `zenml model-deployer models describe <uuid>` CLI command can be run:
 
 ```
-$ zenml served-models describe 87980237-843f-414f-bf06-931f4da69e56
+$ zenml model-deployer models describe 87980237-843f-414f-bf06-931f4da69e56
         Properties of Served Model 87980237-843f-414f-bf06-931f4da69e56        
 ┏━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ MODEL SERVICE PROPERTY │ VALUE                                              ┃
@@ -286,16 +286,16 @@ The prediction URL can sometimes be more difficult to make out in the detailed
 output, so there is a separate CLI command available to retrieve it:
 
 ```shell
-$ zenml served-models get-url 87980237-843f-414f-bf06-931f4da69e56
+$ zenml model-deployer models get-url 87980237-843f-414f-bf06-931f4da69e56
   Prediction URL of Served Model 87980237-843f-414f-bf06-931f4da69e56 is:
   http://localhost:8001/invocations
 ```
 
-Finally, a model server can be deleted with the `zenml served-models delete <uuid>`
+Finally, a model server can be deleted with the `zenml model-deployer models delete <uuid>`
 CLI command:
 
 ```shell
-$ zenml served-models delete 87980237-843f-414f-bf06-931f4da69e56
+$ zenml model-deployer models delete 87980237-843f-414f-bf06-931f4da69e56
 Model server MLFlowDeploymentService[87980237-843f-414f-bf06-931f4da69e56] 
 (type: model-serving, flavor: mlflow) was deleted.
 ```
@@ -306,7 +306,7 @@ To stop any prediction servers running in the background, use the
 `zenml model-server list` and `zenml model-server delete <uuid>` CLI commands.:
 
 ```shell
-zenml served-models delete 8cbe671b-9fce-4394-a051-68e001f92765
+zenml model-deployer models delete 8cbe671b-9fce-4394-a051-68e001f92765
 ```
 
 Then delete the remaining ZenML references.
