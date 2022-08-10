@@ -12,7 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-The Spark integration module to enable distributed processing for your pipelines
+The Spark integration module to enable distributed processing for ZenML
+pipelines.
 """
 
 from typing import List
@@ -22,7 +23,7 @@ from zenml.integrations.constants import SPARK
 from zenml.integrations.integration import Integration
 from zenml.zen_stores.models import FlavorWrapper
 
-SPARK_KUBERNETES_STEP_OPERATOR = "spark-k8s"
+SPARK_KUBERNETES_STEP_OPERATOR = "spark-kubernetes"
 
 
 class SparkIntegration(Integration):
