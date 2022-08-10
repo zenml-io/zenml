@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     from zenml.model_deployers import BaseModelDeployer
 
 
-def register_model_deployer_subcommands() -> None:
+def register_model_deployer_subcommands() -> None:  # noqa: C901
     """Registers CLI subcommands for the Model Deployer."""
     model_deployer_group = cast(TagGroup, cli.commands.get("model-deployer"))
     if not model_deployer_group:
