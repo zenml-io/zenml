@@ -14,8 +14,11 @@
 """Implementation of the Azure Secrets Manager integration."""
 
 import base64
-from typing import Any, ClassVar, List
+import json
+import re
+from typing import Any, ClassVar, List, Optional
 
+from azure.core.exceptions import ResourceNotFoundError
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 
@@ -24,13 +27,19 @@ from zenml.integrations.azure import AZURE_SECRETS_MANAGER_FLAVOR
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
-from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
+from zenml.secrets_managers.base_secrets_manager import (
+    ZENML_SECRET_NAME_LABEL,
+    BaseSecretsManager,
+    SecretsManagerScope,
+)
+from zenml.secrets_managers.utils import secret_from_dict, secret_to_dict
 
 logger = get_logger(__name__)
 
 ZENML_SCHEMA_NAME = "zenml-schema-name"
 ZENML_GROUP_KEY = "zenml-group-key"
 ZENML_KEY_NAME = "zenml-key-name"
+ZENML_AZURE_SECRET_SCOPE_PATH_SEPARATOR = "-"
 
 
 class AzureSecretsManager(BaseSecretsManager):
@@ -45,6 +54,7 @@ class AzureSecretsManager(BaseSecretsManager):
 
     # Class configuration
     FLAVOR: ClassVar[str] = AZURE_SECRETS_MANAGER_FLAVOR
+    SUPPORTS_SCOPING: ClassVar[bool] = True
     CLIENT: ClassVar[Any] = None
 
     @classmethod
@@ -55,6 +65,112 @@ class AzureSecretsManager(BaseSecretsManager):
             credential = DefaultAzureCredential()
             cls.CLIENT = SecretClient(vault_url=KVUri, credential=credential)
 
+    @classmethod
+    def _validate_scope(
+        cls,
+        scope: SecretsManagerScope,
+        namespace: Optional[str],
+    ) -> None:
+        """Validate the scope and namespace value.
+
+        Args:
+            scope: Scope value.
+            namespace: Optional namespace value.
+        """
+        if namespace:
+            cls.validate_secret_name_or_namespace(namespace, scope)
+
+    @classmethod
+    def validate_secret_name_or_namespace(
+        cls,
+        name: str,
+        scope: SecretsManagerScope,
+    ) -> None:
+        """Validate a secret name or namespace.
+
+        Azure secret names must contain only alphanumeric characters and the
+        character `-`.
+
+        Given that we also save secret names and namespaces as labels, we are
+        also limited by the 256 maximum size limitation that Azure imposes on
+        label values. An arbitrary length of 100 characters is used here for
+        the maximum size for the secret name and namespace.
+
+        Args:
+            name: the secret name or namespace
+            scope: the current scope
+
+        Raises:
+            ValueError: if the secret name or namespace is invalid
+        """
+        if scope == SecretsManagerScope.NONE:
+            # to preserve backwards compatibility, we don't validate the
+            # secret name for unscoped secrets.
+            return
+
+        if not re.fullmatch(r"[0-9a-zA-Z-]+", name):
+            raise ValueError(
+                f"Invalid secret name or namespace '{name}'. Must contain "
+                f"only alphanumeric characters and the character -."
+            )
+
+        if len(name) > 100:
+            raise ValueError(
+                f"Invalid secret name or namespace '{name}'. The length is "
+                f"limited to maximum 100 characters."
+            )
+
+    def validate_secret_name(self, name: str) -> None:
+        """Validate a secret name.
+
+        Args:
+            name: the secret name
+        """
+        self.validate_secret_name_or_namespace(name, self.scope)
+
+    def _create_or_update_secret(self, secret: BaseSecretSchema) -> None:
+        """Creates a new secret or updated an existing one.
+
+        Args:
+            secret: the secret to register or update
+        """
+        if self.scope == SecretsManagerScope.NONE:
+            # legacy, non-scoped secrets
+
+            for key, value in secret.content.items():
+                encoded_key = base64.b64encode(
+                    f"{secret.name}-{key}".encode()
+                ).hex()
+                azure_secret_name = f"zenml-{encoded_key}"
+
+                self.CLIENT.set_secret(azure_secret_name, value)
+                self.CLIENT.update_secret_properties(
+                    azure_secret_name,
+                    tags={
+                        ZENML_GROUP_KEY: secret.name,
+                        ZENML_KEY_NAME: key,
+                        ZENML_SCHEMA_NAME: secret.TYPE,
+                    },
+                )
+
+                logger.debug(
+                    "Secret `%s` written to the Azure Key Vault.",
+                    azure_secret_name,
+                )
+        else:
+            azure_secret_name = self._get_scoped_secret_name(
+                secret.name,
+                separator=ZENML_AZURE_SECRET_SCOPE_PATH_SEPARATOR,
+            )
+            self.CLIENT.set_secret(
+                azure_secret_name,
+                json.dumps(secret_to_dict(secret)),
+            )
+            self.CLIENT.update_secret_properties(
+                azure_secret_name,
+                tags=self._get_secret_metadata(secret),
+            )
+
     def register_secret(self, secret: BaseSecretSchema) -> None:
         """Registers a new secret.
 
@@ -64,6 +180,7 @@ class AzureSecretsManager(BaseSecretsManager):
         Raises:
             SecretExistsError: if the secret already exists
         """
+        self.validate_secret_name(secret.name)
         self._ensure_client_connected(self.key_vault_name)
 
         if secret.name in self.get_all_secret_keys():
@@ -71,7 +188,7 @@ class AzureSecretsManager(BaseSecretsManager):
                 f"A Secret with the name '{secret.name}' already exists."
             )
 
-        self.update_secret(secret)
+        self._create_or_update_secret(secret)
 
     def get_secret(self, secret_name: str) -> BaseSecretSchema:
         """Get a secret by its name.
@@ -83,39 +200,70 @@ class AzureSecretsManager(BaseSecretsManager):
             The secret.
 
         Raises:
-            RuntimeError: if the secret does not exist
+            KeyError: if the secret does not exist
             ValueError: if the secret is named 'name'
         """
+        self.validate_secret_name(secret_name)
         self._ensure_client_connected(self.key_vault_name)
+        zenml_secret: Optional[BaseSecretSchema] = None
 
-        secret_contents = {}
-        zenml_schema_name = ""
+        if self.scope == SecretsManagerScope.NONE:
+            # Legacy secrets are mapped to multiple Azure secrets, one for
+            # each secret key
 
-        for secret_property in self.CLIENT.list_properties_of_secrets():
-            tags = secret_property.tags
+            secret_contents = {}
+            zenml_schema_name = ""
 
-            if tags and tags.get(ZENML_GROUP_KEY) == secret_name:
-                secret_key = tags.get(ZENML_KEY_NAME)
-                if not secret_key:
-                    raise ValueError("Missing secret key tag.")
+            for secret_property in self.CLIENT.list_properties_of_secrets():
+                tags = secret_property.tags
 
-                if secret_key == "name":
-                    raise ValueError("The secret's key cannot be 'name'.")
+                if tags and tags.get(ZENML_GROUP_KEY) == secret_name:
+                    secret_key = tags.get(ZENML_KEY_NAME)
+                    if not secret_key:
+                        raise ValueError("Missing secret key tag.")
 
-                response = self.CLIENT.get_secret(secret_property.name)
-                secret_contents[secret_key] = response.value
+                    if secret_key == "name":
+                        raise ValueError("The secret's key cannot be 'name'.")
 
-                zenml_schema_name = tags.get(ZENML_SCHEMA_NAME)
+                    response = self.CLIENT.get_secret(secret_property.name)
+                    secret_contents[secret_key] = response.value
 
-        if not secret_contents:
-            raise RuntimeError(f"No secrets found within the {secret_name}")
+                    zenml_schema_name = tags.get(ZENML_SCHEMA_NAME)
 
-        secret_contents["name"] = secret_name
+            if secret_contents:
+                secret_contents["name"] = secret_name
 
-        secret_schema = SecretSchemaClassRegistry.get_class(
-            secret_schema=zenml_schema_name
-        )
-        return secret_schema(**secret_contents)
+                secret_schema = SecretSchemaClassRegistry.get_class(
+                    secret_schema=zenml_schema_name
+                )
+                zenml_secret = secret_schema(**secret_contents)
+        else:
+            # Scoped secrets are mapped 1-to-1 with Azure secrets
+
+            try:
+                response = self.CLIENT.get_secret(
+                    self._get_scoped_secret_name(
+                        secret_name,
+                        separator=ZENML_AZURE_SECRET_SCOPE_PATH_SEPARATOR,
+                    ),
+                )
+
+                scope_tags = self._get_secret_scope_metadata(secret_name)
+
+                # all scope tags need to be included in the Azure secret tags,
+                # otherwise the secret does not belong to the current scope,
+                # even if it has the same name
+                if scope_tags.items() <= response.properties.tags.items():
+                    zenml_secret = secret_from_dict(
+                        json.loads(response.value), secret_name=secret_name
+                    )
+            except ResourceNotFoundError:
+                pass
+
+        if not zenml_secret:
+            raise KeyError(f"Can't find the specified secret '{secret_name}'")
+
+        return zenml_secret
 
     def get_all_secret_keys(self) -> List[str]:
         """Get all secret keys.
@@ -129,8 +277,20 @@ class AzureSecretsManager(BaseSecretsManager):
 
         for secret_property in self.CLIENT.list_properties_of_secrets():
             tags = secret_property.tags
-            if tags and ZENML_GROUP_KEY in tags:
-                set_of_secrets.add(tags.get(ZENML_GROUP_KEY))
+            if not tags:
+                continue
+
+            if self.scope == SecretsManagerScope.NONE:
+                # legacy, non-scoped secrets
+                if ZENML_GROUP_KEY in tags:
+                    set_of_secrets.add(tags.get(ZENML_GROUP_KEY))
+                continue
+
+            scope_tags = self._get_secret_scope_metadata()
+            # all scope tags need to be included in the Azure secret tags,
+            # otherwise the secret does not belong to the current scope
+            if scope_tags.items() <= tags.items():
+                set_of_secrets.add(tags.get(ZENML_SECRET_NAME_LABEL))
 
         return list(set_of_secrets)
 
@@ -139,46 +299,53 @@ class AzureSecretsManager(BaseSecretsManager):
 
         Args:
             secret: the secret to update
+
+        Raises:
+            KeyError: if the secret does not exist
         """
+        self.validate_secret_name(secret.name)
         self._ensure_client_connected(self.key_vault_name)
 
-        for key, value in secret.content.items():
-            encoded_key = base64.b64encode(
-                f"{secret.name}-{key}".encode()
-            ).hex()
-            azure_secret_name = f"zenml-{encoded_key}"
+        if secret.name not in self.get_all_secret_keys():
+            raise KeyError(f"Can't find the specified secret '{secret.name}'")
 
-            self.CLIENT.set_secret(azure_secret_name, value)
-            self.CLIENT.update_secret_properties(
-                azure_secret_name,
-                tags={
-                    ZENML_GROUP_KEY: secret.name,
-                    ZENML_KEY_NAME: key,
-                    ZENML_SCHEMA_NAME: secret.TYPE,
-                },
-            )
-
-            logger.debug("Wrote secret: %s", azure_secret_name)
+        self._create_or_update_secret(secret)
 
     def delete_secret(self, secret_name: str) -> None:
         """Delete an existing secret. by name.
 
-        In Azure a secret is a single k-v pair. Within ZenML a secret is a
-        collection of k-v pairs. As such, deleting a secret will iterate through
-        all secrets and delete the ones with the secret_name as label.
-
         Args:
             secret_name: the name of the secret to delete
+
+        Raises:
+            KeyError: if the secret no longer exists
         """
+        self.validate_secret_name(secret_name)
         self._ensure_client_connected(self.key_vault_name)
 
-        # Go through all Azure secrets and delete the ones with the secret_name
-        #  as label.
-        for secret_property in self.CLIENT.list_properties_of_secrets():
-            response = self.CLIENT.get_secret(secret_property.name)
-            tags = response.properties.tags
-            if tags and tags.get(ZENML_GROUP_KEY) == secret_name:
-                self.CLIENT.begin_delete_secret(secret_property.name).result()
+        if self.scope == SecretsManagerScope.NONE:
+            # legacy, non-scoped secrets
+
+            # Go through all Azure secrets and delete the ones with the
+            # secret_name as label.
+            for secret_property in self.CLIENT.list_properties_of_secrets():
+                tags = secret_property.tags
+                if tags and tags.get(ZENML_GROUP_KEY) == secret_name:
+                    self.CLIENT.begin_delete_secret(
+                        secret_property.name
+                    ).result()
+
+        else:
+            if secret_name not in self.get_all_secret_keys():
+                raise KeyError(
+                    f"Can't find the specified secret '{secret_name}'"
+                )
+            self.CLIENT.begin_delete_secret(
+                self._get_scoped_secret_name(
+                    secret_name,
+                    separator=ZENML_AZURE_SECRET_SCOPE_PATH_SEPARATOR,
+                ),
+            ).result()
 
     def delete_all_secrets(self) -> None:
         """Delete all existing secrets."""
@@ -186,12 +353,27 @@ class AzureSecretsManager(BaseSecretsManager):
 
         # List all secrets.
         for secret_property in self.CLIENT.list_properties_of_secrets():
-            response = self.CLIENT.get_secret(secret_property.name)
-            tags = response.properties.tags
-            if tags and (ZENML_GROUP_KEY in tags or ZENML_SCHEMA_NAME in tags):
-                logger.info(
-                    "Deleted key-value pair {`%s`, `***`} from secret " "`%s`",
-                    secret_property.name,
-                    tags.get(ZENML_GROUP_KEY),
-                )
+
+            tags = secret_property.tags
+            if not tags:
+                continue
+
+            if self.scope == SecretsManagerScope.NONE:
+                # legacy, non-scoped secrets
+                if ZENML_GROUP_KEY in tags:
+                    logger.info(
+                        "Deleted key-value pair {`%s`, `***`} from secret "
+                        "`%s`",
+                        secret_property.name,
+                        tags.get(ZENML_GROUP_KEY),
+                    )
+                    self.CLIENT.begin_delete_secret(
+                        secret_property.name
+                    ).result()
+                continue
+
+            scope_tags = self._get_secret_scope_metadata()
+            # all scope tags need to be included in the Azure secret tags,
+            # otherwise the secret does not belong to the current scope
+            if scope_tags.items() <= tags.items():
                 self.CLIENT.begin_delete_secret(secret_property.name).result()
