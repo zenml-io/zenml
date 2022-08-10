@@ -94,7 +94,7 @@ class EvidentlyProfileConfig(BaseDriftDetectionConfig):
 
     Attributes:
         column_mapping: properties of the DataFrame columns used
-        ignore_cols: columns to ignore during evidently profile step
+        ignored_cols: columns to ignore during the Evidently profile step
         profile_sections: a list identifying the Evidently profile sections to be
             used. The following are valid options supported by Evidently:
             - "datadrift"
@@ -112,7 +112,7 @@ class EvidentlyProfileConfig(BaseDriftDetectionConfig):
     """
 
     column_mapping: Optional[EvidentlyColumnMapping] = None
-    ignore_cols: Optional[List[str]] = None
+    ignored_cols: Optional[List[str]] = None
     profile_sections: Optional[Sequence[str]] = None
     verbose_level: int = 1
     profile_options: Sequence[Tuple[str, Dict[str, Any]]] = Field(
@@ -159,37 +159,37 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
             EvidentlyDataValidator.get_active_data_validator(),
         )
         column_mapping = None
-        if config.ignore_cols is not None and not (
-            isinstance(config.ignore_cols, list)
+        if config.ignored_cols is not None and not (
+            isinstance(config.ignored_cols, list)
         ):
             raise TypeError(
-                f"Expects a List of columns but got type {type(config.ignore_cols)}"
+                f"Expects a List of columns but got type {type(config.ignored_cols)}"
             )
-        elif len(config.ignore_cols) == 0:
+        elif len(config.ignored_cols) == 0:
             raise ValueError(
-                f"Expects None or list of columns in strings, but got {config.ignore_cols}"
+                f"Expects None or list of columns in strings, but got {config.ignored_cols}"
             )
 
-        elif not (all((isinstance(ele, str) for ele in config.ignore_cols))):
+        elif not (all((isinstance(ele, str) for ele in config.ignored_cols))):
             raise TypeError(
-                "One or more columns to be ignored are not type string"
+                "One or more columns to be ignored are not of type string"
             )
 
         elif not (
-            set(config.ignore_cols).issubset(set(reference_dataset.columns))
+            set(config.ignored_cols).issubset(set(reference_dataset.columns))
         ) or not (
-            set(config.ignore_cols).issubset(set(comparison_dataset.columns))
+            set(config.ignored_cols).issubset(set(comparison_dataset.columns))
         ):
             raise ValueError(
-                "Column name is not found in reference or comparison datasets"
+                "Column is not found in reference or comparison datasets"
             )
 
         else:
             reference_dataset = reference_dataset.drop(
-                labels=list(config.ignore_cols), axis=1
+                labels=list(config.ignored_cols), axis=1
             )
             comparison_dataset = comparison_dataset.drop(
-                labels=list(config.ignore_cols), axis=1
+                labels=list(config.ignored_cols), axis=1
             )
 
         if config.column_mapping:

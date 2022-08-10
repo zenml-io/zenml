@@ -37,24 +37,23 @@ comp["var_B"] = [0.12, -0.54, 0.08, 1.78, 0.03]
 
 
 def test_ignore_feat() -> None:
-    """Tests ignore cols parameter with features ignore_col and var_C
+    """Tests ignored_cols parameter with features ignore_col and var_C
     to be ignored"""
 
     clmn_map = EvidentlyColumnMapping(target_names=["target"])
 
     profile_config = EvidentlyProfileConfig(
-        profile_sections=["datadrift"], column_mapping=clmn_map
+        profile_sections=["datadrift"],
+        column_mapping=clmn_map,
+        ignored_cols=["ignore_col", "var_B"],
     )
 
-    print("config created sucessfully")
     profile_step = EvidentlyProfileStep()
 
-    print(" step created sucessfully")
     drift_obj, dash_obj = profile_step.entrypoint(
         reference_dataset=ref,
         comparison_dataset=comp,
         config=profile_config,
-        ignored_columns=("ignore_col", "var_B"),
     )
 
     target = [drift_obj["data_drift"]["data"]["utility_columns"]["target"]]
@@ -72,13 +71,15 @@ def test_ignore_feat() -> None:
 
 
 def test_default_ignore_cols() -> None:
-    """Tests ignore cols parameter with nothing to ignore
+    """Tests ignored_cols parameter with nothing to ignore
     i.e pass all features"""
 
     clmn_map = EvidentlyColumnMapping(target_names=["target"])
 
     profile_config = EvidentlyProfileConfig(
-        profile_sections=["datadrift"], column_mapping=clmn_map
+        profile_sections=["datadrift"],
+        column_mapping=clmn_map,
+        ignored_cols=[],
     )
 
     profile_step = EvidentlyProfileStep()
@@ -87,7 +88,6 @@ def test_default_ignore_cols() -> None:
         reference_dataset=ref,
         comparison_dataset=comp,
         config=profile_config,
-        ignored_columns=(),
     )
     target = [drift_obj["data_drift"]["data"]["utility_columns"]["target"]]
     prediction = [
@@ -105,12 +105,14 @@ def test_default_ignore_cols() -> None:
 
 
 def test_non_existing_col() -> None:
-    """Tests ignore cols parameter for non existing
+    """Tests ignored_cols parameter for non existing
     features and raises Error"""
 
     clmn_map = EvidentlyColumnMapping(target_names=["target"])
     profile_config = EvidentlyProfileConfig(
-        profile_sections=["datadrift"], column_mapping=clmn_map
+        profile_sections=["datadrift"],
+        column_mapping=clmn_map,
+        ignored_cols=["var_A", "test_1"],
     )
 
     profile_step = EvidentlyProfileStep()
@@ -120,17 +122,18 @@ def test_non_existing_col() -> None:
             reference_dataset=ref,
             comparison_dataset=comp,
             config=profile_config,
-            ignored_columns=("var_A", "test_1"),
         )
 
 
 def test_incorrect_datatype() -> None:
-    """Tests ignore cols parameter for incorrect datatype
+    """Tests ignored_cols parameter for incorrect datatype
     and raises Error"""
 
     clmn_map = EvidentlyColumnMapping(target_names=["target"])
     profile_config = EvidentlyProfileConfig(
-        profile_sections=["datadrift"], column_mapping=clmn_map
+        profile_sections=["datadrift"],
+        column_mapping=clmn_map,
+        ignored_cols="var_A",
     )
 
     profile_step = EvidentlyProfileStep()
@@ -140,17 +143,18 @@ def test_incorrect_datatype() -> None:
             reference_dataset=ref,
             comparison_dataset=comp,
             config=profile_config,
-            ignored_columns="var_A",
         )
 
 
 def test_ignored_cols_elements() -> None:
-    """Tests ignore cols parameter for type of its elements
+    """Tests ignored_cols parameter for type of its elements
     and raises Error"""
 
     clmn_map = EvidentlyColumnMapping(target_names=["target"])
     profile_config = EvidentlyProfileConfig(
-        profile_sections=["datadrift"], column_mapping=clmn_map
+        profile_sections=["datadrift"],
+        column_mapping=clmn_map,
+        ignored_cols=("Housing", "Region", 25, True),
     )
 
     profile_step = EvidentlyProfileStep()
@@ -160,5 +164,4 @@ def test_ignored_cols_elements() -> None:
             reference_dataset=ref,
             comparison_dataset=comp,
             config=profile_config,
-            ignored_columns=("Housing", "Region", 25, True),
         )
