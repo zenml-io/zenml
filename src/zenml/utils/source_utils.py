@@ -32,8 +32,6 @@ import pathlib
 import sys
 import types
 from contextlib import contextmanager
-from distutils.sysconfig import get_python_lib
-import site
 from types import (
     CodeType,
     FrameType,

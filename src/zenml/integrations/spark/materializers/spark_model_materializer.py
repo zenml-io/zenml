@@ -13,13 +13,14 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import Type, Any, Union
+from typing import Any, Type, Union
 
-from pyspark.ml import Transformer, Estimator
+from pyspark.ml import Estimator, Transformer
+
 from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.materializers.base_materializer import BaseMaterializer
 
-DEFAULT_FILEPATH = 'model'
+DEFAULT_FILEPATH = "model"
 
 
 class SparkModelMaterializer(BaseMaterializer):

@@ -12,20 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import json
-from typing import (
-    TYPE_CHECKING, Any, Dict, List, Optional, Union
-)
+import subprocess
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from pydantic import validator
-
-from zenml.step_operators import entrypoint
-from zenml.repository import Repository
-from zenml.step_operators import BaseStepOperator
 from pyspark.conf import SparkConf
-from zenml.config.docker_configuration import DockerConfiguration
-import subprocess
 
+from zenml.config.docker_configuration import DockerConfiguration
 from zenml.logger import get_logger
+from zenml.repository import Repository
+from zenml.step_operators import BaseStepOperator, entrypoint
 
 logger = get_logger(__name__)
 if TYPE_CHECKING:
@@ -41,6 +37,7 @@ class SparkStepOperator(BaseStepOperator):
     """
     MAIN DOCS
     """
+
     # Instance parameters
     master: str
     deploy_mode: str = "cluster"
@@ -59,8 +56,6 @@ class SparkStepOperator(BaseStepOperator):
         For more information on how to set this property please check:
 
         https://spark.apache.org/docs/latest/submitting-applications.html#advanced-dependency-management
-
-        Defa
         """
         return None
 
@@ -101,7 +96,7 @@ class SparkStepOperator(BaseStepOperator):
     def _resource_configuration(
         self,
         spark_config: SparkConf,
-        resource_configuration: "ResourceConfiguration"
+        resource_configuration: "ResourceConfiguration",
     ) -> None:
         """Configures Spark to handle the resource configuration.
 
@@ -115,7 +110,7 @@ class SparkStepOperator(BaseStepOperator):
         if resource_configuration.cpu_count:
             spark_config.set(
                 "spark.executor.cores",
-                str(int(resource_configuration.cpu_count))
+                str(int(resource_configuration.cpu_count)),
             )
 
         if resource_configuration.memory:
@@ -123,7 +118,7 @@ class SparkStepOperator(BaseStepOperator):
             #   type of resource configuration.
             spark_config.set(
                 "spark.executor.memory",
-                resource_configuration.memory.lower().strip('b')
+                resource_configuration.memory.lower().strip("b"),
             )
 
     def _backend_configuration(
@@ -173,12 +168,18 @@ class SparkStepOperator(BaseStepOperator):
                 spark_config.setAll(
                     [
                         ("spark.hadoop.fs.s3a.fast.upload", "true"),
-                        ("spark.hadoop.fs.s3.impl",
-                         "org.apache.hadoop.fs.s3a.S3AFileSystem",),
-                        ("spark.hadoop.fs.AbstractFileSystem.s3.impl",
-                         "org.apache.hadoop.fs.s3a.S3A"),
-                        ("spark.hadoop.fs.s3a.aws.credentials.provider",
-                         "com.amazonaws.auth.DefaultAWSCredentialsProviderChain"),
+                        (
+                            "spark.hadoop.fs.s3.impl",
+                            "org.apache.hadoop.fs.s3a.S3AFileSystem",
+                        ),
+                        (
+                            "spark.hadoop.fs.AbstractFileSystem.s3.impl",
+                            "org.apache.hadoop.fs.s3a.S3A",
+                        ),
+                        (
+                            "spark.hadoop.fs.s3a.aws.credentials.provider",
+                            "com.amazonaws.auth.DefaultAWSCredentialsProviderChain",
+                        ),
                         (f"spark.hadoop.fs.s3a.access.key", f"{key}"),
                         (f"spark.hadoop.fs.s3a.secret.key", f"{secret}"),
                     ]
@@ -218,9 +219,7 @@ class SparkStepOperator(BaseStepOperator):
                 spark_config.set(k, v)
 
     def _launch_spark_job(
-        self,
-        spark_config: SparkConf,
-        entrypoint_command: List[str]
+        self, spark_config: SparkConf, entrypoint_command: List[str]
     ):
         """Generates and executes a spark-submit command.
 

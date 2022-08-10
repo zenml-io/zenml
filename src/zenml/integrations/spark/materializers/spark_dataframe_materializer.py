@@ -18,7 +18,7 @@ from pyspark.sql import DataFrame, SparkSession
 
 from zenml.materializers.base_materializer import BaseMaterializer
 
-DEFAULT_FILEPATH = 'data'
+DEFAULT_FILEPATH = "data"
 
 
 class SparkDataFrameMaterializer(BaseMaterializer):
