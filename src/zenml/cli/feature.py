@@ -1,4 +1,3 @@
-# type: ignore
 #  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -65,7 +64,7 @@ def register_feature_store_subcommands() -> None:
         Args:
             feature_store: The feature store.
         """
-        data_sources = feature_store.get_data_sources()
+        data_sources = feature_store.get_data_sources()  # type: ignore[attr-defined]
         declare(f"Data sources: {data_sources}")
 
     @feature.command("get-entities")
@@ -76,7 +75,7 @@ def register_feature_store_subcommands() -> None:
         Args:
             feature_store: The feature store.
         """
-        entities = feature_store.get_entities()
+        entities = feature_store.get_entities()  # type: ignore[attr-defined]
         declare(f"Entities: {entities}")
 
     @feature.command("get-feature-services")
@@ -87,7 +86,7 @@ def register_feature_store_subcommands() -> None:
         Args:
             feature_store: The feature store.
         """
-        feature_services = feature_store.get_feature_services()
+        feature_services = feature_store.get_feature_services()  # type: ignore[attr-defined]
         declare(f"Feature services: {feature_services}")
 
     @feature.command("get-feature-views")
@@ -98,7 +97,7 @@ def register_feature_store_subcommands() -> None:
         Args:
             feature_store: The feature store.
         """
-        feature_views = feature_store.get_feature_views()
+        feature_views = feature_store.get_feature_views()  # type: ignore[attr-defined]
         declare(f"Feature views: {feature_views}")
 
     @feature.command("get-project")
@@ -109,7 +108,7 @@ def register_feature_store_subcommands() -> None:
         Args:
             feature_store: The feature store.
         """
-        project = feature_store.get_project()
+        project = feature_store.get_project()  # type: ignore[attr-defined]
         declare(f"Project name: {project}")
 
     @feature.command("get-feast-version")
@@ -120,5 +119,5 @@ def register_feature_store_subcommands() -> None:
         Args:
             feature_store: The feature store.
         """
-        version = feature_store.get_feast_version()
+        version = feature_store.get_feast_version()  # type: ignore[attr-defined]
         declare(f"Feast version: {version}")
