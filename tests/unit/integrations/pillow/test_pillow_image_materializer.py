@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
 
-import PIL
+from PIL import Image
 
 from zenml.integrations.pillow.materializers.pillow_image_materializer import (
     PillowImageMaterializer,
@@ -26,9 +26,9 @@ def test_materializer_works_for_pillow_image_objects(clean_repo):
     """Check the materializer is able to handle PIL image objects."""
 
     @step
-    def read_image() -> PIL.Image.Image:
+    def read_image() -> Image.Image:
         """Reads and materializes an image file."""
-        return PIL.Image.new("RGB", (10, 10), color="red")
+        return Image.new("RGB", (10, 10), color="red")
 
     @pipeline
     def test_pipeline(image_reader) -> None:
@@ -44,4 +44,4 @@ def test_materializer_works_for_pillow_image_objects(clean_repo):
 
     last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
     image = last_run.steps[-1].output.read()
-    assert isinstance(image, PIL.Image.Image)
+    assert isinstance(image, Image.Image)
