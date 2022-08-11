@@ -176,25 +176,11 @@ zenml stack update -o <NAME>
 {% endtabs %}
 
 {% hint style="info" %}
-ZenML will build a Docker image called `zenml-kubeflow` which includes your code and use it
-to run your pipeline steps in Kubeflow. Check out
-[this page](../../developer-guide/advanced-concepts/docker.md)
+ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>`
+which includes your code and use it to run your pipeline steps in Kubeflow. Check out
+[this page](../../developer-guide/advanced-usage/docker.md)
 if you want to learn more about how ZenML builds these images and
 how you can customize them.
-
-If you decide you need the full flexibility of having a
-[custom base image](../../developer-guide/advanced-usage/docker.md#using-a-custom-base-image),
-you can update your existing orchestrator
-```shell
-zenml orchestrator update <NAME> \
---custom_docker_base_image_name=<IMAGE_NAME>
-```
-or set it when registering a new Kubeflow orchestrator:
-```shell
-zenml orchestrator register <NAME> \
---flavor=kubeflow \
---custom_docker_base_image_name=<IMAGE_NAME>
-```
 {% endhint %}
 
 Once the orchestrator is part of the active stack, we need to run

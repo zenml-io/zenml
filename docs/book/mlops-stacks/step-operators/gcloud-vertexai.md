@@ -61,26 +61,11 @@ def trainer(...) -> ...:
 ```
 
 {% hint style="info" %}
-ZenML will build a Docker image called `zenml-vertex` which includes your code and use it
-to run your steps in Vertex. Check out
+ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>`
+which includes your code and use it to run your steps in Vertex AI. Check out
 [this page](../../developer-guide/advanced-usage/docker.md)
 if you want to learn more about how ZenML builds these images and
 how you can customize them.
-
-If you decide you need the full flexibility of having a
-[custom base image](../../developer-guide/advanced-usage/docker.md#using-a-custom-base-image),
-you can update your existing step operator
-```shell
-zenml step-operator update <NAME> \
---base_image=<IMAGE_NAME>
-```
-or set it when registering a new Vertex step operator:
-```shell
-zenml step-operator register <NAME> \
---flavor=vertex \
---base_image=<IMAGE_NAME>
-...
-```
 {% endhint %}
 
 A concrete example of using the Vertex step operator can be found 
