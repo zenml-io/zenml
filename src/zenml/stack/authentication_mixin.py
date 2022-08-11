@@ -69,7 +69,7 @@ class AuthenticationMixin(BaseModel):
                 f"issue, register a secret with name "
                 f"{self.authentication_secret} of type "
                 f"{expected_schema_type.TYPE} using the following command: \n "
-                f"`zenml secret register {self.authentication_secret} "
+                f"`zenml secrets-manager secret register {self.authentication_secret} "
                 f"--schema={expected_schema_type.TYPE} ...`"
             )
 

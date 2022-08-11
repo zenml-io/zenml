@@ -190,14 +190,14 @@ interact with it from the CLI to list, start, stop or delete the model servers
 that is manages:
 
 ```
-$ zenml served-models list
+$ zenml model-deployer models list
 ┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ STATUS │ UUID                                 │ PIPELINE_NAME                  │ PIPELINE_STEP_NAME         ┃
 ┠────────┼──────────────────────────────────────┼────────────────────────────────┼────────────────────────────┨
 ┃   ✅   │ 8cbe671b-9fce-4394-a051-68e001f92765 │ continuous_deployment_pipeline │ seldon_model_deployer_step ┃
 ┗━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-$ zenml served-models describe 8cbe671b-9fce-4394-a051-68e001f92765
+$ zenml model-deployer models describe 8cbe671b-9fce-4394-a051-68e001f92765
                           Properties of Served Model 8cbe671b-9fce-4394-a051-68e001f92765                          
 ┏━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ MODEL SERVICE PROPERTY │ VALUE                                                                                  ┃
@@ -223,12 +223,12 @@ $ zenml served-models describe 8cbe671b-9fce-4394-a051-68e001f92765
 ┃ UUID                   │ 8cbe671b-9fce-4394-a051-68e001f92765                                                   ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-$ zenml served-models get-url 8cbe671b-9fce-4394-a051-68e001f92765
+$ zenml model-deployer models get-url 8cbe671b-9fce-4394-a051-68e001f92765
   Prediction URL of Served Model 8cbe671b-9fce-4394-a051-68e001f92765 is:
   http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com/seldon/zenml-workloads/zenml-8cbe67
 1b-9fce-4394-a051-68e001f92765/api/v0.1/predictions
 
-$ zenml served-models delete 8cbe671b-9fce-4394-a051-68e001f92765
+$ zenml model-deployer models delete 8cbe671b-9fce-4394-a051-68e001f92765
 ```
 
 Services can be passed through steps like any other object, and used to interact
