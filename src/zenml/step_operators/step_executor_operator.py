@@ -219,6 +219,7 @@ class StepExecutorOperator(BaseExecutorOperator):
         yaml_utils.write_json(
             input_artifact_types_path, input_artifact_type_mapping
         )
+
         entrypoint_command = [
             "python",
             "-m",

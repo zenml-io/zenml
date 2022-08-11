@@ -453,6 +453,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
             return
 
+        # Prevent execution of nested pipelines which might lead to unexpected
+        # behavior
+        constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
+
         logger.info("Creating run for pipeline: `%s`", self.name)
         logger.info(
             f'Cache {"enabled" if self.enable_cache else "disabled"} for '
@@ -497,9 +501,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self._reset_step_flags()
         self.validate_stack(stack)
 
-        return stack.deploy_pipeline(
+        return_value = stack.deploy_pipeline(
             self, runtime_configuration=runtime_configuration
         )
+        constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
+        return return_value
 
     def with_config(
         self: T, config_file: str, overwrite_step_parameters: bool = False
