@@ -15,7 +15,7 @@
 import os
 from typing import Any, Type, Union
 
-from pyspark.ml import Estimator, Transformer, Model
+from pyspark.ml import Estimator, Model, Transformer
 
 from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -42,8 +42,7 @@ class SparkModelMaterializer(BaseMaterializer):
         return model_type.load(path)  # noqa
 
     def handle_return(
-        self,
-        model: Union[Transformer, Estimator, Model]
+        self, model: Union[Transformer, Estimator, Model]
     ) -> None:
         """Writes a spark model.
 

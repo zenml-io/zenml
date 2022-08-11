@@ -27,9 +27,7 @@ from steps import (
 if __name__ == "__main__":
     pipeline = spark_pipeline(
         importer=importer_step(
-            config=ImporterConfig(
-                path=os.getenv('SPARK_DEMO_DATASET')
-            )
+            config=ImporterConfig(path=os.getenv("SPARK_DEMO_DATASET"))
         ),
         analyzer=statistics_step(),
         splitter=split_step(
