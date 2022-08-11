@@ -41,6 +41,7 @@
 [interrogate-shield]: https://img.shields.io/badge/Interrogate-100%25-brightgreen?style=for-the-badge&logo=interrogate
 [interrogate-url]: https://interrogate.readthedocs.io/en/latest/
 
+
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">

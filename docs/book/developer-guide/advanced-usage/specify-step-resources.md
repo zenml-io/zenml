@@ -33,6 +33,6 @@ step = TrainingStep(resource_configuration=ResourceConfiguration(cpu_count=8, gp
 {% hint style="info" %}
 If you're using an orchestrator which doesn't support this feature or its underlying
 infrastructure doesn't cover your requirements, you can also take a look at 
-[step operators](../step-operators/step-operators.md) which allow you to execute
+[step operators](../../mlops-stacks/step-operators/step-operators.md) which allow you to execute
 individual steps of your pipeline in environments independent of your orchestrator. 
 {% endhint %}
