@@ -52,18 +52,31 @@ class PillowImageMaterializer(BaseMaterializer):
         """
         super().handle_input(data_type)
         files = io_utils.find_files(
-            self.artifact.uri, f"{DEFAULT_IMAGE_FILENAME}*"
+            self.artifact.uri, f"{DEFAULT_IMAGE_FILENAME}.*"
         )
         filepath = [file for file in files if not fileio.isdir(file)][0]
 
         # create a temporary folder
-        file_extension = os.path.splitext(filepath)[-1]
-        with tempfile.NamedTemporaryFile(
-            suffix=file_extension, delete=False
-        ) as f:
-            # copy from artifact store to temporary file
-            io_utils.copy(filepath, f.name, overwrite=True)  # type: ignore[attr-defined]
-            image = Image.open(f.name)
+        temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
+        temp_file = os.path.join(
+            str(temp_dir),
+            f"{DEFAULT_IMAGE_FILENAME}{os.path.splitext(filepath)[1]}",
+        )
+
+        # copy from artifact store to temporary file
+        fileio.copy(filepath, temp_file)
+        image = Image.open(temp_file)
+
+        # Cleanup and return
+        fileio.rmtree(temp_dir)
+
+        # file_extension = os.path.splitext(filepath)[-1]
+        # with tempfile.NamedTemporaryFile(
+        #     suffix=file_extension, delete=False
+        # ) as f:
+        #     # copy from artifact store to temporary file
+        #     io_utils.copy(filepath, f.name, overwrite=True)  # type: ignore[attr-defined]
+        #     image = Image.open(f.name)
         return image
 
     def handle_return(self, image: Image.Image) -> None:
@@ -73,17 +86,28 @@ class PillowImageMaterializer(BaseMaterializer):
             image: An Image.Image object.
         """
         super().handle_return(image)
+        temp_dir = tempfile.TemporaryDirectory()
 
         file_extension = image.format or "PNG"
         full_filename = f"{DEFAULT_IMAGE_FILENAME}.{file_extension}"
+        temp_image_path = os.path.join(temp_dir.name, full_filename)
         artifact_store_path = os.path.join(self.artifact.uri, full_filename)
 
-        # save the image in a temporary file
-        with tempfile.NamedTemporaryFile(
-            prefix=DEFAULT_IMAGE_FILENAME,
-            suffix=f".{file_extension.lower()}",
-            delete=False,
-        ) as f:
-            image.save(f.name)
-            # copy the saved image to the artifact store
-            io_utils.copy(f.name, artifact_store_path, overwrite=True)  # type: ignore[attr-defined]
+        # save the image in a temporary directory
+        image.save(temp_image_path)
+
+        # copy the saved image to the artifact store
+        io_utils.copy(temp_image_path, artifact_store_path, overwrite=True)  # type: ignore[attr-defined]
+        fileio.remove(temp_image_path)
+
+        # artifact_store_path = os.path.join(self.artifact.uri, full_filename)
+
+        # # save the image in a temporary file
+        # with tempfile.NamedTemporaryFile(
+        #     prefix=DEFAULT_IMAGE_FILENAME,
+        #     suffix=f".{file_extension.lower()}",
+        #     delete=False,
+        # ) as f:
+        #     image.save(f.name)
+        #     # copy the saved image to the artifact store
+        #     io_utils.copy(f.name, artifact_store_path, overwrite=True)  # type: ignore[attr-defined]
