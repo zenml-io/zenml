@@ -24,28 +24,28 @@ from zenml.integrations.evidently.steps.evidently_profile import (
 ref = pd.DataFrame()
 ref["target"] = ["A", "B", "B", "C", "A"]
 ref["prediction"] = [0.12, -0.54, 0.08, 1.78, 0.03]
-ref["ignore_col"] = [1, 5, 1, 89, 0]
+ref["ignored_col"] = [1, 5, 1, 89, 0]
 ref["var_A"] = [1, 5, 3, 10, 25]
 ref["var_B"] = [0.58, 0.23, 1.25, -0.14, 0]
 
 comp = pd.DataFrame()
 comp["target"] = ["B", "C", "A", "A", "C"]
 comp["prediction"] = [0.12, -0.54, 0.08, 1.78, 0.03]
-comp["ignore_col"] = [3, 1, 1, 120, 1]
+comp["ignored_col"] = [3, 1, 1, 120, 1]
 comp["var_A"] = [0, 27, 3, 4, 8]
 comp["var_B"] = [0.12, -0.54, 0.08, 1.78, 0.03]
 
 
-def test_ignore_feat() -> None:
+def test_ignore_cols_succeeds() -> None:
     """Tests ignored_cols parameter with features ignore_col and var_C
     to be ignored"""
 
-    clmn_map = EvidentlyColumnMapping(target_names=["target"])
+    column_map = EvidentlyColumnMapping(target_names=["target"])
 
     profile_config = EvidentlyProfileConfig(
         profile_sections=["datadrift"],
-        column_mapping=clmn_map,
-        ignored_cols=["ignore_col", "var_B"],
+        column_mapping=column_map,
+        ignored_cols=["ignored_col", "var_B"],
     )
 
     profile_step = EvidentlyProfileStep()
@@ -64,22 +64,22 @@ def test_ignore_feat() -> None:
     num_feat_names = drift_obj["data_drift"]["data"]["num_feature_names"]
 
     assert (
-        "ignore_col"
+        "ignored_col"
         not in target + prediction + cat_feat_names + num_feat_names
     )
     assert "var_B" not in target + prediction + cat_feat_names + num_feat_names
 
 
-def test_default_ignore_cols() -> None:
+def test_do_not_ignore_any_columns() -> None:
     """Tests ignored_cols parameter with nothing to ignore
     i.e pass all features"""
 
-    clmn_map = EvidentlyColumnMapping(target_names=["target"])
+    column_map = EvidentlyColumnMapping(target_names=["target"])
 
     profile_config = EvidentlyProfileConfig(
         profile_sections=["datadrift"],
-        column_mapping=clmn_map,
-        ignored_cols=[],
+        column_mapping=column_map,
+        ignored_cols=None,
     )
 
     profile_step = EvidentlyProfileStep()
@@ -99,19 +99,19 @@ def test_default_ignore_cols() -> None:
     all_cols = target + prediction + cat_feat_names + num_feat_names
     assert "target" in all_cols
     assert "prediction" in all_cols
-    assert "ignore_col" in all_cols
+    assert "ignored_col" in all_cols
     assert "var_A" in all_cols
     assert "var_B" in all_cols
 
 
-def test_non_existing_col() -> None:
+def test_ignoring_non_existing_column() -> None:
     """Tests ignored_cols parameter for non existing
     features and raises Error"""
 
-    clmn_map = EvidentlyColumnMapping(target_names=["target"])
+    column_map = EvidentlyColumnMapping(target_names=["target"])
     profile_config = EvidentlyProfileConfig(
         profile_sections=["datadrift"],
-        column_mapping=clmn_map,
+        column_mapping=column_map,
         ignored_cols=["var_A", "test_1"],
     )
 
@@ -125,14 +125,14 @@ def test_non_existing_col() -> None:
         )
 
 
-def test_incorrect_datatype() -> None:
+def test_ignoring_incorrect_datatype() -> None:
     """Tests ignored_cols parameter for incorrect datatype
     and raises Error"""
 
-    clmn_map = EvidentlyColumnMapping(target_names=["target"])
+    column_map = EvidentlyColumnMapping(target_names=["target"])
     profile_config = EvidentlyProfileConfig(
         profile_sections=["datadrift"],
-        column_mapping=clmn_map,
+        column_mapping=column_map,
         ignored_cols="var_A",
     )
 
@@ -150,16 +150,37 @@ def test_ignored_cols_elements() -> None:
     """Tests ignored_cols parameter for type of its elements
     and raises Error"""
 
-    clmn_map = EvidentlyColumnMapping(target_names=["target"])
+    column_map = EvidentlyColumnMapping(target_names=["target"])
     profile_config = EvidentlyProfileConfig(
         profile_sections=["datadrift"],
-        column_mapping=clmn_map,
+        column_mapping=column_map,
         ignored_cols=("Housing", "Region", 25, True),
     )
 
     profile_step = EvidentlyProfileStep()
 
     with pytest.raises(TypeError):
+        drift_obj, dash_obj = profile_step.entrypoint(
+            reference_dataset=ref,
+            comparison_dataset=comp,
+            config=profile_config,
+        )
+
+
+def test_empty_ignored_cols() -> None:
+    """Tests for empty ignored_cols parameter
+    and raises Error"""
+
+    column_map = EvidentlyColumnMapping(target_names=["target"])
+    profile_config = EvidentlyProfileConfig(
+        profile_sections=["datadrift"],
+        column_mapping=column_map,
+        ignored_cols=[],
+    )
+
+    profile_step = EvidentlyProfileStep()
+
+    with pytest.raises(ValueError):
         drift_obj, dash_obj = profile_step.entrypoint(
             reference_dataset=ref,
             comparison_dataset=comp,
