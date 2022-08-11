@@ -143,8 +143,6 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
             config: the configuration for the step
 
         Raises:
-            TypeError: If ignored_cols is of incorrect type
-                or if list elements are not of type string.
             ValueError: If ignored_cols is an empty list
             ValueError: If column is not found in reference or comparison
                 dataset
@@ -163,18 +161,9 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
         if config.ignored_cols is None:
             pass
 
-        elif not (isinstance(config.ignored_cols, list)):
-            raise TypeError(
-                f"Expects a List of columns but got type {type(config.ignored_cols)}"
-            )
         elif not config.ignored_cols:
             raise ValueError(
                 f"Expects None or list of columns in strings, but got {config.ignored_cols}"
-            )
-
-        elif not (all((isinstance(col, str) for col in config.ignored_cols))):
-            raise TypeError(
-                "One or more columns to be ignored are not of type string"
             )
 
         elif not (

@@ -14,6 +14,7 @@
 
 import pandas as pd
 import pytest
+from pydantic import ValidationError
 
 from zenml.integrations.evidently.steps.evidently_profile import (
     EvidentlyColumnMapping,
@@ -117,7 +118,7 @@ def test_ignoring_non_existing_column() -> None:
 
     profile_step = EvidentlyProfileStep()
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         drift_obj, dash_obj = profile_step.entrypoint(
             reference_dataset=ref,
             comparison_dataset=comp,
@@ -138,7 +139,7 @@ def test_ignoring_incorrect_datatype() -> None:
 
     profile_step = EvidentlyProfileStep()
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         drift_obj, dash_obj = profile_step.entrypoint(
             reference_dataset=ref,
             comparison_dataset=comp,
@@ -159,7 +160,7 @@ def test_ignored_cols_elements() -> None:
 
     profile_step = EvidentlyProfileStep()
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         drift_obj, dash_obj = profile_step.entrypoint(
             reference_dataset=ref,
             comparison_dataset=comp,
