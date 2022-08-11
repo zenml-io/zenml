@@ -89,7 +89,7 @@ def namespace_scoped_secrets_manager(request: pytest.FixtureRequest):
         request,
         name=f"zenml_pytest_{random_str(16).lower()}",
         scope=SecretsManagerScope.NAMESPACE,
-        namespace=f"pytest_{random_str(8).lower()}",
+        namespace=f"pytest{random_str(8).lower()}",
     )
     old_secrets = secrets_manager.get_all_secret_keys()
     yield secrets_manager
@@ -104,7 +104,7 @@ def secrets_manager(request: pytest.FixtureRequest):
         request,
         name=f"zenml_pytest_{random_str(16).lower()}",
         scope=request.param,
-        namespace=f"pytest_{random_str(8).lower()}",
+        namespace=f"pytest{random_str(8).lower()}",
     )
     old_secrets = secrets_manager.get_all_secret_keys()
     yield secrets_manager

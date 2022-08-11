@@ -344,7 +344,7 @@ aws eks wait nodegroup-active --cluster-name=$EKS_CLUSTER_NAME \
 
 - Register the secret for authenticating with your MySQL database:
     ```shell
-    zenml secret register rds_authentication \
+    zenml secrets-manager secret register rds_authentication \
         --schema=mysql \
         --user=$RDS_MYSQL_USERNAME \
         --password=$RDS_MYSQL_PASSWORD
@@ -543,7 +543,7 @@ zenml stack register kubernetes_stack \
         -x aws_secrets_manager \
         --set
 
-zenml secret register rds_authentication \
+zenml secrets-manager secret register rds_authentication \
         --schema=mysql \
         --user=$RDS_MYSQL_USERNAME \
         --password=$RDS_MYSQL_PASSWORD

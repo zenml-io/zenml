@@ -118,7 +118,7 @@ zenml stack register custom_stack -m mysql_metadata_store ... \
     -x secrets_manager --set
 
 # Create the secret referenced in the metadata store
-zenml secret register mysql_secret --schema=mysql \ 
+zenml secrets-manager secret register mysql_secret --schema=mysql \ 
     --user=<database-user> --password=<database-password> \
     --ssl_ca=@path/to/server/ca/certificate \
     --ssl_cert=@path/to/client/certificate \
