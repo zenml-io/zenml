@@ -39,9 +39,7 @@ ENTRYPOINT_NAME = "zenml_spark_entrypoint.py"
 class KubernetesSparkStepOperator(
     SparkStepOperator, PipelineDockerImageBuilder
 ):
-    """
-    MAIN DOCS
-    """
+    """Step operator which runs Steps with Spark on Kubernetes."""
 
     # Parameters for kubernetes
     kubernetes_namespace: Optional[str] = None
@@ -52,6 +50,7 @@ class KubernetesSparkStepOperator(
 
     @property
     def application_path(self) -> Any:
+        """Provides the application path in the corresponding docker image."""
         return f"local://{APP_DIR}/{ENTRYPOINT_NAME}"
 
     @staticmethod

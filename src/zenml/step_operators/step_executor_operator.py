@@ -11,8 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Custom definition of a Step Executor Operator which can be passed into
-the Step Operator."""
+
+"""Custom StepExecutorOperator which can be passed to the step operator."""
 
 import json
 import os

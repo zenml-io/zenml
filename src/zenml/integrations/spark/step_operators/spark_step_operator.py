@@ -34,15 +34,11 @@ ENTRYPOINT_NAME = "zenml_spark_entrypoint.py"
 
 
 class SparkStepOperator(BaseStepOperator):
-    """
-    MAIN DOCS
-    """
+    """Base class for all Spark-related step operators."""
 
     # Instance parameters
     master: str
     deploy_mode: str = "cluster"
-
-    # Additional parameters for the spark submit
     submit_kwargs: Optional[Dict[str, Any]] = None
 
     @property
@@ -180,8 +176,8 @@ class SparkStepOperator(BaseStepOperator):
                             "spark.hadoop.fs.s3a.aws.credentials.provider",
                             "com.amazonaws.auth.DefaultAWSCredentialsProviderChain",
                         ),
-                        (f"spark.hadoop.fs.s3a.access.key", f"{key}"),
-                        (f"spark.hadoop.fs.s3a.secret.key", f"{secret}"),
+                        ("spark.hadoop.fs.s3a.access.key", f"{key}"),
+                        ("spark.hadoop.fs.s3a.secret.key", f"{secret}"),
                     ]
                 )
             else:
@@ -281,7 +277,7 @@ class SparkStepOperator(BaseStepOperator):
         entrypoint_command: List[str],
         resource_configuration: "ResourceConfiguration",
     ) -> None:
-        """Launches a Spark job using spark-submit.
+        """Launches the step on Spark.
 
         Args:
             pipeline_name: Name of the pipeline which the step to be executed
