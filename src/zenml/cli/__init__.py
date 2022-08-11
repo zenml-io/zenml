@@ -419,14 +419,14 @@ To register a secret, use the `register` command and pass the key-value pairs
 as command line arguments:
 
 ```bash
-zenml secret register SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
+zenml secrets-manager secret register SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
 ```
 
 Note that the keys and values will be preserved in your `bash_history` file, so
 you may prefer to use the interactive `register` command instead:
 
 ```shell
-zenml secret register SECRET_NAME -i
+zenml secrets-manager secret register SECRET_NAME -i
 ```
 
 As an alternative to the interactive mode, also useful for values that
@@ -434,7 +434,7 @@ are long or contain newline or special characters, you can also use the special
 `@` syntax to indicate to ZenML that the value needs to be read from a file:
 
 ```bash
-zenml secret register SECRET_NAME --schema=aws \
+zenml secrets-manager secret register SECRET_NAME --schema=aws \
    --aws_access_key_id=1234567890 \
    --aws_secret_access_key=abcdefghij \
    --aws_session_token=@/path/to/token.txt
@@ -444,32 +444,32 @@ zenml secret register SECRET_NAME --schema=aws \
 To list all the secrets available, use the `list` command:
 
 ```bash
-zenml secret list
+zenml secrets-manager secret list
 ```
 
 To get the key-value pairs for a particular secret, use the `get` command:
 
 ```bash
-zenml secret get SECRET_NAME
+zenml secrets-manager secret get SECRET_NAME
 ```
 
 To update a secret, use the `update` command:
 
 ```bash
-zenml secret update SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
+zenml secrets-manager secret update SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
 ```
 
 Note that the keys and values will be preserved in your `bash_history` file, so
 you may prefer to use the interactive `update` command instead:
 
 ```shell
-zenml secret update SECRET_NAME -i
+zenml secrets-manager secret update SECRET_NAME -i
 ```
 
 Finally, to delete a secret, use the `delete` command:
 
 ```bash
-zenml secret delete SECRET_NAME
+zenml secrets-manager secret delete SECRET_NAME
 ```
 
 Add a Feature Store to your Stack
@@ -493,7 +493,7 @@ If you want to simply see what models have been deployed within your stack, run
 the following command:
 
 ```bash
-zenml served-models list
+zenml model-deployer models list
 ```
 
 This should give you a list of served models containing their uuid, the name
@@ -505,29 +505,29 @@ If you want further information about a specific model, simply copy the
 UUID and the following command.
 
 ```bash
-zenml served-models describe <UUID>
+zenml model-deployer models describe <UUID>
 ```
 
 If you are only interested in the prediction-url of the specific model you can
 also run:
 
 ```bash
-zenml served-models get-url <UUID>
+zenml model-deployer models get-url <UUID>
 ```
 
 Finally, you will also be able to start/stop the services using the following
  two commands:
 
 ```bash
-zenml served-models start <UUID>
-zenml served-models stop <UUID>
+zenml model-deployer models start <UUID>
+zenml model-deployer models stop <UUID>
 ```
 
 If you want to completely remove a served model you can also irreversibly delete
  it using:
 
 ```bash
-zenml served-models delete <UUID>
+zenml model-deployer models delete <UUID>
 ```
 
 Administering the Stack
@@ -819,14 +819,15 @@ zenml model-deployer logs MODEL_DEPLOYER_NAME
 
 """
 
+from zenml.cli.annotator import *  # noqa
 from zenml.cli.base import *  # noqa
 from zenml.cli.config import *  # noqa
 from zenml.cli.example import *  # noqa
 from zenml.cli.feature import *  # noqa
 from zenml.cli.integration import *  # noqa
+from zenml.cli.model import *  # noqa
 from zenml.cli.pipeline import *  # noqa
 from zenml.cli.secret import *  # noqa
-from zenml.cli.served_models import *  # noqa
 from zenml.cli.server import *  # noqa
 from zenml.cli.stack import *  # noqa
 from zenml.cli.stack_components import *  # noqa
