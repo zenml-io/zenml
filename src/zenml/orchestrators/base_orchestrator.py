@@ -523,6 +523,9 @@ class BaseOrchestrator(StackComponent, ABC):
                 MLMD_CONTEXT_STEP_RESOURCES_PROPERTY_NAME
             ] = step.resource_configuration.json(sort_keys=True)
 
+            # We add the resolved materializer sources here to step operators
+            # can fetch it in the entrypoint. This is needed to support
+            # custom materializers which would otherwise get lost.
             materializer_sources = {
                 output_name: source_utils.resolve_class(materializer_class)
                 for output_name, materializer_class in step.get_materializers(
