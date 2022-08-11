@@ -12,8 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from .predictor import predictor
+from .predictor import kserve_predictor, seldon_predictor
 
-__all__ = [
-    "predictor",
-]
+__all__ = ["kserve_predictor", "seldon_predictor"]

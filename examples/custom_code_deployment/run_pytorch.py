@@ -25,7 +25,7 @@ from steps.prediction_service_loader import (
     kserve_prediction_service_loader,
     seldon_prediction_service_loader,
 )
-from steps.predictor import predictor
+from steps.predictor import kserve_predictor, seldon_predictor
 from steps.pytorch_steps import (
     PytorchDataLoaderConfig,
     PyTorchInferenceProcessorStepConfig,
@@ -123,11 +123,13 @@ def main(
         model_deployer = SeldonModelDeployer.get_active_model_deployer()
         prediction_service_loader = seldon_prediction_service_loader
         custom_model_deployer = seldon_custom_model_deployer
+        predictor = seldon_predictor
     elif model_deployer == "kserve":
         deployer_step_name = "kserve_custom_model_deployer_step"
         model_deployer = KServeModelDeployer.get_active_model_deployer()
         prediction_service_loader = kserve_prediction_service_loader
         custom_model_deployer = kserve_custom_model_deployer
+        predictor = kserve_predictor
 
     if deploy:
         # Initialize and run a continuous deployment pipeline run

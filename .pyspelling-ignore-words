@@ -1207,3 +1207,5 @@ Rollouts
 TorchServeParameters
 ZenMLCustomModel
 microservice
+ComponentSpecs
+SeldonDeploymentPredictiveUnit

@@ -489,8 +489,8 @@ class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
 
         This function is called by the deployment step of the pipeline.
         It is responsible for the preparation of the custom deployment image
-        either by returning the image name in the case of a remote orchestrater
-        orby building a new image if only a local orchestrater is used.
+        either by returning the image name in the case of a remote orchestrator
+        or by building a new image if only a local orchestrator is used.
 
         Args:
             pipeline_name: The pipeline to be deployed.

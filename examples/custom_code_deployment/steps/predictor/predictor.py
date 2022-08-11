@@ -19,7 +19,7 @@ from zenml.steps import step
 
 
 @step
-def predictor(
+def kserve_predictor(
     service: KServeDeploymentService,
     data: str,
 ) -> None:
@@ -28,3 +28,16 @@ def predictor(
     service.start(timeout=120)  # should be a NOP if already started
     response = service.predict(data)
     rich_print(response)
+
+
+@step
+def seldon_predictor(
+    service: KServeDeploymentService,
+    data: str,
+) -> None:
+    """Run a inference request against a prediction service"""
+
+    service.start(timeout=120)  # should be a NOP if already started
+    response = service.predict(data)
+    prediction = response["jsonData"]
+    rich_print(prediction)
