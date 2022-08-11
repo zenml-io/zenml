@@ -1320,16 +1320,17 @@ def register_secrets(
         cli_utils.declare("No secrets required for this stack.")
         return
 
+    secret_names = {s.name for s in required_secrets}
     secrets_manager = stack_.secrets_manager
     if not secrets_manager:
         cli_utils.error(
-            "Unable to register secrets because the stack doesn't contain a "
-            "secrets manager."
+            f"Unable to register required secrets ({secret_names}) because "
+            "the stack doesn't contain a secrets manager. Please add a secrets "
+            "manager to your stack and then rerun this command."
         )
 
     secrets_to_register = []
     secrets_to_update = []
-    secret_names = {s.name for s in required_secrets}
     for name in secret_names:
         try:
             secret_content = secrets_manager.get_secret(name).content.copy()

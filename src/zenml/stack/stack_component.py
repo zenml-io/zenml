@@ -166,7 +166,10 @@ class StackComponent(BaseModel, ABC):
                 f"Failed to resolve secret reference for attribute {key} "
                 f"of stack component `{self}`: The stack component is not "
                 "part of the active stack and therefore can't have it's "
-                "secret references resolved."
+                "secret references resolved. If you want to access attributes "
+                "of this stack component which reference secrets, set a stack "
+                "which includes both this component and a secrets manager as "
+                "your active stack: `zenml stack set <STACK_NAME>`."
             )
 
         secrets_manager = Repository().active_stack.secrets_manager
