@@ -251,7 +251,7 @@ class GitHubSecretsManager(BaseSecretsManager):
                 "zenml stack update <NEW_STACK_NAME> "
                 "--secrets_manager=<NEW_SECRETS_MANAGER_NAME>",
                 "zenml stack set <NEW_STACK_NAME>",
-                f"zenml secret register {secret_name} ...",
+                f"zenml secrets-manager secret register {secret_name} ...",
             ]
 
             raise RuntimeError(
@@ -329,8 +329,8 @@ class GitHubSecretsManager(BaseSecretsManager):
             raise SecretExistsError(
                 f"A secret with name '{secret.name}' already exists for this "
                 "GitHub repository. If you want to register a new value for "
-                f"this secret, please run `zenml secret delete {secret.name}` "
-                f"followed by `zenml secret register {secret.name} ...`."
+                f"this secret, please run `zenml secrets-manager secret delete {secret.name}` "
+                f"followed by `zenml secrets-manager secret register {secret.name} ...`."
             )
 
         secret_dict = {

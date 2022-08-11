@@ -20,7 +20,7 @@ setting applicable to all ZenML repositories within your system. {% endhint %}
 In addition to the community at large, **ZenML** is created and maintained by a
 startup based in Munich, Germany called [ZenML GmbH](https://zenml.io). We're a
 team of techies that love MLOps and want to build tools that fellow developers
-would love to use in their daily work. [This is us](https://zenml.io/team/), if
+would love to use in their daily work. [This is us](https://zenml.io/company#CompanyTeam), if
 you want to put faces to the names!
 
 However, in order to improve **ZenML** and understand how it is being used, we

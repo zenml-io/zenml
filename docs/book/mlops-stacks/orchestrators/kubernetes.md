@@ -36,7 +36,7 @@ To use the Kubernetes orchestrator, we need:
 * A [remote metadata store](../metadata-stores/metadata-stores.md) as part of your stack.
 If you want to use a MySQL database deployed in your Kubernetes cluster, you can use
 the [Kubernetes metadata store](../metadata-stores/kubernetes.md). For a more 
-production-ready setup we suggest using a [MySQL metatadata store](../metadata-stores/mysql) instead.
+production-ready setup we suggest using a [MySQL metatadata store](../metadata-stores/mysql.md) instead.
 * A [remote container registry](../container-registries/container-registries.md) as part of your stack.
 * A Kubernetes cluster [deployed](#how-to-deploy-it) and the name
 of your Kubernetes context which points to this cluster. Run 

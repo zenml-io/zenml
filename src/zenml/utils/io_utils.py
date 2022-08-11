@@ -71,7 +71,8 @@ def read_file_contents_as_string(file_path: str) -> str:
     """
     if not exists(file_path):
         raise FileNotFoundError(f"{file_path} does not exist!")
-    return open(file_path).read()  # type: ignore[no-any-return]
+    with open(file_path) as f:
+        return f.read()  # type: ignore[no-any-return]
 
 
 def find_files(dir_path: PathType, pattern: str) -> Iterable[str]:

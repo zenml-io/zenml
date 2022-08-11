@@ -255,6 +255,21 @@ def test_yaml_configuration_with_invalid_parameter_name(tmp_path):
         _ = pipeline_instance.with_config(yaml_path)
 
 
+def test_yaml_configuration_allows_enabling_cache(tmp_path):
+    """Test that a config yaml allows you to disable the cache for a step."""
+    pipeline_instance = create_pipeline_with_config_value(13)
+
+    yaml_path = os.path.join(tmp_path, "config.yaml")
+    cache_value = False
+    write_yaml(
+        yaml_path,
+        {"steps": {"step_": {"parameters": {"enable_cache": cache_value}}}},
+    )
+    pipeline_instance = pipeline_instance.with_config(yaml_path)
+    step_instance = pipeline_instance.steps["step_"]
+    assert step_instance.enable_cache == cache_value
+
+
 def test_setting_pipeline_parameter_name_when_initializing_pipeline(
     one_step_pipeline, empty_step
 ):

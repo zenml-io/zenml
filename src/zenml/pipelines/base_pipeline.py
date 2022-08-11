@@ -502,6 +502,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 step.CONFIG_CLASS.__fields__.keys() if step.CONFIG_CLASS else {}
             )
             parameters = step_dict.get(StepConfigurationKeys.PARAMETERS_, {})
+            # pop the enable_cache
+            if PARAM_ENABLE_CACHE in parameters:
+                enable_cache = parameters.pop(PARAM_ENABLE_CACHE)
+                self.steps[step_name].enable_cache = enable_cache
+
             for parameter, value in parameters.items():
                 if parameter not in step_parameters:
                     raise PipelineConfigurationError(

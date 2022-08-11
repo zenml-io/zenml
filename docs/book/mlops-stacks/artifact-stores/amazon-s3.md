@@ -171,7 +171,7 @@ zenml secrets-manager register secrets_manager \
 zenml stack register custom_stack -a s3_store -x secrets_manager ... --set
 
 # Create the secret referenced in the artifact store
-zenml secret register s3_secret -s aws \
+zenml secrets-manager secret register s3_secret -s aws \
     --aws_access_key_id='your-S3-access-key-ID' \
     --aws_secret_access_key='your-S3-secret-key' \
     --aws_session_token='your-S3-token'
