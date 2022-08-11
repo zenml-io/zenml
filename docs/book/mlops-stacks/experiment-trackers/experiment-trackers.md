@@ -22,12 +22,18 @@ maintaining a record of pipeline executions through the [Metadata Store](../meta
 ZenML already records information about the artifacts circulated through your
 pipelines by means of the mandatory [Artifact Store](../artifact-stores/artifact-stores.md) and
 [Metadata Store](../metadata-stores/metadata-stores.md) stack components. 
+
+<!-- markdown-link-check-disable -->
+
 <!---
 Similar to
 Experiment Trackers, the ZenML pipeline artifacts can be extracted using
 [the post-execution workflow API](../../developer-guide/post-execution-workflow.md)
 and visualized using the ZenML [Visualizers](../../developer-guide/visualizer.md).
 -->
+
+<!-- markdown-link-check-enable -->
+
 However, these ZenML mechanisms are meant to be used programmatically and can be
 more difficult to work with without a visual interface.
 

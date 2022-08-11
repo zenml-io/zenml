@@ -63,7 +63,7 @@ online predictions on the running KServe inference service.
 ### 📄 Prerequisites 
 
 For the ZenML KServe deployer to work, these things are required:
-1. Access to a running [Kubernetes cluster](https://kubernetes.io/docs/tutorials/cluster-administration/). The example accepts a `--kubernetes-context` command-line argument. This Kubernetes context needs to point to the Kubernetes cluster where KServe model servers will be deployed. If the context is not explicitly supplied to the example, it defaults to using the locally active context.
+1. Access to a running [Kubernetes cluster](https://kubernetes.io/). The example accepts a `--kubernetes-context` command-line argument. This Kubernetes context needs to point to the Kubernetes cluster where KServe model servers will be deployed. If the context is not explicitly supplied to the example, it defaults to using the locally active context.
 
 2. KServe must be installed and running on the Kubernetes cluster (More information about how to install KServe can be found below or on the [KServe documentation](https://kserve.github.io/website/)).
 
@@ -372,7 +372,7 @@ Store. for more information, see the [Create and manage service account keys](ht
 Once we have the service account key, we can create a ZenML secret with the following command:
 
 ```bash
-zenml secret register -s kserve_gs kserve_secret \
+zenml secrets-manager secret register -s kserve_gs kserve_secret \
     --credentials="@~/sa-deployment-temp.json" \
 
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
@@ -384,7 +384,7 @@ zenml secret register -s kserve_gs kserve_secret \
 ``` 
 
 ```bash
-zenml secret get kserve_secret
+zenml secrets-manager secret get kserve_secret
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃    SECRET_KEY    │ SECRET_VALUE              ┃
 ┠──────────────────┼───────────────────────────┨
@@ -469,7 +469,7 @@ Pipeline run `tensorflow_inference_pipeline-24_Jul_22-23_58_24_922079` has finis
 The KServe prediction server is running remotely as a Kubernetes service and accepts inference requests at:
     `http://35.243.201.91:80/v1/models/mnist-tensorflow:predict`
     With the hostname: `mnist-tensorflow.kubeflow.example.com.`
-To stop the service, run `zenml served-models delete a9e967a1-9b26-4d5c-855c-e5abba0b020b`.
+To stop the service, run `zenml model-deployer models delete a9e967a1-9b26-4d5c-855c-e5abba0b020b`.
 ```
 
 Example of the Tensorflow inference pipeline when run with the remote Kubeflow stack:
@@ -486,7 +486,7 @@ and Natural Language Processing models, especially in the research domain,
 it is becoming more and more important to have a robust and easy to not only 
 [build ML pipelines with Pytorch](../pytorch/) but also to deploy the models built with it.
 
-[TorchServe](https://torchserve.github.io/website) is an open-source model serving 
+[TorchServe](https://github.com/pytorch/serve) is an open-source model serving 
 framework for PyTorch that makes it easy to deploy Pytorch models at a production 
 scale with low latency and high throughput, it provides default handlers for the most 
 common applications such as object detection and text classification, so you can write
@@ -548,7 +548,7 @@ Pipeline run pytorch_training_deployment_pipeline-04_Aug_22-00_32_11_318689 has 
 The KServe prediction server is running remotely as a Kubernetes service and accepts inference requests at:
     `http://104.196.187.43:80/v1/models/mnist-pytorch:predict`
     With the hostname: `mnist-pytorch.zenml-workloads.example.com.`
-To stop the service, run `zenml served-models delete e7595ac9-7fcf-42c2-82ac-a9e40ee95090`.
+To stop the service, run `zenml model-deployer models delete e7595ac9-7fcf-42c2-82ac-a9e40ee95090`.
 ```
 
 Example of the PyTorch training/deployment pipeline when run with the remote Kubeflow stack:
@@ -579,7 +579,7 @@ Pipeline run `pytorch_inference_pipeline-04_Aug_22-00_35_16_493511` has finished
 The KServe prediction server is running remotely as a Kubernetes service and accepts inference requests at:
     `http://104.196.187.43:80/v1/models/mnist-pytorch:predict`
     With the hostname: `mnist-pytorch.zenml-workloads.example.com.`
-To stop the service, run `zenml served-models delete e7595ac9-7fcf-42c2-82ac-a9e40ee95090`.
+To stop the service, run `zenml model-deployer models delete e7595ac9-7fcf-42c2-82ac-a9e40ee95090`.
 ```
 
 Example of the PyTorch inference pipeline when run with the remote Kubeflow stack:
@@ -589,10 +589,10 @@ Example of the PyTorch inference pipeline when run with the remote Kubeflow stac
 
 ## 🎮 ZenML Served Models CLI
 
-The `zenml served-models list` CLI command can be run to list the active model servers:
+The `zenml model-deployer models list` CLI command can be run to list the active model servers:
 
 ```shell
-$ zenml served-models list
+$ zenml model-deployer models list
 ┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┓
 ┃ STATUS │ UUID                                 │ PIPELINE_NAME                           │ PIPELINE_STEP_NAME         │ MODEL_NAME       ┃
 ┠────────┼──────────────────────────────────────┼─────────────────────────────────────────┼────────────────────────────┼──────────────────┨
@@ -603,10 +603,10 @@ $ zenml served-models list
 ```
 
 To get more information about a specific model server, such as the prediction URL,
-the `zenml served-models describe <uuid>` CLI command can be run:
+the `zenml model-deployer models describe <uuid>` CLI command can be run:
 
 ```shell
-$ zenml served-models describe a9e967a1-9b26-4d5c-855c-e5abba0b020b
+$ zenml model-deployer models describe a9e967a1-9b26-4d5c-855c-e5abba0b020b
   Properties of Served Model 62aac6aa-88fd-4eb7-a753-b46f1658775c                                      
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ MODEL SERVICE PROPERTY   │ VALUE                                                                                                       ┃
@@ -640,17 +640,17 @@ output, so there is a separate CLI command available to retrieve it:
 
 
 ```shell
-$ zenml served-models get-url a9e967a1-9b26-4d5c-855c-e5abba0b020b
+$ zenml model-deployer models get-url a9e967a1-9b26-4d5c-855c-e5abba0b020b
   Prediction URL of Served Model 62aac6aa-88fd-4eb7-a753-b46f1658775c is:
   http://35.243.201.91:80/v1/models/mnist-tensorflow:predict
   and the hostname is: mnist-tensorflow.kubeflow.example.com
 ```
 
-Finally, a model server can be deleted with the `zenml served-models delete <uuid>`
+Finally, a model server can be deleted with the `zenml model-deployer models delete <uuid>`
 CLI command:
 
 ```shell
-$ zenml served-models delete 62aac6aa-88fd-4eb7-a753-b46f1658775c
+$ zenml model-deployer models delete 62aac6aa-88fd-4eb7-a753-b46f1658775c
 ```
 
 ## 🧽 Clean up
@@ -659,7 +659,7 @@ To stop any prediction servers running in the background, use the `zenml model-s
 and `zenml model-server delete <uuid>` CLI commands.:
 
 ```shell
-zenml served-models delete 62aac6aa-88fd-4eb7-a753-b46f1658775c
+zenml model-deployer models delete 62aac6aa-88fd-4eb7-a753-b46f1658775c
 ```
 
 Then delete the remaining ZenML references.

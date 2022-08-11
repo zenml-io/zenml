@@ -333,7 +333,7 @@ new stack with these components that you have just created.
 a `kubeflow` flavor metadata-store).
 
     ```powershell
-    zenml secret register mysql_secret --schema=mysql --user=<user> --password=<password>
+    zenml secrets-manager secret register mysql_secret --schema=mysql --user=<user> --password=<password>
     --ssl_ca=@/path/to/downloaded/server-cert --ssl_cert=@/path/to/downloaded/client-cert
     --ssl_key=@/path/to/downloaded/client-key
     ```

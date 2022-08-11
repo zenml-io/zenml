@@ -357,7 +357,7 @@ save any explicit AWS credentials in the ZenML secret. You just have to set the
 as is:
 
 ```bash
-$ zenml secret register -s seldon_s3 s3-store --rclone_config_s3_env_auth=True
+$ zenml secrets-manager secret register -s seldon_s3 s3-store --rclone_config_s3_env_auth=True
 The following secret will be registered.
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
 ┃        SECRET_KEY         │ SECRET_VALUE ┃
@@ -367,7 +367,7 @@ The following secret will be registered.
 ┃ rclone_config_s3_env_auth │ ***          ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
 
-$ zenml secret get s3-store
+$ zenml secrets-manager secret get s3-store
 INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
 ┃        SECRET_KEY         │ SECRET_VALUE ┃
@@ -385,7 +385,7 @@ configure it, you will need to set up credentials explicitly in the ZenML secret
 e.g.:
 
 ```bash
-$ zenml secret register -s seldon_s3 s3-store \
+$ zenml secrets-manager secret register -s seldon_s3 s3-store \
     --rclone_config_s3_env_auth=False \
     --rclone_config_s3_access_key_id='ASAK2NSJVO4HDQC7Z25F' \ --rclone_config_s3_secret_access_key='AhkFSfhjj23fSDFfjklsdfj34hkls32SDfscsaf+' \
     --rclone_config_s3_session_token=@./aws_session_token.txt \
@@ -405,7 +405,7 @@ The following secret will be registered.
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
 INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
 
-$ zenml secret get s3-store
+$ zenml secrets-manager secret get s3-store
 INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             SECRET_KEY             │ SECRET_VALUE                           ┃
@@ -534,10 +534,10 @@ command line argument can be used:
 python run.py --model-flavor sklearn --penalty=l2
 ```
 
-The `zenml served-models list` CLI command can be run to list the active model servers:
+The `zenml model-deployer models list` CLI command can be run to list the active model servers:
 
 ```shell
-$ zenml served-models list
+$ zenml model-deployer models list
 ┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ STATUS │ UUID                                 │ PIPELINE_NAME                  │ PIPELINE_STEP_NAME         ┃
 ┠────────┼──────────────────────────────────────┼────────────────────────────────┼────────────────────────────┨
@@ -546,10 +546,10 @@ $ zenml served-models list
 ```
 
 To get more information about a specific model server, such as the prediction URL,
-the `zenml served-models describe <uuid>` CLI command can be run:
+the `zenml model-deployer models describe <uuid>` CLI command can be run:
 
 ```shell
-$ zenml served-models describe 8cbe671b-9fce-4394-a051-68e001f92765
+$ zenml model-deployer models describe 8cbe671b-9fce-4394-a051-68e001f92765
                           Properties of Served Model 8cbe671b-9fce-4394-a051-68e001f92765                          
 ┏━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ MODEL SERVICE PROPERTY │ VALUE                                                                                  ┃
@@ -580,17 +580,17 @@ The prediction URL can sometimes be more difficult to make out in the detailed
 output, so there is a separate CLI command available to retrieve it:
 
 ```shell
-$ zenml served-models get-url 8cbe671b-9fce-4394-a051-68e001f92765
+$ zenml model-deployer models get-url 8cbe671b-9fce-4394-a051-68e001f92765
   Prediction URL of Served Model 8cbe671b-9fce-4394-a051-68e001f92765 is:
   http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com/seldon/zenml-workloads/zenml-8cbe67
 1b-9fce-4394-a051-68e001f92765/api/v0.1/predictions
 ```
 
-Finally, a model server can be deleted with the `zenml served-models delete <uuid>`
+Finally, a model server can be deleted with the `zenml model-deployer models delete <uuid>`
 CLI command:
 
 ```shell
-$ zenml served-models delete 8cbe671b-9fce-4394-a051-68e001f92765
+$ zenml model-deployer models delete 8cbe671b-9fce-4394-a051-68e001f92765
 ```
 
 ### 🧽 Clean up
@@ -599,7 +599,7 @@ To stop any prediction servers running in the background, use the `zenml model-s
 and `zenml model-server delete <uuid>` CLI commands.:
 
 ```shell
-zenml served-models delete 8cbe671b-9fce-4394-a051-68e001f92765
+zenml model-deployer models delete 8cbe671b-9fce-4394-a051-68e001f92765
 ```
 
 Then delete the remaining ZenML references.

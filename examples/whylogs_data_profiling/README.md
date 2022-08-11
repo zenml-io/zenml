@@ -197,7 +197,7 @@ zenml data-validator register whylogs -f whylogs --authentication_secret=whylabs
 zenml secrets-manager register local -f local
 zenml stack register whylogs_stack -o default -a default -m default -x local -dv whylogs --set
 
-zenml secret register whylabs_secret -s whylogs \
+zenml secrets-manager secret register whylabs_secret -s whylogs \
     --whylabs_default_org_id=<your-whylogs-organization-id> \
     --whylabs_api_key=<your-whylogs-api-key>
 ```
