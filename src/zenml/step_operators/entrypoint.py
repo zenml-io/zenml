@@ -55,6 +55,10 @@ def create_executor_class(
 
     Returns:
         A class of an executor instance.
+
+    Raises:
+        TypeError: If any materializer source does not resolve to a
+            `BaseMaterializer` subclass.
     """
     step_class = cast(
         Type[BaseStep], source_utils.load_source_path_class(step_source_path)
