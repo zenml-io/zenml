@@ -38,11 +38,13 @@ gcloud auth configure-docker
 You will also need to 
 [create a service account](https://cloud.google.com/iam/docs/creating-managing-service-accounts).
 
+![Grant user access to Service Account](assets/GCP_Service0.png)
+
 This service account will need permissions to run Vertex AI jobs, and access 
 secrets as Admin. Additionally, your user account will need to have permissions to use the service 
 account.
 
-![Grant user access to Service Account](assets/serviceacc3.png)
+![Grant user access to Service Account](assets/GCP_Service1.png)
 
 For your CloudSQL database it is also recommended to enable SSL authentication. 
 You will need to create a client certificate and download all three certificates. 
