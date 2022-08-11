@@ -290,11 +290,14 @@ def test_secrets_shared_at_scope_level(
     # update the secret
     new_secret = get_arbitrary_secret(name=secret.name)
 
-    # TODO: the current GCP Secrets Manager implementation has a bug in it
-    # that prevents new keys from being added to an existing secret. We could
-    # fix it, but given that unscoped secrets are deprecated, it's better to
-    # just wait until it is phased out.
-    if secrets_manager.FLAVOR == "gcp_secrets_manager":
+    # TODO: the current GCP and Azure Secrets Manager implementations have a bug
+    # that prevents new keys from being added to an existing unscoped secret. We
+    # could fix it, but given that unscoped secrets are deprecated, it's better
+    # to just wait until it is phased out.
+    if (
+        secrets_manager.scope == SecretsManagerScope.NONE
+        and secrets_manager.FLAVOR in ["gcp_secrets_manager", "azure_key_vault"]
+    ):
         new_secret.arbitrary_kv_pairs = secret.arbitrary_kv_pairs.copy()
         new_secret.arbitrary_kv_pairs[
             list(new_secret.arbitrary_kv_pairs.keys())[0]
