@@ -2,7 +2,7 @@
 description: How to store ML metadata in a MySQL database
 ---
 
-The MySQL Metadata Store is a built-in ZenML [Metadata Store](./overview.md)
+The MySQL Metadata Store is a built-in ZenML [Metadata Store](./metadata-stores.md)
 flavor that connects to a MySQL compatible service to store metadata
 information.
 
