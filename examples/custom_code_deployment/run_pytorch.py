@@ -53,6 +53,9 @@ DEPLOY = "deploy"
 PREDICT = "predict"
 DEPLOY_AND_PREDICT = "deploy_and_predict"
 
+SELDON = "seldon"
+KSERVE = "kserve"
+
 
 @click.command()
 @click.option(
@@ -69,22 +72,22 @@ DEPLOY_AND_PREDICT = "deploy_and_predict"
 @click.option(
     "--batch-size",
     default=4,
-    help="Number of epochs for training (tensorflow hyperparam)",
+    help="Number of epochs for training (pytorch hyperparam)",
 )
 @click.option(
     "--epochs",
     default=3,
-    help="Number of epochs for training (tensorflow hyperparam)",
+    help="Number of epochs for training (pytorch hyperparam)",
 )
 @click.option(
     "--lr",
     default=0.01,
-    help="Learning rate for training (tensorflow hyperparam, default: 0.003)",
+    help="Learning rate for training (pytorch hyperparam, default: 0.003)",
 )
 @click.option(
     "--momentum",
     default=0.5,
-    help="Learning rate for training (tensorflow hyperparam, default: 0.003)",
+    help="Learning rate for training (pytorch hyperparam, default: 0.003)",
 )
 @click.option(
     "--min-accuracy",
@@ -93,8 +96,11 @@ DEPLOY_AND_PREDICT = "deploy_and_predict"
 )
 @click.option(
     "--model-deployer",
-    help="Which model deployment serving tool is used. This only accept seldon or kserve",
+    "-d",
+    type=click.Choice([SELDON, KSERVE]),
+    help="Which model deployment serving tool is used? This only accepts Seldon or KServe",
     required=True,
+    multiple=False,
 )
 def main(
     config: str,
@@ -105,11 +111,11 @@ def main(
     min_accuracy: float,
     model_deployer: str,
 ):
-    """Run the KServe-Pytorch example training/deployment or inference pipeline
+    """Run the custom code deployment example training/deployment or inference pipeline
 
     Example usage:
 
-        python run.py --deploy --min-accuracy 0.80
+        python run.py --config deploy_and_predict --model-deployer seldon
 
     """
     deploy = config == DEPLOY or config == DEPLOY_AND_PREDICT

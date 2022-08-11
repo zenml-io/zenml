@@ -84,17 +84,19 @@ class ZenMLCustomModel(object):
         return self.ready
 
     def predict(
-        self, X: Array_Like, features_names: Optional[List[str]]
+        self,
+        X: Array_Like,
+        features_names: Optional[List[str]],
+        **kwargs: Any,
     ) -> Array_Like:
         """Predict the given request.
 
         The main predict function of the model. This function is called by the
-        KServe server when a request is received. Then inside this function,
+        Seldon Core server when a request is received. Then inside this function,
         the user-defined predict function is called.
 
         Args:
             X: The request to predict in a dictionary.
-            features_names: The names of the features in the request.
 
         Returns:
             The prediction dictionary.
@@ -105,10 +107,10 @@ class ZenMLCustomModel(object):
         """
         if self.predict_func is not None:
             try:
-                prediction = {"predictions": self.predict_func(self.model, X)}
+                prediction = self.predict_func(self.model, X)
             except Exception as e:
                 raise Exception("Failed to predict: {}".format(e))
-            if isinstance(prediction, dict):
+            if isinstance(prediction, Array_Like):
                 return prediction
             else:
                 raise Exception("Prediction is not a dictionary.")
@@ -138,6 +140,23 @@ class ZenMLCustomModel(object):
 )
 def main(model_name: str, model_uri: str, predict_func: str) -> None:
     """Main function for the custom model.
+
+    Within the deployment process, the built-in custom deployment step is used to
+    to prepare the Seldon Core deployment with an entry point that calls this script,
+    which then starts a subprocess to start the Seldon server and waits for requests.
+
+    The following is an example of the entry point:
+    ```
+    entrypoint_command = [
+        "python",
+        "-m",
+        "zenml.integrations.seldon.custom_deployer.zenml_custom_model",
+        "--model_name",
+        config.service_config.model_name,
+        "--predict_func",
+        config.custom_deploy_parameters.predict_function,
+    ]
+    ```
 
     Args:
         model_name: The name of the model.

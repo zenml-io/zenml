@@ -33,7 +33,7 @@ class ZenMLCustomModel(kserve.Model):  # type: ignore[misc]
     which is used as the main entry point for custom code execution.
 
     Attributes:
-        name: The name of the model.
+        model_name: The name of the model.
         model_uri: The URI of the model.
         predict_func: The predict function of the model.
     """
@@ -62,9 +62,11 @@ class ZenMLCustomModel(kserve.Model):  # type: ignore[misc]
         """Load the model.
 
         This function loads the model into memory and sets the ready flag to True.
+
         The model is loaded using the materializer, by saving the information of
-        the artifact to a file at the preparing time and loading it again at the
-        prediction time by the materializer.
+        the artifact to a YAML file in the same path as the model artifacts at
+        the preparing time and loading it again at the prediction time by
+        the materializer.
 
         Returns:
             True if the model was loaded successfully, False otherwise.
@@ -135,7 +137,24 @@ class ZenMLCustomModel(kserve.Model):  # type: ignore[misc]
     help="The path to the custom predict function defined by the user.",
 )
 def main(model_name: str, model_uri: str, predict_func: str) -> None:
-    """Main function for the custom model.
+    """Main function responsible for starting the Kserve server.
+
+    Within the deployment process, the built-in custom deployment step is used to
+    to prepare the kserve deployment with an entry point that calls this script,
+    which then starts the Kserve server and waits for requests.
+
+    The following is an example of the entry point:
+    ```
+    entrypoint_command = [
+        "python",
+        "-m",
+        "zenml.integrations.kserve.custom_deployer.zenml_custom_model",
+        "--model_name",
+        config.service_config.model_name,
+        "--predict_func",
+        config.custom_deploy_parameters.predict_function,
+    ]
+    ```
 
     Args:
         model_name: The name of the model.

@@ -29,10 +29,10 @@ logger = get_logger(__name__)
 
 
 def save_model_metadata(model_artifact: Artifact) -> str:
-    """Save a zenml artifact to a json file.
+    """Save a zenml artifact metadata to a YAML file.
 
     Args:
-        model_artifact: the directory where the model files are stored
+        model_artifact: the artifact to extract the metadata from.
 
     Returns:
         The path to the temporary file where the model metadata is saved
@@ -54,10 +54,10 @@ def load_model_from_metadata(model_uri: str) -> Any:
     """Load a zenml artifact from a json file.
 
     Args:
-        model_uri: the directory where the model files are stored
+        model_uri: the artifact to extract the metadata from.
 
     Returns:
-        The ML model loaded into a Python object
+        The ML model object loaded into memory.
     """
     with fileio.open(
         os.path.join(model_uri, MODEL_METADATA_YAML_FILE_NAME), "r"

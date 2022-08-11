@@ -37,7 +37,10 @@ class PyTorchInferenceProcessorStepConfig(BaseStepConfig):
 def pytorch_inference_processor(
     config: PyTorchInferenceProcessorStepConfig,
 ) -> str:
-    """Load an image from a URL and encode it as a base64 string.
+    """Load an image and make it available for inference.
+
+    This step is used to load an image from a URL make as a numpy array and
+    dump it as a JSON string.
 
     Args:
         config: The configuration for the step.

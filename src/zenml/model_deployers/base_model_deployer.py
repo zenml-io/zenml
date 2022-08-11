@@ -22,7 +22,6 @@ from zenml.services import BaseService, ServiceConfig
 from zenml.stack import StackComponent
 
 DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT = 300
-CUSTOM_DEPLOYMENT_IMAGE_NAME = "zenml-custom-deploy"
 
 
 class BaseModelDeployer(StackComponent, ABC):

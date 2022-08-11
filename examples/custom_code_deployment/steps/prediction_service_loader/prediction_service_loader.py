@@ -25,13 +25,12 @@ from zenml.steps import BaseStepConfig, step
 
 
 class PredectionServiceLoaderStepConfig(BaseStepConfig):
-    """KServe deployment loader configuration.
-    Attributes:
-        pipeline_name: name of the pipeline that deployed the KServe prediction
-            server
-        step_name: the name of the step that deployed the KServe prediction
-            server
-        model_name: the name of the model that was deployed
+    """Prediction Service loader configuration.
+
+    Attrs:
+        pipeline_name: name of the pipeline that deployed the model.
+        step_name: the name of the step that deployed the model.
+        model_name: the name of the model that was deployed.
     """
 
     pipeline_name: str
@@ -43,7 +42,7 @@ class PredectionServiceLoaderStepConfig(BaseStepConfig):
 def kserve_prediction_service_loader(
     config: PredectionServiceLoaderStepConfig,
 ) -> KServeDeploymentService:
-    """Get the prediction service started by the deployment pipeline"""
+    """Get the KServe prediction service started by the deployment pipeline"""
 
     model_deployer = KServeModelDeployer.get_active_model_deployer()
 
@@ -75,7 +74,7 @@ def kserve_prediction_service_loader(
 def seldon_prediction_service_loader(
     config: PredectionServiceLoaderStepConfig,
 ) -> SeldonDeploymentService:
-    """Get the prediction service started by the deployment pipeline"""
+    """Get the Seldon Core prediction service started by the deployment pipeline."""
 
     model_deployer = SeldonModelDeployer.get_active_model_deployer()
 

@@ -12,12 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the KServe Deployer step."""
+import os
 from typing import List, Optional, cast
 
 from pydantic import BaseModel, validator
 
 from zenml.artifacts.model_artifact import ModelArtifact
+from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.environment import Environment
+from zenml.exceptions import DoesNotExistException
 from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (
     DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT,
     KServeModelDeployer,
@@ -26,6 +29,7 @@ from zenml.integrations.kserve.services.kserve_deployment import (
     KServeDeploymentConfig,
     KServeDeploymentService,
 )
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
@@ -34,6 +38,8 @@ from zenml.steps import (
     step,
 )
 from zenml.steps.step_context import StepContext
+from zenml.utils import io_utils
+from zenml.utils.materializer_utils import save_model_metadata
 from zenml.utils.source_utils import import_class_by_path, is_inside_repository
 
 logger = get_logger(__name__)
@@ -330,15 +336,19 @@ def kserve_custom_model_deployer_step(
         model: the model artifact to deploy
         context: the step context
 
+    Raises:
+        ValueError: if the custom deployer parameters is not defined
+        DoesNotExistException: if no active stack is found
+
+
     Returns:
         KServe deployment service
-
-    Raises:
-        ValueError: if custom deployer is not defined
     """
+    # verify that a custom deployer is defined
     if not config.custom_deploy_parameters:
         raise ValueError("Custom deploy parameters are required.")
 
+    # get the active model deployer
     model_deployer = KServeModelDeployer.get_active_model_deployer()
 
     # get pipeline name, step name, run id and pipeline requirements
@@ -361,6 +371,7 @@ def kserve_custom_model_deployer_step(
         pipeline_step_name=step_name,
         model_name=config.service_config.model_name,
     )
+
     # even when the deploy decision is negative if an existing model server
     # is not running for this pipeline/step, we still have to serve the
     # current model, to ensure that a model server is available at all times
@@ -379,7 +390,7 @@ def kserve_custom_model_deployer_step(
             service.start(timeout=config.timeout)
         return service
 
-    # entrypoint for starting KServe microservice deployment for custom model
+    # entrypoint for starting KServe server deployment for custom model
     entrypoint_command = [
         "python",
         "-m",
@@ -390,31 +401,45 @@ def kserve_custom_model_deployer_step(
         config.custom_deploy_parameters.predict_function,
     ]
 
-    if context.stack is not None:
-        custom_docker_image_name = (
-            model_deployer.prepare_custom_deployment_image(
-                pipeline_name=pipeline_name,
-                stack=context.stack,
-                docker_configuration=docker_configuration,
-                runtime_configuration=runtime_configuration,
-                entrypoint=entrypoint_command,
-            )
+    # verify if there is an active stack before starting the service
+    if not context.stack:
+        raise DoesNotExistException(
+            "No active stack is available. "
+            "Please make sure that you have registered and set a stack."
         )
-    else:
-        raise ValueError("Stack is required for custom deployer.")
+    stack = context.stack
 
-    # import the prepare function from the step utils
-    from zenml.integrations.kserve.steps.kserve_step_utils import (
-        prepare_custom_service_config,
+    # prepare the custom deployment docker image
+    custom_docker_image_name = model_deployer.prepare_custom_deployment_image(
+        pipeline_name=pipeline_name,
+        stack=stack,
+        docker_configuration=docker_configuration,
+        runtime_configuration=runtime_configuration,
+        entrypoint=entrypoint_command,
     )
 
-    # prepare the service config
-    service_config = prepare_custom_service_config(
-        model_uri=model.uri,
-        output_artifact_uri=context.get_output_artifact_uri(),
-        config=config,
-        context=context,
+    # copy the model files to a new specific directory for the deployment
+    served_model_uri = os.path.join(context.get_output_artifact_uri(), "kserve")
+    fileio.makedirs(served_model_uri)
+    io_utils.copy_dir(model.uri, served_model_uri)
+
+    # Get the model artifact to extract information about the model
+    # and how it can be loaded again later in the deployment environment.
+    artifact = stack.metadata_store.store.get_artifacts_by_uri(model.uri)
+    if not artifact:
+        raise DoesNotExistException("No artifact found at {}".format(model.uri))
+
+    # save the model artifact metadata to the YAML file and copy it to the
+    # deployment directory
+    model_metadata_file = save_model_metadata(artifact[0])
+    fileio.copy(
+        model_metadata_file,
+        os.path.join(served_model_uri, MODEL_METADATA_YAML_FILE_NAME),
     )
+
+    # prepare the service configuration for the deployment
+    service_config = config.service_config.copy()
+    service_config.model_uri = served_model_uri
 
     # Prepare container config for custom model deployment
     service_config.containers = {
@@ -424,6 +449,7 @@ def kserve_custom_model_deployer_step(
         "storage_uri": service_config.model_uri,
     }
 
+    # deploy the service
     service = cast(
         KServeDeploymentService,
         model_deployer.deploy_model(

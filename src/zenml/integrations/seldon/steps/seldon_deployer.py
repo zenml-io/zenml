@@ -54,6 +54,12 @@ class CustomDeployParameters(BaseModel):
 
     Attributes:
         predict_function: Path to Python file containing predict function.
+
+    Raises:
+        ValueError: If predict_function is not specified.
+
+    Returns:
+        predict_function: Path to Python file containing predict function.
     """
 
     predict_function: str
@@ -245,7 +251,7 @@ def seldon_custom_model_deployer_step(
     """Seldon Core custom model deployer pipeline step.
 
     This step can be used in a pipeline to implement the
-    process required to deploy a custom model with Seldon Core.
+    the process required to deploy a custom model with Seldon Core.
 
     Args:
         deploy_decision: whether to deploy the model or not
@@ -253,20 +259,21 @@ def seldon_custom_model_deployer_step(
         model: the model artifact to deploy
         context: the step context
 
+    Raises:
+        ValueError: if the custom deployer is not defined
+        DoesNotExistException: if an entity does not exist raise an exception
+
     Returns:
         Seldon Core deployment service
-
-    Raises:
-        ValueError: if custom deployer is not defined
-        DoesNotExistException: if an entity does not exist raises an exception
-        RuntimeError: if the model files were not found
     """
+    # verify that a custom deployer is defined
     if not config.custom_deploy_parameters:
         raise ValueError("Custom deploy parameters are required.")
 
+    # get the active model deployer
     model_deployer = SeldonModelDeployer.get_active_model_deployer()
 
-    # get pipeline name, step name, run id and pipeline requirements
+    # get pipeline name, step name, run id, docker config and the runtime config
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
     pipeline_name = step_env.pipeline_name
     pipeline_run_id = step_env.pipeline_run_id
@@ -280,7 +287,7 @@ def seldon_custom_model_deployer_step(
     config.service_config.pipeline_step_name = step_name
     config.service_config.is_custom_deployment = True
 
-    # fetch existing services with same pipeline name, step name and
+    # fetch existing services with the same pipeline name, step name and
     # model name
     existing_services = model_deployer.find_model_server(
         pipeline_name=pipeline_name,
@@ -298,7 +305,7 @@ def seldon_custom_model_deployer_step(
             f"'{config.service_config.model_name}'..."
         )
         service = cast(SeldonDeploymentService, existing_services[0])
-        # even when the deploy decision is negative, we still need to start
+        # even when the deployment decision is negative, we still need to start
         # the previous model server if it is no longer running, to ensure that
         # a model server is available at all times
         if not service.is_running:
@@ -316,50 +323,47 @@ def seldon_custom_model_deployer_step(
         config.custom_deploy_parameters.predict_function,
     ]
 
-    if context.stack is not None:
-        custom_docker_image_name = (
-            model_deployer.prepare_custom_deployment_image(
-                pipeline_name=pipeline_name,
-                stack=context.stack,
-                docker_configuration=docker_configuration,
-                runtime_configuration=runtime_configuration,
-                entrypoint=entrypoint_command,
-            )
-        )
-    else:
-        raise ValueError("Stack is required for custom deployer.")
-
-    # prepare the service config
-    if config.custom_deploy_parameters is None:
-        raise RuntimeError("No custom deploy parameters provided")
-
-    served_model_uri = os.path.join(context.get_output_artifact_uri(), "seldon")
-    fileio.makedirs(served_model_uri)
-    io_utils.copy_dir(model.uri, served_model_uri)
-    # TODO [ENG-773]: determine how to formalize how models are organized into
-    #   folders and sub-folders depending on the model type/format and the
-    #   Seldon Core protocol used to serve the model.
+    # verify if there is an active stack before starting the service
     if not context.stack:
         raise DoesNotExistException(
             "No active stack is available. "
             "Please make sure that you have registered and set a stack."
         )
     stack = context.stack
-    artifact = stack.metadata_store.store.get_artifacts_by_uri(model.uri)
 
+    # prepare the custom deployment docker image
+    custom_docker_image_name = model_deployer.prepare_custom_deployment_image(
+        pipeline_name=pipeline_name,
+        stack=stack,
+        docker_configuration=docker_configuration,
+        runtime_configuration=runtime_configuration,
+        entrypoint=entrypoint_command,
+    )
+
+    # copy the model files to new specific directory for the deployment
+    served_model_uri = os.path.join(context.get_output_artifact_uri(), "seldon")
+    fileio.makedirs(served_model_uri)
+    io_utils.copy_dir(model.uri, served_model_uri)
+
+    # Get the model artifact to extract information about the model
+    # and how it can be loaded again later in the deployment environment.
+    artifact = stack.metadata_store.store.get_artifacts_by_uri(model.uri)
     if not artifact:
         raise DoesNotExistException("No artifact found at {}".format(model.uri))
 
+    # save the model artifact metadata to the YAML file and copy it to the
+    # deployment directory
     model_metadata_file = save_model_metadata(artifact[0])
     fileio.copy(
         model_metadata_file,
         os.path.join(served_model_uri, MODEL_METADATA_YAML_FILE_NAME),
     )
 
+    # prepare the service configuration for the deployment
     service_config = config.service_config.copy()
     service_config.model_uri = served_model_uri
 
-    # create specification for the custom deployment
+    # create the specification for the custom deployment
     service_config.spec = create_seldon_core_custom_spec(
         model_uri=service_config.model_uri,
         custom_docker_image=custom_docker_image_name,
@@ -367,6 +371,7 @@ def seldon_custom_model_deployer_step(
         command=entrypoint_command,
     )
 
+    # deploy the service
     service = cast(
         SeldonDeploymentService,
         model_deployer.deploy_model(

@@ -23,7 +23,15 @@ def kserve_predictor(
     service: KServeDeploymentService,
     data: str,
 ) -> None:
-    """Run a inference request against a prediction service"""
+    """Run a inference request against the kserve prediction service.
+
+    Acording to the KServe documentation, the predict response is a JSON object
+    with the following structure: {"predictions": []}.
+
+    Args:
+        service: The kserve deployment service.
+        data: The data to predict.
+    """
 
     service.start(timeout=120)  # should be a NOP if already started
     response = service.predict(data)
@@ -35,7 +43,15 @@ def seldon_predictor(
     service: KServeDeploymentService,
     data: str,
 ) -> None:
-    """Run a inference request against a prediction service"""
+    """Run a inference request against the seldon core prediction service.
+
+    Acording to the Seldon documentation, the predict response is a JSON object
+    with the following structure:
+
+    Args:
+        service: The seldon deployment service.
+        data: The data to predict.
+    """
 
     service.start(timeout=120)  # should be a NOP if already started
     response = service.predict(data)

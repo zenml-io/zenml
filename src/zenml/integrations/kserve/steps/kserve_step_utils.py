@@ -20,8 +20,6 @@ from model_archiver.model_packaging import package_model
 from model_archiver.model_packaging_utils import ModelExportUtils
 from pydantic import BaseModel
 
-from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
-from zenml.exceptions import DoesNotExistException
 from zenml.integrations.kserve.services.kserve_deployment import (
     KServeDeploymentConfig,
 )
@@ -30,9 +28,7 @@ from zenml.integrations.kserve.steps.kserve_deployer import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.steps.step_context import StepContext
 from zenml.utils import io_utils
-from zenml.utils.materializer_utils import save_model_metadata
 
 logger = get_logger(__name__)
 
@@ -275,61 +271,3 @@ def generate_model_deployer_config(
         )
     f.close()
     return f.name
-
-
-def prepare_custom_service_config(
-    model_uri: str,
-    output_artifact_uri: str,
-    config: KServeDeployerStepConfig,
-    context: StepContext,
-) -> KServeDeploymentConfig:
-    """Prepare the model files for model serving.
-
-    This function will prepare the model files for model serving.
-    In the context of custom model serving, this function will
-    copy the artifacts from original location to the location
-    where the model is served and saves additional data required to
-    load the model in the serving environment using the materializers
-
-    Args:
-        model_uri: the URI of the model artifact being served
-        output_artifact_uri: the URI of the output artifact
-        config: the KServe deployer step config
-        context: the step context
-
-    Returns:
-        The URL to the model is ready for serving.
-
-    Raises:
-        RuntimeError: if the model files cannot be prepared.
-        DoesNotExistException: if the active stack is not available.
-    """
-    if config.custom_deploy_parameters is None:
-        raise RuntimeError("No custom deploy parameters provided")
-
-    served_model_uri = os.path.join(output_artifact_uri, "kserve")
-    fileio.makedirs(served_model_uri)
-    io_utils.copy_dir(model_uri, served_model_uri)
-    # TODO [ENG-773]: determine how to formalize how models are organized into
-    #   folders and sub-folders depending on the model type/format and the
-    #   KServe protocol used to serve the model.
-    if not context.stack:
-        raise DoesNotExistException(
-            "No active stack is available. "
-            "Please make sure that you have registered and set a stack."
-        )
-    stack = context.stack
-    artifact = stack.metadata_store.store.get_artifacts_by_uri(model_uri)
-
-    if not artifact:
-        raise DoesNotExistException("No artifact found at {}".format(model_uri))
-
-    model_metadata_file = save_model_metadata(artifact[0])
-    fileio.copy(
-        model_metadata_file,
-        os.path.join(served_model_uri, MODEL_METADATA_YAML_FILE_NAME),
-    )
-
-    service_config = config.service_config.copy()
-    service_config.model_uri = served_model_uri
-    return service_config
