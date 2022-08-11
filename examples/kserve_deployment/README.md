@@ -63,7 +63,7 @@ online predictions on the running KServe inference service.
 ### 📄 Prerequisites 
 
 For the ZenML KServe deployer to work, these things are required:
-1. Access to a running [Kubernetes cluster](https://kubernetes.io/docs/tutorials/cluster-administration/). The example accepts a `--kubernetes-context` command-line argument. This Kubernetes context needs to point to the Kubernetes cluster where KServe model servers will be deployed. If the context is not explicitly supplied to the example, it defaults to using the locally active context.
+1. Access to a running [Kubernetes cluster](https://kubernetes.io/). The example accepts a `--kubernetes-context` command-line argument. This Kubernetes context needs to point to the Kubernetes cluster where KServe model servers will be deployed. If the context is not explicitly supplied to the example, it defaults to using the locally active context.
 
 2. KServe must be installed and running on the Kubernetes cluster (More information about how to install KServe can be found below or on the [KServe documentation](https://kserve.github.io/website/)).
 
@@ -486,7 +486,7 @@ and Natural Language Processing models, especially in the research domain,
 it is becoming more and more important to have a robust and easy to not only 
 [build ML pipelines with Pytorch](../pytorch/) but also to deploy the models built with it.
 
-[TorchServe](https://torchserve.github.io/website) is an open-source model serving 
+[TorchServe](https://github.com/pytorch/serve) is an open-source model serving 
 framework for PyTorch that makes it easy to deploy Pytorch models at a production 
 scale with low latency and high throughput, it provides default handlers for the most 
 common applications such as object detection and text classification, so you can write
