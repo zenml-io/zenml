@@ -26,5 +26,5 @@ def predictor(
     """Run a inference request against a prediction service"""
 
     service.start(timeout=120)  # should be a NOP if already started
-    prediction = service.predict(data)
-    rich_print("Prediction: ", prediction)
+    response = service.predict(data)
+    rich_print(response)

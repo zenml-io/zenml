@@ -15,6 +15,12 @@ from typing import cast
 
 from zenml.integrations.kserve.model_deployers import KServeModelDeployer
 from zenml.integrations.kserve.services import KServeDeploymentService
+from zenml.integrations.seldon.model_deployers.seldon_model_deployer import (
+    SeldonModelDeployer,
+)
+from zenml.integrations.seldon.services.seldon_deployment import (
+    SeldonDeploymentService,
+)
 from zenml.steps import BaseStepConfig, step
 
 
@@ -34,7 +40,7 @@ class PredectionServiceLoaderStepConfig(BaseStepConfig):
 
 
 @step(enable_cache=False)
-def prediction_service_loader(
+def kserve_prediction_service_loader(
     config: PredectionServiceLoaderStepConfig,
 ) -> KServeDeploymentService:
     """Get the prediction service started by the deployment pipeline"""
@@ -63,3 +69,35 @@ def prediction_service_loader(
         )
 
     return cast(KServeDeploymentService, services[0])
+
+
+@step(enable_cache=False)
+def seldon_prediction_service_loader(
+    config: PredectionServiceLoaderStepConfig,
+) -> SeldonDeploymentService:
+    """Get the prediction service started by the deployment pipeline"""
+
+    model_deployer = SeldonModelDeployer.get_active_model_deployer()
+
+    services = model_deployer.find_model_server(
+        pipeline_name=config.pipeline_name,
+        pipeline_step_name=config.step_name,
+        model_name=config.model_name,
+    )
+    if not services:
+        raise RuntimeError(
+            f"No Seldon Core prediction server deployed by the "
+            f"'{config.step_name}' step in the '{config.pipeline_name}' "
+            f"pipeline for the '{config.model_name}' model is currently "
+            f"running."
+        )
+
+    if not services[0].is_running:
+        raise RuntimeError(
+            f"The Seldon Core prediction server last deployed by the "
+            f"'{config.step_name}' step in the '{config.pipeline_name}' "
+            f"pipeline for the '{config.model_name}' model is not currently "
+            f"running."
+        )
+
+    return cast(SeldonDeploymentService, services[0])

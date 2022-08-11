@@ -593,4 +593,4 @@ class KServeDeploymentService(BaseService):
             json={"instances": request},
         )
         response.raise_for_status()
-        return response.json()["predictions"]
+        return response.json()

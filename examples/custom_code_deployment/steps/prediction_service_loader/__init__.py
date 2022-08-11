@@ -14,10 +14,12 @@
 
 from .prediction_service_loader import (
     PredectionServiceLoaderStepConfig,
-    prediction_service_loader,
+    kserve_prediction_service_loader,
+    seldon_prediction_service_loader,
 )
 
 __all__ = [
-    "prediction_service_loader",
+    "kserve_prediction_service_loader",
+    "seldon_prediction_service_loader,",
     "PredectionServiceLoaderStepConfig",
 ]

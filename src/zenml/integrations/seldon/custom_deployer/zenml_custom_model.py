@@ -105,11 +105,7 @@ class ZenMLCustomModel(object):
         """
         if self.predict_func is not None:
             try:
-                prediction = {
-                    "predictions": self.predict_func(
-                        self.model, X, features_names
-                    )
-                }
+                prediction = {"predictions": self.predict_func(self.model, X)}
             except Exception as e:
                 raise Exception("Failed to predict: {}".format(e))
             if isinstance(prediction, dict):

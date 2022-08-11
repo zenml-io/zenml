@@ -30,7 +30,7 @@ class PyTorchInferenceProcessorStepConfig(BaseStepConfig):
 
     img_url: Optional[
         str
-    ] = "https://raw.githubusercontent.com/kserve/kserve/master/docs/samples/v1beta1/torchserve/v1/imgconv/0.png"
+    ] = "https://raw.githubusercontent.com/kserve/kserve/master/docs/samples/v1beta1/torchserve/v1/imgconv/1.png"
 
 
 @step(enable_cache=False)
@@ -48,5 +48,5 @@ def pytorch_inference_processor(
     response = requests.get(config.img_url)
     img = Image.open(BytesIO(response.content))
     numpydata = asarray(img)
-    request = numpydata.tolist()
-    return json.dumps([request])
+    input = numpydata.tolist()
+    return json.dumps([input])

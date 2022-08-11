@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import json
 from typing import cast
 
 import numpy as np  # type: ignore [import]
@@ -224,28 +225,32 @@ def dynamic_importer() -> Output(data=np.ndarray):
 
 
 @step
-def tf_predict_preprocessor(input: np.ndarray) -> Output(data=np.ndarray):
+def tf_predict_preprocessor(input: np.ndarray) -> Output(data=str):
     """Prepares the data for inference."""
     input = input / 255.0
-    return input
+    request = input.tolist()
+    return json.dumps(request)
 
 
 @step
-def sklearn_predict_preprocessor(input: np.ndarray) -> Output(data=np.ndarray):
+def sklearn_predict_preprocessor(input: np.ndarray) -> Output(data=str):
     """Prepares the data for inference."""
     input = input / 255.0
-    return input.reshape((input.shape[0], -1))
+    input = input.reshape((input.shape[0], -1))
+    request = input.tolist()
+    return json.dumps(request)
 
 
 @step
 def predictor(
     service: SeldonDeploymentService,
-    data: np.ndarray,
+    data: str,
 ) -> Output(predictions=np.ndarray):
     """Run a inference request against a prediction service"""
 
     service.start(timeout=120)  # should be a NOP if already started
-    prediction = service.predict(data)
+    response = service.predict(data)
+    prediction = np.array(response["data"]["ndarray"])
     prediction = prediction.argmax(axis=-1)
     print("Prediction: ", prediction)
     return prediction

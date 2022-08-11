@@ -20,9 +20,6 @@ from uuid import UUID
 from zenml.enums import StackComponentType
 from zenml.services import BaseService, ServiceConfig
 from zenml.stack import StackComponent
-from zenml.stack.stack import Stack
-from zenml.utils import docker_utils
-from zenml.utils.source_utils import get_source_root_path
 
 DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT = 300
 CUSTOM_DEPLOYMENT_IMAGE_NAME = "zenml-custom-deploy"
@@ -229,52 +226,3 @@ class BaseModelDeployer(StackComponent, ABC):
         if len(services) == 0:
             raise RuntimeError(f"No model server found with UUID {uuid}")
         return services[0].get_logs(follow=follow, tail=tail)
-
-    def prepare_custom_deployment_image(
-        self,
-        stack: "Stack",
-        pipeline_name: str,
-        step_name: str,
-        requirements: List[str],
-        entrypoint_command: List[str],
-    ) -> str:
-        """Prepare a custom Docker image for the model deployment.
-
-        This method prepares a custom Docker image for the model
-        deployment. The image is built and pushed to the container registry
-        configured for the active stack. The image digest is returned.
-        Note: this method is called only when the stack is using a local
-        orchestrator.
-
-        Args:
-            stack: the stack that the model deployment is part of.
-            pipeline_name: name of the pipeline that the deployed model was part
-                of.
-            step_name: name of the pipeline model deployment step that deployed
-                the model.
-            requirements: list of requirements to be included in the Dockerfile.
-            entrypoint_command: command to be executed by the Docker image.
-
-        Returns:
-            The image digest of the prepared Docker image.
-
-        Raises:
-            RuntimeError: if the active stack doesn't have a container registry
-        """
-        container_registry = stack.container_registry
-
-        if not container_registry:
-            raise RuntimeError("Missing container registry")
-
-        registry_uri = container_registry.uri.rstrip("/")
-        image_name = f"{registry_uri}/{CUSTOM_DEPLOYMENT_IMAGE_NAME}:{pipeline_name}-{step_name}"
-
-        docker_utils.build_docker_image(
-            build_context_path=get_source_root_path(),
-            image_name=image_name,
-            entrypoint=" ".join(entrypoint_command),
-            requirements=set(requirements),
-            global_configuration=False,
-        )
-        docker_utils.push_docker_image(image_name)
-        return docker_utils.get_image_digest(image_name) or image_name

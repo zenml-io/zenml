@@ -100,7 +100,9 @@ class ZenMLCustomModel(kserve.Model):  # type: ignore[misc]
         if self.predict_func is not None:
             try:
                 prediction = {
-                    "predictions": self.predict_func(self.model, request)
+                    "predictions": self.predict_func(
+                        self.model, request["instances"]
+                    )
                 }
             except Exception as e:
                 raise Exception("Failed to predict: {}".format(e))

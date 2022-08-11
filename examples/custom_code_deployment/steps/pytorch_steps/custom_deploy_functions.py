@@ -19,6 +19,10 @@ import torch
 import torchvision
 from torch.nn.functional import softmax
 
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 def pre_process(tensor: torch.Tensor) -> dict:
     """Pre process the data
@@ -34,7 +38,24 @@ def pre_process(tensor: torch.Tensor) -> dict:
     return processed_tensor.float()
 
 
-def custom_predict(model: Any, request: Dict) -> List:
+def post_process(prediction: torch.Tensor) -> dict:
+    """Pre process the data
+    Args:
+        tensor (torch.Tensor): The tensor to pre process
+    Returns:
+        dict: The processed data
+    """
+
+    classes = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+    prediction = softmax(prediction)
+    maxindex = np.argmax(prediction.detach().numpy())
+    return classes[maxindex]
+
+
+def custom_predict(
+    model: Any,
+    request: Dict,
+) -> List:
     """Predict the given request.
 
     The custom predict function is the core of the custom deployment, the function must be expecting a request
@@ -51,13 +72,14 @@ def custom_predict(model: Any, request: Dict) -> List:
         Exception: If the request is not a NumPy array.
     """
     inputs = []
-    for instance in request["instances"]:
+    for instance in request:
         instance = np.array(instance)
         try:
             tensor = torch.from_numpy(instance).view(-1, 28, 28)
         except Exception as e:
             raise TypeError(f"The input instance is not a numpy array. {e}")
         processed_tensor = pre_process(tensor)
-        prediction = softmax(model(processed_tensor))
-        inputs.append(prediction.tolist())
+        prediction = model(processed_tensor)
+        postprocessed_prediction = post_process(prediction)
+        inputs.append(postprocessed_prediction)
     return inputs

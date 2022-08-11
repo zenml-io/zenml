@@ -13,11 +13,11 @@
 #  permissions and limitations under the License.
 """Implementation for the Seldon Deployment step."""
 
+import json
 import os
 from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple
 from uuid import UUID
 
-import numpy as np
 import requests
 from pydantic import Field, ValidationError
 
@@ -33,7 +33,7 @@ from zenml.services.service_status import ServiceState, ServiceStatus
 from zenml.services.service_type import ServiceType
 
 if TYPE_CHECKING:
-    from numpy.typing import NDArray
+    pass
 
 logger = get_logger(__name__)
 
@@ -364,7 +364,7 @@ class SeldonDeploymentService(BaseService):
             "api/v0.1/predictions",
         )
 
-    def predict(self, request: "NDArray[Any]") -> "NDArray[Any]":
+    def predict(self, request: str) -> Any:
         """Make a prediction using the service.
 
         Args:
@@ -385,9 +385,14 @@ class SeldonDeploymentService(BaseService):
 
         if self.prediction_url is None:
             raise ValueError("`self.prediction_url` is not set, cannot post.")
+
+        if isinstance(request, str):
+            request = json.loads(request)
+        else:
+            raise ValueError("Request must be a json string.")
         response = requests.post(
             self.prediction_url,
-            json={"data": {"ndarray": request.tolist()}},
+            json={"data": {"ndarray": request}},
         )
         response.raise_for_status()
-        return np.array(response.json()["data"]["ndarray"])
+        return response.json()

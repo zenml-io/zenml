@@ -346,7 +346,8 @@ def kserve_custom_model_deployer_step(
     pipeline_name = step_env.pipeline_name
     pipeline_run_id = step_env.pipeline_run_id
     step_name = step_env.step_name
-    pipeline_requirements = step_env.pipeline_requirements
+    docker_configuration = step_env.docker_configuration
+    runtime_configuration = step_env.runtime_configuration
 
     # update the step configuration with the real pipeline runtime information
     config.service_config.pipeline_name = pipeline_name
@@ -389,34 +390,18 @@ def kserve_custom_model_deployer_step(
         config.custom_deploy_parameters.predict_function,
     ]
 
-    # verify the flavor of the orchestrator.
-    # if the orchestrator is local, then we need to build a docker image with the repo
-    # and requirements and push it to the container registry.
-    # if the orchestrator is remote, then we can use the same image used to run the pipeline.
-    assert context.stack is not None
-    # TODO[medium]: find better way to create a docker image in case of local orchestrator
-    if context.stack.orchestrator.FLAVOR == "local":
-        # more information about stack ..
+    if context.stack is not None:
         custom_docker_image_name = (
             model_deployer.prepare_custom_deployment_image(
-                context.stack,
-                pipeline_name,
-                step_name,
-                pipeline_requirements,
-                entrypoint_command,
+                pipeline_name=pipeline_name,
+                stack=context.stack,
+                docker_configuration=docker_configuration,
+                runtime_configuration=runtime_configuration,
+                entrypoint=entrypoint_command,
             )
         )
     else:
-        base_image_name = (
-            f"zenml-{context.stack.orchestrator.FLAVOR}:{pipeline_name}"
-        )
-        container_registry = context.stack.container_registry
-
-        if container_registry:
-            registry_uri = container_registry.uri.rstrip("/")
-            custom_docker_image_name = f"{registry_uri}/{base_image_name}"
-        else:
-            custom_docker_image_name = base_image_name
+        raise ValueError("Stack is required for custom deployer.")
 
     # import the prepare function from the step utils
     from zenml.integrations.kserve.steps.kserve_step_utils import (
