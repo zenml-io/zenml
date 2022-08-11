@@ -118,7 +118,7 @@ def test_ignoring_non_existing_column() -> None:
 
     profile_step = EvidentlyProfileStep()
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValueError):
         drift_obj, dash_obj = profile_step.entrypoint(
             reference_dataset=ref,
             comparison_dataset=comp,
@@ -155,12 +155,12 @@ def test_ignored_cols_elements() -> None:
     profile_config = EvidentlyProfileConfig(
         profile_sections=["datadrift"],
         column_mapping=column_map,
-        ignored_cols=("Housing", "Region", 25, True),
+        ignored_cols=["Housing", "Region", 25, True],
     )
 
     profile_step = EvidentlyProfileStep()
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValueError):
         drift_obj, dash_obj = profile_step.entrypoint(
             reference_dataset=ref,
             comparison_dataset=comp,
