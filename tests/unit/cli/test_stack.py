@@ -286,9 +286,10 @@ def test_stack_export_delete_import(clean_repo) -> None:
     assert clean_repo.get_stack("arias_new_stack") is not None
 
 
-def test_stack_update_and_register_couples_stores(clean_repo):
+def test_stack_update_and_register_couples_stores(monkeypatch, clean_repo):
     """Tests if the artifact- and metadata store coupling works as intended."""
     # First, check if default association exists.
+    monkeypatch.setattr("zenml.stack.stack.ZENML_IGNORE_STORE_COUPLINGS", False)
     default_stack = clean_repo.active_stack
 
     existing_association = clean_repo.zen_store.get_store_associations_for_artifact_and_metadata_store(

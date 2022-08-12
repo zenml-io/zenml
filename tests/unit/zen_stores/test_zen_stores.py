@@ -615,7 +615,7 @@ def test_update_real_component_succeeds(
     updated_kubeflow_orchestrator = ComponentWrapper.from_component(
         KubeflowOrchestrator(
             name="arias_orchestrator",
-            custom_docker_base_image_name="aria/arias_base_image",
+            docker_parent_image="aria/arias_base_image",
         )
     )
     fresh_zen_store.update_stack_component(
@@ -628,10 +628,7 @@ def test_update_real_component_succeeds(
         StackComponentType.ORCHESTRATOR, "arias_orchestrator"
     ).to_component()
 
-    assert (
-        orchestrator_component.custom_docker_base_image_name
-        == "aria/arias_base_image"
-    )
+    assert orchestrator_component.docker_parent_image == "aria/arias_base_image"
 
 
 def test_rename_nonexistent_stack_component_fails(
