@@ -25,6 +25,7 @@ from tfx.orchestration.portable.data_types import ExecutionInfo
 from tfx.orchestration.portable.python_executor_operator import (
     run_with_executor,
 )
+from tfx.proto.orchestration import pipeline_pb2
 from tfx.proto.orchestration.execution_invocation_pb2 import ExecutionInvocation
 
 from zenml import constants
@@ -202,7 +203,10 @@ def main(
         input_artifact_types_path
     )
     execution_info = load_execution_info(execution_info_path)
-    for context in execution_info.pipeline_node.contexts.contexts:
+    pipeline_node = cast(
+        pipeline_pb2.PipelineNode, execution_info.pipeline_node
+    )
+    for context in pipeline_node.contexts.contexts:
         if context.type.name == constants.ZENML_MLMD_CONTEXT_TYPE:
             materializer_sources = json.loads(
                 context.properties[
