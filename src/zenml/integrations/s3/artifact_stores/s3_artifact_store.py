@@ -36,6 +36,7 @@ from zenml.integrations.s3 import S3_ARTIFACT_STORE_FLAVOR
 from zenml.secret.schemas import AWSSecretSchema
 from zenml.stack.authentication_mixin import AuthenticationMixin
 from zenml.utils.io_utils import convert_to_str
+from zenml.utils.secret_utils import SecretField
 
 PathType = Union[bytes, str]
 
@@ -57,9 +58,9 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
     ```
     """
 
-    key: Optional[str] = None
-    secret: Optional[str] = None
-    token: Optional[str] = None
+    key: Optional[str] = SecretField()
+    secret: Optional[str] = SecretField()
+    token: Optional[str] = SecretField()
     client_kwargs: Optional[Dict[str, Any]] = None
     config_kwargs: Optional[Dict[str, Any]] = None
     s3_additional_kwargs: Optional[Dict[str, Any]] = None

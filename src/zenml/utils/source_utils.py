@@ -223,13 +223,14 @@ def get_module_source_from_module(module: ModuleType) -> str:
     root_path = get_source_root_path()
 
     if not module_path.startswith(root_path):
-        root_path = os.getcwd()
         logger.warning(
-            "User module %s is not in the source root. Using current "
+            "User module %s is not in the source root %s. Using current "
             "directory %s instead to resolve module source.",
             module,
             root_path,
+            os.getcwd(),
         )
+        root_path = os.getcwd()
 
     root_path = os.path.abspath(root_path)
 

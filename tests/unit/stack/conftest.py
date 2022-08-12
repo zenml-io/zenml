@@ -46,6 +46,9 @@ def stack_with_mock_components(mocker):
         flavor=MOCK_FLAVOR,
         uuid=MOCK_UUID,
     )
+    orchestrator.required_secrets = set()
+    metadata_store.required_secrets = set()
+    artifact_store.required_secrets = set()
 
     return Stack(
         name="mock_stack",

@@ -43,6 +43,7 @@ from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
     _include_active_profile,
 )
+from zenml.utils.secret_utils import SecretField
 from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
@@ -87,9 +88,9 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
 
     # Service principal authentication
     # https://docs.microsoft.com/en-us/azure/machine-learning/how-to-setup-authentication#configure-a-service-principal
-    tenant_id: Optional[str] = None
-    service_principal_id: Optional[str] = None
-    service_principal_password: Optional[str] = None
+    tenant_id: Optional[str] = SecretField()
+    service_principal_id: Optional[str] = SecretField()
+    service_principal_password: Optional[str] = SecretField()
 
     # Class Configuration
     FLAVOR: ClassVar[str] = AZUREML_STEP_OPERATOR_FLAVOR

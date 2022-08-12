@@ -22,6 +22,7 @@ from zenml.enums import StackComponentType
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.stack import StackComponent
+from zenml.utils import secret_utils
 from zenml.utils.enum_utils import StrEnum
 
 logger = get_logger(__name__)
@@ -69,6 +70,26 @@ class BaseSecretsManager(StackComponent, ABC):
 
     scope: SecretsManagerScope = SecretsManagerScope.COMPONENT
     namespace: Optional[str] = None
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Ensures that no attributes are specified as a secret reference.
+
+        Args:
+            **kwargs: Arguments to initialize this secrets manager.
+
+        Raises:
+            ValueError: If any of the secrets manager attributes are specified
+                as a secret reference.
+        """
+        for key, value in kwargs.items():
+            if secret_utils.is_secret_reference(value):
+                raise ValueError(
+                    "Using secret references to specify attributes on a "
+                    "secrets manager is not allowed. Please specify the "
+                    f"real value for the attribute {key}."
+                )
+
+        super().__init__(**kwargs)
 
     @root_validator(pre=True)
     def scope_initializer(cls, values: Dict[str, Any]) -> Dict[str, Any]:

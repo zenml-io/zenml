@@ -441,9 +441,17 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self._reset_step_flags()
         self.validate_stack(stack)
 
-        return stack.deploy_pipeline(
-            self, runtime_configuration=runtime_configuration
-        )
+        # Prevent execution of nested pipelines which might lead to unexpected
+        # behavior
+        constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
+        try:
+            return_value = stack.deploy_pipeline(
+                self, runtime_configuration=runtime_configuration
+            )
+        finally:
+            constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
+
+        return return_value
 
     def with_config(
         self: T, config_file: str, overwrite_step_parameters: bool = False

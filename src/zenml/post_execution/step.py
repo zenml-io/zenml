@@ -262,7 +262,7 @@ class StepView:
         """
         return (
             f"{self.__class__.__qualname__}(id={self._id}, "
-            f"name='{self.name}', entrypoint_name='{self.entrypoint_name}'"
+            f"name='{self.name}', entrypoint_name='{self.entrypoint_name}', "
             f"parameters={self._parameters})"
         )
 
