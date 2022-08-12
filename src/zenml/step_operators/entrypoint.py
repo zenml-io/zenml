@@ -14,6 +14,7 @@
 """Entrypoint for the step operator."""
 
 import importlib
+import json
 import logging
 import sys
 from typing import Dict, Type, cast
@@ -24,6 +25,7 @@ from tfx.orchestration.portable.data_types import ExecutionInfo
 from tfx.orchestration.portable.python_executor_operator import (
     run_with_executor,
 )
+from tfx.proto.orchestration import pipeline_pb2
 from tfx.proto.orchestration.execution_invocation_pb2 import ExecutionInvocation
 
 from zenml import constants
@@ -31,6 +33,7 @@ from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.artifacts.type_registry import type_registry
 from zenml.integrations.registry import integration_registry
 from zenml.io import fileio
+from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.repository import Repository
 from zenml.steps import BaseStep
 from zenml.steps.utils import _FunctionExecutor, generate_component_class
@@ -40,6 +43,7 @@ from zenml.utils import source_utils, yaml_utils
 def create_executor_class(
     step_source_path: str,
     input_artifact_type_mapping: Dict[str, str],
+    materializer_sources: Dict[str, str],
 ) -> Type[_FunctionExecutor]:
     """Creates an executor class for a given step.
 
@@ -47,16 +51,42 @@ def create_executor_class(
         step_source_path: Import path of the step to run.
         input_artifact_type_mapping: A dictionary mapping input names to
             a string representation of their artifact classes.
+        materializer_sources: Dictionary mapping step output names to a
+            source string of the materializer class to use for that output.
 
     Returns:
         A class of an executor instance.
+
+    Raises:
+        TypeError: If any materializer source does not resolve to a
+            `BaseMaterializer` subclass.
     """
     step_class = cast(
         Type[BaseStep], source_utils.load_source_path_class(step_source_path)
     )
     step_instance = step_class()
 
-    materializers = step_instance.get_materializers(ensure_complete=True)
+    materializers = {}
+    for output_name, source in materializer_sources.items():
+        module_source, class_source = source.rsplit(".", 1)
+        if module_source == "__main__":
+            main_module_source = (
+                constants.USER_MAIN_MODULE
+                or source_utils.get_module_source_from_module(
+                    sys.modules["__main__"]
+                )
+            )
+            module_source = main_module_source
+        source = f"{module_source}.{class_source}"
+        materializer_class = source_utils.load_source_path_class(source)
+
+        if not issubclass(materializer_class, BaseMaterializer):
+            raise TypeError(
+                f"The materializer source `{source}` passed to the "
+                f"entrypoint for the step output '{output_name}' is not "
+                f"pointing to a `{BaseMaterializer}` subclass."
+            )
+        materializers[output_name] = materializer_class
 
     # We don't publish anything to the metadata store inside this environment,
     # so the specific artifact classes don't matter
@@ -147,10 +177,15 @@ def main(
         step_source_path: Import path of the step to run.
         execution_info_path: Path to the execution info file.
         input_artifact_types_path: Path to the input artifact types file.
+
+    Raises:
+        RuntimeError: If the materializer sources are not part of the execution
+            info.
     """
     # prevent running entire pipeline in user code if they would run at import
     # time (e.g. not wrapped in a function or __name__== "__main__" check)
     constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
+    constants.USER_MAIN_MODULE = main_module
 
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
     logging.getLogger().setLevel(logging.INFO)
@@ -167,12 +202,27 @@ def main(
     input_artifact_type_mapping = yaml_utils.read_json(
         input_artifact_types_path
     )
+    execution_info = load_execution_info(execution_info_path)
+    pipeline_node = cast(
+        pipeline_pb2.PipelineNode, execution_info.pipeline_node
+    )
+    for context in pipeline_node.contexts.contexts:
+        if context.type.name == constants.ZENML_MLMD_CONTEXT_TYPE:
+            materializer_sources = json.loads(
+                context.properties[
+                    constants.MLMD_CONTEXT_MATERIALIZER_SOURCES_PROPERTY_NAME
+                ].field_value.string_value
+            )
+            break
+    else:
+        raise RuntimeError("Unable to find materializer sources.")
+
     executor_class = create_executor_class(
         step_source_path=step_source_path,
         input_artifact_type_mapping=input_artifact_type_mapping,
+        materializer_sources=materializer_sources,
     )
 
-    execution_info = load_execution_info(execution_info_path)
     executor = configure_executor(executor_class, execution_info=execution_info)
 
     stack.prepare_step_run()

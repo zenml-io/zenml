@@ -66,9 +66,8 @@ from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.repository import Repository
 from zenml.stack import StackValidator
-from zenml.utils import io_utils, networking_utils
-from zenml.utils.docker_utils import get_image_digest
-from zenml.utils.source_utils import get_source_root_path
+from zenml.utils import deprecation_utils, io_utils, networking_utils
+from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
@@ -86,7 +85,7 @@ KFP_POD_LABELS = {
 }
 
 
-class KubeflowOrchestrator(BaseOrchestrator):
+class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
     """Orchestrator responsible for running pipelines using Kubeflow.
 
     Attributes:
@@ -127,6 +126,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
     # Class Configuration
     FLAVOR: ClassVar[str] = KUBEFLOW_ORCHESTRATOR_FLAVOR
+
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
+        ("custom_docker_base_image_name", "docker_parent_image")
+    )
 
     @staticmethod
     def _get_k3d_cluster_name(uuid: UUID) -> str:
@@ -330,24 +333,6 @@ class KubeflowOrchestrator(BaseOrchestrator):
             custom_validation_function=_validate_local_requirements,
         )
 
-    def get_docker_image_name(self, pipeline_name: str) -> str:
-        """Returns the full docker image name including registry and tag.
-
-        Args:
-            pipeline_name: The name of the pipeline.
-
-        Returns:
-            The full docker image name including registry and tag.
-        """
-        base_image_name = f"zenml-kubeflow:{pipeline_name}"
-        container_registry = Repository().active_stack.container_registry
-
-        if container_registry:
-            registry_uri = container_registry.uri.rstrip("/")
-            return f"{registry_uri}/{base_image_name}"
-        else:
-            return base_image_name
-
     @property
     def is_local(self) -> bool:
         """Checks if the KFP orchestrator is running locally.
@@ -397,32 +382,12 @@ class KubeflowOrchestrator(BaseOrchestrator):
             stack: The stack to be deployed.
             runtime_configuration: The runtime configuration to be used.
         """
-        from zenml.utils import docker_utils
-
-        image_name = self.get_docker_image_name(pipeline.name)
-
-        requirements = {*stack.requirements(), *pipeline.requirements}
-
-        logger.debug("Kubeflow docker container requirements: %s", requirements)
-
-        docker_utils.build_docker_image(
-            build_context_path=get_source_root_path(),
-            image_name=image_name,
-            dockerignore_path=pipeline.dockerignore_file,
-            requirements=requirements,
-            base_image=self.custom_docker_base_image_name,
-            environment_vars=self._get_environment_vars_from_secrets(
-                pipeline.secrets
-            ),
+        self.build_and_push_docker_image(
+            pipeline_name=pipeline.name,
+            docker_configuration=pipeline.docker_configuration,
+            stack=stack,
+            runtime_configuration=runtime_configuration,
         )
-
-        assert stack.container_registry  # should never happen due to validation
-        stack.container_registry.push_image(image_name)
-
-        # Store the docker image digest in the runtime configuration so it gets
-        # tracked in the ZenStore
-        image_digest = docker_utils.get_image_digest(image_name) or image_name
-        runtime_configuration["docker_image"] = image_digest
 
     @staticmethod
     def _configure_container_op(container_op: dsl.ContainerOp) -> None:
@@ -604,7 +569,8 @@ class KubeflowOrchestrator(BaseOrchestrator):
             runtime_configuration: The runtime configuration object.
 
         Raises:
-            RuntimeError: If you try to run the pipelines in a notebook environment.
+            RuntimeError: If you try to run the pipelines in a notebook
+                environment.
         """
         # First check whether the code running in a notebook
         if Environment.in_notebook():
@@ -617,8 +583,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 "orchestrator."
             )
 
-        image_name = self.get_docker_image_name(pipeline.name)
-        image_name = get_image_digest(image_name) or image_name
+        image_name = runtime_configuration["docker_image"]
 
         # Create a callable for future compilation into a dsl.Pipeline.
         def _construct_kfp_pipeline() -> None:

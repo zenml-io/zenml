@@ -131,6 +131,7 @@ DefaultContainerRegistry
 Deprovision
 Deprovisions
 Deregisters
+DockerConfiguration
 DockerHub
 DockerHubContainerRegistry
 Dockerfile
@@ -315,6 +316,7 @@ MyObj
 MyOrchestrator
 MySQLMetadataStore
 MyService
+MyStackComponent
 MyStep
 MyStepEntrypointConfiguration
 NFS
@@ -355,6 +357,7 @@ PathType
 PermissionError
 PillowImageMaterializer
 PipelineConfigurationError
+PipelineDockerImageBuilder
 PipelineInterfaceError
 PipelineNode
 PipelineRun
@@ -799,6 +802,7 @@ gcs
 gcsfs
 ge
 getattr
+getattribute
 getfile
 getsource
 getter
@@ -1197,5 +1201,4 @@ zenfiles
 zenml
 zenmldocker
 zenmlregistry
-zenserver
 zenserver

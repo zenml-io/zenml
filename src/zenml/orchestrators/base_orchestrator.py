@@ -54,7 +54,8 @@ from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 
 from zenml.constants import (
-    MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME,
+    MLMD_CONTEXT_DOCKER_CONFIGURATION_PROPERTY_NAME,
+    MLMD_CONTEXT_MATERIALIZER_SOURCES_PROPERTY_NAME,
     MLMD_CONTEXT_RUNTIME_CONFIG_PROPERTY_NAME,
     MLMD_CONTEXT_STACK_PROPERTY_NAME,
     MLMD_CONTEXT_STEP_RESOURCES_PROPERTY_NAME,
@@ -73,7 +74,7 @@ from zenml.orchestrators.utils import (
 from zenml.repository import Repository
 from zenml.stack import StackComponent
 from zenml.steps import BaseStep
-from zenml.utils import string_utils
+from zenml.utils import source_utils, string_utils
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
@@ -483,10 +484,11 @@ class BaseOrchestrator(StackComponent, ABC):
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ) -> None:
-        """Iterates through each node of a pb2_pipeline.
+        """Adds context to each pipeline node of a pb2_pipeline.
 
         This attaches important contexts to the nodes; namely
-        pipeline.requirements, stack information and the runtime configuration.
+        pipeline.docker_configuration, stack information and the runtime
+        configuration.
 
         Args:
             pipeline: Zenml Pipeline instance
@@ -494,7 +496,6 @@ class BaseOrchestrator(StackComponent, ABC):
             stack: The stack the pipeline was run on
             runtime_configuration: The Runtime configuration of the current run
         """
-        requirements = " ".join(sorted(pipeline.requirements))
         stack_json = json.dumps(stack.dict(), sort_keys=True)
 
         # Copy and remove the run name so an otherwise identical run reuses
@@ -505,10 +506,12 @@ class BaseOrchestrator(StackComponent, ABC):
             runtime_config_copy, sort_keys=True, default=pydantic_encoder
         )
 
+        docker_config_json = pipeline.docker_configuration.json(sort_keys=True)
+
         context_properties = {
             MLMD_CONTEXT_STACK_PROPERTY_NAME: stack_json,
             MLMD_CONTEXT_RUNTIME_CONFIG_PROPERTY_NAME: runtime_config_json,
-            MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME: requirements,
+            MLMD_CONTEXT_DOCKER_CONFIGURATION_PROPERTY_NAME: docker_config_json,
         }
 
         for node in pb2_pipeline.nodes:
@@ -521,6 +524,19 @@ class BaseOrchestrator(StackComponent, ABC):
             step_context_properties[
                 MLMD_CONTEXT_STEP_RESOURCES_PROPERTY_NAME
             ] = step.resource_configuration.json(sort_keys=True)
+
+            # We add the resolved materializer sources here so step operators
+            # can fetch it in the entrypoint. This is needed to support
+            # custom materializers which would otherwise be ignored.
+            materializer_sources = {
+                output_name: source_utils.resolve_class(materializer_class)
+                for output_name, materializer_class in step.get_materializers(
+                    ensure_complete=True
+                ).items()
+            }
+            step_context_properties[
+                MLMD_CONTEXT_MATERIALIZER_SOURCES_PROPERTY_NAME
+            ] = json.dumps(materializer_sources, sort_keys=True)
 
             properties_json = json.dumps(
                 step_context_properties, sort_keys=True

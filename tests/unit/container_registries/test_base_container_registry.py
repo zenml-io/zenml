@@ -55,7 +55,7 @@ def test_base_container_registry_local_property():
 
 def test_base_container_registry_prevents_push_if_uri_does_not_match(mocker):
     """Tests the base container registry push only works if the URI matches."""
-    mocker.patch("zenml.utils.docker_utils.push_docker_image")
+    mocker.patch("zenml.utils.docker_utils.push_image")
 
     registry = StubContainerRegistry(name="", uri="some_uri")
     with does_not_raise():

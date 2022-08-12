@@ -30,6 +30,7 @@ from zenml.integrations.mlflow import MLFLOW_MODEL_EXPERIMENT_TRACKER_FLAVOR
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.stack import StackValidator
+from zenml.utils.secret_utils import SecretField
 
 logger = get_logger(__name__)
 
@@ -76,9 +77,9 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
     """
 
     tracking_uri: Optional[str] = None
-    tracking_username: Optional[str] = None
-    tracking_password: Optional[str] = None
-    tracking_token: Optional[str] = None
+    tracking_username: Optional[str] = SecretField()
+    tracking_password: Optional[str] = SecretField()
+    tracking_token: Optional[str] = SecretField()
     tracking_insecure_tls: bool = False
 
     # Class Configuration
