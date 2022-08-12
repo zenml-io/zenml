@@ -16,6 +16,7 @@ from contextlib import ExitStack as does_not_raise
 
 import pytest
 
+from zenml.config.docker_configuration import DockerConfiguration
 from zenml.exceptions import (
     PipelineConfigurationError,
     PipelineInterfaceError,
@@ -254,6 +255,21 @@ def test_yaml_configuration_with_invalid_parameter_name(tmp_path):
         _ = pipeline_instance.with_config(yaml_path)
 
 
+def test_yaml_configuration_allows_enabling_cache(tmp_path):
+    """Test that a config yaml allows you to disable the cache for a step."""
+    pipeline_instance = create_pipeline_with_config_value(13)
+
+    yaml_path = os.path.join(tmp_path, "config.yaml")
+    cache_value = False
+    write_yaml(
+        yaml_path,
+        {"steps": {"step_": {"parameters": {"enable_cache": cache_value}}}},
+    )
+    pipeline_instance = pipeline_instance.with_config(yaml_path)
+    step_instance = pipeline_instance.steps["step_"]
+    assert step_instance.enable_cache == cache_value
+
+
 def test_setting_pipeline_parameter_name_when_initializing_pipeline(
     one_step_pipeline, empty_step
 ):
@@ -278,72 +294,87 @@ def test_calling_a_pipeline_twice_raises_no_exception(
         pipeline_instance.run()
 
 
-def test_pipeline_requirements(tmp_path):
-    """Tests that the pipeline requirements are a combination of the
-    requirements of integrations and requirements of the specified
-    requirements file."""
-    from zenml.integrations.sklearn import SklearnIntegration
+def test_pipeline_stores_docker_config():
+    """Tests that the pipeline stores the docker configuration."""
+    docker_config = DockerConfiguration(
+        parent_image="parent_image", environment={"FAVORITE_CAT": "aria"}
+    )
 
-    requirements = tmp_path / "requirements.txt"
-    requirements.write_text("any_requirement")
-
-    @pipeline(required_integrations=[SklearnIntegration.NAME])
+    @pipeline(docker_configuration=docker_config)
     def my_pipeline():
         pass
 
-    assert my_pipeline().requirements == set(SklearnIntegration.REQUIREMENTS)
+    assert my_pipeline().docker_configuration == docker_config
 
-    @pipeline(requirements=str(requirements))
-    def my_pipeline():
-        pass
 
-    assert my_pipeline().requirements == {"any_requirement"}
+def test_pipeline_migrates_old_docker_attributes_to_docker_config():
+    """Tests that the pipeline migrates old docker attributes to the docker
+    configuration."""
 
+    legacy_requirements = ["aria==12.0"]
+    legacy_required_integrations = ["TENSORFLOW"]
+    legacy_dockerignore_file = "/old/.dockerignore"
+
+    new_requirements = ["aria==13.0"]
+    new_required_integrations = ["PYTORCH"]
+    new_dockerignore_file = "/new/.dockerignore"
+
+    # empty docker config, use legacy attributes
     @pipeline(
-        required_integrations=[SklearnIntegration.NAME],
-        requirements=str(requirements),
+        requirements=legacy_requirements,
+        required_integrations=legacy_required_integrations,
+        dockerignore_file=legacy_dockerignore_file,
     )
     def my_pipeline():
         pass
 
-    assert my_pipeline().requirements == {
-        "any_requirement",
-        *SklearnIntegration.REQUIREMENTS,
-    }
+    pipeline_config = my_pipeline().docker_configuration
 
+    assert pipeline_config.requirements == legacy_requirements
+    assert pipeline_config.required_integrations == legacy_required_integrations
+    assert pipeline_config.dockerignore == legacy_dockerignore_file
 
-def test_pipeline_requirements_takes_list(tmp_path):
-    """Tests that the pipeline requirements are a combination of the
-    requirements of integrations and requirements of the specified
-    requirements file."""
-    from zenml.integrations.sklearn import SklearnIntegration
-
-    requirements = tmp_path / "requirements.txt"
-    requirements.write_text("any_requirement")
-
-    @pipeline(required_integrations=[SklearnIntegration.NAME])
-    def my_pipeline():
-        pass
-
-    assert my_pipeline().requirements == set(SklearnIntegration.REQUIREMENTS)
-
-    @pipeline(requirements=["any_requirement"])
-    def my_pipeline():
-        pass
-
-    assert my_pipeline().requirements == {"any_requirement"}
+    # docker config defines all values, legacy attributes ignored
+    docker_config = DockerConfiguration(
+        requirements=new_requirements,
+        required_integrations=new_required_integrations,
+        dockerignore=new_dockerignore_file,
+    )
 
     @pipeline(
-        required_integrations=[SklearnIntegration.NAME],
-        requirements=["any_requirement"],
+        docker_configuration=docker_config,
+        requirements=legacy_requirements,
+        required_integrations=legacy_required_integrations,
+        dockerignore_file=legacy_dockerignore_file,
     )
     def my_pipeline():
         pass
 
-    assert my_pipeline().requirements == {
-        "any_requirement",
-        *SklearnIntegration.REQUIREMENTS,
-    }
+    pipeline_config = my_pipeline().docker_configuration
+
+    assert pipeline_config.requirements == new_requirements
+    assert pipeline_config.required_integrations == new_required_integrations
+    assert pipeline_config.dockerignore == new_dockerignore_file
+
+    # migrate dockerignore only
+    docker_config = DockerConfiguration(
+        requirements=new_requirements,
+        required_integrations=new_required_integrations,
+    )
+
+    @pipeline(
+        docker_configuration=docker_config,
+        required_integrations=legacy_required_integrations,
+        dockerignore_file=legacy_dockerignore_file,
+    )
+    def my_pipeline():
+        pass
+
+    pipeline_config = my_pipeline().docker_configuration
+
+    assert pipeline_config.requirements == new_requirements
+    assert pipeline_config.required_integrations == new_required_integrations
+    assert pipeline_config.dockerignore == legacy_dockerignore_file
 
 
 def test_pipeline_run_fails_when_required_step_operator_is_missing(

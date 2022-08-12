@@ -20,7 +20,7 @@ from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
 def visualize_statistics():
     repo = Repository()
     pipe = repo.get_pipelines()[-1]
-    importer_outputs = pipe.runs[-1].get_step(name="importer")
+    importer_outputs = pipe.runs[-1].get_step(step="importer")
     FacetStatisticsVisualizer().visualize(importer_outputs)
 
 visualize_statistics()

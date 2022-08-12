@@ -519,7 +519,7 @@ def expand_argument_value_from_file(name: str, value: str) -> str:
         return value[1:]
     if not value.startswith("@"):
         return value
-    filename = os.path.abspath(value[1:])
+    filename = os.path.abspath(os.path.expanduser(value[1:]))
     logger.info(
         f"Expanding argument value `{name}` to contents of file `{filename}`."
     )

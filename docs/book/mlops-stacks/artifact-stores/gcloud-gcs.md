@@ -146,7 +146,7 @@ zenml secrets-manager register secrets_manager \
 zenml stack register custom_stack -a gs_store -x secrets_manager ... --set
 
 # Create the secret referenced in the artifact store
-zenml secret register gcp_secret -s gcp \
+zenml secrets-manager secret register gcp_secret -s gcp \
     --token=@path/to/token/file.json
 ```
 

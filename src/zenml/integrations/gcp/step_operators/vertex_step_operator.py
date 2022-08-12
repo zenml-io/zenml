@@ -19,7 +19,7 @@ google_cloud_ai_platform/training_clients.py
 """
 
 import time
-from typing import ClassVar, List, Optional, Tuple
+from typing import TYPE_CHECKING, ClassVar, List, Optional, Tuple
 
 from google.cloud import aiplatform
 from pydantic import validator as property_validator
@@ -39,15 +39,22 @@ from zenml.integrations.gcp.google_credentials_mixin import (
 )
 from zenml.logger import get_logger
 from zenml.repository import Repository
+from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
-from zenml.utils import docker_utils
-from zenml.utils.source_utils import get_source_root_path
+from zenml.utils import deprecation_utils
+from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+
+if TYPE_CHECKING:
+    from zenml.config.docker_configuration import DockerConfiguration
+    from zenml.config.resource_configuration import ResourceConfiguration
 
 logger = get_logger(__name__)
 
 
-class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
+class VertexStepOperator(
+    BaseStepOperator, PipelineDockerImageBuilder, GoogleCredentialsMixin
+):
     """Step operator to run a step on Vertex AI.
 
     This class defines code that can set up a Vertex AI environment and run the
@@ -55,14 +62,14 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
 
     Attributes:
         region: Region name, e.g., `europe-west1`.
-        project: [Optional] GCP project name. If left None, inferred from the
+        project: GCP project name. If left None, inferred from the
             environment.
-        accelerator_type: [Optional] Accelerator type from list: https://cloud.google.com/vertex-ai/docs/reference/rest/v1/MachineSpec#AcceleratorType
-        accelerator_count: [Optional] Defines number of accelerators to be
+        accelerator_type: Accelerator type from list: https://cloud.google.com/vertex-ai/docs/reference/rest/v1/MachineSpec#AcceleratorType
+        accelerator_count: Defines number of accelerators to be
             used for the job.
-        machine_type: [Optional] Machine type specified here: https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
-        base_image: [Optional] Base image for building the custom job container.
-        encryption_spec_key_name: [Optional]: Encryption spec key name.
+        machine_type: Machine type specified here: https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
+        base_image: Base image for building the custom job container.
+        encryption_spec_key_name: Encryption spec key name.
     """
 
     region: str
@@ -78,6 +85,10 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
 
     # Class configuration
     FLAVOR: ClassVar[str] = GCP_VERTEX_STEP_OPERATOR_FLAVOR
+
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
+        ("base_image", "docker_parent_image")
+    )
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -122,50 +133,13 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
                 f"Accelerator must be one of the following: {accepted_vals}"
             )
 
-    def _build_and_push_docker_image(
-        self,
-        pipeline_name: str,
-        requirements: List[str],
-        entrypoint_command: List[str],
-    ) -> str:
-        """Builds and pushes a docker image.
-
-        Args:
-            pipeline_name: Pipeline name
-            requirements: Requirements
-            entrypoint_command: Entrypoint command
-
-        Returns:
-            Docker image name
-
-        Raises:
-            RuntimeError: If no container registry is found in the stack.
-        """
-        repo = Repository()
-        container_registry = repo.active_stack.container_registry
-
-        if not container_registry:
-            raise RuntimeError("Missing container registry")
-
-        registry_uri = container_registry.uri.rstrip("/")
-        image_name = f"{registry_uri}/zenml-vertex:{pipeline_name}"
-
-        docker_utils.build_docker_image(
-            build_context_path=get_source_root_path(),
-            image_name=image_name,
-            entrypoint=" ".join(entrypoint_command),
-            requirements=set(requirements),
-            base_image=self.base_image,
-        )
-        container_registry.push_image(image_name)
-        return docker_utils.get_image_digest(image_name) or image_name
-
     def launch(
         self,
         pipeline_name: str,
         run_name: str,
-        requirements: List[str],
+        docker_configuration: "DockerConfiguration",
         entrypoint_command: List[str],
+        resource_configuration: "ResourceConfiguration",
     ) -> None:
         """Launches a step on Vertex AI.
 
@@ -174,14 +148,25 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
                 is part of.
             run_name: Name of the pipeline run which the step to be executed
                 is part of.
+            docker_configuration: The Docker configuration for this step.
             entrypoint_command: Command that executes the step.
-            requirements: List of pip requirements that must be installed
-                inside the step operator environment.
+            resource_configuration: The resource configuration for this step.
 
         Raises:
             RuntimeError: If the run fails.
             ConnectionError: If the run fails due to a connection error.
         """
+        if resource_configuration.cpu_count or resource_configuration.memory:
+            logger.warning(
+                "Specifying cpus or memory is not supported for "
+                "the Vertex step operator. If you want to run this step "
+                "operator on specific resources, you can do so by configuring "
+                "a different machine_type type like this: "
+                "`zenml step-operator update %s "
+                "--machine_type=<MACHINE_TYPE>`",
+                self.name,
+            )
+
         job_labels = {"source": f"zenml-{__version__.replace('.', '_')}"}
 
         # Step 1: Authenticate with Google
@@ -198,10 +183,12 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
             self.project = project_id
 
         # Step 2: Build and push image
-        image_name = self._build_and_push_docker_image(
+        image_name = self.build_and_push_docker_image(
             pipeline_name=pipeline_name,
-            requirements=requirements,
-            entrypoint_command=entrypoint_command,
+            docker_configuration=docker_configuration,
+            stack=Repository().active_stack,
+            runtime_configuration=RuntimeConfiguration(),
+            entrypoint=" ".join(entrypoint_command),
         )
 
         # Step 3: Launch the job
@@ -212,6 +199,9 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
         client = aiplatform.gapic.JobServiceClient(
             credentials=credentials, client_options=client_options
         )
+        accelerator_count = (
+            resource_configuration.gpu_count or self.accelerator_count
+        )
         custom_job = {
             "display_name": run_name,
             "job_spec": {
@@ -220,7 +210,7 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
                         "machine_spec": {
                             "machine_type": self.machine_type,
                             "accelerator_type": self.accelerator_type,
-                            "accelerator_count": self.accelerator_count
+                            "accelerator_count": accelerator_count
                             if self.accelerator_type
                             else 0,
                         },

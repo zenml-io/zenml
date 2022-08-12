@@ -22,11 +22,15 @@ from pydantic import BaseModel, Extra, Field, root_validator
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackComponentInterfaceError
+from zenml.logger import get_logger
+from zenml.utils import secret_utils
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
     from zenml.stack import Stack, StackValidator
+
+logger = get_logger(__name__)
 
 
 def uuid_factory() -> UUID:
@@ -62,6 +66,160 @@ class StackComponent(BaseModel, ABC):
     # Class Configuration
     TYPE: ClassVar[StackComponentType]
     FLAVOR: ClassVar[str]
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Ensures that secret references don't clash with pydantic validation.
+
+        StackComponents allow the specification of all their string attributes
+        using secret references of the form `{{secret_name.key}}`. This however
+        is only possible when the stack component does not perform any explicit
+        validation of this attribute using pydantic validators. If this were
+        the case, the validation would run on the secret reference and would
+        fail or in the worst case, modify the secret reference and lead to
+        unexpected behavior. This method ensures that no attributes that require
+        custom pydantic validation are set as secret references.
+
+        Args:
+            **kwargs: Arguments to initialize this stack component.
+
+        Raises:
+            ValueError: If an attribute that requires custom pydantic validation
+                is passed as a secret reference, or if the `name` attribute
+                was passed as a secret reference.
+        """
+        for key, value in kwargs.items():
+            try:
+                field = self.__class__.__fields__[key]
+            except KeyError:
+                # Value for a private attribute or non-existing field, this
+                # will fail during the upcoming pydantic validation
+                continue
+
+            if value is None:
+                continue
+
+            if not secret_utils.is_secret_reference(value):
+                if secret_utils.is_secret_field(field):
+                    logger.warning(
+                        "You specified a plain-text value for the sensitive "
+                        f"attribute `{key}` for a `{self.__class__.__name__}` "
+                        "stack component. This is currently only a warning, "
+                        "but future versions of ZenML will require you to pass "
+                        "in senstive information as secrets. Check out the "
+                        "documentation on how to configure your stack "
+                        "components with secrets here: "
+                        "https://docs.zenml.io/developer-guide/advanced-usage/secret-references"
+                    )
+                continue
+
+            if key == "name":
+                raise ValueError(
+                    "Passing the `name` attribute of a stack component as a "
+                    "secret reference is not allowed."
+                )
+
+            requires_validation = field.pre_validators or field.post_validators
+            if requires_validation:
+                raise ValueError(
+                    f"Passing the stack component attribute `{key}` as a "
+                    "secret reference is not allowed as additional validation "
+                    "is required for this attribute."
+                )
+
+        super().__init__(**kwargs)
+
+    def __custom_getattribute__(self, key: str) -> Any:
+        """Returns the (potentially resolved) attribute value for the given key.
+
+        An attribute value may be either specified directly, or as a secret
+        reference. In case of a secret reference, this method resolves the
+        reference and returns the secret value instead.
+
+        Args:
+            key: The key for which to get the attribute value.
+
+        Raises:
+            RuntimeError: If the stack component is not part of the active
+                stack, or the active stack is missing a secrets manager.
+            KeyError: If the secret or secret key don't exist.
+
+        Returns:
+            The (potentially resolved) attribute value.
+        """
+        value = super().__getattribute__(key)
+
+        if not secret_utils.is_secret_reference(value):
+            return value
+
+        from zenml.repository import Repository
+
+        stack = Repository().active_stack
+
+        # A stack component can be part of many stacks, and currently a
+        # secrets manager is associated with a stack. This means we're
+        # not able to identify the 'correct' secrets manager that the user
+        # wanted to resolve the secrets in a general way. We therefore
+        # limit secret resolving to components of the active stack.
+        component = stack.components.get(self.TYPE, None)
+        if not component or component.uuid != self.uuid:
+            raise RuntimeError(
+                f"Failed to resolve secret reference for attribute {key} "
+                f"of stack component `{self}`: The stack component is not "
+                "part of the active stack and therefore can't have it's "
+                "secret references resolved. If you want to access attributes "
+                "of this stack component which reference secrets, set a stack "
+                "which includes both this component and a secrets manager as "
+                "your active stack: `zenml stack set <STACK_NAME>`."
+            )
+
+        secrets_manager = Repository().active_stack.secrets_manager
+        if not secrets_manager:
+            raise RuntimeError(
+                f"Failed to resolve secret reference for attribute {key} "
+                f"of stack component `{self}`: The active stack does not "
+                "have a secrets manager."
+            )
+
+        secret_ref = secret_utils.parse_secret_reference(value)
+        try:
+            secret = secrets_manager.get_secret(secret_ref.name)
+        except KeyError:
+            raise KeyError(
+                f"Failed to resolve secret reference for attribute {key} "
+                f"of stack component `{self}`: The secret "
+                f"{secret_ref.name} does not exist."
+            )
+
+        try:
+            secret_value = secret.content[secret_ref.key]
+        except KeyError:
+            raise KeyError(
+                f"Failed to resolve secret reference for attribute {key} "
+                f"of stack component `{self}`: The secret "
+                f"{secret_ref.name} does not contain a value for key "
+                f"{secret_ref.key}. Available keys: {set(secret.content)}."
+            )
+
+        return str(secret_value)
+
+    if not TYPE_CHECKING:
+        # When defining __getattribute__, mypy allows accessing non-existent
+        # attributes without failing
+        # (see https://github.com/python/mypy/issues/13319).
+        __getattribute__ = __custom_getattribute__
+
+    @property
+    def required_secrets(self) -> Set[secret_utils.SecretReference]:
+        """All required secrets for this stack component.
+
+        Returns:
+            The required secrets of this stack component.
+        """
+        return {
+            secret_utils.parse_secret_reference(v)
+            for v in self.dict().values()
+            if secret_utils.is_secret_reference(v)
+        }
 
     @property
     def log_file(self) -> Optional[str]:

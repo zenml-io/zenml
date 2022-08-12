@@ -15,6 +15,8 @@ encounter throughout your journey, about which you can learn more here.
 * [Writing Custom Stack Component Flavors](./custom-flavors.md)
 can be useful when trying to use ZenML with tooling or infrastructure for which
 no official integration exists yet.
+* [Secret references](./secret-references.md) allow you to securely configure
+sensitive information required in certain stack components.
 * [Managing Stack Component States](./stack-state-management.md)
 is required for certain integrations with remote components and can also be
 used to configure custom setup behavior of custom stack component flavors.
@@ -40,3 +42,6 @@ the repository.
 * [Migrating Legacy Stacks to ZenML Profiles](./migrating-legacy-stacks.md)
 contains additional information for returning users that want to port their
 ZenML stacks to the newest version.
+* [Specifying Hardware Resources for Steps](./specify-step-resources.md) explains
+how to specify hardware resources like memory or the amount of CPUs and GPUs that
+a step requires to execute.

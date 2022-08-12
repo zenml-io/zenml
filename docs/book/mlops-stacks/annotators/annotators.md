@@ -12,7 +12,7 @@ of the conversation. ZenML will incrementally start to build in features that
 support an iterative annotation workflow that sees the people doing labeling
 (and their workflows/behaviors) as integrated parts of their ML process(es).
 
-![When and where to annotate.](../assets/annotation/annotation-when-where.png)
+![When and where to annotate.](../../assets/annotation/annotation-when-where.png)
 
 There are a number of different places in the ML lifecycle where this can
 happen:
@@ -86,7 +86,7 @@ zenml annotator flavor list
 The available implementation of the annotator is built on top of the Label
 Studio integration, which means that using an annotator currently is no
 different than what's described in the [Label Studio page: How to use
-it?](./label_studio.md#how-to-use-it).
+it?](./label-studio.md#how-do-you-use-it).
 
 ## A note on names
 
@@ -98,7 +98,7 @@ component and integrations. Key differences to note:
 - Label Studio refers to the grouping of a set of annotations / tasks as a
   'Project', whereas most other tools use the term 'Dataset', so ZenML also
   calls this grouping a 'Dataset'.
-- The individual metaunit for 'an annotation + the source data' is referred to
+- The individual meta-unit for 'an annotation + the source data' is referred to
   in different ways, but at ZenML (and with Label Studio) we refer to them as
   'tasks'.
 

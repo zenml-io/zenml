@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,14 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-
-from click.testing import CliRunner
-
-from zenml.cli.feature import get_project
+from zenml.artifacts.model_artifact import ModelArtifact
+from zenml.steps import step
 
 
-def test_feature_command_fails_without_active_feature_store() -> None:
-    """Test that the feature store CLI command raises an error when no feature store is active"""
-    runner = CliRunner()
-    result = runner.invoke(get_project)
-    assert result.exit_code == 1
+@step
+def model_deployer_mock(deploy_decision: bool, model: ModelArtifact) -> None:
+    pass
+
+
+model_deployer = model_deployer_mock()

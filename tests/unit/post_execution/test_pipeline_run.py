@@ -59,32 +59,51 @@ def test_get_step_returns_stepview(
 ):
     """Test that the `get_step` method returns the correct step_view"""
 
+    returned_sv = sample_pipeline_run_view.get_step(step="some_step")
+    assert sample_stepview._id == returned_sv._id
+    assert sample_stepview._name == returned_sv._name
+
+
+def test_get_step_raises_key_error(
+    sample_pipeline_run_view: PipelineRunView,
+):
+    """Test that `get_step()` raises a key error for wrong step names."""
+
+    class NonStep:
+        pass
+
     input_args = [
-        {"step": sample_step.__name__},  # calling by name
-        {"step": sample_step},  # calling by step class
-        {"step": sample_step()},  # calling by step instance
-        {"name": sample_step.__name__},
-    ]  # calling with deprecated kwarg
+        {"step": NonStep},  # calling with a class
+        {"step": NonStep()},  # calling with a class instance
+        {"step": 1234},  # calling kwarg with wrong data type
+    ]
 
     for input_arg in input_args:
-        returned_sv = sample_pipeline_run_view.get_step(**input_arg)
-        assert sample_stepview._id == returned_sv._id
-        assert sample_stepview._name == returned_sv._name
+        with pytest.raises(KeyError):
+            sample_pipeline_run_view.get_step(**input_arg)
 
 
-def test_get_step_raises_exception(sample_pipeline_run_view: PipelineRunView):
+def test_get_step_raises_runtime_error(
+    sample_pipeline_run_view: PipelineRunView,
+):
+    """Test that `get_step()` raises a runtime error for invalid kwargs."""
+    with pytest.raises(RuntimeError):
+        sample_pipeline_run_view.get_step(useless_kwarg="some_pipeline")
+
+
+def test_get_step_raises_keyerror_exception(
+    sample_pipeline_run_view: PipelineRunView,
+):
     """Test that the `get_step` method raises runtime error with wrong step."""
 
     class NonStep:
         pass
 
     input_args = [
-        {"step": NonStep},  # calling with wrong class
-        {"step": NonStep()},  # calling with wrong class instance
-        {"useless_arg": "some_pipeline"},  # calling with wrong kwarg
-        {"name": 1234},
-    ]  # calling kwarg with wrong data type
+        {"step": "blupusthecat"},  # calling step with wrong step name
+        {"name": "blupusthecat"},  # calling kwarg with wrong step name
+    ]
 
     for input_arg in input_args:
-        with pytest.raises(RuntimeError):
+        with pytest.raises(KeyError):
             sample_pipeline_run_view.get_step(**input_arg)

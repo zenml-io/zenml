@@ -48,6 +48,12 @@ and add it to your stack:
 zenml integration install label_studio
 ```
 
+The following instructions below offer a general guide to the parts that need
+attention when deploying / using the Label Studio stack component and
+integration. The [`label_studio_annotation`
+example](https://github.com/zenml-io/zenml/tree/develop/examples/label_studio_annotation)
+offers a detailed guide for each cloud provider on how to set it up.
+
 Before registering a `label_studio` flavor stack component as part of your
 stack, you'll need to have registered a cloud artifact store and a secrets
 manager to handle authentication with Label Studio as well as any secrets
@@ -82,7 +88,7 @@ custom secret name, making sure to replace the two parts in `<>` with whatever
 you choose:
 
 ```shell
-zenml secret register <LABEL_STUDIO_SECRET_NAME> --api_key="<your_label_studio_api_key>"
+zenml secrets-manager secret register <LABEL_STUDIO_SECRET_NAME> --api_key="<your_label_studio_api_key>"
 ```
 
 Then register your annotator with ZenML:
@@ -183,4 +189,4 @@ of object detection and image classification. See the
 functions.
 
 A concrete example of using the Label Studio annotator can be found
-[here](#coming-soon).
+[here](https://github.com/zenml-io/zenml/tree/develop/examples/label_studio_annotation).

@@ -1,0 +1,18 @@
+name: Check Markdown Links
+
+on: workflow_call
+
+jobs:
+  markdown-link-check:
+    runs-on: ubuntu-latest
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+    steps:
+    - uses: actions/checkout@master
+    - uses: gaurav-nelson/github-action-markdown-link-check@v1
+      with:
+        use-quiet-mode: 'no'
+        use-verbose-mode: 'no'
+        config-file: .github/workflows/markdown_check_config.json
+    

@@ -106,7 +106,7 @@ class StepView:
 
         Examples:
             # the step entrypoint_name will be "my_step"
-            @step(name="my_step")
+            @step(step="my_step")
             def my_step_function(...)
 
             # the step entrypoint_name will be "my_step_function"
@@ -262,7 +262,7 @@ class StepView:
         """
         return (
             f"{self.__class__.__qualname__}(id={self._id}, "
-            f"name='{self.name}', entrypoint_name='{self.entrypoint_name}'"
+            f"name='{self.name}', entrypoint_name='{self.entrypoint_name}', "
             f"parameters={self._parameters})"
         )
 

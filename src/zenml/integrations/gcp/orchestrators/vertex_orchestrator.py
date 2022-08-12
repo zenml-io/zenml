@@ -54,11 +54,10 @@ from zenml.integrations.gcp.orchestrators.vertex_entrypoint_configuration import
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
-from zenml.repository import Repository
 from zenml.stack.stack_validator import StackValidator
-from zenml.utils.docker_utils import get_image_digest
+from zenml.utils import deprecation_utils
 from zenml.utils.io_utils import get_global_config_directory
-from zenml.utils.source_utils import get_source_root_path
+from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
     from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
@@ -66,7 +65,7 @@ if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
     from zenml.stack import Stack
-    from zenml.steps import BaseStep
+    from zenml.steps import BaseStep, ResourceConfiguration
 
 logger = get_logger(__name__)
 
@@ -83,7 +82,9 @@ def _clean_pipeline_name(pipeline_name: str) -> str:
     return pipeline_name.replace("_", "-").lower()
 
 
-class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
+class VertexOrchestrator(
+    BaseOrchestrator, GoogleCredentialsMixin, PipelineDockerImageBuilder
+):
     """Orchestrator responsible for running pipelines on Vertex AI.
 
     Attributes:
@@ -167,6 +168,10 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
 
     FLAVOR: ClassVar[str] = GCP_VERTEX_ORCHESTRATOR_FLAVOR
 
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
+        ("custom_docker_base_image_name", "docker_parent_image")
+    )
+
     @property
     def validator(self) -> Optional[StackValidator]:
         """Validates that the stack contains a container registry.
@@ -238,24 +243,6 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             custom_validation_function=_validate_stack_requirements,
         )
 
-    def get_docker_image_name(self, pipeline_name: str) -> str:
-        """Returns the full docker image name including registry and tag.
-
-        Args:
-            pipeline_name: The name of the pipeline.
-
-        Returns:
-            The full docker image name including registry and tag.
-        """
-        base_image_name = f"zenml-vertex:{pipeline_name}"
-        container_registry = Repository().active_stack.container_registry
-
-        if container_registry:
-            registry_uri = container_registry.uri.rstrip("/")
-            return f"{registry_uri}/{base_image_name}"
-
-        return base_image_name
-
     @property
     def root_directory(self) -> str:
         """Returns path to the root directory for files for this orchestrator.
@@ -291,35 +278,48 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             pipeline: The pipeline to be deployed.
             stack: The stack that will be used to deploy the pipeline.
             runtime_configuration: The runtime configuration for the pipeline.
-
-        Raises:
-            RuntimeError: If the container registry is missing.
         """
-        from zenml.utils import docker_utils
-
-        repo = Repository()
-        container_registry = repo.active_stack.container_registry
-
-        if not container_registry:
-            raise RuntimeError("Missing container registry")
-
-        image_name = self.get_docker_image_name(pipeline.name)
-
-        requirements = {*stack.requirements(), *pipeline.requirements}
-
-        logger.debug(
-            "Vertex AI Pipelines service docker container requirements %s",
-            requirements,
+        self.build_and_push_docker_image(
+            pipeline_name=pipeline.name,
+            docker_configuration=pipeline.docker_configuration,
+            stack=stack,
+            runtime_configuration=runtime_configuration,
         )
 
-        docker_utils.build_docker_image(
-            build_context_path=get_source_root_path(),
-            image_name=image_name,
-            dockerignore_path=pipeline.dockerignore_file,
-            requirements=requirements,
-            base_image=self.custom_docker_base_image_name,
+    def _configure_container_resources(
+        self,
+        container_op: dsl.ContainerOp,
+        resource_configuration: "ResourceConfiguration",
+    ) -> None:
+        """Adds resource requirements to the container.
+
+        Args:
+            container_op: The kubeflow container operation to configure.
+            resource_configuration: The resource configuration to use for this
+                container.
+        """
+        # Set optional CPU, RAM and GPU constraints for the pipeline
+        cpu_limit = resource_configuration.cpu_count or self.cpu_limit
+        if cpu_limit is not None:
+            container_op = container_op.set_cpu_limit(str(cpu_limit))
+
+        memory_limit = (
+            resource_configuration.memory[:-1]
+            if resource_configuration.memory
+            else self.memory_limit
         )
-        container_registry.push_image(image_name)
+        if memory_limit is not None:
+            container_op = container_op.set_memory_limit(memory_limit)
+
+        if self.node_selector_constraint is not None:
+            container_op = container_op.add_node_selector_constraint(
+                label_name=self.node_selector_constraint[0],
+                value=self.node_selector_constraint[1],
+            )
+
+        gpu_limit = resource_configuration.gpu_count or self.gpu_limit
+        if gpu_limit is not None:
+            container_op = container_op.set_gpu_limit(gpu_limit)
 
     def prepare_or_run_pipeline(
         self,
@@ -389,8 +389,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
 
         # Build the Docker image that will be used to run the steps of the
         # pipeline.
-        image_name = self.get_docker_image_name(pipeline.name)
-        image_name = get_image_digest(image_name) or image_name
+        image_name = runtime_configuration["docker_image"]
 
         def _construct_kfp_pipeline() -> None:
             """Create a `ContainerOp` for each step.
@@ -442,23 +441,10 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                     ]
                     container_op.after(upstream_container_op)
 
-                # Set optional CPU, RAM and GPU constraints for the pipeline
-                if self.cpu_limit is not None:
-                    container_op = container_op.set_cpu_limit(self.cpu_limit)
-
-                if self.memory_limit is not None:
-                    container_op = container_op.set_memory_limit(
-                        self.memory_limit
-                    )
-
-                if self.node_selector_constraint is not None:
-                    container_op = container_op.add_node_selector_constraint(
-                        label_name=self.node_selector_constraint[0],
-                        value=self.node_selector_constraint[1],
-                    )
-
-                if self.gpu_limit is not None:
-                    container_op = container_op.set_gpu_limit(self.gpu_limit)
+                self._configure_container_resources(
+                    container_op=container_op,
+                    resource_configuration=step.resource_configuration,
+                )
 
                 step_name_to_container_op[step.name] = container_op
 
