@@ -97,6 +97,8 @@ class ZenMLCustomModel(object):
 
         Args:
             X: The request to predict in a dictionary.
+            features_names: The names of the features.
+            **kwargs: Additional arguments.
 
         Returns:
             The prediction dictionary.
