@@ -47,10 +47,6 @@ jobs:
         if: ${{ github.event.inputs.tags }}
         uses: mxschmitt/action-tmate@v3
 
-      - name: Setup tmate session
-        # if: ${{ github.event.inputs.tags }}
-        uses: mxschmitt/action-tmate@v3
-
       - name: Test
         run: |
           source $VENV
