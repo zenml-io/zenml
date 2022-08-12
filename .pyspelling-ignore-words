@@ -131,6 +131,7 @@ DefaultContainerRegistry
 Deprovision
 Deprovisions
 Deregisters
+DockerConfiguration
 DockerHub
 DockerHubContainerRegistry
 Dockerfile
@@ -315,6 +316,7 @@ MyObj
 MyOrchestrator
 MySQLMetadataStore
 MyService
+MyStackComponent
 MyStep
 MyStepEntrypointConfiguration
 NFS
@@ -354,6 +356,7 @@ Parametrizes
 PathType
 PermissionError
 PipelineConfigurationError
+PipelineDockerImageBuilder
 PipelineInterfaceError
 PipelineNode
 PipelineRun
@@ -1196,5 +1199,4 @@ zenfiles
 zenml
 zenmldocker
 zenmlregistry
-zenserver
 zenserver

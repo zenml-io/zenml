@@ -14,7 +14,7 @@
 """Deprecation utilities."""
 
 import warnings
-from typing import TYPE_CHECKING, Any, Dict, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, Set, Tuple, Type, Union
 
 from pydantic import BaseModel, root_validator
 
@@ -24,6 +24,8 @@ if TYPE_CHECKING:
     AnyClassMethod = classmethod[Any]
 
 logger = get_logger(__name__)
+
+PREVIOUS_DEPRECATION_WARNINGS_ATTRIBUTE = "__previous_deprecation_warnings"
 
 
 def deprecate_pydantic_attributes(
@@ -71,8 +73,8 @@ def deprecate_pydantic_attributes(
             values: All values passed at model initialization.
 
         Raises:
-            AssertionError: If either the deprecated or replacement attribute don't
-                exist.
+            AssertionError: If either the deprecated or replacement attribute
+                don't exist.
             TypeError: If the deprecated attribute is a required attribute.
             ValueError: If the deprecated attribute and replacement attribute
                 contain different values.
@@ -80,6 +82,26 @@ def deprecate_pydantic_attributes(
         Returns:
             Input values with potentially migrated values.
         """
+        previous_deprecation_warnings: Set[str] = getattr(
+            cls, PREVIOUS_DEPRECATION_WARNINGS_ATTRIBUTE, set()
+        )
+
+        def _warn(message: str, attribute: str) -> None:
+            """Logs and raises a warning for a deprecated attribute.
+
+            Args:
+                message: The warning message.
+                attribute: The name of the attribute.
+            """
+            if attribute not in previous_deprecation_warnings:
+                logger.warning(message)
+                previous_deprecation_warnings.add(attribute)
+
+            warnings.warn(
+                message,
+                DeprecationWarning,
+            )
+
         for attribute in attributes:
             if isinstance(attribute, str):
                 deprecated_attribute = attribute
@@ -104,26 +126,26 @@ def deprecate_pydantic_attributes(
                     "annotation."
                 )
 
-            if deprecated_attribute not in values:
+            if values.get(deprecated_attribute, None) is None:
                 continue
 
             if replacement_attribute is None:
-                warnings.warn(
-                    f"The attribute {deprecated_attribute} of class "
-                    f"{cls.__name__} will be deprecated soon.",
-                    DeprecationWarning,
+                _warn(
+                    message=f"The attribute `{deprecated_attribute}` of class "
+                    f"`{cls.__name__}` will be deprecated soon.",
+                    attribute=deprecated_attribute,
                 )
                 continue
 
-            warnings.warn(
-                f"The attribute {deprecated_attribute} of class "
-                f"{cls.__name__} will be deprecated soon. Use the "
-                f"attribute {replacement_attribute} instead.",
-                DeprecationWarning,
+            _warn(
+                message=f"The attribute `{deprecated_attribute}` of class "
+                f"`{cls.__name__}` will be deprecated soon. Use the "
+                f"attribute `{replacement_attribute}` instead.",
+                attribute=deprecated_attribute,
             )
 
-            if replacement_attribute not in values:
-                logger.info(
+            if values.get(replacement_attribute, None) is None:
+                logger.debug(
                     "Migrating value of deprecated attribute %s to "
                     "replacement attribute %s.",
                     deprecated_attribute,
@@ -139,6 +161,12 @@ def deprecate_pydantic_attributes(
             else:
                 # Both values are identical, no need to do anything
                 pass
+
+        setattr(
+            cls,
+            PREVIOUS_DEPRECATION_WARNINGS_ATTRIBUTE,
+            previous_deprecation_warnings,
+        )
 
         return values
 
