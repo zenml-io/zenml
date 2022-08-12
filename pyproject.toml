@@ -246,7 +246,8 @@ module = [
     "jupyter_dash.*",
     "slack_sdk.*",
     "azure-keyvault-keys.*",
-    "model_archiver.*"
+    "model_archiver.*",
+    "kfp_tekton.*"
 ]
 ignore_missing_imports = true
 

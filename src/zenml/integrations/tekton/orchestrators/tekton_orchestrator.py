@@ -53,10 +53,11 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
     Attributes:
         kubernetes_context: Name of a kubernetes context to run
             pipelines in.
-        tekton_ui_port: A local port to which the KFP UI will be
-            forwarded.
-        skip_ui_daemon_provisioning: If `True`, provisioning the KFP UI daemon
-            will be skipped.
+        kubernetes_namespace: Name of the kubernetes namespace in which the
+            pods that run the pipeline steps should be running.
+        tekton_ui_port: A local port to which the Tekton UI will be forwarded.
+        skip_ui_daemon_provisioning: If `True`, provisioning the Tekton UI
+            daemon will be skipped.
     """
 
     kubernetes_context: str
@@ -209,29 +210,10 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
-        """Creates a kfp yaml file.
+        """Runs the pipeline on Tekton.
 
-        This functions as an intermediary representation of the pipeline which
-        is then deployed to the tekton pipelines instance.
-
-        How it works:
-        -------------
-        Before this method is called the `prepare_pipeline_deployment()`
-        method builds a docker image that contains the code for the
-        pipeline, all steps the context around these files.
-
-        Based on this docker image a callable is created which builds
-        container_ops for each step (`_construct_kfp_pipeline`).
-        To do this the entrypoint of the docker image is configured to
-        run the correct step within the docker image. The dependencies
-        between these container_ops are then also configured onto each
-        container_op by pointing at the downstream steps.
-
-        This callable is then compiled into a kfp yaml file that is used as
-        the intermediary representation of the tekton pipeline.
-
-        This file, together with some metadata, runtime configurations is
-        then uploaded into the tekton pipelines cluster for execution.
+        This function first compiles the ZenML pipeline into a Tekton yaml
+        and then applies this configuration to run the pipeline.
 
         Args:
             sorted_steps: A list of steps sorted by their order in the
@@ -312,7 +294,8 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             self.pipeline_directory, f"{runtime_configuration.run_name}.yaml"
         )
 
-        # write the tekton pipeline yaml
+        # Set the run name, which Tekton reads from this attribute of the
+        # pipeline function
         setattr(
             _construct_kfp_pipeline,
             "_component_human_name",
@@ -320,17 +303,19 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         )
         TektonCompiler().compile(_construct_kfp_pipeline, pipeline_file_path)
 
-        logger.info(
-            "Running in kubernetes context '%s'.",
-            self.kubernetes_context,
-        )
         if runtime_configuration.schedule:
             logger.warning(
-                "The Tekton Orchestrator currently does not support the"
+                "The Tekton Orchestrator currently does not support the "
                 "use of schedules. The `schedule` will be ignored "
                 "and the pipeline will be run immediately."
             )
 
+        logger.info(
+            "Running Tekton pipeline in kubernetes context '%s' and namespace "
+            "'%s'.",
+            self.kubernetes_context,
+            self.kubernetes_namespace,
+        )
         try:
             subprocess.check_call(
                 [
@@ -345,12 +330,11 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 ]
             )
         except subprocess.CalledProcessError as e:
-            logger.warning(
-                f"Failed to upload Tekton pipeline: %s. "
+            raise RuntimeError(
+                f"Failed to upload Tekton pipeline: {str(e)}. "
                 f"Please make sure your kubernetes config is present and the "
                 f"{self.kubernetes_context} kubernetes context is configured "
                 f"correctly.",
-                e,
             )
 
     @property
@@ -412,9 +396,6 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         if self.skip_ui_daemon_provisioning:
             return True
 
-        if not self.is_provisioned:
-            return False
-
         if sys.platform != "win32":
             from zenml.utils.daemon import check_if_daemon_is_running
 
@@ -423,25 +404,35 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             return True
 
     def provision(self) -> None:
+        """Provisions resources for the orchestrator."""
         fileio.makedirs(self.root_directory)
 
     def deprovision(self) -> None:
+        """Deprovisions the orchestrator resources."""
+        if self.is_running:
+            self.suspend()
+
         if fileio.exists(self.log_file):
             fileio.remove(self.log_file)
 
     def resume(self) -> None:
+        """Starts the UI forwarding daemon if necessary."""
         if self.is_running:
+            logger.info("Tekton UI forwarding is already running.")
             return
 
         self.start_ui_daemon()
 
     def suspend(self) -> None:
+        """Stops the UI forwarning daemon if it's running."""
         if not self.is_running:
+            logger.info("Tekton UI forwarding not running.")
             return
 
         self.stop_ui_daemon()
 
-    def start_ui_daemon(self):
+    def start_ui_daemon(self) -> None:
+        """Starts the UI forwarning daemon if possible."""
         port = self.tekton_ui_port
         if (
             port == DEFAULT_TEKTON_UI_PORT
@@ -469,8 +460,8 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 "Unable to port-forward Tekton UI to local port %d "
                 "because the port is occupied. In order to access the Tekton "
                 "UI at http://localhost:<PORT>/, please run '%s' in a "
-                "separate command line shell (replace <PORT> with a free port of "
-                "your choice).",
+                "separate command line shell (replace <PORT> with a free port "
+                "of your choice).",
                 port,
                 " ".join(modified_command),
             )
@@ -503,7 +494,8 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 port,
             )
 
-    def stop_ui_daemon(self):
+    def stop_ui_daemon(self) -> None:
+        """Stops the UI forwarding daemon if it's running."""
         if fileio.exists(self._pid_file_path):
             if sys.platform == "win32":
                 # Daemon functionality is not supported on Windows, so the PID
@@ -515,3 +507,4 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
                 daemon.stop_daemon(self._pid_file_path)
                 fileio.remove(self._pid_file_path)
+                logger.info("Stopped Tektion UI daemon.")
