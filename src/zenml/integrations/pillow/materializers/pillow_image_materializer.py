@@ -58,7 +58,9 @@ class PillowImageMaterializer(BaseMaterializer):
         filepath = [file for file in files if not fileio.isdir(file)][0]
 
         # create a temporary folder
-        with tempfile.TemporaryDirectory(prefix="zenml-temp-") as temp_dir:
+        with tempfile.TemporaryDirectory(
+            prefix="zenml-temp-", ignore_cleanup_errors=True
+        ) as temp_dir:
             temp_file = os.path.join(
                 temp_dir,
                 f"{DEFAULT_IMAGE_FILENAME}{os.path.splitext(filepath)[1]}",
@@ -75,7 +77,9 @@ class PillowImageMaterializer(BaseMaterializer):
             image: An Image.Image object.
         """
         super().handle_return(image)
-        with tempfile.TemporaryDirectory(prefix="zenml-temp-") as temp_dir:
+        with tempfile.TemporaryDirectory(
+            prefix="zenml-temp-", ignore_cleanup_errors=True
+        ) as temp_dir:
 
             file_extension = image.format or DEFAULT_IMAGE_EXTENSION
             full_filename = f"{DEFAULT_IMAGE_FILENAME}.{file_extension}"
