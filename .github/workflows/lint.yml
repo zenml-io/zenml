@@ -36,7 +36,7 @@ jobs:
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
           source $VENV
-          zenml integration install -y --ignore-integration feast --ignore-integration label_studio --ignore-integration kserve
+          zenml integration install -y --ignore-integration feast --ignore-integration label_studio --ignore-integration kserve --ignore-integration tekton
           pip install click~=8.0.3
         
       - name: Lint
