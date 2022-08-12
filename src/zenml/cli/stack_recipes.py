@@ -41,19 +41,19 @@ logger = get_logger(__name__)
 EXCLUDED_RECIPE_DIRS = [""]
 STACK_RECIPES_GITHUB_REPO = "https://github.com/zenml-io/mlops-stacks.git"
 STACK_RECIPES_REPO_DIR = "zenml_stack_recipes"
-RECIPE_RUN_SCRIPT = "run_recipe.sh"
-RECIPE_DESTROY_SCRIPT = "destroy_recipe.sh"
 VARIABLES_FILE = "values.tfvars.json"
-SHELL_EXECUTABLE = "SHELL_EXECUTABLE"
-STACK_INFO_FILE = "stack_info.txt"
 
 
 class Terraform:
     """Class to represent terraform applications."""
 
-    def __init__(self) -> None:
-        """Creates a client that can be used to call terraform commands."""
-        self.tf = python_terraform.Terraform()
+    def __init__(self, path: str) -> None:
+        """Creates a client that can be used to call terraform commands.
+        
+        Args:
+            path: the path to the stack recipe.
+        """
+        self.tf = python_terraform.Terraform(working_dir=str(path))
 
     def check_installation(self) -> None:
         """Checks if terraform is installed on the host system.
@@ -79,14 +79,11 @@ class Terraform:
         ret_code, _, _ = self.tf.cmd("-version")
         return ret_code == 0
 
-    def apply(self, path: str) -> str:
+    def apply(self) -> str:
         """Function to call terraform init and terraform apply.
 
         The init call is not repeated if any successful execution has
         happened already, to save time.
-
-        Args:
-            path: the path to the terraform module to be applied.
 
         Returns:
             The path to the stack YAML configuration file as a string.
@@ -94,21 +91,16 @@ class Terraform:
         Raises:
             RuntimeError: if terraform init fails.
             TerraformCommandError: if terraform apply fails.
-
-            TODO # expect this to be caught in the CLI command and add
-            the line "please run the deploy function again".
-            Keep only one exception going forward. Choose which is 
-            more descriptive.
         """
         # this directory gets created after a successful init
-        previous_run_dir = os.path.join(path, ".ignoreme")
+        previous_run_dir = os.path.join(self.tf.working_dir, ".ignoreme")
         if fileio.exists(previous_run_dir):
             logger.info(
                 "Terraform already initialized, "
                 "terraform init will not be executed."
             )
         else:
-            ret_code, _, _ = self.tf.init(path, capture_output=False)
+            ret_code, _, _ = self.tf.init(capture_output=False)
             if ret_code != 0:
                 raise RuntimeError(
                     "The command 'terraform init' failed."
@@ -116,11 +108,10 @@ class Terraform:
             fileio.mkdir(previous_run_dir)
 
         # get variables from the recipe as a python dictionary
-        vars = self._get_vars(path)
+        vars = self._get_vars(self.tf.working_dir)
 
         # once init is successful, call terraform apply
         _, _, _ = self.tf.apply(
-                            path,
                             var=vars,
                             input=False,
                             capture_output=False,
@@ -152,38 +143,18 @@ class Terraform:
         # set TF_LOG env var to the log_level provided by the user.
         os.environ["TF_LOG"] = log_level
 
-    def destroy(self, path: str) -> None:
+    def destroy(self) -> None:
         """Function to call terraform destroy on the given path.
-        
-        Args:
-            path: the path to the terraform module to be destroyed.
 
         Raises:
             TerrformCommandError: raises if the destroy command fails.
             subprocess.CalledProcessError: if the kubernetes cleanup fails.
         """
-        # if the recipe is aws-minimal, perform extra cleanup
-        if "aws-minimal" in path:
-            self.tf.destroy(
-                path,
-                capture_output=False,
-                raise_on_error=True
-            )
-            cleanup_k8s = subprocess.check_call(
-                              ["kubectl", "delete", "node", "--all"]
-                          )
-            self.tf.destroy(
-                path,
-                input=False,
-                capture_output=False,
-                raise_on_error=True
-            )
-        else:
-            self.tf.destroy(
-                path,
-                capture_output=False,
-                raise_on_error=True
-            )
+        self.tf.destroy(
+            capture_output=False,
+            raise_on_error=True,
+            force=python_terraform.IsNotFlagged
+        )
 
 
 class LocalStackRecipe:
@@ -200,39 +171,6 @@ class LocalStackRecipe:
         self.name = name
         self.path = path
 
-    @property
-    def recipes_deploy_bash_script(self) -> str:
-        """Path to the bash script that deploys the recipe.
-
-        Returns:
-            Path to the bash script that deploys the recipe.
-        """
-        return os.path.join(self.path, RECIPE_RUN_SCRIPT)
-
-    @property
-    def recipes_destroy_bash_script(self) -> str:
-        """Path to the bash script that destroys the recipe.
-
-        Returns:
-            Path to the bash script that destroys the recipe.
-        """
-        return os.path.join(self.path, RECIPE_DESTROY_SCRIPT)
-
-    # define the property here
-    @property
-    def stack_yaml_file(self) -> str:
-        """Path of the stack config YAML file created as part of recipe deployment.
-
-        Returns:
-            Path of the stack config YAML file created as part of recipe deployment.
-        """
-        stack_info_file = open(self.path / STACK_INFO_FILE, "r")
-        file_name = stack_info_file.read().replace('"', "")
-        file_name = file_name[2:]
-        stack_info_file.close()
-
-        return os.path.join(self.path, file_name.replace("\n", ""))
-
     def is_present(self) -> bool:
         """Checks if the stack_recipe exists at the given path.
 
@@ -240,42 +178,6 @@ class LocalStackRecipe:
             True if the stack_recipe exists at the given path, else False.
         """
         return fileio.isdir(str(self.path))
-
-    def run_stack_recipe(self, stack_recipe_runner: List[str]) -> None:
-        """Run the local stack recipe using the bash script at the supplied location.
-
-        Args:
-            stack_recipe_runner: Sequence of locations of executable file(s)
-                            to run the stack_recipe
-
-        Raises:
-            NotImplementedError: If the stack_recipe hasn't been implement yet.
-            FileNotFoundError: If the stack_recipe runner script is not found.
-            subprocess.CalledProcessError: If the stack_recipe runner script fails.
-        """
-        if all(map(fileio.exists, stack_recipe_runner)):
-            call = stack_recipe_runner
-            try:
-                subprocess.check_call(
-                    call,
-                    cwd=str(self.path),
-                    shell=click._compat.WIN,
-                    env=os.environ.copy(),
-                )
-            except subprocess.CalledProcessError as e:
-                if e.returncode == 38:
-                    raise NotImplementedError(
-                        "Please raise an issue at "
-                        f"{STACK_RECIPES_GITHUB_REPO}."
-                    )
-                raise
-        else:
-            raise FileNotFoundError(
-                "Bash File(s) to run recipe not found at"
-                f"{stack_recipe_runner}. Check if the file exists "
-                "and the path is correct. If not, please raise an "
-                f"issue at {STACK_RECIPES_GITHUB_REPO}."
-            )
 
 
 class StackRecipe:
@@ -789,23 +691,13 @@ def pull(
     help="Relative path at which you want to install the stack_recipe(s)",
 )
 @click.option(
-    "--yes",
-    "-y",
+    "--force",
+    "-f",
     "force",
     is_flag=True,
     help="Force the run of the stack_recipe. This deletes the .zen folder from the "
     "stack_recipe folder and force installs all necessary integration "
     "requirements.",
-)
-@click.option(
-    "--shell-executable",
-    "-x",
-    type=click.Path(exists=True),
-    required=False,
-    envvar=SHELL_EXECUTABLE,
-    help="Manually specify the path to the executable that runs .sh files. "
-    "Can be helpful for compatibility with Windows or minimal linux "
-    "distros without bash.",
 )
 @click.option(
     "--stack-name",
@@ -826,15 +718,14 @@ def pull(
     '--log-level',
     type=click.Choice(['TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR'], case_sensitive=False),
     help="Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case insensitive) as "
-    "log level for the deploy operation."
+    "log level for the deploy operation.",
+    default="ERROR",
 )
 @pass_git_stack_recipes_handler
-@pass_tf_client
 @click.pass_context
 def deploy(
     ctx: click.Context,
     git_stack_recipes_handler: GitStackRecipesHandler,
-    tf_client: Terraform,
     stack_recipe_name: str,
     path: str,
     force: bool,
@@ -850,7 +741,6 @@ def deploy(
     Args:
         ctx: The click context.
         git_stack_recipes_handler: The GitStackRecipesHandler instance.
-        tf_client: The Terraform class instance to use for operations.
         stack_recipe_name: The name of the stack_recipe.
         path: The path at which you want to install the stack_recipe(s).
         force: Force the run of the stack_recipe.
@@ -862,15 +752,6 @@ def deploy(
         log_level: Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case insensitive)
             as log level for the deploy operation.
     """
-    # check if terraform is installed
-    try:
-        tf_client.check_installation()
-    except RuntimeError as e:
-        cli_utils.error(str(e))
-
-    # set terraform log level
-    tf_client.set_log_level(log_level=log_level)
-
     stack_recipes_dir = Path(os.getcwd()) / path
 
     if sys.platform == "win32":
@@ -900,6 +781,16 @@ def deploy(
             )
 
         try:
+            # check if terraform is installed
+            tf_client = Terraform(local_stack_recipe.path)
+            try:
+                tf_client.check_installation()
+            except RuntimeError as e:
+                cli_utils.error(str(e))
+
+            # set terraform log level
+            tf_client.set_log_level(log_level=log_level)
+
             # Telemetry
             track_event(
                 AnalyticsEvent.RUN_STACK_RECIPE,
@@ -908,7 +799,7 @@ def deploy(
             # use the terraform client to apply recipe
             stack_yaml_file = os.path.join(
                 local_stack_recipe.path,
-                tf_client.apply(path=local_stack_recipe.path),
+                tf_client.apply(),
             )
 
             logger.info(
@@ -947,7 +838,7 @@ def deploy(
         except RuntimeError as e:
             cli_utils.error(
                 f"Error running recipe {stack_recipe_name}: {str(e)} "
-                "Please look at the error message to figure out why the "
+                "\nPlease look at the error message to figure out why the "
                 "command failed. If the error is due some wrong configuration, "
                 "please consider checking the locals.tf file to verify if the "
                 "inputs are correct. Most commonly, the command can fail due "
@@ -957,7 +848,7 @@ def deploy(
         except python_terraform.TerraformCommandError as e:
             cli_utils.error(
                 f"Error running recipe {stack_recipe_name}: {str(e.err)} "
-                "Please look at the error message to figure out why the "
+                "\nPlease look at the error message to figure out why the "
                 "command failed. If the error is due some wrong configuration, "
                 "please consider checking the locals.tf file to verify if the "
                 "inputs are correct. Most commonly, the command can fail due "
@@ -982,15 +873,16 @@ def deploy(
     '--log-level',
     type=click.Choice(['TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR'], case_sensitive=False),
     help="Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case insensitive) as "
-    "log level for the destroy operation."
+    "log level for the destroy operation.",
+    default="ERROR",
 )
 @pass_git_stack_recipes_handler
-@pass_tf_client
+# @pass_tf_client
 @click.pass_context
 def destroy(
     ctx: click.Context,
     git_stack_recipes_handler: GitStackRecipesHandler,
-    tf_client: Terraform,
+    # tf_client: Terraform,
     stack_recipe_name: str,
     path: str,
     log_level: str,
@@ -1012,14 +904,7 @@ def destroy(
     Raises:
         ModuleNotFoundError: If the recipe is found at the given path.
     """
-    # check if terraform is installed
-    try:
-        tf_client.check_installation()
-    except RuntimeError as e:
-        cli_utils.error(str(e))
-
-    # set terraform log level
-    tf_client.set_log_level(log_level=log_level)
+    
     
     stack_recipes_dir = Path(os.getcwd()) / path
 
@@ -1050,13 +935,23 @@ def destroy(
             )
 
         try:
+            # check if terraform is installed
+            tf_client = Terraform(local_stack_recipe.path)
+            try:
+                tf_client.check_installation()
+            except RuntimeError as e:
+                cli_utils.error(str(e))
+
+            # set terraform log level
+            tf_client.set_log_level(log_level=log_level)
+
             # Telemetry
             track_event(
                 AnalyticsEvent.DESTROY_STACK_RECIPE,
                 {"stack_recipe_name": stack_recipe_name},
             )
             # use the terraform client to call destroy on the recipe
-            tf_client.destroy(path=local_stack_recipe.path)
+            tf_client.destroy()
 
             cli_utils.declare(
                 "\n" + "Your active stack might now be invalid. Please run:"
@@ -1068,18 +963,24 @@ def destroy(
             )
 
         except python_terraform.TerraformCommandError as e:
+            force_message = ""
+            if stack_recipe_name == "aws_minimal":
+                force_message = "If there are Kubernetes resources that aren't"
+                "getting deleted, run 'kubectl delete node -all' to delete the "
+                "nodes and consequently all Kubernetes resources. Run the destroy "
+                "again after that, to remove any other remaining resources."
             cli_utils.error(
                 f"Error destroying recipe {stack_recipe_name}: {str(e.err)}"
-                "Most commonly, the error occurs if there's some resource "
+                "\nMost commonly, the error occurs if there's some resource "
                 "that can't be deleted instantly, for example, MySQL stores "
                 "with backups. In such cases, please try again after "
                 "around 30 minutes. If the issue persists, kindly raise an "
-                f"issue at {STACK_RECIPES_GITHUB_REPO}."
+                f"issue at {STACK_RECIPES_GITHUB_REPO}. \n{force_message}"
             )
         except subprocess.CalledProcessError as e:
             cli_utils.warning(
                 f"Error destroying recipe {stack_recipe_name}: {str(e.err)}"
-                "The kubernetes cluster couldn't be removed due to the error "
+                "\nThe kubernetes cluster couldn't be removed due to the error "
                 "above. Please verify if the cluster has already been deleted by "
                 "running kubectl get nodes to check if there's any active nodes."
                 "Ignore this warning if there are no active nodes."
