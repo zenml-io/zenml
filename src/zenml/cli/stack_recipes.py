@@ -517,6 +517,11 @@ def list_stack_recipes(
     Args:
         git_stack_recipes_handler: The GitStackRecipesHandler instance.
     """
+    cli_utils.warning(
+        "The stack recipes CLI is in alpha and actively being developed. "
+        "Please avoid running mission-critical workloads on resources deployed "
+        "through these commands."
+    )
     stack_recipes = [
         {"stack_recipe_name": stack_recipe.name}
         for stack_recipe in git_stack_recipes_handler.get_stack_recipes()
@@ -634,6 +639,11 @@ def pull(
             folder.
         path: The path at which you want to install the stack_recipe(s).
     """
+    cli_utils.warning(
+        "The stack recipes CLI is in alpha and actively being developed. "
+        "Please avoid running mission-critical workloads on resources deployed "
+        "through these commands."
+    )
     git_stack_recipes_handler.pull(branch="main", force=force)
 
     stack_recipes_dir = os.path.join(os.getcwd(), path)
@@ -752,6 +762,11 @@ def deploy(
         log_level: Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case insensitive)
             as log level for the deploy operation.
     """
+    cli_utils.warning(
+        "The stack recipes CLI is in alpha and actively being developed. "
+        "Please avoid running mission-critical workloads on resources deployed "
+        "through these commands."
+    )
     stack_recipes_dir = Path(os.getcwd()) / path
 
     if sys.platform == "win32":
@@ -904,7 +919,11 @@ def destroy(
     Raises:
         ModuleNotFoundError: If the recipe is found at the given path.
     """
-    
+    cli_utils.warning(
+        "The stack recipes CLI is in alpha and actively being developed. "
+        "Please avoid running mission-critical workloads on resources deployed "
+        "through these commands."
+    )
     
     stack_recipes_dir = Path(os.getcwd()) / path
 
