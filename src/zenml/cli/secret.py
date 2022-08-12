@@ -66,7 +66,6 @@ def register_secrets_manager_subcommands() -> None:
                 "No active secrets manager found. Please create a secrets manager "
                 "first and add it to your stack."
             )
-            return
 
         ctx.obj = secrets_manager_wrapper.to_component()
 
@@ -81,7 +80,8 @@ def register_secrets_manager_subcommands() -> None:
         "-s",
         "secret_schema_type",
         default=ARBITRARY_SECRET_SCHEMA_TYPE,
-        help="Register a secret with an optional schema.",
+        help="DEPRECATED: Register a secret with an optional schema. Secret "
+        "schemas will be removed in an upcoming release of ZenML.",
         type=str,
     )
     @click.option(
@@ -173,8 +173,13 @@ def register_secrets_manager_subcommands() -> None:
                 "the secret name."
             )
 
-        if "name" in parsed_args:
-            error("Secret names cannot be passed as arguments.")
+        if secret_schema_type != ARBITRARY_SECRET_SCHEMA_TYPE:
+            warning(
+                "Secret schemas will be deprecated soon. You can still "
+                "register secrets as a group of key-value pairs using the "
+                "`ArbitrarySecretSchema` by not specifying a secret schema "
+                "with the `--schema/-s` option."
+            )
 
         try:
             from zenml.secret.secret_schema_class_registry import (

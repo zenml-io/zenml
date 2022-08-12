@@ -179,7 +179,6 @@ def _get_stack_component_wrapper(
         return active_component, True
     else:
         cli_utils.error(f"No {singular_display_name} in active stack.")
-    return None, False
 
 
 def generate_stack_component_get_command(
