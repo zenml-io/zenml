@@ -38,9 +38,9 @@ from zenml.repository import Repository
 from zenml.steps import BaseStep
 from zenml.steps.utils import _FunctionExecutor, generate_component_class
 from zenml.utils import source_utils, yaml_utils
+from zenml.utils.pipeline_docker_image_builder import DOCKER_IMAGE_WORKDIR
 from zenml.utils.source_utils import prepend_python_path
 
-from zenml.utils.pipeline_docker_image_builder import DOCKER_IMAGE_WORKDIR
 
 def create_executor_class(
     step_source_path: str,
@@ -230,8 +230,7 @@ def main(
         )
 
         executor = configure_executor(
-            executor_class,
-            execution_info=execution_info
+            executor_class, execution_info=execution_info
         )
 
         stack.prepare_step_run()
