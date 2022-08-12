@@ -60,7 +60,7 @@ class PillowImageMaterializer(BaseMaterializer):
         # create a temporary folder
         temp_dir = tempfile.TemporaryDirectory(prefix="zenml-temp-")
         temp_file = os.path.join(
-            temp_dir.name,
+            temp_dir,
             f"{DEFAULT_IMAGE_FILENAME}{os.path.splitext(filepath)[1]}",
         )
 
@@ -68,8 +68,6 @@ class PillowImageMaterializer(BaseMaterializer):
         fileio.copy(filepath, temp_file)
         image = Image.open(temp_file)
         temp_dir.cleanup()
-        os.close(temp_dir)
-        os.remove(temp_dir)
         return image
 
     def handle_return(self, image: Image.Image) -> None:
@@ -91,5 +89,3 @@ class PillowImageMaterializer(BaseMaterializer):
         artifact_store_path = os.path.join(self.artifact.uri, full_filename)
         io_utils.copy(temp_image_path, artifact_store_path, overwrite=True)  # type: ignore[attr-defined]
         temp_dir.cleanup()
-        os.close(temp_dir)
-        os.remove(temp_dir)
