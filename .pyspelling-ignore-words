@@ -1128,6 +1128,7 @@ tensorboard
 tensorflow
 terraform
 tf
+tfvars
 tfx
 thinknum
 tiangolo
