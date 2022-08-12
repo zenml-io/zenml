@@ -145,7 +145,7 @@ def _create_custom_build_context(
         # in dockerignore files -> remind to specify a .dockerignore file
         logger.warning(
             "Build context size for docker image: `%s`. If you believe this is "
-            "unreasonably large, make sure to include a `.dockerignore` file"
+            "unreasonably large, make sure to include a `.dockerignore` file "
             "at the root of your build context `%s` or specify a custom file "
             "for argument `%s` when defining your pipeline.",
             string_utils.get_human_readable_filesize(build_context_size),
@@ -242,10 +242,11 @@ def push_image(image_name: str) -> str:
     aux_info = _process_stream(output_stream)
     logger.info("Finished pushing Docker image.")
 
+    image_name_without_tag, _ = image_name.rsplit(":", maxsplit=1)
     for info in reversed(aux_info):
         try:
             repo_digest = info["Digest"]
-            return f"{image_name}@{repo_digest}"
+            return f"{image_name_without_tag}@{repo_digest}"
         except KeyError:
             pass
     else:

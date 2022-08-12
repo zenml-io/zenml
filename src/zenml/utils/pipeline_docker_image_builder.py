@@ -17,7 +17,7 @@ import itertools
 import os
 import subprocess
 import sys
-from pathlib import PurePosixPath
+from pathlib import PurePath, PurePosixPath
 from typing import TYPE_CHECKING, Iterator, List, Optional, Sequence, Tuple
 
 from pydantic import BaseModel
@@ -50,11 +50,16 @@ DEFAULT_DOCKER_PARENT_IMAGE = (
 
 
 @contextlib.contextmanager
-def _include_active_profile(build_context_root: str) -> Iterator[None]:
+def _include_active_profile(
+    build_context_root: str,
+    load_config_path: PurePath = PurePosixPath(DOCKER_IMAGE_ZENML_CONFIG_PATH),
+) -> Iterator[None]:
     """Context manager to include the active profile in a Docker build context.
 
     Args:
         build_context_root: The root of the build context.
+        load_config_path: The path of the global configuration inside the
+            image.
 
     Yields:
         None.
@@ -66,7 +71,6 @@ def _include_active_profile(build_context_root: str) -> Iterator[None]:
     config_path = os.path.join(
         build_context_root, DOCKER_IMAGE_ZENML_CONFIG_DIR
     )
-    load_config_path = PurePosixPath(DOCKER_IMAGE_ZENML_CONFIG_PATH)
     try:
         GlobalConfiguration().copy_active_configuration(
             config_path, load_config_path=load_config_path
