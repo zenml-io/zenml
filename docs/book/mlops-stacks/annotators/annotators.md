@@ -86,7 +86,7 @@ zenml annotator flavor list
 The available implementation of the annotator is built on top of the Label
 Studio integration, which means that using an annotator currently is no
 different than what's described in the [Label Studio page: How to use
-it?](./label_studio.md#how-to-use-it).
+it?](./label-studio.md#how-do-you-use-it).
 
 ## A note on names
 

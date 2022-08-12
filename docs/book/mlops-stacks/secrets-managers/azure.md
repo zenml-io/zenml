@@ -43,7 +43,7 @@ zenml secrets-manager register <NAME> \
 zenml stack update -x <NAME>
 ```
 
-You can now [register, update or delete secrets](./overview.md#in-the-cli) using the CLI or [fetch secret values inside your steps](./overview.md#in-a-zenml-step).
+You can now [register, update or delete secrets](./secrets-managers.md#in-the-cli) using the CLI or [fetch secret values inside your steps](./secrets-managers.md#in-a-zenml-step).
 
 You can use [secret scoping](./secrets-managers.md#secret-scopes) with the Azure
 Secrets Manager to emulate multiple Secrets Manager namespaces on top of a
