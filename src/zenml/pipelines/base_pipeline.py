@@ -147,6 +147,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self._verify_arguments(*args, **kwargs)
 
     def _migrate_to_docker_config(self, kwargs: Dict[str, Any]) -> None:
+        """Migrates legacy requirements to the new Docker configuration.
+
+        Args:
+            kwargs: Keyword arguments passed during pipeline initialization.
+        """
         attributes = [
             (PARAM_REQUIREMENTS, "requirements"),
             (PARAM_REQUIRED_INTEGRATIONS, "required_integrations"),
@@ -436,9 +441,17 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self._reset_step_flags()
         self.validate_stack(stack)
 
-        return stack.deploy_pipeline(
-            self, runtime_configuration=runtime_configuration
-        )
+        # Prevent execution of nested pipelines which might lead to unexpected
+        # behavior
+        constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
+        try:
+            return_value = stack.deploy_pipeline(
+                self, runtime_configuration=runtime_configuration
+            )
+        finally:
+            constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
+
+        return return_value
 
     def with_config(
         self: T, config_file: str, overwrite_step_parameters: bool = False
@@ -497,6 +510,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 step.CONFIG_CLASS.__fields__.keys() if step.CONFIG_CLASS else {}
             )
             parameters = step_dict.get(StepConfigurationKeys.PARAMETERS_, {})
+            # pop the enable_cache
+            if PARAM_ENABLE_CACHE in parameters:
+                enable_cache = parameters.pop(PARAM_ENABLE_CACHE)
+                self.steps[step_name].enable_cache = enable_cache
+
             for parameter, value in parameters.items():
                 if parameter not in step_parameters:
                     raise PipelineConfigurationError(

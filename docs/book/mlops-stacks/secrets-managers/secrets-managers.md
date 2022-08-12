@@ -25,7 +25,7 @@ files. Additional cloud secrets managers are provided by integrations:
 | [Local](./local.md) | `local` | _built-in_ | No | Uses local files to store secrets |
 | [AWS](./aws.md) | `aws` | `aws` | Yes | Uses AWS to store secrets |
 | [GCP](./gcp.md) | `gcp_secrets_manager` | `gcp` | Yes | Uses GCP to store secretes |
-| [Azure](./azure.md) | `azure_key_vault` | `azure` | No | Uses Azure Key Vaults to store secrets |
+| [Azure](./azure.md) | `azure_key_vault` | `azure` | Yes | Uses Azure Key Vaults to store secrets |
 | [HashiCorp Vault](./hashicorp-vault.md) | `vault` | `vault` | Yes | Uses HashiCorp Vault to store secrets |
 | [Custom Implementation](./custom.md) | _custom_ | | No | Extend the secrets manager abstraction and provide your own implementation |
 
@@ -57,14 +57,14 @@ wish to do so interactively, passing the secret name in as an argument
 (as in the following example) will initiate an interactive process:
 
 ```shell
-zenml secret register SECRET_NAME -i
+zenml secrets-manager secret register SECRET_NAME -i
 ```
 
 If you wish to specify key-value pairs using command line arguments, you can do
 so instead:
 
 ```shell
-zenml secret register SECRET_NAME --key1=value1 --key2=value2
+zenml secrets-manager secret register SECRET_NAME --key1=value1 --key2=value2
 ```
 
 For secret values that are too big to pass as a command line argument, or have
@@ -72,7 +72,7 @@ special characters, you can also use the special `@` syntax to indicate to ZenML
 that the value needs to be read from a file:
 
 ```bash
-zenml secret register SECRET_NAME --attr_from_literal=value \
+zenml secrets-manager secret register SECRET_NAME --attr_from_literal=value \
    --attr_from_file=@path/to/file.txt ...
 ```
 
@@ -140,10 +140,10 @@ class MYSQLSecretSchema(BaseSecretSchema):
 ```
 
 To register a secret regulated by a schema, the `--schema` argument must be
-passed to the `zenml secret register` command:
+passed to the `zenml secrets-manager secret register` command:
 
 ```shell
-zenml secret register mysql_secret --schema=mysql --user=user --password=password
+zenml secrets-manager secret register mysql_secret --schema=mysql --user=user --password=password
 --ssl_ca=@./ca.pem --ssl_verify_server_cert=true
 ```
 
@@ -157,6 +157,14 @@ their default value if omitted
 the schema (i.e. that can be converted to the type indicated) or an error will
 be raised
 
+## Secret References
+
+Secret references work with any secrets mananger and allow you to securely
+specify sensitive configurations for your
+[stack components](../../developer-guide/stacks-profiles-repositories/stack.md#stack-components).
+
+Check out the corresponding [documentation page](../../developer-guide/advanced-usage/secret-references.md)
+for more information.
 ## Secret Scopes
 
 Examples of situations in which Secrets Manager scoping can be useful:

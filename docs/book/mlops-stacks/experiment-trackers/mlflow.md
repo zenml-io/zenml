@@ -44,7 +44,7 @@ The MLflow Experiment Tracker can be configured to accommodate the following
 [MLflow deployment scenarios](https://mlflow.org/docs/latest/tracking.html#how-runs-and-artifacts-are-recorded):
 
 * [Scenario 1](https://mlflow.org/docs/latest/tracking.html#scenario-1-mlflow-on-localhost):
-This scenario requires that you use a [local Artifact Store](../artifact_stores/local.md)
+This scenario requires that you use a [local Artifact Store](../artifact-stores/local.md)
 alongside the MLflow Experiment Tracker in your ZenML stack. The local Artifact
 Store comes with limitations regarding what other types of components you can
 use in the same stack. This scenario should only be used to run ZenML locally

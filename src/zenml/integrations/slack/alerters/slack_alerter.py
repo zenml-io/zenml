@@ -24,6 +24,7 @@ from zenml.alerter.base_alerter import BaseAlerter
 from zenml.integrations.slack import SLACK_ALERTER_FLAVOR
 from zenml.logger import get_logger
 from zenml.steps.step_interfaces.base_alerter_step import BaseAlerterStepConfig
+from zenml.utils.secret_utils import SecretField
 
 logger = get_logger(__name__)
 
@@ -52,7 +53,7 @@ class SlackAlerter(BaseAlerter):
         slack_token: The Slack token tied to the Slack account to be used.
     """
 
-    slack_token: str
+    slack_token: str = SecretField()
     default_slack_channel_id: Optional[str] = None
 
     # Class Configuration

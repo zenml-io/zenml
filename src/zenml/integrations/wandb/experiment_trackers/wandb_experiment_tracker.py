@@ -24,6 +24,7 @@ from zenml.experiment_trackers.base_experiment_tracker import (
 )
 from zenml.integrations.wandb import WANDB_EXPERIMENT_TRACKER_FLAVOR
 from zenml.logger import get_logger
+from zenml.utils.secret_utils import SecretField
 
 logger = get_logger(__name__)
 
@@ -53,7 +54,7 @@ class WandbExperimentTracker(BaseExperimentTracker):
             entity and project.
     """
 
-    api_key: str
+    api_key: str = SecretField()
     entity: Optional[str] = None
     project_name: Optional[str] = None
 

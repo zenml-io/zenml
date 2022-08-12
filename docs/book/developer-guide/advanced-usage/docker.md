@@ -16,6 +16,17 @@ If your pipeline needs any additional requirements, check out our [guide on incl
 * **Copies your source files**. These files need to be included in the Docker image so ZenML can execute your step code. Check out [this section](#which-files-get-included) for more information on which files get included by default and how to exclude files.
 * **Sets user-defined environment variables.**
 
+{% hint style="info" %}
+ZenML uses the official Docker python library to build and push your images. This library
+loads its authentication credentials to push images from the default config location: `$HOME/.docker/config.json`.
+If your Docker configuration is stored in a different directory, you can use the environment
+variable `DOCKER_CONFIG` to override this behavior:
+```shell
+export DOCKER_CONFIG=/path/to/config_dir
+```
+The directory that you specify here must contain your Docker configuration in a file called `config.json`.
+{% endhint %}
+
 ## Customizing the build process
 
 The process explained above is all done automatically by ZenML and covers most basic use cases.
@@ -85,7 +96,7 @@ you're on your own and need to copy a stack configuration to the correct path yo
 ### How to install additional pip dependencies
 
 By default, ZenML will automatically install all the packages required by your
-active ZenML stack. There are however many additional ways in which you can specify
+active ZenML stack. There are, however, various ways in which you can specify
 additional packages that should be installed:
 * Install all the packages in your local python environment (This will use the `pip` or `poetry`
 package manager to get a list of your local packages):
@@ -152,8 +163,10 @@ you can either specify a custom pre-built parent image or a Dockerfile which Zen
 build a parent image for you.
 
 {% hint style="info" %}
-If you're going to use a custom parent image, you need to make sure that it has Python, pip and 
-ZenML installed for it to work.
+If you're going to use a custom parent image (either pre-built or by specifying a Dockerfile),
+you need to make sure that it has Python, pip and ZenML installed for it to work. If you need 
+a starting point, you can take a look at the Dockerfile that ZenML uses
+[here](https://github.com/zenml-io/zenml/blob/main/docker/base.Dockerfile).
 {% endhint %}
 
 ### Using a pre-built parent image

@@ -39,7 +39,7 @@ class NeuralNetwork(nn.Module):
         return logits
 
 
-@step
+@step(enable_cache=False)
 def trainer(train_dataloader: DataLoader) -> nn.Module:
     """Trains on the train dataloader"""
     model = NeuralNetwork().to(DEVICE)

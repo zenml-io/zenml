@@ -140,7 +140,7 @@ def main(
                 f"    {service.prediction_url}\n"
                 f"    With the hostname: {service.prediction_hostname}.\n"
                 f"To stop the service, run "
-                f"[italic green]`zenml served-models delete "
+                f"[italic green]`zenml model-deployer models delete "
                 f"{str(service.uuid)}`[/italic green]."
             )
         elif service.is_failed:

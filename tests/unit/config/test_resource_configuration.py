@@ -28,6 +28,10 @@ def test_unit_byte_value_defined_for_all_values():
 def test_resource_config_empty():
     """Tests that the empty property is only True when no value is configured."""
     assert ResourceConfiguration().empty is True
+    assert (
+        ResourceConfiguration(cpu_count=None, gpu_count=None, memory=None).empty
+        is True
+    )
     assert ResourceConfiguration(cpu_count=1).empty is False
     assert ResourceConfiguration(gpu_count=1).empty is False
     assert ResourceConfiguration(memory="1KB").empty is False

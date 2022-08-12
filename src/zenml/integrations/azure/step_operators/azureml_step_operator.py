@@ -15,6 +15,7 @@
 
 import itertools
 import os
+from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, ClassVar, List, Optional
 
 from azureml.core import (
@@ -43,6 +44,7 @@ from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
     _include_active_profile,
 )
+from zenml.utils.secret_utils import SecretField
 from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
@@ -87,9 +89,9 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
 
     # Service principal authentication
     # https://docs.microsoft.com/en-us/azure/machine-learning/how-to-setup-authentication#configure-a-service-principal
-    tenant_id: Optional[str] = None
-    service_principal_id: Optional[str] = None
-    service_principal_password: Optional[str] = None
+    tenant_id: Optional[str] = SecretField()
+    service_principal_id: Optional[str] = SecretField()
+    service_principal_password: Optional[str] = SecretField()
 
     # Class Configuration
     FLAVOR: ClassVar[str] = AZUREML_STEP_OPERATOR_FLAVOR
@@ -119,7 +121,7 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
     def _prepare_environment(
         self,
         workspace: Workspace,
-        docker_configuration: DockerConfiguration,
+        docker_configuration: "DockerConfiguration",
         run_name: str,
     ) -> Environment:
         """Prepares the environment in which Azure will run all jobs.
@@ -263,7 +265,12 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
         )
 
         source_directory = get_source_root_path()
-        with _include_active_profile(build_context_root=source_directory):
+        with _include_active_profile(
+            build_context_root=source_directory,
+            load_config_path=PurePosixPath(
+                f"./{DOCKER_IMAGE_ZENML_CONFIG_DIR}"
+            ),
+        ):
             environment = self._prepare_environment(
                 workspace=workspace,
                 docker_configuration=docker_configuration,
