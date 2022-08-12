@@ -18,11 +18,11 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, List, Optional, cast
 
 import click
+import python_terraform  # type: ignore
 from packaging.version import Version, parse
-import python_terraform
 from rich.markdown import Markdown
 from rich.text import Text
 
@@ -49,7 +49,7 @@ class Terraform:
 
     def __init__(self, path: str) -> None:
         """Creates a client that can be used to call terraform commands.
-        
+
         Args:
             path: the path to the stack recipe.
         """
@@ -57,7 +57,7 @@ class Terraform:
 
     def check_installation(self) -> None:
         """Checks if terraform is installed on the host system.
-        
+
         Raises:
             RuntimeError: if terraform is not installed.
         """
@@ -68,16 +68,16 @@ class Terraform:
                 "https://learn.hashicorp.com/tutorials/terraform/install-cli "
                 "to install it."
             )
-    
+
     def _is_installed(self) -> bool:
         """Checks if terraform is installed on the host system.
-        
+
         Returns:
             True if terraform is installed, false otherwise.
         """
-        # check terraform version to verify installation. 
+        # check terraform version to verify installation.
         ret_code, _, _ = self.tf.cmd("-version")
-        return ret_code == 0
+        return bool(ret_code == 0)
 
     def apply(self) -> str:
         """Function to call terraform init and terraform apply.
@@ -90,7 +90,6 @@ class Terraform:
 
         Raises:
             RuntimeError: if terraform init fails.
-            TerraformCommandError: if terraform apply fails.
         """
         # this directory gets created after a successful init
         previous_run_dir = os.path.join(self.tf.working_dir, ".ignoreme")
@@ -102,9 +101,7 @@ class Terraform:
         else:
             ret_code, _, _ = self.tf.init(capture_output=False)
             if ret_code != 0:
-                raise RuntimeError(
-                    "The command 'terraform init' failed."
-                )
+                raise RuntimeError("The command 'terraform init' failed.")
             fileio.mkdir(previous_run_dir)
 
         # get variables from the recipe as a python dictionary
@@ -112,18 +109,30 @@ class Terraform:
 
         # once init is successful, call terraform apply
         _, _, _ = self.tf.apply(
-                            var=vars,
-                            input=False,
-                            capture_output=False,
-                            raise_on_error=True,
-                        )
+            var=vars,
+            input=False,
+            capture_output=False,
+            raise_on_error=True,
+        )
 
         # return the path of the stack yaml file
         _, stack_file_path, _ = self.tf.output("stack-yaml-path")
-        return stack_file_path
+        return str(stack_file_path)
 
-    def _get_vars(self, path: str) -> Dict[str, Any]:
-        """Get variables as a dictionary from values.tfvars.json"""
+    def _get_vars(self, path: str) -> Any:
+        """Get variables as a dictionary from values.tfvars.json.
+
+        Args:
+            path: the path to the stack recipe.
+
+        Returns:
+            A dictionary of variables to use for the stack recipes
+            derived from the tfvars.json file.
+
+        Raises:
+            FileNotFoundError: if the values.tfvars.json file is not
+                found in the stack recipe.
+        """
         import json
 
         variables_file_path = os.path.join(path, VARIABLES_FILE)
@@ -140,20 +149,20 @@ class Terraform:
             return variables
 
     def set_log_level(self, log_level: str) -> None:
-        # set TF_LOG env var to the log_level provided by the user.
+        """Set TF_LOG env var to the log_level provided by the user.
+
+        Args:
+            log_level: One of TRACE, DEBUG, INFO, WARN or ERROR to set
+                as the log level for terraform CLI.
+        """
         os.environ["TF_LOG"] = log_level
 
     def destroy(self) -> None:
-        """Function to call terraform destroy on the given path.
-
-        Raises:
-            TerrformCommandError: raises if the destroy command fails.
-            subprocess.CalledProcessError: if the kubernetes cleanup fails.
-        """
+        """Function to call terraform destroy on the given path."""
         self.tf.destroy(
             capture_output=False,
             raise_on_error=True,
-            force=python_terraform.IsNotFlagged
+            force=python_terraform.IsNotFlagged,
         )
 
 
@@ -497,9 +506,7 @@ class GitStackRecipesHandler(object):
 pass_git_stack_recipes_handler = click.make_pass_decorator(
     GitStackRecipesHandler, ensure=True
 )
-pass_tf_client = click.make_pass_decorator(
-    Terraform, ensure=True
-)
+pass_tf_client = click.make_pass_decorator(Terraform, ensure=True)
 
 
 @stack.group("recipe", cls=TagGroup)
@@ -725,8 +732,10 @@ def pull(
     "stack configuration file is still generated and can be imported manually.",
 )
 @click.option(
-    '--log-level',
-    type=click.Choice(['TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR'], case_sensitive=False),
+    "--log-level",
+    type=click.Choice(
+        ["TRACE", "DEBUG", "INFO", "WARN", "ERROR"], case_sensitive=False
+    ),
     help="Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case insensitive) as "
     "log level for the deploy operation.",
     default="ERROR",
@@ -797,7 +806,7 @@ def deploy(
 
         try:
             # check if terraform is installed
-            tf_client = Terraform(local_stack_recipe.path)
+            tf_client = Terraform(str(local_stack_recipe.path))
             try:
                 tf_client.check_installation()
             except RuntimeError as e:
@@ -885,8 +894,10 @@ def deploy(
     help="Relative path at which you want to install the stack_recipe(s)",
 )
 @click.option(
-    '--log-level',
-    type=click.Choice(['TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR'], case_sensitive=False),
+    "--log-level",
+    type=click.Choice(
+        ["TRACE", "DEBUG", "INFO", "WARN", "ERROR"], case_sensitive=False
+    ),
     help="Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case insensitive) as "
     "log level for the destroy operation.",
     default="ERROR",
@@ -910,7 +921,6 @@ def destroy(
     Args:
         ctx: The click context.
         git_stack_recipes_handler: The GitStackRecipesHandler instance.
-        tf_client: The Terraform class instance to use for operations.
         stack_recipe_name: The name of the stack_recipe.
         path: The path at which you want to install the stack_recipe(s).
         log_level: Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case insensitive)
@@ -924,7 +934,7 @@ def destroy(
         "Please avoid running mission-critical workloads on resources deployed "
         "through these commands."
     )
-    
+
     stack_recipes_dir = Path(os.getcwd()) / path
 
     if sys.platform == "win32":
@@ -955,7 +965,7 @@ def destroy(
 
         try:
             # check if terraform is installed
-            tf_client = Terraform(local_stack_recipe.path)
+            tf_client = Terraform(str(local_stack_recipe.path))
             try:
                 tf_client.check_installation()
             except RuntimeError as e:
@@ -998,7 +1008,7 @@ def destroy(
             )
         except subprocess.CalledProcessError as e:
             cli_utils.warning(
-                f"Error destroying recipe {stack_recipe_name}: {str(e.err)}"
+                f"Error destroying recipe {stack_recipe_name}: {str(e)}"
                 "\nThe kubernetes cluster couldn't be removed due to the error "
                 "above. Please verify if the cluster has already been deleted by "
                 "running kubectl get nodes to check if there's any active nodes."
