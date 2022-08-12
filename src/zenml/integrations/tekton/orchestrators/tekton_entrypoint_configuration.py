@@ -48,9 +48,9 @@ class TektonEntrypointConfiguration(StepEntrypointConfiguration):
             The run name argument.
         """
         # Tekton replaces the `$(context.pipelineRun.name)` with the actual
-        # run name when executing a container. This allows users to retrigger
+        # run name when executing a container. This allows users to re-trigger
         # runs on the Tekton UI and uses the new run name for storing
-        # information in the metadadata store.
+        # information in the metadata store.
         return [
             f"--{RUN_NAME_OPTION}",
             "$(context.pipelineRun.name)",

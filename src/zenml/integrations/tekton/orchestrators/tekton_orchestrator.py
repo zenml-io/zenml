@@ -352,7 +352,7 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
     @property
     def pipeline_directory(self) -> str:
-        """Returns path to a directory in which the tekton pipeline files are stored.
+        """Path to a directory in which the Tekton pipeline files are stored.
 
         Returns:
             Path to the pipeline directory.
@@ -424,7 +424,7 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         self.start_ui_daemon()
 
     def suspend(self) -> None:
-        """Stops the UI forwarning daemon if it's running."""
+        """Stops the UI forwarding daemon if it's running."""
         if not self.is_running:
             logger.info("Tekton UI forwarding not running.")
             return
@@ -432,7 +432,7 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         self.stop_ui_daemon()
 
     def start_ui_daemon(self) -> None:
-        """Starts the UI forwarning daemon if possible."""
+        """Starts the UI forwarding daemon if possible."""
         port = self.tekton_ui_port
         if (
             port == DEFAULT_TEKTON_UI_PORT
