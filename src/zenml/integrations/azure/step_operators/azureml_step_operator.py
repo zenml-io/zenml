@@ -12,9 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the ZenML AzureML Step Operator."""
-
 import itertools
 import os
+from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, ClassVar, List, Optional
 
 from azureml.core import (
@@ -119,7 +119,7 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
     def _prepare_environment(
         self,
         workspace: Workspace,
-        docker_configuration: DockerConfiguration,
+        docker_configuration: "DockerConfiguration",
         run_name: str,
     ) -> Environment:
         """Prepares the environment in which Azure will run all jobs.
@@ -263,7 +263,12 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
         )
 
         source_directory = get_source_root_path()
-        with _include_active_profile(build_context_root=source_directory):
+        with _include_active_profile(
+            build_context_root=source_directory,
+            load_config_path=PurePosixPath(
+                f"./{DOCKER_IMAGE_ZENML_CONFIG_DIR}"
+            ),
+        ):
             environment = self._prepare_environment(
                 workspace=workspace,
                 docker_configuration=docker_configuration,

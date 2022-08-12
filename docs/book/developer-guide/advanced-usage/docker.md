@@ -16,6 +16,17 @@ If your pipeline needs any additional requirements, check out our [guide on incl
 * **Copies your source files**. These files need to be included in the Docker image so ZenML can execute your step code. Check out [this section](#which-files-get-included) for more information on which files get included by default and how to exclude files.
 * **Sets user-defined environment variables.**
 
+{% hint style="info" %}
+ZenML uses the official Docker python library to build and push your images. This library
+loads its authentication credentials to push images from the default config location: `$HOME/.docker/config.json`.
+If your Docker configuration is stored in a different directory, you can use the environment
+variable `DOCKER_CONFIG` to override this behavior:
+```shell
+export DOCKER_CONFIG=/path/to/config_dir
+```
+The directory that you specify here must contain your Docker configuration in a file called `config.json`.
+{% endhint %}
+
 ## Customizing the build process
 
 The process explained above is all done automatically by ZenML and covers most basic use cases.
