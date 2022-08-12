@@ -77,7 +77,10 @@ class ResourceConfiguration(BaseModel):
         Returns:
             `True` if no values were configured, `False` otherwise.
         """
-        return len(self.__fields_set__) == 0
+        # To detect whether this config is empty (= no values specified), we
+        # check if there are any attributes which are explicitly set to any
+        # value other than `None`.
+        return len(self.dict(exclude_unset=True, exclude_none=True)) == 0
 
     def get_memory(
         self, unit: Union[str, ByteUnit] = ByteUnit.GB

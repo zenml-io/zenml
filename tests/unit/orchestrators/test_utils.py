@@ -16,17 +16,19 @@
 import json
 
 from zenml.config.docker_configuration import DockerConfiguration
-from zenml.config.resource_configuration import ResourceConfiguration
 from zenml.constants import (
     MLMD_CONTEXT_DOCKER_CONFIGURATION_PROPERTY_NAME,
+    MLMD_CONTEXT_MATERIALIZER_SOURCES_PROPERTY_NAME,
     MLMD_CONTEXT_STACK_PROPERTY_NAME,
     MLMD_CONTEXT_STEP_RESOURCES_PROPERTY_NAME,
     ZENML_MLMD_CONTEXT_TYPE,
 )
+from zenml.materializers import BuiltInMaterializer
 from zenml.orchestrators.utils import get_cache_status
 from zenml.pipelines import pipeline
 from zenml.repository import Repository
-from zenml.steps import step
+from zenml.steps import ResourceConfiguration, step
+from zenml.utils import source_utils
 
 
 def test_get_cache_status_raises_no_error_when_none_passed():
@@ -112,3 +114,10 @@ def test_pipeline_storing_context_in_the_metadata_store():
     assert contexts[0].custom_properties[
         MLMD_CONTEXT_DOCKER_CONFIGURATION_PROPERTY_NAME
     ].string_value == docker_config.json(sort_keys=True)
+
+    expected_materializers = {
+        "output": source_utils.resolve_class(BuiltInMaterializer)
+    }
+    assert contexts[0].custom_properties[
+        MLMD_CONTEXT_MATERIALIZER_SOURCES_PROPERTY_NAME
+    ].string_value == json.dumps(expected_materializers, sort_keys=True)
