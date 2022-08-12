@@ -20,7 +20,8 @@ from zenml.enums import StackComponentType
 from zenml.stack import StackComponent
 
 if TYPE_CHECKING:
-    from zenml.steps import ResourceConfiguration
+    from zenml.config.docker_configuration import DockerConfiguration
+    from zenml.config.resource_configuration import ResourceConfiguration
 
 
 class BaseStepOperator(StackComponent, ABC):
@@ -34,7 +35,7 @@ class BaseStepOperator(StackComponent, ABC):
         self,
         pipeline_name: str,
         run_name: str,
-        requirements: List[str],
+        docker_configuration: "DockerConfiguration",
         entrypoint_command: List[str],
         resource_configuration: "ResourceConfiguration",
     ) -> None:
@@ -42,8 +43,8 @@ class BaseStepOperator(StackComponent, ABC):
 
         Concrete step operator subclasses must implement the following
         functionality in this method:
-        - Prepare the execution environment and install all the necessary
-          `requirements`
+        - Prepare the execution environment by copying user files and installing
+          requirements as specified in the `docker_configuration`.
         - Launch a **synchronous** job that executes the `entrypoint_command`
 
         Args:
@@ -51,8 +52,7 @@ class BaseStepOperator(StackComponent, ABC):
                 is part of.
             run_name: Name of the pipeline run which the step to be executed
                 is part of.
+            docker_configuration: The Docker configuration for this step.
             entrypoint_command: Command that executes the step.
-            requirements: List of pip requirements that must be installed
-                inside the step operator environment.
             resource_configuration: The resource configuration for this step.
         """

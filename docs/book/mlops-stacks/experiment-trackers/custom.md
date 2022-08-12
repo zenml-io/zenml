@@ -37,5 +37,5 @@ to implement your own custom Experiment Tracker:
 
 | Experiment Tracker | Implementation  |
 |--------------------|-----------------|
-| [MLflow](./mlflow.mdd) | [MLFlowExperimentTracker](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/experiment_trackers/mlflow_experiment_tracker.py) |
+| [MLflow](./mlflow.md) | [MLFlowExperimentTracker](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/experiment_trackers/mlflow_experiment_tracker.py) |
 | [Weights & Biases](./wandb.md) | [WandbExperimentTracker](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/wandb/experiment_trackers/wandb_experiment_tracker.py) |

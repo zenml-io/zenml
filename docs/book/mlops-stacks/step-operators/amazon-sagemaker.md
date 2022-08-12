@@ -32,6 +32,12 @@ To use the SageMaker step operator, we need:
 for detailed instructions.
 * An [AWS container registry](../container-registries/amazon-ecr.md) as part of our stack.
 Take a look [here](../container-registries/amazon-ecr.md#how-to-deploy-it) for a guide on how to set that up.
+* A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack. This is needed so
+that both your orchestration environment as well as SageMaker can read and write step artifacts. Check out
+the documentation page of the artifact store you want to use for more information on how to set that up
+and configure authentication for it.
+* A [local orchestrator](../orchestrators/local.md) as part of your stack. This is a current limitation of
+the SageMaker step operator which will be resolved in an upcoming release.
 * The `aws` cli set up and authenticated. Make sure you have the permissions to create 
 and manage SageMaker runs.
 * An instance type that we want to execute our steps on.
@@ -63,26 +69,11 @@ def trainer(...) -> ...:
 ```
 
 {% hint style="info" %}
-ZenML will build a Docker image called `zenml-sagemaker` which includes your code and use it
-to run your steps in SageMaker. Check out
+ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>`
+which includes your code and use it to run your steps in SageMaker. Check out
 [this page](../../developer-guide/advanced-usage/docker.md)
 if you want to learn more about how ZenML builds these images and
 how you can customize them.
-
-If you decide you need the full flexibility of having a
-[custom base image](../../developer-guide/advanced-usage/docker.md#using-a-custom-base-image),
-you can update your existing step operator
-```shell
-zenml step-operator update <NAME> \
---base_image=<IMAGE_NAME>
-```
-or set it when registering a new SageMaker step operator:
-```shell
-zenml step-operator register <NAME> \
---flavor=sagemaker \
---base_image=<IMAGE_NAME>
-...
-```
 {% endhint %}
 
 
