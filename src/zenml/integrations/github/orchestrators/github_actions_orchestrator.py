@@ -42,7 +42,8 @@ from zenml.orchestrators import BaseOrchestrator
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.stack import Stack
 from zenml.steps import BaseStep
-from zenml.utils import string_utils, yaml_utils
+from zenml.utils import deprecation_utils, string_utils, yaml_utils
+from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
@@ -50,9 +51,7 @@ if TYPE_CHECKING:
 
 from zenml.enums import StackComponentType
 from zenml.integrations.github import GITHUB_ORCHESTRATOR_FLAVOR
-from zenml.repository import Repository
 from zenml.stack import StackValidator
-from zenml.utils import docker_utils, source_utils
 
 logger = get_logger(__name__)
 
@@ -64,7 +63,7 @@ DOCKER_LOGIN_ACTION = "docker/login-action@v1"
 ENV_ENCODED_ZENML_PIPELINE = "ENCODED_ZENML_PIPELINE"
 
 
-class GitHubActionsOrchestrator(BaseOrchestrator):
+class GitHubActionsOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
     """Orchestrator responsible for running pipelines using GitHub Actions.
 
     Attributes:
@@ -95,6 +94,10 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
 
     # Class configuration
     FLAVOR: ClassVar[str] = GITHUB_ORCHESTRATOR_FLAVOR
+
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
+        ("custom_docker_base_image_name", "docker_parent_image")
+    )
 
     @property
     def git_repo(self) -> Repo:
@@ -196,20 +199,6 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
             required_components={StackComponentType.CONTAINER_REGISTRY},
             custom_validation_function=_validate_local_requirements,
         )
-
-    def get_docker_image_name(self, pipeline_name: str) -> str:
-        """Returns the full docker image name including registry and tag.
-
-        Args:
-            pipeline_name: Name of the pipeline for which to generate a docker
-                image name.
-
-        Returns:
-            The docker image name.
-        """
-        container_registry = Repository().active_stack.container_registry
-        assert container_registry  # should never happen due to validation
-        return f"{container_registry.uri}/zenml-github-actions:{pipeline_name}"
 
     def _docker_login_step(
         self,
@@ -325,28 +314,12 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
                 "--skip_dirty_repository_check=true`"
             )
 
-        image_name = self.get_docker_image_name(pipeline.name)
-        requirements = {*stack.requirements(), *pipeline.requirements}
-
-        logger.debug(
-            "Github actions docker image requirements: %s", requirements
+        self.build_and_push_docker_image(
+            pipeline_name=pipeline.name,
+            docker_configuration=pipeline.docker_configuration,
+            stack=stack,
+            runtime_configuration=runtime_configuration,
         )
-
-        docker_utils.build_docker_image(
-            build_context_path=source_utils.get_source_root_path(),
-            image_name=image_name,
-            dockerignore_path=pipeline.dockerignore_file,
-            requirements=requirements,
-            base_image=self.custom_docker_base_image_name,
-        )
-
-        assert stack.container_registry  # should never happen due to validation
-        stack.container_registry.push_image(image_name)
-
-        # Store the docker image digest in the runtime configuration so it gets
-        # tracked in the ZenStore
-        image_digest = docker_utils.get_image_digest(image_name) or image_name
-        runtime_configuration["docker_image"] = image_digest
 
     def prepare_or_run_pipeline(
         self,
@@ -441,8 +414,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
             )
             workflow_dict["on"] = {"push": {"paths": [workflow_path_in_repo]}}
 
-        image_name = self.get_docker_image_name(pipeline.name)
-        image_name = docker_utils.get_image_digest(image_name) or image_name
+        image_name = runtime_configuration["docker_image"]
 
         # Prepare the step that writes an environment file which will get
         # passed to the docker image

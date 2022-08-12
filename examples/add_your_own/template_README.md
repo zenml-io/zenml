@@ -1,3 +1,6 @@
+<!-- Remove these comments -->
+<!-- markdown-link-check-disable -->
+
 # <FITTING EMOJI] <NAME OF THE INTEGRATION AND WHAT IT DOES>
 
 <MOTIVATION OF WHY THIS IS RELEVANT>

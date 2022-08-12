@@ -17,6 +17,7 @@ import uuid
 from typing import TYPE_CHECKING, Optional, cast
 
 import click
+from rich.errors import MarkupError
 
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
@@ -420,6 +421,9 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
         ):
             # don't pretty-print log lines that are already pretty-printed
             if raw or line.startswith("\x1b["):
-                print(line)
+                console.print(line, markup=False)
             else:
-                console.print(line)
+                try:
+                    console.print(line)
+                except MarkupError:
+                    console.print(line, markup=False)
