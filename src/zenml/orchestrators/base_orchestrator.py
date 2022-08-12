@@ -54,8 +54,8 @@ from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 
 from zenml.constants import (
-    MLMD_CONTEXT_MATERIALIZER_SOURCES_PROPERTY_NAME,
     MLMD_CONTEXT_DOCKER_CONFIGURATION_PROPERTY_NAME,
+    MLMD_CONTEXT_MATERIALIZER_SOURCES_PROPERTY_NAME,
     MLMD_CONTEXT_RUNTIME_CONFIG_PROPERTY_NAME,
     MLMD_CONTEXT_STACK_PROPERTY_NAME,
     MLMD_CONTEXT_STEP_RESOURCES_PROPERTY_NAME,

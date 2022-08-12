@@ -17,8 +17,8 @@ import json
 
 from zenml.config.docker_configuration import DockerConfiguration
 from zenml.constants import (
-    MLMD_CONTEXT_MATERIALIZER_SOURCES_PROPERTY_NAME,
     MLMD_CONTEXT_DOCKER_CONFIGURATION_PROPERTY_NAME,
+    MLMD_CONTEXT_MATERIALIZER_SOURCES_PROPERTY_NAME,
     MLMD_CONTEXT_STACK_PROPERTY_NAME,
     MLMD_CONTEXT_STEP_RESOURCES_PROPERTY_NAME,
     ZENML_MLMD_CONTEXT_TYPE,
@@ -29,7 +29,6 @@ from zenml.pipelines import pipeline
 from zenml.repository import Repository
 from zenml.steps import ResourceConfiguration, step
 from zenml.utils import source_utils
-
 
 
 def test_get_cache_status_raises_no_error_when_none_passed():
