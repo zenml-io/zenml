@@ -15,6 +15,8 @@
 from rich import print as rich_print
 
 from zenml.integrations.kserve.services import KServeDeploymentService
+from zenml.integrations.seldon.services import SeldonDeploymentService
+
 from zenml.steps import step
 
 
@@ -40,7 +42,7 @@ def kserve_predictor(
 
 @step
 def seldon_predictor(
-    service: KServeDeploymentService,
+    service: SeldonDeploymentService,
     data: str,
 ) -> None:
     """Run a inference request against the seldon core prediction service.
