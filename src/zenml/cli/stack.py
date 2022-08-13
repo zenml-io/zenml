@@ -1189,7 +1189,7 @@ def import_stack(
             cli_utils.warning(
                 f"The stack that will be installed is using ZenML version "
                 f"{data['zenml_version']}. You have version "
-                f"{zenml.__version__} installed. Some components might not"
+                f"{zenml.__version__} installed. Some components might not "
                 "work as expected."
             )
         else:

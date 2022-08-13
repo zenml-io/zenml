@@ -824,7 +824,7 @@ Stack Recipes allow you to quickly deploy fully-fledged MLOps stacks with just a
 commands. Each recipe uses Terraform modules under the hood and once executed can set up
 a ZenML stack, ready to run your pipelines!
 
-A number of stack recipes are already available at the `mlops-stacks` repository. List them
+A number of stack recipes are already available at [the `mlops-stacks` repository](https://github.com/zenml-io/mlops-stacks/). List them
 using the following command:
 
 ```bash
@@ -835,9 +835,9 @@ If you want to pull any specific recipe to your local system, use the `pull` com
 ```bash
 zenml stack recipe pull <stack-recipe-name>
 ```
-Not specifying a name will pull all the recipes.
+If you don't specify a name, `zenml stack recipe pull` will pull all the recipes.
 
-If you notice any inconsistency with the locally pulled version and the GitHub repository,
+If you notice any inconsistency with the locally-pulled version and the GitHub repository,
 run the `pull` command with the `-y` flag to download any recent changes.
 ```bash
 zenml stack recipe pull <stack-recipe-name> -y
@@ -848,7 +848,7 @@ stack recipe(s). Use the `-p` or `--path` flag.
 ```bash
 zenml stack recipe pull <stack-recipe-name> --path=<PATH>
 ```
-By default, all recipes get downloaded under a directory by the name `zenml_stack_recipes`.
+By default, all recipes get downloaded under a directory called `zenml_stack_recipes`.
 
 To deploy a recipe, use the `deploy` command. Before running deploy, review the `locals.tf`
 file for configuring non-sensitive variables and the `values.tfvars` file to add sensitive
@@ -863,7 +863,7 @@ the stack recipe name. Use the `--stack-name` option to specify your own name.
 zenml stack recipe deploy <stack-recipe-name> --stack-name=my_stack
 ```
 
-If you wish to review the stack information from the newly generated resources before
+If you wish to review the stack information from the newly-generated resources before
 importing, you can run `deploy` with the `--no-import` flag.
 ```bash
 zenml stack recipe deploy <stack-recipe-name> --no-import
@@ -876,7 +876,7 @@ To remove all resources created as part of the recipe, run the `destroy` command
 zenml stack recipe destroy <stack-recipe-name>
 ```
 
-For deleting all the recipe files from your system, you can use the `clean` command.
+To delete all the recipe files from your system, you can use the `clean` command.
 ```bash
 zenml stack recipe clean
 ```
