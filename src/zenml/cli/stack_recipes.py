@@ -903,12 +903,10 @@ def deploy(
     default="ERROR",
 )
 @pass_git_stack_recipes_handler
-# @pass_tf_client
 @click.pass_context
 def destroy(
     ctx: click.Context,
     git_stack_recipes_handler: GitStackRecipesHandler,
-    # tf_client: Terraform,
     stack_recipe_name: str,
     path: str,
     log_level: str,
