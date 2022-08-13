@@ -408,7 +408,7 @@ class GitStackRecipesHandler(object):
         Returns:
             Whether the supplied stack_recipe_name corresponds to an stack_recipe.
         """
-        stack_recipe_dict = {e.name: e for e in self.stack_recipes}
+        stack_recipe_dict = {recipe.name: recipe for recipe in self.stack_recipes}
         if stack_recipe_name:
             if stack_recipe_name in stack_recipe_dict.keys():
                 return True
@@ -432,9 +432,9 @@ class GitStackRecipesHandler(object):
             KeyError: If the supplied stack_recipe_name is not found.
         """
         stack_recipe_dict = {
-            e.name: e
-            for e in self.stack_recipes
-            if e.name not in EXCLUDED_RECIPE_DIRS
+            recipe.name: recipe
+            for recipe in self.stack_recipes
+            if recipe.name not in EXCLUDED_RECIPE_DIRS
         }
         if stack_recipe_name:
             if stack_recipe_name in stack_recipe_dict.keys():
