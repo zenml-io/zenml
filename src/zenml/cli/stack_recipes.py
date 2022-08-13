@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -543,7 +543,7 @@ def list_stack_recipes(
     text = Text("zenml stack recipe pull -y", style="markdown.code_block")
     cli_utils.declare(text)
 
-    cli_utils.declare("\n" + "To pull any individual stack_recipes, type: ")
+    cli_utils.declare("\n" + "To pull any individual stack recipe, type: ")
     text = Text(
         "zenml stack recipe pull RECIPE_NAME", style="markdown.code_block"
     )
@@ -590,7 +590,7 @@ def clean(git_stack_recipes_handler: GitStackRecipesHandler, path: str) -> None:
 def info(
     git_stack_recipes_handler: GitStackRecipesHandler, stack_recipe_name: str
 ) -> None:
-    """Find out more about an stack recipe.
+    """Find out more about a stack recipe.
 
     Outputs a pager view of the stack_recipe's README.md file.
 
@@ -721,8 +721,8 @@ def pull(
     "-n",
     type=click.STRING,
     required=False,
-    help="Set a name for the ZenML stack that will be imported from the YAML"
-    "configuration file which gets generated after deploying the stack recipe."
+    help="Set a name for the ZenML stack that will be imported from the YAML "
+    "configuration file which gets generated after deploying the stack recipe. "
     "Defaults to the name of the stack recipe being deployed.",
 )
 @click.option(
@@ -754,7 +754,7 @@ def deploy(
 ) -> None:
     """Run the stack_recipe at the specified relative path.
 
-    `zenml stack_recipe pull stack_recipe_name` has to be called with the same relative
+    `zenml stack_recipe pull <STACK_RECIPE_NAME>` has to be called with the same relative
     path before the deploy command.
 
     Args:
