@@ -113,7 +113,7 @@ class Terraform:
         vars = self._get_vars(self.tf.working_dir)
 
         # once init is successful, call terraform apply
-        _, _, _ = self.tf.apply(
+        self.tf.apply(
             var=vars,
             input=False,
             capture_output=False,
@@ -144,7 +144,8 @@ class Terraform:
         if not fileio.exists(variables_file_path):
             raise FileNotFoundError(
                 "The file values.tfvars.json was not found in the "
-                "recipe's directory. Please verify if it exists."
+                f"recipe's directory at {variables_file_path}. Please "
+                "verify if it exists."
             )
 
         # read values into a dict and return
@@ -852,6 +853,13 @@ def deploy(
                     "components like the metadata store might need. "
                     "You can inspect the fields of a stack component by "
                     "running a describe command on them."
+                )
+                cli_utils.declare(
+                    "\n Run 'terraform output' in the recipe's directory at "
+                    f"{local_stack_recipe.path} to get a list of outputs. To now "
+                    "retrieve sensitive outputs, for example, the metadata-db-password "
+                    "use the command 'terraform output metadata-db-password' to get the "
+                    "value in the command-line."
                 )
 
         except RuntimeError as e:
