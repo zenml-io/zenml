@@ -42,6 +42,11 @@ EXCLUDED_RECIPE_DIRS = [""]
 STACK_RECIPES_GITHUB_REPO = "https://github.com/zenml-io/mlops-stacks.git"
 STACK_RECIPES_REPO_DIR = "zenml_stack_recipes"
 VARIABLES_FILE = "values.tfvars.json"
+ALPHA_MESSAGE = (
+    "The stack recipes CLI is in alpha and actively being developed. "
+    "Please avoid running mission-critical workloads on resources deployed "
+    "through these commands."
+)
 
 
 class Terraform:
@@ -408,7 +413,9 @@ class GitStackRecipesHandler(object):
         Returns:
             Whether the supplied stack_recipe_name corresponds to an stack_recipe.
         """
-        stack_recipe_dict = {recipe.name: recipe for recipe in self.stack_recipes}
+        stack_recipe_dict = {
+            recipe.name: recipe for recipe in self.stack_recipes
+        }
         if stack_recipe_name:
             if stack_recipe_name in stack_recipe_dict.keys():
                 return True
@@ -524,11 +531,7 @@ def list_stack_recipes(
     Args:
         git_stack_recipes_handler: The GitStackRecipesHandler instance.
     """
-    cli_utils.warning(
-        "The stack recipes CLI is in alpha and actively being developed. "
-        "Please avoid running mission-critical workloads on resources deployed "
-        "through these commands."
-    )
+    cli_utils.warning(ALPHA_MESSAGE)
     stack_recipes = [
         {"stack_recipe_name": stack_recipe.name}
         for stack_recipe in git_stack_recipes_handler.get_stack_recipes()
@@ -646,11 +649,7 @@ def pull(
             folder.
         path: The path at which you want to install the stack_recipe(s).
     """
-    cli_utils.warning(
-        "The stack recipes CLI is in alpha and actively being developed. "
-        "Please avoid running mission-critical workloads on resources deployed "
-        "through these commands."
-    )
+    cli_utils.warning(ALPHA_MESSAGE)
     git_stack_recipes_handler.pull(branch="main", force=force)
 
     stack_recipes_dir = os.path.join(os.getcwd(), path)
@@ -771,11 +770,7 @@ def deploy(
         log_level: Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case insensitive)
             as log level for the deploy operation.
     """
-    cli_utils.warning(
-        "The stack recipes CLI is in alpha and actively being developed. "
-        "Please avoid running mission-critical workloads on resources deployed "
-        "through these commands."
-    )
+    cli_utils.warning(ALPHA_MESSAGE)
     stack_recipes_dir = Path(os.getcwd()) / path
 
     if sys.platform == "win32":
@@ -927,11 +922,7 @@ def destroy(
     Raises:
         ModuleNotFoundError: If the recipe is found at the given path.
     """
-    cli_utils.warning(
-        "The stack recipes CLI is in alpha and actively being developed. "
-        "Please avoid running mission-critical workloads on resources deployed "
-        "through these commands."
-    )
+    cli_utils.warning(ALPHA_MESSAGE)
 
     stack_recipes_dir = Path(os.getcwd()) / path
 
