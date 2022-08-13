@@ -850,9 +850,10 @@ zenml stack recipe pull <stack-recipe-name> --path=<PATH>
 ```
 By default, all recipes get downloaded under a directory called `zenml_stack_recipes`.
 
-To deploy a recipe, use the `deploy` command. Before running deploy, review the `locals.tf`
-file for configuring non-sensitive variables and the `values.tfvars` file to add sensitive
-information like access keys and passwords.
+To deploy a recipe, use the `deploy` command. Before running deploy, review the 
+`zenml_stack_recipes/<stack-recipe-name>/locals.tf` file for configuring non-sensitive 
+variables and the `zenml_stack_recipes/<stack-recipe-name>/values.tfvars` file to 
+add sensitive information like access keys and passwords.
 ```bash
 zenml stack recipe deploy <stack-recipe-name>
 ```
