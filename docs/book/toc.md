@@ -47,6 +47,7 @@
   * [Google Cloud VertexAI Orchestrator](./mlops-stacks/orchestrators/gcloud-vertexai.md)
   * [Github Actions Orchestrator](./mlops-stacks/orchestrators/github-actions.md)
   * [Airflow Orchestrator](./mlops-stacks/orchestrators/airflow.md)
+  * [Tekton Orchestrator](./mlops-stacks/orchestrators/tekton.md)
   * [Develop a Custom Orchestrator](./mlops-stacks/orchestrators/custom.md)
 * [Artifact Stores](./mlops-stacks/artifact-stores/artifact-stores.md)
   * [Local Artifact Store](./mlops-stacks/artifact-stores/local.md)
