@@ -14,7 +14,7 @@
 """Materializer for Pillow Image objects."""
 
 import os
-import tempfile
+import shutil
 from typing import Type
 
 from PIL import Image
@@ -57,17 +57,38 @@ class PillowImageMaterializer(BaseMaterializer):
         )
         filepath = [file for file in files if not fileio.isdir(file)][0]
 
+        # # FAILING OPTION 1: temporary directory
+        # # create a temporary folder
+        # temp_dir = tempfile.TemporaryDirectory(prefix="zenml-temp-")
+        # temp_file = os.path.join(
+        #     temp_dir.name,
+        #     f"{DEFAULT_IMAGE_FILENAME}{os.path.splitext(filepath)[1]}",
+        # )
+
+        # # copy from artifact store to temporary file
+        # fileio.copy(filepath, temp_file)
+        # image = Image.open(temp_file)
+        # temp_dir.cleanup()
+        # return image
+
+        # OPTION 2: save in CWD
         # create a temporary folder
-        temp_dir = tempfile.TemporaryDirectory(prefix="zenml-temp-")
-        temp_file = os.path.join(
+        temp_dir = os.path.join(
+            os.getcwd(),
+            "zenml-temp-dir",
+        )
+        if not os.path.exists(temp_dir):
+            os.makedirs(temp_dir)
+
+        local_file_path = os.path.join(
             temp_dir,
             f"{DEFAULT_IMAGE_FILENAME}{os.path.splitext(filepath)[1]}",
         )
 
         # copy from artifact store to temporary file
-        fileio.copy(filepath, temp_file)
-        image = Image.open(temp_file)
-        temp_dir.cleanup()
+        fileio.copy(filepath, local_file_path)
+        image = Image.open(local_file_path)
+        shutil.rmtree(temp_dir)
         return image
 
     def handle_return(self, image: Image.Image) -> None:
@@ -76,16 +97,42 @@ class PillowImageMaterializer(BaseMaterializer):
         Args:
             image: An Image.Image object.
         """
+        # # FAILING OPTION 1: temporary directory
+        # super().handle_return(image)
+        # temp_dir = tempfile.TemporaryDirectory(prefix="zenml-temp-")
+        # file_extension = image.format or DEFAULT_IMAGE_EXTENSION
+        # full_filename = f"{DEFAULT_IMAGE_FILENAME}.{file_extension}"
+        # temp_image_path = os.path.join(temp_dir.name, full_filename)
+
+        # # save the image in a temporary directory
+        # image.save(temp_image_path)
+
+        # # copy the saved image to the artifact store
+        # artifact_store_path = os.path.join(self.artifact.uri, full_filename)
+        # io_utils.copy(temp_image_path, artifact_store_path, overwrite=True)  # type: ignore[attr-defined]
+        # temp_dir.cleanup()
+
+        # FAILING OPTION 2: save in CWD
         super().handle_return(image)
-        temp_dir = tempfile.TemporaryDirectory(prefix="zenml-temp-")
+
+        # create a temporary directory
+        temp_dir = os.path.join(
+            os.getcwd(),
+            "zenml-temp-dir",
+        )
+        if not os.path.exists(temp_dir):
+            os.makedirs(temp_dir)
+
         file_extension = image.format or DEFAULT_IMAGE_EXTENSION
         full_filename = f"{DEFAULT_IMAGE_FILENAME}.{file_extension}"
-        temp_image_path = os.path.join(temp_dir.name, full_filename)
+        local_file_path = os.path.join(temp_dir, full_filename)
 
         # save the image in a temporary directory
-        image.save(temp_image_path)
+        image.save(local_file_path)
 
         # copy the saved image to the artifact store
         artifact_store_path = os.path.join(self.artifact.uri, full_filename)
-        io_utils.copy(temp_image_path, artifact_store_path, overwrite=True)  # type: ignore[attr-defined]
-        temp_dir.cleanup()
+        io_utils.copy(local_file_path, artifact_store_path, overwrite=True)  # type: ignore[attr-defined]
+
+        # delete the temporary directory
+        shutil.rmtree(temp_dir)
