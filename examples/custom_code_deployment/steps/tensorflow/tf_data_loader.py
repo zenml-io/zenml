@@ -12,6 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from typing import List, Tuple
+
 import numpy as np  # type: ignore [import]
 import tensorflow as tf  # type: ignore [import]
 
@@ -20,7 +22,8 @@ from zenml.steps import Output, step
 
 @step
 def tf_data_loader() -> Output(
-    x_train=np.ndarray, y_train=np.ndarray, x_test=np.ndarray, y_test=np.ndarray
+    train_loader=Tuple[List, List],
+    test_loader=Tuple[List, List],
 ):
     """Download the MNIST data store it as an artifact"""
     (x_train, y_train), (
@@ -29,4 +32,7 @@ def tf_data_loader() -> Output(
     ) = tf.keras.datasets.mnist.load_data()
     x_train = x_train / 255.0
     x_test = x_test / 255.0
-    return x_train, y_train, x_test, y_test
+    return (x_train.tolist(), y_train.tolist()), (
+        x_test.tolist(),
+        y_test.tolist(),
+    )

@@ -12,6 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from typing import Tuple
+
 import numpy as np  # type: ignore [import]
 import tensorflow as tf  # type: ignore [import]
 
@@ -20,11 +22,12 @@ from zenml.steps import step
 
 @step
 def tf_evaluator(
-    x_test: np.ndarray,
-    y_test: np.ndarray,
+    test_loader: Tuple[np.ndarray, np.ndarray],
     model: tf.keras.Model,
 ) -> float:
     """Calculate the loss for the model for each epoch in a graph"""
-
+    x_test, y_test = test_loader
+    x_test = np.asarray(x_test)
+    y_test = np.asarray(y_test)
     _, test_acc = model.evaluate(x_test, y_test, verbose=2)
     return test_acc

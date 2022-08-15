@@ -12,6 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from typing import Tuple
+
 import numpy as np  # type: ignore [import]
 import tensorflow as tf  # type: ignore [import]
 
@@ -28,8 +30,7 @@ class TensorflowTrainerConfig(BaseStepConfig):
 @step
 def tf_trainer(
     config: TensorflowTrainerConfig,
-    x_train: np.ndarray,
-    y_train: np.ndarray,
+    train_loader: Tuple[np.ndarray, np.ndarray],
 ) -> tf.keras.Model:
     """Train a neural net from scratch to recognize MNIST digits return our
     model or the learner"""
@@ -46,6 +47,9 @@ def tf_trainer(
         metrics=["accuracy"],
     )
 
+    x_train, y_train = train_loader
+    x_train = np.asarray(x_train)
+    y_train = np.asarray(y_train)
     model.fit(
         x_train,
         y_train,

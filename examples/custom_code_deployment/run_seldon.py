@@ -127,7 +127,7 @@ def main(
     deploy = config == DEPLOY or config == DEPLOY_AND_PREDICT
     predict = config == PREDICT or config == DEPLOY_AND_PREDICT
 
-    deployment_pipeline_name = "custom_code_deployment_pipeline"
+    deployment_pipeline_name = "custom_code_pipeline"
     step_name = "seldon_custom_model_deployer_step"
 
     model_deployer = SeldonModelDeployer.get_active_model_deployer()
@@ -144,7 +144,7 @@ def main(
         )
         evaluator = pytorch_evaluator()
     elif model_flavor == "tensorflow":
-        model_name = "kserve-tensorflow-custom-deployment"
+        model_name = "seldon-tensorflow-custom-deployment"
         data_loader = tf_data_loader()
         trainer = tf_trainer(TensorflowTrainerConfig())
         evaluator = tf_evaluator()
