@@ -67,28 +67,7 @@ class PillowImageMaterializer(BaseMaterializer):
 
         # copy from artifact store to temporary file
         fileio.copy(filepath, temp_file)
-        image = Image.open(temp_file)
-        return image
-
-        # OPTION 2: save in CWD
-        # create a temporary folder
-        # temp_dir = os.path.join(
-        #     os.getcwd(),
-        #     "zenml-temp-dir",
-        # )
-        # if not os.path.exists(temp_dir):
-        #     os.makedirs(temp_dir)
-
-        # local_file_path = os.path.join(
-        #     temp_dir,
-        #     f"{DEFAULT_IMAGE_FILENAME}{os.path.splitext(filepath)[1]}",
-        # )
-
-        # # copy from artifact store to temporary file
-        # fileio.copy(filepath, local_file_path)
-        # image = Image.open(local_file_path)
-        # shutil.rmtree(temp_dir)
-        # return image
+        return Image.open(temp_file)
 
     def handle_return(self, image: Image.Image) -> None:
         """Write to artifact store.
@@ -110,28 +89,3 @@ class PillowImageMaterializer(BaseMaterializer):
         artifact_store_path = os.path.join(self.artifact.uri, full_filename)
         io_utils.copy(temp_image_path, artifact_store_path, overwrite=True)  # type: ignore[attr-defined]
         temp_dir.cleanup()
-
-        # FAILING OPTION 2: save in CWD
-        # super().handle_return(image)
-
-        # # create a temporary directory
-        # temp_dir = os.path.join(
-        #     os.getcwd(),
-        #     "zenml-temp-dir",
-        # )
-        # if not os.path.exists(temp_dir):
-        #     os.makedirs(temp_dir)
-
-        # file_extension = image.format or DEFAULT_IMAGE_EXTENSION
-        # full_filename = f"{DEFAULT_IMAGE_FILENAME}.{file_extension}"
-        # local_file_path = os.path.join(temp_dir, full_filename)
-
-        # # save the image in a temporary directory
-        # image.save(local_file_path)
-
-        # # copy the saved image to the artifact store
-        # artifact_store_path = os.path.join(self.artifact.uri, full_filename)
-        # io_utils.copy(local_file_path, artifact_store_path, overwrite=True)  # type: ignore[attr-defined]
-
-        # # delete the temporary directory
-        # shutil.rmtree(temp_dir)
