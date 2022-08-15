@@ -20,20 +20,34 @@ from zenml.integrations.seldon.steps.seldon_deployer import (
     SeldonDeployerStepConfig,
     seldon_custom_model_deployer_step,
 )
+from zenml.steps.base_step import BaseStep
 
-PYTORCH_MODEL_NAME = "seldon-pytorch-custom-deployment"
 
-seldon_pytorch_custom_deployment = seldon_custom_model_deployer_step(
-    config=SeldonDeployerStepConfig(
-        service_config=SeldonDeploymentConfig(
-            model_name=PYTORCH_MODEL_NAME,
-            replicas=1,
-            implementation="custom",
-            resources={"requests": {"cpu": "200m", "memory": "500m"}},
-        ),
-        timeout=120,
-        custom_deploy_parameters=CustomDeployParameters(
-            predict_function="steps.pytorch.pytorch_custom_deploy_code.custom_predict",
-        ),
+def get_seldon_custom_deployment_step(model_flavor: str) -> BaseStep:
+    """Returns the step function that deploys a custom model"""
+    if model_flavor == "pytorch":
+        model_name = "seldon-pytorch-custom-deployment"
+        predict_function = (
+            "steps.pytorch.pytorch_custom_deploy_code.custom_predict"
+        )
+    elif model_flavor == "tensorflow":
+        model_name = "seldon-tensorflow-custom-deployment"
+        predict_function = (
+            "steps.tensorflow.tf_custom_deploy_code.custom_predict"
+        )
+
+    seldon_custom_deployment = seldon_custom_model_deployer_step(
+        config=SeldonDeployerStepConfig(
+            service_config=SeldonDeploymentConfig(
+                model_name=model_name,
+                replicas=1,
+                implementation="custom",
+                resources={"requests": {"cpu": "200m", "memory": "500m"}},
+            ),
+            timeout=120,
+            custom_deploy_parameters=CustomDeployParameters(
+                predict_function=predict_function
+            ),
+        )
     )
-)
+    return seldon_custom_deployment

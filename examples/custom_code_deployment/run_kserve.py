@@ -14,31 +14,31 @@
 from typing import cast
 
 import click
-from pipelines import (
-    custom_code_deployment_pipeline,
-    pytorch_inference_pipeline,
-)
+from pipelines.kserve_pipelines import custom_code_pipeline, inference_pipeline
 from rich import print
-from steps.kserve.kserve_deployer import kserve_pytorch_custom_deployment
+from steps.deployment_trigger.deployment_trigger import (
+    DeploymentTriggerConfig,
+    deployment_trigger,
+)
+from steps.inference_image_loader.inference_image_loader import (
+    InferenceImageLoaderStepConfig,
+    inference_image_loader,
+)
+from steps.kserve.kserve_deployer import get_kserve_custom_deployment_step
 from steps.kserve.kserve_predictor import kserve_predictor
 from steps.kserve.kserve_service_loader import (
     PredectionServiceLoaderStepConfig,
     kserve_prediction_service_loader,
-)
-from steps.pytorch.deployment_trigger import (
-    DeploymentTriggerConfig,
-    deployment_trigger,
 )
 from steps.pytorch.pytorch_data_loader import (
     PytorchDataLoaderConfig,
     pytorch_data_loader,
 )
 from steps.pytorch.pytorch_evaluator import pytorch_evaluator
-from steps.pytorch.pytorch_inference_processor import (
-    PyTorchInferenceProcessorStepConfig,
-    pytorch_inference_processor,
-)
 from steps.pytorch.pytorch_trainer import PytorchTrainerConfig, pytorch_trainer
+from steps.tensorflow.tf_data_loader import tf_data_loader
+from steps.tensorflow.tf_evaluator import tf_evaluator
+from steps.tensorflow.tf_trainer import TensorflowTrainerConfig, tf_trainer
 
 from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (
     KServeModelDeployer,
@@ -127,27 +127,33 @@ def main(
     deploy = config == DEPLOY or config == DEPLOY_AND_PREDICT
     predict = config == PREDICT or config == DEPLOY_AND_PREDICT
 
-    deployment_pipeline_name = "custom_code_deployment_pipeline"
+    deployment_pipeline_name = "custom_code_pipeline"
     step_name = "kserve_custom_model_deployer_step"
 
     model_deployer = KServeModelDeployer.get_active_model_deployer()
 
     if model_flavor == "pytorch":
         model_name = "kserve-pytorch-custom-deployment"
-        data_loader=pytorch_data_loader(
+        data_loader = pytorch_data_loader(
             PytorchDataLoaderConfig(
                 train_batch_size=batch_size, test_batch_size=batch_size
             )
         )
-        trainer=pytorch_trainer(
+        trainer = pytorch_trainer(
             PytorchTrainerConfig(epochs=epochs, lr=lr, momentum=momentum)
         )
-        evaluator=pytorch_evaluator()
-        deployer=kserve_pytorch_custom_deployment
+        evaluator = pytorch_evaluator()
+    elif model_flavor == "tensorflow":
+        model_name = "kserve-tensorflow-custom-deployment"
+        data_loader = tf_data_loader()
+        trainer = tf_trainer(TensorflowTrainerConfig())
+        evaluator = tf_evaluator()
+
+    deployer = get_kserve_custom_deployment_step(model_flavor, model_name)
 
     if deploy:
         # Initialize and run a continuous deployment pipeline run
-        custom_code_deployment_pipeline(
+        custom_code_pipeline(
             data_loader=data_loader,
             trainer=trainer,
             evaluator=evaluator,
@@ -161,9 +167,9 @@ def main(
 
     if predict:
         # Initialize an inference pipeline run
-        pytorch_inference_pipeline(
-            pytorch_inference_processor=pytorch_inference_processor(
-                PyTorchInferenceProcessorStepConfig(
+        inference_pipeline(
+            pytorch_inference_loader=inference_image_loader(
+                InferenceImageLoaderStepConfig(
                     img_url=prediction_image_url,
                 ),
             ),

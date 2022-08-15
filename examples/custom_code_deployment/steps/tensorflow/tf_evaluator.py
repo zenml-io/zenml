@@ -11,12 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from .pytorch_pipeline import (
-    custom_code_deployment_pipeline,
-    pytorch_inference_pipeline,
-)
 
-__all__ = [
-    "custom_code_deployment_pipeline",
-    "pytorch_inference_pipeline",
-]
+import numpy as np  # type: ignore [import]
+import tensorflow as tf  # type: ignore [import]
+
+from zenml.steps import step
+
+
+@step
+def tf_evaluator(
+    x_test: np.ndarray,
+    y_test: np.ndarray,
+    model: tf.keras.Model,
+) -> float:
+    """Calculate the loss for the model for each epoch in a graph"""
+
+    _, test_acc = model.evaluate(x_test, y_test, verbose=2)
+    return test_acc
