@@ -48,7 +48,7 @@ In addition to the underlying `terraform` functionality, these commands also off
 
 - ability to list all the available recipes conveniently before you choose to deploy any one of them.
 - checks to ensure that you have all the binaries/tools installed for running a recipe.
-- extensive logs and error messages that guide you in case any of the recipe fails or misbehaves.
+- extensive logs and error messages that guide you in case any of the recipes fails or misbehaves.
 - option to automatically import a ZenML stack, out of the components created after deploying a stack recipe.
 
 More features that are planned 👇: 
@@ -85,6 +85,7 @@ We have already discussed the features that the ZenML CLI offers on top of the u
 
     {% hint style="info" %}
     You'll notice that a ZenML stack configuration file gets created 🤯! This command will also import this YAML file as a ZenML stack, using the stack recipe's name by default. You can set your own name by using the `--stack-name` option.
+    {% endhint %}
 
 6. If you wish to prevent this behaviour and prefer making any modifications to the generated configuration file before importing, pass the `--no-import` flag with the deploy command. You can then run the following command to import the resources set as your current stack, manually.
 
@@ -104,6 +105,7 @@ We have already discussed the features that the ZenML CLI offers on top of the u
     zenml stack recipe clean
     ```
 
+Check out the [API docs](https://apidocs.zenml.io/) to learn more about each of these commands and the options that are available.
 
 ## Creating your own recipe 🧑‍🍳
 
