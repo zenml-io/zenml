@@ -8,7 +8,7 @@ The expertise of setting up these often-complex stacks up shouldn't be a pre-req
 
 ## Stack Recipes 🍱
 
-A Stack Recipe is a collection of carefully-crafted Terraform modules and resources which when executed creates a range of stack components that can be used to run your pipelines. Each recipe is designed to offer a great deal of flexbility in configuring the resources while preserving the ease of application through the use of sensible defaults.
+A Stack Recipe is a collection of carefully-crafted Terraform modules and resources which when executed creates a range of stack components that can be used to run your pipelines. Each recipe is designed to offer a great deal of flexibility in configuring the resources while preserving the ease of application through the use of sensible defaults.
 
 Stack recipes create opinionated ZenML stacks. In other words, they have a fixed implementation for each of the stack components that ZenML uses. However, there are multiple recipes available with more being developed actively, that cover most common use-cases. Check out the full list of available recipes at the [mlops-stacks](https://github.com/zenml-io/mlops-stacks) repository.
 
