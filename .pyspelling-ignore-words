@@ -355,6 +355,7 @@ Paperspace
 Parametrizes
 PathType
 PermissionError
+PillowImageMaterializer
 PipelineConfigurationError
 PipelineDockerImageBuilder
 PipelineInterfaceError
