@@ -21,7 +21,7 @@ from torch.utils.data import DataLoader
 
 from zenml.steps import BaseStepConfig, step
 
-from .mnist import Net
+from .pytorch_net import Net
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

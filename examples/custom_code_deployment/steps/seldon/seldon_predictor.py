@@ -14,30 +14,8 @@
 
 from rich import print as rich_print
 
-from zenml.integrations.kserve.services import KServeDeploymentService
 from zenml.integrations.seldon.services import SeldonDeploymentService
-
 from zenml.steps import step
-
-
-@step
-def kserve_predictor(
-    service: KServeDeploymentService,
-    data: str,
-) -> None:
-    """Run a inference request against the kserve prediction service.
-
-    Acording to the KServe documentation, the predict response is a JSON object
-    with the following structure: {"predictions": []}.
-
-    Args:
-        service: The kserve deployment service.
-        data: The data to predict.
-    """
-
-    service.start(timeout=120)  # should be a NOP if already started
-    response = service.predict(data)
-    rich_print(response)
 
 
 @step
@@ -45,13 +23,13 @@ def seldon_predictor(
     service: SeldonDeploymentService,
     data: str,
 ) -> None:
-    """Run a inference request against the seldon core prediction service.
+    """Run an inference request against the Seldon core prediction service.
 
-    Acording to the Seldon documentation, the predict response is a JSON object
+    According to the Seldon documentation, the predicted response is a JSON object
     with the following structure:
 
     Args:
-        service: The seldon deployment service.
+        service: The Seldon deployment service.
         data: The data to predict.
     """
 
