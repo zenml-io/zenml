@@ -25,7 +25,7 @@ def kserve_predictor(
 ) -> None:
     """Run a inference request against the kserve prediction service.
 
-    Acording to the KServe documentation, the predict response is a JSON object
+    According to the KServe documentation, the predicted response is a JSON object
     with the following structure: {"predictions": []}.
 
     Args:
