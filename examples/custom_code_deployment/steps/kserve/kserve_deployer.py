@@ -21,15 +21,15 @@ from zenml.integrations.kserve.steps import (
 from zenml.steps.base_step import BaseStep
 
 
-def get_kserve_custom_deployment_step(model_flavor: str) -> BaseStep:
+def get_kserve_custom_deployment_step(
+    model_flavor: str, model_name: str
+) -> BaseStep:
     """Returns the step function that deploys a custom model"""
     if model_flavor == "pytorch":
-        model_name = "kserve-pytorch-custom-deployment"
         predict_function = (
             "steps.pytorch.pytorch_custom_deploy_code.custom_predict"
         )
     elif model_flavor == "tensorflow":
-        model_name = "kserve-tensorflow-custom-deployment"
         predict_function = (
             "steps.tensorflow.tf_custom_deploy_code.custom_predict"
         )

@@ -30,10 +30,7 @@ from steps.pytorch.pytorch_data_loader import (
 )
 from steps.pytorch.pytorch_evaluator import pytorch_evaluator
 from steps.pytorch.pytorch_trainer import PytorchTrainerConfig, pytorch_trainer
-from steps.seldon.seldon_deployer import (
-    get_seldon_custom_deployment_step,
-    seldon_pytorch_custom_deployment,
-)
+from steps.seldon.seldon_deployer import get_seldon_custom_deployment_step
 from steps.seldon.seldon_predictor import seldon_predictor
 from steps.seldon.seldon_service_loader import (
     PredectionServiceLoaderStepConfig,
@@ -55,7 +52,7 @@ PREDICT = "predict"
 DEPLOY_AND_PREDICT = "deploy_and_predict"
 
 PYTORCH = "pytorch"
-TENSORFLOW = "tensoflow"
+TENSORFLOW = "tensorflow"
 
 
 @click.command()
@@ -137,18 +134,6 @@ def main(
 
     if model_flavor == "pytorch":
         model_name = "seldon-pytorch-custom-deployment"
-        data_loader = pytorch_data_loader(
-            PytorchDataLoaderConfig(
-                train_batch_size=batch_size, test_batch_size=batch_size
-            )
-        )
-        trainer = pytorch_trainer(
-            PytorchTrainerConfig(epochs=epochs, lr=lr, momentum=momentum)
-        )
-        evaluator = pytorch_evaluator()
-        deployer = seldon_pytorch_custom_deployment
-    if model_flavor == "tensorflow":
-        model_name = "seldon-tensorflow-custom-deployment"
         data_loader = pytorch_data_loader(
             PytorchDataLoaderConfig(
                 train_batch_size=batch_size, test_batch_size=batch_size

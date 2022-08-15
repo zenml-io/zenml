@@ -52,7 +52,7 @@ PREDICT = "predict"
 DEPLOY_AND_PREDICT = "deploy_and_predict"
 
 PYTORCH = "pytorch"
-TENSORFLOW = "tensoflow"
+TENSORFLOW = "tensorflow"
 
 
 @click.command()

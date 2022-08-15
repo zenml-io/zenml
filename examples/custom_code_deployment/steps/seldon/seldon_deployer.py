@@ -23,15 +23,15 @@ from zenml.integrations.seldon.steps.seldon_deployer import (
 from zenml.steps.base_step import BaseStep
 
 
-def get_seldon_custom_deployment_step(model_flavor: str) -> BaseStep:
+def get_seldon_custom_deployment_step(
+    model_flavor: str, model_name: str
+) -> BaseStep:
     """Returns the step function that deploys a custom model"""
     if model_flavor == "pytorch":
-        model_name = "seldon-pytorch-custom-deployment"
         predict_function = (
             "steps.pytorch.pytorch_custom_deploy_code.custom_predict"
         )
     elif model_flavor == "tensorflow":
-        model_name = "seldon-tensorflow-custom-deployment"
         predict_function = (
             "steps.tensorflow.tf_custom_deploy_code.custom_predict"
         )
