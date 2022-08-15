@@ -94,7 +94,7 @@ TENSORFLOW = "tensoflow"
 )
 @click.option(
     "--model-flavor",
-    "-d",
+    "-m",
     type=click.Choice([PYTORCH, TENSORFLOW]),
     help="Which model deployment serving tool is used? This only accepts Seldon or KServe",
     required=True,
@@ -128,27 +128,22 @@ def main(
     predict = config == PREDICT or config == DEPLOY_AND_PREDICT
 
     deployment_pipeline_name = "custom_code_deployment_pipeline"
-    step_name = "custom_model_deployer_step"
+    step_name = "kserve_custom_model_deployer_step"
 
     model_deployer = KServeModelDeployer.get_active_model_deployer()
 
     if model_flavor == "pytorch":
         model_name = "kserve-pytorch-custom-deployment"
-
-        data_loader = (
-            pytorch_data_loader(
-                PytorchDataLoaderConfig(
-                    train_batch_size=batch_size, test_batch_size=batch_size
-                )
-            ),
+        data_loader=pytorch_data_loader(
+            PytorchDataLoaderConfig(
+                train_batch_size=batch_size, test_batch_size=batch_size
+            )
         )
-        trainer = (
-            pytorch_trainer(
-                PytorchTrainerConfig(epochs=epochs, lr=lr, momentum=momentum)
-            ),
+        trainer=pytorch_trainer(
+            PytorchTrainerConfig(epochs=epochs, lr=lr, momentum=momentum)
         )
-        evaluator = (pytorch_evaluator(),)
-        deployer = (kserve_pytorch_custom_deployment,)
+        evaluator=pytorch_evaluator()
+        deployer=kserve_pytorch_custom_deployment
 
     if deploy:
         # Initialize and run a continuous deployment pipeline run
