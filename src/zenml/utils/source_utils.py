@@ -439,7 +439,7 @@ def get_hashed_source(value: Any) -> str:
         TypeError: If unable to compute the hash.
     """
     try:
-        source_code = "pleaserevertthis"
+        source_code = get_source(value)
     except TypeError:
         raise TypeError(
             f"Unable to compute the hash of source code of object: {value}."
