@@ -79,9 +79,8 @@
     <a href="https://twitter.com/zenml_io">
     <img src="https://img.shields.io/badge/-Twitter-black.svg?style=for-the-badge&logo=twitter&colorB=555" alt="Logo">
     </a>
-    <br />
     <div align="center">
-  Join our <a href="https://zenml.io/slack-invite" target="_blank">
+      Join our <a href="https://zenml.io/slack-invite" target="_blank">
       <img width="25" src="https://cdn3.iconfinder.com/data/icons/logos-and-brands-adobe/512/306_Slack-512.png" alt="Slack"/>
   <b>Slack Community</b> </a> and become part of the ZenML family.
   </div>
