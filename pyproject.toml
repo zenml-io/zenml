@@ -70,7 +70,10 @@ nbconvert = "6.4.4"
 
 # Optional dependencies for the ZenServer
 fastapi = { version = "~0.75.0", optional = true }
-uvicorn = { extras = ["standard"], version = "~0.17.5" , optional = true}
+uvicorn = { extras = ["standard"], version = "~0.17.5",  optional = true}
+
+# dependencies for stack recipes
+python-terraform = "^0.10.1"
 
 [tool.poetry.extras]
 server = ["fastapi", "uvicorn"]
