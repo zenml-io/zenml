@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 import json
 from io import BytesIO
-from typing import Optional
 
 import requests
 from numpy import asarray
@@ -28,9 +27,7 @@ class PyTorchInferenceProcessorStepConfig(BaseStepConfig):
     Configuration for the PyTorch inference preprocessor step.
     """
 
-    img_url: Optional[
-        str
-    ] = "https://raw.githubusercontent.com/kserve/kserve/master/docs/samples/v1beta1/torchserve/v1/imgconv/1.png"
+    img_url: str
 
 
 @step(enable_cache=False)

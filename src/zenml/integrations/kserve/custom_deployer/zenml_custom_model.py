@@ -128,7 +128,7 @@ class ZenMLCustomModel(kserve.Model):  # type: ignore[misc]
     default=DEFAULT_MODEL_NAME,
     required=True,
     type=click.STRING,
-    help="The name of the model to deploy. This important for the Kserve server.",
+    help="The name of the model to deploy. This is important for the KServe server.",
 )
 @click.option(
     "--predict_func",
@@ -137,11 +137,13 @@ class ZenMLCustomModel(kserve.Model):  # type: ignore[misc]
     help="The path to the custom predict function defined by the user.",
 )
 def main(model_name: str, model_uri: str, predict_func: str) -> None:
-    """Main function responsible for starting the Kserve server.
+    """Main function responsible for starting the KServe server.
 
-    Within the deployment process, the built-in custom deployment step is used to
-    to prepare the kserve deployment with an entry point that calls this script,
-    which then starts the Kserve server and waits for requests.
+    The way the custom deployment server works with the KServe server is by
+    implementing a custom model class and passing it to the KServe server and then
+    starting the server. Because custom classes usually need some parameters to
+    be passed to the model, the parameters are passed from the entry point to the
+    main function as arguments and then passed to the model class constructor.
 
     The following is an example of the entry point:
     ```
@@ -159,7 +161,7 @@ def main(model_name: str, model_uri: str, predict_func: str) -> None:
     Args:
         model_name: The name of the model.
         model_uri: The URI of the model.
-        predict_func: The path to the predict function.
+        predict_func: The path to the predict function defined by the user.
     """
     model = ZenMLCustomModel(model_name, model_uri, predict_func)
     model.load()

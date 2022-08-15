@@ -29,7 +29,14 @@ logger = get_logger(__name__)
 
 
 def save_model_metadata(model_artifact: Artifact) -> str:
-    """Save a zenml artifact metadata to a YAML file.
+    """Save a zenml model artifact metadata to a YAML file.
+
+    This function is used to extract and save information from a zenml model artifact
+    such as the model type and materializer. The extracted information will be
+    the key to loading the model into memory in the inference environment.
+
+    datatype: the model type. This is the path to the model class.
+    materializer: the materializer class. This is the path to the materializer class.
 
     Args:
         model_artifact: the artifact to extract the metadata from.
@@ -51,7 +58,15 @@ def save_model_metadata(model_artifact: Artifact) -> str:
 
 
 def load_model_from_metadata(model_uri: str) -> Any:
-    """Load a zenml artifact from a json file.
+    """Load a zenml model artifact from a json file.
+
+    This function is used to load information from a Yaml file that was created
+    by the save_model_metadata function. The information in the Yaml file is
+    used to load the model into memory in the inference environment.
+
+    model_uri: the URI of the model checkpoint/files to load.
+    datatype: the model type. This is the path to the model class.
+    materializer: the materializer class. This is the path to the materializer class.
 
     Args:
         model_uri: the artifact to extract the metadata from.

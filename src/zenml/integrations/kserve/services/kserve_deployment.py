@@ -42,7 +42,6 @@ from zenml.services import (
 )
 
 if TYPE_CHECKING:
-    pass
 
     from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (  # noqa
         KServeModelDeployer,

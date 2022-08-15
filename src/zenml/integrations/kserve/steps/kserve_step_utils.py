@@ -33,9 +33,6 @@ from zenml.utils import io_utils
 logger = get_logger(__name__)
 
 
-ARTIFACT_FILE = "artifact.json"
-
-
 def prepare_service_config(
     model_uri: str, output_artifact_uri: str, config: KServeDeployerStepConfig
 ) -> KServeDeploymentConfig:

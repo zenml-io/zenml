@@ -179,11 +179,11 @@ class CustomDeployParameters(BaseModel):
     predict_function: str
 
     @validator("predict_function")
-    def predict_function_validate(cls, v: str) -> str:
+    def predict_function_validate(cls, predict_func_path: str) -> str:
         """Validate predict function.
 
         Args:
-            v: predict function path
+            predict_func_path: predict function path
 
         Returns:
             predict function path
@@ -191,13 +191,13 @@ class CustomDeployParameters(BaseModel):
         Raises:
             ValueError: if predict function path is not valid
         """
-        if not v:
+        if not predict_func_path:
             raise ValueError("Predict function path is required.")
         try:
-            import_class_by_path(v)
+            import_class_by_path(predict_func_path)
         except AttributeError:
             raise ValueError("Predict function can't be found.")
-        return v
+        return predict_func_path
 
 
 class KServeDeployerStepConfig(BaseStepConfig):

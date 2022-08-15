@@ -52,7 +52,7 @@ def post_process(prediction: torch.Tensor) -> str:
         str: The processed data, in this case the predicted digit.
     """
 
-    classes = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+    classes = [str(i) for i in range(10)]
     prediction = softmax(prediction)
     maxindex = np.argmax(prediction.detach().numpy())
     return classes[maxindex]

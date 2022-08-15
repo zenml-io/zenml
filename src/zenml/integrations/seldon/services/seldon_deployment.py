@@ -15,7 +15,7 @@
 
 import json
 import os
-from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple
+from typing import Any, Dict, Generator, Optional, Tuple
 from uuid import UUID
 
 import requests
@@ -31,9 +31,6 @@ from zenml.logger import get_logger
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.services.service_status import ServiceState, ServiceStatus
 from zenml.services.service_type import ServiceType
-
-if TYPE_CHECKING:
-    pass
 
 logger = get_logger(__name__)
 

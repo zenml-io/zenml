@@ -65,11 +65,11 @@ class CustomDeployParameters(BaseModel):
     predict_function: str
 
     @validator("predict_function")
-    def predict_function_validate(cls, v: str) -> str:
+    def predict_function_validate(cls, predict_func_path: str) -> str:
         """Validate predict function.
 
         Args:
-            v: predict function path
+            predict_func_path: predict function path
 
         Returns:
             predict function path
@@ -77,13 +77,13 @@ class CustomDeployParameters(BaseModel):
         Raises:
             ValueError: if predict function path is not valid
         """
-        if not v:
+        if not predict_func_path:
             raise ValueError("Predict function path is required.")
         try:
-            import_class_by_path(v)
+            import_class_by_path(predict_func_path)
         except AttributeError:
             raise ValueError("Predict function can't be found.")
-        return v
+        return predict_func_path
 
 
 class SeldonDeployerStepConfig(BaseStepConfig):
@@ -268,8 +268,10 @@ def seldon_custom_model_deployer_step(
     """
     # verify that a custom deployer is defined
     if not config.custom_deploy_parameters:
-        raise ValueError("Custom deploy parameters are required.")
-
+        raise ValueError(
+            "Custom deploy parameter is required as part of the step configuration this parameter is",
+            "the path of the custom predict function",
+        )
     # get the active model deployer
     model_deployer = SeldonModelDeployer.get_active_model_deployer()
 
@@ -299,8 +301,8 @@ def seldon_custom_model_deployer_step(
     # current model, to ensure that a model server is available at all times
     if not deploy_decision and existing_services:
         logger.info(
-            f"Skipping model deployment because the model quality does not "
-            f"meet the criteria. Reusing the last model server deployed by step "
+            f"Skipping model deployment because the model quality does not"
+            f" meet the criteria. Reusing the last model server deployed by step "
             f"'{step_name}' and pipeline '{pipeline_name}' for model "
             f"'{config.service_config.model_name}'..."
         )
