@@ -67,7 +67,7 @@ class PillowImageMaterializer(BaseMaterializer):
 
         # copy from artifact store to temporary file
         fileio.copy(filepath, temp_file)
-        image = Image.open(temp_file) 
+        image = Image.open(temp_file)
         return image
 
         # OPTION 2: save in CWD
