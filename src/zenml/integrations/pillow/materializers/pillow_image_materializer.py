@@ -112,7 +112,7 @@ class PillowImageMaterializer(BaseMaterializer):
         temp_dir.cleanup()
 
         # FAILING OPTION 2: save in CWD
-        super().handle_return(image)
+        # super().handle_return(image)
 
         # # create a temporary directory
         # temp_dir = os.path.join(
