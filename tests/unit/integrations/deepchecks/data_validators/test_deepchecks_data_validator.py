@@ -14,12 +14,9 @@
 
 
 from zenml.enums import StackComponentType
+from zenml.integrations.deepchecks import DEEPCHECKS_DATA_VALIDATOR_FLAVOR
 from zenml.integrations.deepchecks.data_validators import (
     DeepchecksDataValidator,
-)
-
-from zenml.integrations.deepchecks import (
-    DEEPCHECKS_DATA_VALIDATOR_FLAVOR,
 )
 
 
