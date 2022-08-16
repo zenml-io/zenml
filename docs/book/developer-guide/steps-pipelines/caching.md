@@ -70,6 +70,26 @@ You can get a graphical visualization of which steps were cached using
 [ZenML's Pipeline Run Visualization Tool](./pipeline-visualization.md).
 {% endhint %}
 
+You can disable caching for individual steps via the `config.yaml` file and
+specifying parameters for a specific step (as described [in the section on YAML
+config
+files](https://docs.zenml.io/developer-guide/steps-and-pipelines/runtime-configuration#configuring-with-yaml-config-files).)
+In this case, you would specify `True` or `False` in the place of the
+`<ENABLE_CACHE_VALUE>` below.
+
+```yaml
+steps:
+  <STEP_NAME_IN_PIPELINE>:
+    parameters:
+      enable_cache: <ENABLE_CACHE_VALUE>
+      ...
+    ...
+```
+
+You can see an example of this in action in our [PyTorch
+Example](https://github.com/zenml-io/zenml/blob/develop/examples/pytorch/config.yaml),
+where caching is disabled for the `trainer` step.
+
 ### Dynamically disabling caching for a pipeline run
 
 Sometimes you want to have control over caching at runtime instead of defaulting to the backed in configurations of 

@@ -40,6 +40,7 @@ from zenml.integrations.label_studio import LabelStudioIntegration  # noqa
 from zenml.integrations.lightgbm import LightGBMIntegration  # noqa
 from zenml.integrations.mlflow import MlflowIntegration  # noqa
 from zenml.integrations.neural_prophet import NeuralProphetIntegration  # noqa
+from zenml.integrations.pillow import PillowIntegration  # noqa
 from zenml.integrations.plotly import PlotlyIntegration  # noqa
 from zenml.integrations.pytorch import PytorchIntegration  # noqa
 from zenml.integrations.pytorch_lightning import (  # noqa

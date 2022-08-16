@@ -25,6 +25,7 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.io import fileio
 from zenml.metadata_stores import BaseMetadataStore
 from zenml.repository import Repository
+from zenml.utils.secret_utils import SecretField
 
 
 class MySQLMetadataStore(BaseMetadataStore):
@@ -47,8 +48,8 @@ class MySQLMetadataStore(BaseMetadataStore):
     host: str
     database: str
     secret: Optional[str] = None
-    username: Optional[str] = None
-    password: Optional[str] = None
+    username: Optional[str] = SecretField()
+    password: Optional[str] = SecretField()
 
     # Class Configuration
     FLAVOR: ClassVar[str] = "mysql"

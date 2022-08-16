@@ -1040,6 +1040,8 @@ class BaseZenStore(ABC):
         a local artifact store and a local SQLite metadata store.
         """
         stack = Stack.default_local_stack()
+        sw = StackWrapper.from_stack(stack)
+        self._register_stack(sw)
         # For the default stack, we have to set up the association manually.
         # As we can not use the repo/store yet to check the previously defined
         # associations.
@@ -1047,8 +1049,6 @@ class BaseZenStore(ABC):
             artifact_store_uuid=stack.artifact_store.uuid,
             metadata_store_uuid=stack.metadata_store.uuid,
         )
-        sw = StackWrapper.from_stack(stack)
-        self._register_stack(sw)
         metadata = {c.type.value: c.flavor for c in sw.components}
         metadata["store_type"] = self.type.value
         self._track_event(

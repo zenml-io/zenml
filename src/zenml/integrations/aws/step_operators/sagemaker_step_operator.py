@@ -21,19 +21,21 @@ from zenml.enums import StackComponentType
 from zenml.integrations.aws import AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
 from zenml.logger import get_logger
 from zenml.repository import Repository
+from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
-from zenml.utils import docker_utils
-from zenml.utils.source_utils import get_source_root_path
+from zenml.utils import deprecation_utils
+from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
-    from zenml.steps import ResourceConfiguration
+    from zenml.config.docker_configuration import DockerConfiguration
+    from zenml.config.resource_configuration import ResourceConfiguration
 
 
 logger = get_logger(__name__)
 
 
-class SagemakerStepOperator(BaseStepOperator):
+class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
     """Step operator to run a step on Sagemaker.
 
     This class defines code that builds an image with the ZenML entrypoint
@@ -63,6 +65,10 @@ class SagemakerStepOperator(BaseStepOperator):
     # Class Configuration
     FLAVOR: ClassVar[str] = AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
 
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
+        ("base_image", "docker_parent_image")
+    )
+
     @property
     def validator(self) -> Optional[StackValidator]:
         """Validates that the stack contains a container registry.
@@ -82,36 +88,11 @@ class SagemakerStepOperator(BaseStepOperator):
             custom_validation_function=_ensure_local_orchestrator,
         )
 
-    def _build_docker_image(
-        self,
-        pipeline_name: str,
-        requirements: List[str],
-        entrypoint_command: List[str],
-    ) -> str:
-        repo = Repository()
-        container_registry = repo.active_stack.container_registry
-
-        if not container_registry:
-            raise RuntimeError("Missing container registry")
-
-        registry_uri = container_registry.uri.rstrip("/")
-        image_name = f"{registry_uri}/zenml-sagemaker:{pipeline_name}"
-
-        docker_utils.build_docker_image(
-            build_context_path=get_source_root_path(),
-            image_name=image_name,
-            entrypoint=" ".join(entrypoint_command),
-            requirements=set(requirements),
-            base_image=self.base_image,
-        )
-        container_registry.push_image(image_name)
-        return docker_utils.get_image_digest(image_name) or image_name
-
     def launch(
         self,
         pipeline_name: str,
         run_name: str,
-        requirements: List[str],
+        docker_configuration: "DockerConfiguration",
         entrypoint_command: List[str],
         resource_configuration: "ResourceConfiguration",
     ) -> None:
@@ -122,15 +103,16 @@ class SagemakerStepOperator(BaseStepOperator):
                 is part of.
             run_name: Name of the pipeline run which the step to be executed
                 is part of.
+            docker_configuration: The Docker configuration for this step.
             entrypoint_command: Command that executes the step.
-            requirements: List of pip requirements that must be installed
-                inside the step operator environment.
             resource_configuration: The resource configuration for this step.
         """
-        image_name = self._build_docker_image(
+        image_name = self.build_and_push_docker_image(
             pipeline_name=pipeline_name,
-            requirements=requirements,
-            entrypoint_command=entrypoint_command,
+            docker_configuration=docker_configuration,
+            stack=Repository().active_stack,
+            runtime_configuration=RuntimeConfiguration(),
+            entrypoint=" ".join(entrypoint_command),
         )
 
         if not resource_configuration.empty:

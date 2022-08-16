@@ -11,15 +11,23 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Initialization of the Pillow integration."""
+
+from zenml.integrations.constants import PILLOW
+from zenml.integrations.integration import Integration
+from zenml.utils.source_utils import import_class_by_path
 
 
-from click.testing import CliRunner
+class PillowIntegration(Integration):
+    """Definition of Pillow integration for ZenML."""
 
-from zenml.cli.feature import get_project
+    NAME = PILLOW
+    REQUIREMENTS = ["Pillow>=9.2.0"]
+
+    @classmethod
+    def activate(cls) -> None:
+        """Activates the integration."""
+        from zenml.integrations.pillow import materializers  # noqa
 
 
-def test_feature_command_fails_without_active_feature_store() -> None:
-    """Test that the feature store CLI command raises an error when no feature store is active"""
-    runner = CliRunner()
-    result = runner.invoke(get_project)
-    assert result.exit_code == 1
+PillowIntegration.check_installation()

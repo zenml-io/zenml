@@ -112,7 +112,7 @@ class GCPSecretsManager(BaseSecretsManager):
 
         Given that we also save secret names and namespaces as labels, we are
         also limited by the limitation that Google imposes on label values: max
-        63 characters and must and must only contain lowercase letters, numerals
+        63 characters and must only contain lowercase letters, numerals
         and the hyphen (-) and underscore (_) characters
 
         Args:

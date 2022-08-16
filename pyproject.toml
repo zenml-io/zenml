@@ -110,6 +110,7 @@ types-certifi = "^2021.10.8.0"
 types-croniter = "^1.0.2"
 types-futures = "^3.3.1"
 types-Markdown = "^3.3.6"
+types-Pillow = "^9.2.1"
 types-protobuf = "^3.18.0"
 types-PyMySQL = "^1.0.4"
 types-python-dateutil = "^2.8.2"
@@ -138,6 +139,7 @@ legacy_tox_ini = """
 isolated_build = True
 skipsdist = true
 envlist = py36,py37,py38,py39
+
 
 [testenv]
 whitelist_externals = poetry

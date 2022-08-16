@@ -85,17 +85,23 @@ class BaseContainerRegistry(StackComponent, AuthenticationMixin):
         return bool(re.fullmatch(r"localhost:[0-9]{4,5}", self.uri))
 
     def prepare_image_push(self, image_name: str) -> None:
-        """Method that subclasses can overwrite to do any necessary checks or preparations before an image gets pushed.
+        """Preparation before an image gets pushed.
+
+        Subclasses can overwrite this to do any necessary checks or
+        preparations before an image gets pushed.
 
         Args:
             image_name: Name of the docker image that will be pushed.
         """
 
-    def push_image(self, image_name: str) -> None:
+    def push_image(self, image_name: str) -> str:
         """Pushes a docker image.
 
         Args:
             image_name: Name of the docker image that will be pushed.
+
+        Returns:
+            The Docker repository digest of the pushed image.
 
         Raises:
             ValueError: If the image name is not associated with this
@@ -108,4 +114,4 @@ class BaseContainerRegistry(StackComponent, AuthenticationMixin):
             )
 
         self.prepare_image_push(image_name)
-        docker_utils.push_docker_image(image_name)
+        return docker_utils.push_image(image_name)
