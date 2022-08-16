@@ -253,6 +253,8 @@ class SparkStepOperator(BaseStepOperator):
             i = entrypoint_command.index(arg)
             command.extend([arg, entrypoint_command[i + 1]])
 
+        command = " ".join(command)
+
         # Execute the spark-submit
         process = subprocess.Popen(
             command,
