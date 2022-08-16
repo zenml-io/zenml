@@ -15,10 +15,10 @@ from typing import cast
 
 import click
 from kserve.tensorflow.pipelines.kserve_tensorflow_pipelines import (
-    tensorflow_custom_code_pipeline, 
+    tensorflow_custom_code_pipeline,
     tensorflow_inference_pipeline,
 )
-from rich import print
+from kserve.tensorflow.steps.deployer import kserve_tensorflow_custom_deployment
 from kserve.tensorflow.steps.deployment_trigger import (
     DeploymentTriggerConfig,
     deployment_trigger,
@@ -27,15 +27,18 @@ from kserve.tensorflow.steps.inference_image_loader import (
     InferenceImageLoaderStepConfig,
     inference_image_loader,
 )
-from kserve.tensorflow.steps.deployer import kserve_tensorflow_custom_deployment
-from kserve.tensorflow.steps.predictor import kserve_predictor
 from kserve.tensorflow.steps.predection_service_loader import (
     PredectionServiceLoaderStepConfig,
     kserve_prediction_service_loader,
 )
+from kserve.tensorflow.steps.predictor import kserve_predictor
 from kserve.tensorflow.steps.tf_data_loader import tf_data_loader
 from kserve.tensorflow.steps.tf_evaluator import tf_evaluator
-from kserve.tensorflow.steps.tf_trainer import TensorflowTrainerConfig, tf_trainer
+from kserve.tensorflow.steps.tf_trainer import (
+    TensorflowTrainerConfig,
+    tf_trainer,
+)
+from rich import print
 
 from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (
     KServeModelDeployer,
@@ -120,13 +123,13 @@ def main(
     model_name = "kserve-tensorflow-custom-model"
 
     model_deployer = KServeModelDeployer.get_active_model_deployer()
-        
+
     if deploy:
         # Initialize and run a continuous deployment pipeline run
         tensorflow_custom_code_pipeline(
-            data_loader = tf_data_loader(),
-            trainer = tf_trainer(TensorflowTrainerConfig()),
-            evaluator = tf_evaluator(),
+            data_loader=tf_data_loader(),
+            trainer=tf_trainer(TensorflowTrainerConfig()),
+            evaluator=tf_evaluator(),
             deployment_trigger=deployment_trigger(
                 config=DeploymentTriggerConfig(
                     min_accuracy=min_accuracy,

@@ -14,8 +14,11 @@
 from typing import cast
 
 import click
-from kserve.pytorch.pipelines.kserve_pytroch_pipelines import pytorch_custom_code_pipeline, pytorch_inference_pipeline
-from rich import print
+from kserve.pytorch.pipelines.kserve_pytroch_pipelines import (
+    pytorch_custom_code_pipeline,
+    pytorch_inference_pipeline,
+)
+from kserve.pytorch.steps.deployer import kserve_pytorch_custom_deployment
 from kserve.pytorch.steps.deployment_trigger import (
     DeploymentTriggerConfig,
     deployment_trigger,
@@ -24,21 +27,28 @@ from kserve.pytorch.steps.inference_image_loader import (
     InferenceImageLoaderStepConfig,
     inference_image_loader,
 )
-from kserve.pytorch.steps.predictor import kserve_predictor
 from kserve.pytorch.steps.predection_service_loader import (
     PredectionServiceLoaderStepConfig,
     kserve_prediction_service_loader,
 )
+from kserve.pytorch.steps.predictor import kserve_predictor
 from kserve.pytorch.steps.pytorch_data_loader import (
     PytorchDataLoaderConfig,
     pytorch_data_loader,
 )
 from kserve.pytorch.steps.pytorch_evaluator import pytorch_evaluator
-from kserve.pytorch.steps.pytorch_trainer import PytorchTrainerConfig, pytorch_trainer
-from kserve.pytorch.steps.deployer import kserve_pytorch_custom_deployment
+from kserve.pytorch.steps.pytorch_trainer import (
+    PytorchTrainerConfig,
+    pytorch_trainer,
+)
+from rich import print
 
-from zenml.integrations.kserve.model_deployers.kserve_model_deployer import KServeModelDeployer
-from zenml.integrations.kserve.services.kserve_deployment import KServeDeploymentService
+from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (
+    KServeModelDeployer,
+)
+from zenml.integrations.kserve.services.kserve_deployment import (
+    KServeDeploymentService,
+)
 
 DEPLOY = "deploy"
 PREDICT = "predict"
@@ -113,10 +123,9 @@ def main(
 
     deployment_pipeline_name = "pytorch_custom_code_pipeline"
     step_name = "kserve_pytorch_custom_deployment"
-    model_name= "kserve-pytorch-custom-model"
+    model_name = "kserve-pytorch-custom-model"
 
     model_deployer = KServeModelDeployer.get_active_model_deployer()
-
 
     if deploy:
         # Initialize and run a continuous deployment pipeline run

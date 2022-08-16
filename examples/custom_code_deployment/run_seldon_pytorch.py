@@ -12,13 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from typing import cast
+
 import click
 from rich import print
-
 from seldon.pytorch.pipelines.seldon_pytorch_pipelines import (
-    pytorch_custom_code_pipeline, 
+    pytorch_custom_code_pipeline,
     pytorch_inference_pipeline,
 )
+from seldon.pytorch.steps.deployer import seldon_pytorch_custom_deployment
 from seldon.pytorch.steps.deployment_trigger import (
     DeploymentTriggerConfig,
     deployment_trigger,
@@ -27,21 +28,27 @@ from seldon.pytorch.steps.inference_image_loader import (
     InferenceImageLoaderStepConfig,
     inference_image_loader,
 )
-from seldon.pytorch.steps.predictor import seldon_predictor
 from seldon.pytorch.steps.predection_service_loader import (
     PredectionServiceLoaderStepConfig,
     seldon_prediction_service_loader,
 )
+from seldon.pytorch.steps.predictor import seldon_predictor
 from seldon.pytorch.steps.pytorch_data_loader import (
     PytorchDataLoaderConfig,
     pytorch_data_loader,
 )
 from seldon.pytorch.steps.pytorch_evaluator import pytorch_evaluator
-from seldon.pytorch.steps.pytorch_trainer import PytorchTrainerConfig, pytorch_trainer
-from seldon.pytorch.steps.deployer import seldon_pytorch_custom_deployment
+from seldon.pytorch.steps.pytorch_trainer import (
+    PytorchTrainerConfig,
+    pytorch_trainer,
+)
 
-from zenml.integrations.seldon.model_deployers.seldon_model_deployer import SeldonModelDeployer
-from zenml.integrations.seldon.services.seldon_deployment import SeldonDeploymentService
+from zenml.integrations.seldon.model_deployers.seldon_model_deployer import (
+    SeldonModelDeployer,
+)
+from zenml.integrations.seldon.services.seldon_deployment import (
+    SeldonDeploymentService,
+)
 
 DEPLOY = "deploy"
 PREDICT = "predict"
@@ -116,10 +123,9 @@ def main(
 
     deployment_pipeline_name = "pytorch_custom_code_pipeline"
     step_name = "seldon_pytorch_custom_deployment"
-    model_name= "seldon-pytorch-custom-model"
+    model_name = "seldon-pytorch-custom-model"
 
     model_deployer = SeldonModelDeployer.get_active_model_deployer()
-
 
     if deploy:
         # Initialize and run a continuous deployment pipeline run
@@ -187,6 +193,7 @@ def main(
             "pipeline must run first to train a model and deploy it. Execute "
             "the same command with the `--deploy` argument to deploy a model."
         )
+
 
 if __name__ == "__main__":
     main()

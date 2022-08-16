@@ -19,7 +19,6 @@ from zenml.integrations.kserve.steps import (
     kserve_custom_model_deployer_step,
 )
 
-
 kserve_tensorflow_custom_deployment = kserve_custom_model_deployer_step(
     config=KServeDeployerStepConfig(
         service_config=KServeDeploymentConfig(

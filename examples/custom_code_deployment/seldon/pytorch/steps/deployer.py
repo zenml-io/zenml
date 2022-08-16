@@ -21,7 +21,6 @@ from zenml.integrations.seldon.steps.seldon_deployer import (
     seldon_custom_model_deployer_step,
 )
 
-
 seldon_pytorch_custom_deployment = seldon_custom_model_deployer_step(
     config=SeldonDeployerStepConfig(
         service_config=SeldonDeploymentConfig(

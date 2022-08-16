@@ -14,11 +14,12 @@
 from typing import cast
 
 import click
+from rich import print
 from seldon.tensorflow.pipelines.seldon_tensorflow_pipelines import (
-    tensorflow_custom_code_pipeline, 
+    tensorflow_custom_code_pipeline,
     tensorflow_inference_pipeline,
 )
-from rich import print
+from seldon.tensorflow.steps.deployer import seldon_tensorflow_custom_deployment
 from seldon.tensorflow.steps.deployment_trigger import (
     DeploymentTriggerConfig,
     deployment_trigger,
@@ -27,15 +28,17 @@ from seldon.tensorflow.steps.inference_image_loader import (
     InferenceImageLoaderStepConfig,
     inference_image_loader,
 )
-from seldon.tensorflow.steps.deployer import seldon_tensorflow_custom_deployment
-from seldon.tensorflow.steps.predictor import seldon_predictor
 from seldon.tensorflow.steps.predection_service_loader import (
     PredectionServiceLoaderStepConfig,
     seldon_prediction_service_loader,
 )
+from seldon.tensorflow.steps.predictor import seldon_predictor
 from seldon.tensorflow.steps.tf_data_loader import tf_data_loader
 from seldon.tensorflow.steps.tf_evaluator import tf_evaluator
-from seldon.tensorflow.steps.tf_trainer import TensorflowTrainerConfig, tf_trainer
+from seldon.tensorflow.steps.tf_trainer import (
+    TensorflowTrainerConfig,
+    tf_trainer,
+)
 
 from zenml.integrations.seldon.model_deployers.seldon_model_deployer import (
     SeldonModelDeployer,
@@ -120,13 +123,13 @@ def main(
     model_name = "seldon-tensorflow-custom-model"
 
     model_deployer = SeldonModelDeployer.get_active_model_deployer()
-        
+
     if deploy:
         # Initialize and run a continuous deployment pipeline run
         tensorflow_custom_code_pipeline(
-            data_loader = tf_data_loader(),
-            trainer = tf_trainer(TensorflowTrainerConfig()),
-            evaluator = tf_evaluator(),
+            data_loader=tf_data_loader(),
+            trainer=tf_trainer(TensorflowTrainerConfig()),
+            evaluator=tf_evaluator(),
             deployment_trigger=deployment_trigger(
                 config=DeploymentTriggerConfig(
                     min_accuracy=min_accuracy,
