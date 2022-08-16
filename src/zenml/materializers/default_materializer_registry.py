@@ -79,25 +79,26 @@ class MaterializerRegistry:
         # Check whether the type is registered
         if key in self.materializer_types:
             return self.materializer_types[key]
-        else:
-            # If the type is not registered, check for superclasses
-            materializers_for_compatible_superclasses = {
-                materializer
-                for registered_type, materializer in self.materializer_types.items()
-                if issubclass(key, registered_type)
-            }
-            # Make sure that there is only a single materializer
-            if len(materializers_for_compatible_superclasses) == 1:
-                return materializers_for_compatible_superclasses.pop()
-            elif len(materializers_for_compatible_superclasses) > 1:
-                raise StepInterfaceError(
-                    f"Type {key} is subclassing more than one type, thus it "
-                    f"maps to multiple materializers within the materializer "
-                    f"registry: {materializers_for_compatible_superclasses}. "
-                    f"Please specify which of these materializers you would "
-                    f"like to use explicitly in your step.",
-                    url="https://docs.zenml.io/developer-guide/advanced-usage/materializer",
-                )
+
+        # If the type is not registered, check for superclasses
+        materializers_for_compatible_superclasses = {
+            materializer
+            for registered_type, materializer in self.materializer_types.items()
+            if issubclass(key, registered_type)
+        }
+
+        # Make sure that there is only a single materializer
+        if len(materializers_for_compatible_superclasses) == 1:
+            return materializers_for_compatible_superclasses.pop()
+        if len(materializers_for_compatible_superclasses) > 1:
+            raise StepInterfaceError(
+                f"Type {key} is subclassing more than one type, thus it "
+                f"maps to multiple materializers within the materializer "
+                f"registry: {materializers_for_compatible_superclasses}. "
+                f"Please specify which of these materializers you would "
+                f"like to use explicitly in your step.",
+                url="https://docs.zenml.io/developer-guide/advanced-usage/materializer",
+            )
         raise StepInterfaceError(
             f"No materializer registered for class {key}. You can register a "
             f"default materializer for specific types by subclassing "
@@ -126,7 +127,7 @@ class MaterializerRegistry:
             True if a materializer is registered for the given type, False
             otherwise.
         """
-        return any(issubclass(key, t) for t in self.materializer_types)
+        return any(issubclass(key, type_) for type_ in self.materializer_types)
 
 
 default_materializer_registry = MaterializerRegistry()
