@@ -58,10 +58,11 @@ We will split this into 2 main sections, one for KServe and one for Seldon Core.
 
 ## 📦 KServe Custom Code Deployment
 
-WIP
+Work in progress.
+
 ## 📦 Seldon Core Custom Code Deployment
 
-WIP
+Work in progress.
 
 ## 🧽 Clean up
 
