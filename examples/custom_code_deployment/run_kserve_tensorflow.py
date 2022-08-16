@@ -14,27 +14,27 @@
 from typing import cast
 
 import click
-from kserve.tensorflow.pipelines.kserve_tensorflow_pipelines import (
+from kserve_tensorflow.pipelines.kserve_tensorflow_pipelines import (
     tensorflow_custom_code_pipeline,
     tensorflow_inference_pipeline,
 )
-from kserve.tensorflow.steps.deployer import kserve_tensorflow_custom_deployment
-from kserve.tensorflow.steps.deployment_trigger import (
+from kserve_tensorflow.steps.deployer import kserve_tensorflow_custom_deployment
+from kserve_tensorflow.steps.deployment_trigger import (
     DeploymentTriggerConfig,
     deployment_trigger,
 )
-from kserve.tensorflow.steps.inference_image_loader import (
+from kserve_tensorflow.steps.inference_image_loader import (
     InferenceImageLoaderStepConfig,
     inference_image_loader,
 )
-from kserve.tensorflow.steps.predection_service_loader import (
+from kserve_tensorflow.steps.predection_service_loader import (
     PredectionServiceLoaderStepConfig,
     kserve_prediction_service_loader,
 )
-from kserve.tensorflow.steps.predictor import kserve_predictor
-from kserve.tensorflow.steps.tf_data_loader import tf_data_loader
-from kserve.tensorflow.steps.tf_evaluator import tf_evaluator
-from kserve.tensorflow.steps.tf_trainer import (
+from kserve_tensorflow.steps.predictor import kserve_predictor
+from kserve_tensorflow.steps.tf_data_loader import tf_data_loader
+from kserve_tensorflow.steps.tf_evaluator import tf_evaluator
+from kserve_tensorflow.steps.tf_trainer import (
     TensorflowTrainerConfig,
     tf_trainer,
 )

@@ -12,24 +12,26 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.integrations.kserve.services import KServeDeploymentConfig
-from zenml.integrations.kserve.steps import (
+from zenml.integrations.seldon.services.seldon_deployment import (
+    SeldonDeploymentConfig,
+)
+from zenml.integrations.seldon.steps.seldon_deployer import (
     CustomDeployParameters,
-    KServeDeployerStepConfig,
-    kserve_custom_model_deployer_step,
+    SeldonDeployerStepConfig,
+    seldon_custom_model_deployer_step,
 )
 
-kserve_tensorflow_custom_deployment = kserve_custom_model_deployer_step(
-    config=KServeDeployerStepConfig(
-        service_config=KServeDeploymentConfig(
-            model_name="kserve-tensorflow-custom-model",
+seldon_pytorch_custom_deployment = seldon_custom_model_deployer_step(
+    config=SeldonDeployerStepConfig(
+        service_config=SeldonDeploymentConfig(
+            model_name="seldon-pytorch-custom-model",
             replicas=1,
-            predictor="custom",
+            implementation="custom",
             resources={"requests": {"cpu": "200m", "memory": "500m"}},
         ),
         timeout=240,
         custom_deploy_parameters=CustomDeployParameters(
-            predict_function="kserve.tensorflow.steps.tf_custom_deploy_code.custom_predict"
+            predict_function="seldon_pytorch.steps.pytorch_custom_deploy_code.custom_predict"
         ),
     )
 )

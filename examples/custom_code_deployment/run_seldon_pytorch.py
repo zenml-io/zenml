@@ -15,30 +15,30 @@ from typing import cast
 
 import click
 from rich import print
-from seldon.pytorch.pipelines.seldon_pytorch_pipelines import (
+from seldon_pytorch.pipelines.seldon_pytorch_pipelines import (
     pytorch_custom_code_pipeline,
     pytorch_inference_pipeline,
 )
-from seldon.pytorch.steps.deployer import seldon_pytorch_custom_deployment
-from seldon.pytorch.steps.deployment_trigger import (
+from seldon_pytorch.steps.deployer import seldon_pytorch_custom_deployment
+from seldon_pytorch.steps.deployment_trigger import (
     DeploymentTriggerConfig,
     deployment_trigger,
 )
-from seldon.pytorch.steps.inference_image_loader import (
+from seldon_pytorch.steps.inference_image_loader import (
     InferenceImageLoaderStepConfig,
     inference_image_loader,
 )
-from seldon.pytorch.steps.predection_service_loader import (
+from seldon_pytorch.steps.predection_service_loader import (
     PredectionServiceLoaderStepConfig,
     seldon_prediction_service_loader,
 )
-from seldon.pytorch.steps.predictor import seldon_predictor
-from seldon.pytorch.steps.pytorch_data_loader import (
+from seldon_pytorch.steps.predictor import seldon_predictor
+from seldon_pytorch.steps.pytorch_data_loader import (
     PytorchDataLoaderConfig,
     pytorch_data_loader,
 )
-from seldon.pytorch.steps.pytorch_evaluator import pytorch_evaluator
-from seldon.pytorch.steps.pytorch_trainer import (
+from seldon_pytorch.steps.pytorch_evaluator import pytorch_evaluator
+from seldon_pytorch.steps.pytorch_trainer import (
     PytorchTrainerConfig,
     pytorch_trainer,
 )
@@ -122,7 +122,7 @@ def main(
     predict = config == PREDICT or config == DEPLOY_AND_PREDICT
 
     deployment_pipeline_name = "pytorch_custom_code_pipeline"
-    step_name = "seldon_pytorch_custom_deployment"
+    step_name = "seldon_custom_model_deployer_step"
     model_name = "seldon-pytorch-custom-model"
 
     model_deployer = SeldonModelDeployer.get_active_model_deployer()

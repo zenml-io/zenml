@@ -14,30 +14,30 @@
 from typing import cast
 
 import click
-from kserve.pytorch.pipelines.kserve_pytroch_pipelines import (
+from kserve_pytorch.pipelines.kserve_pytroch_pipelines import (
     pytorch_custom_code_pipeline,
     pytorch_inference_pipeline,
 )
-from kserve.pytorch.steps.deployer import kserve_pytorch_custom_deployment
-from kserve.pytorch.steps.deployment_trigger import (
+from kserve_pytorch.steps.deployer import kserve_pytorch_custom_deployment
+from kserve_pytorch.steps.deployment_trigger import (
     DeploymentTriggerConfig,
     deployment_trigger,
 )
-from kserve.pytorch.steps.inference_image_loader import (
+from kserve_pytorch.steps.inference_image_loader import (
     InferenceImageLoaderStepConfig,
     inference_image_loader,
 )
-from kserve.pytorch.steps.predection_service_loader import (
+from kserve_pytorch.steps.predection_service_loader import (
     PredectionServiceLoaderStepConfig,
     kserve_prediction_service_loader,
 )
-from kserve.pytorch.steps.predictor import kserve_predictor
-from kserve.pytorch.steps.pytorch_data_loader import (
+from kserve_pytorch.steps.predictor import kserve_predictor
+from kserve_pytorch.steps.pytorch_data_loader import (
     PytorchDataLoaderConfig,
     pytorch_data_loader,
 )
-from kserve.pytorch.steps.pytorch_evaluator import pytorch_evaluator
-from kserve.pytorch.steps.pytorch_trainer import (
+from kserve_pytorch.steps.pytorch_evaluator import pytorch_evaluator
+from kserve_pytorch.steps.pytorch_trainer import (
     PytorchTrainerConfig,
     pytorch_trainer,
 )
@@ -122,7 +122,7 @@ def main(
     predict = config == PREDICT or config == DEPLOY_AND_PREDICT
 
     deployment_pipeline_name = "pytorch_custom_code_pipeline"
-    step_name = "kserve_pytorch_custom_deployment"
+    step_name = "kserve_custom_model_deployer_step"
     model_name = "kserve-pytorch-custom-model"
 
     model_deployer = KServeModelDeployer.get_active_model_deployer()

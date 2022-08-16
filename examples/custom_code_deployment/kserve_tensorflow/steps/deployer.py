@@ -19,17 +19,17 @@ from zenml.integrations.kserve.steps import (
     kserve_custom_model_deployer_step,
 )
 
-kserve_pytorch_custom_deployment = kserve_custom_model_deployer_step(
+kserve_tensorflow_custom_deployment = kserve_custom_model_deployer_step(
     config=KServeDeployerStepConfig(
         service_config=KServeDeploymentConfig(
-            model_name="kserve-pytorch-custom-model",
+            model_name="kserve-tensorflow-custom-model",
             replicas=1,
             predictor="custom",
             resources={"requests": {"cpu": "200m", "memory": "500m"}},
         ),
         timeout=240,
         custom_deploy_parameters=CustomDeployParameters(
-            predict_function="kserve.pytorch.steps.pytorch_custom_deploy_code.custom_predict"
+            predict_function="kserve_tensorflow.steps.tf_custom_deploy_code.custom_predict"
         ),
     )
 )

@@ -15,27 +15,27 @@ from typing import cast
 
 import click
 from rich import print
-from seldon.tensorflow.pipelines.seldon_tensorflow_pipelines import (
+from seldon_tensorflow.pipelines.seldon_tensorflow_pipelines import (
     tensorflow_custom_code_pipeline,
     tensorflow_inference_pipeline,
 )
-from seldon.tensorflow.steps.deployer import seldon_tensorflow_custom_deployment
-from seldon.tensorflow.steps.deployment_trigger import (
+from seldon_tensorflow.steps.deployer import seldon_tensorflow_custom_deployment
+from seldon_tensorflow.steps.deployment_trigger import (
     DeploymentTriggerConfig,
     deployment_trigger,
 )
-from seldon.tensorflow.steps.inference_image_loader import (
+from seldon_tensorflow.steps.inference_image_loader import (
     InferenceImageLoaderStepConfig,
     inference_image_loader,
 )
-from seldon.tensorflow.steps.predection_service_loader import (
+from seldon_tensorflow.steps.predection_service_loader import (
     PredectionServiceLoaderStepConfig,
     seldon_prediction_service_loader,
 )
-from seldon.tensorflow.steps.predictor import seldon_predictor
-from seldon.tensorflow.steps.tf_data_loader import tf_data_loader
-from seldon.tensorflow.steps.tf_evaluator import tf_evaluator
-from seldon.tensorflow.steps.tf_trainer import (
+from seldon_tensorflow.steps.predictor import seldon_predictor
+from seldon_tensorflow.steps.tf_data_loader import tf_data_loader
+from seldon_tensorflow.steps.tf_evaluator import tf_evaluator
+from seldon_tensorflow.steps.tf_trainer import (
     TensorflowTrainerConfig,
     tf_trainer,
 )
@@ -119,7 +119,7 @@ def main(
     predict = config == PREDICT or config == DEPLOY_AND_PREDICT
 
     deployment_pipeline_name = "tensorflow_custom_code_pipeline"
-    step_name = "seldon_tensorflow_custom_deployment"
+    step_name = "seldon_custom_model_deployer_step"
     model_name = "seldon-tensorflow-custom-model"
 
     model_deployer = SeldonModelDeployer.get_active_model_deployer()

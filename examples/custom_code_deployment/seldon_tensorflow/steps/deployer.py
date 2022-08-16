@@ -31,7 +31,7 @@ seldon_tensorflow_custom_deployment = seldon_custom_model_deployer_step(
         ),
         timeout=240,
         custom_deploy_parameters=CustomDeployParameters(
-            predict_function="seldon.tensorflow.steps.tf_custom_deploy_code.custom_predict"
+            predict_function="seldon_tensorflow.steps.tf_custom_deploy_code.custom_predict"
         ),
     )
 )
