@@ -57,6 +57,7 @@ class CustomDeployParameters(BaseModel):
 
     Raises:
         ValueError: If predict_function is not specified.
+        TypeError: If predict_function is not a callable function.
 
     Returns:
         predict_function: Path to Python file containing predict function.
@@ -76,13 +77,14 @@ class CustomDeployParameters(BaseModel):
 
         Raises:
             ValueError: if predict function path is not valid
+            TypeError: if predict function path is not a callable function
         """
-        if not predict_func_path:
-            raise ValueError("Predict function path is required.")
         try:
-            import_class_by_path(predict_func_path)
+            predict_function = import_class_by_path(predict_func_path)
         except AttributeError:
             raise ValueError("Predict function can't be found.")
+        if not callable(predict_function):
+            raise TypeError("Predict function must be callable.")
         return predict_func_path
 
 

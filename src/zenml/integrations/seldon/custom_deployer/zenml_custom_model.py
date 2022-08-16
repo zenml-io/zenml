@@ -30,7 +30,7 @@ DEFAULT_LOCAL_MODEL_DIR = "/mnt/models"
 Array_Like = Union[np.ndarray, List[Any], str, bytes, Dict[str, Any]]
 
 
-class ZenMLCustomModel(object):
+class ZenMLCustomModel:
     """Custom model class for ZenML and Seldon.
 
     This class is used to implement a custom model for the Seldon Core integration,
@@ -106,6 +106,7 @@ class ZenMLCustomModel(object):
         Raises:
             Exception: If function could not be called.
             NotImplementedError: If the model is not ready.
+            TypeError: If the request is not a dictionary.
         """
         if self.predict_func is not None:
             try:
@@ -115,7 +116,9 @@ class ZenMLCustomModel(object):
             if isinstance(prediction, dict):
                 return prediction
             else:
-                raise Exception("Prediction is not a dictionary.")
+                raise TypeError(
+                    f"Prediction is not a dictionary. Expected dict type but got {type(prediction)}"
+                )
         else:
             raise NotImplementedError("Predict function is not implemented")
 
@@ -179,8 +182,10 @@ def main(model_name: str, model_uri: str, predict_func: str) -> None:
     ]
     try:
         subprocess.check_call(command)
-    except subprocess.CalledProcessError:
-        logger.error("Failed to start the seldon-core-microservice process.")
+    except subprocess.CalledProcessError as ProcessError:
+        logger.error(
+            f"Failed to start the seldon-core-microservice process. {ProcessError}"
+        )
         return
 
 

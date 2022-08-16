@@ -27,10 +27,7 @@ from zenml.integrations.kserve.steps.kserve_deployer import (
     KServeDeployerStepConfig,
 )
 from zenml.io import fileio
-from zenml.logger import get_logger
 from zenml.utils import io_utils
-
-logger = get_logger(__name__)
 
 
 def prepare_service_config(

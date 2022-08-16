@@ -61,7 +61,7 @@ class KServeDeploymentConfig(ServiceConfig):
         predictor: the KServe predictor used to serve the model.
         replicas: number of replicas to use for the prediction service.
         resources: the Kubernetes resources to allocate for the prediction service.
-        containers: the containers to use for the custom prediction services.
+        container: the container to use for the custom prediction services.
     """
 
     model_uri: str = ""
@@ -69,7 +69,7 @@ class KServeDeploymentConfig(ServiceConfig):
     secret_name: Optional[str]
     predictor: str
     replicas: int = 1
-    containers: Optional[Dict[str, Any]]
+    container: Optional[Dict[str, Any]]
     resources: Optional[Dict[str, Any]]
 
     @staticmethod
@@ -343,18 +343,18 @@ class KServeDeploymentService(BaseService):
 
         # All supported model specs seem to have the same fields
         # so we can use any one of them (see https://kserve.github.io/website/0.8/reference/api/#serving.kserve.io/v1beta1.PredictorExtensionSpec)
-        if self.config.containers is not None:
+        if self.config.container is not None:
             predictor_kwargs = {
                 "containers": [
                     k8s_client.V1Container(
-                        name=self.config.containers.get("name"),
-                        image=self.config.containers.get("image"),
-                        command=self.config.containers.get("command"),
-                        args=self.config.containers.get("args"),
+                        name=self.config.container.get("name"),
+                        image=self.config.container.get("image"),
+                        command=self.config.container.get("command"),
+                        args=self.config.container.get("args"),
                         env=[
                             k8s_client.V1EnvVar(
                                 name="STORAGE_URI",
-                                value=self.config.containers.get("storage_uri"),
+                                value=self.config.container.get("storage_uri"),
                             )
                         ],
                     )

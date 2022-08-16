@@ -96,8 +96,9 @@ class ZenMLCustomModel(kserve.Model):  # type: ignore[misc]
             The prediction dictionary.
 
         Raises:
-            Exception: If function could not be called.
+            RuntimeError: If function could not be called.
             NotImplementedError: If the model is not ready.
+            TypeError: If the request is not a dictionary.
         """
         if self.predict_func is not None:
             try:
@@ -106,12 +107,14 @@ class ZenMLCustomModel(kserve.Model):  # type: ignore[misc]
                         self.model, request["instances"]
                     )
                 }
-            except Exception as e:
-                raise Exception("Failed to predict: {}".format(e))
+            except RuntimeError as err:
+                raise RuntimeError("Failed to predict: {}".format(err))
             if isinstance(prediction, dict):
                 return prediction
             else:
-                raise Exception("Prediction is not a dictionary.")
+                raise TypeError(
+                    f"Prediction is not a dictionary. Expecting a dictionary but got {type(prediction)}"
+                )
         else:
             raise NotImplementedError("Predict function is not implemented")
 

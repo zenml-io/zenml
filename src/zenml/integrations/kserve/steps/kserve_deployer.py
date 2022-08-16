@@ -190,13 +190,14 @@ class CustomDeployParameters(BaseModel):
 
         Raises:
             ValueError: if predict function path is not valid
+            TypeError: if predict function path is not a cllable function
         """
-        if not predict_func_path:
-            raise ValueError("Predict function path is required.")
         try:
-            import_class_by_path(predict_func_path)
+            predict_function = import_class_by_path(predict_func_path)
         except AttributeError:
             raise ValueError("Predict function can't be found.")
+        if not callable(predict_function):
+            raise TypeError("Predict function must be callable.")
         return predict_func_path
 
 
@@ -346,7 +347,10 @@ def kserve_custom_model_deployer_step(
     """
     # verify that a custom deployer is defined
     if not config.custom_deploy_parameters:
-        raise ValueError("Custom deploy parameters are required.")
+        raise ValueError(
+            "Custom deploy parameter which contains the path of the",
+            "custom predict function is required for custom model deployment.",
+        )
 
     # get the active model deployer
     model_deployer = KServeModelDeployer.get_active_model_deployer()
@@ -427,7 +431,7 @@ def kserve_custom_model_deployer_step(
     # and how it can be loaded again later in the deployment environment.
     artifact = stack.metadata_store.store.get_artifacts_by_uri(model.uri)
     if not artifact:
-        raise DoesNotExistException("No artifact found at {}".format(model.uri))
+        raise DoesNotExistException(f"No artifact found at {model.uri}.")
 
     # save the model artifact metadata to the YAML file and copy it to the
     # deployment directory
@@ -442,7 +446,7 @@ def kserve_custom_model_deployer_step(
     service_config.model_uri = served_model_uri
 
     # Prepare container config for custom model deployment
-    service_config.containers = {
+    service_config.container = {
         "name": service_config.model_name,
         "image": custom_docker_image_name,
         "command": entrypoint_command,

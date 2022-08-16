@@ -22,10 +22,14 @@ from ml_metadata.proto.metadata_store_pb2 import Artifact
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import source_utils
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 logger = get_logger(__name__)
+
+METADATA_DATATYPE = "datatype"
+METADATA_MATERIALIZER = "materializer"
 
 
 def save_model_metadata(model_artifact: Artifact) -> str:
@@ -45,9 +49,11 @@ def save_model_metadata(model_artifact: Artifact) -> str:
         The path to the temporary file where the model metadata is saved
     """
     metadata = dict()
-    metadata["datatype"] = model_artifact.properties["datatype"].string_value
-    metadata["materializer"] = model_artifact.properties[
-        "materializer"
+    metadata[METADATA_DATATYPE] = model_artifact.properties[
+        METADATA_DATATYPE
+    ].string_value
+    metadata[METADATA_MATERIALIZER] = model_artifact.properties[
+        METADATA_MATERIALIZER
     ].string_value
 
     with tempfile.NamedTemporaryFile(
@@ -80,17 +86,19 @@ def load_model_from_metadata(model_uri: str) -> Any:
         metadata = read_yaml(f.name)
     model_artifact = Artifact()
     model_artifact.uri = model_uri
-    model_artifact.properties["datatype"].string_value = metadata["datatype"]
-    model_artifact.properties["materializer"].string_value = metadata[
-        "materializer"
+    model_artifact.properties[METADATA_DATATYPE].string_value = metadata[
+        METADATA_DATATYPE
+    ]
+    model_artifact.properties[METADATA_MATERIALIZER].string_value = metadata[
+        METADATA_MATERIALIZER
     ]
     materializer_class = source_utils.load_source_path_class(
-        model_artifact.properties["materializer"].string_value
+        model_artifact.properties[METADATA_MATERIALIZER].string_value
     )
     model_class = source_utils.load_source_path_class(
-        model_artifact.properties["datatype"].string_value
+        model_artifact.properties[METADATA_DATATYPE].string_value
     )
-    materialzer_object = materializer_class(model_artifact)
+    materialzer_object: BaseMaterializer = materializer_class(model_artifact)
     model = materialzer_object.handle_input(model_class)
     try:
         import torch.nn as nn
@@ -99,5 +107,5 @@ def load_model_from_metadata(model_uri: str) -> Any:
             model.eval()
     except ImportError:
         pass
-    logger.debug(f"model loaded successfully :\n{model}")
+    logger.debug(f"Model loaded successfully :\n{model}")
     return model
