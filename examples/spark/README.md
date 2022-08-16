@@ -92,12 +92,14 @@ For the container registry, we will use ECR:
 - Make sure the correct region is selected on the top right.
 - Click on `Create repository`.
 - Create a private repository called `zenml` with default settings.
-- Note down the URI of your registry:
+- Note down the URI of your registry and log in:
 
 ```bash
 # This should be the prefix of your just created repository URI, 
 # e.g. 714803424590.dkr.ecr.eu-west-1.amazonaws.com
 ECR_URI=<ECR_URI>
+
+aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ECR_URI
 ```
 
 ## Step Operator - EKS
@@ -122,12 +124,14 @@ to create an Amazon EC2 node role.
 
 ```bash
 EKS_CLUSTER_NAME=<EKS_CLUSTER_NAME>
-API_SERVER_ENDPOINT=<API_SERVER_ENDPOINT>
+EKS_API_SERVER_ENDPOINT=<API_SERVER_ENDPOINT>
 ```
 
 - After the cluster is created, select it and click on `Add node group` in
   the `Compute` tab.
 - Enter a name and select the **node role**.
+- For the instance type, we recommend `t3a.xlarge`, as it provides up to 4 
+vCPUs and 16 GB of memory.
 
 ### Docker image for the Spark drivers and executors
 
@@ -151,13 +155,12 @@ is set up, you can build the image as follows:
 
 ```bash
 cd $SPARK_HOME
-./bin/docker-image-tool.sh -t spark-with-aws -p kubernetes/dockerfiles/spark/bindings/python/Dockerfile build
-```
 
-Note down the name of the base image:
+SPARK_IMAGE_TAG=<SPARK_IMAGE_TAG>
 
-```bash
-BASE_IMAGE_NAME=<BASE_IMAGE_NAME>
+./bin/docker-image-tool.sh -t $SPARK_IMAGE_TAG -p kubernetes/dockerfiles/spark/bindings/python/Dockerfile -u 0 build
+
+BASE_IMAGE_NAME=spark-py:$SPARK_IMAGE_TAG
 ```
 
 ### Configuring RBAC
@@ -197,6 +200,8 @@ roleRef:
 Simply execute:
 
 ```bash
+aws eks --region=$REGION update-kubeconfig --name=$EKS_CLUSTER_NAME
+
 kubectl create -f rbac.yaml
 ```
 
@@ -214,15 +219,13 @@ by registering the most important component of the demo, namely
 the **step operator**.
 
 ```bash
-# Regiater the spark on Kubernetes step operator
+# Register the spark on Kubernetes step operator
 zenml step-operator register spark_step_operator \
-	--flavor=spark-k8s \
-	--master=k8s://$API_SERVER_ENDPOINT \
+	--flavor=spark-kubernetes \
+	--master=k8s://$EKS_API_SERVER_ENDPOINT \
 	--namespace=$KUBERNETES_NAMESPACE \
 	--service_account=$KUBERNETES_SERVICE_ACCOUNT \
-	--base_image=$BASE_IMAGE_NAME
-
-aws eks --region=$REGION update-kubeconfig --name=$EKS_CLUSTER_NAME
+	--docker_parent_image=$BASE_IMAGE_NAME
 ```
 
 Following that, we will register the **secrets manager**, as we will utilize 
@@ -249,7 +252,7 @@ zenml secret register s3-secret \
 # Register the artifact store using the secret
 zenml artifact-store register spark_artifact_store \
 	--flavor=s3 \
-	--path=S3_BUCKET_NAME \
+	--path=$S3_BUCKET_NAME \
 	--authentication_secret=s3-secret
 ```
 
@@ -278,8 +281,6 @@ We also register the **container registry** on ECR as follows:
 zenml container-registry register spark_container_registry \
     --flavor=aws \
     --uri=$ECR_URI
-
-aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ECR_URI
 ```
 
 Finally, let’s finalize the stack.

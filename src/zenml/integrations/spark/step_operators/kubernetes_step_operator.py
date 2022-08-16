@@ -42,8 +42,8 @@ class KubernetesSparkStepOperator(
     """Step operator which runs Steps with Spark on Kubernetes."""
 
     # Parameters for kubernetes
-    kubernetes_namespace: Optional[str] = None
-    kubernetes_service_account: Optional[str] = None
+    namespace: Optional[str] = None
+    service_account: Optional[str] = None
 
     # Class configuration
     FLAVOR: ClassVar[str] = SPARK_KUBERNETES_STEP_OPERATOR
