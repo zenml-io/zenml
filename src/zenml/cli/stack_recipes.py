@@ -45,7 +45,8 @@ VARIABLES_FILE = "values.tfvars.json"
 ALPHA_MESSAGE = (
     "The stack recipes CLI is in alpha and actively being developed. "
     "Please avoid running mission-critical workloads on resources deployed "
-    "through these commands."
+    "through these commands. If you encounter any problems, create an issue "
+    f"on the repository {STACK_RECIPES_REPO_DIR} and we'll help you out!"
 )
 
 
@@ -550,6 +551,7 @@ def list_stack_recipes(
     cli_utils.declare(text)
 
 
+@stack_recipe.command(help="Deletes the ZenML stack recipes directory.")
 @click.option(
     "--path",
     "-p",
@@ -557,7 +559,6 @@ def list_stack_recipes(
     default="zenml_stack_recipes",
     help="Relative path at which you want to clean the stack_recipe(s)",
 )
-@stack_recipe.command(help="Deletes the ZenML stack recipes directory.")
 @pass_git_stack_recipes_handler
 def clean(git_stack_recipes_handler: GitStackRecipesHandler, path: str) -> None:
     """Deletes the ZenML stack recipes directory from your current working directory.

@@ -1149,12 +1149,20 @@ def _import_stack_component(
     help="Import stack components even if the installed version of ZenML "
     "is different from the one specified in the stack YAML file",
 )
+@click.option(
+    "--decouple_stores",
+    "decouple_stores",
+    is_flag=True,
+    help="Decouple the given artifact/metadata store from prior associations.",
+    type=click.BOOL,
+)
 @click.pass_context
 def import_stack(
     ctx: click.Context,
     stack_name: str,
     filename: Optional[str],
-    ignore_version_mismatch: bool,
+    ignore_version_mismatch: bool = False,
+    decouple_stores: bool = False,
 ) -> None:
     """Import a stack from YAML.
 
@@ -1165,6 +1173,8 @@ def import_stack(
         ignore_version_mismatch: Import stack components even if
             the installed version of ZenML is different from the
             one specified in the stack YAML file.
+        decouple_stores: Resets the previous couplings of the given
+            artifact/metadata stores and creates a new one.
     """
     track_event(AnalyticsEvent.IMPORT_STACK)
 
@@ -1219,7 +1229,12 @@ def import_stack(
         component_names[component_type + "_name"] = component_name
 
     # register new stack
-    ctx.invoke(register_stack, stack_name=stack_name, **component_names)
+    ctx.invoke(
+        register_stack,
+        stack_name=stack_name,
+        decouple_stores=decouple_stores,
+        **component_names,
+    )
 
 
 @stack.command("copy", help="Copy a stack to a new stack name.")
