@@ -44,7 +44,7 @@ def get_seldon_custom_deployment_step(
                 implementation="custom",
                 resources={"requests": {"cpu": "200m", "memory": "500m"}},
             ),
-            timeout=120,
+            timeout=240,
             custom_deploy_parameters=CustomDeployParameters(
                 predict_function=predict_function
             ),

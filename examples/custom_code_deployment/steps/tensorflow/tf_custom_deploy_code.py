@@ -31,7 +31,7 @@ def pre_process(input: np.ndarray) -> np.ndarray:
         input (np.ndarray): The input to pre process
 
     Returns:
-        dinp.ndarray: The pre processed input
+        np.ndarray: The pre processed input
     """
 
     input = input / 255.0

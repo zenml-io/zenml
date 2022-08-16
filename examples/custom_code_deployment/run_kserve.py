@@ -128,7 +128,7 @@ def main(
     predict = config == PREDICT or config == DEPLOY_AND_PREDICT
 
     deployment_pipeline_name = "custom_code_pipeline"
-    step_name = "custom_model_deployer_step"
+    step_name = "kserve_custom_model_deployer_step"
 
     model_deployer = KServeModelDeployer.get_active_model_deployer()
 
@@ -168,7 +168,7 @@ def main(
     if predict:
         # Initialize an inference pipeline run
         inference_pipeline(
-            pytorch_inference_loader=inference_image_loader(
+            inference_image_loader=inference_image_loader(
                 InferenceImageLoaderStepConfig(
                     img_url=prediction_image_url,
                 ),
