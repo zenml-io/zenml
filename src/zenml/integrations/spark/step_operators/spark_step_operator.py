@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the Spark Step Operator."""
+
 import json
 import subprocess
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
@@ -29,7 +31,20 @@ if TYPE_CHECKING:
 
 
 class SparkStepOperator(BaseStepOperator):
-    """Base class for all Spark-related step operators."""
+    """Base class for all Spark-related step operators.
+
+    Attributes:
+        master: is the master URL for the cluster. You might see different
+            schemes for different cluster managers which are supported by Spark
+            like Mesos, YARN, or Kubernetes. Within the context of this PR,
+            the implementation supports Kubernetes as a cluster manager.
+        deploy_mode: can either be 'cluster' (default) or 'client' and it
+            decides where the driver node of the application will run.
+        submit_kwargs: is the JSON string of a dict, which will be used
+            to define additional params if required (Spark has quite a
+            lot of different parameters, so including them, all in the step
+            operator was not implemented).
+    """
 
     # Instance parameters
     master: str

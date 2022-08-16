@@ -46,14 +46,17 @@ def create_executor_class(
     materializer_sources: Dict[str, str],
 ) -> Type[_FunctionExecutor]:
     """Creates an executor class for a given step.
+
     Args:
         step_source_path: Import path of the step to run.
         input_artifact_type_mapping: A dictionary mapping input names to
             a string representation of their artifact classes.
         materializer_sources: Dictionary mapping step output names to a
             source string of the materializer class to use for that output.
+
     Returns:
         A class of an executor instance.
+
     Raises:
         TypeError: If any materializer source does not resolve to a
             `BaseMaterializer` subclass.
@@ -118,8 +121,10 @@ def create_executor_class(
 
 def load_execution_info(execution_info_path: str) -> ExecutionInfo:
     """Loads the execution info from the given path.
+
     Args:
         execution_info_path: Path to the execution info file.
+
     Returns:
         Execution info.
     """
@@ -133,9 +138,11 @@ def configure_executor(
     executor_class: Type[BaseExecutor], execution_info: ExecutionInfo
 ) -> BaseExecutor:
     """Creates and configures an executor instance.
+
     Args:
         executor_class: The class of the executor instance.
         execution_info: Execution info for the executor.
+
     Returns:
         A configured executor instance.
     """
@@ -164,11 +171,13 @@ def main(
     input_artifact_types_path: str,
 ) -> None:
     """Runs a single ZenML step.
+
     Args:
         main_module: The module containing the main function.
         step_source_path: Import path of the step to run.
         execution_info_path: Path to the execution info file.
         input_artifact_types_path: Path to the input artifact types file.
+
     Raises:
         RuntimeError: If the materializer sources are not part of the execution
             info.

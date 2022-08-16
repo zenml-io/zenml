@@ -11,13 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the Kubernetes Spark Step Operator."""
 import os
-from typing import Any, ClassVar, List, Optional, Sequence
+from typing import Any, ClassVar, Optional
 
 from pyspark.conf import SparkConf
 
 from zenml.config.docker_configuration import DockerConfiguration
 from zenml.integrations.spark import SPARK_KUBERNETES_STEP_OPERATOR
+from zenml.integrations.spark.step_operators import spark_entrypoint
 from zenml.integrations.spark.step_operators.spark_step_operator import (
     SparkStepOperator,
 )
@@ -25,8 +27,10 @@ from zenml.io.fileio import copy
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
-from zenml.integrations.spark.step_operators import spark_entrypoint
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder, DOCKER_IMAGE_WORKDIR
+from zenml.utils.pipeline_docker_image_builder import (
+    DOCKER_IMAGE_WORKDIR,
+    PipelineDockerImageBuilder,
+)
 from zenml.utils.source_utils import get_source_root_path
 
 logger = get_logger(__name__)
@@ -38,7 +42,17 @@ ENTRYPOINT_NAME = "zenml_spark_entrypoint.py"
 class KubernetesSparkStepOperator(
     SparkStepOperator, PipelineDockerImageBuilder
 ):
-    """Step operator which runs Steps with Spark on Kubernetes."""
+    """Step operator which runs Steps with Spark on Kubernetes.
+
+    Attributes:
+        namespace: the namespace under which the driver and executor pods
+            will run.
+        service_account: the service account that will be used by various Spark
+            components (to create and watch the pods).
+        docker_parent_image: (which originally comes from the
+            PipelineDockerImageBuilder base class) indicates the name of a
+            base image that has Spark enabled.
+    """
 
     # Parameters for kubernetes
     namespace: Optional[str] = None

@@ -11,10 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the Spark Dataframe Materializer."""
+
 import os.path
 from typing import Any, Type
 
 from pyspark.sql import DataFrame, SparkSession
+
 from zenml.artifacts.data_artifact import DataArtifact
 from zenml.materializers.base_materializer import BaseMaterializer
 
@@ -29,6 +32,7 @@ class SparkDataFrameMaterializer(BaseMaterializer):
 
     def handle_input(self, data_type: Type[Any]) -> DataFrame:
         """Reads and returns a spark dataframe.
+
         Returns:
             A loaded spark dataframe.
         """
@@ -42,6 +46,7 @@ class SparkDataFrameMaterializer(BaseMaterializer):
 
     def handle_return(self, df: DataFrame) -> None:
         """Writes a spark dataframe.
+
         Args:
             df: A spark dataframe object.
         """
