@@ -38,8 +38,6 @@ from zenml.repository import Repository
 from zenml.steps import BaseStep
 from zenml.steps.utils import _FunctionExecutor, generate_component_class
 from zenml.utils import source_utils, yaml_utils
-from zenml.utils.pipeline_docker_image_builder import DOCKER_IMAGE_WORKDIR
-from zenml.utils.source_utils import prepend_python_path
 
 
 def create_executor_class(
@@ -48,17 +46,14 @@ def create_executor_class(
     materializer_sources: Dict[str, str],
 ) -> Type[_FunctionExecutor]:
     """Creates an executor class for a given step.
-
     Args:
         step_source_path: Import path of the step to run.
         input_artifact_type_mapping: A dictionary mapping input names to
             a string representation of their artifact classes.
         materializer_sources: Dictionary mapping step output names to a
             source string of the materializer class to use for that output.
-
     Returns:
         A class of an executor instance.
-
     Raises:
         TypeError: If any materializer source does not resolve to a
             `BaseMaterializer` subclass.
@@ -123,10 +118,8 @@ def create_executor_class(
 
 def load_execution_info(execution_info_path: str) -> ExecutionInfo:
     """Loads the execution info from the given path.
-
     Args:
         execution_info_path: Path to the execution info file.
-
     Returns:
         Execution info.
     """
@@ -140,11 +133,9 @@ def configure_executor(
     executor_class: Type[BaseExecutor], execution_info: ExecutionInfo
 ) -> BaseExecutor:
     """Creates and configures an executor instance.
-
     Args:
         executor_class: The class of the executor instance.
         execution_info: Execution info for the executor.
-
     Returns:
         A configured executor instance.
     """
@@ -173,13 +164,11 @@ def main(
     input_artifact_types_path: str,
 ) -> None:
     """Runs a single ZenML step.
-
     Args:
         main_module: The module containing the main function.
         step_source_path: Import path of the step to run.
         execution_info_path: Path to the execution info file.
         input_artifact_types_path: Path to the input artifact types file.
-
     Raises:
         RuntimeError: If the materializer sources are not part of the execution
             info.
@@ -189,53 +178,47 @@ def main(
     constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
     constants.USER_MAIN_MODULE = main_module
 
-    stack = Repository().active_stack
-
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
     logging.getLogger().setLevel(logging.INFO)
 
     # activate integrations and import the user main module to register all
     # materializers and stack components
     integration_registry.activate_integrations()
+    importlib.import_module(main_module)
+    # create an instance of the active stack. This makes sure the artifact
+    # store is created and registered in `fileio` so we can read the entrypoint
+    # inputs
+    stack = Repository().active_stack
 
-    with prepend_python_path([DOCKER_IMAGE_WORKDIR]):
-        importlib.import_module(main_module)
-        # create an instance of the active stack. This makes sure the artifact
-        # store is created and registered in `fileio` so we can read the
-        # entrypoint inputs
-        stack = Repository().active_stack
+    input_artifact_type_mapping = yaml_utils.read_json(
+        input_artifact_types_path
+    )
+    execution_info = load_execution_info(execution_info_path)
+    pipeline_node = cast(
+        pipeline_pb2.PipelineNode, execution_info.pipeline_node
+    )
+    for context in pipeline_node.contexts.contexts:
+        if context.type.name == constants.ZENML_MLMD_CONTEXT_TYPE:
+            materializer_sources = json.loads(
+                context.properties[
+                    constants.MLMD_CONTEXT_MATERIALIZER_SOURCES_PROPERTY_NAME
+                ].field_value.string_value
+            )
+            break
+    else:
+        raise RuntimeError("Unable to find materializer sources.")
 
-        input_artifact_type_mapping = yaml_utils.read_json(
-            input_artifact_types_path
-        )
-        execution_info = load_execution_info(execution_info_path)
-        pipeline_node = cast(
-            pipeline_pb2.PipelineNode, execution_info.pipeline_node
-        )
-        for context in pipeline_node.contexts.contexts:
-            if context.type.name == constants.ZENML_MLMD_CONTEXT_TYPE:
-                materializer_sources = json.loads(
-                    context.properties[
-                        constants.MLMD_CONTEXT_MATERIALIZER_SOURCES_PROPERTY_NAME
-                    ].field_value.string_value
-                )
-                break
-        else:
-            raise RuntimeError("Unable to find materializer sources.")
+    executor_class = create_executor_class(
+        step_source_path=step_source_path,
+        input_artifact_type_mapping=input_artifact_type_mapping,
+        materializer_sources=materializer_sources,
+    )
 
-        executor_class = create_executor_class(
-            step_source_path=step_source_path,
-            input_artifact_type_mapping=input_artifact_type_mapping,
-            materializer_sources=materializer_sources,
-        )
+    executor = configure_executor(executor_class, execution_info=execution_info)
 
-        executor = configure_executor(
-            executor_class, execution_info=execution_info
-        )
-
-        stack.prepare_step_run()
-        run_with_executor(execution_info=execution_info, executor=executor)
-        stack.cleanup_step_run()
+    stack.prepare_step_run()
+    run_with_executor(execution_info=execution_info, executor=executor)
+    stack.cleanup_step_run()
 
 
 if __name__ == "__main__":
