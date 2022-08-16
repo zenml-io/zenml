@@ -56,8 +56,6 @@ BaseModel
 BaseModelDeployer
 BaseOrchestrator
 BasePipeline
-BasePipelineRunVisualizer
-BasePipelineVisualizer
 BaseSecretSchema
 BaseSecretsManager
 BaseService
@@ -65,7 +63,6 @@ BaseServiceMeta
 BaseStep
 BaseStepConfig
 BaseStepOperator
-BaseStepVisualizer
 BaseTypedModel
 BaseVisualizer
 BaseZenStore

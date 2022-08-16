@@ -26,7 +26,7 @@ from zenml.enums import ExecutionStatus
 from zenml.environment import Environment
 from zenml.logger import get_logger
 from zenml.post_execution import PipelineRunView
-from zenml.visualizers import BasePipelineRunVisualizer
+from zenml.visualizers import BaseVisualizer
 
 logger = get_logger(__name__)
 
@@ -97,7 +97,7 @@ STYLESHEET = [
 ]
 
 
-class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
+class PipelineRunLineageVisualizer(BaseVisualizer):
     """Implementation of a lineage diagram via the dash and dash-cytoscape libraries."""
 
     ARTIFACT_PREFIX = "artifact_"
