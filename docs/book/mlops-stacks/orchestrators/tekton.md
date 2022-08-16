@@ -94,8 +94,6 @@ To use the Tekton orchestrator, we need:
     ```
 * [Docker](https://www.docker.com) installed and running.
 * [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed.
-
-When using the Tekton orchestrator with a remote cluster, you'll additionally need
 * Tekton pipelines deployed on a remote cluster. See the [deployment section](#how-to-deploy-it) 
 for more information.
 * The name of your Kubernetes context which points to your remote cluster. 
