@@ -242,36 +242,23 @@ Next, let us register our **artifact store** on S3. For this example, we
 will also use a secret while registering our artifact store.
 
 ```bash
-# Register the authentication secret for s3
-zenml secret register s3-secret \
-	--schema=aws \ 
-	--aws_access_key_id=<ACCESS_KEY_ID> \
-	--aws_secret_access_key=<SECRET_ACCESS_KEY> \
-	--aws_session_token=<SESSION_TOKEN>
-
 # Register the artifact store using the secret
 zenml artifact-store register spark_artifact_store \
 	--flavor=s3 \
 	--path=$S3_BUCKET_NAME \
-	--authentication_secret=s3-secret
+	--authentication_secret=s3_authentication
 ```
 
 Similar to the artifact store, for our **metadata store** on RDS, we will be 
 using an authentication secret.
 
 ```bash
-# Register the authentication secret for RDS
-zenml secret register rds_authentication \
---schema=mysql \
---user=$RDS_MYSQL_USERNAME \
---password=$RDS_MYSQL_PASSWORD
-
 # Register the metadata store using the secret
 zenml metadata-store register spark_metadata_store \
---flavor=mysql \
---database=zenml \
---secret=rds_authentication \
---host=$RDS_MYSQL_ENDPOINT
+  --flavor=mysql \
+  --database=zenml \
+  --secret=rds_authentication \
+  --host=$RDS_MYSQL_ENDPOINT
 ```
 
 We also register the **container registry** on ECR as follows:
@@ -288,6 +275,7 @@ Finally, let’s finalize the stack.
 ```bash
 # Register the stack
 zenml stack register spark_stack \
+    -o default \
 	-s spark_step_operator \
 	-x spark_secrets_manager \
 	-a spark_artifact_store \
@@ -296,6 +284,22 @@ zenml stack register spark_stack \
 	--set
 ```
 
+and register the required secrets:
+
+```bash
+# Register the authentication secret for s3
+zenml secrets-manager secret register s3_authentication \
+	--schema=aws \
+	--aws_access_key_id=<ACCESS_KEY_ID> \
+	--aws_secret_access_key=<SECRET_ACCESS_KEY> \
+	--aws_session_token=<SESSION_TOKEN>
+	
+# Register the authentication secret for RDS
+zenml secrets-manager secret register rds_authentication \
+  --schema=mysql \
+  --user=$RDS_MYSQL_USERNAME \
+  --password=$RDS_MYSQL_PASSWORD
+```
 ### Running the pipeline
 
 Now that our stack is ready, you can go ahead and run your pipeline: 
