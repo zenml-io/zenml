@@ -13,16 +13,16 @@
 #  permissions and limitations under the License.
 
 
-from zenml.integrations.constants import KSERVE, PYTORCH, TENSORFLOW
+from zenml.integrations.constants import PYTORCH, SELDON
 from zenml.pipelines import pipeline
 
 
 @pipeline(
     enable_cache=True,
     requirements=["torchvision"],
-    required_integrations=[KSERVE, PYTORCH, TENSORFLOW],
+    required_integrations=[SELDON, PYTORCH],
 )
-def custom_code_pipeline(
+def pytorch_custom_code_pipeline(
     data_loader,
     trainer,
     evaluator,
@@ -39,9 +39,9 @@ def custom_code_pipeline(
 @pipeline(
     enable_cache=True,
     requirements=["torchvision"],
-    required_integrations=[KSERVE, PYTORCH, TENSORFLOW],
+    required_integrations=[SELDON, PYTORCH],
 )
-def inference_pipeline(
+def pytorch_inference_pipeline(
     inference_image_loader,
     prediction_service_loader,
     predictor,

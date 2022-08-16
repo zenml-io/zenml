@@ -14,31 +14,28 @@
 from typing import cast
 
 import click
-from pipelines.seldon_pipelines import custom_code_pipeline, inference_pipeline
+from seldon.tensorflow.pipelines.seldon_tensorflow_pipelines import (
+    tensorflow_custom_code_pipeline, 
+    tensorflow_inference_pipeline,
+)
 from rich import print
-from steps.deployment_trigger.deployment_trigger import (
+from seldon.tensorflow.steps.deployment_trigger import (
     DeploymentTriggerConfig,
     deployment_trigger,
 )
-from steps.inference_image_loader.inference_image_loader import (
+from seldon.tensorflow.steps.inference_image_loader import (
     InferenceImageLoaderStepConfig,
     inference_image_loader,
 )
-from steps.pytorch.pytorch_data_loader import (
-    PytorchDataLoaderConfig,
-    pytorch_data_loader,
-)
-from steps.pytorch.pytorch_evaluator import pytorch_evaluator
-from steps.pytorch.pytorch_trainer import PytorchTrainerConfig, pytorch_trainer
-from steps.seldon.seldon_deployer import get_seldon_custom_deployment_step
-from steps.seldon.seldon_predictor import seldon_predictor
-from steps.seldon.seldon_service_loader import (
+from seldon.tensorflow.steps.deployer import seldon_tensorflow_custom_deployment
+from seldon.tensorflow.steps.predictor import seldon_predictor
+from seldon.tensorflow.steps.predection_service_loader import (
     PredectionServiceLoaderStepConfig,
     seldon_prediction_service_loader,
 )
-from steps.tensorflow.tf_data_loader import tf_data_loader
-from steps.tensorflow.tf_evaluator import tf_evaluator
-from steps.tensorflow.tf_trainer import TensorflowTrainerConfig, tf_trainer
+from seldon.tensorflow.steps.tf_data_loader import tf_data_loader
+from seldon.tensorflow.steps.tf_evaluator import tf_evaluator
+from seldon.tensorflow.steps.tf_trainer import TensorflowTrainerConfig, tf_trainer
 
 from zenml.integrations.seldon.model_deployers.seldon_model_deployer import (
     SeldonModelDeployer,
@@ -93,14 +90,6 @@ TENSORFLOW = "tensorflow"
     help="Minimum accuracy required to deploy the model (default: 0.92)",
 )
 @click.option(
-    "--model-flavor",
-    "-m",
-    type=click.Choice([PYTORCH, TENSORFLOW]),
-    help="Which model deployment serving tool is used? This only accepts Seldon or KServe",
-    required=True,
-    multiple=False,
-)
-@click.option(
     "--prediction-image-url",
     "-imgurl",
     type=str,
@@ -114,7 +103,6 @@ def main(
     lr: float,
     momentum: float,
     min_accuracy: float,
-    model_flavor: str,
     prediction_image_url: str,
 ):
     """Run the custom code deployment example training/deployment or inference pipeline
@@ -127,47 +115,29 @@ def main(
     deploy = config == DEPLOY or config == DEPLOY_AND_PREDICT
     predict = config == PREDICT or config == DEPLOY_AND_PREDICT
 
-    deployment_pipeline_name = "custom_code_pipeline"
-    step_name = "seldon_custom_model_deployer_step"
+    deployment_pipeline_name = "tensorflow_custom_code_pipeline"
+    step_name = "seldon_tensorflow_custom_deployment"
+    model_name = "seldon-tensorflow-custom-model"
 
     model_deployer = SeldonModelDeployer.get_active_model_deployer()
-
-    if model_flavor == "pytorch":
-        model_name = "seldon-pytorch-custom-deployment"
-        data_loader = pytorch_data_loader(
-            PytorchDataLoaderConfig(
-                train_batch_size=batch_size, test_batch_size=batch_size
-            )
-        )
-        trainer = pytorch_trainer(
-            PytorchTrainerConfig(epochs=epochs, lr=lr, momentum=momentum)
-        )
-        evaluator = pytorch_evaluator()
-    elif model_flavor == "tensorflow":
-        model_name = "seldon-tensorflow-custom-deployment"
-        data_loader = tf_data_loader()
-        trainer = tf_trainer(TensorflowTrainerConfig())
-        evaluator = tf_evaluator()
-
-    deployer = get_seldon_custom_deployment_step(model_flavor, model_name)
-
+        
     if deploy:
         # Initialize and run a continuous deployment pipeline run
-        custom_code_pipeline(
-            data_loader=data_loader,
-            trainer=trainer,
-            evaluator=evaluator,
+        tensorflow_custom_code_pipeline(
+            data_loader = tf_data_loader(),
+            trainer = tf_trainer(TensorflowTrainerConfig()),
+            evaluator = tf_evaluator(),
             deployment_trigger=deployment_trigger(
                 config=DeploymentTriggerConfig(
                     min_accuracy=min_accuracy,
                 )
             ),
-            deployer=deployer,
+            deployer=seldon_tensorflow_custom_deployment,
         ).run()
 
     if predict:
         # Initialize an inference pipeline run
-        inference_pipeline(
+        tensorflow_inference_pipeline(
             inference_image_loader=inference_image_loader(
                 InferenceImageLoaderStepConfig(
                     img_url=prediction_image_url,
@@ -192,16 +162,17 @@ def main(
         service = cast(SeldonDeploymentService, services[0])
         if service.is_running:
             print(
-                f"The Seldon prediction server is running remotely as a Kubernetes "
+                f"The KServe prediction server is running remotely as a Kubernetes "
                 f"service and accepts inference requests at:\n"
                 f"    {service.prediction_url}\n"
+                f"    With the hostname: {service.prediction_hostname}.\n"
                 f"To stop the service, run "
                 f"[italic green]`zenml served-models delete "
                 f"{str(service.uuid)}`[/italic green]."
             )
         elif service.is_failed:
             print(
-                f"The Seldon prediction server is in a failed state:\n"
+                f"The KServe prediction server is in a failed state:\n"
                 f" Last state: '{service.status.state.value}'\n"
                 f" Last error: '{service.status.last_error}'"
             )
