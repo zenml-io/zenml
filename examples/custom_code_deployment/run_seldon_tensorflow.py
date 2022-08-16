@@ -165,17 +165,16 @@ def main(
         service = cast(SeldonDeploymentService, services[0])
         if service.is_running:
             print(
-                f"The KServe prediction server is running remotely as a Kubernetes "
+                f"The Seldon prediction server is running remotely as a Kubernetes "
                 f"service and accepts inference requests at:\n"
                 f"    {service.prediction_url}\n"
-                f"    With the hostname: {service.prediction_hostname}.\n"
                 f"To stop the service, run "
                 f"[italic green]`zenml served-models delete "
                 f"{str(service.uuid)}`[/italic green]."
             )
         elif service.is_failed:
             print(
-                f"The KServe prediction server is in a failed state:\n"
+                f"The Seldon prediction server is in a failed state:\n"
                 f" Last state: '{service.status.state.value}'\n"
                 f" Last error: '{service.status.last_error}'"
             )
