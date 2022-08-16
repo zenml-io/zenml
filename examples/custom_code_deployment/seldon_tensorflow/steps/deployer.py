@@ -24,7 +24,7 @@ from zenml.integrations.seldon.steps.seldon_deployer import (
 seldon_tensorflow_custom_deployment = seldon_custom_model_deployer_step(
     config=SeldonDeployerStepConfig(
         service_config=SeldonDeploymentConfig(
-            model_name="seldon-ptensorflow-custom-model",
+            model_name="seldon-tensorflow-custom-model",
             replicas=1,
             implementation="custom",
             resources={"requests": {"cpu": "200m", "memory": "500m"}},
