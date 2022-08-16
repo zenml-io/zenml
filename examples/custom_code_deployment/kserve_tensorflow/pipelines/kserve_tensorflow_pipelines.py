@@ -19,6 +19,7 @@ from zenml.pipelines import pipeline
 
 @pipeline(
     enable_cache=True,
+    requirements=["Pillow"],
     required_integrations=[KSERVE, TENSORFLOW],
 )
 def tensorflow_custom_code_pipeline(
@@ -37,6 +38,7 @@ def tensorflow_custom_code_pipeline(
 
 @pipeline(
     enable_cache=True,
+    requirements=["Pillow"],
     required_integrations=[KSERVE, TENSORFLOW],
 )
 def tensorflow_inference_pipeline(
