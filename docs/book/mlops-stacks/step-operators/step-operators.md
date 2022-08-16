@@ -32,12 +32,13 @@ or [AzureML](./azureml.md) to execute the training step with a GPU.
 Step operators to execute steps on one of the big cloud providers are provided
 by the following ZenML integrations:
 
-| Step Operator | Flavor | Integration | Notes             |
-|----------------|--------|-------------|-------------------|
-| [SageMaker](./amazon-sagemaker.md) | `sagemaker` | `aws` | Uses SageMaker to execute steps |
-| [Vertex](./gcloud-vertexai.md) | `vertex` | `gcp` |  Uses Vertex AI to execute steps |
-| [AzureML](./azureml.md) | `azureml` | `azure` |  Uses AzureML to execute steps |
-| [Custom Implementation](./custom.md) | _custom_ | | Extend the step operator abstraction and provide your own implementation |
+| Step Operator                        | Flavor      | Integration | Notes                                                                    |
+|--------------------------------------|-------------|-------------|--------------------------------------------------------------------------|
+| [SageMaker](./amazon-sagemaker.md)   | `sagemaker` | `aws`       | Uses SageMaker to execute steps                                          |
+| [Vertex](./gcloud-vertexai.md)       | `vertex`    | `gcp`       | Uses Vertex AI to execute steps                                          |
+| [AzureML](./azureml.md)              | `azureml`   | `azure`     | Uses AzureML to execute steps                                            |
+| [Spark](./spark.md)                  | `spark`     | `spark`     | Uses Spark on Kubernetes to execute steps in a distributed manner        |
+| [Custom Implementation](./custom.md) | _custom_    |             | Extend the step operator abstraction and provide your own implementation |
 
 If you would like to see the available flavors of step operators, you can 
 use the command:
