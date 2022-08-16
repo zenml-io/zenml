@@ -14,11 +14,11 @@
 """Implementation of ZenML's builtin materializer."""
 
 import os
-import shutil
 from typing import Any, Iterable, Type
 
 from zenml.artifacts import DataAnalysisArtifact, DataArtifact
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.default_materializer_registry import (
@@ -140,9 +140,9 @@ def _is_serializable(obj: Any) -> bool:
     Returns:
         True if the entire object is JSON-serializable, else False.
     """
-    if any(isinstance(obj, basic_type) for basic_type in BASIC_TYPES):
+    if isinstance(obj, tuple(BASIC_TYPES)):
         return True
-    if any(isinstance(obj, iterable_) for iterable_ in (list, tuple)):
+    if isinstance(obj, (list, tuple, set)):
         return _all_serializable(obj)
     if isinstance(obj, dict):
         return _all_serializable(obj.keys()) and _all_serializable(obj.values())
@@ -216,7 +216,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         super().handle_input(data_type)
 
         # If the data was not serialized, there must be metadata present.
-        if not os.path.exists(self.data_path) and not os.path.exists(
+        if not fileio.exists(self.data_path) and not fileio.exists(
             self.metadata_path
         ):
             raise RuntimeError(
@@ -225,7 +225,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             )
 
         # If the data was serialized as JSON, deserialize it.
-        if os.path.exists(self.data_path):
+        if fileio.exists(self.data_path):
             outputs = yaml_utils.read_json(self.data_path)
 
         # Otherwise, use the metadata to reconstruct the data as a list.
@@ -289,7 +289,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         paths, types, materializers = [], [], []
         for i, element in enumerate(data):
             element_path = os.path.join(self.artifact.uri, str(i))
-            os.mkdir(element_path)
+            fileio.mkdir(element_path)
             type_ = type(element)
             paths.append(element_path)
             types.append(str(type_))
@@ -308,9 +308,9 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         # If an error occurs, delete all created files.
         except Exception as e:
             # Delete metadata
-            if os.path.exists(self.metadata_path):
-                os.remove(self.metadata_path)
+            if fileio.exists(self.metadata_path):
+                fileio.remove(self.metadata_path)
             # Delete all elements that were already saved.
             for element_path in paths:
-                shutil.rmtree(element_path)
+                fileio.rmtree(element_path)
             raise e
