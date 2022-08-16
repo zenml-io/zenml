@@ -56,6 +56,11 @@
     <br />
     <a href="https://docs.zenml.io/"><strong>Explore the docs »</strong></a>
     <br />
+    <div align="center">
+      Join our <a href="https://zenml.io/slack-invite" target="_blank">
+      <img width="25" src="https://cdn3.iconfinder.com/data/icons/logos-and-brands-adobe/512/306_Slack-512.png" alt="Slack"/>
+    <b>Slack Community</b> </a> and be part of the ZenML family.
+    </div>
     <br />
     <a href="https://zenml.io/features">Features</a>
     ·
@@ -79,11 +84,6 @@
     <a href="https://twitter.com/zenml_io">
     <img src="https://img.shields.io/badge/-Twitter-black.svg?style=for-the-badge&logo=twitter&colorB=555" alt="Logo">
     </a>
-    <a href="https://zenml.io/slack-invite">
-    <img src="https://img.shields.io/badge/-Slack-black.svg?style=for-the-badge&logo=slack&colorB=555" alt="Logo">
-    </a>
-
-    
   </p>
 </div>
 

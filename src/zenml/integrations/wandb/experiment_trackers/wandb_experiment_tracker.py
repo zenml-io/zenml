@@ -18,7 +18,6 @@ from contextlib import contextmanager
 from typing import ClassVar, Iterator, Optional, Tuple
 
 import wandb
-
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
 )

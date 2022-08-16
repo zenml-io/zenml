@@ -23,12 +23,12 @@ from whylogs.viz import NotebookProfileVisualizer  # type: ignore
 from zenml.environment import Environment
 from zenml.logger import get_logger
 from zenml.post_execution import StepView
-from zenml.visualizers import BaseStepVisualizer
+from zenml.visualizers import BaseVisualizer
 
 logger = get_logger(__name__)
 
 
-class WhylogsVisualizer(BaseStepVisualizer):
+class WhylogsVisualizer(BaseVisualizer):
     """The implementation of a Whylogs Visualizer."""
 
     def visualize(
