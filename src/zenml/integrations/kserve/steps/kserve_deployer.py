@@ -190,7 +190,7 @@ class CustomDeployParameters(BaseModel):
 
         Raises:
             ValueError: if predict function path is not valid
-            TypeError: if predict function path is not a cllable function
+            TypeError: if predict function path is not a callable function
         """
         try:
             predict_function = import_class_by_path(predict_func_path)

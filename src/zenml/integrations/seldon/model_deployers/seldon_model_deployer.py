@@ -30,7 +30,7 @@ from zenml.repository import Repository
 from zenml.secrets_managers import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.stack.stack import Stack
-from zenml.utils.analytics_utils import track_event, AnalyticsEvent
+from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
