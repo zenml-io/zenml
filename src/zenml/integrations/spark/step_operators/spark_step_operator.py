@@ -42,7 +42,7 @@ class SparkStepOperator(BaseStepOperator):
     submit_kwargs: Optional[Dict[str, Any]] = None
 
     @property
-    def application_path(self) -> Any:
+    def application_path(self) -> Optional[str]:
         """Optional method for providing the application path.
 
         This is especially critical when using 'spark-submit' as it defines the
