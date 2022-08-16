@@ -541,8 +541,8 @@ def stack_recipe() -> None:
     """Access all ZenML stack recipes."""
 
 
-if terraform_installed:
-    
+if terraform_installed:  # noqa: C901
+
     @stack_recipe.command(name="list", help="List the available stack recipes.")
     @pass_git_stack_recipes_handler
     def list_stack_recipes(
@@ -560,7 +560,9 @@ if terraform_installed:
         ]
         cli_utils.print_table(stack_recipes)
 
-        cli_utils.declare("\n" + "To get the latest list of stack recipes, run: ")
+        cli_utils.declare(
+            "\n" + "To get the latest list of stack recipes, run: "
+        )
         text = Text("zenml stack recipe pull -y", style="markdown.code_block")
         cli_utils.declare(text)
 
@@ -569,7 +571,6 @@ if terraform_installed:
             "zenml stack recipe pull RECIPE_NAME", style="markdown.code_block"
         )
         cli_utils.declare(text)
-
 
     @stack_recipe.command(help="Deletes the ZenML stack recipes directory.")
     @click.option(
@@ -580,7 +581,9 @@ if terraform_installed:
         help="Relative path at which you want to clean the stack_recipe(s)",
     )
     @pass_git_stack_recipes_handler
-    def clean(git_stack_recipes_handler: GitStackRecipesHandler, path: str) -> None:
+    def clean(
+        git_stack_recipes_handler: GitStackRecipesHandler, path: str
+    ) -> None:
         """Deletes the ZenML stack recipes directory from your current working directory.
 
         Args:
@@ -604,12 +607,12 @@ if terraform_installed:
                 "as it was not found in your current working directory."
             )
 
-
     @stack_recipe.command(help="Find out more about a stack recipe.")
     @pass_git_stack_recipes_handler
     @click.argument("stack_recipe_name")
     def info(
-        git_stack_recipes_handler: GitStackRecipesHandler, stack_recipe_name: str
+        git_stack_recipes_handler: GitStackRecipesHandler,
+        stack_recipe_name: str,
     ) -> None:
         """Find out more about a stack recipe.
 
@@ -630,7 +633,6 @@ if terraform_installed:
             md = Markdown(stack_recipe_obj.readme_content)
             with console.pager(styles=True):
                 console.print(md)
-
 
     @stack_recipe.command(
         help="Pull stack recipes straight into your current working directory."
@@ -685,7 +687,9 @@ if terraform_installed:
 
         else:
             for stack_recipe in stack_recipes:
-                destination_dir = os.path.join(os.getcwd(), path, stack_recipe.name)
+                destination_dir = os.path.join(
+                    os.getcwd(), path, stack_recipe.name
+                )
                 if LocalStackRecipe(
                     name=stack_recipe.name, path=Path(destination_dir)
                 ).is_present():
@@ -701,7 +705,9 @@ if terraform_installed:
                         )
                         continue
 
-                cli_utils.declare(f"Pulling stack recipe {stack_recipe.name}...")
+                cli_utils.declare(
+                    f"Pulling stack recipe {stack_recipe.name}..."
+                )
 
                 io_utils.create_dir_if_not_exists(destination_dir)
                 git_stack_recipes_handler.copy_stack_recipe(
@@ -714,7 +720,6 @@ if terraform_installed:
                     AnalyticsEvent.PULL_STACK_RECIPE,
                     {"stack_recipe_name": stack_recipe.name},
                 )
-
 
     @stack_recipe.command(
         help="Run the stack_recipe that you previously pulled with "
@@ -804,7 +809,9 @@ if terraform_installed:
             )
 
         try:
-            _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[0]
+            _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[
+                0
+            ]
         except KeyError as e:
             cli_utils.error(str(e))
         else:
@@ -904,7 +911,6 @@ if terraform_installed:
                     f"run zenml stack recipe deploy {stack_recipe_name} again"
                 )
 
-
     @stack_recipe.command(
         help="Destroy the stack components created previously with "
         "`zenml stack recipe deploy <name>`"
@@ -964,7 +970,9 @@ if terraform_installed:
             )
 
         try:
-            _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[0]
+            _ = git_stack_recipes_handler.get_stack_recipes(stack_recipe_name)[
+                0
+            ]
         except KeyError as e:
             cli_utils.error(str(e))
         else:
@@ -1012,7 +1020,9 @@ if terraform_installed:
             except python_terraform.TerraformCommandError as e:
                 force_message = ""
                 if stack_recipe_name == "aws_minimal":
-                    force_message = "If there are Kubernetes resources that aren't"
+                    force_message = (
+                        "If there are Kubernetes resources that aren't"
+                    )
                     "getting deleted, run 'kubectl delete node -all' to delete the "
                     "nodes and consequently all Kubernetes resources. Run the destroy "
                     "again after that, to remove any other remaining resources."
