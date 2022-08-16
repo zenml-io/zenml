@@ -58,16 +58,9 @@ The inference pipeline loads the image from the local filesystem and performs
 online predictions on the running KServe inference service.
 
 
-# 🖥 Local Stack
+# 🖥 Cloud Stack
 
 ### 📄 Prerequisites 
-
-For the ZenML KServe deployer to work, these things are required:
-1. Access to a running [Kubernetes cluster](https://kubernetes.io/). The example accepts a `--kubernetes-context` command-line argument. This Kubernetes context needs to point to the Kubernetes cluster where KServe model servers will be deployed. If the context is not explicitly supplied to the example, it defaults to using the locally active context.
-
-2. KServe must be installed and running on the Kubernetes cluster (More information about how to install KServe can be found below or on the [KServe documentation](https://kserve.github.io/website/)).
-
-3. KServe must be able to access whatever storage is used by ZenML to save the artifact. Since  KServe is installed in the Kubernetes cluster, local filesystem storage can't be used. We recommend using a persistent volume or a remote storage service. (e.g. AWS S3, GCS, Azure Blob Storage, etc.).
 
 To run this example, you need to install and initialize ZenML:
 
@@ -85,6 +78,23 @@ cd zenml_examples/kserve_deployment
 # initialize a local ZenML Repository
 zenml init
 ```
+
+For the ZenML KServe deployer to work, these things are required:
+1. Access to a running [Kubernetes cluster](https://kubernetes.io/). The example accepts a `--kubernetes-context` command-line argument. This Kubernetes context needs to point to the Kubernetes cluster where KServe model servers will be deployed. If the context is not explicitly supplied to the example, it defaults to using the locally active context.
+
+2. KServe must be installed and running on the Kubernetes cluster (More information about how to install KServe can be found below or on the [KServe documentation](https://kserve.github.io/website/)).
+
+3. KServe must be able to access whatever storage is used by ZenML to save the artifact. Since  KServe is installed in the Kubernetes cluster, local filesystem storage can't be used. We recommend using a persistent volume or a remote storage service. (e.g. AWS S3, GCS, Azure Blob Storage, etc.).
+
+ 
+#### 🚅 That seems like a lot of infrastructure work. Is there a faster way to run this example?
+
+Yes! If you are not a fan of creating resources on the cloud manually, we have just the solution for you. The [`gke-kubeflow-kserve` recipe](https://github.com/zenml-io/mlops-stacks/tree/main/gcp-kubeflow-kserve) can provision all the resources you need for this example and if you're using the new stack recipe CLI commands, it will even import a ZenML stack with these new components that you can use out of the box! 
+
+For those not familiar with stack recipes, they are a set of carefully-crafted Terraform modules that do the heavy-lifting of creating your cloud resources, following your customizations. With just a simple command, you can have a full MLOps stacks that you can run your pipelines on! Check out the [`mlops-stacks` repository](https://github.com/zenml-io/mlops-stacks) to see the list of recipes available as of now and for the instructions on how to deploy them 🚀.
+
+If you follow the [instructions](https://github.com/zenml-io/mlops-stacks#-association-with-zenml) to deploy the `gcp-kubeflow-kserve` example, you can skip directly to the [part of this guide where you define ZenML secrets](#gcp-authentication-with-kservegs-secret-schema) for your stack! 
+
 
 ### Installing KServe (e.g. in an GKE cluster)
 
@@ -365,6 +375,9 @@ Please look up the variables relevant to your use case in the
 and set them accordingly for your ZenML secret.
 
 ##### GCP Authentication with kserve_gs secret schema
+
+> **Note**
+> If you're coming to this section after deploying the [`gke-kubeflow-kserve` recipe](https://github.com/zenml-io/mlops-stacks/tree/main/gcp-kubeflow-kserve), you already have a service account created for you. The service account key is available as a file named `kserve_sa_key.json` in the root directory of your recipe. You can jump straight to the `zenml secrets-mannager secret register` command below to register your secret!
 
 Before setting ZenML secrets, we need to create a service account key. 
 This service account will be used to access the GCP Artifact
