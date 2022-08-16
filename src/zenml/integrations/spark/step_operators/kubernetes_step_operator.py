@@ -12,12 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
-from typing import Any, ClassVar, List, Optional, Sequence
+from typing import Any, ClassVar, Optional
 
 from pyspark.conf import SparkConf
 
 from zenml.config.docker_configuration import DockerConfiguration
 from zenml.integrations.spark import SPARK_KUBERNETES_STEP_OPERATOR
+from zenml.integrations.spark.step_operators import spark_entrypoint
 from zenml.integrations.spark.step_operators.spark_step_operator import (
     SparkStepOperator,
 )
@@ -25,7 +26,6 @@ from zenml.io.fileio import copy
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
-from zenml.integrations.spark.step_operators import spark_entrypoint
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 from zenml.utils.source_utils import get_source_root_path
 
@@ -52,7 +52,6 @@ class KubernetesSparkStepOperator(
     def application_path(self) -> Any:
         """Provides the application path in the corresponding docker image."""
         return f"local://{APP_DIR}/{ENTRYPOINT_NAME}"
-
 
     def _backend_configuration(
         self,
