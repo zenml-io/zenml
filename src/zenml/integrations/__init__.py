@@ -40,6 +40,7 @@ from zenml.integrations.label_studio import LabelStudioIntegration  # noqa
 from zenml.integrations.lightgbm import LightGBMIntegration  # noqa
 from zenml.integrations.mlflow import MlflowIntegration  # noqa
 from zenml.integrations.neural_prophet import NeuralProphetIntegration  # noqa
+from zenml.integrations.pillow import PillowIntegration  # noqa
 from zenml.integrations.plotly import PlotlyIntegration  # noqa
 from zenml.integrations.pytorch import PytorchIntegration  # noqa
 from zenml.integrations.pytorch_lightning import (  # noqa
@@ -51,6 +52,7 @@ from zenml.integrations.seldon import SeldonIntegration  # noqa
 from zenml.integrations.sklearn import SklearnIntegration  # noqa
 from zenml.integrations.slack import SlackIntegration  # noqa
 from zenml.integrations.spark import SparkIntegration  # noqa
+from zenml.integrations.tekton import TektonIntegration  # noqa
 from zenml.integrations.tensorflow import TensorflowIntegration  # noqa
 from zenml.integrations.vault import VaultSecretsManagerIntegration  # noqa
 from zenml.integrations.wandb import WandbIntegration  # noqa
