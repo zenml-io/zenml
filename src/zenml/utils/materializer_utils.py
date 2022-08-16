@@ -98,8 +98,8 @@ def load_model_from_metadata(model_uri: str) -> Any:
     model_class = source_utils.load_source_path_class(
         model_artifact.properties[METADATA_DATATYPE].string_value
     )
-    materialzer_object: BaseMaterializer = materializer_class(model_artifact)
-    model = materialzer_object.handle_input(model_class)
+    materializer_object: BaseMaterializer = materializer_class(model_artifact)
+    model = materializer_object.handle_input(model_class)
     try:
         import torch.nn as nn
 
