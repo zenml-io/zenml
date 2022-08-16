@@ -15,19 +15,17 @@
 import os
 import subprocess
 import sys
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Tuple
 
-from kfp import dsl
-from kfp_argo.compiler import ArgoCompiler
+import functools
+from hera import Task, Workflow, WorkflowService
+
 from kubernetes import config as k8s_config
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.integrations.argo import ARGO_ORCHESTRATOR_FLAVOR
-from zenml.integrations.argo.orchestrators.argo_entrypoint_configuration import (
-    ArgoEntrypointConfiguration,
-)
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
@@ -44,7 +42,7 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-DEFAULT_ARGO_UI_PORT = 8080
+DEFAULT_ARGO_UI_PORT = 2746
 
 
 class ArgoOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
@@ -61,7 +59,7 @@ class ArgoOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
     """
 
     kubernetes_context: str
-    kubernetes_namespace: str = "zenml"
+    kubernetes_namespace: str = "argo"
     argo_ui_port: int = DEFAULT_ARGO_UI_PORT
     skip_ui_daemon_provisioning: bool = False
 
@@ -115,39 +113,39 @@ class ArgoOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             # go through all stack components and identify those that
             # advertise a local path where they persist information that
             # they need to be available when running pipelines.
-            for stack_comp in stack.components.values():
-                local_path = stack_comp.local_path
-                if not local_path:
-                    continue
-                return False, (
-                    f"The Argo orchestrator is configured to run "
-                    f"pipelines in a remote Kubernetes cluster designated "
-                    f"by the '{self.kubernetes_context}' configuration "
-                    f"context, but the '{stack_comp.name}' "
-                    f"{stack_comp.TYPE.value} is a local stack component "
-                    f"and will not be available in the Argo pipeline "
-                    f"step.\nPlease ensure that you always use non-local "
-                    f"stack components with a Argo orchestrator, "
-                    f"otherwise you may run into pipeline execution "
-                    f"problems. You should use a flavor of "
-                    f"{stack_comp.TYPE.value} other than "
-                    f"'{stack_comp.FLAVOR}'."
-                )
-
-            if container_registry.is_local:
-                return False, (
-                    f"The Argo orchestrator is configured to run "
-                    f"pipelines in a remote Kubernetes cluster designated "
-                    f"by the '{self.kubernetes_context}' configuration "
-                    f"context, but the '{container_registry.name}' "
-                    f"container registry URI '{container_registry.uri}' "
-                    f"points to a local container registry. Please ensure "
-                    f"that you always use non-local stack components with "
-                    f"a Argo orchestrator, otherwise you will "
-                    f"run into problems. You should use a flavor of "
-                    f"container registry other than "
-                    f"'{container_registry.FLAVOR}'."
-                )
+            # for stack_comp in stack.components.values():
+            #     local_path = stack_comp.local_path
+            #     if not local_path:
+            #         continue
+            #     return False, (
+            #         f"The Argo orchestrator is configured to run "
+            #         f"pipelines in a remote Kubernetes cluster designated "
+            #         f"by the '{self.kubernetes_context}' configuration "
+            #         f"context, but the '{stack_comp.name}' "
+            #         f"{stack_comp.TYPE.value} is a local stack component "
+            #         f"and will not be available in the Argo pipeline "
+            #         f"step.\nPlease ensure that you always use non-local "
+            #         f"stack components with a Argo orchestrator, "
+            #         f"otherwise you may run into pipeline execution "
+            #         f"problems. You should use a flavor of "
+            #         f"{stack_comp.TYPE.value} other than "
+            #         f"'{stack_comp.FLAVOR}'."
+            #     )
+            #
+            # if container_registry.is_local:
+            #     return False, (
+            #         f"The Argo orchestrator is configured to run "
+            #         f"pipelines in a remote Kubernetes cluster designated "
+            #         f"by the '{self.kubernetes_context}' configuration "
+            #         f"context, but the '{container_registry.name}' "
+            #         f"container registry URI '{container_registry.uri}' "
+            #         f"points to a local container registry. Please ensure "
+            #         f"that you always use non-local stack components with "
+            #         f"a Argo orchestrator, otherwise you will "
+            #         f"run into problems. You should use a flavor of "
+            #         f"container registry other than "
+            #         f"'{container_registry.FLAVOR}'."
+            #     )
 
             return True, ""
 
@@ -175,32 +173,6 @@ class ArgoOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             stack=stack,
             runtime_configuration=runtime_configuration,
         )
-
-    @staticmethod
-    def _configure_container_resources(
-        container_op: dsl.ContainerOp,
-        resource_configuration: "ResourceConfiguration",
-    ) -> None:
-        """Adds resource requirements to the container.
-
-        Args:
-            container_op: The container operation to configure.
-            resource_configuration: The resource configuration to use for this
-                container.
-        """
-        if resource_configuration.cpu_count is not None:
-            container_op = container_op.set_cpu_limit(
-                str(resource_configuration.cpu_count)
-            )
-
-        if resource_configuration.gpu_count is not None:
-            container_op = container_op.set_gpu_limit(
-                resource_configuration.gpu_count
-            )
-
-        if resource_configuration.memory is not None:
-            memory_limit = resource_configuration.memory[:-1]
-            container_op = container_op.set_memory_limit(memory_limit)
 
     def prepare_or_run_pipeline(
         self,
@@ -239,54 +211,6 @@ class ArgoOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
         image_name = runtime_configuration["docker_image"]
 
-        def _construct_kfp_pipeline() -> None:
-            """Create a container_op for each step.
-
-            This should contain the name of the docker image and configures the
-            entrypoint of the docker image to run the step.
-
-            Additionally, this gives each container_op information about its
-            direct downstream steps.
-            """
-            # Dictionary of container_ops index by the associated step name
-            step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
-
-            for step in sorted_steps:
-                command = ArgoEntrypointConfiguration.get_entrypoint_command()
-                arguments = (
-                    ArgoEntrypointConfiguration.get_entrypoint_arguments(
-                        step=step,
-                        pb2_pipeline=pb2_pipeline,
-                    )
-                )
-
-                container_op = dsl.ContainerOp(
-                    name=step.name,
-                    image=image_name,
-                    command=command,
-                    arguments=arguments,
-                )
-
-                if self.requires_resources_in_orchestration_environment(step):
-                    self._configure_container_resources(
-                        container_op=container_op,
-                        resource_configuration=step.resource_configuration,
-                    )
-
-                # Find the upstream container ops of the current step and
-                # configure the current container op to run after them
-                upstream_step_names = self.get_upstream_step_names(
-                    step=step, pb2_pipeline=pb2_pipeline
-                )
-                for upstream_step_name in upstream_step_names:
-                    upstream_container_op = step_name_to_container_op[
-                        upstream_step_name
-                    ]
-                    container_op.after(upstream_container_op)
-
-                # Update dictionary of container ops with the current one
-                step_name_to_container_op[step.name] = container_op
-
         # Get a filepath to use to save the finished yaml to
         assert runtime_configuration.run_name
         fileio.makedirs(self.pipeline_directory)
@@ -294,14 +218,45 @@ class ArgoOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             self.pipeline_directory, f"{runtime_configuration.run_name}.yaml"
         )
 
-        # Set the run name, which Argo reads from this attribute of the
-        # pipeline function
-        setattr(
-            _construct_kfp_pipeline,
-            "_component_human_name",
-            runtime_configuration.run_name,
-        )
-        ArgoCompiler().compile(_construct_kfp_pipeline, pipeline_file_path)
+        # Dictionary mapping step names to airflow_operators. This will be needed
+        # to configure airflow operator dependencies
+        step_name_to_argo_task = {}
+
+        with Workflow(pipeline.name, WorkflowService(host=None, token=None)) as w:
+            for step in sorted_steps:
+                # Create callable that will be used by argo to execute the step
+                # within the orchestrated environment
+                def _step_callable(step_instance: "BaseStep", run_name: str, **kwargs):
+                    if self.requires_resources_in_orchestration_environment(step):
+                        logger.warning(
+                            "Specifying step resources is not yet supported for "
+                            "the Airflow orchestrator, ignoring resource "
+                            "configuration for step %s.",
+                            step.name,
+                        )
+                    # Extract run name for the kwargs that will be passed to the
+                    # callable
+                    self.run_step(
+                        step=step_instance,
+                        run_name=run_name,
+                        pb2_pipeline=pb2_pipeline,
+                    )
+
+                current_task = Task(
+                    step.name,
+                    functools.partial(_step_callable, step_instance=step, run_id=runtime_configuration.run_name),
+                    image=image_name,
+                )
+
+                # Configure the current argo operator to run after all upstream
+                # operators finished executing
+                step_name_to_argo_task[step.name] = current_task
+                upstream_step_names = self.get_upstream_step_names(
+                    step=step, pb2_pipeline=pb2_pipeline
+                )
+                for upstream_step_name in upstream_step_names:
+                    step_name_to_argo_task[upstream_step_name] >> current_task
+
 
         if runtime_configuration.schedule:
             logger.warning(
@@ -317,18 +272,7 @@ class ArgoOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             self.kubernetes_namespace,
         )
         try:
-            subprocess.check_call(
-                [
-                    "kubectl",
-                    "--context",
-                    self.kubernetes_context,
-                    "--namespace",
-                    self.kubernetes_namespace,
-                    "apply",
-                    "-f",
-                    pipeline_file_path,
-                ]
-            )
+            w.create()
         except subprocess.CalledProcessError as e:
             raise RuntimeError(
                 f"Failed to upload Argo pipeline: {str(e)}. "
@@ -447,15 +391,15 @@ class ArgoOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             "--context",
             self.kubernetes_context,
             "--namespace",
-            "argo-pipelines",
+            self.kubernetes_namespace,
             "port-forward",
-            "svc/argo-dashboard",
-            f"{port}:9097",
+            "svc/argo-server",
+            f"{port}:2746",
         ]
 
         if not networking_utils.port_available(port):
             modified_command = command.copy()
-            modified_command[-1] = "<PORT>:9097"
+            modified_command[-1] = "<PORT>:2746"
             logger.warning(
                 "Unable to port-forward Argo UI to local port %d "
                 "because the port is occupied. In order to access the Argo "
@@ -507,4 +451,4 @@ class ArgoOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
                 daemon.stop_daemon(self._pid_file_path)
                 fileio.remove(self._pid_file_path)
-                logger.info("Stopped Tektion UI daemon.")
+                logger.info("Stopped Argo UI daemon.")

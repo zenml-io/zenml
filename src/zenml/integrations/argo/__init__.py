@@ -31,7 +31,7 @@ class ArgoIntegration(Integration):
     """Definition of Argo Integration for ZenML."""
 
     NAME = ARGO
-    REQUIREMENTS = ["hera-workflows"]
+    REQUIREMENTS = ["hera-workflows", "kubernetes"]
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
