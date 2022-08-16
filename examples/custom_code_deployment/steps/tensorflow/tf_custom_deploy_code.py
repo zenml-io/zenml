@@ -78,7 +78,7 @@ def custom_predict(
     inputs = []
     for instance in request:
         input = np.array(instance)
-        if not isinstance(instance, np.ndarray):
+        if not isinstance(input, np.ndarray):
             raise Exception("The request must be a NumPy array")
         processed_input = pre_process(input)
         prediction = model.predict(processed_input)
