@@ -33,6 +33,7 @@ from zenml.repository import Repository
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.stack.stack import Stack
+from zenml.utils.analytics_utils import track_event, AnalyticsEvent
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
@@ -279,6 +280,12 @@ class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
         # start the service which in turn provisions the KServe
         # deployment server and waits for it to reach a ready state
         service.start(timeout=timeout)
+
+        # Add telemetry with metadata that differentiates between pure model
+        #  and custom code deployments
+        metadata = {"is_custom_code_deployment": config.container is not None}
+        track_event(AnalyticsEvent.MODEL_DEPLOYED, metadata=metadata)
+
         return service
 
     def get_kserve_deployments(

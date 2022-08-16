@@ -52,6 +52,9 @@ class AnalyticsEvent(str, Enum):
     IMPORT_STACK = "Stack imported"
     EXPORT_STACK = "Stack exported"
 
+    # Model Deployment
+    MODEL_DEPLOYED = "Model deployed"
+
     # Analytics opt in and out
     OPT_IN_ANALYTICS = "Analytics opt-in"
     OPT_OUT_ANALYTICS = "Analytics opt-out"
