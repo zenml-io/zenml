@@ -13,9 +13,13 @@
 #  permissions and limitations under the License.
 """Step environment class."""
 
+from typing import TYPE_CHECKING
+
 from zenml.environment import BaseEnvironmentComponent
 
 STEP_ENVIRONMENT_NAME = "step_environment"
+if TYPE_CHECKING:
+    from zenml.config.docker_configuration import DockerConfiguration
 
 
 class StepEnvironment(BaseEnvironmentComponent):
@@ -45,6 +49,7 @@ class StepEnvironment(BaseEnvironmentComponent):
         pipeline_run_id: str,
         step_name: str,
         cache_enabled: bool,
+        docker_configuration: "DockerConfiguration",
     ):
         """Initialize the environment of the currently running step.
 
@@ -53,12 +58,15 @@ class StepEnvironment(BaseEnvironmentComponent):
             pipeline_run_id: the ID of the currently running pipeline
             step_name: the name of the currently running step
             cache_enabled: whether cache is enabled for this step
+            docker_configuration: The Docker configuration of the currently
+                running pipeline.
         """
         super().__init__()
         self._pipeline_name = pipeline_name
         self._pipeline_run_id = pipeline_run_id
         self._step_name = step_name
         self._cache_enabled = cache_enabled
+        self._docker_configuration = docker_configuration
 
     @property
     def pipeline_name(self) -> str:
@@ -95,3 +103,12 @@ class StepEnvironment(BaseEnvironmentComponent):
             True if cache is enabled for the step, otherwise False.
         """
         return self._cache_enabled
+
+    @property
+    def docker_configuration(self) -> "DockerConfiguration":
+        """The Docker configuration of the currently running pipeline.
+
+        Returns:
+            A Docker configuration object.
+        """
+        return self._docker_configuration

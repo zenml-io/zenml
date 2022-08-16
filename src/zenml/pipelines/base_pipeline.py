@@ -23,7 +23,6 @@ from typing import (
     List,
     NoReturn,
     Optional,
-    Set,
     Text,
     Tuple,
     Type,
@@ -36,6 +35,7 @@ from zenml.config.config_keys import (
     PipelineConfigurationKeys,
     StepConfigurationKeys,
 )
+from zenml.config.docker_configuration import DockerConfiguration
 from zenml.environment import Environment
 from zenml.exceptions import (
     DuplicatedConfigurationError,
@@ -43,8 +43,6 @@ from zenml.exceptions import (
     PipelineInterfaceError,
     StackValidationError,
 )
-from zenml.integrations.registry import integration_registry
-from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.pipelines.schedule import Schedule
 from zenml.post_execution import PipelineRunView
@@ -63,11 +61,11 @@ logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME: str = "connect"
 PARAM_ENABLE_CACHE: str = "enable_cache"
 PARAM_REQUIRED_INTEGRATIONS: str = "required_integrations"
-PARAM_REQUIREMENTS_FILE: str = "requirements_file"
 PARAM_REQUIREMENTS: str = "requirements"
 PARAM_DOCKERIGNORE_FILE: str = "dockerignore_file"
 INSTANCE_CONFIGURATION = "INSTANCE_CONFIGURATION"
 PARAM_SECRETS: str = "secrets"
+PARAM_DOCKER_CONFIGURATION: str = "docker_configuration"
 
 
 class BasePipelineMeta(type):
@@ -136,22 +134,54 @@ class BasePipeline(metaclass=BasePipelineMeta):
         """
         kwargs.update(getattr(self, INSTANCE_CONFIGURATION))
         self.enable_cache = kwargs.pop(PARAM_ENABLE_CACHE, True)
-        self.required_integrations = kwargs.pop(PARAM_REQUIRED_INTEGRATIONS, ())
-        self.requirements_file = kwargs.pop(PARAM_REQUIREMENTS_FILE, None)
-        if self.requirements_file:
-            logger.warning(
-                "The `requirements_file` argument has been deprecated. Please "
-                "use `requirements` instead to pass in either a string path "
-                "to a file listing your 'requirements' or a list of the "
-                "individual requirements."
-            )
-        self._requirements = kwargs.pop(PARAM_REQUIREMENTS, None)
-        self.dockerignore_file = kwargs.pop(PARAM_DOCKERIGNORE_FILE, None)
         self.secrets = kwargs.pop(PARAM_SECRETS, [])
+
+        self.docker_configuration = (
+            kwargs.pop(PARAM_DOCKER_CONFIGURATION, None)
+            or DockerConfiguration()
+        )
+        self._migrate_to_docker_config(kwargs)
 
         self.name = self.__class__.__name__
         self.__steps: Dict[str, BaseStep] = {}
         self._verify_arguments(*args, **kwargs)
+
+    def _migrate_to_docker_config(self, kwargs: Dict[str, Any]) -> None:
+        """Migrates legacy requirements to the new Docker configuration.
+
+        Args:
+            kwargs: Keyword arguments passed during pipeline initialization.
+        """
+        attributes = [
+            (PARAM_REQUIREMENTS, "requirements"),
+            (PARAM_REQUIRED_INTEGRATIONS, "required_integrations"),
+            (PARAM_DOCKERIGNORE_FILE, "dockerignore"),
+        ]
+        updates = {}
+
+        for kwarg_name, docker_config_attribute in attributes:
+            value = kwargs.pop(kwarg_name, None)
+
+            if value:
+                logger.warning(
+                    f"The `{kwarg_name}` parameter has been deprecated. Please "
+                    "use the `docker_configuration` parameter instead."
+                )
+
+                if getattr(self.docker_configuration, docker_config_attribute):
+                    logger.warning(
+                        f"Parameter {kwarg_name} was defined on the pipeline "
+                        "as well as in the docker configuration. Ignoring the "
+                        "value defined on the pipeline."
+                    )
+                else:
+                    # No value set on the docker config, migrate the old one
+                    updates[docker_config_attribute] = value
+
+        if updates:
+            self.docker_configuration = self.docker_configuration.copy(
+                update=updates
+            )
 
     def _verify_arguments(self, *steps: BaseStep, **kw_steps: BaseStep) -> None:
         """Verifies the initialization args and kwargs of this pipeline.
@@ -279,92 +309,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
             NotImplementedError: Always.
         """
         raise NotImplementedError
-
-    @property
-    def requirements(self) -> Set[str]:
-        """Set of Python requirements of this pipeline.
-
-        This property is a combination of the requirements of
-        - required integrations for this pipeline
-        - the `requirements` specified for this pipeline
-
-        Returns:
-            Set of Python requirements of this pipeline.
-
-        Raises:
-            KeyError: If the requirements file could not be found.
-        """
-        requirements = set()
-
-        for integration_name in self.required_integrations:
-            try:
-                integration_requirements = (
-                    integration_registry.select_integration_requirements(
-                        integration_name
-                    )
-                )
-                requirements.update(integration_requirements)
-            except KeyError as e:
-                raise KeyError(
-                    f"Unable to find requirements for integration "
-                    f"'{integration_name}'."
-                ) from e
-
-        if isinstance(self._requirements, str) and fileio.exists(
-            self._requirements
-        ):
-            with fileio.open(self._requirements, "r") as f:
-                requirements.update(
-                    {
-                        requirement.strip()
-                        for requirement in f.read().split("\n")
-                        if requirement
-                    }
-                )
-            if self.requirements_file:
-                logger.warning(
-                    f"Using the file path passed in as `requirements` and "
-                    f"ignoring the file '{self.requirements_file}'."
-                )
-        # Add this logic back in (described in #ENG-882)
-        #
-        # elif isinstance(self._requirements, str) and self._requirements:
-        #     root = str(Repository().root)
-        #     if root:
-        #         assumed_requirements_file = os.path.join(
-        #             root, "requirements.txt"
-        #         )
-        #         if fileio.exists(assumed_requirements_file):
-        #             with fileio.open(assumed_requirements_file, "r") as f:
-        #                 requirements.update(
-        #                     {
-        #                         requirement.strip()
-        #                         for requirement in f.read().split("\n")
-        #                     }
-        #                 )
-        #                 logger.info(
-        #                     "Using requirements file: `%s`",
-        #                     assumed_requirements_file,
-        #                 )
-        elif isinstance(self._requirements, List):
-            requirements.update(self._requirements)
-            if self.requirements_file:
-                logger.warning(
-                    f"Using the values passed in as `requirements` and "
-                    f"ignoring the file '{self.requirements_file}'."
-                )
-        elif self.requirements_file and fileio.exists(self.requirements_file):
-            # TODO [ENG-883]: Deprecate the `requirements_file` option
-            with fileio.open(self.requirements_file, "r") as f:
-                requirements.update(
-                    {
-                        requirement.strip()
-                        for requirement in f.read().split("\n")
-                        if requirement
-                    }
-                )
-
-        return requirements
 
     @property
     def steps(self) -> Dict[str, BaseStep]:
@@ -497,9 +441,17 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self._reset_step_flags()
         self.validate_stack(stack)
 
-        return stack.deploy_pipeline(
-            self, runtime_configuration=runtime_configuration
-        )
+        # Prevent execution of nested pipelines which might lead to unexpected
+        # behavior
+        constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
+        try:
+            return_value = stack.deploy_pipeline(
+                self, runtime_configuration=runtime_configuration
+            )
+        finally:
+            constants.SHOULD_PREVENT_PIPELINE_EXECUTION = False
+
+        return return_value
 
     def with_config(
         self: T, config_file: str, overwrite_step_parameters: bool = False
@@ -558,6 +510,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 step.CONFIG_CLASS.__fields__.keys() if step.CONFIG_CLASS else {}
             )
             parameters = step_dict.get(StepConfigurationKeys.PARAMETERS_, {})
+            # pop the enable_cache
+            if PARAM_ENABLE_CACHE in parameters:
+                enable_cache = parameters.pop(PARAM_ENABLE_CACHE)
+                self.steps[step_name].enable_cache = enable_cache
+
             for parameter, value in parameters.items():
                 if parameter not in step_parameters:
                     raise PipelineConfigurationError(

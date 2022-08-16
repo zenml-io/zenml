@@ -47,26 +47,11 @@ zenml stack update -o <NAME>
 ```
 
 {% hint style="info" %}
-ZenML will build a Docker image called `zenml-vertex` which includes your code and use it
-to run your pipeline steps in Vertex AI. Check out
+ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>`
+which includes your code and use it to run your pipeline steps in Vertex AI. Check out
 [this page](../../developer-guide/advanced-usage/docker.md)
 if you want to learn more about how ZenML builds these images and
 how you can customize them.
-
-If you decide you need the full flexibility of having a
-[custom base image](../../developer-guide/advanced-usage/docker.md#using-a-custom-base-image),
-you can update your existing orchestrator
-```shell
-zenml orchestrator update <NAME> \
---custom_docker_base_image_name=<IMAGE_NAME>
-```
-or set it when registering a new Vertex orchestrator:
-```shell
-zenml orchestrator register <NAME> \
---flavor=vertex \
---custom_docker_base_image_name=<IMAGE_NAME> \
-...
-```
 {% endhint %}
 
 You can now run any ZenML pipeline using the Vertex orchestrator:

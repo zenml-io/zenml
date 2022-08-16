@@ -13,20 +13,29 @@
 #  permissions and limitations under the License.
 """Implementation of the Sagemaker Step Operator."""
 
-from typing import ClassVar, List, Optional, Tuple
+from typing import TYPE_CHECKING, ClassVar, List, Optional, Tuple
 
 import sagemaker
 
 from zenml.enums import StackComponentType
 from zenml.integrations.aws import AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
+from zenml.logger import get_logger
 from zenml.repository import Repository
+from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
-from zenml.utils import docker_utils
-from zenml.utils.source_utils import get_source_root_path
+from zenml.utils import deprecation_utils
+from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+
+if TYPE_CHECKING:
+    from zenml.config.docker_configuration import DockerConfiguration
+    from zenml.config.resource_configuration import ResourceConfiguration
 
 
-class SagemakerStepOperator(BaseStepOperator):
+logger = get_logger(__name__)
+
+
+class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
     """Step operator to run a step on Sagemaker.
 
     This class defines code that builds an image with the ZenML entrypoint
@@ -36,12 +45,12 @@ class SagemakerStepOperator(BaseStepOperator):
         role: The role that has to be assigned to the jobs which are
             running in Sagemaker.
         instance_type: The type of the compute instance where jobs will run.
-        base_image: [Optional] The base image to use for building the docker
+        base_image: The base image to use for building the docker
             image that will be executed.
-        bucket: [Optional] Name of the S3 bucket to use for storing artifacts
+        bucket: Name of the S3 bucket to use for storing artifacts
             from the job run. If not provided, a default bucket will be created
             based on the following format: "sagemaker-{region}-{aws-account-id}".
-        experiment_name: [Optional] The name for the experiment to which the job
+        experiment_name: The name for the experiment to which the job
             will be associated. If not provided, the job runs would be
             independent.
     """
@@ -55,6 +64,10 @@ class SagemakerStepOperator(BaseStepOperator):
 
     # Class Configuration
     FLAVOR: ClassVar[str] = AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
+
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
+        ("base_image", "docker_parent_image")
+    )
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -75,37 +88,13 @@ class SagemakerStepOperator(BaseStepOperator):
             custom_validation_function=_ensure_local_orchestrator,
         )
 
-    def _build_docker_image(
-        self,
-        pipeline_name: str,
-        requirements: List[str],
-        entrypoint_command: List[str],
-    ) -> str:
-        repo = Repository()
-        container_registry = repo.active_stack.container_registry
-
-        if not container_registry:
-            raise RuntimeError("Missing container registry")
-
-        registry_uri = container_registry.uri.rstrip("/")
-        image_name = f"{registry_uri}/zenml-sagemaker:{pipeline_name}"
-
-        docker_utils.build_docker_image(
-            build_context_path=get_source_root_path(),
-            image_name=image_name,
-            entrypoint=" ".join(entrypoint_command),
-            requirements=set(requirements),
-            base_image=self.base_image,
-        )
-        container_registry.push_image(image_name)
-        return docker_utils.get_image_digest(image_name) or image_name
-
     def launch(
         self,
         pipeline_name: str,
         run_name: str,
-        requirements: List[str],
+        docker_configuration: "DockerConfiguration",
         entrypoint_command: List[str],
+        resource_configuration: "ResourceConfiguration",
     ) -> None:
         """Launches a step on Sagemaker.
 
@@ -114,15 +103,28 @@ class SagemakerStepOperator(BaseStepOperator):
                 is part of.
             run_name: Name of the pipeline run which the step to be executed
                 is part of.
+            docker_configuration: The Docker configuration for this step.
             entrypoint_command: Command that executes the step.
-            requirements: List of pip requirements that must be installed
-                inside the step operator environment.
+            resource_configuration: The resource configuration for this step.
         """
-        image_name = self._build_docker_image(
+        image_name = self.build_and_push_docker_image(
             pipeline_name=pipeline_name,
-            requirements=requirements,
-            entrypoint_command=entrypoint_command,
+            docker_configuration=docker_configuration,
+            stack=Repository().active_stack,
+            runtime_configuration=RuntimeConfiguration(),
+            entrypoint=" ".join(entrypoint_command),
         )
+
+        if not resource_configuration.empty:
+            logger.warning(
+                "Specifying custom step resources is not supported for "
+                "the SageMaker step operator. If you want to run this step "
+                "operator on specific resources, you can do so by configuring "
+                "a different instance type like this: "
+                "`zenml step-operator update %s "
+                "--instance_type=<INSTANCE_TYPE>`",
+                self.name,
+            )
 
         session = sagemaker.Session(default_bucket=self.bucket)
         estimator = sagemaker.estimator.Estimator(

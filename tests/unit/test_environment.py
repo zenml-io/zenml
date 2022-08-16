@@ -16,6 +16,7 @@ import platform
 
 import pytest
 
+from zenml.config.docker_configuration import DockerConfiguration
 from zenml.constants import VALID_OPERATING_SYSTEMS
 from zenml.environment import BaseEnvironmentComponent, Environment
 from zenml.steps import StepEnvironment
@@ -49,6 +50,7 @@ def test_step_is_running():
         pipeline_run_id="run_id",
         step_name="step",
         cache_enabled=True,
+        docker_configuration=DockerConfiguration(),
     ):
         assert Environment().step_is_running is True
 

@@ -124,8 +124,8 @@ def visualize_statistics(
             profiles are required.
     """
     repo = Repository()
-    pipe = repo.get_pipeline(pipeline_name="data_profiling_pipeline")
-    whylogs_step = pipe.runs[-1].get_step(name=step_name)
+    pipe = repo.get_pipeline(pipeline="data_profiling_pipeline")
+    whylogs_step = pipe.runs[-1].get_step(step=step_name)
     whylogs_reference_step = None
     if reference_step_name:
         whylogs_reference_step = pipe.runs[-1].get_step(
@@ -197,7 +197,7 @@ zenml data-validator register whylogs -f whylogs --authentication_secret=whylabs
 zenml secrets-manager register local -f local
 zenml stack register whylogs_stack -o default -a default -m default -x local -dv whylogs --set
 
-zenml secret register whylabs_secret -s whylogs \
+zenml secrets-manager secret register whylabs_secret -s whylogs \
     --whylabs_default_org_id=<your-whylogs-organization-id> \
     --whylabs_api_key=<your-whylogs-api-key>
 ```

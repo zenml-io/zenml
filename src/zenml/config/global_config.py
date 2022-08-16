@@ -18,7 +18,7 @@ import logging
 import os
 import uuid
 from pathlib import PurePath
-from typing import Any, Dict, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 
 from packaging import version
 from pydantic import BaseModel, Field, ValidationError, validator
@@ -219,7 +219,7 @@ class GlobalConfiguration(
             return
         self._write_config()
 
-    def __getattribute__(self, key: str) -> Any:
+    def __custom_getattribute__(self, key: str) -> Any:
         """Gets an attribute value for a specific key.
 
         If a value for this attribute was specified using an environment
@@ -250,6 +250,12 @@ class GlobalConfiguration(
             return return_value
         except (ValidationError, KeyError, TypeError):
             return value
+
+    if not TYPE_CHECKING:
+        # When defining __getattribute__, mypy allows accessing non-existent
+        # attributes without failing
+        # (see https://github.com/python/mypy/issues/13319).
+        __getattribute__ = __custom_getattribute__
 
     def _migrate_config(self) -> None:
         """Migrates the global config to the latest version."""

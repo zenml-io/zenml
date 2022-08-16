@@ -63,7 +63,7 @@ online predictions on the running KServe inference service.
 ### 📄 Prerequisites 
 
 For the ZenML KServe deployer to work, these things are required:
-1. Access to a running [Kubernetes cluster](https://kubernetes.io/docs/tutorials/cluster-administration/). The example accepts a `--kubernetes-context` command-line argument. This Kubernetes context needs to point to the Kubernetes cluster where KServe model servers will be deployed. If the context is not explicitly supplied to the example, it defaults to using the locally active context.
+1. Access to a running [Kubernetes cluster](https://kubernetes.io/). The example accepts a `--kubernetes-context` command-line argument. This Kubernetes context needs to point to the Kubernetes cluster where KServe model servers will be deployed. If the context is not explicitly supplied to the example, it defaults to using the locally active context.
 
 2. KServe must be installed and running on the Kubernetes cluster (More information about how to install KServe can be found below or on the [KServe documentation](https://kserve.github.io/website/)).
 
@@ -114,19 +114,19 @@ istioctl install -y
 
 ```bash
 # Install the required custom resources
-kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.5.0/serving-crds.yaml
+kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.6.0/serving-crds.yaml
 # Install the core components of Knative Serving
-kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.5.0/serving-core.yaml
+kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.6.0/serving-core.yaml
 ```
 
 Install an Istio networking layer:
 
 ```bash
 # Install a properly configured Istio
-kubectl apply -l knative.dev/crd-install=true -f https://github.com/knative/net-istio/releases/download/knative-v1.5.0/istio.yaml
-kubectl apply -f https://github.com/knative/net-istio/releases/download/knative-v1.5.0/istio.yaml
+kubectl apply -l knative.dev/crd-install=true -f https://github.com/knative/net-istio/releases/download/knative-v1.6.0/istio.yaml
+kubectl apply -f https://github.com/knative/net-istio/releases/download/knative-v1.6.0/istio.yaml
 # Install the Knative Istio controller
-kubectl apply -f https://github.com/knative/net-istio/releases/download/knative-v1.5.0/net-istio.yaml
+kubectl apply -f https://github.com/knative/net-istio/releases/download/knative-v1.6.0/net-istio.yaml
 # Fetch the External IP address or CNAME
 kubectl --namespace istio-system get service istio-ingressgateway
 ```
@@ -150,7 +150,7 @@ webhook-756688c869-79pqh                 1/1     Running     0          2d22h
 3. Install Cert Manager:
 
 ```bash
-kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.8.0/cert-manager.yaml
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.9.1/cert-manager.yaml
 ```
 
 4. Finally, install KServe:
@@ -204,7 +204,7 @@ sklearn-iris   http://sklearn-iris.kserve-test.example.com         True         
 4. Determine the ingress IP and ports:
 
 ```bash
-$ kubectl get svc istio-ingressgateway -n istio-system
+kubectl get svc istio-ingressgateway -n istio-system
 NAME                   TYPE           CLUSTER-IP       EXTERNAL-IP      PORT(S)   AGE
 istio-ingressgateway   LoadBalancer   172.21.109.129   130.211.10.121   ...       17h
 ```
@@ -218,6 +218,7 @@ export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -
 export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 
 export INGRESS_PORT=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')
+export INGRESS_URL="http://${INGRESS_HOST}:${INGRESS_PORT}"
 
 ```
 
@@ -310,10 +311,12 @@ zenml model-deployer register kserve_gke --flavor=kserve \
   --kubernetes_namespace=zenml-workloads \
   --base_url=$INGRESS_URL \
   --secret=kserve_secret
-zenml artifact-store register gcp --flavor=fcp --path gs://my-bucket
+zenml artifact-store register gcp_artifact_store --flavor=fcp --path gs://my-bucket
 zenml secrets-manager register local --flavor=local
-zenml stack register local_gcp_kserve_stack -m default -a gcp -o default -d kserve_gke -x local --set
+zenml stack register local_gcp_kserve_stack -m default -a gcp_artifact_store -o default -d kserve_gke -x local --set
 ```
+
+##### KServe and Remote orchestrator like Kubeflow
 
 ZenML will manage the KServe deployments inside the same `kubeflow`
 namespace where the Kubeflow pipelines are running. You also have to update the set of
@@ -327,7 +330,7 @@ kubectl apply -n kserve-test -f - <<EOF
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: kubeflow-kserve-permission
+  name: kserve-permission
   namespace: kubeflow
   labels:
     app: zenml
@@ -344,7 +347,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: kubeflow-kserve-permission
+  name: kserve-permission
 subjects:
 - kind: ServiceAccount
   name: pipeline-runner
@@ -369,28 +372,23 @@ Store. for more information, see the [Create and manage service account keys](ht
 Once we have the service account key, we can create a ZenML secret with the following command:
 
 ```bash
-$ zenml secret register -s kserve_gs kserve_secret \
-    --namespace="zenml-workloads" \
+zenml secrets-manager secret register -s kserve_gs kserve_secret \
     --credentials="@~/sa-deployment-temp.json" \
-```
 
-The following secret will be registered.
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
 ┃             SECRET_KEY             │ SECRET_VALUE ┃
 ┠────────────────────────────────────┼──────────────┨
 ┃            storage_type            │ ***          ┃
-┃              namespace             │ ***          ┃
 ┃             credentials            │ ***          ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+``` 
 
 ```bash
-$ zenml secret get kserve_secret
+zenml secrets-manager secret get kserve_secret
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃    SECRET_KEY    │ SECRET_VALUE              ┃
 ┠──────────────────┼───────────────────────────┨
 ┃   storage_type   │ GCS                       ┃
-┠──────────────────┼───────────────────────────┨
-┃    namespace     │ kserve-test               ┃
 ┠──────────────────┼───────────────────────────┨
 ┃   credentials    │ ~/sa-deployment-temp.json ┃
 ┗━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
@@ -471,7 +469,7 @@ Pipeline run `tensorflow_inference_pipeline-24_Jul_22-23_58_24_922079` has finis
 The KServe prediction server is running remotely as a Kubernetes service and accepts inference requests at:
     `http://35.243.201.91:80/v1/models/mnist-tensorflow:predict`
     With the hostname: `mnist-tensorflow.kubeflow.example.com.`
-To stop the service, run `zenml served-models delete a9e967a1-9b26-4d5c-855c-e5abba0b020b`.
+To stop the service, run `zenml model-deployer models delete a9e967a1-9b26-4d5c-855c-e5abba0b020b`.
 ```
 
 Example of the Tensorflow inference pipeline when run with the remote Kubeflow stack:
@@ -488,7 +486,7 @@ and Natural Language Processing models, especially in the research domain,
 it is becoming more and more important to have a robust and easy to not only 
 [build ML pipelines with Pytorch](../pytorch/) but also to deploy the models built with it.
 
-[TorchServe](https://torchserve.github.io/website) is an open-source model serving 
+[TorchServe](https://github.com/pytorch/serve) is an open-source model serving 
 framework for PyTorch that makes it easy to deploy Pytorch models at a production 
 scale with low latency and high throughput, it provides default handlers for the most 
 common applications such as object detection and text classification, so you can write
@@ -500,7 +498,7 @@ The PyTorch Training/Deployment pipeline consists of the following steps:
 * evaluate - Evaluate the model using the test set.
 * deployment_trigger - Verify if the newly trained model exceeds the threshold and if so, deploy the model.
 * model_deployer - Deploy the trained model to the KServe model server using the TorchServe runtime.
-Just like the SKLearn MLServer runtime, the `model_deployer` is a ZenML built-in step that takes care of the preparing of the model to the right format for the runtime servers. But in this case, the user must provide some extra files to the config parameters of the `model_deployer` step.
+Just like the TFServing runtime, the `model_deployer` is a ZenML built-in step that takes care of the preparing of the model to the right format for the runtime servers. But in this case, the user must provide some extra files to the config parameters of the `model_deployer` step.
 Some of the parameters that TorchServe expects are:
     - `model_class_file`:   Python script containing model architecture class.
     - `handler`:            TorchServe's handler file to handle custom TorchServe inference logic.
@@ -522,33 +520,35 @@ python run_pytorch.py --config="deploy"
 Example output when running the pipeline with the local orchestrator stack:
 
 ```shell
-Creating run for pipeline: tensorflow_training_deployment_pipeline
-Cache enabled for pipeline tensorflow_training_deployment_pipeline
-Using stack gcp_stack_kserve to run pipeline tensorflow_training_deployment_pipeline...
-Step importer_mnist has started.
-Using cached version of importer_mnist.
-Step importer_mnist has finished in 0.045s.
-Step normalizer has started.
-Using cached version of normalizer.
-Step normalizer has finished in 0.059s.
-Step tf_trainer has started.
-Using cached version of tf_trainer.
-Step tf_trainer has finished in 0.058s.
-Step tf_evaluator has started.
-Using cached version of tf_evaluator.
-Step tf_evaluator has finished in 0.074s.
+Creating run for pipeline: pytorch_training_deployment_pipeline
+Cache enabled for pipeline pytorch_training_deployment_pipeline
+Using stack local_gcp_kserve_stack to run pipeline pytorch_training_deployment_pipeline...
+Step pytorch_data_loader has started.
+Using cached version of pytorch_data_loader.
+Step pytorch_data_loader has finished in 0.040s.
+Step pytorch_trainer has started.
+Using cached version of pytorch_trainer.
+Step pytorch_trainer has finished in 0.034s.
+Step pytorch_evaluator has started.
+Using cached version of pytorch_evaluator.
+Step pytorch_evaluator has finished in 0.041s.
 Step deployment_trigger has started.
 Using cached version of deployment_trigger.
-Step deployment_trigger has finished in 0.051s.
+Step deployment_trigger has finished in 0.032s.
 Step kserve_model_deployer_step has started.
-INFO:kserve.api.creds_utils:Created Secret: `kserve-secret-lj8h4` in namespace kubeflow
-INFO:kserve.api.creds_utils:Patched Service account: kserve-service-credentials in namespace kubeflow
-Creating a new KServe deployment service: `KServeDeploymentService[62aac6aa-88fd-4eb7-a753-b46f1658775c]` (type: model-serving, flavor: kserve)
+INFO:root:Successfully exported model mnist-pytorch to file `/tmp/zenml-pytorch-temp-j_bx9x1f`
+INFO:kserve.api.creds_utils:Created Secret: `kserve-secret-gqktl` in namespace zenml-workloads
+INFO:kserve.api.creds_utils:Patched Service account: kserve-service-credentials in namespace zenml-workloads
+Creating a new KServe deployment service: `KServeDeploymentService[e7595ac9-7fcf-42c2-82ac-a9e40ee95090]` (type: model-serving, flavor: kserve)
 KServe deployment service started and reachable at:
-    `http://35.243.201.91:80/v1/models/mnist-tensorflow:predict`
-    With the hostname: `mnist-tensorflow.kubeflow.example.com.`
-Step kserve_model_deployer_step has finished in 32.602s.
-Pipeline run `tensorflow_training_deployment_pipeline-25_Jul_22-00_17_10_197418` has finished in 34.904s.
+    `http://104.196.187.43:80/v1/models/mnist-pytorch:predict`
+    With the hostname: `mnist-pytorch.zenml-workloads.example.com.`
+Step kserve_model_deployer_step has finished in 31.207s.
+Pipeline run pytorch_training_deployment_pipeline-04_Aug_22-00_32_11_318689 has finished in 31.667s.
+The KServe prediction server is running remotely as a Kubernetes service and accepts inference requests at:
+    `http://104.196.187.43:80/v1/models/mnist-pytorch:predict`
+    With the hostname: `mnist-pytorch.zenml-workloads.example.com.`
+To stop the service, run `zenml model-deployer models delete e7595ac9-7fcf-42c2-82ac-a9e40ee95090`.
 ```
 
 Example of the PyTorch training/deployment pipeline when run with the remote Kubeflow stack:
@@ -564,21 +564,22 @@ python run_pytorch.py --config="predict"
 Example output when running the pipeline with the local orchestrator stack:
 
 ```shell
-Creating run for pipeline: tensorflow_inference_pipeline
-Cache enabled for pipeline tensorflow_inference_pipeline
-Using stack gcp_stack_kserve to run pipeline tensorflow_inference_pipeline...
+Creating run for pipeline: pytorch_inference_pipeline
+Cache enabled for pipeline pytorch_inference_pipeline
+Using stack local_gcp_kserve_stack to run pipeline pytorch_inference_pipeline...
 Step prediction_service_loader has started.
-Step prediction_service_loader has finished in 7.828s.
-Step tf_predict_preprocessor has started.
-Step tf_predict_preprocessor has finished in 5.955s.
-Step tf_predictor has started.
-Prediction:  [0]
-Step tf_predictor has finished in 8.417s.
-Pipeline run `tensorflow_inference_pipeline-25_Jul_22-00_17_48_063863` has finished in 24.284s.
+Step prediction_service_loader has finished in 2.910s.
+Step pytorch_inference_processor has started.
+Step pytorch_inference_processor has finished in 1.664s.
+Step pytorch_predictor has started.
+Prediction: 
+[1]
+Step pytorch_predictor has finished in 4.075s.
+Pipeline run `pytorch_inference_pipeline-04_Aug_22-00_35_16_493511` has finished in 8.883s.
 The KServe prediction server is running remotely as a Kubernetes service and accepts inference requests at:
-    `http://35.243.201.91:80/v1/models/mnist-tensorflow:predict`
-    With the hostname: `mnist-tensorflow.kubeflow.example.com.`
-To stop the service, run `zenml served-models delete 62aac6aa-88fd-4eb7-a753-b46f1658775c`.
+    `http://104.196.187.43:80/v1/models/mnist-pytorch:predict`
+    With the hostname: `mnist-pytorch.zenml-workloads.example.com.`
+To stop the service, run `zenml model-deployer models delete e7595ac9-7fcf-42c2-82ac-a9e40ee95090`.
 ```
 
 Example of the PyTorch inference pipeline when run with the remote Kubeflow stack:
@@ -588,24 +589,24 @@ Example of the PyTorch inference pipeline when run with the remote Kubeflow stac
 
 ## 🎮 ZenML Served Models CLI
 
-The `zenml served-models list` CLI command can be run to list the active model servers:
+The `zenml model-deployer models list` CLI command can be run to list the active model servers:
 
 ```shell
-$ zenml served-models list
+$ zenml model-deployer models list
 ┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┓
 ┃ STATUS │ UUID                                 │ PIPELINE_NAME                           │ PIPELINE_STEP_NAME         │ MODEL_NAME       ┃
 ┠────────┼──────────────────────────────────────┼─────────────────────────────────────────┼────────────────────────────┼──────────────────┨
-┃   ✅   │ c4d488dd-3924-499b-9829-46e91f6081e9 │ pytorch_training_deployment_pipeline    │ kserve_model_deployer_step │ mnist-pytorch    ┃
+┃   ✅   │ e7595ac9-7fcf-42c2-82ac-a9e40ee95090 │ pytorch_training_deployment_pipeline    │ kserve_model_deployer_step │ mnist-pytorch    ┃
 ┠────────┼──────────────────────────────────────┼─────────────────────────────────────────┼────────────────────────────┼──────────────────┨
 ┃   ✅   │ 62aac6aa-88fd-4eb7-a753-b46f1658775c │ tensorflow_training_deployment_pipeline │ kserve_model_deployer_step │ mnist-tensorflow ┃
 ┗━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━┛
 ```
 
 To get more information about a specific model server, such as the prediction URL,
-the `zenml served-models describe <uuid>` CLI command can be run:
+the `zenml model-deployer models describe <uuid>` CLI command can be run:
 
 ```shell
-$ zenml served-models describe a9e967a1-9b26-4d5c-855c-e5abba0b020b
+$ zenml model-deployer models describe a9e967a1-9b26-4d5c-855c-e5abba0b020b
   Properties of Served Model 62aac6aa-88fd-4eb7-a753-b46f1658775c                                      
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ MODEL SERVICE PROPERTY   │ VALUE                                                                                                       ┃
@@ -639,17 +640,17 @@ output, so there is a separate CLI command available to retrieve it:
 
 
 ```shell
-$ zenml served-models get-url a9e967a1-9b26-4d5c-855c-e5abba0b020b
+$ zenml model-deployer models get-url a9e967a1-9b26-4d5c-855c-e5abba0b020b
   Prediction URL of Served Model 62aac6aa-88fd-4eb7-a753-b46f1658775c is:
   http://35.243.201.91:80/v1/models/mnist-tensorflow:predict
   and the hostname is: mnist-tensorflow.kubeflow.example.com
 ```
 
-Finally, a model server can be deleted with the `zenml served-models delete <uuid>`
+Finally, a model server can be deleted with the `zenml model-deployer models delete <uuid>`
 CLI command:
 
 ```shell
-$ zenml served-models delete 62aac6aa-88fd-4eb7-a753-b46f1658775c
+$ zenml model-deployer models delete 62aac6aa-88fd-4eb7-a753-b46f1658775c
 ```
 
 ## 🧽 Clean up
@@ -658,7 +659,7 @@ To stop any prediction servers running in the background, use the `zenml model-s
 and `zenml model-server delete <uuid>` CLI commands.:
 
 ```shell
-zenml served-models delete 62aac6aa-88fd-4eb7-a753-b46f1658775c
+zenml model-deployer models delete 62aac6aa-88fd-4eb7-a753-b46f1658775c
 ```
 
 Then delete the remaining ZenML references.

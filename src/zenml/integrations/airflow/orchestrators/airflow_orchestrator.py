@@ -168,6 +168,13 @@ class AirflowOrchestrator(BaseOrchestrator):
             # Create callable that will be used by airflow to execute the step
             # within the orchestrated environment
             def _step_callable(step_instance: "BaseStep", **kwargs):
+                if self.requires_resources_in_orchestration_environment(step):
+                    logger.warning(
+                        "Specifying step resources is not yet supported for "
+                        "the Airflow orchestrator, ignoring resource "
+                        "configuration for step %s.",
+                        step.name,
+                    )
                 # Extract run name for the kwargs that will be passed to the
                 # callable
                 run_name = kwargs["ti"].get_dagrun().run_id

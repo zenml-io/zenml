@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """CLI for manipulating ZenML local and global config file."""
 
+import getpass
 import json
 from typing import Dict, Optional
 
@@ -30,6 +31,7 @@ from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.repository import Repository
+from zenml.secret import ArbitrarySecretSchema
 from zenml.stack import Stack
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.yaml_utils import read_yaml, write_yaml
@@ -1273,3 +1275,116 @@ def copy_stack(
             )
         stack_wrapper.name = target_stack
         target_repo.zen_store.register_stack(stack_wrapper)
+
+
+@stack.command(
+    "register-secrets",
+    help="Interactively register all required secrets for a stack.",
+)
+@click.argument("stack_name", type=str, required=False)
+@click.option(
+    "--skip-existing",
+    "skip_existing",
+    is_flag=True,
+    default=False,
+    help="Skip secrets with existing values.",
+    type=bool,
+)
+def register_secrets(
+    skip_existing: bool,
+    stack_name: Optional[str] = None,
+) -> None:
+    """Interactively registers all required secrets for a stack.
+
+    Args:
+        skip_existing: If `True`, skip asking for secret values that already
+            exist.
+        stack_name: Name of the stack for which to register secrets. If empty,
+            the active stack will be used.
+    """
+    cli_utils.print_active_profile()
+
+    if stack_name:
+        try:
+            stack_ = Repository().get_stack(stack_name)
+        except KeyError:
+            cli_utils.error(f"No stack found for name `{stack_name}`.")
+    else:
+        stack_ = Repository().active_stack
+        cli_utils.declare(
+            f"No stack name specified, using the active stack `{stack_.name}`."
+        )
+
+    required_secrets = stack_.required_secrets
+    if not required_secrets:
+        cli_utils.declare("No secrets required for this stack.")
+        return
+
+    secret_names = {s.name for s in required_secrets}
+    secrets_manager = stack_.secrets_manager
+    if not secrets_manager:
+        cli_utils.error(
+            f"Unable to register required secrets ({secret_names}) because "
+            "the stack doesn't contain a secrets manager. Please add a secrets "
+            "manager to your stack and then rerun this command."
+        )
+
+    secrets_to_register = []
+    secrets_to_update = []
+    for name in secret_names:
+        try:
+            secret_content = secrets_manager.get_secret(name).content.copy()
+            secret_exists = True
+        except KeyError:
+            secret_content = {}
+            secret_exists = False
+
+        required_keys = {s.key for s in required_secrets if s.name == name}
+        needs_update = False
+
+        for key in required_keys:
+            existing_value = secret_content.get(key, None)
+
+            if existing_value:
+                if skip_existing:
+                    continue
+
+                value = getpass.getpass(
+                    f"Value for secret `{name}.{key}` "
+                    "(Leave empty to use existing value):"
+                )
+                if value:
+                    value = cli_utils.expand_argument_value_from_file(
+                        name=key, value=value
+                    )
+                else:
+                    value = existing_value
+
+                # only need to update if the value changed
+                needs_update = needs_update or value != existing_value
+            else:
+                value = None
+                while not value:
+                    value = getpass.getpass(f"Value for secret `{name}.{key}`:")
+                value = cli_utils.expand_argument_value_from_file(
+                    name=key, value=value
+                )
+                needs_update = True
+
+            secret_content[key] = value
+
+        secret = ArbitrarySecretSchema(name=name, **secret_content)
+
+        if not secret_exists:
+            secrets_to_register.append(secret)
+        elif needs_update:
+            secrets_to_update.append(secret)
+
+    for secret in secrets_to_register:
+        cli_utils.declare(f"Registering secret `{secret.name}`:")
+        cli_utils.pretty_print_secret(secret=secret, hide_secret=True)
+        secrets_manager.register_secret(secret)
+    for secret in secrets_to_update:
+        cli_utils.declare(f"Updating secret `{secret.name}`:")
+        cli_utils.pretty_print_secret(secret=secret, hide_secret=True)
+        secrets_manager.update_secret(secret)

@@ -36,7 +36,7 @@ To use the Kubernetes orchestrator, we need:
 * A [remote metadata store](../metadata-stores/metadata-stores.md) as part of your stack.
 If you want to use a MySQL database deployed in your Kubernetes cluster, you can use
 the [Kubernetes metadata store](../metadata-stores/kubernetes.md). For a more 
-production-ready setup we suggest using a [MySQL metatadata store](../metadata-stores/mysql) instead.
+production-ready setup we suggest using a [MySQL metatadata store](../metadata-stores/mysql.md) instead.
 * A [remote container registry](../container-registries/container-registries.md) as part of your stack.
 * A Kubernetes cluster [deployed](#how-to-deploy-it) and the name
 of your Kubernetes context which points to this cluster. Run 
@@ -53,25 +53,11 @@ zenml stack update -o <NAME>
 ```
 
 {% hint style="info" %}
-ZenML will build a Docker image called `zenml-kubernetes`
+ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>`
 which includes your code and use it to run your pipeline steps in Kubernetes. Check out
 [this page](../../developer-guide/advanced-usage/docker.md)
 if you want to learn more about how ZenML builds these images and
 how you can customize them.
-
-If you decide you need the full flexibility of having a
-[custom base image](../../developer-guide/advanced-usage/docker.md#using-a-custom-base-image),
-you can update your existing orchestrator
-```shell
-zenml orchestrator update <NAME> \
---custom_docker_base_image_name=<IMAGE_NAME>
-```
-or set it when registering a new Kubernetes orchestrator:
-```shell
-zenml orchestrator register <NAME> \
---flavor=kubernetes \
---custom_docker_base_image_name=<IMAGE_NAME>
-```
 {% endhint %}
 
 You can now run any ZenML pipeline using the Kubernetes orchestrator:

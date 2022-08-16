@@ -18,7 +18,7 @@ from zenml.integrations.slack.steps.slack_alerter_post_step import (
     slack_alerter_post_step,
 )
 
-from .data_loader import data_loader
+from .data_loader import digits_data_loader
 from .deployer import model_deployer
 from .evaluator import evaluator
 from .formatter import test_acc_ask_formatter, test_acc_post_formatter
@@ -26,7 +26,7 @@ from .trainer import svc_trainer, svc_trainer_mlflow
 
 __all__ = [
     "model_deployer",
-    "data_loader",
+    "digits_data_loader",
     "evaluator",
     "svc_trainer",
     "test_acc_ask_formatter",

@@ -34,12 +34,12 @@ from zenml.integrations.tensorflow.services.tensorboard_service import (
 from zenml.logger import get_logger
 from zenml.post_execution import StepView
 from zenml.repository import Repository
-from zenml.visualizers import BaseStepVisualizer
+from zenml.visualizers import BaseVisualizer
 
 logger = get_logger(__name__)
 
 
-class TensorboardVisualizer(BaseStepVisualizer):
+class TensorboardVisualizer(BaseVisualizer):
     """The implementation of a Whylogs Visualizer."""
 
     @classmethod
@@ -198,7 +198,7 @@ def get_step(pipeline_name: str, step_name: str) -> StepView:
         raise RuntimeError(f"No pipeline with name `{pipeline_name}` was found")
 
     last_run = pipeline.runs[-1]
-    step = last_run.get_step(name=step_name)
+    step = last_run.get_step(step=step_name)
     if step is None:
         raise RuntimeError(
             f"No pipeline step with name `{step_name}` was found in "

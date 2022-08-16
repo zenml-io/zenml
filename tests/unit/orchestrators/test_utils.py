@@ -15,15 +15,20 @@
 
 import json
 
+from zenml.config.docker_configuration import DockerConfiguration
 from zenml.constants import (
-    MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME,
+    MLMD_CONTEXT_DOCKER_CONFIGURATION_PROPERTY_NAME,
+    MLMD_CONTEXT_MATERIALIZER_SOURCES_PROPERTY_NAME,
     MLMD_CONTEXT_STACK_PROPERTY_NAME,
+    MLMD_CONTEXT_STEP_RESOURCES_PROPERTY_NAME,
     ZENML_MLMD_CONTEXT_TYPE,
 )
+from zenml.materializers import BuiltInMaterializer
 from zenml.orchestrators.utils import get_cache_status
 from zenml.pipelines import pipeline
 from zenml.repository import Repository
-from zenml.steps import step
+from zenml.steps import ResourceConfiguration, step
+from zenml.utils import source_utils
 
 
 def test_get_cache_status_raises_no_error_when_none_passed():
@@ -78,11 +83,15 @@ def test_get_cache_status_works_when_running_pipeline_twice(clean_repo, mocker):
 def test_pipeline_storing_context_in_the_metadata_store():
     """Tests that storing the ZenML context in the metadata store works."""
 
-    @step
+    resource_config = ResourceConfiguration(gpu_count=1, memory="8GB")
+
+    @step(resource_configuration=resource_config)
     def some_step_1() -> int:
         return 3
 
-    @pipeline(requirements=["test==0.1.2"])
+    docker_config = DockerConfiguration(requirements=["test==0.12"])
+
+    @pipeline(docker_configuration=docker_config)
     def p(step_):
         step_()
 
@@ -99,9 +108,16 @@ def test_pipeline_storing_context_in_the_metadata_store():
     assert contexts[0].custom_properties[
         MLMD_CONTEXT_STACK_PROPERTY_NAME
     ].string_value == json.dumps(repo.active_stack.dict(), sort_keys=True)
-    assert (
-        contexts[0]
-        .custom_properties[MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME]
-        .string_value
-        == "test==0.1.2"
-    )
+    assert contexts[0].custom_properties[
+        MLMD_CONTEXT_STEP_RESOURCES_PROPERTY_NAME
+    ].string_value == resource_config.json(sort_keys=True)
+    assert contexts[0].custom_properties[
+        MLMD_CONTEXT_DOCKER_CONFIGURATION_PROPERTY_NAME
+    ].string_value == docker_config.json(sort_keys=True)
+
+    expected_materializers = {
+        "output": source_utils.resolve_class(BuiltInMaterializer)
+    }
+    assert contexts[0].custom_properties[
+        MLMD_CONTEXT_MATERIALIZER_SOURCES_PROPERTY_NAME
+    ].string_value == json.dumps(expected_materializers, sort_keys=True)

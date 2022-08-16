@@ -15,28 +15,25 @@
 
 import json
 import os
-import sys
-from pathlib import PurePosixPath
-from typing import AbstractSet, Any, Dict, Iterable, List, Optional, cast
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    cast,
+)
 
-import pkg_resources
 from docker.client import DockerClient
 from docker.utils import build as docker_build_utils
 
-import zenml
-from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import ENV_ZENML_CONFIG_PATH
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.pipelines.base_pipeline import PARAM_DOCKERIGNORE_FILE
-from zenml.utils import string_utils
-from zenml.utils.io_utils import read_file_contents_as_string
-
-DEFAULT_BASE_IMAGE = (
-    f"zenmldocker/zenml:{zenml.__version__}-"
-    f"py{sys.version_info.major}.{sys.version_info.minor}"
-)
-CONTAINER_ZENML_CONFIG_DIR = ".zenconfig"
+from zenml.utils import io_utils, string_utils
 
 logger = get_logger(__name__)
 
@@ -51,7 +48,7 @@ def _parse_dockerignore(dockerignore_path: str) -> List[str]:
         List of patterns to ignore.
     """
     try:
-        file_content = read_file_contents_as_string(dockerignore_path)
+        file_content = io_utils.read_file_contents_as_string(dockerignore_path)
     except FileNotFoundError:
         logger.warning(
             "Unable to find dockerignore file at path '%s'.", dockerignore_path
@@ -67,100 +64,76 @@ def _parse_dockerignore(dockerignore_path: str) -> List[str]:
     return exclude_patterns
 
 
-def generate_dockerfile_contents(
-    base_image: str,
-    entrypoint: Optional[str] = None,
-    requirements: Optional[AbstractSet[str]] = None,
-    environment_vars: Optional[Dict[str, str]] = None,
-) -> str:
-    """Generates a Dockerfile.
-
-    Args:
-        base_image: The image to use as base for the dockerfile.
-        entrypoint: The default entrypoint command that gets executed when
-            running a container of an image created by this dockerfile.
-        requirements: Optional list of pip requirements to install.
-        environment_vars: Optional dict of environment variables to set.
-
-    Returns:
-        Content of a dockerfile.
-    """
-    lines = [f"FROM {base_image}", "WORKDIR /app"]
-
-    # TODO [ENG-781]: Make secrets invisible in the Dockerfile or use a different approach.
-    if environment_vars:
-        for key, value in environment_vars.items():
-            lines.append(f"ENV {key.upper()}={value}")
-
-    if requirements:
-        # Quote the requirements to avoid problems with special characters
-        requirements = {f"'{r}'" for r in requirements}
-        lines.append(
-            f"RUN pip install --no-cache {' '.join(sorted(requirements))}"
-        )
-
-    lines.append("COPY . .")
-    lines.append("RUN chmod -R a+rw .")
-    lines.append(
-        f"ENV {ENV_ZENML_CONFIG_PATH}=/app/{CONTAINER_ZENML_CONFIG_DIR}"
-    )
-
-    if entrypoint:
-        lines.append(f"ENTRYPOINT {entrypoint}")
-
-    return "\n".join(lines)
-
-
-def create_custom_build_context(
-    build_context_path: str,
+def _create_custom_build_context(
     dockerfile_contents: str,
-    dockerignore_path: Optional[str] = None,
+    build_context_root: Optional[str] = None,
+    dockerignore: Optional[str] = None,
+    extra_files: Sequence[Tuple[str, str]] = (),
 ) -> Any:
     """Creates a docker build context.
 
     Args:
-        build_context_path: Path to a directory that will be sent to the
+        build_context_root: Path to a directory that will be sent to the
             docker daemon as build context.
         dockerfile_contents: File contents of the Dockerfile to use for the
             build.
-        dockerignore_path: Optional path to a dockerignore file. If no value is
+        dockerignore: Optional path to a dockerignore file. If no value is
             given, the .dockerignore in the root of the build context will be
-            used if it exists. Otherwise, all files inside `build_context_path`
+            used if it exists. Otherwise, all files inside `build_context_root`
             are included in the build context.
+        extra_files: Additional files to include in the build context. The
+            files should be passed as a tuple
+            (filepath_inside_build_context, file_content) and will overwrite
+            existing files in the build context if they share the same path.
 
     Returns:
         Docker build context that can be passed when building a docker image.
     """
-    exclude_patterns = []
-    default_dockerignore_path = os.path.join(
-        build_context_path, ".dockerignore"
-    )
-    if dockerignore_path or fileio.exists(default_dockerignore_path):
-        if not dockerignore_path:
-            dockerignore_path = default_dockerignore_path
+    if build_context_root:
         logger.info(
-            "Using dockerignore file `%s` to create docker build context.",
-            dockerignore_path,
+            "Creating Docker build context from directory `%s`.",
+            os.path.abspath(build_context_root),
         )
-        exclude_patterns = _parse_dockerignore(dockerignore_path)
+        exclude_patterns = []
+        default_dockerignore_path = os.path.join(
+            build_context_root, ".dockerignore"
+        )
+        if dockerignore or fileio.exists(default_dockerignore_path):
+            if not dockerignore:
+                dockerignore = default_dockerignore_path
+            logger.info(
+                "Using dockerignore file `%s` to create docker build context.",
+                dockerignore,
+            )
+            exclude_patterns = _parse_dockerignore(dockerignore)
+        else:
+            logger.info(
+                "No `.dockerignore` found, including all files inside build "
+                "context.",
+            )
+
+        logger.debug(
+            "Exclude patterns for creating docker build context: %s",
+            exclude_patterns,
+        )
+        no_ignores_found = not exclude_patterns
+
+        files = docker_build_utils.exclude_paths(
+            build_context_root, patterns=exclude_patterns
+        )
     else:
+        # No build context path given, we create a build context with only
+        # the Dockerfile included
         logger.info(
-            "No `.dockerignore` found, including all files inside `%s`.",
-            build_context_path,
+            "No build context root specified, not including any files in the "
+            "Docker build context."
         )
+        no_ignores_found = False
+        files = []
 
-    logger.debug(
-        "Exclude patterns for creating docker build context: %s",
-        exclude_patterns,
-    )
-    no_ignores_found = not exclude_patterns
-
-    files = docker_build_utils.exclude_paths(
-        build_context_path, patterns=exclude_patterns
-    )
-    extra_files = [("Dockerfile", dockerfile_contents)]
+    extra_files = [*extra_files, ("Dockerfile", dockerfile_contents)]
     context = docker_build_utils.create_archive(
-        root=build_context_path,
+        root=build_context_root,
         files=sorted(files),
         gzip=False,
         extra_files=extra_files,
@@ -172,7 +145,7 @@ def create_custom_build_context(
         # in dockerignore files -> remind to specify a .dockerignore file
         logger.warning(
             "Build context size for docker image: `%s`. If you believe this is "
-            "unreasonably large, make sure to include a `.dockerignore` file"
+            "unreasonably large, make sure to include a `.dockerignore` file "
             "at the root of your build context `%s` or specify a custom file "
             "for argument `%s` when defining your pipeline.",
             string_utils.get_human_readable_filesize(build_context_size),
@@ -183,142 +156,119 @@ def create_custom_build_context(
     return context
 
 
-def get_current_environment_requirements() -> Dict[str, str]:
-    """Returns a dict of package requirements.
-
-    This applies to the environment that in which the current python process is
-    running.
-
-    Returns:
-        A dict of package requirements.
-    """
-    return {
-        distribution.key: distribution.version
-        for distribution in pkg_resources.working_set
-    }
-
-
-def build_docker_image(
-    build_context_path: str,
+def build_image(
     image_name: str,
-    entrypoint: Optional[str] = None,
-    dockerfile_path: Optional[str] = None,
-    dockerignore_path: Optional[str] = None,
-    requirements: Optional[AbstractSet[str]] = None,
-    environment_vars: Optional[Dict[str, str]] = None,
-    use_local_requirements: bool = False,
-    base_image: Optional[str] = None,
+    dockerfile: Union[str, List[str]],
+    build_context_root: Optional[str] = None,
+    dockerignore: Optional[str] = None,
+    extra_files: Sequence[Tuple[str, str]] = (),
+    **custom_build_options: Any,
 ) -> None:
     """Builds a docker image.
 
     Args:
-        build_context_path: Path to a directory that will be sent to the
-            docker daemon as build context.
-        image_name: The name to use for the created docker image.
-        entrypoint: Optional entrypoint command that gets executed when running
-            a container of the built image.
-        dockerfile_path: Optional path to a dockerfile. If no value is given,
-            a temporary dockerfile will be created.
-        dockerignore_path: Optional path to a dockerignore file. If no value is
+        image_name: The name to use for the built docker image.
+        dockerfile: Path to a dockerfile or a list of strings representing the
+            Dockerfile lines/commands.
+        build_context_root: Optional path to a directory that will be sent to
+            the Docker daemon as build context. If left empty, the Docker build
+            context will be empty.
+        dockerignore: Optional path to a dockerignore file. If no value is
             given, the .dockerignore in the root of the build context will be
-            used if it exists. Otherwise, all files inside `build_context_path`
+            used if it exists. Otherwise, all files inside `build_context_root`
             are included in the build context.
-        requirements: Optional list of pip requirements to install. This
-            will only be used if no value is given for `dockerfile_path`.
-        environment_vars: Optional dict of key value pairs that need to be
-            embedded as environment variables in the image.
-        use_local_requirements: If `True` and no values are given for
-            `dockerfile_path` and `requirements`, then the packages installed
-            in the environment of the current python processed will be
-            installed in the docker image.
-        base_image: The image to use as base for the docker image.
+        extra_files: Additional files to include in the build context. The
+            files should be passed as a tuple
+            (filepath_inside_build_context, file_content) and will overwrite
+            existing files in the build context if they share the same path.
+        **custom_build_options: Additional options that will be passed
+            unmodified to the Docker build call when building the image. You
+            can use this to for example specify build args or a target stage.
+            See https://docker-py.readthedocs.io/en/stable/images.html#docker.models.images.ImageCollection.build
+            for a full list of available options.
     """
-    config_path = os.path.join(build_context_path, CONTAINER_ZENML_CONFIG_DIR)
-    try:
-        logger.info("Building Docker image `%s`:", image_name)
+    if isinstance(dockerfile, str):
+        dockerfile_contents = io_utils.read_file_contents_as_string(dockerfile)
+        logger.info("Using Dockerfile `%s`.", os.path.abspath(dockerfile))
+    else:
+        dockerfile_contents = "\n".join(dockerfile)
 
-        # Save a copy of the current global configuration with the
-        # active profile and the active stack configuration into the build
-        # context, to have the active profile and active stack accessible from
-        # within the container.
-        load_config_path = PurePosixPath(f"/app/{CONTAINER_ZENML_CONFIG_DIR}")
-        GlobalConfiguration().copy_active_configuration(
-            config_path, load_config_path=load_config_path
-        )
+    build_context = _create_custom_build_context(
+        dockerfile_contents=dockerfile_contents,
+        build_context_root=build_context_root,
+        dockerignore=dockerignore,
+        extra_files=extra_files,
+    )
 
-        if not requirements and use_local_requirements:
-            local_requirements = get_current_environment_requirements()
-            requirements = {
-                f"{package}=={version}"
-                for package, version in local_requirements.items()
-                if package != "zenml"  # exclude ZenML
-            }
-            logger.info("Using requirements from local environment.")
+    build_options = {
+        "rm": False,  # don't remove intermediate containers to improve caching
+        "pull": True,  # always pull parent images
+        **custom_build_options,
+    }
 
-        if requirements:
-            logger.info(
-                "The following external requirements are built into the image:"
-            )
-            for requirement in requirements:
-                logger.info(f"\t- `{requirement}`")
+    logger.info("Building Docker image `%s`.", image_name)
+    logger.debug("Docker build options: %s", build_options)
 
-        if dockerfile_path:
-            dockerfile_contents = read_file_contents_as_string(dockerfile_path)
-        else:
-            dockerfile_contents = generate_dockerfile_contents(
-                base_image=base_image or DEFAULT_BASE_IMAGE,
-                entrypoint=entrypoint,
-                requirements=requirements,
-                environment_vars=environment_vars,
-            )
+    logger.info("Building the image might take a while...")
 
-        build_context = create_custom_build_context(
-            build_context_path=build_context_path,
-            dockerfile_contents=dockerfile_contents,
-            dockerignore_path=dockerignore_path,
-        )
-        # If a custom base image is provided, make sure to always pull the
-        # latest version of that image (if it isn't a locally built image).
-        # If no base image is provided, we use the static default ZenML image so
-        # there is no need to constantly pull
-        pull_base_image = False
-        if base_image:
-            pull_base_image = not is_local_image(base_image)
-
-        logger.info("Building the image might take a while...")
-
-        docker_client = DockerClient.from_env()
-        # We use the client api directly here, so we can stream the logs
-        output_stream = docker_client.images.client.api.build(
-            fileobj=build_context,
-            custom_context=True,
-            tag=image_name,
-            pull=pull_base_image,
-            rm=False,  # don't remove intermediate containers
-        )
-        _process_stream(output_stream)
-    finally:
-        # Clean up the temporary build files
-        fileio.rmtree(config_path)
+    docker_client = DockerClient.from_env()
+    # We use the client api directly here, so we can stream the logs
+    output_stream = docker_client.images.client.api.build(
+        fileobj=build_context,
+        custom_context=True,
+        tag=image_name,
+        **build_options,
+    )
+    _process_stream(output_stream)
 
     logger.info("Finished building Docker image `%s`.", image_name)
 
 
-def push_docker_image(image_name: str) -> None:
-    """Pushes a docker image to a container registry.
+def push_image(image_name: str) -> str:
+    """Pushes an image to a container registry.
 
     Args:
         image_name: The full name (including a tag) of the image to push.
+
+    Returns:
+        The Docker repository digest of the pushed image.
+
+    Raises:
+        RuntimeError: If fetching the repository digest of the image failed.
     """
     logger.info("Pushing Docker image `%s`.", image_name)
     docker_client = DockerClient.from_env()
     output_stream = docker_client.images.push(image_name, stream=True)
-    _process_stream(output_stream)
-    logger.info("Finished pushing Docker image `%s`.", image_name)
+    aux_info = _process_stream(output_stream)
+    logger.info("Finished pushing Docker image.")
+
+    image_name_without_tag, _ = image_name.rsplit(":", maxsplit=1)
+    for info in reversed(aux_info):
+        try:
+            repo_digest = info["Digest"]
+            return f"{image_name_without_tag}@{repo_digest}"
+        except KeyError:
+            pass
+    else:
+        raise RuntimeError(
+            f"Unable to find repo digest after pushing image {image_name}."
+        )
+
+
+def tag_image(image_name: str, target: str) -> None:
+    """Tags an image.
+
+    Args:
+        image_name: The name of the image to tag.
+        target: The full target name including a tag.
+    """
+    docker_client = DockerClient.from_env()
+    image = docker_client.images.get(image_name)
+    image.tag(target)
 
 
 def get_image_digest(image_name: str) -> Optional[str]:
-    """Gets the digest of a docker image.
+    """Gets the digest of an image.
 
     Args:
         image_name: Name of the image to get the digest for.
@@ -362,7 +312,7 @@ def is_local_image(image_name: str) -> bool:
         return False
 
 
-def _process_stream(stream: Iterable[bytes]) -> None:
+def _process_stream(stream: Iterable[bytes]) -> List[Dict[str, Any]]:
     """Processes the output stream of a docker command call.
 
     Args:
@@ -370,7 +320,12 @@ def _process_stream(stream: Iterable[bytes]) -> None:
 
     Raises:
         RuntimeError: If there was an error while running the docker command.
+
+    Returns:
+        Auxiliary information which was part of the stream.
     """
+    auxiliary_info = []
+
     for element in stream:
         lines = element.decode("utf-8").strip().split("\n")
 
@@ -381,9 +336,13 @@ def _process_stream(stream: Iterable[bytes]) -> None:
                     raise RuntimeError(f"Docker error: {line_json['error']}.")
                 elif "stream" in line_json:
                     logger.debug(line_json["stream"].strip())
+                elif "aux" in line_json:
+                    auxiliary_info.append(line_json["aux"])
                 else:
                     pass
             except json.JSONDecodeError as error:
                 logger.warning(
                     "Failed to decode json for line '%s': %s", line, error
                 )
+
+    return auxiliary_info

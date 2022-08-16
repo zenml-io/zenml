@@ -22,7 +22,6 @@ from steps import (
     model_deployer,
     prediction_service_loader,
     predictor,
-    skew_comparison,
     svc_trainer_mlflow,
     training_data_loader,
 )
@@ -34,35 +33,33 @@ from zenml.integrations.evidently.visualizers import EvidentlyVisualizer
 from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
     FacetStatisticsVisualizer,
 )
-from zenml.repository import Repository
 
 
 def main():
 
     # initialize and run training pipeline
-    training_pipeline(
+    training_pipeline_instance = training_pipeline(
         training_data_loader=training_data_loader(),
-        skew_comparison=skew_comparison(),
         trainer=svc_trainer_mlflow(),
         evaluator=evaluator(),
         deployment_trigger=deployment_trigger(),
         model_deployer=model_deployer,
-    ).run()
+    )
+    training_pipeline_instance.run()
 
     # initialize and run inference pipeline
-    inference_pipeline(
+    inference_pipeline_instance = inference_pipeline(
         inference_data_loader=inference_data_loader(),
         prediction_service_loader=prediction_service_loader(),
         predictor=predictor(),
         training_data_loader=training_data_loader(),
-        skew_comparison=skew_comparison(),
         drift_detector=drift_detector,
-    ).run()
+    )
+    inference_pipeline_instance.run()
 
     # fetch latest runs for each pipeline
-    repo = Repository()
-    train_run = repo.get_pipeline(pipeline_name="training_pipeline").runs[-1]
-    inf_run = repo.get_pipeline(pipeline_name="inference_pipeline").runs[-1]
+    train_run = training_pipeline_instance.get_runs()[-1]
+    inf_run = inference_pipeline_instance.get_runs()[-1]
 
     # visualize training pipeline
     PipelineRunLineageVisualizer().visualize(train_run)
@@ -70,16 +67,19 @@ def main():
     # visualize inference pipeline
     PipelineRunLineageVisualizer().visualize(inf_run)
 
-    # visualize train-test skew
-    train_test_skew_step = train_run.get_step(name="skew_comparison")
-    FacetStatisticsVisualizer().visualize(train_test_skew_step)
-
-    # visualize training-serving skew
-    training_serving_skew_step = inf_run.get_step(name="skew_comparison")
-    FacetStatisticsVisualizer().visualize(training_serving_skew_step)
+    # visualize train-test and training-serving skew
+    training_data_loader_step = train_run.get_step(step="training_data_loader")
+    inference_data_loader_step = inf_run.get_step(step="inference_data_loader")
+    FacetStatisticsVisualizer().visualize(
+        {
+            "Train": training_data_loader_step.outputs["X_train"],
+            "Test": training_data_loader_step.outputs["X_test"],
+            "Inference": inference_data_loader_step.output,
+        }
+    )
 
     # visualize data drift
-    drift_detection_step = inf_run.get_step(name="drift_detector")
+    drift_detection_step = inf_run.get_step(step="drift_detector")
     EvidentlyVisualizer().visualize(drift_detection_step)
 
 

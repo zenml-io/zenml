@@ -372,8 +372,8 @@ from zenml.repository import Repository
 
 def visualize_results(pipeline_name: str, step_name: str) -> None:
     repo = Repository()
-    pipeline = repo.get_pipeline(pipeline_name=pipeline_name)
-    evidently_outputs = pipeline.runs[-1].get_step(name=step_name)
+    pipeline = repo.get_pipeline(pipeline=pipeline_name)
+    evidently_outputs = pipeline.runs[-1].get_step(step=step_name)
     EvidentlyVisualizer().visualize(evidently_outputs)
 
 if __name__ == "__main__":
