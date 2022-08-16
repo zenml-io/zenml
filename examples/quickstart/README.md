@@ -20,6 +20,35 @@ You can use Google Colab to see ZenML in action, no signup / installation requir
 
 <a href="https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/notebooks/quickstart.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
+## :cloud: Run on a cloud provider of your choice
+
+If you're looking for a quick way to test the quickstart out on your cloud but don't want to go through the pain-staking process of creating all the required resources, we have just the solution for you: stack recipes! 🥗
+
+Stack recipes are a set of carefully-crafted Terraform modules that do the heavy-lifting of creating your cloud resources, following your customizations. With just a simple command, you can have a full MLOps stacks that you can run your pipelines on! Check out the [`mlops-stacks` repository](https://github.com/zenml-io/mlops-stacks) to see the list of recipes available as of now and for the instructions on how to deploy them 🚀.
+
+Once you follow the [instructions](https://github.com/zenml-io/mlops-stacks#-association-with-zenml) to deploy any recipe of your choice, you'll then have a ZenML stack created for you. Set this as the current active stack by running the following command and get started on the Zen experience 🧘:
+
+```bash
+zenml stack set <name-of-recipe>
+```
+
+> **Note**
+> You'll need to have all the necessary integrations installed before running the recipe. Use the following command:
+```bash
+zenml integration install dash sklearn mlflow evidently facets
+``` 
+
+> **Note**
+> You should also have `kubectl` and `docker` installed on your local system with the local docker client authorized to push to your cloud registry.
+
+
+You can now run the quickstart pipeline by executing the `run.py` file in the root directory!
+
+```bash
+python run.py
+```
+
+
 ## :computer: Run Locally
 
 ### :page_facing_up: Prerequisites 

@@ -204,6 +204,46 @@ to access the GCP container registry.
 * Kubectl can [access](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl) your GCP 
 Kubernetes cluster.
 
+#### 🚅 That seems like a lot of infrastructure work. Is there a faster way to run this example?
+
+Yes! If you are not a fan of creating resources on the cloud manually, we have just the solution for you. The [`gke-kubeflow-kserve` recipe](https://github.com/zenml-io/mlops-stacks/tree/main/gcp-kubeflow-kserve) can provision all the resources you need for this example and if you're using the new stack recipe CLI commands, it will even import a ZenML stack with these new components that you can use out of the box! 
+
+For those not familiar with stack recipes, they are a set of carefully-crafted Terraform modules that do the heavy-lifting of creating your cloud resources, following your customizations. With just a simple command, you can have a full MLOps stacks that you can run your pipelines on! Check out the [`mlops-stacks` repository](https://github.com/zenml-io/mlops-stacks) to see the list of recipes available as of now and for the instructions on how to deploy them 🚀.
+
+Once you follow the [instructions](https://github.com/zenml-io/mlops-stacks#-association-with-zenml) to deploy the `gcp-kubeflow-kserve` recipe, you'll then have a ZenML stack created for you. Set this as the current active stack by running the following command and get started on the Zen experience 🧘:
+
+```bash
+zenml stack set gcp-kubeflow-kserve
+```
+
+> **Note**
+> You need to have the `gcp`, `kubeflow`, `kserve` and `mlflow` integrations installed before running the recipe.
+
+> **Note**
+> You should also have `kubectl` and `docker` installed on your local system with the local docker client authorized to push to your cloud registry.
+
+You should now create a secret for the CloudSQL instance that will allow ZenML to connect to it. Use the following command:
+
+```bash
+zenml secrets-manager secret register gcp_mysql_secret --schema=mysql --user=<DB_USER> --password=<PWD> \
+  --ssl_ca=@</PATH/TO/DOWNLOADED/SERVER-CERT> \
+  --ssl_cert=@</PATH/TO/DOWNLOADED/CLIENT-CERT> \
+  --ssl_key=@</PATH/TO/DOWNLOADED/CLIENT-KEY>
+```
+
+The values for the username and password can be obtained by running the following commands inside your recipe directory.
+
+```bash
+terraform output metadata-db-username
+
+terraform output metadata-db-password
+```
+
+For the certificates, visit the Google Cloud Console to [create a certificate and download the files](https://cloud.google.com/sql/docs/mysql/configure-ssl-instance#:~:text=Cloud%20SQL%20Instances-,To%20open%20the%20Overview%20page%20of%20an%20instance%2C%20click%20the,Click%20Create%20client%20certificate.) to your system.
+
+
+You can now jump straight to the [section on running the pipeline](#🏃-run-pipelines-in-production-using-kubeflow-pipelines)!
+
 ### 🥞 Create a GCP Kubeflow Pipelines stack
 
 To run our pipeline on Kubeflow Pipelines deployed to GCP, we will create a new stack with these components:
