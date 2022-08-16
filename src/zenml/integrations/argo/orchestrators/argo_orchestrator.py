@@ -12,7 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the Argo orchestrator."""
-import os
+
+import base64
 import subprocess
 import sys
 from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Tuple
@@ -22,7 +23,10 @@ from hera import Task, Workflow, WorkflowService
 
 from kubernetes import config as k8s_config
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
+import errno
+import os
 
+from kubernetes import client, config
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.integrations.argo import ARGO_ORCHESTRATOR_FLAVOR
@@ -32,6 +36,7 @@ from zenml.orchestrators import BaseOrchestrator
 from zenml.stack import StackValidator
 from zenml.utils import io_utils, networking_utils
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.integrations.argo.orchestrators.argo_entrypoint_configuration import ArgoEntrypointConfiguration
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
@@ -44,6 +49,34 @@ logger = get_logger(__name__)
 
 DEFAULT_ARGO_UI_PORT = 2746
 
+
+def get_sa_token(service_account: str = "default", namespace: str = "default", config_file: Optional[str] = None):
+    """Get ServiceAccount token using kubernetes config.
+     Parameters
+    ----------
+    service_account: str
+        The service account to authenticate from.
+    namespace: str = 'default'
+        The K8S namespace the workflow service submits workflows to. This defaults to the `default` namespace.
+    config_file: Optional[str] = None
+        The path to k8s configuration file.
+     Raises
+    ------
+    FileNotFoundError
+        When the config_file can not be found.
+    """
+    if config_file is not None and not os.path.isfile(config_file):
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), config_file)
+
+    config.load_kube_config(config_file=config_file)
+    v1 = client.CoreV1Api()
+    secret_name = v1.read_namespaced_service_account(service_account, namespace).secrets[0].name
+    sec = v1.read_namespaced_secret(secret_name, namespace).data
+    return base64.b64decode(sec["token"]).decode()
+
+
+def dummy():
+    print("dummy")
 
 class ArgoOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
     """Orchestrator responsible for running pipelines using Argo.
@@ -213,40 +246,38 @@ class ArgoOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
         # Get a filepath to use to save the finished yaml to
         assert runtime_configuration.run_name
-        fileio.makedirs(self.pipeline_directory)
-        pipeline_file_path = os.path.join(
-            self.pipeline_directory, f"{runtime_configuration.run_name}.yaml"
-        )
 
         # Dictionary mapping step names to airflow_operators. This will be needed
         # to configure airflow operator dependencies
         step_name_to_argo_task = {}
 
-        with Workflow(pipeline.name, WorkflowService(host=None, token=None)) as w:
+        with Workflow(pipeline.name, WorkflowService(host=f"https://127.0.0.1:{self.argo_ui_port}", token=get_sa_token(namespace=self.kubernetes_namespace), verify_ssl=False, namespace=self.kubernetes_namespace)) as w:
             for step in sorted_steps:
                 # Create callable that will be used by argo to execute the step
                 # within the orchestrated environment
-                def _step_callable(step_instance: "BaseStep", run_name: str, **kwargs):
-                    if self.requires_resources_in_orchestration_environment(step):
-                        logger.warning(
-                            "Specifying step resources is not yet supported for "
-                            "the Airflow orchestrator, ignoring resource "
-                            "configuration for step %s.",
-                            step.name,
-                        )
-                    # Extract run name for the kwargs that will be passed to the
-                    # callable
-                    self.run_step(
-                        step=step_instance,
-                        run_name=run_name,
+                command = ArgoEntrypointConfiguration.get_entrypoint_command()
+                arguments = (
+                    ArgoEntrypointConfiguration.get_entrypoint_arguments(
+                        step=step,
                         pb2_pipeline=pb2_pipeline,
                     )
+                )
 
                 current_task = Task(
                     step.name,
-                    functools.partial(_step_callable, step_instance=step, run_id=runtime_configuration.run_name),
+                    dummy,
                     image=image_name,
+                    command=command,
+                    args=arguments
                 )
+
+                if self.requires_resources_in_orchestration_environment(step):
+                    logger.warning(
+                        "Specifying step resources is not yet supported for "
+                        "the Airflow orchestrator, ignoring resource "
+                        "configuration for step %s.",
+                        step.name,
+                    )
 
                 # Configure the current argo operator to run after all upstream
                 # operators finished executing
@@ -256,7 +287,6 @@ class ArgoOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 )
                 for upstream_step_name in upstream_step_names:
                     step_name_to_argo_task[upstream_step_name] >> current_task
-
 
         if runtime_configuration.schedule:
             logger.warning(
