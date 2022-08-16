@@ -53,30 +53,6 @@ class KubernetesSparkStepOperator(
         """Provides the application path in the corresponding docker image."""
         return f"local://{APP_DIR}/{ENTRYPOINT_NAME}"
 
-    # @staticmethod
-    # def _generate_zenml_pipeline_dockerfile(  # TODO: To be removed
-    #     parent_image: str,
-    #     docker_configuration: DockerConfiguration,
-    #     requirements_files: Sequence[str] = (),
-    #     entrypoint: Optional[str] = None,
-    # ) -> List[str]:
-    #     dockerfile = (
-    #         PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
-    #             parent_image,
-    #             docker_configuration,
-    #             requirements_files,
-    #             entrypoint,
-    #         )
-    #     )
-    #     return (
-    #         [dockerfile[0]]
-    #         + [
-    #             "USER root",  # required to install the requirements
-    #             "RUN apt-get -y update",
-    #             "RUN apt-get -y install git",
-    #         ]
-    #         + dockerfile[1:]
-    #     )
 
     def _backend_configuration(
         self,
