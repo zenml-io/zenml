@@ -17,7 +17,15 @@ jobs:
     uses: ./.github/workflows/publish_to_pypi.yml
     secrets: inherit
 
-  publish-docker-image:
+  wait-for-package-release:
+    runs-on: ubuntu-latest
     needs: publish-python-package
+    steps:
+      - name: Sleep for 60 seconds
+        run: sleep 60
+        shell: bash
+
+  publish-docker-image:
+    needs: wait-for-package-release
     uses: ./.github/workflows/publish_docker_image.yml
     secrets: inherit
