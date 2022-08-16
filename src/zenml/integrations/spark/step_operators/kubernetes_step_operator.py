@@ -25,13 +25,13 @@ from zenml.io.fileio import copy
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
-from zenml.step_operators import entrypoint
+from zenml.integrations.spark.step_operators import spark_entrypoint
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 from zenml.utils.source_utils import get_source_root_path
 
 logger = get_logger(__name__)
 
-LOCAL_ENTRYPOINT = entrypoint.__file__
+LOCAL_ENTRYPOINT = spark_entrypoint.__file__
 APP_DIR = "/app"
 ENTRYPOINT_NAME = "zenml_spark_entrypoint.py"
 
@@ -53,30 +53,30 @@ class KubernetesSparkStepOperator(
         """Provides the application path in the corresponding docker image."""
         return f"local://{APP_DIR}/{ENTRYPOINT_NAME}"
 
-    @staticmethod
-    def _generate_zenml_pipeline_dockerfile(  # TODO: To be removed
-        parent_image: str,
-        docker_configuration: DockerConfiguration,
-        requirements_files: Sequence[str] = (),
-        entrypoint: Optional[str] = None,
-    ) -> List[str]:
-        dockerfile = (
-            PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
-                parent_image,
-                docker_configuration,
-                requirements_files,
-                entrypoint,
-            )
-        )
-        return (
-            [dockerfile[0]]
-            + [
-                "USER root",  # required to install the requirements
-                "RUN apt-get -y update",
-                "RUN apt-get -y install git",
-            ]
-            + dockerfile[1:]
-        )
+    # @staticmethod
+    # def _generate_zenml_pipeline_dockerfile(  # TODO: To be removed
+    #     parent_image: str,
+    #     docker_configuration: DockerConfiguration,
+    #     requirements_files: Sequence[str] = (),
+    #     entrypoint: Optional[str] = None,
+    # ) -> List[str]:
+    #     dockerfile = (
+    #         PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
+    #             parent_image,
+    #             docker_configuration,
+    #             requirements_files,
+    #             entrypoint,
+    #         )
+    #     )
+    #     return (
+    #         [dockerfile[0]]
+    #         + [
+    #             "USER root",  # required to install the requirements
+    #             "RUN apt-get -y update",
+    #             "RUN apt-get -y install git",
+    #         ]
+    #         + dockerfile[1:]
+    #     )
 
     def _backend_configuration(
         self,
@@ -109,13 +109,13 @@ class KubernetesSparkStepOperator(
 
         # Adjust the spark configuration
         spark_config.set("spark.kubernetes.container.image", image_name)
-        if self.kubernetes_namespace:
+        if self.namespace:
             spark_config.set(
                 "spark.kubernetes.namespace",
-                self.kubernetes_namespace,
+                self.namespace,
             )
-        if self.kubernetes_service_account:
+        if self.service_account:
             spark_config.set(
                 "spark.kubernetes.authenticate.driver.serviceAccountName",
-                self.kubernetes_service_account,
+                self.service_account,
             )
