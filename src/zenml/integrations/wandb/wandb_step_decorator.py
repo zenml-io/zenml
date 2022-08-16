@@ -17,7 +17,6 @@ import functools
 from typing import Any, Callable, Optional, Type, TypeVar, Union, cast, overload
 
 import wandb
-
 from zenml.environment import Environment
 from zenml.integrations.wandb.experiment_trackers.wandb_experiment_tracker import (
     WandbExperimentTracker,

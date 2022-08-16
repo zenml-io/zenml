@@ -27,6 +27,6 @@ def digits_data_loader() -> Output(
     digits = load_digits()
     data = digits.images.reshape((len(digits.images), -1))
     X_train, X_test, y_train, y_test = train_test_split(
-        data, digits.target, test_size=0.5, shuffle=False
+        data, digits.target, test_size=0.2, shuffle=False
     )
     return X_train, X_test, y_train, y_test

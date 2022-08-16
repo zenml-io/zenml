@@ -50,10 +50,9 @@ class FacetStatisticsVisualizer(BaseVisualizer):
         """Method to visualize components.
 
         Args:
-            object:
-                - Either a StepView fetched from run.get_step() whose outputs
-                    are all datasets that should be visualized.
-                - Or a dict that maps dataset names to datasets.
+            object: Either a StepView fetched from run.get_step() whose outputs
+                are all datasets that should be visualized, or a dict that maps
+                dataset names to datasets.
             magic: Whether to render in a Jupyter notebook or not.
             *args: Additional arguments.
             **kwargs: Additional keyword arguments.
