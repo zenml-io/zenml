@@ -24,7 +24,7 @@ DEFAULT_FILEPATH = "model"
 
 
 class SparkModelMaterializer(BaseMaterializer):
-    """Materializer to read/write NeuralProphet models."""
+    """Materializer to read/write Spark models."""
 
     ASSOCIATED_TYPES = (Transformer, Estimator, Model)
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)

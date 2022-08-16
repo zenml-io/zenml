@@ -1,4 +1,4 @@
-# The distributed programming with Spark
+# Distributed Data Processing with Spark on Kubernetes
 
 In an MLOps workflow where the scale is high, distributed programming as a
 feature has the potential to be a game-changer, especially in steps such as
@@ -27,7 +27,6 @@ spin up a few resources. Additionally, you have to install Spark following the
 instructions [here](https://spark.apache.org/downloads.html).
 
 #### Recommended versions
-
 - `spark` = 3.2.1
 - `hadoop` = 3.2
 
@@ -221,11 +220,11 @@ the **step operator**.
 ```bash
 # Register the spark on Kubernetes step operator
 zenml step-operator register spark_step_operator \
-	--flavor=spark-kubernetes \
-	--master=k8s://$EKS_API_SERVER_ENDPOINT \
-	--namespace=$KUBERNETES_NAMESPACE \
-	--service_account=$KUBERNETES_SERVICE_ACCOUNT \
-	--docker_parent_image=$BASE_IMAGE_NAME
+    --flavor=spark-kubernetes \
+    --master=k8s://$EKS_API_SERVER_ENDPOINT \
+    --namespace=$KUBERNETES_NAMESPACE \
+    --service_account=$KUBERNETES_SERVICE_ACCOUNT \
+    --docker_parent_image=$BASE_IMAGE_NAME
 ```
 
 Following that, we will register the **secrets manager**, as we will utilize 
@@ -234,8 +233,8 @@ it to register some secrets required by some of the other components:
 ```bash
 # Register the secrets manager on AWS
 zenml secrets-manager register spark_secrets_manager \
-	--flavor=aws \
-	--region_name=$REGION
+    --flavor=aws \
+    --region_name=$REGION
 ```
 
 Next, let us register our **artifact store** on S3. For this example, we 
@@ -244,9 +243,9 @@ will also use a secret while registering our artifact store.
 ```bash
 # Register the artifact store using the secret
 zenml artifact-store register spark_artifact_store \
-	--flavor=s3 \
-	--path=$S3_BUCKET_NAME \
-	--authentication_secret=s3_authentication
+    --flavor=s3 \
+    --path=$S3_BUCKET_NAME \
+    --authentication_secret=s3_authentication
 ```
 
 Similar to the artifact store, for our **metadata store** on RDS, we will be 
@@ -255,10 +254,10 @@ using an authentication secret.
 ```bash
 # Register the metadata store using the secret
 zenml metadata-store register spark_metadata_store \
-  --flavor=mysql \
-  --database=zenml \
-  --secret=rds_authentication \
-  --host=$RDS_MYSQL_ENDPOINT
+    --flavor=mysql \
+    --database=zenml \
+    --secret=rds_authentication \
+    --host=$RDS_MYSQL_ENDPOINT
 ```
 
 We also register the **container registry** on ECR as follows:
@@ -276,12 +275,12 @@ Finally, let’s finalize the stack.
 # Register the stack
 zenml stack register spark_stack \
     -o default \
-	-s spark_step_operator \
-	-x spark_secrets_manager \
-	-a spark_artifact_store \
-	-m spark_metadata_store \
-	-c spark_container_registry \
-	--set
+    -s spark_step_operator \
+    -x spark_secrets_manager \
+    -a spark_artifact_store \
+    -m spark_metadata_store \
+    -c spark_container_registry \
+    --set
 ```
 
 and register the required secrets:
@@ -289,16 +288,16 @@ and register the required secrets:
 ```bash
 # Register the authentication secret for s3
 zenml secrets-manager secret register s3_authentication \
-	--schema=aws \
-	--aws_access_key_id=<ACCESS_KEY_ID> \
-	--aws_secret_access_key=<SECRET_ACCESS_KEY> \
-	--aws_session_token=<SESSION_TOKEN>
+    --schema=aws \
+    --aws_access_key_id=<ACCESS_KEY_ID> \
+    --aws_secret_access_key=<SECRET_ACCESS_KEY> \
+    --aws_session_token=<SESSION_TOKEN>
 	
 # Register the authentication secret for RDS
 zenml secrets-manager secret register rds_authentication \
-  --schema=mysql \
-  --user=$RDS_MYSQL_USERNAME \
-  --password=$RDS_MYSQL_PASSWORD
+    --schema=mysql \
+    --user=$RDS_MYSQL_USERNAME \
+    --password=$RDS_MYSQL_PASSWORD
 ```
 ### Running the pipeline
 

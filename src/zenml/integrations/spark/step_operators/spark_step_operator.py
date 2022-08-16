@@ -21,16 +21,11 @@ from pyspark.conf import SparkConf
 from zenml.config.docker_configuration import DockerConfiguration
 from zenml.logger import get_logger
 from zenml.repository import Repository
-from zenml.step_operators import BaseStepOperator, entrypoint
+from zenml.step_operators import BaseStepOperator
 
 logger = get_logger(__name__)
 if TYPE_CHECKING:
     from zenml.config.resource_configuration import ResourceConfiguration
-
-LOCAL_ENTRYPOINT = entrypoint.__file__
-APP_DIR = "/app/"
-CONTAINER_ZENML_CONFIG_DIR = ".zenconfig"
-ENTRYPOINT_NAME = "zenml_spark_entrypoint.py"
 
 
 class SparkStepOperator(BaseStepOperator):
@@ -189,7 +184,7 @@ class SparkStepOperator(BaseStepOperator):
                 )
         else:
             logger.warning(
-                "In most cases, the spark step operator requires additional "
+                "In most cases, the Spark step operator requires additional "
                 "configuration based on the artifact store flavor you are "
                 "using. That also means, that when you use this step operator "
                 "with certain artifact store flavor, ZenML can take care of "

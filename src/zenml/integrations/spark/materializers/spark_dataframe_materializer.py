@@ -15,16 +15,17 @@ import os.path
 from typing import Any, Type
 
 from pyspark.sql import DataFrame, SparkSession
-
+from zenml.artifacts.data_artifact import DataArtifact
 from zenml.materializers.base_materializer import BaseMaterializer
 
 DEFAULT_FILEPATH = "data"
 
 
 class SparkDataFrameMaterializer(BaseMaterializer):
-    """Materializer to read/write NeuralProphet models."""
+    """Materializer to read/write Spark dataframes."""
 
     ASSOCIATED_TYPES = (DataFrame,)
+    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> DataFrame:
         """Reads and returns a spark dataframe.

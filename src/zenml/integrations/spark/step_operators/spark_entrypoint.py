@@ -189,8 +189,6 @@ def main(
     constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
     constants.USER_MAIN_MODULE = main_module
 
-    stack = Repository().active_stack
-
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
     logging.getLogger().setLevel(logging.INFO)
 
