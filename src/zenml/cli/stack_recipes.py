@@ -152,8 +152,7 @@ class Terraform:
         # read values into a dict and return
         with fileio.open(variables_file_path, "r") as f:
             variables = json.load(f)
-            f.close()
-            return variables
+        return variables
 
     def set_log_level(self, log_level: str) -> None:
         """Set TF_LOG env var to the log_level provided by the user.
@@ -634,7 +633,7 @@ def info(
 )
 def pull(
     git_stack_recipes_handler: GitStackRecipesHandler,
-    stack_recipe_name: str,
+    stack_recipe_name: Optional[str],
     force: bool,
     path: str,
 ) -> None:
