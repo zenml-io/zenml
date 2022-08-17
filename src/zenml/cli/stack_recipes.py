@@ -213,6 +213,38 @@ class LocalStackRecipe:
         """
         return fileio.isdir(str(self.path))
 
+    @property
+    def locals_content(self) -> str:
+        """Returns the locals.tf content associated with a particular recipe.
+
+        Returns:
+            The locals.tf content associated with a particular recipe.
+
+        Raises:
+            ValueError: If the locals.tf file is not found.
+            FileNotFoundError: If the locals.tf file is not one of the options.
+        """
+        locals_file = os.path.join(self.path_in_repo, "locals.tf")
+        try:
+            with open(locals_file) as locals:
+                locals_content = locals.read()
+            return locals_content
+        except FileNotFoundError:
+            if fileio.exists(str(self.path_in_repo)) and fileio.isdir(
+                str(self.path_in_repo)
+            ):
+                raise ValueError(
+                    f"No locals.tf file found in " f"{self.path_in_repo}"
+                )
+            else:
+                raise FileNotFoundError(
+                    f"Recipe {self.name} is not one of the available options."
+                    f"\n"
+                    f"To list all available recipes, type: `zenml stack recipe "
+                    f"list`"
+                )
+
+
 
 class StackRecipe:
     """Class for all stack recipe objects."""
@@ -845,56 +877,73 @@ if terraform_installed:  # noqa: C901
                 # set terraform log level
                 tf_client.set_log_level(log_level=log_level)
 
-                # Telemetry
-                track_event(
-                    AnalyticsEvent.RUN_STACK_RECIPE,
-                    {"stack_recipe_name": stack_recipe_name},
-                )
-                # use the terraform client to apply recipe
-                stack_yaml_file = os.path.join(
-                    local_stack_recipe.path,
-                    tf_client.apply(),
-                )
-
                 logger.info(
-                    "\nA stack configuration YAML file has been generated as "
-                    f"part of the deployment of the {stack_recipe_name} recipe. "
-                    f"Find it at {stack_yaml_file}."
+                    "The following values are selected for the configuration "
+                    "of your cloud resources. You can change it by modifying "
+                    "the contents of the locals.tf file here: "
+                    f"{os.path.join(local_stack_recipe.path, 'locals.tf')}\n"
                 )
 
-                if import_stack:
+                with console.pager(styles=True):
+                    console.print(local_stack_recipe.locals_content)
+                
+                if cli_utils.confirmation(
+                    f"\nDo you wish to deploy the {stack_recipe_name} recipe "
+                    "with the above configuration? Please make sure that "
+                    "resources with the same values as above don't already "
+                    "exist on your cloud account."
+                ):
+                
+                    # Telemetry
+                    track_event(
+                        AnalyticsEvent.RUN_STACK_RECIPE,
+                        {"stack_recipe_name": stack_recipe_name},
+                    )
+                    # use the terraform client to apply recipe
+                    stack_yaml_file = os.path.join(
+                        local_stack_recipe.path,
+                        tf_client.apply(),
+                    )
+
                     logger.info(
-                        "\nThe flag `--no-import` is not set. Proceeding "
-                        "to import a new ZenML stack from the created resources."
-                    )
-                    import_stack_name = (
-                        stack_name if stack_name else stack_recipe_name
-                    )
-                    cli_utils.declare(
-                        f"Importing a new stack with the name {import_stack_name}."
+                        "\nA stack configuration YAML file has been generated as "
+                        f"part of the deployment of the {stack_recipe_name} recipe. "
+                        f"Find it at {stack_yaml_file}."
                     )
 
-                    # import deployed resources as ZenML stack
-                    ctx.invoke(
-                        import_stack,
-                        stack_name=stack_name,
-                        filename=stack_yaml_file,
-                        ignore_version_mismatch=True,
-                    )
+                    if import_stack:
+                        logger.info(
+                            "\nThe flag `--no-import` is not set. Proceeding "
+                            "to import a new ZenML stack from the created resources."
+                        )
+                        import_stack_name = (
+                            stack_name if stack_name else stack_recipe_name
+                        )
+                        cli_utils.declare(
+                            f"Importing a new stack with the name {import_stack_name}."
+                        )
 
-                    cli_utils.declare(
-                        "Please consider creating any secrets that your stack "
-                        "components like the metadata store might need. "
-                        "You can inspect the fields of a stack component by "
-                        "running a describe command on them."
-                    )
-                    cli_utils.declare(
-                        "\n Run 'terraform output' in the recipe's directory at "
-                        f"{local_stack_recipe.path} to get a list of outputs. To now "
-                        "retrieve sensitive outputs, for example, the metadata-db-password "
-                        "use the command 'terraform output metadata-db-password' to get the "
-                        "value in the command-line."
-                    )
+                        # import deployed resources as ZenML stack
+                        ctx.invoke(
+                            import_stack,
+                            stack_name=stack_name,
+                            filename=stack_yaml_file,
+                            ignore_version_mismatch=True,
+                        )
+
+                        cli_utils.declare(
+                            "Please consider creating any secrets that your stack "
+                            "components like the metadata store might need. "
+                            "You can inspect the fields of a stack component by "
+                            "running a describe command on them."
+                        )
+                        cli_utils.declare(
+                            "\n Run 'terraform output' in the recipe's directory at "
+                            f"{local_stack_recipe.path} to get a list of outputs. To now "
+                            "retrieve sensitive outputs, for example, the metadata-db-password "
+                            "use the command 'terraform output metadata-db-password' to get the "
+                            "value in the command-line."
+                        )
 
             except RuntimeError as e:
                 cli_utils.error(
