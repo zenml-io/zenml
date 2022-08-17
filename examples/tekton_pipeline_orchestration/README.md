@@ -70,7 +70,7 @@ this example, we will use GCP, but any other cloud provider of choice can  be us
 * An existing [GCP container registry](https://cloud.google.com/container-registry/docs).
 * An existing [GCP bucket](https://cloud.google.com/storage/docs/creating-buckets).
 * A [Cloud SQL MySQL](https://cloud.google.com/sql) database deployed in the same region as the Kubernetes cluster below.
-* [Tekton Pipelines](https://www.tekton.org/docs/distributions/gke/deploy/overview/) deployed to a Google 
+* [Tekton Pipelines](https://tekton.dev/docs/pipelines/install/#installing-tekton-pipelines-on-kubernetes) deployed to a Google 
 Kubernetes Engine cluster.
 * The local docker client has to be [authorized](https://cloud.google.com/container-registry/docs/advanced-authentication) 
 to access the GCP container registry.
