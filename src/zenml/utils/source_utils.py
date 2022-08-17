@@ -29,9 +29,11 @@ import importlib
 import inspect
 import os
 import pathlib
+import site
 import sys
 import types
 from contextlib import contextmanager
+from distutils.sysconfig import get_python_lib
 from types import (
     CodeType,
     FrameType,
@@ -96,7 +98,17 @@ def is_third_party_module(file_path: str) -> bool:
         `True` if the file belongs to a third party package, else `False`.
     """
     absolute_file_path = pathlib.Path(file_path).resolve()
-    return get_source_root_path() not in absolute_file_path.parents
+
+    for path in site.getsitepackages() + [
+        site.getusersitepackages(),
+        get_python_lib(standard_lib=True),
+    ]:
+        if pathlib.Path(path).resolve() in absolute_file_path.parents:
+            return True
+
+    return (
+        pathlib.Path(get_source_root_path()) not in absolute_file_path.parents
+    )
 
 
 def create_zenml_pin() -> str:
