@@ -25,5 +25,6 @@ def pytorch_predictor(
     """Run a inference request against a prediction service"""
 
     service.start(timeout=120)  # should be a NOP if already started
-    prediction = service.predict(data)
+    response = service.predict(data)
+    prediction = response["predictions"]
     rich_print("Prediction: ", prediction)
