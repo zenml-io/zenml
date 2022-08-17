@@ -102,7 +102,7 @@ The flow to get started for this example can be the following:
 
     For the certificates, visit the Google Cloud Console to [create a certificate and download the files](https://cloud.google.com/sql/docs/mysql/configure-ssl-instance#:~:text=Cloud%20SQL%20Instances-,To%20open%20the%20Overview%20page%20of%20an%20instance%2C%20click%20the,Click%20Create%20client%20certificate.) to your system.
 
-You can now skip directly to [running the pipeline](#▶️-run-the-pipeline)!
+You can now skip directly to [running the pipeline](#%EF%B8%8F-run-the-pipeline)!
 
 ## 🥞 Create a GCP Kubeflow Pipelines stack
 
