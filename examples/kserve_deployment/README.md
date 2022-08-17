@@ -89,7 +89,7 @@ For the ZenML KServe deployer to work, these things are required:
  
 #### 🚅 That seems like a lot of infrastructure work. Is there a faster way to run this example?
 
-Yes! If you are not a fan of creating resources on the cloud manually, we have just the solution for you. The [`gke-kubeflow-kserve` recipe](https://github.com/zenml-io/mlops-stacks/tree/main/gcp-kubeflow-kserve) can provision all the resources you need for this example and if you're using the new stack recipe CLI commands, it will even import a ZenML stack with these new components that you can use out of the box! 
+Yes! If you are not a fan of creating resources on the cloud manually, we have just the solution for you. The [`gke-kubeflow-kserve` recipe](https://github.com/zenml-io/mlops-stacks/tree/main/gcp-kubeflow-kserve) can provision all the resources you need for this example and if you're using the new [stack recipe CLI commands](../../docs/book/cloud-guide/stack-recipes.md), it will even import a ZenML stack with these new components that you can use out of the box! 
 
 For those not familiar with stack recipes, they are a set of carefully-crafted Terraform modules that do the heavy-lifting of creating your cloud resources, following your customizations. With just a simple command, you can have a full MLOps stacks that you can run your pipelines on! Check out the [`mlops-stacks` repository](https://github.com/zenml-io/mlops-stacks) to see the list of recipes available as of now and for the instructions on how to deploy them 🚀.
 
@@ -125,7 +125,7 @@ terraform output metadata-db-password
 For the certificates, visit the Google Cloud Console to [create a certificate and download the files](https://cloud.google.com/sql/docs/mysql/configure-ssl-instance#:~:text=Cloud%20SQL%20Instances-,To%20open%20the%20Overview%20page%20of%20an%20instance%2C%20click%20the,Click%20Create%20client%20certificate.) to your system.
 
 
-You can now skip directly to the [part of this guide where you define ZenML secrets](#gcp-authentication-with-kservegs-secret-schema) for your stack! 
+You can now skip directly to the [part of this guide where you define ZenML secrets](#gcp-authentication-with-kservegs-secret-schema) for your Kserve! 
 
 
 ### Installing KServe (e.g. in an GKE cluster)

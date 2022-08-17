@@ -206,7 +206,7 @@ Kubernetes cluster.
 
 #### 🚅 That seems like a lot of infrastructure work. Is there a faster way to run this example?
 
-Yes! If you are not a fan of creating resources on the cloud manually, we have just the solution for you. The [`gke-kubeflow-kserve` recipe](https://github.com/zenml-io/mlops-stacks/tree/main/gcp-kubeflow-kserve) can provision all the resources you need for this example and if you're using the new stack recipe CLI commands, it will even import a ZenML stack with these new components that you can use out of the box! 
+Yes! If you are not a fan of creating resources on the cloud manually, we have just the solution for you. The [`gke-kubeflow-kserve` recipe](https://github.com/zenml-io/mlops-stacks/tree/main/gcp-kubeflow-kserve) can provision all the resources you need for this example and if you're using the new [stack recipe CLI commands](../../docs/book/cloud-guide/stack-recipes.md), it will even import a ZenML stack with these new components that you can use out of the box! 
 
 For those not familiar with stack recipes, they are a set of carefully-crafted Terraform modules that do the heavy-lifting of creating your cloud resources, following your customizations. With just a simple command, you can have a full MLOps stacks that you can run your pipelines on! Check out the [`mlops-stacks` repository](https://github.com/zenml-io/mlops-stacks) to see the list of recipes available as of now and for the instructions on how to deploy them 🚀.
 

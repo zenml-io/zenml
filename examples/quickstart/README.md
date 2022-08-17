@@ -22,7 +22,7 @@ You can use Google Colab to see ZenML in action, no signup / installation requir
 
 ## :cloud: Run on a cloud provider of your choice
 
-If you're looking for a quick way to test the quickstart out on your cloud but don't want to go through the pain-staking process of creating all the required resources, we have just the solution for you: stack recipes! 🥗
+If you're looking for a quick way to test the quickstart out on your cloud but don't want to go through the pain-staking process of creating all the required resources, we have just the solution for you: [stack recipes!](../../docs/book/cloud-guide/stack-recipes.md) 🥗
 
 Stack recipes are a set of carefully-crafted Terraform modules that do the heavy-lifting of creating your cloud resources, following your customizations. With just a simple command, you can have a full MLOps stacks that you can run your pipelines on! Check out the [`mlops-stacks` repository](https://github.com/zenml-io/mlops-stacks) to see the list of recipes available as of now and for the instructions on how to deploy them 🚀.
 
