@@ -65,7 +65,7 @@ except ImportError:
         "\n\n**Note**: The stack recipe commands seem to be unavailable on "
         "your machine. This is probably because ZenML was installed without "
         "the optional terraform dependencies. To install the missing dependencies: \n\n"
-        f'`pip install "zenml[recipes]=={zenml.__version__}"`.'
+        f'`pip install "zenml[stacks]=={zenml.__version__}"`.'
     )
 
 
