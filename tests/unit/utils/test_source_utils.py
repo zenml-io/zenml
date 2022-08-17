@@ -31,8 +31,8 @@ import pathlib
 def test_is_third_party_module(module_mocker: MockerFixture):
     """Tests that third party modules get detected correctly."""
     module_mocker.patch(
-        "zenml.repository.Repository.find_repository",
-        return_value=pathlib.Path(__file__).absolute().parents[3],
+        "zenml.utils.source_utils.get_source_root_path",
+        return_value=str(pathlib.Path(__file__).absolute().parents[3]),
     )
     third_party_file = inspect.getfile(pytest.Cache)
     assert source_utils.is_third_party_module(third_party_file)
@@ -54,8 +54,8 @@ def test_resolve_class(module_mocker: MockerFixture):
     os.chdir(parent_directory)
 
     module_mocker.patch(
-        "zenml.repository.Repository.find_repository",
-        return_value=pathlib.Path(__file__).absolute().parents[1],
+        "zenml.utils.source_utils.get_source_root_path",
+        return_value=str(pathlib.Path(__file__).absolute().parents[1]),
     )
 
     try:
