@@ -14,6 +14,7 @@
 
 import inspect
 import os
+import pathlib
 import sys
 from collections import OrderedDict
 from contextlib import ExitStack as does_not_raise
@@ -25,7 +26,6 @@ from pytest_mock import MockerFixture
 
 from zenml.repository import Repository
 from zenml.utils import source_utils
-import pathlib
 
 
 def test_is_third_party_module(module_mocker: MockerFixture):
@@ -42,6 +42,7 @@ def test_is_third_party_module(module_mocker: MockerFixture):
 
     standard_lib_file = inspect.getfile(OrderedDict)
     assert source_utils.is_third_party_module(standard_lib_file)
+
 
 class EmptyClass:
     pass
