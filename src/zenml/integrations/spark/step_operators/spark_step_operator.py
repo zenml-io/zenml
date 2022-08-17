@@ -62,6 +62,9 @@ class SparkStepOperator(BaseStepOperator):
         For more information on how to set this property please check:
 
         https://spark.apache.org/docs/latest/submitting-applications.html#advanced-dependency-management
+
+        Returns:
+            The path to the application entrypoint
         """
         return None
 
@@ -112,6 +115,11 @@ class SparkStepOperator(BaseStepOperator):
         Note: This is still work-in-progress. In the future, we would like to
         enable much more than executor cores and memory with a dedicated
         ResourceConfiguration object.
+
+        Args:
+            spark_config: a SparkConf object which collects all the
+                configuration parameters
+            resource_configuration: the resource configuration for this step
         """
         if resource_configuration.cpu_count:
             spark_config.set(
@@ -138,9 +146,9 @@ class SparkStepOperator(BaseStepOperator):
         Args:
             spark_config: a SparkConf object which collects all the
                 configuration parameters
-            pipeline_name: Name of the pipeline which the step to be executed
-                is part of.
-            docker_configuration: The Docker configuration for this step.
+            pipeline_name: name of the pipeline which the step to be executed
+                is part of
+            docker_configuration: the Docker configuration for this step
         """
 
     def _io_configuration(self, spark_config: SparkConf) -> None:
@@ -160,6 +168,10 @@ class SparkStepOperator(BaseStepOperator):
             spark_config: a SparkConf object which collects all the
                 configuration parameters
 
+        Raises:
+            RuntimeError: when the step operator is being used with an S3
+                artifact store and the artifact store does not have the
+                required authentication
         """
         # Get active artifact store
         repo = Repository()
@@ -215,9 +227,6 @@ class SparkStepOperator(BaseStepOperator):
         Args:
             spark_config: a SparkConf object which collects all the
                 configuration parameters
-
-        Returns:
-            the same SparkConf object with appended configuration parameters
         """
         # Add the additional parameters
         if self.submit_kwargs:
@@ -237,8 +246,8 @@ class SparkStepOperator(BaseStepOperator):
                 step operator, this list is used to form the application
                 parameters for spark-submit.
 
-        Returns:
-            str, the complete spark-submit command
+        Raises:
+            RuntimeError: if the spark-submit fails
         """
         # Base spark-submit command
         command = [

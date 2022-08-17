@@ -35,6 +35,9 @@ class SparkModelMaterializer(BaseMaterializer):
     ) -> Union[Transformer, Estimator, Model]:
         """Reads and returns a Spark ML model.
 
+        Args:
+            model_type: The type of the model to read.
+
         Returns:
             A loaded spark model.
         """

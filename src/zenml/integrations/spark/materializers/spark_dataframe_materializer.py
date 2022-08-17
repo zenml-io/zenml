@@ -33,6 +33,9 @@ class SparkDataFrameMaterializer(BaseMaterializer):
     def handle_input(self, data_type: Type[Any]) -> DataFrame:
         """Reads and returns a spark dataframe.
 
+        Args:
+            data_type: The type of the data to read.
+
         Returns:
             A loaded spark dataframe.
         """

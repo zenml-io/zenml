@@ -63,7 +63,11 @@ class KubernetesSparkStepOperator(
 
     @property
     def application_path(self) -> Any:
-        """Provides the application path in the corresponding docker image."""
+        """Provides the application path in the corresponding docker image.
+
+        Returns:
+            The path to the application entrypoint within the docker image
+        """
         return f"local://{DOCKER_IMAGE_WORKDIR}/{ENTRYPOINT_NAME}"
 
     def _backend_configuration(
@@ -77,11 +81,16 @@ class KubernetesSparkStepOperator(
         This method will build and push a docker image for the drivers and
         executors and adjust the config accordingly.
 
-        spark_config: a SparkConf object which collects all the
+        Args:
+            spark_config: a SparkConf object which collects all the
                 configuration parameters
-        docker_configuration: The Docker configuration for this step.
-        pipeline_name: Name of the pipeline which the step to be executed
-                is part of.
+            docker_configuration: the Docker configuration for this step
+            pipeline_name: name of the pipeline which the step to be executed
+                is part of
+
+        Raises:
+            FileExistsError: if the path where the entrypoint is copied to is
+                already occupied
         """
         # Copy the entrypoint
         entrypoint_path = os.path.join(get_source_root_path(), ENTRYPOINT_NAME)

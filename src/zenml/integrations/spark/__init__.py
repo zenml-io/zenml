@@ -37,7 +37,11 @@ class SparkIntegration(Integration):
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
-        """Declare the stack component flavors for the Spark integration."""
+        """Declare the stack component flavors for the Spark integration.
+
+        Returns:
+            The flavor wrapper for the step operator flavor
+        """
         return [
             FlavorWrapper(
                 name=SPARK_KUBERNETES_STEP_OPERATOR,
