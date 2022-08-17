@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 import numpy as np
 import tensorflow as tf
-
 import wandb
+
 from zenml.integrations.wandb.wandb_step_decorator import enable_wandb
 from zenml.steps import step
 

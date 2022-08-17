@@ -1202,3 +1202,12 @@ zenml
 zenmldocker
 zenmlregistry
 zenserver
+KServeDeployerStepConfig
+KServeDeploymentConfig
+ModelMesh
+Rollouts
+TorchServeParameters
+ZenMLCustomModel
+microservice
+ComponentSpecs
+SeldonDeploymentPredictiveUnit

@@ -16,6 +16,7 @@ import platform
 
 import pytest
 
+from src.zenml.runtime_configuration import RuntimeConfiguration
 from zenml.config.docker_configuration import DockerConfiguration
 from zenml.constants import VALID_OPERATING_SYSTEMS
 from zenml.environment import BaseEnvironmentComponent, Environment
@@ -51,6 +52,7 @@ def test_step_is_running():
         step_name="step",
         cache_enabled=True,
         docker_configuration=DockerConfiguration(),
+        runtime_configuration=RuntimeConfiguration(),
     ):
         assert Environment().step_is_running is True
 
