@@ -46,7 +46,7 @@ ALPHA_MESSAGE = (
     "The stack recipes CLI is in alpha and actively being developed. "
     "Please avoid running mission-critical workloads on resources deployed "
     "through these commands. If you encounter any problems, create an issue "
-    f"on the repository {STACK_RECIPES_REPO_DIR} and we'll help you out!"
+    f"on the repository {STACK_RECIPES_GITHUB_REPO} and we'll help you out!"
 )
 HELP_MESSAGE = "Commands for using the stack recipes."
 
