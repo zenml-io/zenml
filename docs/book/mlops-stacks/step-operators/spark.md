@@ -23,7 +23,7 @@ The `KubernetesSparkStepOperator` requires a Kubernetes cluster in order to run.
 There are many ways to deploy a Kubernetes cluster using different cloud 
 providers or on your custom infrastructure, and we can't possibly cover 
 all of them, but you can check out our 
-[spark example](https://github.com/zenml-io/zenml/tree/main/examples/spark) 
+[spark example](https://github.com/zenml-io/zenml/tree/main/examples/spark_distributed_programming) 
 to see how we deployed it on AWS.
 
 ## How to use it
@@ -68,4 +68,4 @@ def preprocess(...) -> ...:
 ```
 
 A concrete example of using the AzureML step operator can be found 
-[here](https://github.com/zenml-io/zenml/tree/main/examples/spark).
+[here](https://github.com/zenml-io/zenml/tree/main/examples/spark_distributed_programming).
