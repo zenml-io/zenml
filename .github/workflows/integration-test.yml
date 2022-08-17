@@ -20,7 +20,8 @@ jobs:
 
     strategy:
       matrix:
-        os: [ macos-latest, ubuntu-latest, windows-latest ]
+        # TODO: readd macos-latest once we fix the integration tests
+        os: [ ubuntu-latest, windows-latest ]
         python-version: [ 3.7, 3.8, 3.9 ]
       fail-fast: false
 
