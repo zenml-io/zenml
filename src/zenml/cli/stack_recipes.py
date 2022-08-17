@@ -757,7 +757,8 @@ if terraform_installed:  # noqa: C901
         "Defaults to the name of the stack recipe being deployed.",
     )
     @click.option(
-        "--no-import",
+        "--import",
+        "import_stack"
         is_flag=True,
         help="Don't import the stack automatically after the recipe is deployed. The "
         "stack configuration file is still generated and can be imported manually.",
@@ -779,7 +780,7 @@ if terraform_installed:  # noqa: C901
         stack_recipe_name: str,
         path: str,
         force: bool,
-        no_import: bool,
+        import_stack: bool,
         log_level: str,
         stack_name: Optional[str],
     ) -> None:
@@ -796,9 +797,9 @@ if terraform_installed:  # noqa: C901
             force: Force the run of the stack_recipe.
             stack_name: A name for the ZenML stack that gets imported as a result
                 of the recipe deployment.
-            no_import: Don't import the stack automatically after the recipe is
-                deployed. The stack configuration file is still generated and
-                can be imported manually.
+            import_stack: Import the stack automatically after the recipe is
+                deployed. The stack configuration file is always generated and
+                can be imported manually otherwise.
             log_level: Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case insensitive)
                 as log level for the deploy operation.
         """
@@ -861,7 +862,7 @@ if terraform_installed:  # noqa: C901
                     f"Find it at {stack_yaml_file}."
                 )
 
-                if not no_import:
+                if import_stack:
                     logger.info(
                         "\nThe flag `--no-import` is not set. Proceeding "
                         "to import a new ZenML stack from the created resources."
