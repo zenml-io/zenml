@@ -94,6 +94,7 @@ class EvidentlyProfileConfig(BaseDriftDetectionConfig):
 
     Attributes:
         column_mapping: properties of the DataFrame columns used
+        ignored_cols: columns to ignore during the Evidently profile step
         profile_sections: a list identifying the Evidently profile sections to be
             used. The following are valid options supported by Evidently:
             - "datadrift"
@@ -111,6 +112,7 @@ class EvidentlyProfileConfig(BaseDriftDetectionConfig):
     """
 
     column_mapping: Optional[EvidentlyColumnMapping] = None
+    ignored_cols: Optional[List[str]] = None
     profile_sections: Optional[Sequence[str]] = None
     verbose_level: int = 1
     profile_options: Sequence[Tuple[str, Dict[str, Any]]] = Field(
@@ -140,6 +142,11 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
                 compare against the reference data
             config: the configuration for the step
 
+        Raises:
+            ValueError: If ignored_cols is an empty list
+            ValueError: If column is not found in reference or comparison
+                dataset
+
         Returns:
             profile: Evidently Profile generated for the data drift
             dashboard: HTML report extracted from an Evidently Dashboard
@@ -150,6 +157,32 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
             EvidentlyDataValidator.get_active_data_validator(),
         )
         column_mapping = None
+
+        if config.ignored_cols is None:
+            pass
+
+        elif not config.ignored_cols:
+            raise ValueError(
+                f"Expects None or list of columns in strings, but got {config.ignored_cols}"
+            )
+
+        elif not (
+            set(config.ignored_cols).issubset(set(reference_dataset.columns))
+        ) or not (
+            set(config.ignored_cols).issubset(set(comparison_dataset.columns))
+        ):
+            raise ValueError(
+                "Column is not found in reference or comparison datasets"
+            )
+
+        else:
+            reference_dataset = reference_dataset.drop(
+                labels=list(config.ignored_cols), axis=1
+            )
+            comparison_dataset = comparison_dataset.drop(
+                labels=list(config.ignored_cols), axis=1
+            )
+
         if config.column_mapping:
             column_mapping = config.column_mapping.to_evidently_column_mapping()
         profile, dashboard = data_validator.data_profiling(
