@@ -1,8 +1,62 @@
 <!-- markdown-link-check-disable -->
+# 0.13.0
+
+ZenML version 0.13.0 is chock-full with exciting features. 
+
+[Custom Code Deployment](https://github.com/zenml-io/zenml/tree/main/examples/custom_code_deployment) is the
+continuation of the Model Deployment story that we have been working on over the last few releases. Now
+it is possible to deploy custom code along with your models using Kserve or Seldon.
+
+With [Spark](https://github.com/zenml-io/zenml/tree/main/examples/spark_distributed_programming) this 
+release also brings distributed processing into the ZenML toolkit.
+
+Spinning up and configuring infrastructure is a difficult part of the MLOps journey 
+and can easily become a barrier to entry. Using our [mlops-stacks](https://github.com/zenml-io/mlops-stacks)
+repository, it is now possible to spin up perfectly configured infrastructure with
+the corresponding ZenML stack using the ZenML CLI.
+
+As always, we've also included various bug fixes and lots of improvements to the documentation and our examples.
+
+## What's Changed
+* Link checker by @dnth in https://github.com/zenml-io/zenml/pull/818
+* Update Readme with latest info from docs page by @dnth in https://github.com/zenml-io/zenml/pull/810
+* Typo on Readme by @dnth in https://github.com/zenml-io/zenml/pull/821
+* Update kserve installation to 0.9 on kserve deployment example by @safoinme in https://github.com/zenml-io/zenml/pull/823
+* Allow setting caching via the `config.yaml` by @strickvl in https://github.com/zenml-io/zenml/pull/827
+* Handle file-io with context manager by @aliabbasjaffri in https://github.com/zenml-io/zenml/pull/825
+* Add automated link check github actions by @dnth in https://github.com/zenml-io/zenml/pull/828
+* Fix the SQL zenstore to work with MySQL by @stefannica in https://github.com/zenml-io/zenml/pull/829
+* Improve label studio error messages if secrets are missing or of wrong schema by @schustmi in https://github.com/zenml-io/zenml/pull/832
+* Add secret scoping to the Azure Key Vault by @stefannica in https://github.com/zenml-io/zenml/pull/830
+* Unify CLI concepts (removing `secret`, `feature` and `served-models`) by @strickvl in https://github.com/zenml-io/zenml/pull/833
+* Put link checker as part of CI by @dnth in https://github.com/zenml-io/zenml/pull/838
+* Add missing requirement for step operators by @schustmi in https://github.com/zenml-io/zenml/pull/834
+* Fix broken links from link checker results by @dnth in https://github.com/zenml-io/zenml/pull/835
+* Fix served models logs formatting error by @safoinme in https://github.com/zenml-io/zenml/pull/836
+* New Docker build configuration by @schustmi in https://github.com/zenml-io/zenml/pull/811
+* Secrets references on stack component attributes by @schustmi in https://github.com/zenml-io/zenml/pull/817
+* Misc bugfixes by @schustmi in https://github.com/zenml-io/zenml/pull/842
+* Pillow Image materializer by @strickvl in https://github.com/zenml-io/zenml/pull/820
+* Add Tekton orchestrator by @schustmi in https://github.com/zenml-io/zenml/pull/844
+* Put Slack call to action at the top of README page. by @dnth in https://github.com/zenml-io/zenml/pull/846
+* Change Quickstart to Use Tabular Data by @fa9r in https://github.com/zenml-io/zenml/pull/843
+* Add sleep before docker builds in release GH action by @schustmi in https://github.com/zenml-io/zenml/pull/849
+* Implement Recursive Built-In Container Materializer by @fa9r in https://github.com/zenml-io/zenml/pull/812
+* Custom deployment with KServe and Seldon Core by @safoinme in https://github.com/zenml-io/zenml/pull/841
+* Spark Integration by @bcdurak in https://github.com/zenml-io/zenml/pull/837
+* Add zenml stack recipe CLI commands by @wjayesh in https://github.com/zenml-io/zenml/pull/807
+
+## New Contributors
+* @aliabbasjaffri made their first contribution in https://github.com/zenml-io/zenml/pull/825
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.12.0...0.13.0
+
 
 # 0.12.0
 
-The 0.12.0 release comes with the third implementation of the ZenML Model Deployer abstraction: The [KServe](https://github.com/zenml-io/zenml/tree/main/examples/kserve_deployment) integration allows you to deploy any PyTorch, TensorFlow or SKLearn from within your ZenML pipelines!
+The 0.12.0 release comes with the third implementation of the ZenML Model Deployer abstraction: 
+The [KServe](https://github.com/zenml-io/zenml/tree/main/examples/kserve_deployment) 
+integration allows you to deploy any PyTorch, TensorFlow or SKLearn from within your ZenML pipelines!
 
 We also added functionality to specify hardware resources on a step level to control the amount of memory, CPUs and GPUs that
 each ZenML step has access to. This is curretly limited to the Kubeflow and Vertex orchestrator but will be expanded in upcoming releases.
