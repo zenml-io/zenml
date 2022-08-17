@@ -1,0 +1,3497 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://apidocs.zenml.io/0.13.0/api_docs/orchestrators/">
+      
+      <link rel="icon" href="../../_assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.3.0">
+    
+    
+      
+        <title>Orchestrators - ZenML API Reference</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.fd896c8a.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.cbb835fc.min.css">
+        
+      
+      
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+
+<script>
+  !function(){var analytics=window.analytics=window.analytics||[];if(!analytics.initialize)if(analytics.invoked)window.console&&console.error&&console.error("Segment snippet included twice.");else{analytics.invoked=!0;analytics.methods=["trackSubmit","trackClick","trackLink","trackForm","pageview","identify","reset","group","track","ready","alias","debug","page","once","off","on","addSourceMiddleware","addIntegrationMiddleware","setAnonymousId","addDestinationMiddleware"];analytics.factory=function(e){return function(){var t=Array.prototype.slice.call(arguments);t.unshift(e);analytics.push(t);return analytics}};for(var e=0;e<analytics.methods.length;e++){var key=analytics.methods[e];analytics[key]=analytics.factory(key)}analytics.load=function(key,e){var t=document.createElement("script");t.type="text/javascript";t.async=!0;t.src="https://cdn.segment.com/analytics.js/v1/" + key + "/analytics.min.js";var n=document.getElementsByTagName("script")[0];n.parentNode.insertBefore(t,n);analytics._loadOptions=e};analytics._writeKey="CaE5VaNjhyaUt48qXK4rLwwKJ0PdAOFM";;analytics.SNIPPET_VERSION="4.15.3";
+  analytics.load("CaE5VaNjhyaUt48qXK4rLwwKJ0PdAOFM");
+  analytics.page();
+  }}();
+</script>
+<script defer data-domain="apidocs.zenml.io" src="https://plausible.io/js/plausible.js"></script>
+
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="none" data-md-color-accent="none">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#orchestrators" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-component="outdated" hidden>
+        <aside class="md-banner md-banner--warning">
+          
+        </aside>
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="ZenML API Reference" class="md-header__button md-logo" aria-label="ZenML API Reference" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ZenML API Reference
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Orchestrators
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/zenml-io/zenml" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="ZenML API Reference" class="md-nav__button md-logo" aria-label="ZenML API Reference" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    ZenML API Reference
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/zenml-io/zenml" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        ZenML
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        CLI docs
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Api docs
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Api docs" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Api docs
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../alerter/" class="md-nav__link">
+        Alerter
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../annotators/" class="md-nav__link">
+        Annotators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../artifact_stores/" class="md-nav__link">
+        Artifact Stores
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../artifacts/" class="md-nav__link">
+        Artifacts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        Config
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../console/" class="md-nav__link">
+        Console
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../constants/" class="md-nav__link">
+        Constants
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../container_registries/" class="md-nav__link">
+        Container Registries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data_validators/" class="md-nav__link">
+        Data Validators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../entrypoints/" class="md-nav__link">
+        Entrypoints
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../enums/" class="md-nav__link">
+        Enums
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../environment/" class="md-nav__link">
+        Environment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exceptions/" class="md-nav__link">
+        Exceptions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../experiment_trackers/" class="md-nav__link">
+        Experiment Trackers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_stores/" class="md-nav__link">
+        Feature Stores
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/" class="md-nav__link">
+        Integrations
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../io/" class="md-nav__link">
+        Io
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../logger/" class="md-nav__link">
+        Logger
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../materializers/" class="md-nav__link">
+        Materializers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../metadata_stores/" class="md-nav__link">
+        Metadata Stores
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model_deployers/" class="md-nav__link">
+        Model Deployers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Orchestrators
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Orchestrators
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zenml.orchestrators" class="md-nav__link">
+    orchestrators
+  </a>
+  
+    <nav class="md-nav" aria-label="orchestrators">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.base_orchestrator" class="md-nav__link">
+    base_orchestrator
+  </a>
+  
+    <nav class="md-nav" aria-label="base_orchestrator">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.base_orchestrator.BaseOrchestrator" class="md-nav__link">
+    BaseOrchestrator
+  </a>
+  
+    <nav class="md-nav" aria-label="BaseOrchestrator">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.base_orchestrator.BaseOrchestrator--how-it-works" class="md-nav__link">
+    How it works:
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.base_orchestrator.BaseOrchestrator--building-your-own" class="md-nav__link">
+    Building your own:
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.base_orchestrator.BaseOrchestrator.get_upstream_step_names" class="md-nav__link">
+    get_upstream_step_names()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.base_orchestrator.BaseOrchestrator.prepare_or_run_pipeline" class="md-nav__link">
+    prepare_or_run_pipeline()
+  </a>
+  
+    <nav class="md-nav" aria-label="prepare_or_run_pipeline()">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.base_orchestrator.BaseOrchestrator.prepare_or_run_pipeline--simple-case" class="md-nav__link">
+    Simple Case:
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.base_orchestrator.BaseOrchestrator.prepare_or_run_pipeline--advanced-case" class="md-nav__link">
+    Advanced Case:
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.base_orchestrator.BaseOrchestrator.requires_resources_in_orchestration_environment" class="md-nav__link">
+    requires_resources_in_orchestration_environment()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.base_orchestrator.BaseOrchestrator.run" class="md-nav__link">
+    run()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.base_orchestrator.BaseOrchestrator.run_step" class="md-nav__link">
+    run_step()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.local" class="md-nav__link">
+    local
+  </a>
+  
+    <nav class="md-nav" aria-label="local">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.local.local_orchestrator" class="md-nav__link">
+    local_orchestrator
+  </a>
+  
+    <nav class="md-nav" aria-label="local_orchestrator">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.local.local_orchestrator.LocalOrchestrator" class="md-nav__link">
+    LocalOrchestrator
+  </a>
+  
+    <nav class="md-nav" aria-label="LocalOrchestrator">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.local.local_orchestrator.LocalOrchestrator.prepare_or_run_pipeline" class="md-nav__link">
+    prepare_or_run_pipeline()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.utils" class="md-nav__link">
+    utils
+  </a>
+  
+    <nav class="md-nav" aria-label="utils">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.utils.add_context_to_node" class="md-nav__link">
+    add_context_to_node()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.utils.create_tfx_pipeline" class="md-nav__link">
+    create_tfx_pipeline()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.utils.get_cache_status" class="md-nav__link">
+    get_cache_status()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.utils.get_step_for_node" class="md-nav__link">
+    get_step_for_node()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipelines/" class="md-nav__link">
+        Pipelines
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../post_execution/" class="md-nav__link">
+        Post Execution
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repository/" class="md-nav__link">
+        Repository
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runtime_configuration/" class="md-nav__link">
+        Runtime Configuration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../secret/" class="md-nav__link">
+        Secret
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../secrets_managers/" class="md-nav__link">
+        Secrets Managers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../services/" class="md-nav__link">
+        Services
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stack/" class="md-nav__link">
+        Stack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../step_operators/" class="md-nav__link">
+        Step Operators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../steps/" class="md-nav__link">
+        Steps
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        Utils
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../visualizers/" class="md-nav__link">
+        Visualizers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../zen_server/" class="md-nav__link">
+        Zen Server
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../zen_stores/" class="md-nav__link">
+        Zen Stores
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_37" type="checkbox" id="__nav_3_37" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_37">
+          Cli
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Cli" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_37">
+          <span class="md-nav__icon md-icon"></span>
+          Cli
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/annotator/" class="md-nav__link">
+        Annotator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/cli/" class="md-nav__link">
+        Cli
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/config/" class="md-nav__link">
+        Config
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/example/" class="md-nav__link">
+        Example
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/feature/" class="md-nav__link">
+        Feature
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/formatter/" class="md-nav__link">
+        Formatter
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/integration/" class="md-nav__link">
+        Integration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/model/" class="md-nav__link">
+        Model
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/pipeline/" class="md-nav__link">
+        Pipeline
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/secret/" class="md-nav__link">
+        Secret
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/server/" class="md-nav__link">
+        Server
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/stack/" class="md-nav__link">
+        Stack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/stack_components/" class="md-nav__link">
+        Stack Components
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/stack_recipes/" class="md-nav__link">
+        Stack Recipes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/text_utils/" class="md-nav__link">
+        Text Utils
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/user_management/" class="md-nav__link">
+        User Management
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/utils/" class="md-nav__link">
+        Utils
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/version/" class="md-nav__link">
+        Version
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zenml.orchestrators" class="md-nav__link">
+    orchestrators
+  </a>
+  
+    <nav class="md-nav" aria-label="orchestrators">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.base_orchestrator" class="md-nav__link">
+    base_orchestrator
+  </a>
+  
+    <nav class="md-nav" aria-label="base_orchestrator">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.base_orchestrator.BaseOrchestrator" class="md-nav__link">
+    BaseOrchestrator
+  </a>
+  
+    <nav class="md-nav" aria-label="BaseOrchestrator">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.base_orchestrator.BaseOrchestrator--how-it-works" class="md-nav__link">
+    How it works:
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.base_orchestrator.BaseOrchestrator--building-your-own" class="md-nav__link">
+    Building your own:
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.base_orchestrator.BaseOrchestrator.get_upstream_step_names" class="md-nav__link">
+    get_upstream_step_names()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.base_orchestrator.BaseOrchestrator.prepare_or_run_pipeline" class="md-nav__link">
+    prepare_or_run_pipeline()
+  </a>
+  
+    <nav class="md-nav" aria-label="prepare_or_run_pipeline()">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.base_orchestrator.BaseOrchestrator.prepare_or_run_pipeline--simple-case" class="md-nav__link">
+    Simple Case:
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.base_orchestrator.BaseOrchestrator.prepare_or_run_pipeline--advanced-case" class="md-nav__link">
+    Advanced Case:
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.base_orchestrator.BaseOrchestrator.requires_resources_in_orchestration_environment" class="md-nav__link">
+    requires_resources_in_orchestration_environment()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.base_orchestrator.BaseOrchestrator.run" class="md-nav__link">
+    run()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.base_orchestrator.BaseOrchestrator.run_step" class="md-nav__link">
+    run_step()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.local" class="md-nav__link">
+    local
+  </a>
+  
+    <nav class="md-nav" aria-label="local">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.local.local_orchestrator" class="md-nav__link">
+    local_orchestrator
+  </a>
+  
+    <nav class="md-nav" aria-label="local_orchestrator">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.local.local_orchestrator.LocalOrchestrator" class="md-nav__link">
+    LocalOrchestrator
+  </a>
+  
+    <nav class="md-nav" aria-label="LocalOrchestrator">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.local.local_orchestrator.LocalOrchestrator.prepare_or_run_pipeline" class="md-nav__link">
+    prepare_or_run_pipeline()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.utils" class="md-nav__link">
+    utils
+  </a>
+  
+    <nav class="md-nav" aria-label="utils">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.utils.add_context_to_node" class="md-nav__link">
+    add_context_to_node()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.utils.create_tfx_pipeline" class="md-nav__link">
+    create_tfx_pipeline()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.utils.get_cache_status" class="md-nav__link">
+    get_cache_status()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.orchestrators.utils.get_step_for_node" class="md-nav__link">
+    get_step_for_node()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+  <a href="https://github.com/zenml-io/zenml/docs/api_docs/orchestrators.md" title="Edit this page" class="md-content__button md-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+
+<h1 id="orchestrators">Orchestrators</h1>
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h2 id="zenml.orchestrators" class="doc doc-heading">
+        <code>zenml.orchestrators</code>
+
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+</h2>
+
+    <div class="doc doc-contents first">
+
+      <p>Initialization for ZenML orchestrators.</p>
+<p>An orchestrator is a special kind of backend that manages the running of each
+step of the pipeline. Orchestrators administer the actual pipeline runs. You can
+think of it as the 'root' of any pipeline job that you run during your
+experimentation.</p>
+<p>ZenML supports a local orchestrator out of the box which allows you to run your
+pipelines in a local environment. We also support using Apache Airflow as the
+orchestrator to handle the steps of your pipeline.</p>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h3 id="zenml.orchestrators.base_orchestrator" class="doc doc-heading">
+        <code>base_orchestrator</code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Base orchestrator class.</p>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h4 id="zenml.orchestrators.base_orchestrator.BaseOrchestrator" class="doc doc-heading">
+        <code>
+BaseOrchestrator            (<a class="autorefs autorefs-internal" title="zenml.stack.stack_component.StackComponent" href="../stack/#zenml.stack.stack_component.StackComponent">StackComponent</a>, <span title="abc.ABC">ABC</span>)
+        </code>
+
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-pydantic-model"><code>pydantic-model</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Base class for all orchestrators.</p>
+<p>In order to implement an orchestrator you will need to subclass from this
+class.</p>
+<h6 id="zenml.orchestrators.base_orchestrator.BaseOrchestrator--how-it-works">How it works:</h6>
+<p>The <code>run()</code> method is the entrypoint that is executed when the
+pipeline's run method is called within the user code
+(<code>pipeline_instance.run()</code>).</p>
+<p>This method will take the ZenML Pipeline instance and prepare it for
+eventual execution. To do this the following steps are taken:</p>
+<ul>
+<li>
+<p>The underlying protobuf pipeline is created.</p>
+</li>
+<li>
+<p>Within the <code>_configure_node_context()</code> method the pipeline
+requirements, stack and runtime configuration is added to the step
+context</p>
+</li>
+<li>
+<p>The <code>_get_sorted_steps()</code> method then generates a sorted list of
+steps which will later be used to directly execute these steps in order,
+or to easily build a dag</p>
+</li>
+<li>
+<p>After these initial steps comes the most crucial one. Within the
+<code>prepare_or_run_pipeline()</code> method each orchestrator will have its own
+implementation that dictates the pipeline orchestration. In the simplest
+case this method will iterate through all steps and execute them one by
+one. In other cases this method will build and deploy an intermediate
+representation of the pipeline (e.g an airflow dag or a kubeflow
+pipelines yaml) to be executed within the orchestrators environment.</p>
+</li>
+</ul>
+<h6 id="zenml.orchestrators.base_orchestrator.BaseOrchestrator--building-your-own">Building your own:</h6>
+<p>In order to build your own orchestrator, all you need to do is subclass
+from this class and implement your own <code>prepare_or_run_pipeline()</code>
+method. Overwriting other methods is NOT recommended but possible.
+See the docstring of the <code>prepare_or_run_pipeline()</code> method to find out
+details of what needs to be implemented within it.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/orchestrators/base_orchestrator.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseOrchestrator</span><span class="p">(</span><span class="n">StackComponent</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base class for all orchestrators.</span>
+
+<span class="sd">    In order to implement an orchestrator you will need to subclass from this</span>
+<span class="sd">    class.</span>
+
+<span class="sd">    How it works:</span>
+<span class="sd">    -------------</span>
+<span class="sd">    The `run()` method is the entrypoint that is executed when the</span>
+<span class="sd">    pipeline&#39;s run method is called within the user code</span>
+<span class="sd">    (`pipeline_instance.run()`).</span>
+
+<span class="sd">    This method will take the ZenML Pipeline instance and prepare it for</span>
+<span class="sd">    eventual execution. To do this the following steps are taken:</span>
+
+<span class="sd">    * The underlying protobuf pipeline is created.</span>
+
+<span class="sd">    * Within the `_configure_node_context()` method the pipeline</span>
+<span class="sd">    requirements, stack and runtime configuration is added to the step</span>
+<span class="sd">    context</span>
+
+<span class="sd">    * The `_get_sorted_steps()` method then generates a sorted list of</span>
+<span class="sd">    steps which will later be used to directly execute these steps in order,</span>
+<span class="sd">    or to easily build a dag</span>
+
+<span class="sd">    * After these initial steps comes the most crucial one. Within the</span>
+<span class="sd">    `prepare_or_run_pipeline()` method each orchestrator will have its own</span>
+<span class="sd">    implementation that dictates the pipeline orchestration. In the simplest</span>
+<span class="sd">    case this method will iterate through all steps and execute them one by</span>
+<span class="sd">    one. In other cases this method will build and deploy an intermediate</span>
+<span class="sd">    representation of the pipeline (e.g an airflow dag or a kubeflow</span>
+<span class="sd">    pipelines yaml) to be executed within the orchestrators environment.</span>
+
+<span class="sd">    Building your own:</span>
+<span class="sd">    ------------------</span>
+<span class="sd">    In order to build your own orchestrator, all you need to do is subclass</span>
+<span class="sd">    from this class and implement your own `prepare_or_run_pipeline()`</span>
+<span class="sd">    method. Overwriting other methods is NOT recommended but possible.</span>
+<span class="sd">    See the docstring of the `prepare_or_run_pipeline()` method to find out</span>
+<span class="sd">    details of what needs to be implemented within it.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Class Configuration</span>
+    <span class="n">TYPE</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">StackComponentType</span><span class="p">]</span> <span class="o">=</span> <span class="n">StackComponentType</span><span class="o">.</span><span class="n">ORCHESTRATOR</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">sorted_steps</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">BaseStep</span><span class="p">],</span>
+        <span class="n">pipeline</span><span class="p">:</span> <span class="s2">&quot;BasePipeline&quot;</span><span class="p">,</span>
+        <span class="n">pb2_pipeline</span><span class="p">:</span> <span class="n">Pb2Pipeline</span><span class="p">,</span>
+        <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
+        <span class="n">runtime_configuration</span><span class="p">:</span> <span class="s2">&quot;RuntimeConfiguration&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;This method needs to be implemented by the respective orchestrator.</span>
+
+<span class="sd">        Depending on the type of orchestrator you&#39;ll have to perform slightly</span>
+<span class="sd">        different operations.</span>
+
+<span class="sd">        Simple Case:</span>
+<span class="sd">        ------------</span>
+<span class="sd">        The Steps are run directly from within the same environment in which</span>
+<span class="sd">        the orchestrator code is executed. In this case you will need to</span>
+<span class="sd">        deal with implementation-specific runtime configurations (like the</span>
+<span class="sd">        schedule) and then iterate through each step and finally call</span>
+<span class="sd">        `self.run_step()` to execute each step.</span>
+
+<span class="sd">        Advanced Case:</span>
+<span class="sd">        --------------</span>
+<span class="sd">        Most orchestrators will not run the steps directly. Instead, they</span>
+<span class="sd">        build some intermediate representation of the pipeline that is then</span>
+<span class="sd">        used to create and run the pipeline and its steps on the target</span>
+<span class="sd">        environment. For such orchestrators this method will have to build</span>
+<span class="sd">        this representation and either deploy it directly or return it.</span>
+
+<span class="sd">        Regardless of the implementation details, the orchestrator will need</span>
+<span class="sd">        to a way to trigger each step in the target environment. For this</span>
+<span class="sd">        the `run_step()` method should be used.</span>
+
+<span class="sd">        In case the orchestrator is using docker containers for orchestration</span>
+<span class="sd">        of each step, the `zenml.entrypoints.step_entrypoint` module can be</span>
+<span class="sd">        used as a generalized entrypoint that sets up all the necessary</span>
+<span class="sd">        prerequisites, parses input parameters and finally executes the step</span>
+<span class="sd">        using the `run_step()`method.</span>
+
+<span class="sd">        If the orchestrator needs to know the upstream steps for a specific</span>
+<span class="sd">        step to build a DAG, it can use the `get_upstream_step_names()` method</span>
+<span class="sd">        to get them.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sorted_steps: List of sorted steps.</span>
+<span class="sd">            pipeline: Zenml Pipeline instance.</span>
+<span class="sd">            pb2_pipeline: Protobuf Pipeline instance.</span>
+<span class="sd">            stack: The stack the pipeline was run on.</span>
+<span class="sd">            runtime_configuration: The Runtime configuration of the current run.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The optional return value from this method will be returned by the</span>
+<span class="sd">            `pipeline_instance.run()` call when someone is running a pipeline.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">pipeline</span><span class="p">:</span> <span class="s2">&quot;BasePipeline&quot;</span><span class="p">,</span>
+        <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
+        <span class="n">runtime_configuration</span><span class="p">:</span> <span class="s2">&quot;RuntimeConfiguration&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Runs a pipeline.</span>
+
+<span class="sd">        To do this, a protobuf pipeline is created, the context of the</span>
+<span class="sd">        individual steps is expanded to include relevant data, the steps are</span>
+<span class="sd">        sorted into execution order and the implementation specific</span>
+<span class="sd">        `prepare_or_run_pipeline()` method is called.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pipeline: The pipeline to run.</span>
+<span class="sd">            stack: The stack on which the pipeline is run.</span>
+<span class="sd">            runtime_configuration: Runtime configuration of the pipeline run.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The result of the call to `prepare_or_run_pipeline()`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Create the protobuf pipeline which will be needed for various reasons</span>
+        <span class="c1"># in the following steps</span>
+        <span class="n">pb2_pipeline</span><span class="p">:</span> <span class="n">Pb2Pipeline</span> <span class="o">=</span> <span class="n">Compiler</span><span class="p">()</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+            <span class="n">create_tfx_pipeline</span><span class="p">(</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">stack</span><span class="o">=</span><span class="n">stack</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_configure_node_context</span><span class="p">(</span>
+            <span class="n">pipeline</span><span class="o">=</span><span class="n">pipeline</span><span class="p">,</span>
+            <span class="n">pb2_pipeline</span><span class="o">=</span><span class="n">pb2_pipeline</span><span class="p">,</span>
+            <span class="n">stack</span><span class="o">=</span><span class="n">stack</span><span class="p">,</span>
+            <span class="n">runtime_configuration</span><span class="o">=</span><span class="n">runtime_configuration</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">sorted_steps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_sorted_steps</span><span class="p">(</span>
+            <span class="n">pipeline</span><span class="o">=</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">pb2_pipeline</span><span class="o">=</span><span class="n">pb2_pipeline</span>
+        <span class="p">)</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prepare_or_run_pipeline</span><span class="p">(</span>
+            <span class="n">sorted_steps</span><span class="o">=</span><span class="n">sorted_steps</span><span class="p">,</span>
+            <span class="n">pipeline</span><span class="o">=</span><span class="n">pipeline</span><span class="p">,</span>
+            <span class="n">pb2_pipeline</span><span class="o">=</span><span class="n">pb2_pipeline</span><span class="p">,</span>
+            <span class="n">stack</span><span class="o">=</span><span class="n">stack</span><span class="p">,</span>
+            <span class="n">runtime_configuration</span><span class="o">=</span><span class="n">runtime_configuration</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_get_sorted_steps</span><span class="p">(</span>
+        <span class="n">pipeline</span><span class="p">:</span> <span class="s2">&quot;BasePipeline&quot;</span><span class="p">,</span> <span class="n">pb2_pipeline</span><span class="p">:</span> <span class="n">Pb2Pipeline</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;BaseStep&quot;</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get steps sorted in the execution order.</span>
+
+<span class="sd">        This simplifies the building of a DAG at a later stage as it can be</span>
+<span class="sd">        built with one iteration over this sorted list of steps.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pipeline: The pipeline</span>
+<span class="sd">            pb2_pipeline: The protobuf pipeline representation</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List of steps in execution order</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Create a list of sorted steps</span>
+        <span class="n">sorted_steps</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">pb2_pipeline</span><span class="o">.</span><span class="n">nodes</span><span class="p">:</span>
+            <span class="n">pipeline_node</span><span class="p">:</span> <span class="n">PipelineNode</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">pipeline_node</span>
+            <span class="n">sorted_steps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">get_step_for_node</span><span class="p">(</span>
+                    <span class="n">pipeline_node</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">pipeline</span><span class="o">.</span><span class="n">steps</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">sorted_steps</span>
+
+    <span class="k">def</span> <span class="nf">run_step</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">,</span>
+        <span class="n">run_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">pb2_pipeline</span><span class="p">:</span> <span class="n">Pb2Pipeline</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">data_types</span><span class="o">.</span><span class="n">ExecutionInfo</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;This sets up a component launcher and executes the given step.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            step: The step to be executed</span>
+<span class="sd">            run_name: The unique run name</span>
+<span class="sd">            pb2_pipeline: Protobuf Pipeline instance</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The execution info of the step.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Substitute the runtime parameter to be a concrete run_id, it is</span>
+        <span class="c1"># important for this to be unique for each run.</span>
+        <span class="n">runtime_parameter_utils</span><span class="o">.</span><span class="n">substitute_runtime_parameter</span><span class="p">(</span>
+            <span class="n">pb2_pipeline</span><span class="p">,</span>
+            <span class="p">{</span><span class="n">PIPELINE_RUN_ID_PARAMETER_NAME</span><span class="p">:</span> <span class="n">run_name</span><span class="p">},</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Extract the deployment_configs and use it to access the executor and</span>
+        <span class="c1"># custom driver spec</span>
+        <span class="n">deployment_config</span> <span class="o">=</span> <span class="n">runner_utils</span><span class="o">.</span><span class="n">extract_local_deployment_config</span><span class="p">(</span>
+            <span class="n">pb2_pipeline</span>
+        <span class="p">)</span>
+        <span class="n">executor_spec</span> <span class="o">=</span> <span class="n">runner_utils</span><span class="o">.</span><span class="n">extract_executor_spec</span><span class="p">(</span>
+            <span class="n">deployment_config</span><span class="p">,</span> <span class="n">step</span><span class="o">.</span><span class="n">name</span>
+        <span class="p">)</span>
+        <span class="n">custom_driver_spec</span> <span class="o">=</span> <span class="n">runner_utils</span><span class="o">.</span><span class="n">extract_custom_driver_spec</span><span class="p">(</span>
+            <span class="n">deployment_config</span><span class="p">,</span> <span class="n">step</span><span class="o">.</span><span class="n">name</span>
+        <span class="p">)</span>
+
+        <span class="c1"># At this point the active metadata store is queried for the</span>
+        <span class="c1"># metadata_connection</span>
+        <span class="n">repo</span> <span class="o">=</span> <span class="n">Repository</span><span class="p">()</span>
+        <span class="n">metadata_store</span> <span class="o">=</span> <span class="n">repo</span><span class="o">.</span><span class="n">active_stack</span><span class="o">.</span><span class="n">metadata_store</span>
+        <span class="n">metadata_connection</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">Metadata</span><span class="p">(</span>
+            <span class="n">metadata_store</span><span class="o">.</span><span class="n">get_tfx_metadata_config</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="n">custom_executor_operators</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">executable_spec_pb2</span><span class="o">.</span><span class="n">PythonClassExecutableSpec</span><span class="p">:</span> <span class="n">step</span><span class="o">.</span><span class="n">executor_operator</span>
+        <span class="p">}</span>
+
+        <span class="c1"># The protobuf node for the current step is loaded here.</span>
+        <span class="n">pipeline_node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_node_with_step_name</span><span class="p">(</span>
+            <span class="n">step_name</span><span class="o">=</span><span class="n">step</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">pb2_pipeline</span><span class="o">=</span><span class="n">pb2_pipeline</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Create the tfx launcher responsible for executing the step.</span>
+        <span class="n">component_launcher</span> <span class="o">=</span> <span class="n">launcher</span><span class="o">.</span><span class="n">Launcher</span><span class="p">(</span>
+            <span class="n">pipeline_node</span><span class="o">=</span><span class="n">pipeline_node</span><span class="p">,</span>
+            <span class="n">mlmd_connection</span><span class="o">=</span><span class="n">metadata_connection</span><span class="p">,</span>
+            <span class="n">pipeline_info</span><span class="o">=</span><span class="n">pb2_pipeline</span><span class="o">.</span><span class="n">pipeline_info</span><span class="p">,</span>
+            <span class="n">pipeline_runtime_spec</span><span class="o">=</span><span class="n">pb2_pipeline</span><span class="o">.</span><span class="n">runtime_spec</span><span class="p">,</span>
+            <span class="n">executor_spec</span><span class="o">=</span><span class="n">executor_spec</span><span class="p">,</span>
+            <span class="n">custom_driver_spec</span><span class="o">=</span><span class="n">custom_driver_spec</span><span class="p">,</span>
+            <span class="n">custom_executor_operators</span><span class="o">=</span><span class="n">custom_executor_operators</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># In some stack configurations, some stack components (like experiment</span>
+        <span class="c1"># trackers) will run some code before and after the actual step run.</span>
+        <span class="c1"># This is where the step actually gets executed using the</span>
+        <span class="c1"># component_launcher</span>
+        <span class="n">repo</span><span class="o">.</span><span class="n">active_stack</span><span class="o">.</span><span class="n">prepare_step_run</span><span class="p">()</span>
+        <span class="n">execution_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_execute_step</span><span class="p">(</span><span class="n">component_launcher</span><span class="p">)</span>
+        <span class="n">repo</span><span class="o">.</span><span class="n">active_stack</span><span class="o">.</span><span class="n">cleanup_step_run</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">execution_info</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_execute_step</span><span class="p">(</span>
+        <span class="n">tfx_launcher</span><span class="p">:</span> <span class="n">launcher</span><span class="o">.</span><span class="n">Launcher</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">data_types</span><span class="o">.</span><span class="n">ExecutionInfo</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Executes a tfx component.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            tfx_launcher: A tfx launcher to execute the component.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Optional execution info returned by the launcher.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            DuplicateRunNameError: If the run name is already in use.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pipeline_step_name</span> <span class="o">=</span> <span class="n">tfx_launcher</span><span class="o">.</span><span class="n">_pipeline_node</span><span class="o">.</span><span class="n">node_info</span><span class="o">.</span><span class="n">id</span>
+        <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Step `</span><span class="si">{</span><span class="n">pipeline_step_name</span><span class="si">}</span><span class="s2">` has started.&quot;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">execution_info</span> <span class="o">=</span> <span class="n">tfx_launcher</span><span class="o">.</span><span class="n">launch</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">execution_info</span> <span class="ow">and</span> <span class="n">get_cache_status</span><span class="p">(</span><span class="n">execution_info</span><span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Using cached version of `</span><span class="si">{</span><span class="n">pipeline_step_name</span><span class="si">}</span><span class="s2">`.&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">RuntimeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;execution has already succeeded&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">):</span>
+                <span class="c1"># Hacky workaround to catch the error that a pipeline run with</span>
+                <span class="c1"># this name already exists. Raise an error with a more</span>
+                <span class="c1"># descriptive</span>
+                <span class="c1"># message instead.</span>
+                <span class="k">raise</span> <span class="n">DuplicateRunNameError</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span>
+
+        <span class="n">run_duration</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Step `</span><span class="si">{</span><span class="n">pipeline_step_name</span><span class="si">}</span><span class="s2">` has finished in &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">string_utils</span><span class="o">.</span><span class="n">get_human_readable_time</span><span class="p">(</span><span class="n">run_duration</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">execution_info</span>
+
+    <span class="k">def</span> <span class="nf">get_upstream_step_names</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">,</span> <span class="n">pb2_pipeline</span><span class="p">:</span> <span class="n">Pb2Pipeline</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Given a step, use the associated pb2 node to find the names of all upstream nodes.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            step: Instance of a Pipeline Step</span>
+<span class="sd">            pb2_pipeline: Protobuf Pipeline instance</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List of step names from direct upstream steps</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_node_with_step_name</span><span class="p">(</span><span class="n">step</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">pb2_pipeline</span><span class="p">)</span>
+
+        <span class="n">upstream_steps</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">upstream_node</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">upstream_nodes</span><span class="p">:</span>
+            <span class="n">upstream_steps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">upstream_node</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">upstream_steps</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">requires_resources_in_orchestration_environment</span><span class="p">(</span>
+        <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Checks if the orchestrator should run this step on special resources.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            step: The step that will be checked.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True if the step requires special resources in the orchestration</span>
+<span class="sd">            environment, False otherwise.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># If the step requires custom resources and doesn&#39;t run with a step</span>
+        <span class="c1"># operator, it would need these requirements in the orchestrator</span>
+        <span class="c1"># environment</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="p">(</span>
+            <span class="n">step</span><span class="o">.</span><span class="n">custom_step_operator</span> <span class="ow">or</span> <span class="n">step</span><span class="o">.</span><span class="n">resource_configuration</span><span class="o">.</span><span class="n">empty</span>
+        <span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_get_node_with_step_name</span><span class="p">(</span>
+        <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pb2_pipeline</span><span class="p">:</span> <span class="n">Pb2Pipeline</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PipelineNode</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Given the name of a step, return the node with that name from the pb2_pipeline.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            step_name: Name of the step</span>
+<span class="sd">            pb2_pipeline: pb2 pipeline containing nodes</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            PipelineNode instance</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            KeyError: If the step name is not found in the pipeline.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">pb2_pipeline</span><span class="o">.</span><span class="n">nodes</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">WhichOneof</span><span class="p">(</span><span class="s2">&quot;node&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;pipeline_node&quot;</span>
+                <span class="ow">and</span> <span class="n">node</span><span class="o">.</span><span class="n">pipeline_node</span><span class="o">.</span><span class="n">node_info</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">step_name</span>
+            <span class="p">):</span>
+                <span class="k">return</span> <span class="n">node</span><span class="o">.</span><span class="n">pipeline_node</span>
+
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Step </span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2"> not found in Pipeline &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">pb2_pipeline</span><span class="o">.</span><span class="n">pipeline_info</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_configure_node_context</span><span class="p">(</span>
+        <span class="n">pipeline</span><span class="p">:</span> <span class="s2">&quot;BasePipeline&quot;</span><span class="p">,</span>
+        <span class="n">pb2_pipeline</span><span class="p">:</span> <span class="n">Pb2Pipeline</span><span class="p">,</span>
+        <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
+        <span class="n">runtime_configuration</span><span class="p">:</span> <span class="s2">&quot;RuntimeConfiguration&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Adds context to each pipeline node of a pb2_pipeline.</span>
+
+<span class="sd">        This attaches important contexts to the nodes; namely</span>
+<span class="sd">        pipeline.docker_configuration, stack information and the runtime</span>
+<span class="sd">        configuration.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pipeline: Zenml Pipeline instance</span>
+<span class="sd">            pb2_pipeline: Protobuf Pipeline instance</span>
+<span class="sd">            stack: The stack the pipeline was run on</span>
+<span class="sd">            runtime_configuration: The Runtime configuration of the current run</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">stack_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">stack</span><span class="o">.</span><span class="n">dict</span><span class="p">(),</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Copy and remove the run name so an otherwise identical run reuses</span>
+        <span class="c1"># our MLMD context</span>
+        <span class="n">runtime_config_copy</span> <span class="o">=</span> <span class="n">runtime_configuration</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">runtime_config_copy</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;run_name&quot;</span><span class="p">)</span>
+        <span class="n">runtime_config_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
+            <span class="n">runtime_config_copy</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">pydantic_encoder</span>
+        <span class="p">)</span>
+
+        <span class="n">docker_config_json</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">docker_configuration</span><span class="o">.</span><span class="n">json</span><span class="p">(</span><span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">context_properties</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">MLMD_CONTEXT_STACK_PROPERTY_NAME</span><span class="p">:</span> <span class="n">stack_json</span><span class="p">,</span>
+            <span class="n">MLMD_CONTEXT_RUNTIME_CONFIG_PROPERTY_NAME</span><span class="p">:</span> <span class="n">runtime_config_json</span><span class="p">,</span>
+            <span class="n">MLMD_CONTEXT_DOCKER_CONFIGURATION_PROPERTY_NAME</span><span class="p">:</span> <span class="n">docker_config_json</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">pb2_pipeline</span><span class="o">.</span><span class="n">nodes</span><span class="p">:</span>
+            <span class="n">pipeline_node</span><span class="p">:</span> <span class="n">PipelineNode</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">pipeline_node</span>
+
+            <span class="n">step</span> <span class="o">=</span> <span class="n">get_step_for_node</span><span class="p">(</span>
+                <span class="n">pipeline_node</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">pipeline</span><span class="o">.</span><span class="n">steps</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+            <span class="p">)</span>
+            <span class="n">step_context_properties</span> <span class="o">=</span> <span class="n">context_properties</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">step_context_properties</span><span class="p">[</span>
+                <span class="n">MLMD_CONTEXT_STEP_RESOURCES_PROPERTY_NAME</span>
+            <span class="p">]</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">resource_configuration</span><span class="o">.</span><span class="n">json</span><span class="p">(</span><span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="c1"># We add the resolved materializer sources here so step operators</span>
+            <span class="c1"># can fetch it in the entrypoint. This is needed to support</span>
+            <span class="c1"># custom materializers which would otherwise be ignored.</span>
+            <span class="n">materializer_sources</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">output_name</span><span class="p">:</span> <span class="n">source_utils</span><span class="o">.</span><span class="n">resolve_class</span><span class="p">(</span><span class="n">materializer_class</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">output_name</span><span class="p">,</span> <span class="n">materializer_class</span> <span class="ow">in</span> <span class="n">step</span><span class="o">.</span><span class="n">get_materializers</span><span class="p">(</span>
+                    <span class="n">ensure_complete</span><span class="o">=</span><span class="kc">True</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="p">}</span>
+            <span class="n">step_context_properties</span><span class="p">[</span>
+                <span class="n">MLMD_CONTEXT_MATERIALIZER_SOURCES_PROPERTY_NAME</span>
+            <span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">materializer_sources</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="n">properties_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
+                <span class="n">step_context_properties</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">)</span>
+            <span class="n">context_name</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">md5</span><span class="p">(</span><span class="n">properties_json</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+
+            <span class="n">add_context_to_node</span><span class="p">(</span>
+                <span class="n">pipeline_node</span><span class="p">,</span>
+                <span class="n">type_</span><span class="o">=</span><span class="n">ZENML_MLMD_CONTEXT_TYPE</span><span class="p">,</span>
+                <span class="n">name</span><span class="o">=</span><span class="n">context_name</span><span class="p">,</span>
+                <span class="n">properties</span><span class="o">=</span><span class="n">step_context_properties</span><span class="p">,</span>
+            <span class="p">)</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.orchestrators.base_orchestrator.BaseOrchestrator.get_upstream_step_names" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_upstream_step_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">pb2_pipeline</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Given a step, use the associated pb2 node to find the names of all upstream nodes.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>step</code></td>
+        <td><code>BaseStep</code></td>
+        <td><p>Instance of a Pipeline Step</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>pb2_pipeline</code></td>
+        <td><code>Pipeline</code></td>
+        <td><p>Protobuf Pipeline instance</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>List[str]</code></td>
+      <td><p>List of step names from direct upstream steps</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/orchestrators/base_orchestrator.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_upstream_step_names</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">,</span> <span class="n">pb2_pipeline</span><span class="p">:</span> <span class="n">Pb2Pipeline</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Given a step, use the associated pb2 node to find the names of all upstream nodes.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        step: Instance of a Pipeline Step</span>
+<span class="sd">        pb2_pipeline: Protobuf Pipeline instance</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List of step names from direct upstream steps</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_node_with_step_name</span><span class="p">(</span><span class="n">step</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">pb2_pipeline</span><span class="p">)</span>
+
+    <span class="n">upstream_steps</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">upstream_node</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">upstream_nodes</span><span class="p">:</span>
+        <span class="n">upstream_steps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">upstream_node</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">upstream_steps</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.orchestrators.base_orchestrator.BaseOrchestrator.prepare_or_run_pipeline" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">prepare_or_run_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sorted_steps</span><span class="p">,</span> <span class="n">pipeline</span><span class="p">,</span> <span class="n">pb2_pipeline</span><span class="p">,</span> <span class="n">stack</span><span class="p">,</span> <span class="n">runtime_configuration</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>This method needs to be implemented by the respective orchestrator.</p>
+<p>Depending on the type of orchestrator you'll have to perform slightly
+different operations.</p>
+<h6 id="zenml.orchestrators.base_orchestrator.BaseOrchestrator.prepare_or_run_pipeline--simple-case">Simple Case:</h6>
+<p>The Steps are run directly from within the same environment in which
+the orchestrator code is executed. In this case you will need to
+deal with implementation-specific runtime configurations (like the
+schedule) and then iterate through each step and finally call
+<code>self.run_step()</code> to execute each step.</p>
+<h6 id="zenml.orchestrators.base_orchestrator.BaseOrchestrator.prepare_or_run_pipeline--advanced-case">Advanced Case:</h6>
+<p>Most orchestrators will not run the steps directly. Instead, they
+build some intermediate representation of the pipeline that is then
+used to create and run the pipeline and its steps on the target
+environment. For such orchestrators this method will have to build
+this representation and either deploy it directly or return it.</p>
+<p>Regardless of the implementation details, the orchestrator will need
+to a way to trigger each step in the target environment. For this
+the <code>run_step()</code> method should be used.</p>
+<p>In case the orchestrator is using docker containers for orchestration
+of each step, the <code>zenml.entrypoints.step_entrypoint</code> module can be
+used as a generalized entrypoint that sets up all the necessary
+prerequisites, parses input parameters and finally executes the step
+using the <code>run_step()</code>method.</p>
+<p>If the orchestrator needs to know the upstream steps for a specific
+step to build a DAG, it can use the <code>get_upstream_step_names()</code> method
+to get them.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>sorted_steps</code></td>
+        <td><code>List[zenml.steps.base_step.BaseStep]</code></td>
+        <td><p>List of sorted steps.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>pipeline</code></td>
+        <td><code>BasePipeline</code></td>
+        <td><p>Zenml Pipeline instance.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>pb2_pipeline</code></td>
+        <td><code>Pipeline</code></td>
+        <td><p>Protobuf Pipeline instance.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>stack</code></td>
+        <td><code>Stack</code></td>
+        <td><p>The stack the pipeline was run on.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>runtime_configuration</code></td>
+        <td><code>RuntimeConfiguration</code></td>
+        <td><p>The Runtime configuration of the current run.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Any</code></td>
+      <td><p>The optional return value from this method will be returned by the
+<code>pipeline_instance.run()</code> call when someone is running a pipeline.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/orchestrators/base_orchestrator.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">def</span> <span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">sorted_steps</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">BaseStep</span><span class="p">],</span>
+    <span class="n">pipeline</span><span class="p">:</span> <span class="s2">&quot;BasePipeline&quot;</span><span class="p">,</span>
+    <span class="n">pb2_pipeline</span><span class="p">:</span> <span class="n">Pb2Pipeline</span><span class="p">,</span>
+    <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
+    <span class="n">runtime_configuration</span><span class="p">:</span> <span class="s2">&quot;RuntimeConfiguration&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;This method needs to be implemented by the respective orchestrator.</span>
+
+<span class="sd">    Depending on the type of orchestrator you&#39;ll have to perform slightly</span>
+<span class="sd">    different operations.</span>
+
+<span class="sd">    Simple Case:</span>
+<span class="sd">    ------------</span>
+<span class="sd">    The Steps are run directly from within the same environment in which</span>
+<span class="sd">    the orchestrator code is executed. In this case you will need to</span>
+<span class="sd">    deal with implementation-specific runtime configurations (like the</span>
+<span class="sd">    schedule) and then iterate through each step and finally call</span>
+<span class="sd">    `self.run_step()` to execute each step.</span>
+
+<span class="sd">    Advanced Case:</span>
+<span class="sd">    --------------</span>
+<span class="sd">    Most orchestrators will not run the steps directly. Instead, they</span>
+<span class="sd">    build some intermediate representation of the pipeline that is then</span>
+<span class="sd">    used to create and run the pipeline and its steps on the target</span>
+<span class="sd">    environment. For such orchestrators this method will have to build</span>
+<span class="sd">    this representation and either deploy it directly or return it.</span>
+
+<span class="sd">    Regardless of the implementation details, the orchestrator will need</span>
+<span class="sd">    to a way to trigger each step in the target environment. For this</span>
+<span class="sd">    the `run_step()` method should be used.</span>
+
+<span class="sd">    In case the orchestrator is using docker containers for orchestration</span>
+<span class="sd">    of each step, the `zenml.entrypoints.step_entrypoint` module can be</span>
+<span class="sd">    used as a generalized entrypoint that sets up all the necessary</span>
+<span class="sd">    prerequisites, parses input parameters and finally executes the step</span>
+<span class="sd">    using the `run_step()`method.</span>
+
+<span class="sd">    If the orchestrator needs to know the upstream steps for a specific</span>
+<span class="sd">    step to build a DAG, it can use the `get_upstream_step_names()` method</span>
+<span class="sd">    to get them.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        sorted_steps: List of sorted steps.</span>
+<span class="sd">        pipeline: Zenml Pipeline instance.</span>
+<span class="sd">        pb2_pipeline: Protobuf Pipeline instance.</span>
+<span class="sd">        stack: The stack the pipeline was run on.</span>
+<span class="sd">        runtime_configuration: The Runtime configuration of the current run.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The optional return value from this method will be returned by the</span>
+<span class="sd">        `pipeline_instance.run()` call when someone is running a pipeline.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.orchestrators.base_orchestrator.BaseOrchestrator.requires_resources_in_orchestration_environment" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">requires_resources_in_orchestration_environment</span><span class="p">(</span><span class="n">step</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-staticmethod"><code>staticmethod</code></small>
+  </span>
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Checks if the orchestrator should run this step on special resources.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>step</code></td>
+        <td><code>BaseStep</code></td>
+        <td><p>The step that will be checked.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>bool</code></td>
+      <td><p>True if the step requires special resources in the orchestration
+environment, False otherwise.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/orchestrators/base_orchestrator.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
+<span class="k">def</span> <span class="nf">requires_resources_in_orchestration_environment</span><span class="p">(</span>
+    <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Checks if the orchestrator should run this step on special resources.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        step: The step that will be checked.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        True if the step requires special resources in the orchestration</span>
+<span class="sd">        environment, False otherwise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># If the step requires custom resources and doesn&#39;t run with a step</span>
+    <span class="c1"># operator, it would need these requirements in the orchestrator</span>
+    <span class="c1"># environment</span>
+    <span class="k">return</span> <span class="ow">not</span> <span class="p">(</span>
+        <span class="n">step</span><span class="o">.</span><span class="n">custom_step_operator</span> <span class="ow">or</span> <span class="n">step</span><span class="o">.</span><span class="n">resource_configuration</span><span class="o">.</span><span class="n">empty</span>
+    <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.orchestrators.base_orchestrator.BaseOrchestrator.run" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pipeline</span><span class="p">,</span> <span class="n">stack</span><span class="p">,</span> <span class="n">runtime_configuration</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Runs a pipeline.</p>
+<p>To do this, a protobuf pipeline is created, the context of the
+individual steps is expanded to include relevant data, the steps are
+sorted into execution order and the implementation specific
+<code>prepare_or_run_pipeline()</code> method is called.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>pipeline</code></td>
+        <td><code>BasePipeline</code></td>
+        <td><p>The pipeline to run.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>stack</code></td>
+        <td><code>Stack</code></td>
+        <td><p>The stack on which the pipeline is run.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>runtime_configuration</code></td>
+        <td><code>RuntimeConfiguration</code></td>
+        <td><p>Runtime configuration of the pipeline run.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Any</code></td>
+      <td><p>The result of the call to <code>prepare_or_run_pipeline()</code>.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/orchestrators/base_orchestrator.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">run</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">pipeline</span><span class="p">:</span> <span class="s2">&quot;BasePipeline&quot;</span><span class="p">,</span>
+    <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
+    <span class="n">runtime_configuration</span><span class="p">:</span> <span class="s2">&quot;RuntimeConfiguration&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Runs a pipeline.</span>
+
+<span class="sd">    To do this, a protobuf pipeline is created, the context of the</span>
+<span class="sd">    individual steps is expanded to include relevant data, the steps are</span>
+<span class="sd">    sorted into execution order and the implementation specific</span>
+<span class="sd">    `prepare_or_run_pipeline()` method is called.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        pipeline: The pipeline to run.</span>
+<span class="sd">        stack: The stack on which the pipeline is run.</span>
+<span class="sd">        runtime_configuration: Runtime configuration of the pipeline run.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The result of the call to `prepare_or_run_pipeline()`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Create the protobuf pipeline which will be needed for various reasons</span>
+    <span class="c1"># in the following steps</span>
+    <span class="n">pb2_pipeline</span><span class="p">:</span> <span class="n">Pb2Pipeline</span> <span class="o">=</span> <span class="n">Compiler</span><span class="p">()</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+        <span class="n">create_tfx_pipeline</span><span class="p">(</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">stack</span><span class="o">=</span><span class="n">stack</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">_configure_node_context</span><span class="p">(</span>
+        <span class="n">pipeline</span><span class="o">=</span><span class="n">pipeline</span><span class="p">,</span>
+        <span class="n">pb2_pipeline</span><span class="o">=</span><span class="n">pb2_pipeline</span><span class="p">,</span>
+        <span class="n">stack</span><span class="o">=</span><span class="n">stack</span><span class="p">,</span>
+        <span class="n">runtime_configuration</span><span class="o">=</span><span class="n">runtime_configuration</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">sorted_steps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_sorted_steps</span><span class="p">(</span>
+        <span class="n">pipeline</span><span class="o">=</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">pb2_pipeline</span><span class="o">=</span><span class="n">pb2_pipeline</span>
+    <span class="p">)</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prepare_or_run_pipeline</span><span class="p">(</span>
+        <span class="n">sorted_steps</span><span class="o">=</span><span class="n">sorted_steps</span><span class="p">,</span>
+        <span class="n">pipeline</span><span class="o">=</span><span class="n">pipeline</span><span class="p">,</span>
+        <span class="n">pb2_pipeline</span><span class="o">=</span><span class="n">pb2_pipeline</span><span class="p">,</span>
+        <span class="n">stack</span><span class="o">=</span><span class="n">stack</span><span class="p">,</span>
+        <span class="n">runtime_configuration</span><span class="o">=</span><span class="n">runtime_configuration</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">result</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.orchestrators.base_orchestrator.BaseOrchestrator.run_step" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">run_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">run_name</span><span class="p">,</span> <span class="n">pb2_pipeline</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>This sets up a component launcher and executes the given step.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>step</code></td>
+        <td><code>BaseStep</code></td>
+        <td><p>The step to be executed</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>run_name</code></td>
+        <td><code>str</code></td>
+        <td><p>The unique run name</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>pb2_pipeline</code></td>
+        <td><code>Pipeline</code></td>
+        <td><p>Protobuf Pipeline instance</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Optional[tfx.orchestration.portable.data_types.ExecutionInfo]</code></td>
+      <td><p>The execution info of the step.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/orchestrators/base_orchestrator.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">run_step</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">,</span>
+    <span class="n">run_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">pb2_pipeline</span><span class="p">:</span> <span class="n">Pb2Pipeline</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">data_types</span><span class="o">.</span><span class="n">ExecutionInfo</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;This sets up a component launcher and executes the given step.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        step: The step to be executed</span>
+<span class="sd">        run_name: The unique run name</span>
+<span class="sd">        pb2_pipeline: Protobuf Pipeline instance</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The execution info of the step.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Substitute the runtime parameter to be a concrete run_id, it is</span>
+    <span class="c1"># important for this to be unique for each run.</span>
+    <span class="n">runtime_parameter_utils</span><span class="o">.</span><span class="n">substitute_runtime_parameter</span><span class="p">(</span>
+        <span class="n">pb2_pipeline</span><span class="p">,</span>
+        <span class="p">{</span><span class="n">PIPELINE_RUN_ID_PARAMETER_NAME</span><span class="p">:</span> <span class="n">run_name</span><span class="p">},</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Extract the deployment_configs and use it to access the executor and</span>
+    <span class="c1"># custom driver spec</span>
+    <span class="n">deployment_config</span> <span class="o">=</span> <span class="n">runner_utils</span><span class="o">.</span><span class="n">extract_local_deployment_config</span><span class="p">(</span>
+        <span class="n">pb2_pipeline</span>
+    <span class="p">)</span>
+    <span class="n">executor_spec</span> <span class="o">=</span> <span class="n">runner_utils</span><span class="o">.</span><span class="n">extract_executor_spec</span><span class="p">(</span>
+        <span class="n">deployment_config</span><span class="p">,</span> <span class="n">step</span><span class="o">.</span><span class="n">name</span>
+    <span class="p">)</span>
+    <span class="n">custom_driver_spec</span> <span class="o">=</span> <span class="n">runner_utils</span><span class="o">.</span><span class="n">extract_custom_driver_spec</span><span class="p">(</span>
+        <span class="n">deployment_config</span><span class="p">,</span> <span class="n">step</span><span class="o">.</span><span class="n">name</span>
+    <span class="p">)</span>
+
+    <span class="c1"># At this point the active metadata store is queried for the</span>
+    <span class="c1"># metadata_connection</span>
+    <span class="n">repo</span> <span class="o">=</span> <span class="n">Repository</span><span class="p">()</span>
+    <span class="n">metadata_store</span> <span class="o">=</span> <span class="n">repo</span><span class="o">.</span><span class="n">active_stack</span><span class="o">.</span><span class="n">metadata_store</span>
+    <span class="n">metadata_connection</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">Metadata</span><span class="p">(</span>
+        <span class="n">metadata_store</span><span class="o">.</span><span class="n">get_tfx_metadata_config</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="n">custom_executor_operators</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">executable_spec_pb2</span><span class="o">.</span><span class="n">PythonClassExecutableSpec</span><span class="p">:</span> <span class="n">step</span><span class="o">.</span><span class="n">executor_operator</span>
+    <span class="p">}</span>
+
+    <span class="c1"># The protobuf node for the current step is loaded here.</span>
+    <span class="n">pipeline_node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_node_with_step_name</span><span class="p">(</span>
+        <span class="n">step_name</span><span class="o">=</span><span class="n">step</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">pb2_pipeline</span><span class="o">=</span><span class="n">pb2_pipeline</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Create the tfx launcher responsible for executing the step.</span>
+    <span class="n">component_launcher</span> <span class="o">=</span> <span class="n">launcher</span><span class="o">.</span><span class="n">Launcher</span><span class="p">(</span>
+        <span class="n">pipeline_node</span><span class="o">=</span><span class="n">pipeline_node</span><span class="p">,</span>
+        <span class="n">mlmd_connection</span><span class="o">=</span><span class="n">metadata_connection</span><span class="p">,</span>
+        <span class="n">pipeline_info</span><span class="o">=</span><span class="n">pb2_pipeline</span><span class="o">.</span><span class="n">pipeline_info</span><span class="p">,</span>
+        <span class="n">pipeline_runtime_spec</span><span class="o">=</span><span class="n">pb2_pipeline</span><span class="o">.</span><span class="n">runtime_spec</span><span class="p">,</span>
+        <span class="n">executor_spec</span><span class="o">=</span><span class="n">executor_spec</span><span class="p">,</span>
+        <span class="n">custom_driver_spec</span><span class="o">=</span><span class="n">custom_driver_spec</span><span class="p">,</span>
+        <span class="n">custom_executor_operators</span><span class="o">=</span><span class="n">custom_executor_operators</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># In some stack configurations, some stack components (like experiment</span>
+    <span class="c1"># trackers) will run some code before and after the actual step run.</span>
+    <span class="c1"># This is where the step actually gets executed using the</span>
+    <span class="c1"># component_launcher</span>
+    <span class="n">repo</span><span class="o">.</span><span class="n">active_stack</span><span class="o">.</span><span class="n">prepare_step_run</span><span class="p">()</span>
+    <span class="n">execution_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_execute_step</span><span class="p">(</span><span class="n">component_launcher</span><span class="p">)</span>
+    <span class="n">repo</span><span class="o">.</span><span class="n">active_stack</span><span class="o">.</span><span class="n">cleanup_step_run</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">execution_info</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h3 id="zenml.orchestrators.local" class="doc doc-heading">
+        <code>local</code>
+
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Initialization for the local orchestrator.</p>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h4 id="zenml.orchestrators.local.local_orchestrator" class="doc doc-heading">
+        <code>local_orchestrator</code>
+
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Implementation of the ZenML local orchestrator.</p>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h5 id="zenml.orchestrators.local.local_orchestrator.LocalOrchestrator" class="doc doc-heading">
+        <code>
+LocalOrchestrator            (<a class="autorefs autorefs-internal" title="zenml.orchestrators.base_orchestrator.BaseOrchestrator" href="#zenml.orchestrators.base_orchestrator.BaseOrchestrator">BaseOrchestrator</a>)
+        </code>
+
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-pydantic-model"><code>pydantic-model</code></small>
+  </span>
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Orchestrator responsible for running pipelines locally.</p>
+<p>This orchestrator does not allow for concurrent execution of steps and also
+does not support running on a schedule.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/orchestrators/local/local_orchestrator.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LocalOrchestrator</span><span class="p">(</span><span class="n">BaseOrchestrator</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Orchestrator responsible for running pipelines locally.</span>
+
+<span class="sd">    This orchestrator does not allow for concurrent execution of steps and also</span>
+<span class="sd">    does not support running on a schedule.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">FLAVOR</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;local&quot;</span>
+
+    <span class="k">def</span> <span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">sorted_steps</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">BaseStep</span><span class="p">],</span>
+        <span class="n">pipeline</span><span class="p">:</span> <span class="s2">&quot;BasePipeline&quot;</span><span class="p">,</span>
+        <span class="n">pb2_pipeline</span><span class="p">:</span> <span class="n">Pb2Pipeline</span><span class="p">,</span>
+        <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
+        <span class="n">runtime_configuration</span><span class="p">:</span> <span class="s2">&quot;RuntimeConfiguration&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;This method iterates through all steps and executes them sequentially.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sorted_steps: A list of steps in the pipeline.</span>
+<span class="sd">            pipeline: The pipeline object.</span>
+<span class="sd">            pb2_pipeline: The pipeline object in protobuf format.</span>
+<span class="sd">            stack: The stack object.</span>
+<span class="sd">            runtime_configuration: The runtime configuration object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">runtime_configuration</span><span class="o">.</span><span class="n">schedule</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Local Orchestrator currently does not support the&quot;</span>
+                <span class="s2">&quot;use of schedules. The `schedule` will be ignored &quot;</span>
+                <span class="s2">&quot;and the pipeline will be run immediately.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">assert</span> <span class="n">runtime_configuration</span><span class="o">.</span><span class="n">run_name</span><span class="p">,</span> <span class="s2">&quot;Run name must be set&quot;</span>
+
+        <span class="c1"># Run each step</span>
+        <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">sorted_steps</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">requires_resources_in_orchestration_environment</span><span class="p">(</span><span class="n">step</span><span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s2">&quot;Specifying step resources is not supported for the local &quot;</span>
+                    <span class="s2">&quot;orchestrator, ignoring resource configuration for &quot;</span>
+                    <span class="s2">&quot;step </span><span class="si">%s</span><span class="s2">.&quot;</span><span class="p">,</span>
+                    <span class="n">step</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">run_step</span><span class="p">(</span>
+                <span class="n">step</span><span class="o">=</span><span class="n">step</span><span class="p">,</span>
+                <span class="n">run_name</span><span class="o">=</span><span class="n">runtime_configuration</span><span class="o">.</span><span class="n">run_name</span><span class="p">,</span>
+                <span class="n">pb2_pipeline</span><span class="o">=</span><span class="n">pb2_pipeline</span><span class="p">,</span>
+            <span class="p">)</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h6 id="zenml.orchestrators.local.local_orchestrator.LocalOrchestrator.prepare_or_run_pipeline" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">prepare_or_run_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sorted_steps</span><span class="p">,</span> <span class="n">pipeline</span><span class="p">,</span> <span class="n">pb2_pipeline</span><span class="p">,</span> <span class="n">stack</span><span class="p">,</span> <span class="n">runtime_configuration</span><span class="p">)</span></code>
+
+
+</h6>
+
+    <div class="doc doc-contents ">
+
+      <p>This method iterates through all steps and executes them sequentially.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>sorted_steps</code></td>
+        <td><code>List[zenml.steps.base_step.BaseStep]</code></td>
+        <td><p>A list of steps in the pipeline.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>pipeline</code></td>
+        <td><code>BasePipeline</code></td>
+        <td><p>The pipeline object.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>pb2_pipeline</code></td>
+        <td><code>Pipeline</code></td>
+        <td><p>The pipeline object in protobuf format.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>stack</code></td>
+        <td><code>Stack</code></td>
+        <td><p>The stack object.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>runtime_configuration</code></td>
+        <td><code>RuntimeConfiguration</code></td>
+        <td><p>The runtime configuration object.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/orchestrators/local/local_orchestrator.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">sorted_steps</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">BaseStep</span><span class="p">],</span>
+    <span class="n">pipeline</span><span class="p">:</span> <span class="s2">&quot;BasePipeline&quot;</span><span class="p">,</span>
+    <span class="n">pb2_pipeline</span><span class="p">:</span> <span class="n">Pb2Pipeline</span><span class="p">,</span>
+    <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
+    <span class="n">runtime_configuration</span><span class="p">:</span> <span class="s2">&quot;RuntimeConfiguration&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;This method iterates through all steps and executes them sequentially.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        sorted_steps: A list of steps in the pipeline.</span>
+<span class="sd">        pipeline: The pipeline object.</span>
+<span class="sd">        pb2_pipeline: The pipeline object in protobuf format.</span>
+<span class="sd">        stack: The stack object.</span>
+<span class="sd">        runtime_configuration: The runtime configuration object.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">runtime_configuration</span><span class="o">.</span><span class="n">schedule</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s2">&quot;Local Orchestrator currently does not support the&quot;</span>
+            <span class="s2">&quot;use of schedules. The `schedule` will be ignored &quot;</span>
+            <span class="s2">&quot;and the pipeline will be run immediately.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">assert</span> <span class="n">runtime_configuration</span><span class="o">.</span><span class="n">run_name</span><span class="p">,</span> <span class="s2">&quot;Run name must be set&quot;</span>
+
+    <span class="c1"># Run each step</span>
+    <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">sorted_steps</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">requires_resources_in_orchestration_environment</span><span class="p">(</span><span class="n">step</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Specifying step resources is not supported for the local &quot;</span>
+                <span class="s2">&quot;orchestrator, ignoring resource configuration for &quot;</span>
+                <span class="s2">&quot;step </span><span class="si">%s</span><span class="s2">.&quot;</span><span class="p">,</span>
+                <span class="n">step</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">run_step</span><span class="p">(</span>
+            <span class="n">step</span><span class="o">=</span><span class="n">step</span><span class="p">,</span>
+            <span class="n">run_name</span><span class="o">=</span><span class="n">runtime_configuration</span><span class="o">.</span><span class="n">run_name</span><span class="p">,</span>
+            <span class="n">pb2_pipeline</span><span class="o">=</span><span class="n">pb2_pipeline</span><span class="p">,</span>
+        <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h3 id="zenml.orchestrators.utils" class="doc doc-heading">
+        <code>utils</code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Utility functions for the orchestrator.</p>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.orchestrators.utils.add_context_to_node" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">add_context_to_node</span><span class="p">(</span><span class="n">pipeline_node</span><span class="p">,</span> <span class="n">type_</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">properties</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Adds a new context to a TFX protobuf pipeline node.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>pipeline_node</code></td>
+        <td><code>PipelineNode</code></td>
+        <td><p>A tfx protobuf pipeline node</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>type_</code></td>
+        <td><code>str</code></td>
+        <td><p>The type name for the context to be added</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>name</code></td>
+        <td><code>str</code></td>
+        <td><p>Unique key for the context</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>properties</code></td>
+        <td><code>Dict[str, str]</code></td>
+        <td><p>dictionary of strings as properties of the context</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/orchestrators/utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">add_context_to_node</span><span class="p">(</span>
+    <span class="n">pipeline_node</span><span class="p">:</span> <span class="n">PipelineNode</span><span class="p">,</span>
+    <span class="n">type_</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">properties</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Adds a new context to a TFX protobuf pipeline node.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        pipeline_node: A tfx protobuf pipeline node</span>
+<span class="sd">        type_: The type name for the context to be added</span>
+<span class="sd">        name: Unique key for the context</span>
+<span class="sd">        properties: dictionary of strings as properties of the context</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Add a new context to the pipeline</span>
+    <span class="n">context</span><span class="p">:</span> <span class="n">ContextSpec</span> <span class="o">=</span> <span class="n">pipeline_node</span><span class="o">.</span><span class="n">contexts</span><span class="o">.</span><span class="n">contexts</span><span class="o">.</span><span class="n">add</span><span class="p">()</span>
+    <span class="c1"># Adding the type of context</span>
+    <span class="n">context</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">type_</span>
+    <span class="c1"># Setting the name of the context</span>
+    <span class="n">context</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">field_value</span><span class="o">.</span><span class="n">string_value</span> <span class="o">=</span> <span class="n">name</span>
+    <span class="c1"># Setting the properties of the context depending on attribute type</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">properties</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">c_property</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="n">c_property</span><span class="o">.</span><span class="n">field_value</span><span class="o">.</span><span class="n">string_value</span> <span class="o">=</span> <span class="n">value</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.orchestrators.utils.create_tfx_pipeline" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">create_tfx_pipeline</span><span class="p">(</span><span class="n">zenml_pipeline</span><span class="p">,</span> <span class="n">stack</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Creates a tfx pipeline from a ZenML pipeline.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>zenml_pipeline</code></td>
+        <td><code>BasePipeline</code></td>
+        <td><p>The ZenML pipeline.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>stack</code></td>
+        <td><code>Stack</code></td>
+        <td><p>The stack.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Pipeline</code></td>
+      <td><p>The tfx pipeline.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/orchestrators/utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_tfx_pipeline</span><span class="p">(</span>
+    <span class="n">zenml_pipeline</span><span class="p">:</span> <span class="s2">&quot;BasePipeline&quot;</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tfx_pipeline</span><span class="o">.</span><span class="n">Pipeline</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Creates a tfx pipeline from a ZenML pipeline.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        zenml_pipeline: The ZenML pipeline.</span>
+<span class="sd">        stack: The stack.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The tfx pipeline.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Connect the inputs/outputs of all steps in the pipeline</span>
+    <span class="n">zenml_pipeline</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="o">**</span><span class="n">zenml_pipeline</span><span class="o">.</span><span class="n">steps</span><span class="p">)</span>
+
+    <span class="n">tfx_components</span> <span class="o">=</span> <span class="p">[</span><span class="n">step</span><span class="o">.</span><span class="n">component</span> <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">zenml_pipeline</span><span class="o">.</span><span class="n">steps</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
+
+    <span class="n">artifact_store</span> <span class="o">=</span> <span class="n">stack</span><span class="o">.</span><span class="n">artifact_store</span>
+
+    <span class="c1"># We do not pass the metadata connection config here as it might not be</span>
+    <span class="c1"># accessible. Instead it is queried from the active stack right before a</span>
+    <span class="c1"># step is executed (see `BaseOrchestrator.run_step(...)`)</span>
+    <span class="k">return</span> <span class="n">tfx_pipeline</span><span class="o">.</span><span class="n">Pipeline</span><span class="p">(</span>
+        <span class="n">pipeline_name</span><span class="o">=</span><span class="n">zenml_pipeline</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="n">components</span><span class="o">=</span><span class="n">tfx_components</span><span class="p">,</span>  <span class="c1"># type: ignore[arg-type]</span>
+        <span class="n">pipeline_root</span><span class="o">=</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
+        <span class="n">enable_cache</span><span class="o">=</span><span class="n">zenml_pipeline</span><span class="o">.</span><span class="n">enable_cache</span><span class="p">,</span>
+    <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.orchestrators.utils.get_cache_status" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_cache_status</span><span class="p">(</span><span class="n">execution_info</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns whether a cached execution was used or not.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>execution_info</code></td>
+        <td><code>Optional[tfx.orchestration.portable.data_types.ExecutionInfo]</code></td>
+        <td><p>The execution info.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>bool</code></td>
+      <td><p><code>True</code> if the execution was cached, <code>False</code> otherwise.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/orchestrators/utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_cache_status</span><span class="p">(</span>
+    <span class="n">execution_info</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">data_types</span><span class="o">.</span><span class="n">ExecutionInfo</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns whether a cached execution was used or not.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        execution_info: The execution info.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        `True` if the execution was cached, `False` otherwise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># An execution output URI is only provided if the step needs to be</span>
+    <span class="c1"># executed (= is not cached)</span>
+    <span class="k">if</span> <span class="n">execution_info</span> <span class="ow">and</span> <span class="n">execution_info</span><span class="o">.</span><span class="n">execution_output_uri</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h4 id="zenml.orchestrators.utils.get_step_for_node" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_step_for_node</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">steps</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Finds the matching step for a tfx pipeline node.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>node</code></td>
+        <td><code>PipelineNode</code></td>
+        <td><p>The tfx pipeline node.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>steps</code></td>
+        <td><code>List[zenml.steps.base_step.BaseStep]</code></td>
+        <td><p>The list of steps.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>BaseStep</code></td>
+      <td><p>The matching step.</p></td>
+    </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>RuntimeError</code></td>
+        <td><p>If no matching step is found.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/orchestrators/utils.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_step_for_node</span><span class="p">(</span><span class="n">node</span><span class="p">:</span> <span class="n">PipelineNode</span><span class="p">,</span> <span class="n">steps</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">BaseStep</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">BaseStep</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Finds the matching step for a tfx pipeline node.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        node: The tfx pipeline node.</span>
+<span class="sd">        steps: The list of steps.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The matching step.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        RuntimeError: If no matching step is found.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">step_name</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">node_info</span><span class="o">.</span><span class="n">id</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="n">step</span> <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">steps</span> <span class="k">if</span> <span class="n">step</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">step_name</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unable to find step with name &#39;</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+              
+            </article>
+            
+          </div>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../model_deployers/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Model Deployers" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Model Deployers
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../pipelines/" class="md-footer__link md-footer__link--next" aria-label="Next: Pipelines" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Pipelines
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2022 ZenML GmbH
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.b028fd86.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.0f659f14.min.js"></script>
+      
+    
+  </body>
+</html>
