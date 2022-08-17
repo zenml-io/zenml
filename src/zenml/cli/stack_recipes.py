@@ -230,12 +230,8 @@ class LocalStackRecipe:
                 locals_content = locals.read()
             return locals_content
         except FileNotFoundError:
-            if fileio.exists(str(self.path_in_repo)) and fileio.isdir(
-                str(self.path_in_repo)
-            ):
-                raise ValueError(
-                    f"No locals.tf file found in " f"{self.path_in_repo}"
-                )
+            if fileio.exists(str(self.path)) and fileio.isdir(str(self.path)):
+                raise ValueError(f"No locals.tf file found in " f"{self.path}")
             else:
                 raise FileNotFoundError(
                     f"Recipe {self.name} is not one of the available options."
@@ -243,7 +239,6 @@ class LocalStackRecipe:
                     f"To list all available recipes, type: `zenml stack recipe "
                     f"list`"
                 )
-
 
 
 class StackRecipe:
@@ -790,7 +785,7 @@ if terraform_installed:  # noqa: C901
     )
     @click.option(
         "--import",
-        "import_stack",
+        "import_stack_flag",
         is_flag=True,
         help="Don't import the stack automatically after the recipe is deployed. The "
         "stack configuration file is still generated and can be imported manually.",
@@ -812,7 +807,7 @@ if terraform_installed:  # noqa: C901
         stack_recipe_name: str,
         path: str,
         force: bool,
-        import_stack: bool,
+        import_stack_flag: bool,
         log_level: str,
         stack_name: Optional[str],
     ) -> None:
@@ -829,7 +824,7 @@ if terraform_installed:  # noqa: C901
             force: Force the run of the stack_recipe.
             stack_name: A name for the ZenML stack that gets imported as a result
                 of the recipe deployment.
-            import_stack: Import the stack automatically after the recipe is
+            import_stack_flag: Import the stack automatically after the recipe is
                 deployed. The stack configuration file is always generated and
                 can be imported manually otherwise.
             log_level: Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case insensitive)
@@ -886,14 +881,14 @@ if terraform_installed:  # noqa: C901
 
                 with console.pager(styles=False):
                     console.print(local_stack_recipe.locals_content)
-                
+
                 if cli_utils.confirmation(
                     f"\nDo you wish to deploy the {stack_recipe_name} recipe "
                     "with the above configuration? Please make sure that "
                     "resources with the same values as above don't already "
                     "exist on your cloud account."
                 ):
-                
+
                     # Telemetry
                     track_event(
                         AnalyticsEvent.RUN_STACK_RECIPE,
@@ -911,7 +906,7 @@ if terraform_installed:  # noqa: C901
                         f"Find it at {stack_yaml_file}."
                     )
 
-                    if import_stack:
+                    if import_stack_flag:
                         logger.info(
                             "\nThe flag `--no-import` is not set. Proceeding "
                             "to import a new ZenML stack from the created resources."
