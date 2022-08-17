@@ -60,7 +60,8 @@ More features that are planned 👇:
 ## Integration with the ZenML CLI 🙏
 
 {% hint style="info" %}
-To use the stack recipe CLI commands, you will have to install some optional dependencies with `zenml`. Run `pip install zenml[recipes]` to get started! 
+To use the stack recipe CLI commands, you will have to install some optional dependencies with `zenml`. 
+Run `pip install "zenml[recipes]"` to get started! 
 {% endhint %}
 
 We have already discussed the features that the ZenML CLI offers on top of the usual terraform commands. To see them in action, here's what a simple flow could look like:
