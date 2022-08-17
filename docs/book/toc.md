@@ -111,6 +111,7 @@
 ## Cloud Guide
 
 * [Overview: Options for Deploying Infrastructure](./cloud-guide/overview.md)
+* [Quick Deployments with Stack Recipes](./cloud-guide/stack-recipes.md)
 * [AWS](./cloud-guide/aws/aws.md)
   * [Set Up a Minimal MLOps Stack on AWS](./cloud-guide/aws/aws-guide.md)
 * [GCP](./cloud-guide/gcp/gcp.md)

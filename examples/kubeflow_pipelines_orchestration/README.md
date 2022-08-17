@@ -204,6 +204,61 @@ to access the GCP container registry.
 * Kubectl can [access](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl) your GCP 
 Kubernetes cluster.
 
+### 🚅 That seems like a lot of infrastructure work. Is there a Zen 🧘 way to run this example?
+
+Yes! With [ZenML Stack Recipes](../../docs/book/cloud-guide/stack-recipes.md), you can now provision all the infrastructure you need to run your ZenML pipelines with just a few simple commands.
+
+The flow to get started for this example can be the following:
+
+1. Pull the `gcp-kubeflow-kserve` recipe to your local system. Learn more about what this recipe does from its README.
+
+    ```shell
+    zenml stack recipe pull gcp-kubeflow-kserve
+    ```
+2. (Optional) 🎨 Customize your deployment by editing the default values in the `locals.tf` file.
+
+3. 🚀 Deploy the recipe with this simple command.
+
+    ```shell
+    zenml stack recipe deploy gcp-kubeflow-kserve
+    ```
+    > **Note**
+    > This command can also automatically import the resources created as a ZenML stack for you. Just run it with the `--import` flag and optionally provide a `--stack-name` and you're set! Keep in mind, in that case, you'll need all integrations for this example installed before you run this command.
+
+    > **Note**
+    > You should also have [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) and [docker](https://docs.docker.com/engine/install/) installed on your local system with the local [docker client authorized](https://cloud.google.com/sdk/gcloud/reference/auth/configure-docker) to push to your cloud registry.
+    
+4. You'll notice that a ZenML stack configuration file gets created 🤯! You can run the following command to import the resources as a ZenML stack, manually.
+
+    ```shell
+    zenml stack import <STACK-NAME> <PATH-TO-THE-CREATED-STACK-CONFIG-YAML>
+
+    # set the imported stack as the active stack
+    zenml stack set <STACK-NAME>
+    ```
+
+5. You should now create a secret for the CloudSQL instance that will allow ZenML to connect to it. Use the following command:
+
+    ```bash
+    zenml secrets-manager secret register gcp_mysql_secret --schema=mysql --user=<DB_USER> --password=<PWD> \
+      --ssl_ca=@</PATH/TO/DOWNLOADED/SERVER-CERT> \
+      --ssl_cert=@</PATH/TO/DOWNLOADED/CLIENT-CERT> \
+      --ssl_key=@</PATH/TO/DOWNLOADED/CLIENT-KEY>
+    ```
+
+    The values for the username and password can be obtained by running the following commands inside your recipe directory.
+
+    ```bash
+    terraform output metadata-db-username
+
+    terraform output metadata-db-password
+    ```
+
+    For the certificates, visit the Google Cloud Console to [create a certificate and download the files](https://cloud.google.com/sql/docs/mysql/configure-ssl-instance#:~:text=Cloud%20SQL%20Instances-,To%20open%20the%20Overview%20page%20of%20an%20instance%2C%20click%20the,Click%20Create%20client%20certificate.) to your system.
+
+
+You can now jump straight to the [section on running the pipeline](#e296b6efb88f-run-the-pipeline-1)!
+
 ### 🥞 Create a GCP Kubeflow Pipelines stack
 
 To run our pipeline on Kubeflow Pipelines deployed to GCP, we will create a new stack with these components:

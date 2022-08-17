@@ -90,6 +90,11 @@ class AnalyticsEvent(str, Enum):
     # Test event
     EVENT_TEST = "Test event"
 
+    # Stack recipes
+    PULL_STACK_RECIPE = "Stack recipes pulled"
+    RUN_STACK_RECIPE = "Stack recipe created"
+    DESTROY_STACK_RECIPE = "Stack recipe destroyed"
+
 
 def get_segment_key() -> str:
     """Get key for authorizing to Segment backend.
