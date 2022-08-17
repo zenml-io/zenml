@@ -41,61 +41,68 @@ You can provision these resources manually by following the
 For detailed instructions, see our
 [Kubernetes orchestrator blog post](https://blog.zenml.io/k8s-orchestrator/).
 
-Alternatively, you can also use any other cloud provider, spin up the
-respective resources there, and adjust all `zenml ... register` commands below
-accordingly.
-
-#### 🚅 That seems like a lot of infrastructure work. Is there a faster way to run this example?
-
-Yes! If you are not a fan of creating resources on the cloud manually, we have just the solution for you. The [`aws-minimal` recipe](https://github.com/zenml-io/mlops-stacks/tree/main/aws-minimal) can provision all the resources you need for this example and if you're using the new [stack recipe CLI commands](../../docs/book/cloud-guide/stack-recipes.md), it will even import a ZenML stack with these new components that you can use out of the box! 
-
-For those not familiar with stack recipes, they are a set of carefully-crafted Terraform modules that do the heavy-lifting of creating your cloud resources, following your customizations. With just a simple command, you can have a full MLOps stacks that you can run your pipelines on! Check out the [`mlops-stacks` repository](https://github.com/zenml-io/mlops-stacks) to see the list of recipes available as of now and for the instructions on how to deploy them 🚀.
-
-Once you follow the [instructions](https://github.com/zenml-io/mlops-stacks#-association-with-zenml) to deploy the `aws-minimal` recipe, you'll then have a ZenML stack created for you. Set this as the current active stack by running the following command and get started on the Zen experience 🧘:
-
-```bash
-zenml stack set aws-minimal
-```
-
-> **Note**
-> You need to have the `aws`, `mlflow` and `seldon` integrations installed before running the recipe.
-
-> **Note**
-> You should also have `kubectl` and `docker` installed on your local system with the local docker client authorized to push to your cloud registry.
-
-You should now create a secret for the RDS MySQL instance that will allow ZenML to connect to it. Use the following command:
-
-```bash
-zenml secret register aws_rds_secret \
-    --schema=mysql \
-    --user=<user> \
-    --password=<password>
-```
-
-The values for the username and password can be obtained by running the following commands inside your recipe directory.
-
-```bash
-terraform output metadata-db-username
-
-terraform output metadata-db-password
-```
-
-> **Warning**
-> Remove the unused Seldon Core model deployer component by running the following command:
-```bash
-zenml stack remove-component --model-deployer
-```
-
-
-You can now jump straight to the [section on running the pipeline](#computer-run-pipeline)!
-
-
 Regardless of your cloud provider choice, you will also need to have the
 following additional software installed on your local machine:
 
 * [Docker](https://www.docker.com/)
 * [kubectl](https://kubernetes.io/docs/tasks/tools/)
 * [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+
+Alternatively, you can also use any other cloud provider, spin up the
+respective resources there, and adjust all `zenml ... register` commands below
+accordingly.
+
+### 🚅 That seems like a lot of infrastructure work. Is there a Zen 🧘 way to run this example?
+
+Yes! With [ZenML Stack Recipes](../../docs/book/cloud-guide/stack-recipes.md), you can now provision all the infrastructure you need to run your ZenML pipelines with just a few simple commands.
+
+The flow to get started for this example can be the following:
+
+1. Pull the `aws_minimal` recipe to your local system. Learn more about what this recipe does from its README.
+
+    ```shell
+    zenml stack recipe pull aws_minimal
+    ```
+2. (Optional) 🎨 Customize your deployment by editing the default values in the `locals.tf` file.
+
+3. 🚀 Deploy the recipe with this simple command.
+
+    ```shell
+    zenml stack recipe deploy aws_minimal
+    ```
+    > **Note**
+    > This command can also automatically import the resources created as a ZenML stack for you. Just run it with the `--import` flag and optionally provide a `--stack-name` and you're set! Keep in mind, in that case, you'll need all integrations for this example installed before you run this command.
+
+    > **Note**
+    > You should also have [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) and [docker](https://docs.docker.com/engine/install/) installed on your local system with the local [docker client authorized](https://cloud.google.com/sdk/gcloud/reference/auth/configure-docker) to push to your cloud registry.
+    
+4. You'll notice that a ZenML stack configuration file gets created 🤯! You can run the following command to import the resources as a ZenML stack, manually. You either need to have the `aws`, `mlflow` and `seldon` integrations installed before importing the stack or you can go into the YAML file and delete the sections on the `experiment_tracker` and `model_deployer` to not have them importer at all.
+
+    ```shell
+    zenml stack import <STACK-NAME> <PATH-TO-THE-CREATED-STACK-CONFIG-YAML>
+
+    # set the imported stack as the active stack
+    zenml stack set <STACK-NAME>
+    ```
+
+5. You should now create a secret for the RDS MySQL instance that will allow ZenML to connect to it. Use the following command:
+
+    ```bash
+    zenml secret register aws_rds_secret \
+        --schema=mysql \
+        --user=<user> \
+        --password=<password>
+    ```
+
+    The values for the username and password can be obtained by running the following commands inside your recipe directory.
+
+    ```bash
+    terraform output metadata-db-username
+
+    terraform output metadata-db-password
+    ```
+
+You can now jump straight to the [section on running the pipeline](#computer-run-pipeline)!
 
 ### Setup and Register Kubernetes Orchestrator
 After spinning up your Kubernetes cluster in the cloud, you will first need

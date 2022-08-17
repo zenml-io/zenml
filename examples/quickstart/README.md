@@ -20,26 +20,45 @@ You can use Google Colab to see ZenML in action, no signup / installation requir
 
 <a href="https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/notebooks/quickstart.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
-## :cloud: Run on a cloud provider of your choice
+## :cloud: The Zen 🧘 way to run on a cloud provider of your choice
 
 If you're looking for a quick way to test the quickstart out on your cloud but don't want to go through the pain-staking process of creating all the required resources, we have just the solution for you: [stack recipes!](../../docs/book/cloud-guide/stack-recipes.md) 🥗
 
-Stack recipes are a set of carefully-crafted Terraform modules that do the heavy-lifting of creating your cloud resources, following your customizations. With just a simple command, you can have a full MLOps stacks that you can run your pipelines on! Check out the [`mlops-stacks` repository](https://github.com/zenml-io/mlops-stacks) to see the list of recipes available as of now and for the instructions on how to deploy them 🚀.
+A flow to get started for this example can be the following:
 
-Once you follow the [instructions](https://github.com/zenml-io/mlops-stacks#-association-with-zenml) to deploy any recipe of your choice, you'll then have a ZenML stack created for you. Set this as the current active stack by running the following command and get started on the Zen experience 🧘:
+1. 📃 List all available stack recipes.
 
-```bash
-zenml stack set <name-of-recipe>
-```
+    ```shell
+    zenml stack recipe list
+    ```
+2. Pull the recipe that you wish to deploy, to your local system.
 
-> **Note**
-> You'll need to have all the necessary integrations installed before running the recipe. Use the following command:
-```bash
-zenml integration install dash sklearn mlflow evidently facets
-``` 
+    ```shell
+    zenml stack recipe pull <STACK-RECIPE-NAME>
 
-> **Note**
-> You should also have `kubectl` and `docker` installed on your local system with the local docker client authorized to push to your cloud registry.
+3. (Optional) 🎨 Customize your deployment by editing the default values in the `locals.tf` file.
+
+3. 🚀 Deploy the recipe with this simple command.
+
+    ```shell
+    zenml stack recipe deploy <STACK-RECIPE-NAME>
+    ```
+    > **Note**
+    > This command can also automatically import the resources created as a ZenML stack for you. Just run it with the `--import` flag and optionally provide a `--stack-name` and you're set! Keep in mind, in that case, you'll need all integrations for this example installed before you run this command.
+
+    > **Note**
+    > You should also have [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) and [docker](https://docs.docker.com/engine/install/) installed on your local system with the local [docker client authorized](https://cloud.google.com/sdk/gcloud/reference/auth/configure-docker) to push to your cloud registry.
+    
+4. You'll notice that a ZenML stack configuration file gets created 🤯! You can run the following command to import the resources as a ZenML stack, manually.
+
+    ```shell
+    zenml stack import <STACK-NAME> <PATH-TO-THE-CREATED-STACK-CONFIG-YAML>
+
+    # set the imported stack as the active stack
+    zenml stack set <STACK-NAME>
+    ```
+
+5. You should now create secrets for your newly-created MySQL instance. If you're using a GCP recipe, you can refer to the [Kubeflow example README](../kubeflow_pipelines_orchestration/README.md#🚅-that-seems-like-a-lot-of-infrastructure-work-is-there-a-zen-🧘-way-to-run-this-example) for the necessary commands. For AWS, check out the [Kubernetes Orchestrator example README.](../kubernetes_orchestration/README.md#🚅-that-seems-like-a-lot-of-infrastructure-work-is-there-a-zen-🧘-way-to-run-this-example)
 
 
 You can now run the quickstart pipeline by executing the `run.py` file in the root directory!
