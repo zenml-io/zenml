@@ -716,6 +716,11 @@ if terraform_installed:  # noqa: C901
                 cli_utils.declare(
                     f"Stack recipe pulled in directory: {destination_dir}"
                 )
+                cli_utils.declare(
+                    "\n Please edit the configuration values as you see fit, "
+                    f"in the file: {os.path.join(destination_dir, 'locals.tf')} "
+                    "before you run the deploy command."
+                )
                 track_event(
                     AnalyticsEvent.PULL_STACK_RECIPE,
                     {"stack_recipe_name": stack_recipe.name},
