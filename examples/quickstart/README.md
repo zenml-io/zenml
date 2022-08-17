@@ -8,10 +8,10 @@ Then open [notebooks/quickstart.ipynb](notebooks/quickstart.ipynb) to get starte
 ## :earth_americas: Overview
 
 This quickstart aims to give you a small illustration of what ZenML can do. To do so, we will:
-- Train a model on the MNIST digits dataset, evaluate it, deploy it, and embed it in an inference pipeline
-- Automatically version, track, and cache data, models, and other artifacts
-- Track model hyperparameters and metrics in an experiment tracking tool
-- Measure and visualize train-test skew, training-serving skew, and data drift
+- Train a model on the iris flower classification dataset, evaluate it, deploy it, and embed it in an inference pipeline,
+- Automatically version, track, and cache data, models, and other artifacts,
+- Track model hyperparameters and metrics in an experiment tracking tool,
+- Measure and visualize train-test skew, training-serving skew, and data drift.
 
 **New to MLOps?** You might want to start with our [**ZenBytes**](https://github.com/zenml-io/zenbytes) lesson series instead where we cover each MLOps concept in much more detail. This quickstart assumes you are already familiar with basic MLOps concepts and just want to learn how to approach them with ZenML.
 
