@@ -85,17 +85,26 @@ class KubernetesSparkStepOperator(
         """
         # Copy the entrypoint
         entrypoint_path = os.path.join(get_source_root_path(), ENTRYPOINT_NAME)
-        copy(LOCAL_ENTRYPOINT, entrypoint_path, overwrite=True)
 
-        # Build and push the image
-        image_name = self.build_and_push_docker_image(
-            pipeline_name=pipeline_name,
-            docker_configuration=docker_configuration,
-            stack=Repository().active_stack,
-            runtime_configuration=RuntimeConfiguration(),
-        )
+        try:
+            copy(LOCAL_ENTRYPOINT, entrypoint_path, overwrite=False)
+        except OSError:
+            raise FileExistsError(
+                f"The Kubernetes Spark step operator needs to copy the step "
+                f"entrypoint to {entrypoint_path}, however a file with this "
+                f"path already exists."
+            )
 
-        remove(entrypoint_path)
+        try:
+            # Build and push the image
+            image_name = self.build_and_push_docker_image(
+                pipeline_name=pipeline_name,
+                docker_configuration=docker_configuration,
+                stack=Repository().active_stack,
+                runtime_configuration=RuntimeConfiguration(),
+            )
+        finally:
+            remove(entrypoint_path)
 
         # Adjust the spark configuration
         spark_config.set("spark.kubernetes.container.image", image_name)
