@@ -224,7 +224,7 @@ class LocalStackRecipe:
             ValueError: If the locals.tf file is not found.
             FileNotFoundError: If the locals.tf file is not one of the options.
         """
-        locals_file = os.path.join(self.path_in_repo, "locals.tf")
+        locals_file = os.path.join(self.path, "locals.tf")
         try:
             with open(locals_file) as locals:
                 locals_content = locals.read()
@@ -884,7 +884,7 @@ if terraform_installed:  # noqa: C901
                     f"{os.path.join(local_stack_recipe.path, 'locals.tf')}\n"
                 )
 
-                with console.pager(styles=True):
+                with console.pager(styles=False):
                     console.print(local_stack_recipe.locals_content)
                 
                 if cli_utils.confirmation(
