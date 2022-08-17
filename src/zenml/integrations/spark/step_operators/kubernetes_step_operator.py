@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Kubernetes Spark Step Operator."""
 import os
-from typing import Any, ClassVar, Optional, List , Sequence
+from typing import Any, ClassVar, Optional
 
 from pyspark.conf import SparkConf
 
