@@ -51,6 +51,7 @@ from zenml.integrations.scipy import ScipyIntegration  # noqa
 from zenml.integrations.seldon import SeldonIntegration  # noqa
 from zenml.integrations.sklearn import SklearnIntegration  # noqa
 from zenml.integrations.slack import SlackIntegration  # noqa
+from zenml.integrations.spark import SparkIntegration  # noqa
 from zenml.integrations.tekton import TektonIntegration  # noqa
 from zenml.integrations.tensorflow import TensorflowIntegration  # noqa
 from zenml.integrations.vault import VaultSecretsManagerIntegration  # noqa

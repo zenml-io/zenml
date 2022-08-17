@@ -457,6 +457,7 @@ SingletonMetaClass
 SlackAlerter
 SleepingDaemon
 SleepingDaemonConfig
+SparkStepOperator
 SqlZenStore
 StackComponent
 StackComponentConfiguration
@@ -1029,6 +1030,7 @@ repo
 repos
 reproducibility
 requiredintegrations
+ResourceConfigurations
 rf
 rf
 rmtree
@@ -1202,6 +1204,21 @@ zenml
 zenmldocker
 zenmlregistry
 zenserver
+Mesos
+SparkConf
+AFileSystem
+SparkConf
+SparkDataFrameMaterializer
+SparkModelMaterializer
+hadoop
+impl
+SparkConf
+preconfigure
+ClusterRole
+ClusterRoleBinding
+MLLib
+PySpark
+rds
 KServeDeployerStepConfig
 KServeDeploymentConfig
 ModelMesh
