@@ -11,9 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization for TensorFlow visualizer."""
+"""Initialization for TensorBoard visualizer."""
 
-from zenml.integrations.tensorflow.visualizers.tensorboard_visualizer import (  # noqa
+from zenml.integrations.tensorboard.visualizers.tensorboard_visualizer import (  # noqa
     TensorboardVisualizer,
     stop_tensorboard_server,
     visualize_tensorboard,
