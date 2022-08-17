@@ -140,7 +140,7 @@ The flow to get started for this example can be the following:
     For the certificates, visit the Google Cloud Console to [create a certificate and download the files](https://cloud.google.com/sql/docs/mysql/configure-ssl-instance#:~:text=Cloud%20SQL%20Instances-,To%20open%20the%20Overview%20page%20of%20an%20instance%2C%20click%20the,Click%20Create%20client%20certificate.) to your system.
 
 
-You can now skip directly to the [part of this guide where you define ZenML secrets](#gcp-authentication-with-kservegs-secret-schema) for your Kserve component! 
+You can now skip directly to the [part of this guide where you define ZenML secrets](#gcp-authentication-with-kserve_gs-secret-schema) for your Kserve component! 
 
 
 ### Installing KServe (e.g. in an GKE cluster)
