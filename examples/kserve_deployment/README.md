@@ -98,7 +98,7 @@ The flow to get started for this example can be the following:
     ```shell
     zenml stack recipe pull gcp-kubeflow-kserve
     ```
-2. 🎨 Customize your deployment by editing the default values in the `locals.tf` file.
+2. (Optional) 🎨 Customize your deployment by editing the default values in the `locals.tf` file.
 
 3. 🚀 Deploy the recipe with this simple command.
 
@@ -109,18 +109,18 @@ The flow to get started for this example can be the following:
     > This command can also automatically import the resources created as a ZenML stack for you. Just run it with the `--import` flag and optionally provide a `--stack-name` and you're set! Keep in mind, in that case, you'll need all integrations for this example installed before you run this command.
 
     > **Note**
-    > You should also have `kubectl` and `docker` installed on your local system with the local docker client authorized to push to your cloud registry.
+    > You should also have [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) and [docker](https://docs.docker.com/engine/install/) installed on your local system with the local [docker client authorized](https://cloud.google.com/sdk/gcloud/reference/auth/configure-docker) to push to your cloud registry.
     
-5. You'll notice that a ZenML stack configuration file gets created 🤯! You can run the following command to import the resources as a ZenML stack, manually.
+4. You'll notice that a ZenML stack configuration file gets created 🤯! You can run the following command to import the resources as a ZenML stack, manually.
 
     ```shell
-    zenml stack import <stack-name> <path-to-the-created-stack-config-yaml>
+    zenml stack import <STACK-NAME> <PATH-TO-THE-CREATED-STACK-CONFIG-YAML>
 
     # set the imported stack as the active stack
-    zenml stack set <stack-name>
+    zenml stack set <STACK-NAME>
     ```
 
-6. You should now create a secret for the CloudSQL instance that will allow ZenML to connect to it. Use the following command:
+5. You should now create a secret for the CloudSQL instance that will allow ZenML to connect to it. Use the following command:
 
     ```bash
     zenml secrets-manager secret register gcp_mysql_secret --schema=mysql --user=<DB_USER> --password=<PWD> \
