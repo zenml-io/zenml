@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of a TensorFlow visualizer step."""
+"""Implementation of a TensorBoard visualizer step."""
 
 import os
 import sys
@@ -27,7 +27,7 @@ from tensorboard.manager import (  # type: ignore [import]
 
 from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.environment import Environment
-from zenml.integrations.tensorflow.services.tensorboard_service import (
+from zenml.integrations.tensorboard.services.tensorboard_service import (
     TensorboardService,
     TensorboardServiceConfig,
 )
@@ -40,7 +40,7 @@ logger = get_logger(__name__)
 
 
 class TensorboardVisualizer(BaseVisualizer):
-    """The implementation of a Whylogs Visualizer."""
+    """The implementation of a TensorBoard Visualizer."""
 
     @classmethod
     def find_running_tensorboard_server(

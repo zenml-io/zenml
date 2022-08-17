@@ -39,7 +39,7 @@ logs by managing a local TensorBoard server, which couples nicely with
 the `TensorboardVisualizer` to visualize Tensorboard logs:
 
 ```python
-from zenml.integrations.tensorflow.services.tensorboard_service import (
+from zenml.integrations.tensorboard.services.tensorboard_service import (
     TensorboardService,
     TensorboardServiceConfig
 )
