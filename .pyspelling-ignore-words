@@ -1251,3 +1251,7 @@ ZenMLCustomModel
 microservice
 ComponentSpecs
 SeldonDeploymentPredictiveUnit
+Tekton
+tekton
+PillowImageMaterializer
+iterable
