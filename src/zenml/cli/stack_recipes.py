@@ -758,7 +758,7 @@ if terraform_installed:  # noqa: C901
     )
     @click.option(
         "--import",
-        "import_stack"
+        "import_stack",
         is_flag=True,
         help="Don't import the stack automatically after the recipe is deployed. The "
         "stack configuration file is still generated and can be imported manually.",
