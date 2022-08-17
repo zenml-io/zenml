@@ -98,7 +98,7 @@ class FirstPipeline(BasePipeline):
 
 
 first_pipeline_instance = FirstPipeline(
-    step_1=load_digits(),
+    step_1=digits_data_loader(),
     step_2=SVCTrainerStep(SVCTrainerStepConfig(gamma=0.01)),
 )
 
@@ -118,7 +118,7 @@ def first_pipeline(step_1, step_2):
 
 
 first_pipeline_instance = first_pipeline(
-    step_1=load_digits(),
+    step_1=digits_data_loader(),
     step_2=SVCTrainerStep(SVCTrainerStepConfig(gamma=0.01)),
 )
 

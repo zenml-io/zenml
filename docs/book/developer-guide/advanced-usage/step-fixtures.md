@@ -138,19 +138,24 @@ def find_best_model(context: StepContext, test_acc: float) -> bool:
 ```python
 import numpy as np
 from sklearn.base import ClassifierMixin
+from sklearn.datasets import load_digits
+from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 
-from zenml.integrations.sklearn.helpers.digits import get_digits
 from zenml.pipelines import pipeline
 from zenml.steps import BaseStepConfig, Output, StepContext, step
 
 
 @step
-def load_digits() -> Output(
+def digits_data_loader() -> Output(
     X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
 ):
-    """Loads the digits dataset as normal numpy arrays."""
-    X_train, X_test, y_train, y_test = get_digits()
+    """Loads the digits dataset as a tuple of flattened numpy arrays."""
+    digits = load_digits()
+    data = digits.images.reshape((len(digits.images), -1))
+    X_train, X_test, y_train, y_test = train_test_split(
+        data, digits.target, test_size=0.2, shuffle=False
+    )
     return X_train, X_test, y_train, y_test
 
 
@@ -226,7 +231,7 @@ def best_model_pipeline(importer, trainer, evaluator, find_best_model):
 for gamma in (0.01, 0.001, 0.0001):
 
     best_model_pipeline(
-        importer=load_digits(),
+        importer=digits_data_loader(),
         trainer=svc_trainer(SVCTrainerStepConfig(gamma=gamma)),
         evaluator=evaluator(),
         find_best_model=find_best_model(),

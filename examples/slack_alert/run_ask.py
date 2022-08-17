@@ -13,7 +13,7 @@
 
 from pipelines.ask_pipeline import slack_ask_pipeline
 from steps import (
-    data_loader,
+    digits_data_loader,
     evaluator,
     svc_trainer_mlflow,
     test_acc_ask_formatter,
@@ -26,7 +26,7 @@ from zenml.integrations.slack.steps.slack_alerter_ask_step import (
 
 if __name__ == "__main__":
     slack_ask_pipeline(
-        data_loader=data_loader(),
+        data_loader=digits_data_loader(),
         trainer=svc_trainer_mlflow(),
         evaluator=evaluator(),
         formatter=test_acc_ask_formatter(),

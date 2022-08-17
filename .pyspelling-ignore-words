@@ -56,8 +56,6 @@ BaseModel
 BaseModelDeployer
 BaseOrchestrator
 BasePipeline
-BasePipelineRunVisualizer
-BasePipelineVisualizer
 BaseSecretSchema
 BaseSecretsManager
 BaseService
@@ -65,7 +63,6 @@ BaseServiceMeta
 BaseStep
 BaseStepConfig
 BaseStepOperator
-BaseStepVisualizer
 BaseTypedModel
 BaseVisualizer
 BaseZenStore
@@ -357,6 +354,7 @@ Paperspace
 Parametrizes
 PathType
 PermissionError
+PillowImageMaterializer
 PipelineConfigurationError
 PipelineDockerImageBuilder
 PipelineInterfaceError
@@ -506,6 +504,7 @@ TFTrainer
 TFX
 TFX's
 TODO
+Tekton
 TempPathFactory
 TensorBoard
 TensorBoardInfo
@@ -871,6 +870,7 @@ isdir
 isinstance
 istio
 istioctl
+iterable
 iteratively
 jejik
 jira
@@ -1124,6 +1124,7 @@ symlinks
 sys
 syspath
 tada
+tekton
 tempfile
 tensorboard
 tensorflow

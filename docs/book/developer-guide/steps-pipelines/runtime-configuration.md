@@ -55,7 +55,7 @@ the pipeline is instantiated you can override the default like this:
 
 ```python
 first_pipeline_instance = first_pipeline(
-    step_1=load_digits(),
+    step_1=digits_data_loader(),
     step_2=svc_trainer(SVCTrainerStepConfig(gamma=0.01)),
 )
 
@@ -91,7 +91,7 @@ before running it using the `with_config()` method, e.g.:
 
 ```python
 first_pipeline_instance = first_pipeline(
-    step_1=load_digits(),
+    step_1=digits_data_loader(),
     step_2=svc_trainer(),
 )
 
@@ -256,19 +256,24 @@ zenml pipeline run run.py -c config.yaml
 ```python
 import numpy as np
 from sklearn.base import ClassifierMixin
+from sklearn.datasets import load_digits
+from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 
-from zenml.integrations.sklearn.helpers.digits import get_digits
 from zenml.steps import BaseStepConfig, Output, step
 from zenml.pipelines import pipeline
 
 
 @step
-def load_digits() -> Output(
+def digits_data_loader() -> Output(
     X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
 ):
-    """Loads the digits dataset as normal numpy arrays."""
-    X_train, X_test, y_train, y_test = get_digits()
+    """Loads the digits dataset as a tuple of flattened numpy arrays."""
+    digits = load_digits()
+    data = digits.images.reshape((len(digits.images), -1))
+    X_train, X_test, y_train, y_test = train_test_split(
+        data, digits.target, test_size=0.2, shuffle=False
+    )
     return X_train, X_test, y_train, y_test
 
 
@@ -303,7 +308,7 @@ name: first_pipeline
 steps:
   step_1:
     source:
-      name: load_digits
+      name: digits_data_loader
   step_2:
     source:
       name: svc_trainer
@@ -317,7 +322,7 @@ This is what the same pipeline run would look like if triggered from within pyth
 
 ```python
 first_pipeline_instance = first_pipeline(
-    step_1=load_digits(),
+    step_1=digits_data_loader(),
     step_2=svc_trainer(SVCTrainerStepConfig(gamma=0.01)),
 )
 

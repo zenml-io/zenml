@@ -18,7 +18,7 @@ import os
 import tempfile
 import webbrowser
 from abc import abstractmethod
-from typing import Any, Dict, List, Text
+from typing import Any, Dict, List, Text, Union
 
 import pandas as pd
 from facets_overview.generic_feature_statistics_generator import (
@@ -29,40 +29,49 @@ from IPython.core.display import HTML, display
 from zenml.environment import Environment
 from zenml.logger import get_logger
 from zenml.post_execution import StepView
+from zenml.post_execution.artifact import ArtifactView
 from zenml.utils import io_utils
-from zenml.visualizers import BaseStepVisualizer
+from zenml.visualizers import BaseVisualizer
 
 logger = get_logger(__name__)
 
 
-class FacetStatisticsVisualizer(BaseStepVisualizer):
-    """The base implementation of a ZenML Visualizer."""
+class FacetStatisticsVisualizer(BaseVisualizer):
+    """Visualize and compare dataset statistics with Facets."""
 
     @abstractmethod
     def visualize(
-        self, object: StepView, magic: bool = False, *args: Any, **kwargs: Any
+        self,
+        object: Union[StepView, Dict[str, Union[ArtifactView, pd.DataFrame]]],
+        magic: bool = False,
+        *args: Any,
+        **kwargs: Any,
     ) -> None:
         """Method to visualize components.
 
         Args:
-            object: StepView fetched from run.get_step().
+            object: Either a StepView fetched from run.get_step() whose outputs
+                are all datasets that should be visualized, or a dict that maps
+                dataset names to datasets.
             magic: Whether to render in a Jupyter notebook or not.
             *args: Additional arguments.
             **kwargs: Additional keyword arguments.
         """
+        data_dict = object.outputs if isinstance(object, StepView) else object
         datasets = []
-        for output_name, artifact_view in object.outputs.items():
-            df = artifact_view.read()
+        for dataset_name, data in data_dict.items():
+            df = data.read() if isinstance(data, ArtifactView) else data
             if type(df) is not pd.DataFrame:
                 logger.warning(
                     "`%s` is not a pd.DataFrame. You can only visualize "
                     "statistics of steps that output pandas DataFrames. "
-                    "Skipping this output.." % output_name
+                    "Skipping this output.." % dataset_name
                 )
             else:
-                datasets.append({"name": output_name, "table": df})
-        h = self.generate_html(datasets)
-        self.generate_facet(h, magic)
+                datasets.append({"name": dataset_name, "table": df})
+
+        html_ = self.generate_html(datasets)
+        self.generate_facet(html_, magic)
 
     def generate_html(self, datasets: List[Dict[Text, pd.DataFrame]]) -> str:
         """Generates html for facet.

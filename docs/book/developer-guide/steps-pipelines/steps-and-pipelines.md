@@ -23,17 +23,22 @@ such a step, which uses a utility function to load the Digits dataset:
 
 ```python
 import numpy as np
+from sklearn.datasets import load_digits
+from sklearn.model_selection import train_test_split
 
-from zenml.integrations.sklearn.helpers.digits import get_digits
 from zenml.steps import Output, step
 
 
 @step
-def load_digits() -> Output(
+def digits_data_loader() -> Output(
     X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
 ):
-    """Loads the digits dataset as normal numpy arrays."""
-    X_train, X_test, y_train, y_test = get_digits()
+    """Loads the digits dataset as a tuple of flattened numpy arrays."""
+    digits = load_digits()
+    data = digits.images.reshape((len(digits.images), -1))
+    X_train, X_test, y_train, y_test = train_test_split(
+        data, digits.target, test_size=0.2, shuffle=False
+    )
     return X_train, X_test, y_train, y_test
 ```
 
@@ -100,7 +105,7 @@ implementations to use when instantiating the pipeline:
 
 ```python
 first_pipeline_instance = first_pipeline(
-    step_1=load_digits(),
+    step_1=digits_data_loader(),
     step_2=svc_trainer(),
 )
 ```
@@ -124,8 +129,8 @@ You should see the following output in your terminal:
 Creating run for pipeline: `first_pipeline`
 Cache disabled for pipeline `first_pipeline`
 Using stack `default` to run pipeline `first_pipeline`
-Step `load_digits` has started.
-Step `load_digits` has finished in 0.049s.
+Step `digits_data_loader` has started.
+Step `digits_data_loader` has finished in 0.049s.
 Step `svc_trainer` has started.
 Step `svc_trainer` has finished in 0.067s.
 Pipeline run `first_pipeline-06_Jul_22-16_10_46_255748` has finished in 0.128s.
@@ -157,19 +162,24 @@ plan to run your pipeline multiple times.
 ```python
 import numpy as np
 from sklearn.base import ClassifierMixin
+from sklearn.datasets import load_digits
+from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 
-from zenml.integrations.sklearn.helpers.digits import get_digits
 from zenml.steps import Output, step
 from zenml.pipelines import pipeline
 
 
 @step
-def load_digits() -> Output(
+def digits_data_loader() -> Output(
     X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
 ):
-    """Loads the digits dataset as normal numpy arrays."""
-    X_train, X_test, y_train, y_test = get_digits()
+    """Loads the digits dataset as a tuple of flattened numpy arrays."""
+    digits = load_digits()
+    data = digits.images.reshape((len(digits.images), -1))
+    X_train, X_test, y_train, y_test = train_test_split(
+        data, digits.target, test_size=0.2, shuffle=False
+    )
     return X_train, X_test, y_train, y_test
 
 
@@ -191,7 +201,7 @@ def first_pipeline(step_1, step_2):
 
 
 first_pipeline_instance = first_pipeline(
-    step_1=load_digits(),
+    step_1=digits_data_loader(),
     step_2=svc_trainer(),
 )
 
