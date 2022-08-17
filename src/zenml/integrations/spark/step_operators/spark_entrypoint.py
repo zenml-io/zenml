@@ -197,7 +197,7 @@ def main(
     integration_registry.activate_integrations()
 
     # TODO[LOW]: Investigate if prepending the python path here would break the
-    #   entrypoint for other step opreators. If not, merge it with the original
+    #   entrypoint for other step operators. If not, merge it with the original
     #   entrypoint.
     with prepend_python_path([DOCKER_IMAGE_WORKDIR]):
         importlib.import_module(main_module)
