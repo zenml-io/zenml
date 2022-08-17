@@ -106,7 +106,7 @@ class SparkStepOperator(BaseStepOperator):
     ) -> None:
         """Configures Spark to handle the resource configuration.
 
-        This should serve as the layer between our ResourceConfiguration's
+        This should serve as the layer between our ResourceConfigurations
         and Spark's own ways of configuring its resources.
 
         Note: This is still work-in-progress. In the future, we would like to
