@@ -23,5 +23,11 @@ class TensorBoardIntegration(Integration):
     NAME = TENSORBOARD
     REQUIREMENTS = ["tensorboard==2.8.0"]
 
+    @classmethod
+    def activate(cls) -> None:
+        """Activates the integration."""
+
+        from zenml.integrations.tensorboard import services  # noqa
+
 
 TensorBoardIntegration.check_installation()
