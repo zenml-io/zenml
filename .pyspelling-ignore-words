@@ -457,6 +457,7 @@ SingletonMetaClass
 SlackAlerter
 SleepingDaemon
 SleepingDaemonConfig
+SparkStepOperator
 SqlZenStore
 StackComponent
 StackComponentConfiguration
