@@ -858,7 +858,7 @@ if terraform_installed:  # noqa: C901
 
                 if not no_import:
                     logger.info(
-                        "\nThe flag --no-import is not set. Proceeding "
+                        "\nThe flag `--no-import` is not set. Proceeding "
                         "to import a new ZenML stack from the created resources."
                     )
                     import_stack_name = (

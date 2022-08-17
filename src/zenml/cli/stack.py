@@ -1207,7 +1207,10 @@ def import_stack(
                 f"Cannot import stacks from other ZenML versions. "
                 f"The stack was created using ZenML version "
                 f"{data['zenml_version']}, you have version "
-                f"{zenml.__version__} installed."
+                f"{zenml.__version__} installed. You can "
+                retry using the `--ignore-version-mismatch` 
+                flag. However, be aware that this might
+                fail or lead to other unexpected behavior."
             )
 
     # ask user for new stack_name if current one already exists
