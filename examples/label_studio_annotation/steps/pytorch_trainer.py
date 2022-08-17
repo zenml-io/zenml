@@ -18,6 +18,7 @@ from zenml.integrations.label_studio.label_studio_utils import (
     is_s3_url,
 )
 from zenml.io import fileio
+from zenml.repository import Repository
 from zenml.steps import BaseStepConfig, step
 from zenml.steps.step_context import StepContext
 from zenml.utils import io_utils
@@ -128,7 +129,7 @@ class CustomDataset:
 
 def _find_last_successful_run(context: StepContext) -> int:
     """Get the index of the last successful run of this pipeline and step."""
-    pipeline = context.metadata_store.get_pipeline(PIPELINE_NAME)
+    pipeline = Repository().get_pipeline(PIPELINE_NAME)
     if pipeline is not None:
         for idx, run in reversed(list(enumerate(pipeline.runs))):
             try:
@@ -144,7 +145,7 @@ def _load_last_model(context: StepContext) -> nn.Module:
     idx = _find_last_successful_run(context=context)
     if idx is None:
         return None
-    last_run = context.metadata_store.get_pipeline(PIPELINE_NAME).runs[idx]
+    last_run = Repository().get_pipeline(PIPELINE_NAME).runs[idx]
     return last_run.get_step(PIPELINE_STEP_NAME).output.read()
 
 
@@ -165,7 +166,7 @@ def _is_new_data_available(
         return True
 
     # Else, we check whether we had the same number of samples before.
-    last_run = context.metadata_store.get_pipeline(PIPELINE_NAME).runs[idx]
+    last_run = Repository().get_pipeline(PIPELINE_NAME).runs[idx]
     last_inputs = last_run.get_step(PIPELINE_STEP_NAME).inputs
     last_image_urls = last_inputs["image_urls"].read()
     return len(last_image_urls) != len(image_urls)

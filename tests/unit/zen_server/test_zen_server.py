@@ -22,7 +22,7 @@ from zenml.constants import STACK_CONFIGURATIONS, STACKS, USERS
 from zenml.services import ServiceState
 from zenml.utils.networking_utils import scan_for_available_port
 from zenml.zen_server.zen_server import ZenServer, ZenServerConfig
-from zenml.zen_stores import LocalZenStore
+from zenml.zen_stores import SqlZenStore
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 
 
@@ -32,7 +32,9 @@ def running_zen_server(tmp_path_factory: pytest.TempPathFactory) -> ZenServer:
     tmp_path = tmp_path_factory.mktemp("local_zen_store")
     global_cfg = GlobalConfiguration()
 
-    backing_zen_store = LocalZenStore().initialize(str(tmp_path))
+    backing_zen_store = SqlZenStore().initialize(
+        f"sqlite:///{tmp_path / 'store.db'}"
+    )
     store_profile = ProfileConfiguration(
         name=f"test_profile_{hash(str(tmp_path))}",
         store_url=backing_zen_store.url,

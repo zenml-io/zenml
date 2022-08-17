@@ -15,7 +15,6 @@ import pytest
 
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.enums import StackComponentType
-from zenml.metadata_stores import BaseMetadataStore
 from zenml.orchestrators import BaseOrchestrator
 from zenml.stack import Stack, StackComponent, StackValidator
 
@@ -30,11 +29,6 @@ def stack_with_mock_components(mocker):
         type=StackComponentType.ORCHESTRATOR,
         flavor=MOCK_FLAVOR,
     )
-    metadata_store = mocker.Mock(
-        spec=BaseMetadataStore,
-        type=StackComponentType.METADATA_STORE,
-        flavor=MOCK_FLAVOR,
-    )
     artifact_store = mocker.Mock(
         spec=BaseArtifactStore,
         type=StackComponentType.ARTIFACT_STORE,
@@ -44,7 +38,6 @@ def stack_with_mock_components(mocker):
     return Stack(
         name="mock_stack",
         orchestrator=orchestrator,
-        metadata_store=metadata_store,
         artifact_store=artifact_store,
     )
 

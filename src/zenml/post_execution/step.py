@@ -13,14 +13,12 @@
 #  permissions and limitations under the License.
 """Implementation of a post-execution step class."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from zenml.enums import ExecutionStatus
 from zenml.post_execution.artifact import ArtifactView
+from zenml.repository import Repository
 from zenml.zen_stores.models.pipeline_models import StepWrapper
-
-if TYPE_CHECKING:
-    from zenml.metadata_stores import BaseMetadataStore
 
 
 class StepView:
@@ -36,7 +34,6 @@ class StepView:
         entrypoint_name: str,
         name: str,
         parameters: Dict[str, Any],
-        metadata_store: "BaseMetadataStore",
     ):
         """Initializes a post-execution step object.
 
@@ -49,15 +46,12 @@ class StepView:
             entrypoint_name: The name of this step.
             name: The name of this step within the pipeline
             parameters: Parameters that were used to run this step.
-            metadata_store: The metadata store which should be used to fetch
-                additional information related to this step.
         """
         self._id = id_
         self._parents_step_ids = parents_step_ids
         self._entrypoint_name = entrypoint_name
         self._name = name
         self._parameters = parameters
-        self._metadata_store = metadata_store
 
         self._inputs: Dict[str, ArtifactView] = {}
         self._outputs: Dict[str, ArtifactView] = {}
@@ -91,9 +85,10 @@ class StepView:
         Returns:
             A list of all parent steps of this step.
         """
+        repo = Repository()
         steps = [
-            self._metadata_store.get_step_by_id(s)
-            for s in self.parents_step_ids
+            repo.zen_store.get_step_by_id(parent_id)
+            for parent_id in self.parents_step_ids
         ]
         return steps
 
@@ -170,7 +165,7 @@ class StepView:
         Returns:
             The current status of the step.
         """
-        return self._metadata_store.get_step_status(self)
+        return Repository().zen_store.get_step_status(self)
 
     @property
     def is_cached(self) -> bool:
@@ -250,9 +245,8 @@ class StepView:
             # we already fetched inputs/outputs, no need to do anything
             return
 
-        self._inputs, self._outputs = self._metadata_store.get_step_artifacts(
-            self
-        )
+        repo = Repository()
+        self._inputs, self._outputs = repo.zen_store.get_step_artifacts(self)
 
     def __repr__(self) -> str:
         """Returns a string representation of this step.
@@ -277,8 +271,5 @@ class StepView:
             otherwise.
         """
         if isinstance(other, StepView):
-            return (
-                self._id == other._id
-                and self._metadata_store.uuid == other._metadata_store.uuid
-            )
+            return self._id == other._id
         return NotImplemented

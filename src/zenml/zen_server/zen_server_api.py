@@ -934,7 +934,7 @@ async def pipeline_runs(
     Returns:
         All runs for a pipeline.
     """
-    return zen_store.get_pipeline_runs(
+    return zen_store.get_pipeline_run_wrappers(
         pipeline_name=pipeline_name, project_name=project_name
     )
 
@@ -961,7 +961,7 @@ async def pipeline_run(
         not_found: when none are found.
     """
     try:
-        return zen_store.get_pipeline_run(
+        return zen_store.get_pipeline_run_wrapper(
             pipeline_name=pipeline_name,
             run_name=run_name,
             project_name=project_name,

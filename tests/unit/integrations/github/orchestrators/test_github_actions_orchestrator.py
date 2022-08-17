@@ -16,12 +16,12 @@ from contextlib import ExitStack as does_not_raise
 
 import pytest
 
+from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
 from zenml.container_registries import DefaultContainerRegistry
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
 from zenml.integrations.gcp.artifact_stores import GCPArtifactStore
 from zenml.integrations.github.orchestrators import GitHubActionsOrchestrator
-from zenml.metadata_stores import MySQLMetadataStore, SQLiteMetadataStore
 from zenml.stack import Stack
 
 
@@ -37,16 +37,6 @@ def test_github_actions_orchestrator_stack_validation() -> None:
     """Tests the GitHub actions orchestrator stack validation."""
     orchestrator = GitHubActionsOrchestrator(name="")
 
-    local_metadata_store = SQLiteMetadataStore(name="", uri="metadata.db")
-    remote_metadata_store = MySQLMetadataStore(
-        name="",
-        username="",
-        password="",
-        host="",
-        port=0,
-        database="zenml",
-    )
-
     local_container_registry = DefaultContainerRegistry(
         name="", uri="localhost:5000"
     )
@@ -57,6 +47,7 @@ def test_github_actions_orchestrator_stack_validation() -> None:
         name="", uri="gcr.io/my-project"
     )
 
+    local_artifact_store = LocalArtifactStore(name="", path="/local/path")
     remote_artifact_store = GCPArtifactStore(name="", path="gs://bucket")
 
     with does_not_raise():
@@ -64,7 +55,6 @@ def test_github_actions_orchestrator_stack_validation() -> None:
         Stack(
             name="",
             orchestrator=orchestrator,
-            metadata_store=remote_metadata_store,
             artifact_store=remote_artifact_store,
             container_registry=remote_container_registry,
         ).validate()
@@ -74,7 +64,6 @@ def test_github_actions_orchestrator_stack_validation() -> None:
         Stack(
             name="",
             orchestrator=orchestrator,
-            metadata_store=remote_metadata_store,
             artifact_store=remote_artifact_store,
         ).validate()
 
@@ -83,7 +72,6 @@ def test_github_actions_orchestrator_stack_validation() -> None:
         Stack(
             name="",
             orchestrator=orchestrator,
-            metadata_store=remote_metadata_store,
             artifact_store=remote_artifact_store,
             container_registry=local_container_registry,
         ).validate()
@@ -93,7 +81,6 @@ def test_github_actions_orchestrator_stack_validation() -> None:
         Stack(
             name="",
             orchestrator=orchestrator,
-            metadata_store=remote_metadata_store,
             artifact_store=remote_artifact_store,
             container_registry=container_registry_that_requires_authentication,
         ).validate()
@@ -103,7 +90,6 @@ def test_github_actions_orchestrator_stack_validation() -> None:
         Stack(
             name="",
             orchestrator=orchestrator,
-            metadata_store=local_metadata_store,
-            artifact_store=remote_artifact_store,
+            artifact_store=local_artifact_store,
             container_registry=remote_container_registry,
         ).validate()

@@ -26,7 +26,6 @@ from zenml.exceptions import StackValidationError
 from zenml.integrations.azure.artifact_stores import AzureArtifactStore
 from zenml.integrations.gcp.artifact_stores import GCPArtifactStore
 from zenml.integrations.gcp.orchestrators import VertexOrchestrator
-from zenml.metadata_stores import MySQLMetadataStore, SQLiteMetadataStore
 from zenml.stack import Stack
 
 
@@ -56,16 +55,7 @@ def test_vertex_orchestrator_stack_validation() -> None:
         name="", location="europe-west4"
     )
 
-    local_metadata_store = SQLiteMetadataStore(name="", uri="./metadata.db")
-    local_artifact_store = LocalArtifactStore(name="", path="")
-    mysql_metadata_store = MySQLMetadataStore(
-        name="mysql_metadata_store",
-        username="zenml",
-        password="zenml",
-        host="10.0.0.1",
-        port="3306",
-        database="zenml",
-    )
+    local_artifact_store = LocalArtifactStore(name="", path="/local/path")
     gcp_artifact_store = GCPArtifactStore(
         name="gcp_artifact_store", path="gs://my-bucket/artifacts"
     )
@@ -85,7 +75,6 @@ def test_vertex_orchestrator_stack_validation() -> None:
         Stack(
             name="",
             orchestrator=orchestrator,
-            metadata_store=local_metadata_store,
             artifact_store=local_artifact_store,
             container_registry=gcp_container_registry,
         ).validate()
@@ -95,7 +84,6 @@ def test_vertex_orchestrator_stack_validation() -> None:
         Stack(
             name="",
             orchestrator=orchestrator,
-            metadata_store=mysql_metadata_store,
             artifact_store=gcp_artifact_store,
         ).validate()
 
@@ -104,7 +92,6 @@ def test_vertex_orchestrator_stack_validation() -> None:
         Stack(
             name="",
             orchestrator=orchestrator,
-            metadata_store=mysql_metadata_store,
             artifact_store=gcp_artifact_store,
             container_registry=local_container_registry,
         ).validate()
@@ -114,7 +101,6 @@ def test_vertex_orchestrator_stack_validation() -> None:
         Stack(
             name="",
             orchestrator=orchestrator_no_pipeline_root,
-            metadata_store=mysql_metadata_store,
             artifact_store=azure_artifact_store,
             container_registry=gcp_container_registry,
         ).validate()
@@ -124,7 +110,6 @@ def test_vertex_orchestrator_stack_validation() -> None:
         Stack(
             name="",
             orchestrator=orchestrator,
-            metadata_store=mysql_metadata_store,
             artifact_store=gcp_artifact_store,
             container_registry=gcp_container_registry,
         ).validate()

@@ -171,8 +171,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
     def validator(self) -> Optional[StackValidator]:
         """Validates that the stack contains a container registry.
 
-        Also validates that the artifact store and metadata store used are not
-        local.
+        Also validates that the artifact store is not local.
 
         Returns:
             A StackValidator instance.

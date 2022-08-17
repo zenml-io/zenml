@@ -14,7 +14,7 @@
 """Metadata store for SQLite."""
 
 from pathlib import Path
-from typing import ClassVar, Union
+from typing import Union
 
 from ml_metadata.proto import metadata_store_pb2
 from pydantic import validator
@@ -28,9 +28,6 @@ class SQLiteMetadataStore(BaseMetadataStore):
     """SQLite backend for ZenML metadata store."""
 
     uri: str
-
-    # Class Configuration
-    FLAVOR: ClassVar[str] = "sqlite"
 
     @property
     def local_path(self) -> str:

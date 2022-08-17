@@ -48,17 +48,11 @@ class FlavorRegistry:
             GCPContainerRegistry,
             GitHubContainerRegistry,
         )
-        from zenml.metadata_stores import (
-            MySQLMetadataStore,
-            SQLiteMetadataStore,
-        )
         from zenml.orchestrators import LocalOrchestrator
         from zenml.secrets_managers import LocalSecretsManager
 
         default_flavors = [
             LocalOrchestrator,
-            SQLiteMetadataStore,
-            MySQLMetadataStore,
             LocalArtifactStore,
             DefaultContainerRegistry,
             AzureContainerRegistry,

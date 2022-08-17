@@ -54,7 +54,7 @@ def get_default_store_type() -> StoreType:
     store_type = os.getenv(ENV_ZENML_DEFAULT_STORE_TYPE)
     if store_type and store_type in StoreType.values():
         return StoreType(store_type)
-    return StoreType.LOCAL
+    return StoreType.SQL
 
 
 class ProfileConfiguration(BaseModel):

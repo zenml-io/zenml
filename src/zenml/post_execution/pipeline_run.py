@@ -14,18 +14,16 @@
 """Implementation of the post-execution pipeline run class."""
 
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from ml_metadata import proto
 
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_apidocs_link, get_logger
 from zenml.post_execution.step import StepView
+from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
-
-if TYPE_CHECKING:
-    from zenml.metadata_stores import BaseMetadataStore
 
 logger = get_logger(__name__)
 
@@ -42,7 +40,6 @@ class PipelineRunView:
         id_: int,
         name: str,
         executions: List[proto.Execution],
-        metadata_store: "BaseMetadataStore",
     ):
         """Initializes a post-execution pipeline run object.
 
@@ -53,12 +50,9 @@ class PipelineRunView:
             id_: The context id of this pipeline run.
             name: The name of this pipeline run.
             executions: All executions associated with this pipeline run.
-            metadata_store: The metadata store which should be used to fetch
-                additional information related to this pipeline run.
         """
         self._id = id_
         self._name = name
-        self._metadata_store = metadata_store
 
         self._executions = executions
         self._steps: Dict[str, StepView] = OrderedDict()
@@ -229,7 +223,7 @@ class PipelineRunView:
             # we already fetched the steps, no need to do anything
             return
 
-        self._steps = self._metadata_store.get_pipeline_run_steps(self)
+        self._steps = Repository().zen_store.get_pipeline_run_steps(self)
 
         if self._run_wrapper:
             # If we have the run wrapper from the ZenStore, pass on the step
@@ -259,8 +253,5 @@ class PipelineRunView:
             True if the other object is referring to the same pipeline run.
         """
         if isinstance(other, PipelineRunView):
-            return (
-                self._id == other._id
-                and self._metadata_store.uuid == other._metadata_store.uuid
-            )
+            return self._id == other._id
         return NotImplemented

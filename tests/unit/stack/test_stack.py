@@ -21,7 +21,6 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.container_registries import DefaultContainerRegistry
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
-from zenml.metadata_stores import SQLiteMetadataStore
 from zenml.orchestrators import LocalOrchestrator
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.stack import Stack
@@ -33,7 +32,6 @@ def test_default_local_stack():
     stack = Stack.default_local_stack()
 
     assert isinstance(stack.orchestrator, LocalOrchestrator)
-    assert isinstance(stack.metadata_store, SQLiteMetadataStore)
     assert isinstance(stack.artifact_store, LocalArtifactStore)
     assert stack.container_registry is None
 
@@ -42,30 +40,23 @@ def test_default_local_stack():
         "local_stores",
         str(stack.artifact_store.uuid),
     )
-    expected_metadata_store_uri = os.path.join(
-        expected_artifact_store_path, "metadata.db"
-    )
 
     assert stack.artifact_store.path == expected_artifact_store_path
-    assert stack.metadata_store.uri == expected_metadata_store_uri
 
 
 def test_initializing_a_stack_from_components():
     """Tests that a stack can be initialized from a dict of components."""
     orchestrator = LocalOrchestrator(name="")
-    metadata_store = SQLiteMetadataStore(name="", uri="")
     artifact_store = LocalArtifactStore(name="", path="")
 
     components = {
         StackComponentType.ORCHESTRATOR: orchestrator,
-        StackComponentType.METADATA_STORE: metadata_store,
         StackComponentType.ARTIFACT_STORE: artifact_store,
     }
 
     stack = Stack.from_components(name="", components=components)
 
     assert stack.orchestrator is orchestrator
-    assert stack.metadata_store is metadata_store
     assert stack.artifact_store is artifact_store
     assert stack.container_registry is None
 
@@ -90,7 +81,6 @@ def test_initializing_a_stack_with_wrong_components():
     # orchestrators for all component types
     components = {
         StackComponentType.ORCHESTRATOR: orchestrator,
-        StackComponentType.METADATA_STORE: orchestrator,
         StackComponentType.ARTIFACT_STORE: orchestrator,
     }
 
@@ -102,18 +92,15 @@ def test_stack_returns_all_its_components():
     """Tests that the stack `components` property returns the correct stack
     components."""
     orchestrator = LocalOrchestrator(name="")
-    metadata_store = SQLiteMetadataStore(name="", uri="")
     artifact_store = LocalArtifactStore(name="", path="")
     stack = Stack(
         name="",
         orchestrator=orchestrator,
-        metadata_store=metadata_store,
         artifact_store=artifact_store,
     )
 
     expected_components = {
         StackComponentType.ORCHESTRATOR: orchestrator,
-        StackComponentType.METADATA_STORE: metadata_store,
         StackComponentType.ARTIFACT_STORE: artifact_store,
     }
     assert stack.components == expected_components
@@ -123,7 +110,6 @@ def test_stack_returns_all_its_components():
     stack = Stack(
         name="",
         orchestrator=orchestrator,
-        metadata_store=metadata_store,
         artifact_store=artifact_store,
         container_registry=container_registry,
     )
@@ -144,11 +130,10 @@ def test_stack_runtime_options_combines_runtime_options_of_components(
         "key_1": None,
         "key_2": "Aria",
     }
-    stack_with_mock_components.metadata_store.runtime_options = {
+    stack_with_mock_components.artifact_store.runtime_options = {
         "key_1": None,
         "key_3": "Not Aria",
     }
-    stack_with_mock_components.artifact_store.runtime_options = {}
 
     expected_runtime_options = {
         "key_1": None,
@@ -163,11 +148,10 @@ def test_stack_runtime_options_combines_runtime_options_of_components(
 def test_stack_requirements(stack_with_mock_components):
     """Tests that the stack returns the requirements of all its components."""
     stack_with_mock_components.orchestrator.requirements = {"one_requirement"}
-    stack_with_mock_components.metadata_store.requirements = {
+    stack_with_mock_components.artifact_store.requirements = {
         "another_requirement",
         "aria",
     }
-    stack_with_mock_components.artifact_store.requirements = set()
 
     assert stack_with_mock_components.requirements() == {
         "one_requirement",
@@ -182,7 +166,6 @@ def test_stack_validation_fails_if_a_components_validator_fails(
     """Tests that the stack validation fails if one of its components validates
     fails to validate the stack."""
     stack_with_mock_components.orchestrator.validator = failing_stack_validator
-    stack_with_mock_components.metadata_store.validator = None
     stack_with_mock_components.artifact_store.validator = None
 
     with pytest.raises(StackValidationError):
@@ -195,7 +178,6 @@ def test_stack_validation_succeeds_if_no_component_validator_fails(
     """Tests that the stack validation succeeds if one no component validator
     fails."""
     stack_with_mock_components.orchestrator.validator = None
-    stack_with_mock_components.metadata_store.validator = None
     stack_with_mock_components.artifact_store.validator = None
 
     with does_not_raise():

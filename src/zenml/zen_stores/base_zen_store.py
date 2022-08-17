@@ -19,10 +19,15 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import yaml
+from ml_metadata.proto import metadata_store_pb2
 
-from zenml.enums import StackComponentType, StoreType
+from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.logger import get_logger
+from zenml.post_execution.artifact import ArtifactView
+from zenml.post_execution.pipeline import PipelineView
+from zenml.post_execution.pipeline_run import PipelineRunView
+from zenml.post_execution.step import StepView
 from zenml.stack import Stack
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.zen_stores.models import (
@@ -185,6 +190,19 @@ class BaseZenStore(ABC):
         """
 
     # Private interface (must be implemented, not to be called by user):
+
+    @abstractmethod
+    def _get_tfx_metadata_config(
+        self,
+    ) -> Union[
+        metadata_store_pb2.ConnectionConfig,
+        metadata_store_pb2.MetadataStoreClientConfig,
+    ]:
+        """Get the TFX metadata config of this ZenStore.
+
+        Returns:
+            The TFX metadata config of this ZenStore.
+        """
 
     @abstractmethod
     def _register_stack_component(
@@ -634,7 +652,53 @@ class BaseZenStore(ABC):
     # Pipelines and pipeline runs
 
     @abstractmethod
+    def get_pipeline(self, pipeline_name: str) -> Optional[PipelineView]:
+        """Returns a pipeline for the given name.
+
+        Args:
+            pipeline_name: Name of the pipeline.
+
+        Returns:
+            PipelineView if found, None otherwise.
+        """
+
+    @abstractmethod
+    def get_pipelines(self) -> List[PipelineView]:
+        """Returns a list of all pipelines stored in this ZenStore.
+
+        Returns:
+            A list of all pipelines stored in this ZenStore.
+        """
+
+    @abstractmethod
     def get_pipeline_run(
+        self, pipeline: PipelineView, run_name: str
+    ) -> Optional[PipelineRunView]:
+        """Gets a specific run for the given pipeline.
+
+        Args:
+            pipeline: The pipeline for which to get the run.
+            run_name: The name of the run to get.
+
+        Returns:
+            The pipeline run with the given name.
+        """
+
+    @abstractmethod
+    def get_pipeline_runs(
+        self, pipeline: PipelineView
+    ) -> Dict[str, PipelineRunView]:
+        """Gets all runs for the given pipeline.
+
+        Args:
+            pipeline: a Pipeline object for which you want the runs.
+
+        Returns:
+            A dictionary of pipeline run names to PipelineRunView.
+        """
+
+    @abstractmethod
+    def get_pipeline_run_wrapper(
         self,
         pipeline_name: str,
         run_name: str,
@@ -654,7 +718,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def get_pipeline_runs(
+    def get_pipeline_run_wrappers(
         self, pipeline_name: str, project_name: Optional[str] = None
     ) -> List[PipelineRunWrapper]:
         """Gets pipeline runs.
@@ -663,6 +727,67 @@ class BaseZenStore(ABC):
             pipeline_name: Name of the pipeline for which to get runs.
             project_name: Optional name of the project from which to get the
                 pipeline runs.
+        """
+
+    @abstractmethod
+    def get_pipeline_run_steps(
+        self, pipeline_run: PipelineRunView
+    ) -> Dict[str, StepView]:
+        """Gets all steps for the given pipeline run.
+
+        Args:
+            pipeline_run: The pipeline run to get the steps for.
+
+        Returns:
+            A dictionary of step names to step views.
+        """
+
+    @abstractmethod
+    def get_step_by_id(self, step_id: int) -> StepView:
+        """Gets a `StepView` by its ID.
+
+        Args:
+            step_id (int): The ID of the step to get.
+
+        Returns:
+            StepView: The `StepView` with the given ID.
+        """
+
+    @abstractmethod
+    def get_step_status(self, step: StepView) -> ExecutionStatus:
+        """Gets the execution status of a single step.
+
+        Args:
+            step (StepView): The step to get the status for.
+
+        Returns:
+            ExecutionStatus: The status of the step.
+        """
+
+    @abstractmethod
+    def get_step_artifacts(
+        self, step: StepView
+    ) -> Tuple[Dict[str, ArtifactView], Dict[str, ArtifactView]]:
+        """Returns input and output artifacts for the given step.
+
+        Args:
+            step: The step for which to get the artifacts.
+
+        Returns:
+            A tuple (inputs, outputs) where inputs and outputs
+            are both Dicts mapping artifact names
+            to the input and output artifacts respectively.
+        """
+
+    @abstractmethod
+    def get_producer_step_from_artifact(self, artifact_id: int) -> StepView:
+        """Returns original StepView from an ArtifactView.
+
+        Args:
+            artifact_id: ID of the ArtifactView to be queried.
+
+        Returns:
+            Original StepView that produced the artifact.
         """
 
     @abstractmethod
@@ -952,8 +1077,8 @@ class BaseZenStore(ABC):
     def register_default_stack(self) -> None:
         """Populates the store with the default Stack.
 
-        The default stack contains a local orchestrator,
-        a local artifact store and a local SQLite metadata store.
+        The default stack contains a local orchestrator and a local artifact
+        store.
         """
         stack = Stack.default_local_stack()
         sw = StackWrapper.from_stack(stack)

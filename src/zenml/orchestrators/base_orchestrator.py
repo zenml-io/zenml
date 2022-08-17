@@ -332,13 +332,12 @@ class BaseOrchestrator(StackComponent, ABC):
             deployment_config, step.name
         )
 
-        # At this point the active metadata store is queried for the
-        # metadata_connection
+        # Query the ZenStore for the metadata connection
         repo = Repository()
-        metadata_store = repo.active_stack.metadata_store
         metadata_connection = metadata.Metadata(
-            metadata_store.get_tfx_metadata_config()
+            Repository().zen_store._get_tfx_metadata_config()
         )
+
         custom_executor_operators = {
             executable_spec_pb2.PythonClassExecutableSpec: step.executor_operator
         }

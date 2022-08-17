@@ -1065,9 +1065,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         """Fetches post-execution pipeline views.
 
         Args:
-            stack_name: If specified, pipelines in the metadata store of the
-                given stack are returned. Otherwise, pipelines in the metadata
-                store of the currently active stack are returned.
+            stack_name: If specified, pipelines of the given stack are returned.
+                Otherwise, pipelines of the currently active stack are returned.
 
         Returns:
             A list of post-execution pipeline views.
@@ -1082,8 +1081,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 "No active stack is configured for the repository. Run "
                 "`zenml stack set STACK_NAME` to update the active stack."
             )
-        metadata_store = self.get_stack(stack_name).metadata_store
-        return metadata_store.get_pipelines()
+        return self.zen_store.get_pipelines()
 
     @track(event=AnalyticsEvent.GET_PIPELINE)
     def get_pipeline(
@@ -1113,9 +1111,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
         Args:
             pipeline: Class or class instance of the pipeline
-            stack_name: If specified, pipelines in the metadata store of the
-                given stack are returned. Otherwise, pipelines in the metadata
-                store of the currently active stack are returned.
+            stack_name: If specified, pipelines of the given stack are returned.
+                Otherwise, pipelines of the currently active stack are returned.
             **kwargs: The deprecated `pipeline_name` is caught as a kwarg to
                 specify the pipeline instead of using the `pipeline` argument.
 
@@ -1168,9 +1165,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 "No active stack is configured for the repository. Run "
                 "`zenml stack set STACK_NAME` to update the active stack."
             )
-        metadata_store = self.get_stack(stack_name).metadata_store
-
-        return metadata_store.get_pipeline(pipeline_name)
+        return self.zen_store.get_pipeline(pipeline_name)
 
     @staticmethod
     def is_repository_directory(path: Path) -> bool:

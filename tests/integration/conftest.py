@@ -59,9 +59,6 @@ def shared_kubeflow_profile(
         custom_docker_base_image_name="zenml-base-image:latest",
         synchronous=True,
     )
-    metadata_store = base_profile.active_stack.metadata_store.copy(
-        update={"name": "local_kubeflow_metadata_store"}
-    )
     artifact_store = base_profile.active_stack.artifact_store.copy(
         update={"name": "local_kubeflow_artifact_store"}
     )
@@ -71,7 +68,6 @@ def shared_kubeflow_profile(
     kubeflow_stack = Stack(
         name="local_kubeflow_stack",
         orchestrator=orchestrator,
-        metadata_store=metadata_store,
         artifact_store=artifact_store,
         container_registry=container_registry,
     )

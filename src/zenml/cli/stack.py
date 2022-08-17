@@ -51,14 +51,6 @@ def stack() -> None:
 )
 @click.argument("stack_name", type=str, required=True)
 @click.option(
-    "-m",
-    "--metadata-store",
-    "metadata_store_name",
-    help="Name of the metadata store for this stack.",
-    type=str,
-    required=True,
-)
-@click.option(
     "-a",
     "--artifact-store",
     "artifact_store_name",
@@ -155,7 +147,6 @@ def stack() -> None:
 )
 def register_stack(
     stack_name: str,
-    metadata_store_name: str,
     artifact_store_name: str,
     orchestrator_name: str,
     container_registry_name: Optional[str] = None,
@@ -173,7 +164,6 @@ def register_stack(
 
     Args:
         stack_name: Unique name of the stack
-        metadata_store_name: Name of the metadata store for this stack.
         artifact_store_name: Name of the artifact store for this stack.
         orchestrator_name: Name of the orchestrator for this stack.
         container_registry_name: Name of the container registry for this stack.
@@ -193,9 +183,6 @@ def register_stack(
         repo = Repository()
 
         stack_components = {
-            StackComponentType.METADATA_STORE: repo.get_stack_component(
-                StackComponentType.METADATA_STORE, name=metadata_store_name
-            ),
             StackComponentType.ARTIFACT_STORE: repo.get_stack_component(
                 StackComponentType.ARTIFACT_STORE, name=artifact_store_name
             ),
@@ -292,14 +279,6 @@ def register_stack(
 )
 @click.argument("stack_name", type=str, required=False)
 @click.option(
-    "-m",
-    "--metadata-store",
-    "metadata_store_name",
-    help="Name of the new metadata store for this stack.",
-    type=str,
-    required=False,
-)
-@click.option(
     "-a",
     "--artifact-store",
     "artifact_store_name",
@@ -389,7 +368,6 @@ def register_stack(
 )
 def update_stack(
     stack_name: Optional[str],
-    metadata_store_name: Optional[str] = None,
     artifact_store_name: Optional[str] = None,
     orchestrator_name: Optional[str] = None,
     container_registry_name: Optional[str] = None,
@@ -406,7 +384,6 @@ def update_stack(
 
     Args:
         stack_name: Name of the stack to update.
-        metadata_store_name: Name of the new metadata store for this stack.
         artifact_store_name: Name of the new artifact store for this stack.
         orchestrator_name: Name of the new orchestrator for this stack.
         container_registry_name: Name of the new container registry for this
@@ -437,13 +414,6 @@ def update_stack(
                 f"Stack `{stack_name}` cannot be updated as it does not exist.",
             )
         stack_components = current_stack.components
-
-        if metadata_store_name:
-            stack_components[
-                StackComponentType.METADATA_STORE
-            ] = repo.get_stack_component(
-                StackComponentType.METADATA_STORE, name=metadata_store_name
-            )
 
         if artifact_store_name:
             stack_components[

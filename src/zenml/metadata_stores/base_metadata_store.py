@@ -17,11 +17,13 @@ import json
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from json import JSONDecodeError
-from typing import ClassVar, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
+from uuid import UUID, uuid4
 
 from ml_metadata import proto
 from ml_metadata.metadata_store import metadata_store
 from ml_metadata.proto import metadata_store_pb2
+from pydantic import BaseModel, Extra, Field
 from tfx.dsl.compiler.constants import (
     PIPELINE_CONTEXT_TYPE_NAME,
     PIPELINE_RUN_CONTEXT_TYPE_NAME,
@@ -31,7 +33,7 @@ from zenml.artifacts.constants import (
     DATATYPE_PROPERTY_KEY,
     MATERIALIZER_PROPERTY_KEY,
 )
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.post_execution import (
     ArtifactView,
@@ -39,7 +41,6 @@ from zenml.post_execution import (
     PipelineView,
     StepView,
 )
-from zenml.stack import StackComponent
 from zenml.steps.utils import (
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
     PARAM_PIPELINE_PARAMETER_NAME,
@@ -48,12 +49,10 @@ from zenml.steps.utils import (
 logger = get_logger(__name__)
 
 
-class BaseMetadataStore(StackComponent, ABC):
+class BaseMetadataStore(BaseModel, ABC):
     """Base class for all ZenML metadata stores."""
 
-    # Class Configuration
-    TYPE: ClassVar[StackComponentType] = StackComponentType.METADATA_STORE
-
+    uuid: UUID = Field(default_factory=uuid4)
     upgrade_migration_enabled: bool = True
     _store: Optional[metadata_store.MetadataStore] = None
 
@@ -208,7 +207,6 @@ class BaseMetadataStore(StackComponent, ABC):
             entrypoint_name=impl_name,
             name=step_name,
             parameters=step_parameters,
-            metadata_store=self,
         )
 
     def get_pipelines(self) -> List[PipelineView]:
@@ -224,7 +222,6 @@ class BaseMetadataStore(StackComponent, ABC):
             pipeline = PipelineView(
                 id_=pipeline_context.id,
                 name=pipeline_context.name,
-                metadata_store=self,
             )
             pipelines.append(pipeline)
 
@@ -248,7 +245,6 @@ class BaseMetadataStore(StackComponent, ABC):
             return PipelineView(
                 id_=pipeline_context.id,
                 name=pipeline_context.name,
-                metadata_store=self,
             )
         else:
             logger.info("No pipelines found for name '%s'", pipeline_name)
@@ -279,7 +275,6 @@ class BaseMetadataStore(StackComponent, ABC):
                     id_=run.id,
                     name=run.name,
                     executions=executions,
-                    metadata_store=self,
                 )
                 runs[run.name] = run_view
 
@@ -318,7 +313,6 @@ class BaseMetadataStore(StackComponent, ABC):
                 id_=run.id,
                 name=run.name,
                 executions=executions,
-                metadata_store=self,
             )
 
         logger.info("No pipeline run found for name '%s'", run_name)
@@ -440,7 +434,6 @@ class BaseMetadataStore(StackComponent, ABC):
                 uri=artifact_proto.uri,
                 materializer=materializer,
                 data_type=data_type,
-                metadata_store=self,
                 parent_step_id=parent_step_id,
             )
 
@@ -458,21 +451,30 @@ class BaseMetadataStore(StackComponent, ABC):
 
         return inputs, outputs
 
-    def get_producer_step_from_artifact(
-        self, artifact: ArtifactView
-    ) -> StepView:
+    def get_producer_step_from_artifact(self, artifact_id: int) -> StepView:
         """Returns original StepView from an ArtifactView.
 
         Args:
-            artifact: ArtifactView to be queried.
+            artifact_id: ID of the ArtifactView to be queried.
 
         Returns:
             Original StepView that produced the artifact.
         """
         executions_ids = set(
             event.execution_id
-            for event in self.store.get_events_by_artifact_ids([artifact.id])
+            for event in self.store.get_events_by_artifact_ids([artifact_id])
             if event.type == event.OUTPUT
         )
         execution = self.store.get_executions_by_id(executions_ids)[0]
         return self._get_step_view_from_execution(execution)
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # public attributes are immutable
+        allow_mutation = False
+        # all attributes with leading underscore are private and therefore
+        # are mutable and not included in serialization
+        underscore_attrs_are_private = True
+        # prevent extra attributes during model initialization
+        extra = Extra.forbid
