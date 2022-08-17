@@ -181,7 +181,11 @@ class SparkStepOperator(BaseStepOperator):
 
         # If S3, preconfigure the spark session
         if artifact_store.FLAVOR == S3_ARTIFACT_STORE_FLAVOR:
-            key, secret, _ = artifact_store._get_credentials()
+            (
+                key,
+                secret,
+                _,
+            ) = artifact_store._get_credentials()  # type:ignore[attr-defined]
             if key and secret:
                 spark_config.setAll(
                     [
@@ -235,7 +239,7 @@ class SparkStepOperator(BaseStepOperator):
 
     def _launch_spark_job(
         self, spark_config: SparkConf, entrypoint_command: List[str]
-    ):
+    ) -> None:
         """Generates and executes a spark-submit command.
 
         Args:
@@ -260,7 +264,7 @@ class SparkStepOperator(BaseStepOperator):
         command += [f"--conf {c[0]}={c[1]}" for c in spark_config.getAll()]
 
         # Add the application path
-        command.append(self.application_path)
+        command.append(self.application_path)  # type: ignore[arg-type]
 
         # Add the application parameters
         for arg in [
@@ -272,11 +276,11 @@ class SparkStepOperator(BaseStepOperator):
             i = entrypoint_command.index(arg)
             command.extend([arg, entrypoint_command[i + 1]])
 
-        command = " ".join(command)
+        final_command = " ".join(command)
 
         # Execute the spark-submit
         process = subprocess.Popen(
-            command,
+            final_command,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             universal_newlines=True,

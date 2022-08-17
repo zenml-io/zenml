@@ -32,7 +32,7 @@ class SparkModelMaterializer(BaseMaterializer):
 
     def handle_input(
         self, model_type: Type[Any]
-    ) -> Union[Transformer, Estimator, Model]:
+    ) -> Union[Transformer, Estimator, Model]:  # type: ignore[type-arg]
         """Reads and returns a Spark ML model.
 
         Args:
@@ -43,10 +43,10 @@ class SparkModelMaterializer(BaseMaterializer):
         """
         super().handle_input(model_type)
         path = os.path.join(self.artifact.uri, DEFAULT_FILEPATH)
-        return model_type.load(path)  # noqa
+        return model_type.load(path)  # type: ignore[no-any-return]
 
     def handle_return(
-        self, model: Union[Transformer, Estimator, Model]
+        self, model: Union[Transformer, Estimator, Model]  # type: ignore[type-arg]
     ) -> None:
         """Writes a spark model.
 
@@ -57,4 +57,4 @@ class SparkModelMaterializer(BaseMaterializer):
 
         # Write the dataframe to the artifact store
         path = os.path.join(self.artifact.uri, DEFAULT_FILEPATH)
-        model.save(path)
+        model.save(path)  # type: ignore[union-attr]
