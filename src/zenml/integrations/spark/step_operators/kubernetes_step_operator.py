@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Kubernetes Spark Step Operator."""
 import os
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar, Optional, List , Sequence
 
 from pyspark.conf import SparkConf
 
@@ -23,7 +23,7 @@ from zenml.integrations.spark.step_operators import spark_entrypoint
 from zenml.integrations.spark.step_operators.spark_step_operator import (
     SparkStepOperator,
 )
-from zenml.io.fileio import copy
+from zenml.io.fileio import copy, remove
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
@@ -94,6 +94,8 @@ class KubernetesSparkStepOperator(
             stack=Repository().active_stack,
             runtime_configuration=RuntimeConfiguration(),
         )
+
+        remove(entrypoint_path)
 
         # Adjust the spark configuration
         spark_config.set("spark.kubernetes.container.image", image_name)
