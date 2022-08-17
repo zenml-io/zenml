@@ -16,6 +16,7 @@
 from typing import TYPE_CHECKING
 
 from zenml.environment import BaseEnvironmentComponent
+from zenml.runtime_configuration import RuntimeConfiguration
 
 STEP_ENVIRONMENT_NAME = "step_environment"
 if TYPE_CHECKING:
@@ -50,6 +51,7 @@ class StepEnvironment(BaseEnvironmentComponent):
         step_name: str,
         cache_enabled: bool,
         docker_configuration: "DockerConfiguration",
+        runtime_configuration: "RuntimeConfiguration",
     ):
         """Initialize the environment of the currently running step.
 
@@ -60,6 +62,8 @@ class StepEnvironment(BaseEnvironmentComponent):
             cache_enabled: whether cache is enabled for this step
             docker_configuration: The Docker configuration of the currently
                 running pipeline.
+            runtime_configuration: The runtime configuration of the currently
+                running pipeline.
         """
         super().__init__()
         self._pipeline_name = pipeline_name
@@ -67,6 +71,7 @@ class StepEnvironment(BaseEnvironmentComponent):
         self._step_name = step_name
         self._cache_enabled = cache_enabled
         self._docker_configuration = docker_configuration
+        self._runtime_configuration = runtime_configuration
 
     @property
     def pipeline_name(self) -> str:
@@ -112,3 +117,12 @@ class StepEnvironment(BaseEnvironmentComponent):
             A Docker configuration object.
         """
         return self._docker_configuration
+
+    @property
+    def runtime_configuration(self) -> "RuntimeConfiguration":
+        """The Runtime configuration of the currently running pipeline.
+
+        Returns:
+            A Runtime configuration object.
+        """
+        return self._runtime_configuration

@@ -1219,3 +1219,12 @@ ClusterRoleBinding
 MLLib
 PySpark
 rds
+KServeDeployerStepConfig
+KServeDeploymentConfig
+ModelMesh
+Rollouts
+TorchServeParameters
+ZenMLCustomModel
+microservice
+ComponentSpecs
+SeldonDeploymentPredictiveUnit

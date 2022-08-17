@@ -17,7 +17,7 @@ import base64
 import json
 import re
 import time
-from typing import Dict, Generator, List, Optional
+from typing import Any, Dict, Generator, List, Optional
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -29,6 +29,7 @@ from zenml.utils.enum_utils import StrEnum
 
 logger = get_logger(__name__)
 
+api = k8s_client.ApiClient()
 
 SELDON_DEPLOYMENT_KIND = "SeldonDeployment"
 SELDON_DEPLOYMENT_API_VERSION = "machinelearning.seldon.io/v1"
@@ -107,6 +108,25 @@ class SeldonDeploymentPredictiveUnit(BaseModel):
         extra = "ignore"
 
 
+class SeldonDeploymentComponentSpecs(BaseModel):
+    """Component specs for a Seldon Deployment.
+
+    Attributes:
+        spec: the component spec.
+    """
+
+    spec: Optional[Dict[str, Any]]
+    # TODO [HIGH]: Add graph field to ComponentSpecs. graph: Optional[SeldonDeploymentPredictiveUnit]
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # validate attribute assignments
+        validate_assignment = True
+        # Ignore extra attributes from the CRD that are not reflected here
+        extra = "ignore"
+
+
 class SeldonDeploymentPredictor(BaseModel):
     """Seldon Deployment predictor.
 
@@ -118,9 +138,10 @@ class SeldonDeploymentPredictor(BaseModel):
 
     name: str
     replicas: int = 1
-    graph: SeldonDeploymentPredictiveUnit = Field(
+    graph: Optional[SeldonDeploymentPredictiveUnit] = Field(
         default_factory=SeldonDeploymentPredictiveUnit
     )
+    componentSpecs: Optional[List[SeldonDeploymentComponentSpecs]]
 
     class Config:
         """Pydantic configuration class."""
@@ -264,6 +285,8 @@ class SeldonDeployment(BaseModel):
         secret_name: Optional[str] = None,
         labels: Optional[Dict[str, str]] = None,
         annotations: Optional[Dict[str, str]] = None,
+        is_custom_deployment: Optional[bool] = False,
+        spec: Optional[Dict[Any, Any]] = None,
     ) -> "SeldonDeployment":
         """Build a basic Seldon Deployment object.
 
@@ -279,6 +302,8 @@ class SeldonDeployment(BaseModel):
             labels: A dictionary of labels to apply to the Seldon Deployment.
             annotations: A dictionary of annotations to apply to the Seldon
                 Deployment.
+            spec: A Kubernetes pod spec to use for the Seldon Deployment.
+            is_custom_deployment: Whether the Seldon Deployment is a custom or a built-in one.
 
         Returns:
             A minimal SeldonDeployment object built from the provided
@@ -292,25 +317,41 @@ class SeldonDeployment(BaseModel):
         if annotations is None:
             annotations = {}
 
+        if is_custom_deployment:
+            predictors = [
+                SeldonDeploymentPredictor(
+                    name=model_name or "",
+                    graph=SeldonDeploymentPredictiveUnit(
+                        name="classifier",
+                        type=SeldonDeploymentPredictiveUnitType.MODEL,
+                    ),
+                    componentSpecs=[
+                        SeldonDeploymentComponentSpecs(
+                            spec=spec
+                            # TODO [HIGH]: Add support for other component types (e.g. graph)
+                        )
+                    ],
+                )
+            ]
+        else:
+            predictors = [
+                SeldonDeploymentPredictor(
+                    name=model_name or "",
+                    graph=SeldonDeploymentPredictiveUnit(
+                        name="classifier",
+                        type=SeldonDeploymentPredictiveUnitType.MODEL,
+                        modelUri=model_uri or "",
+                        implementation=implementation or "",
+                        envSecretRefName=secret_name,
+                    ),
+                )
+            ]
+
         return SeldonDeployment(
             metadata=SeldonDeploymentMetadata(
                 name=name, labels=labels, annotations=annotations
             ),
-            spec=SeldonDeploymentSpec(
-                name=name,
-                predictors=[
-                    SeldonDeploymentPredictor(
-                        name=model_name or "",
-                        graph=SeldonDeploymentPredictiveUnit(
-                            name="default",
-                            type=SeldonDeploymentPredictiveUnitType.MODEL,
-                            modelUri=model_uri or "",
-                            implementation=implementation or "",
-                            envSecretRefName=secret_name,
-                        ),
-                    )
-                ],
-            ),
+            spec=SeldonDeploymentSpec(name=name, predictors=predictors),
         )
 
     def is_managed_by_zenml(self) -> bool:
@@ -546,12 +587,13 @@ class SeldonClient:
             # are not
             deployment.mark_as_managed_by_zenml()
 
+            body_deploy = deployment.dict(exclude_none=True)
             response = self._custom_objects_api.create_namespaced_custom_object(
                 group="machinelearning.seldon.io",
                 version="v1",
                 namespace=self._namespace,
                 plural="seldondeployments",
-                body=deployment.dict(exclude_none=True),
+                body=body_deploy,
                 _request_timeout=poll_timeout or None,
             )
             logger.debug("Seldon Core API response: %s", response)
@@ -1024,3 +1066,90 @@ class SeldonClient:
             raise SeldonClientError(
                 f"Exception when deleting Secret resource {name}"
             ) from e
+
+
+def create_seldon_core_custom_spec(
+    model_uri: Optional[str],
+    custom_docker_image: Optional[str],
+    secret_name: Optional[str],
+    command: Optional[List[str]],
+    container_registry_secret_name: Optional[str] = None,
+) -> k8s_client.V1PodSpec:
+    """Create a custom pod spec for the seldon core container.
+
+    Args:
+        model_uri: The URI of the model to load.
+        custom_docker_image: The docker image to use.
+        secret_name: The name of the secret to use.
+        command: The command to run in the container.
+        container_registry_secret_name: The name of the secret to use for docker image pull.
+
+    Returns:
+        A pod spec for the seldon core container.
+    """
+    volume = k8s_client.V1Volume(
+        name="classifier-provision-location",
+        empty_dir={},
+    )
+    init_container = k8s_client.V1Container(
+        name="classifier-model-initializer",
+        image="seldonio/rclone-storage-initializer:1.14.0-dev",
+        image_pull_policy="IfNotPresent",
+        args=[model_uri, "/mnt/models"],
+        volume_mounts=[
+            k8s_client.V1VolumeMount(
+                name="classifier-provision-location", mount_path="/mnt/models"
+            )
+        ],
+        env_from=[
+            k8s_client.V1EnvFromSource(
+                secret_ref=k8s_client.V1SecretEnvSource(
+                    name=secret_name, optional=False
+                )
+            )
+        ],
+    )
+    image_pull_secret = k8s_client.V1LocalObjectReference(
+        name=container_registry_secret_name
+    )
+    container = k8s_client.V1Container(
+        name="classifier",
+        image=custom_docker_image,
+        image_pull_policy="IfNotPresent",
+        command=command,
+        volume_mounts=[
+            k8s_client.V1VolumeMount(
+                name="classifier-provision-location",
+                mount_path="/mnt/models",
+                read_only=True,
+            )
+        ],
+        ports=[
+            k8s_client.V1ContainerPort(container_port=5000),
+            k8s_client.V1ContainerPort(container_port=9000),
+        ],
+    )
+
+    if image_pull_secret:
+        spec = k8s_client.V1PodSpec(
+            volumes=[
+                volume,
+            ],
+            init_containers=[
+                init_container,
+            ],
+            image_pull_secrets=[image_pull_secret],
+            containers=[container],
+        )
+    else:
+        spec = k8s_client.V1PodSpec(
+            volumes=[
+                volume,
+            ],
+            init_containers=[
+                init_container,
+            ],
+            containers=[container],
+        )
+
+    return api.sanitize_for_serialization(spec)
