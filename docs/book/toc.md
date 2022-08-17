@@ -96,6 +96,7 @@
   * [Amazon SageMaker](./mlops-stacks/step-operators/amazon-sagemaker.md)
   * [Google Cloud VertexAI](./mlops-stacks/step-operators/gcloud-vertexai.md)
   * [AzureML](./mlops-stacks/step-operators/azureml.md)
+  * [Spark](./mlops-stacks/step-operators/spark.md)
   * [Develop a Custom Step Operator](./mlops-stacks/step-operators/custom.md)
 * [Alerters](./mlops-stacks/alerters/alerters.md)
   * [Slack Alerter](./mlops-stacks/alerters/slack.md)
