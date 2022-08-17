@@ -330,9 +330,18 @@ class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
         # deployment server and waits for it to reach a ready state
         service.start(timeout=timeout)
 
-        # Add telemetry with metadata that differentiates between pure model
-        #  and custom code deployments
-        metadata = {"is_custom_code_deployment": config.is_custom_deployment}
+        # Add telemetry with metadata that gets the stack metadata and
+        # differentiates between pure model and custom code deployments
+        stack = Repository().active_stack
+        stack_metadata = {
+            component_type.value: component.FLAVOR
+            for component_type, component in stack.components.items()
+        }
+        metadata = {
+            "store_type": Repository().active_profile.store_type.value,
+            **stack_metadata,
+            "is_custom_code_deployment": config.is_custom_deployment,
+        }
         track_event(AnalyticsEvent.MODEL_DEPLOYED, metadata=metadata)
 
         return service
