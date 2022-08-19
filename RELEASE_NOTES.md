@@ -17,6 +17,20 @@ the corresponding ZenML stack using the ZenML CLI.
 
 As always, we've also included various bug fixes and lots of improvements to the documentation and our examples.
 
+## Breaking Changes
+
+This release introduces a breaking change to the CLI by adjusting the access to
+the stack component specific resources for `secret-managers` and 
+`model-deployers` to be more explicitly linked to the component. Here is how:
+
+```bash
+# `zenml secret register ...` becomes 
+zenml secrets-manager secret register ...
+
+# `zenml served_models list` becomes 
+zenml model-deployer models list
+```
+
 ## What's Changed
 * Link checker by @dnth in https://github.com/zenml-io/zenml/pull/818
 * Update Readme with latest info from docs page by @dnth in https://github.com/zenml-io/zenml/pull/810
