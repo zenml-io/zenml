@@ -172,6 +172,8 @@ TRIGGERS = "/triggers"
 RUNS = "/runs"
 DEFAULT_STACK = "/default-stack"
 RUNTIME_CONFIGURATION = "/runtime-configuration"
+GRAPH = "/graph"
+STEPS = "/steps"
 
 # mandatory stack component attributes
 MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]
