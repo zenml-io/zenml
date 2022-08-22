@@ -22,10 +22,11 @@ from pydantic import BaseModel
 
 import zenml
 from zenml.config.global_config import GlobalConfiguration
-from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import (
     ENV_ZENML_PROFILE_NAME,
     FLAVORS,
+    LOGIN,
+    LOGOUT,
     PIPELINE_RUNS,
     PROJECTS,
     ROLE_ASSIGNMENTS,
@@ -166,14 +167,14 @@ def conflict(error: Exception) -> HTTPException:
     return HTTPException(status_code=409, detail=error_detail(error))
 
 
-@authed.get("/", response_model=ProfileConfiguration)
-async def service_info() -> ProfileConfiguration:
-    """Returns the profile configuration for this service.
+# @authed.get("/", response_model=ProfileConfiguration)
+# async def service_info() -> ProfileConfiguration:
+#     """Returns the profile configuration for this service.
 
-    Returns:
-        Profile configuration for this service.
-    """
-    return profile
+#     Returns:
+#         Profile configuration for this service.
+#     """
+#     return profile
 
 
 @app.head("/health")
@@ -185,6 +186,50 @@ async def health() -> str:
         String representing the health status of the server.
     """
     return "OK"
+
+
+@authed.post(
+    LOGIN,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def login() -> None:
+    """Login as a user.
+
+    Raises:
+        conflict: when not authorized to login
+        not_found: when user does not exist
+        validation error: when unable to validate credentials
+    """
+    try:
+        zen_store.login()
+    except NotAuthorizedError as error:
+        raise conflict(error) from error
+    except NotFoundError as error:
+        raise not_found(error) from error
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.post(
+    LOGOUT,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def logout() -> None:
+    """Logout as a user.
+
+    Raises:
+        conflict: when not authorized to login
+        not_found: when user does not exist
+        validation error: when unable to validate credentials
+    """
+    try:
+        zen_store.login()
+    except NotAuthorizedError as error:
+        raise conflict(error) from error
+    except NotFoundError as error:
+        raise not_found(error) from error
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
 
 
 @authed.get(STACKS_EMPTY, response_model=bool)

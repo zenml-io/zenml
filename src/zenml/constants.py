@@ -165,6 +165,8 @@ ROLES = "/roles"
 FLAVORS = "/flavors"
 ROLE_ASSIGNMENTS = "/role_assignments"
 PIPELINE_RUNS = "/pipeline_runs"
+LOGIN = "/login"
+LOGOUT = "/logout"
 
 # mandatory stack component attributes
 MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]
