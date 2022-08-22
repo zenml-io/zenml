@@ -48,13 +48,13 @@ from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
 from zenml.zen_stores.schemas.schemas import (
-    ComponentSchema,
-    CompositionSchema,
     FlavorSchema,
     PipelineRunSchema,
     ProjectSchema,
     RoleAssignmentSchema,
     RoleSchema,
+    StackComponentSchema,
+    StackCompositionSchema,
     StackSchema,
     TeamAssignmentSchema,
     TeamSchema,
@@ -245,10 +245,16 @@ class SqlZenStore(BaseZenStore):
         # then get all components assigned to that stack
         with Session(self.engine) as session:
             definitions_and_components = session.exec(
-                select(CompositionSchema, ComponentSchema)
-                .where(CompositionSchema.component_type == ComponentSchema.type)
-                .where(CompositionSchema.component_name == ComponentSchema.name)
-                .where(CompositionSchema.stack_name == name)
+                select(StackCompositionSchema, StackComponentSchema)
+                .where(
+                    StackCompositionSchema.component_type
+                    == StackComponentSchema.type
+                )
+                .where(
+                    StackCompositionSchema.component_name
+                    == StackComponentSchema.name
+                )
+                .where(StackCompositionSchema.stack_name == name)
             )
             params = {
                 component.component_type: component.name
@@ -280,9 +286,9 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             existing_component = session.exec(
-                select(ComponentSchema)
-                .where(ComponentSchema.name == component.name)
-                .where(ComponentSchema.type == component.type)
+                select(StackComponentSchema)
+                .where(StackComponentSchema.name == component.name)
+                .where(StackComponentSchema.type == component.type)
             ).first()
             if existing_component is not None:
                 raise StackComponentExistsError(
@@ -290,7 +296,7 @@ class SqlZenStore(BaseZenStore):
                     f"{component.type}) with name '{component.name}': Found "
                     f"existing stack component with this name."
                 )
-            new_component = ComponentSchema(
+            new_component = StackComponentSchema(
                 type=component.type,
                 name=component.name,
                 flavor=component.flavor,
@@ -322,9 +328,9 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             updated_component = session.exec(
-                select(ComponentSchema)
-                .where(ComponentSchema.type == component_type)
-                .where(ComponentSchema.name == name)
+                select(StackComponentSchema)
+                .where(StackComponentSchema.type == component_type)
+                .where(StackComponentSchema.name == name)
             ).first()
 
             if not updated_component:
@@ -335,9 +341,9 @@ class SqlZenStore(BaseZenStore):
                 )
 
             new_name_component = session.exec(
-                select(ComponentSchema)
-                .where(ComponentSchema.type == component_type)
-                .where(ComponentSchema.name == component.name)
+                select(StackComponentSchema)
+                .where(StackComponentSchema.type == component_type)
+                .where(StackComponentSchema.name == component.name)
             ).first()
             if (name != component.name) and new_name_component is not None:
                 raise StackComponentExistsError(
@@ -353,9 +359,9 @@ class SqlZenStore(BaseZenStore):
 
             # rename components inside stacks
             updated_stack_definitions = session.exec(
-                select(CompositionSchema)
-                .where(CompositionSchema.component_type == component_type)
-                .where(CompositionSchema.component_name == name)
+                select(StackCompositionSchema)
+                .where(StackCompositionSchema.component_type == component_type)
+                .where(StackCompositionSchema.component_name == name)
             ).all()
             for stack_definition in updated_stack_definitions:
                 stack_definition.component_name = component.name
@@ -388,8 +394,8 @@ class SqlZenStore(BaseZenStore):
             except NoResultFound as error:
                 raise KeyError from error
             definitions = session.exec(
-                select(CompositionSchema).where(
-                    CompositionSchema.stack_name == name
+                select(StackCompositionSchema).where(
+                    StackCompositionSchema.stack_name == name
                 )
             ).all()
             for definition in definitions:
@@ -432,23 +438,23 @@ class SqlZenStore(BaseZenStore):
             else:
                 # clear the existing stack definitions for a stack
                 # that is about to be updated
-                query = select(CompositionSchema).where(
-                    CompositionSchema.stack_name == name
+                query = select(StackCompositionSchema).where(
+                    StackCompositionSchema.stack_name == name
                 )
                 for result in session.exec(query).all():
                     session.delete(result)
 
             for ctype, cname in stack_configuration.items():
                 statement = (
-                    select(CompositionSchema)
-                    .where(CompositionSchema.stack_name == name)
-                    .where(CompositionSchema.component_type == ctype)
+                    select(StackCompositionSchema)
+                    .where(StackCompositionSchema.stack_name == name)
+                    .where(StackCompositionSchema.component_type == ctype)
                 )
                 results = session.exec(statement)
                 component = results.one_or_none()
                 if component is None:
                     session.add(
-                        CompositionSchema(
+                        StackCompositionSchema(
                             stack_name=name,
                             component_type=ctype,
                             component_name=cname,
@@ -478,9 +484,9 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             component = session.exec(
-                select(ComponentSchema)
-                .where(ComponentSchema.type == component_type)
-                .where(ComponentSchema.name == name)
+                select(StackComponentSchema)
+                .where(StackComponentSchema.type == component_type)
+                .where(StackComponentSchema.name == name)
             ).one_or_none()
             if component is None:
                 raise KeyError(
@@ -501,8 +507,8 @@ class SqlZenStore(BaseZenStore):
             A list of names as strings.
         """
         with Session(self.engine) as session:
-            statement = select(ComponentSchema).where(
-                ComponentSchema.type == component_type
+            statement = select(StackComponentSchema).where(
+                StackComponentSchema.type == component_type
             )
             return [component.name for component in session.exec(statement)]
 
@@ -520,9 +526,9 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             component = session.exec(
-                select(ComponentSchema)
-                .where(ComponentSchema.type == component_type)
-                .where(ComponentSchema.name == name)
+                select(StackComponentSchema)
+                .where(StackComponentSchema.type == component_type)
+                .where(StackComponentSchema.name == name)
             ).first()
             if component is not None:
                 session.delete(component)

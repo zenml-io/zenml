@@ -44,7 +44,7 @@ class StackSchema(SQLModel, table=True):
     project_id: UUID = Field(foreign_key="projectschema.id")
 
 
-class ComponentSchema(SQLModel, table=True):
+class StackComponentSchema(SQLModel, table=True):
     """SQL Model for stack components."""
 
     id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
@@ -81,7 +81,7 @@ class FlavorSchema(SQLModel, table=True):
     repository_id: UUID = Field(foreign_key="repositoryschema.id")
 
 
-class CompositionSchema(SQLModel, table=True):
+class StackCompositionSchema(SQLModel, table=True):
     """SQL Model for stack definitions.
 
     Join table between Stacks and StackComponents.
@@ -206,7 +206,7 @@ class PipelineRunSchema(SQLModel, table=True):
         )
 
 
-class StepSchema(SQLModel, table=True):
+class PipelineRunStepSchema(SQLModel, table=True):
     """SQL Model for pipeline run steps."""
 
     id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
