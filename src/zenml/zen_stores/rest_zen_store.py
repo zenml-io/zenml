@@ -48,7 +48,7 @@ from zenml.post_execution.pipeline_run import PipelineRunView
 from zenml.post_execution.step import StepView
 from zenml.zen_stores import BaseZenStore
 from zenml.zen_stores.models import (
-    ComponentWrapper,
+    ComponentModel,
     FlavorWrapper,
     Project,
     Role,
@@ -233,7 +233,7 @@ class RestZenStore(BaseZenStore):
 
     def _register_stack_component(
         self,
-        component: ComponentWrapper,
+        component: ComponentModel,
     ) -> None:
         """Register a stack component.
 
@@ -246,7 +246,7 @@ class RestZenStore(BaseZenStore):
         self,
         name: str,
         component_type: StackComponentType,
-        component: ComponentWrapper,
+        component: ComponentModel,
     ) -> Dict[str, str]:
         """Update a stack component.
 
@@ -352,7 +352,7 @@ class RestZenStore(BaseZenStore):
 
     def get_stack_component(
         self, component_type: StackComponentType, name: str
-    ) -> ComponentWrapper:
+    ) -> ComponentModel:
         """Get a registered stack component.
 
         Args:
@@ -362,13 +362,13 @@ class RestZenStore(BaseZenStore):
         Returns:
             ComponentWrapper instance if the component exists.
         """
-        return ComponentWrapper.parse_obj(
+        return ComponentModel.parse_obj(
             self.get(f"{STACK_COMPONENTS}/{component_type}/{name}")
         )
 
     def get_stack_components(
         self, component_type: StackComponentType
-    ) -> List[ComponentWrapper]:
+    ) -> List[ComponentModel]:
         """Fetches all registered stack components of the given type.
 
         Args:
@@ -385,7 +385,7 @@ class RestZenStore(BaseZenStore):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
             )
-        return [ComponentWrapper.parse_obj(c) for c in body]
+        return [ComponentModel.parse_obj(c) for c in body]
 
     def deregister_stack_component(
         self, component_type: StackComponentType, name: str

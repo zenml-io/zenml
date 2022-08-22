@@ -56,7 +56,7 @@ if TYPE_CHECKING:
     from zenml.model_deployers import BaseModelDeployer
     from zenml.secret import BaseSecretSchema
     from zenml.services import BaseService
-    from zenml.zen_stores.models import ComponentWrapper, FlavorWrapper
+    from zenml.zen_stores.models import ComponentModel, FlavorWrapper
 
 
 def title(text: str) -> None:
@@ -254,7 +254,7 @@ def format_integration_list(
 
 
 def print_stack_component_list(
-    components: List["ComponentWrapper"],
+    components: List["ComponentModel"],
     active_component_name: Optional[str] = None,
 ) -> None:
     """Prints a table with configuration options for a list of stack components.
@@ -376,7 +376,7 @@ def print_flavor_list(
 
 
 def print_stack_component_configuration(
-    component: "ComponentWrapper", display_name: str, active_status: bool
+    component: "ComponentModel", display_name: str, active_status: bool
 ) -> None:
     """Prints the configuration options of a stack component.
 

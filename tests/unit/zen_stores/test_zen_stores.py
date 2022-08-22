@@ -50,7 +50,7 @@ from zenml.stack import Stack
 from zenml.utils.networking_utils import scan_for_available_port
 from zenml.zen_stores import BaseZenStore, RestZenStore, SqlZenStore
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
-from zenml.zen_stores.models import ComponentWrapper, StackWrapper
+from zenml.zen_stores.models import ComponentModel, StackWrapper
 from zenml.zen_stores.models.pipeline_models import (
     PipelineRunWrapper,
     PipelineWrapper,
@@ -213,7 +213,7 @@ def test_register_deregister_components(fresh_zen_store):
     # can't add another orchestrator of same name
     with pytest.raises(StackComponentExistsError):
         zen_store.register_stack_component(
-            ComponentWrapper.from_component(
+            ComponentModel.from_component(
                 LocalOrchestrator(
                     name="default",
                 )
@@ -222,7 +222,7 @@ def test_register_deregister_components(fresh_zen_store):
 
     # but can add one if it has a different name
     zen_store.register_stack_component(
-        ComponentWrapper.from_component(
+        ComponentModel.from_component(
             LocalOrchestrator(
                 name="local_orchestrator_part_2_the_remix",
             )
@@ -583,7 +583,7 @@ def test_update_non_existent_stack_component_raises_error(
         fresh_zen_store.update_stack_component(
             local_secrets_manager.name,
             StackComponentType.SECRETS_MANAGER,
-            ComponentWrapper.from_component(local_secrets_manager),
+            ComponentModel.from_component(local_secrets_manager),
         )
 
 
@@ -591,12 +591,12 @@ def test_update_real_component_succeeds(
     fresh_zen_store,
 ):
     """Test updating a real component succeeds."""
-    kubeflow_orchestrator = ComponentWrapper.from_component(
+    kubeflow_orchestrator = ComponentModel.from_component(
         KubeflowOrchestrator(name="arias_orchestrator")
     )
     fresh_zen_store.register_stack_component(kubeflow_orchestrator)
 
-    updated_kubeflow_orchestrator = ComponentWrapper.from_component(
+    updated_kubeflow_orchestrator = ComponentModel.from_component(
         KubeflowOrchestrator(
             name="arias_orchestrator",
             custom_docker_base_image_name="aria/arias_base_image",
@@ -626,7 +626,7 @@ def test_rename_nonexistent_stack_component_fails(
         fresh_zen_store.update_stack_component(
             "not_a_secrets_manager",
             StackComponentType.SECRETS_MANAGER,
-            ComponentWrapper.from_component(
+            ComponentModel.from_component(
                 LocalSecretsManager(name="local_secrets_manager")
             ),
         )
@@ -638,7 +638,7 @@ def test_rename_core_stack_component_succeeds(
     """Test renaming a core stack component succeeds."""
     old_name = "default"
     new_name = "arias_orchestrator"
-    renamed_orchestrator = ComponentWrapper.from_component(
+    renamed_orchestrator = ComponentModel.from_component(
         LocalOrchestrator(name=new_name)
     )
     fresh_zen_store.update_stack_component(
@@ -666,12 +666,12 @@ def test_rename_non_core_stack_component_succeeds(
     old_name = "original_kubeflow"
     new_name = "arias_kubeflow"
 
-    kubeflow_orchestrator = ComponentWrapper.from_component(
+    kubeflow_orchestrator = ComponentModel.from_component(
         KubeflowOrchestrator(name=old_name)
     )
     fresh_zen_store.register_stack_component(kubeflow_orchestrator)
 
-    renamed_kubeflow_orchestrator = ComponentWrapper.from_component(
+    renamed_kubeflow_orchestrator = ComponentModel.from_component(
         KubeflowOrchestrator(name=new_name)
     )
     fresh_zen_store.update_stack_component(

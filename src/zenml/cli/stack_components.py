@@ -43,7 +43,7 @@ from zenml.repository import Repository
 from zenml.stack import StackComponent
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.source_utils import validate_flavor_source
-from zenml.zen_stores.models.component_wrapper import ComponentWrapper
+from zenml.zen_stores.models.component_wrapper import ComponentModel
 
 if TYPE_CHECKING:
     from zenml.annotators.base_annotator import BaseAnnotator
@@ -127,7 +127,7 @@ def _component_display_name(
 def _get_stack_component_wrapper(
     component_type: StackComponentType,
     component_name: Optional[str] = None,
-) -> Tuple[Optional[ComponentWrapper], bool]:
+) -> Tuple[Optional[ComponentModel], bool]:
     """Gets a stack component for a given type and name.
 
     Args:

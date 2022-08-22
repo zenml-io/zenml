@@ -47,7 +47,7 @@ from zenml.exceptions import (
 from zenml.repository import Repository
 from zenml.zen_stores import BaseZenStore
 from zenml.zen_stores.models import (
-    ComponentWrapper,
+    ComponentModel,
     FlavorWrapper,
     Project,
     Role,
@@ -235,7 +235,7 @@ async def stack_configurations() -> Dict[str, Dict[StackComponentType, str]]:
 
 @authed.post(STACK_COMPONENTS, responses={409: error_response})
 async def register_stack_component(
-    component: ComponentWrapper,
+    component: ComponentModel,
 ) -> None:
     """Registers a stack component.
 
@@ -347,7 +347,7 @@ async def update_stack(stack: StackWrapper, name: str) -> None:
 async def update_stack_component(
     name: str,
     component_type: StackComponentType,
-    component: ComponentWrapper,
+    component: ComponentModel,
 ) -> Dict[str, str]:
     """Updates a stack component.
 
@@ -370,12 +370,12 @@ async def update_stack_component(
 
 @authed.get(
     STACK_COMPONENTS + "/{component_type}/{name}",
-    response_model=ComponentWrapper,
+    response_model=ComponentModel,
     responses={404: error_response},
 )
 async def get_stack_component(
     component_type: StackComponentType, name: str
-) -> ComponentWrapper:
+) -> ComponentModel:
     """Returns the requested stack component.
 
     Args:
@@ -396,11 +396,11 @@ async def get_stack_component(
 
 @authed.get(
     STACK_COMPONENTS + "/{component_type}",
-    response_model=List[ComponentWrapper],
+    response_model=List[ComponentModel],
 )
 async def get_stack_components(
     component_type: StackComponentType,
-) -> List[ComponentWrapper]:
+) -> List[ComponentModel]:
     """Returns all stack components for the requested type.
 
     Args:

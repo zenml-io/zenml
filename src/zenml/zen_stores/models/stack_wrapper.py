@@ -19,14 +19,14 @@ from pydantic import BaseModel
 
 from zenml.enums import StackComponentType
 from zenml.stack import Stack
-from zenml.zen_stores.models import ComponentWrapper
+from zenml.zen_stores.models import ComponentModel
 
 
 class StackWrapper(BaseModel):
     """Network Serializable Wrapper describing a Stack."""
 
     name: str
-    components: List[ComponentWrapper]
+    components: List[ComponentModel]
 
     @classmethod
     def from_stack(cls, stack: Stack) -> "StackWrapper":
@@ -41,7 +41,7 @@ class StackWrapper(BaseModel):
         return cls(
             name=stack.name,
             components=[
-                ComponentWrapper.from_component(component)
+                ComponentModel.from_component(component)
                 for t, component in stack.components.items()
             ],
         )
@@ -64,7 +64,7 @@ class StackWrapper(BaseModel):
 
     def get_component_wrapper(
         self, component_type: StackComponentType
-    ) -> Optional[ComponentWrapper]:
+    ) -> Optional[ComponentModel]:
         """Returns the component of the given type.
 
         Args:

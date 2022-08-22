@@ -921,12 +921,12 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             component_type: The type of the component to update.
             component: The new component to update with.
         """
-        from zenml.zen_stores.models import ComponentWrapper
+        from zenml.zen_stores.models import ComponentModel
 
         self.zen_store.update_stack_component(
             name,
             component_type,
-            ComponentWrapper.from_component(component),
+            ComponentModel.from_component(component),
         )
 
     def get_stack_components(
@@ -976,10 +976,10 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         Args:
             component: The component to register.
         """
-        from zenml.zen_stores.models import ComponentWrapper
+        from zenml.zen_stores.models import ComponentModel
 
         self.zen_store.register_stack_component(
-            ComponentWrapper.from_component(component)
+            ComponentModel.from_component(component)
         )
         if component.post_registration_message:
             logger.info(component.post_registration_message)

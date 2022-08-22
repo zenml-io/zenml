@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class ComponentWrapper(BaseModel):
+class ComponentModel(BaseModel):
     """Serializable Configuration of a StackComponent."""
 
     type: StackComponentType
@@ -40,14 +40,14 @@ class ComponentWrapper(BaseModel):
     config: bytes  # b64 encoded yaml config
 
     @classmethod
-    def from_component(cls, component: "StackComponent") -> "ComponentWrapper":
-        """Creates a ComponentWrapper from an instance of a Stack Component.
+    def from_component(cls, component: "StackComponent") -> "ComponentModel":
+        """Creates a ComponentModel from an instance of a Stack Component.
 
         Args:
             component: the instance of a StackComponent
 
         Returns:
-            a ComponentWrapper
+            a ComponentModel
         """
         return cls(
             type=component.TYPE,
@@ -60,7 +60,7 @@ class ComponentWrapper(BaseModel):
         )
 
     def to_component(self) -> "StackComponent":
-        """Converts the ComponentWrapper into an actual instance of a Stack Component.
+        """Converts the ComponentModel into an actual instance of a Stack Component.
 
         Returns:
             a StackComponent

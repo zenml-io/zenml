@@ -38,7 +38,7 @@ from zenml.logger import get_logger
 from zenml.utils import io_utils
 from zenml.zen_stores import BaseZenStore
 from zenml.zen_stores.models import (
-    ComponentWrapper,
+    ComponentModel,
     FlavorWrapper,
     Project,
     Role,
@@ -259,7 +259,7 @@ class LocalZenStore(BaseZenStore):
 
     def _register_stack_component(
         self,
-        component: ComponentWrapper,
+        component: ComponentModel,
     ) -> None:
         """Register a stack component.
 
@@ -303,7 +303,7 @@ class LocalZenStore(BaseZenStore):
         self,
         name: str,
         component_type: StackComponentType,
-        component: ComponentWrapper,
+        component: ComponentModel,
     ) -> Dict[str, str]:
         """Update a stack component.
 

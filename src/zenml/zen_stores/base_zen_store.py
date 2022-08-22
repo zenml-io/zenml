@@ -31,7 +31,7 @@ from zenml.post_execution.step import StepView
 from zenml.stack import Stack
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.zen_stores.models import (
-    ComponentWrapper,
+    ComponentModel,
     FlavorWrapper,
     Project,
     Role,
@@ -207,7 +207,7 @@ class BaseZenStore(ABC):
     @abstractmethod
     def _register_stack_component(
         self,
-        component: ComponentWrapper,
+        component: ComponentModel,
     ) -> None:
         """Register a stack component.
 
@@ -224,7 +224,7 @@ class BaseZenStore(ABC):
         self,
         name: str,
         component_type: StackComponentType,
-        component: ComponentWrapper,
+        component: ComponentModel,
     ) -> Dict[str, str]:
         """Update a stack component.
 
@@ -919,7 +919,7 @@ class BaseZenStore(ABC):
             )
 
         def __check_component(
-            component: ComponentWrapper,
+            component: ComponentModel,
         ) -> Tuple[StackComponentType, str]:
             """Try to register a stack component, if it doesn't exist.
 
@@ -985,7 +985,7 @@ class BaseZenStore(ABC):
             pass
 
         def __check_component(
-            component: ComponentWrapper,
+            component: ComponentModel,
         ) -> Tuple[StackComponentType, str]:
             """Try to register a stack component, if it doesn't exist.
 
@@ -1014,7 +1014,7 @@ class BaseZenStore(ABC):
 
     def get_stack_component(
         self, component_type: StackComponentType, name: str
-    ) -> ComponentWrapper:
+    ) -> ComponentModel:
         """Get a registered stack component.
 
         Args:
@@ -1028,7 +1028,7 @@ class BaseZenStore(ABC):
             component_type, name=name
         )
         uuid = yaml.safe_load(base64.b64decode(config).decode())["uuid"]
-        return ComponentWrapper(
+        return ComponentModel(
             type=component_type,
             flavor=flavor,
             name=name,
@@ -1038,7 +1038,7 @@ class BaseZenStore(ABC):
 
     def get_stack_components(
         self, component_type: StackComponentType
-    ) -> List[ComponentWrapper]:
+    ) -> List[ComponentModel]:
         """Fetches all registered stack components of the given type.
 
         Args:
@@ -1144,7 +1144,7 @@ class BaseZenStore(ABC):
 
     def register_stack_component(
         self,
-        component: ComponentWrapper,
+        component: ComponentModel,
     ) -> None:
         """Register a stack component.
 
@@ -1168,7 +1168,7 @@ class BaseZenStore(ABC):
         self,
         name: str,
         component_type: StackComponentType,
-        component: ComponentWrapper,
+        component: ComponentModel,
     ) -> Dict[str, str]:
         """Update a stack component.
 
