@@ -205,7 +205,7 @@ For more information and a full list of configurable attributes of the Seldon Co
 
 ## Custom Model Deployment
 
-When you have custom use-case where Seldon Core pre-packaged inference servers cannot cover your needs, you can laverage the language wrappers to containerise your machine learning model and logic.
+When you have custom use-case where Seldon Core pre-packaged inference servers cannot cover your needs, you can leverage the language wrappers to Containerise your machine learning model and logic.
 With ZenML's Seldon Core Integration, you can create your own custom model
 deployment code by creating a custom predict function that will be passed
 to a custom deployment step responsible for preparing a docker image for the 
@@ -275,7 +275,7 @@ Before creating your custom model class, you should take a look at the
 The built-in seldon custom deployment step is a good starting point for
 deploying your custom models. However if you want to deploy more than the
 trained model, you can create your own Custom Class and a custom step
-to acheive this.
+to achieve this.
 
 Example of the [custom class](https://apidocs.zenml.io/0.13.0/api_docs/integrations/#zenml.integrations.seldon.custom_deployer.zenml_custom_model.ZenMLCustomModel)
 

@@ -259,9 +259,9 @@ Building Docker image(s) for pipeline pytorch_custom_code_pipeline.
 Gathering requirements for Docker build:
         - Including user-defined requirements: torchvision
         - Including integration requirements: gcsfs, google-cloud-aiplatform>=1.11.0, google-cloud-secret-manager, kfp==1.8.9, kserve==0.9.0, torch, torch-model-archiver
-Creating Docker build context from directory /home/safoine-zenml/zen/zenml/examples/custom_code_deployment.
+Creating Docker build context from directory /home/zenml/zen/zenml/examples/custom_code_deployment.
 No .dockerignore found, including all files inside build context.
-Build context size for docker image: 63.86 MiB. If you believe this is unreasonably large, make sure to include a .dockerignore file at the root of your build context /home/safoine-zenml/zen/zenml/examples/custom_code_deployment/.dockerignore or specify a custom file for argument dockerignore_file when defining your pipeline.
+Build context size for docker image: 63.86 MiB. If you believe this is unreasonably large, make sure to include a .dockerignore file at the root of your build context /home/zenml/zen/zenml/examples/custom_code_deployment/.dockerignore or specify a custom file for argument dockerignore_file when defining your pipeline.
 Building Docker image gcr.io/zenml-core/zenml-kubeflow/zenml:pytorch_custom_code_pipeline.
 Building the image might take a while...
 Finished building Docker image gcr.io/zenml-core/zenml-kubeflow/zenml:pytorch_custom_code_pipeline.
@@ -484,9 +484,9 @@ Building Docker image(s) for pipeline tensorflow_custom_code_pipeline.
 Gathering requirements for Docker build:
         - Including user-defined requirements: Pillow
         - Including integration requirements: gcsfs, google-cloud-aiplatform>=1.11.0, google-cloud-secret-manager, kfp==1.8.9, kubernetes==18.20.0, seldon-core==1.14.0, tensorflow==2.8.0, tensorflow_io==0.24.0
-Creating Docker build context from directory /home/safoine-zenml/zen/zenml/examples/custom_code_deployment.
+Creating Docker build context from directory /home/zenml/zen/zenml/examples/custom_code_deployment.
 No .dockerignore found, including all files inside build context.
-Build context size for docker image: 63.86 MiB. If you believe this is unreasonably large, make sure to include a .dockerignore file at the root of your build context /home/safoine-zenml/zen/zenml/examples/custom_code_deployment/.dockerignore or specify a custom file for argument dockerignore_file when defining your pipeline.
+Build context size for docker image: 63.86 MiB. If you believe this is unreasonably large, make sure to include a .dockerignore file at the root of your build context /home/zenml/zen/zenml/examples/custom_code_deployment/.dockerignore or specify a custom file for argument dockerignore_file when defining your pipeline.
 Building Docker image gcr.io/zenml-core/zenml-kubeflow/zenml:tensorflow_custom_code_pipeline.
 Building the image might take a while...
 Finished building Docker image gcr.io/zenml-core/zenml-kubeflow/zenml:tensorflow_custom_code_pipeline.
@@ -526,7 +526,7 @@ Step seldon_predictor has started.
 Step seldon_predictor has finished in 4.553s.
 Pipeline run tensorflow_inference_pipeline-22_Aug_22-08_38_30_970798 has finished in 22.677s.
 The Seldon prediction server is running remotely as a Kubernetes service and accepts inference requests at:
-    http://35.243.201.91:80/seldon/kubeflow/zenml-eaa6fc48-cda7-4c4e-8785-dc5b85cf0a31/api/v0.1/predictions
+    `http://35.243.201.91:80/seldon/kubeflow/zenml-eaa6fc48-cda7-4c4e-8785-dc5b85cf0a31/api/v0.1/predictions`
 To stop the service, run `zenml served-models delete eaa6fc48-cda7-4c4e-8785-dc5b85cf0a31`.
 ```
 
@@ -620,7 +620,7 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the custom model deployment can be found [here](https://docs.zenml.io/mlops-stacks/model-deployers/seldon).
+Our docs regarding the custom model deployment can be found [here](https://docs.zenml.io/mlops-stacks/model-deployers/custom-pre-processing-and-post-processing).
 
 If you want to learn more about the deployment in ZenML in general or about how to build your deployer steps in ZenML
 check out our [docs](https://docs.zenml.io/mlops-stacks/model-deployers/custom).

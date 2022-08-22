@@ -104,7 +104,7 @@ you can use `kserve_s3` for AWS S3 or `kserve_gs` for GCS and `kserve_az` for Az
 [Secrets Manager](../secrets-managers/secrets-managers.md).
 
 {% hint style="warning" %}
-The recommended way to pass the credentails to the KServe model depployer is to use a file that contains the credentials. You can acheive this by adding the `@` followed by the path to the file to the `--credentials` argument.
+The recommended way to pass the credentails to the KServe model depployer is to use a file that contains the credentials. You can achieve this by adding the `@` followed by the path to the file to the `--credentials` argument.
 (e.g. `--credentials @/path/to/credentials.json`)
 {% endhint %}
 
@@ -273,8 +273,7 @@ Before creating your custom model class, you should take a look at the
 
 The built-in kserve custom deployment step is a good starting point for
 deploying your custom models. However if you want to deploy more than the
-trained model, you can create your own Custom Model Class and a custom step
-to acheive this.
+trained model, you can create your own Custom Model Class and a custom step to achieve this.
 
 Example of the [custom model class](https://apidocs.zenml.io/0.13.0/api_docs/integrations/#zenml.integrations.kserve.custom_deployer.zenml_custom_model.ZenMLCustomModel)
 
