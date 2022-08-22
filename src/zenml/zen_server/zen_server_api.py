@@ -23,6 +23,7 @@ from pydantic import BaseModel
 import zenml
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
+    DEFAULT_STACK,
     ENV_ZENML_PROFILE_NAME,
     FLAVORS,
     LOGIN,
@@ -33,6 +34,7 @@ from zenml.constants import (
     ROLE_ASSIGNMENTS,
     ROLES,
     RUNS,
+    RUNTIME_CONFIGURATION,
     STACK_COMPONENTS,
     STACK_CONFIGURATIONS,
     STACKS,
@@ -170,14 +172,7 @@ def conflict(error: Exception) -> HTTPException:
     return HTTPException(status_code=409, detail=error_detail(error))
 
 
-# @authed.get("/", response_model=ProfileConfiguration)
-# async def service_info() -> ProfileConfiguration:
-#     """Returns the profile configuration for this service.
-
-#     Returns:
-#         Profile configuration for this service.
-#     """
-#     return profile
+## HEALTH
 
 
 @app.head("/health")
@@ -189,6 +184,9 @@ async def health() -> str:
         String representing the health status of the server.
     """
     return "OK"
+
+
+# AUTH
 
 
 @authed.post(
@@ -233,6 +231,9 @@ async def logout() -> None:
         raise not_found(error) from error
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+# PIPELINES
 
 
 @authed.get(
@@ -482,6 +483,7 @@ async def create_pipeline_run(pipeline_id: str, pipeline_run) -> None:
         validation error: when unable to validate credentials
     """
     try:
+        # THIS ALSO EXISTS: zen_store.register_pipeline_run(pipeline_run)
         return zen_store.create_pipeline_run(
             pipeline_id=pipeline_id, pipeline_run=pipeline_run
         )
@@ -491,6 +493,199 @@ async def create_pipeline_run(pipeline_id: str, pipeline_run) -> None:
         raise conflict(error) from error
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+## TRIGGER
+
+
+@authed.get(
+    TRIGGERS + "/{trigger_id}",
+    response_model=Dict,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def get_pipeline(trigger_id: str) -> Dict:
+    """Gets a specific trigger using its unique id.
+
+    Args:
+        trigger_id: ID of the pipeline to get.
+
+    Returns:
+        A specific trigger object.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.get_trigger(trigger_id)
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.put(
+    TRIGGERS + "/{trigger_id}",
+    response_model=Dict,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def update_trigger(trigger_id: str, trigger) -> Dict:
+    """Updates an attribute on a specific trigger using its unique id.
+
+    For a schedule this might be the schedule interval.
+
+    Args:
+        trigger_id: ID of the pipeline to get.
+        trigger: the trigger object to use to update.
+
+    Returns:
+        The updated trigger.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.update_trigger(trigger_id, trigger)
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.delete(
+    TRIGGERS + "/{trigger_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def delete_trigger(trigger_id: str) -> None:
+    """Delete a specific pipeline trigger.
+
+    Runs that are in progress are not cancelled by this.
+
+    Args:
+        trigger_id: ID of the pipeline to get.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.delete_trigger(trigger_id)
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.get(
+    TRIGGERS + "/{trigger_id}" + DEFAULT_STACK,
+    response_model=List[Dict],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def get_trigger_default_stack(trigger_id: str) -> List[Dict]:
+    """Get the default stack used by a specific trigger.
+
+    Args:
+        trigger_id: ID of the pipeline to get.
+
+    Returns:
+        The stack used by a specific trigger.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.get_trigger_default_stack(trigger_id)
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.put(
+    TRIGGERS + "/{trigger_id}" + DEFAULT_STACK + "/{stack_id}",
+    response_model=List[Dict],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def update_trigger_default_stack(
+    trigger_id: str, stack_id: str
+) -> List[Dict]:
+    """Update the default stack used by a specific trigger.
+
+    Args:
+        trigger_id: ID of the pipeline to update.
+        stack_id: ID of the stack to use.
+
+    Returns:
+        The updated default stack.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.update_trigger_default_stack(trigger_id, stack_id)
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.put(
+    TRIGGERS + "/{trigger_id}" + RUNTIME_CONFIGURATION,
+    response_model=Dict,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def update_trigger_default_stack(
+    trigger_id: str, runtime_configuration
+) -> Dict:
+    """Updates the pipeline runtime configuration used for triggered runs.
+
+    Args:
+        trigger_id: ID of the pipeline to update.
+
+    Returns:
+        The updated pipeline runtime configuration. # TODO: is this correct?
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.update_trigger_runtime_configuration(
+            trigger_id, runtime_configuration
+        )
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+## RUN
+
+
+## STEP
+
+## STACK
 
 
 @authed.get(STACKS_EMPTY, response_model=bool)
@@ -645,6 +840,9 @@ async def update_stack(stack: StackWrapper, name: str) -> None:
         raise not_found(error) from error
 
 
+## STACK COMPONENT
+
+
 @authed.put(
     STACK_COMPONENTS + "/{component_type}/{name}",
     response_model=Dict[str, str],
@@ -744,6 +942,86 @@ async def deregister_stack_component(
         raise not_found(error) from error
     except ValueError as error:
         raise conflict(error) from error
+
+
+## PROJECTS
+
+
+@authed.get(PROJECTS, response_model=List[Project])
+async def projects() -> List[Project]:
+    """Returns all projects.
+
+    Returns:
+        All projects.
+    """
+    return zen_store.projects
+
+
+@authed.get(
+    PROJECTS + "/{project_name}",
+    response_model=Project,
+    responses={404: error_response},
+)
+async def get_project(project_name: str) -> Project:
+    """Get a project for given name.
+
+    # noqa: DAR401
+
+    Args:
+        project_name: Name of the project.
+
+    Returns:
+        The requested project.
+    """
+    try:
+        return zen_store.get_project(project_name)
+    except KeyError as error:
+        raise not_found(error) from error
+
+
+@authed.post(
+    PROJECTS,
+    response_model=Project,
+    responses={409: error_response},
+)
+async def create_project(project: Project) -> Project:
+    """Creates a project.
+
+    # noqa: DAR401
+
+    Args:
+        project: Project to create.
+
+    Returns:
+        The created project.
+    """
+    try:
+        return zen_store.create_project(
+            project_name=project.name, description=project.description
+        )
+    except EntityExistsError as error:
+        raise conflict(error) from error
+
+
+@authed.delete(PROJECTS + "/{name}", responses={404: error_response})
+async def delete_project(name: str) -> None:
+    """Deletes a project.
+
+    Args:
+        name: Name of the project.
+
+    Raises:
+        not_found: when none are found
+    """
+    try:
+        zen_store.delete_project(project_name=name)
+    except KeyError as error:
+        raise not_found(error) from error
+
+
+## REPOSITORY
+
+## USERS
 
 
 @authed.get(USERS, response_model=List[User])
@@ -862,6 +1140,235 @@ async def role_assignments_for_user(
         )
     except KeyError as error:
         raise not_found(error) from error
+
+
+## ROLES
+
+
+@authed.get(ROLES, response_model=List[Role])
+async def roles() -> List[Role]:
+    """Returns all roles.
+
+    Returns:
+        All roles.
+    """
+    return zen_store.roles
+
+
+@authed.get(ROLES + "/{name}", responses={404: error_response})
+async def get_role(name: str) -> Role:
+    """Gets a specific role.
+
+    Args:
+        name: Name of the role.
+
+    Returns:
+        The requested role.
+
+    Raises:
+        not_found: when none are found
+    """
+    try:
+        return zen_store.get_role(role_name=name)
+    except KeyError as error:
+        raise not_found(error) from error
+
+
+@authed.post(
+    ROLES,
+    response_model=Role,
+    responses={409: error_response},
+)
+async def create_role(role: Role) -> Role:
+    """Creates a role.
+
+    # noqa: DAR401
+
+    Args:
+        role: Role to create.
+
+    Returns:
+        The created role.
+    """
+    try:
+        return zen_store.create_role(role.name)
+    except EntityExistsError as error:
+        raise conflict(error) from error
+
+
+@authed.delete(ROLES + "/{name}", responses={404: error_response})
+async def delete_role(name: str) -> None:
+    """Deletes a role.
+
+    Args:
+        name: Name of the role.
+
+    Raises:
+        not_found: when none are found
+    """
+    try:
+        zen_store.delete_role(role_name=name)
+    except KeyError as error:
+        raise not_found(error) from error
+
+
+@authed.get(ROLE_ASSIGNMENTS, response_model=List[RoleAssignment])
+async def role_assignments() -> List[RoleAssignment]:
+    """Returns all role assignments.
+
+    Returns:
+        All role assignments.
+    """
+    return zen_store.role_assignments
+
+
+@authed.post(
+    ROLE_ASSIGNMENTS,
+    responses={404: error_response},
+)
+async def assign_role(data: Dict[str, Any]) -> None:
+    """Assigns a role.
+
+    Args:
+        data: Data containing the role assignment.
+
+    Raises:
+        not_found: when none are found
+    """
+    role_name = data["role_name"]
+    entity_name = data["entity_name"]
+    project_name = data.get("project_name")
+    is_user = data.get("is_user", True)
+
+    try:
+        zen_store.assign_role(
+            role_name=role_name,
+            entity_name=entity_name,
+            project_name=project_name,
+            is_user=is_user,
+        )
+    except KeyError as error:
+        raise not_found(error) from error
+
+
+@authed.delete(ROLE_ASSIGNMENTS, responses={404: error_response})
+async def revoke_role(data: Dict[str, Any]) -> None:
+    """Revokes a role.
+
+    Args:
+        data: Data containing the role assignment.
+
+    Raises:
+        not_found: when none are found
+    """
+    role_name = data["role_name"]
+    entity_name = data["entity_name"]
+    project_name = data.get("project_name")
+    is_user = data.get("is_user", True)
+
+    try:
+        zen_store.revoke_role(
+            role_name=role_name,
+            entity_name=entity_name,
+            project_name=project_name,
+            is_user=is_user,
+        )
+    except KeyError as error:
+        raise not_found(error) from error
+
+
+## METADATA-CONFIG
+
+
+################################# UNUSED BELOW
+
+## FLAVORS
+
+
+@authed.get(FLAVORS, response_model=List[FlavorWrapper])
+async def flavors() -> List[FlavorWrapper]:
+    """Get all flavors.
+
+    Returns:
+        All flavors.
+    """
+    return zen_store.flavors
+
+
+@authed.post(
+    FLAVORS,
+    response_model=FlavorWrapper,
+    responses={409: error_response},
+)
+async def create_flavor(flavor: FlavorWrapper) -> FlavorWrapper:
+    """Creates a flavor.
+
+    # noqa: DAR401
+
+    Args:
+        flavor: Flavor to create.
+
+    Returns:
+        The created flavor.
+    """
+    try:
+        return zen_store.create_flavor(
+            name=flavor.name,
+            source=flavor.source,
+            stack_component_type=flavor.type,
+        )
+    except EntityExistsError as error:
+        raise conflict(error) from error
+
+
+@authed.get(FLAVORS + "/{component_type}", responses={404: error_response})
+async def get_flavor_by_type(
+    component_type: StackComponentType,
+) -> List[FlavorWrapper]:
+    """Returns all flavors of a given type.
+
+    Args:
+        component_type: Type of the component.
+
+    Returns:
+        The requested flavors.
+
+    Raises:
+        not_found: when none are found.
+    """
+    try:
+        return zen_store.get_flavors_by_type(component_type=component_type)
+    except KeyError as error:
+        raise not_found(error) from error
+
+
+@authed.get(
+    FLAVORS + "/{component_type}/{name}", responses={404: error_response}
+)
+async def get_flavor_by_type_and_name(
+    component_type: StackComponentType, name: str
+) -> FlavorWrapper:
+    """Returns a flavor of a given type and name.
+
+    Args:
+        component_type: Type of the component
+        name: Name of the flavor.
+
+    Returns:
+        The requested flavor.
+
+    Raises:
+        not_found: when none are found
+    """
+    try:
+        return zen_store.get_flavor_by_name_and_type(
+            component_type=component_type, flavor_name=name
+        )
+    except KeyError as error:
+        raise not_found(error) from error
+
+
+#### TEAMS
 
 
 @authed.get(TEAMS, response_model=List[Team])
@@ -1021,345 +1528,48 @@ async def role_assignments_for_team(
         raise not_found(error) from error
 
 
-@authed.get(PROJECTS, response_model=List[Project])
-async def projects() -> List[Project]:
-    """Returns all projects.
-
-    Returns:
-        All projects.
-    """
-    return zen_store.projects
-
-
-@authed.get(
-    PROJECTS + "/{project_name}",
-    response_model=Project,
-    responses={404: error_response},
-)
-async def get_project(project_name: str) -> Project:
-    """Get a project for given name.
-
-    # noqa: DAR401
-
-    Args:
-        project_name: Name of the project.
-
-    Returns:
-        The requested project.
-    """
-    try:
-        return zen_store.get_project(project_name)
-    except KeyError as error:
-        raise not_found(error) from error
-
-
-@authed.post(
-    PROJECTS,
-    response_model=Project,
-    responses={409: error_response},
-)
-async def create_project(project: Project) -> Project:
-    """Creates a project.
-
-    # noqa: DAR401
-
-    Args:
-        project: Project to create.
-
-    Returns:
-        The created project.
-    """
-    try:
-        return zen_store.create_project(
-            project_name=project.name, description=project.description
-        )
-    except EntityExistsError as error:
-        raise conflict(error) from error
-
-
-@authed.delete(PROJECTS + "/{name}", responses={404: error_response})
-async def delete_project(name: str) -> None:
-    """Deletes a project.
-
-    Args:
-        name: Name of the project.
-
-    Raises:
-        not_found: when none are found
-    """
-    try:
-        zen_store.delete_project(project_name=name)
-    except KeyError as error:
-        raise not_found(error) from error
-
-
-@authed.get(ROLES, response_model=List[Role])
-async def roles() -> List[Role]:
-    """Returns all roles.
-
-    Returns:
-        All roles.
-    """
-    return zen_store.roles
-
-
-@authed.get(ROLES + "/{name}", responses={404: error_response})
-async def get_role(name: str) -> Role:
-    """Gets a specific role.
-
-    Args:
-        name: Name of the role.
-
-    Returns:
-        The requested role.
-
-    Raises:
-        not_found: when none are found
-    """
-    try:
-        return zen_store.get_role(role_name=name)
-    except KeyError as error:
-        raise not_found(error) from error
-
-
-@authed.post(
-    ROLES,
-    response_model=Role,
-    responses={409: error_response},
-)
-async def create_role(role: Role) -> Role:
-    """Creates a role.
-
-    # noqa: DAR401
-
-    Args:
-        role: Role to create.
-
-    Returns:
-        The created role.
-    """
-    try:
-        return zen_store.create_role(role.name)
-    except EntityExistsError as error:
-        raise conflict(error) from error
-
-
-@authed.delete(ROLES + "/{name}", responses={404: error_response})
-async def delete_role(name: str) -> None:
-    """Deletes a role.
-
-    Args:
-        name: Name of the role.
-
-    Raises:
-        not_found: when none are found
-    """
-    try:
-        zen_store.delete_role(role_name=name)
-    except KeyError as error:
-        raise not_found(error) from error
-
-
-@authed.get(ROLE_ASSIGNMENTS, response_model=List[RoleAssignment])
-async def role_assignments() -> List[RoleAssignment]:
-    """Returns all role assignments.
-
-    Returns:
-        All role assignments.
-    """
-    return zen_store.role_assignments
-
-
-@authed.post(
-    ROLE_ASSIGNMENTS,
-    responses={404: error_response},
-)
-async def assign_role(data: Dict[str, Any]) -> None:
-    """Assigns a role.
-
-    Args:
-        data: Data containing the role assignment.
-
-    Raises:
-        not_found: when none are found
-    """
-    role_name = data["role_name"]
-    entity_name = data["entity_name"]
-    project_name = data.get("project_name")
-    is_user = data.get("is_user", True)
-
-    try:
-        zen_store.assign_role(
-            role_name=role_name,
-            entity_name=entity_name,
-            project_name=project_name,
-            is_user=is_user,
-        )
-    except KeyError as error:
-        raise not_found(error) from error
-
-
-@authed.delete(ROLE_ASSIGNMENTS, responses={404: error_response})
-async def revoke_role(data: Dict[str, Any]) -> None:
-    """Revokes a role.
-
-    Args:
-        data: Data containing the role assignment.
-
-    Raises:
-        not_found: when none are found
-    """
-    role_name = data["role_name"]
-    entity_name = data["entity_name"]
-    project_name = data.get("project_name")
-    is_user = data.get("is_user", True)
-
-    try:
-        zen_store.revoke_role(
-            role_name=role_name,
-            entity_name=entity_name,
-            project_name=project_name,
-            is_user=is_user,
-        )
-    except KeyError as error:
-        raise not_found(error) from error
-
-
-@authed.get(
-    PIPELINE_RUNS + "/{pipeline_name}/{run_name}",
-    response_model=PipelineRunWrapper,
-    responses={404: error_response},
-)
-async def pipeline_run(
-    pipeline_name: str, run_name: str, project_name: Optional[str] = None
-) -> PipelineRunWrapper:
-    """Returns a single pipeline run.
-
-    Args:
-        pipeline_name: Name of the pipeline.
-        run_name: Name of the run.
-        project_name: Name of the project.
-
-    Returns:
-        The requested pipeline run.
-
-    Raises:
-        not_found: when none are found.
-    """
-    try:
-        return zen_store.get_pipeline_run_wrapper(
-            pipeline_name=pipeline_name,
-            run_name=run_name,
-            project_name=project_name,
-        )
-    except KeyError as error:
-        raise not_found(error) from error
-
-
-@authed.post(
-    PIPELINE_RUNS,
-    responses={409: error_response},
-)
-async def register_pipeline_run(pipeline_run: PipelineRunWrapper) -> None:
-    """Registers a pipeline run.
-
-    # noqa: DAR401
-
-    Args:
-        pipeline_run: Pipeline run to register.
-
-    Returns:
-        None
-    """
-    try:
-        return zen_store.register_pipeline_run(pipeline_run)
-    except EntityExistsError as error:
-        raise conflict(error) from error
-
-
-@authed.get(FLAVORS, response_model=List[FlavorWrapper])
-async def flavors() -> List[FlavorWrapper]:
-    """Get all flavors.
-
-    Returns:
-        All flavors.
-    """
-    return zen_store.flavors
-
-
-@authed.post(
-    FLAVORS,
-    response_model=FlavorWrapper,
-    responses={409: error_response},
-)
-async def create_flavor(flavor: FlavorWrapper) -> FlavorWrapper:
-    """Creates a flavor.
-
-    # noqa: DAR401
-
-    Args:
-        flavor: Flavor to create.
-
-    Returns:
-        The created flavor.
-    """
-    try:
-        return zen_store.create_flavor(
-            name=flavor.name,
-            source=flavor.source,
-            stack_component_type=flavor.type,
-        )
-    except EntityExistsError as error:
-        raise conflict(error) from error
-
-
-@authed.get(FLAVORS + "/{component_type}", responses={404: error_response})
-async def get_flavor_by_type(
-    component_type: StackComponentType,
-) -> List[FlavorWrapper]:
-    """Returns all flavors of a given type.
-
-    Args:
-        component_type: Type of the component.
-
-    Returns:
-        The requested flavors.
-
-    Raises:
-        not_found: when none are found.
-    """
-    try:
-        return zen_store.get_flavors_by_type(component_type=component_type)
-    except KeyError as error:
-        raise not_found(error) from error
-
-
-@authed.get(
-    FLAVORS + "/{component_type}/{name}", responses={404: error_response}
-)
-async def get_flavor_by_type_and_name(
-    component_type: StackComponentType, name: str
-) -> FlavorWrapper:
-    """Returns a flavor of a given type and name.
-
-    Args:
-        component_type: Type of the component
-        name: Name of the flavor.
-
-    Returns:
-        The requested flavor.
-
-    Raises:
-        not_found: when none are found
-    """
-    try:
-        return zen_store.get_flavor_by_name_and_type(
-            component_type=component_type, flavor_name=name
-        )
-    except KeyError as error:
-        raise not_found(error) from error
-
-
 # include the router after all commands have been added to it so FastAPI
 # recognizes them
 app.include_router(authed)
+
+
+# @authed.get("/", response_model=ProfileConfiguration)
+# async def service_info() -> ProfileConfiguration:
+#     """Returns the profile configuration for this service.
+
+#     Returns:
+#         Profile configuration for this service.
+#     """
+#     return profile
+
+
+# NOT PART OF SWAGGER DOCS DESCRIBED
+# @authed.get(
+#     PIPELINE_RUNS + "/{pipeline_name}/{run_name}",
+#     response_model=PipelineRunWrapper,
+#     responses={404: error_response},
+# )
+# async def pipeline_run(
+#     pipeline_name: str, run_name: str, project_name: Optional[str] = None
+# ) -> PipelineRunWrapper:
+#     """Returns a single pipeline run.
+
+#     Args:
+#         pipeline_name: Name of the pipeline.
+#         run_name: Name of the run.
+#         project_name: Name of the project.
+
+#     Returns:
+#         The requested pipeline run.
+
+#     Raises:
+#         not_found: when none are found.
+#     """
+#     try:
+#         return zen_store.get_pipeline_run_wrapper(
+#             pipeline_name=pipeline_name,
+#             run_name=run_name,
+#             project_name=project_name,
+#         )
+#     except KeyError as error:
+#         raise not_found(error) from error

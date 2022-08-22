@@ -170,6 +170,8 @@ LOGOUT = "/logout"
 PIPELINES = "/pipelines"
 TRIGGERS = "/triggers"
 RUNS = "/runs"
+DEFAULT_STACK = "/default-stack"
+RUNTIME_CONFIGURATION = "/runtime-configuration"
 
 # mandatory stack component attributes
 MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]
