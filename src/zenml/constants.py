@@ -174,6 +174,7 @@ DEFAULT_STACK = "/default-stack"
 RUNTIME_CONFIGURATION = "/runtime-configuration"
 GRAPH = "/graph"
 STEPS = "/steps"
+OUTPUTS = "/outputs"
 
 # mandatory stack component attributes
 MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]
