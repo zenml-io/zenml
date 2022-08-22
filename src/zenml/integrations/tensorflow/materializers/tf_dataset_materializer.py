@@ -44,13 +44,11 @@ class TensorflowDatasetMaterializer(BaseMaterializer):
         """
         super().handle_input(data_type)
         temp_dir = tempfile.TemporaryDirectory()
-        try:
-            io_utils.copy_dir(self.artifact.uri, temp_dir.name)
-            path = os.path.join(temp_dir.name, DEFAULT_FILENAME)
-            dataset = tf.data.experimental.load(path)
-        finally:
-            fileio.rmtree(temp_dir.name)
-
+        io_utils.copy_dir(self.artifact.uri, temp_dir.name)
+        path = os.path.join(temp_dir.name, DEFAULT_FILENAME)
+        dataset = tf.data.experimental.load(path)
+        # Don't delete the temporary directory here as the dataset is lazily
+        # loaded and needs to read it when the object gets used
         return dataset
 
     def handle_return(self, dataset: tf.data.Dataset) -> None:
