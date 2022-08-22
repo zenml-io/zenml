@@ -49,17 +49,17 @@ from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
 # warning
 from zenml.zen_stores.schemas.schemas import (
     ComponentSchema,
-    PipelineRunTable,
-    ProjectTable,
-    RoleAssignmentTable,
-    RoleTable,
-    TeamAssignmentTable,
-    TeamTable,
+    CompositionSchema,
+    FlavorSchema,
+    PipelineRunSchema,
+    ProjectSchema,
+    RoleAssignmentSchema,
+    RoleSchema,
+    StackSchema,
+    TeamAssignmentSchema,
+    TeamSchema,
+    UserSchema,
     UserTable,
-    ZenFlavor,
-    ZenStack,
-    ZenStackDefinition,
-    ZenUser,
 )
 
 SelectOfScalar.inherit_cache = True  # type: ignore
@@ -114,8 +114,8 @@ class SqlZenStore(BaseZenStore):
         self.engine = create_engine(url, *args, **sql_kwargs)
         SQLModel.metadata.create_all(self.engine)
         with Session(self.engine) as session:
-            if not session.exec(select(ZenUser)).first():
-                session.add(ZenUser(id=1, name="LocalZenUser"))
+            if not session.exec(select(UserSchema)).first():
+                session.add(UserSchema(id=1, name="LocalZenUser"))
             session.commit()
 
         super().initialize(url, *args, **kwargs)
@@ -215,7 +215,7 @@ class SqlZenStore(BaseZenStore):
             True if the zen store is empty, False otherwise.
         """
         with Session(self.engine) as session:
-            return session.exec(select(ZenStack)).first() is None
+            return session.exec(select(StackSchema)).first() is None
 
     def get_stack_configuration(
         self, name: str
@@ -235,7 +235,7 @@ class SqlZenStore(BaseZenStore):
         # first check that the stack exists
         with Session(self.engine) as session:
             maybe_stack = session.exec(
-                select(ZenStack).where(ZenStack.name == name)
+                select(StackSchema).where(StackSchema.name == name)
             ).first()
         if maybe_stack is None:
             raise KeyError(
@@ -245,14 +245,10 @@ class SqlZenStore(BaseZenStore):
         # then get all components assigned to that stack
         with Session(self.engine) as session:
             definitions_and_components = session.exec(
-                select(ZenStackDefinition, ComponentSchema)
-                .where(
-                    ZenStackDefinition.component_type == ComponentSchema.type
-                )
-                .where(
-                    ZenStackDefinition.component_name == ComponentSchema.name
-                )
-                .where(ZenStackDefinition.stack_name == name)
+                select(CompositionSchema, ComponentSchema)
+                .where(CompositionSchema.component_type == ComponentSchema.type)
+                .where(CompositionSchema.component_name == ComponentSchema.name)
+                .where(CompositionSchema.stack_name == name)
             )
             params = {
                 component.component_type: component.name
@@ -357,9 +353,9 @@ class SqlZenStore(BaseZenStore):
 
             # rename components inside stacks
             updated_stack_definitions = session.exec(
-                select(ZenStackDefinition)
-                .where(ZenStackDefinition.component_type == component_type)
-                .where(ZenStackDefinition.component_name == name)
+                select(CompositionSchema)
+                .where(CompositionSchema.component_type == component_type)
+                .where(CompositionSchema.component_name == name)
             ).all()
             for stack_definition in updated_stack_definitions:
                 stack_definition.component_name = component.name
@@ -386,14 +382,14 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             try:
                 stack = session.exec(
-                    select(ZenStack).where(ZenStack.name == name)
+                    select(StackSchema).where(StackSchema.name == name)
                 ).one()
                 session.delete(stack)
             except NoResultFound as error:
                 raise KeyError from error
             definitions = session.exec(
-                select(ZenStackDefinition).where(
-                    ZenStackDefinition.stack_name == name
+                select(CompositionSchema).where(
+                    CompositionSchema.stack_name == name
                 )
             ).all()
             for definition in definitions:
@@ -428,31 +424,31 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             stack = session.exec(
-                select(ZenStack).where(ZenStack.name == name)
+                select(StackSchema).where(StackSchema.name == name)
             ).first()
             if stack is None:
-                stack = ZenStack(name=name, created_by=1)
+                stack = StackSchema(name=name, created_by=1)
                 session.add(stack)
             else:
                 # clear the existing stack definitions for a stack
                 # that is about to be updated
-                query = select(ZenStackDefinition).where(
-                    ZenStackDefinition.stack_name == name
+                query = select(CompositionSchema).where(
+                    CompositionSchema.stack_name == name
                 )
                 for result in session.exec(query).all():
                     session.delete(result)
 
             for ctype, cname in stack_configuration.items():
                 statement = (
-                    select(ZenStackDefinition)
-                    .where(ZenStackDefinition.stack_name == name)
-                    .where(ZenStackDefinition.component_type == ctype)
+                    select(CompositionSchema)
+                    .where(CompositionSchema.stack_name == name)
+                    .where(CompositionSchema.component_type == ctype)
                 )
                 results = session.exec(statement)
                 component = results.one_or_none()
                 if component is None:
                     session.add(
-                        ZenStackDefinition(
+                        CompositionSchema(
                             stack_name=name,
                             component_type=ctype,
                             component_name=cname,
@@ -621,13 +617,13 @@ class SqlZenStore(BaseZenStore):
             session.delete(user)
             session.commit()
             self._delete_query_results(
-                select(RoleAssignmentTable).where(
-                    RoleAssignmentTable.user_id == user.id
+                select(RoleAssignmentSchema).where(
+                    RoleAssignmentSchema.user_id == user.id
                 )
             )
             self._delete_query_results(
-                select(TeamAssignmentTable).where(
-                    TeamAssignmentTable.user_id == user.id
+                select(TeamAssignmentSchema).where(
+                    TeamAssignmentSchema.user_id == user.id
                 )
             )
 
@@ -641,7 +637,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             return [
                 Team(**team.dict())
-                for team in session.exec(select(TeamTable)).all()
+                for team in session.exec(select(TeamSchema)).all()
             ]
 
     def _get_team(self, team_name: str) -> Team:
@@ -659,7 +655,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             try:
                 team = session.exec(
-                    select(TeamTable).where(TeamTable.name == team_name)
+                    select(TeamSchema).where(TeamSchema.name == team_name)
                 ).one()
             except NoResultFound as error:
                 raise KeyError from error
@@ -680,13 +676,13 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             existing_team = session.exec(
-                select(TeamTable).where(TeamTable.name == team_name)
+                select(TeamSchema).where(TeamSchema.name == team_name)
             ).first()
             if existing_team:
                 raise EntityExistsError(
                     f"Team with name '{team_name}' already exists."
                 )
-            sql_team = TeamTable(name=team_name)
+            sql_team = TeamSchema(name=team_name)
             team = Team(**sql_team.dict())
             session.add(sql_team)
             session.commit()
@@ -704,7 +700,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             try:
                 team = session.exec(
-                    select(TeamTable).where(TeamTable.name == team_name)
+                    select(TeamSchema).where(TeamSchema.name == team_name)
                 ).one()
             except NoResultFound as error:
                 raise KeyError from error
@@ -712,13 +708,13 @@ class SqlZenStore(BaseZenStore):
             session.delete(team)
             session.commit()
             self._delete_query_results(
-                select(RoleAssignmentTable).where(
-                    RoleAssignmentTable.team_id == team.id
+                select(RoleAssignmentSchema).where(
+                    RoleAssignmentSchema.team_id == team.id
                 )
             )
             self._delete_query_results(
-                select(TeamAssignmentTable).where(
-                    TeamAssignmentTable.team_id == team.id
+                select(TeamAssignmentSchema).where(
+                    TeamAssignmentSchema.team_id == team.id
                 )
             )
 
@@ -735,7 +731,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             try:
                 team = session.exec(
-                    select(TeamTable).where(TeamTable.name == team_name)
+                    select(TeamSchema).where(TeamSchema.name == team_name)
                 ).one()
                 user = session.exec(
                     select(UserTable).where(UserTable.name == user_name)
@@ -743,7 +739,7 @@ class SqlZenStore(BaseZenStore):
             except NoResultFound as error:
                 raise KeyError from error
 
-            assignment = TeamAssignmentTable(user_id=user.id, team_id=team.id)
+            assignment = TeamAssignmentSchema(user_id=user.id, team_id=team.id)
             session.add(assignment)
             session.commit()
 
@@ -760,11 +756,11 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             try:
                 assignment = session.exec(
-                    select(TeamAssignmentTable)
-                    .where(TeamAssignmentTable.team_id == TeamTable.id)
-                    .where(TeamAssignmentTable.user_id == UserTable.id)
+                    select(TeamAssignmentSchema)
+                    .where(TeamAssignmentSchema.team_id == TeamSchema.id)
+                    .where(TeamAssignmentSchema.user_id == UserTable.id)
                     .where(UserTable.name == user_name)
-                    .where(TeamTable.name == team_name)
+                    .where(TeamSchema.name == team_name)
                 ).one()
             except NoResultFound as error:
                 raise KeyError from error
@@ -782,7 +778,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             return [
                 Project(**project.dict())
-                for project in session.exec(select(ProjectTable)).all()
+                for project in session.exec(select(ProjectSchema)).all()
             ]
 
     def _get_project(self, project_name: str) -> Project:
@@ -800,8 +796,8 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             try:
                 project = session.exec(
-                    select(ProjectTable).where(
-                        ProjectTable.name == project_name
+                    select(ProjectSchema).where(
+                        ProjectSchema.name == project_name
                     )
                 ).one()
             except NoResultFound as error:
@@ -826,13 +822,13 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             existing_project = session.exec(
-                select(ProjectTable).where(ProjectTable.name == project_name)
+                select(ProjectSchema).where(ProjectSchema.name == project_name)
             ).first()
             if existing_project:
                 raise EntityExistsError(
                     f"Project with name '{project_name}' already exists."
                 )
-            sql_project = ProjectTable(name=project_name)
+            sql_project = ProjectSchema(name=project_name)
             project = Project(**sql_project.dict())
             session.add(sql_project)
             session.commit()
@@ -850,8 +846,8 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             try:
                 project = session.exec(
-                    select(ProjectTable).where(
-                        ProjectTable.name == project_name
+                    select(ProjectSchema).where(
+                        ProjectSchema.name == project_name
                     )
                 ).one()
             except NoResultFound as error:
@@ -860,8 +856,8 @@ class SqlZenStore(BaseZenStore):
             session.delete(project)
             session.commit()
             self._delete_query_results(
-                select(RoleAssignmentTable).where(
-                    RoleAssignmentTable.project_id == project.id
+                select(RoleAssignmentSchema).where(
+                    RoleAssignmentSchema.project_id == project.id
                 )
             )
 
@@ -875,7 +871,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             return [
                 Role(**role.dict())
-                for role in session.exec(select(RoleTable)).all()
+                for role in session.exec(select(RoleSchema)).all()
             ]
 
     @property
@@ -889,7 +885,7 @@ class SqlZenStore(BaseZenStore):
             return [
                 RoleAssignment(**assignment.dict())
                 for assignment in session.exec(
-                    select(RoleAssignmentTable)
+                    select(RoleAssignmentSchema)
                 ).all()
             ]
 
@@ -908,7 +904,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             try:
                 role = session.exec(
-                    select(RoleTable).where(RoleTable.name == role_name)
+                    select(RoleSchema).where(RoleSchema.name == role_name)
                 ).one()
             except NoResultFound as error:
                 raise KeyError from error
@@ -929,13 +925,13 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             existing_role = session.exec(
-                select(RoleTable).where(RoleTable.name == role_name)
+                select(RoleSchema).where(RoleSchema.name == role_name)
             ).first()
             if existing_role:
                 raise EntityExistsError(
                     f"Role with name '{role_name}' already exists."
                 )
-            sql_role = RoleTable(name=role_name)
+            sql_role = RoleSchema(name=role_name)
             role = Role(**sql_role.dict())
             session.add(sql_role)
             session.commit()
@@ -953,7 +949,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             try:
                 role = session.exec(
-                    select(RoleTable).where(RoleTable.name == role_name)
+                    select(RoleSchema).where(RoleSchema.name == role_name)
                 ).one()
             except NoResultFound as error:
                 raise KeyError from error
@@ -961,8 +957,8 @@ class SqlZenStore(BaseZenStore):
             session.delete(role)
             session.commit()
             self._delete_query_results(
-                select(RoleAssignmentTable).where(
-                    RoleAssignmentTable.role_id == role.id
+                select(RoleAssignmentSchema).where(
+                    RoleAssignmentSchema.role_id == role.id
                 )
             )
 
@@ -992,13 +988,13 @@ class SqlZenStore(BaseZenStore):
 
             try:
                 role_id = session.exec(
-                    select(RoleTable.id).where(RoleTable.name == role_name)
+                    select(RoleSchema.id).where(RoleSchema.name == role_name)
                 ).one()
 
                 if project_name:
                     project_id = session.exec(
-                        select(ProjectTable.id).where(
-                            ProjectTable.name == project_name
+                        select(ProjectSchema.id).where(
+                            ProjectSchema.name == project_name
                         )
                     ).one()
 
@@ -1010,14 +1006,14 @@ class SqlZenStore(BaseZenStore):
                     ).one()
                 else:
                     team_id = session.exec(
-                        select(TeamTable.id).where(
-                            TeamTable.name == entity_name
+                        select(TeamSchema.id).where(
+                            TeamSchema.name == entity_name
                         )
                     ).one()
             except NoResultFound as error:
                 raise KeyError from error
 
-            assignment = RoleAssignmentTable(
+            assignment = RoleAssignmentSchema(
                 role_id=role_id,
                 project_id=project_id,
                 user_id=user_id,
@@ -1047,24 +1043,24 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             statement = (
-                select(RoleAssignmentTable)
-                .where(RoleAssignmentTable.role_id == RoleTable.id)
-                .where(RoleTable.name == role_name)
+                select(RoleAssignmentSchema)
+                .where(RoleAssignmentSchema.role_id == RoleSchema.id)
+                .where(RoleSchema.name == role_name)
             )
 
             if project_name:
                 statement = statement.where(
-                    RoleAssignmentTable.project_id == ProjectTable.id
-                ).where(ProjectTable.name == project_name)
+                    RoleAssignmentSchema.project_id == ProjectSchema.id
+                ).where(ProjectSchema.name == project_name)
 
             if is_user:
                 statement = statement.where(
-                    RoleAssignmentTable.user_id == UserTable.id
+                    RoleAssignmentSchema.user_id == UserTable.id
                 ).where(UserTable.name == entity_name)
             else:
                 statement = statement.where(
-                    RoleAssignmentTable.team_id == TeamTable.id
-                ).where(TeamTable.name == entity_name)
+                    RoleAssignmentSchema.team_id == TeamSchema.id
+                ).where(TeamSchema.name == entity_name)
 
             try:
                 assignment = session.exec(statement).one()
@@ -1089,15 +1085,15 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             try:
                 team_id = session.exec(
-                    select(TeamTable.id).where(TeamTable.name == team_name)
+                    select(TeamSchema.id).where(TeamSchema.name == team_name)
                 ).one()
             except NoResultFound as error:
                 raise KeyError from error
 
             users = session.exec(
                 select(UserTable)
-                .where(UserTable.id == TeamAssignmentTable.user_id)
-                .where(TeamAssignmentTable.team_id == team_id)
+                .where(UserTable.id == TeamAssignmentSchema.user_id)
+                .where(TeamAssignmentSchema.team_id == team_id)
             ).all()
             return [User(**user.dict()) for user in users]
 
@@ -1122,9 +1118,9 @@ class SqlZenStore(BaseZenStore):
                 raise KeyError from error
 
             teams = session.exec(
-                select(TeamTable)
-                .where(TeamTable.id == TeamAssignmentTable.team_id)
-                .where(TeamAssignmentTable.user_id == user_id)
+                select(TeamSchema)
+                .where(TeamSchema.id == TeamAssignmentSchema.team_id)
+                .where(TeamAssignmentSchema.user_id == user_id)
             ).all()
             return [Team(**team.dict()) for team in teams]
 
@@ -1154,17 +1150,17 @@ class SqlZenStore(BaseZenStore):
                 user_id = session.exec(
                     select(UserTable.id).where(UserTable.name == user_name)
                 ).one()
-                statement = select(RoleAssignmentTable).where(
-                    RoleAssignmentTable.user_id == user_id
+                statement = select(RoleAssignmentSchema).where(
+                    RoleAssignmentSchema.user_id == user_id
                 )
                 if project_name:
                     project_id = session.exec(
-                        select(ProjectTable.id).where(
-                            ProjectTable.name == project_name
+                        select(ProjectSchema.id).where(
+                            ProjectSchema.name == project_name
                         )
                     ).one()
                     statement = statement.where(
-                        RoleAssignmentTable.project_id == project_id
+                        RoleAssignmentSchema.project_id == project_id
                     )
             except NoResultFound as error:
                 raise KeyError from error
@@ -1202,20 +1198,20 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             try:
                 team_id = session.exec(
-                    select(TeamTable.id).where(TeamTable.name == team_name)
+                    select(TeamSchema.id).where(TeamSchema.name == team_name)
                 ).one()
 
-                statement = select(RoleAssignmentTable).where(
-                    RoleAssignmentTable.team_id == team_id
+                statement = select(RoleAssignmentSchema).where(
+                    RoleAssignmentSchema.team_id == team_id
                 )
                 if project_name:
                     project_id = session.exec(
-                        select(ProjectTable.id).where(
-                            ProjectTable.name == project_name
+                        select(ProjectSchema.id).where(
+                            ProjectSchema.name == project_name
                         )
                     ).one()
                     statement = statement.where(
-                        RoleAssignmentTable.project_id == project_id
+                        RoleAssignmentSchema.project_id == project_id
                     )
             except NoResultFound as error:
                 raise KeyError from error
@@ -1297,14 +1293,14 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             try:
                 statement = (
-                    select(PipelineRunTable)
-                    .where(PipelineRunTable.name == run_name)
-                    .where(PipelineRunTable.pipeline_name == pipeline_name)
+                    select(PipelineRunSchema)
+                    .where(PipelineRunSchema.name == run_name)
+                    .where(PipelineRunSchema.pipeline_name == pipeline_name)
                 )
 
                 if project_name:
                     statement = statement.where(
-                        PipelineRunTable.project_name == project_name
+                        PipelineRunSchema.project_name == project_name
                     )
 
                 run = session.exec(statement).one()
@@ -1330,13 +1326,13 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             try:
-                statement = select(PipelineRunTable).where(
-                    PipelineRunTable.pipeline_name == pipeline_name
+                statement = select(PipelineRunSchema).where(
+                    PipelineRunSchema.pipeline_name == pipeline_name
                 )
 
                 if project_name:
                     statement = statement.where(
-                        PipelineRunTable.project_name == project_name
+                        PipelineRunSchema.project_name == project_name
                     )
                 return [
                     run.to_pipeline_run_wrapper()
@@ -1421,8 +1417,8 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             existing_run = session.exec(
-                select(PipelineRunTable).where(
-                    PipelineRunTable.name == pipeline_run.name
+                select(PipelineRunSchema).where(
+                    PipelineRunSchema.name == pipeline_run.name
                 )
             ).first()
             if existing_run:
@@ -1432,7 +1428,7 @@ class SqlZenStore(BaseZenStore):
                     "unique."
                 )
 
-            sql_run = PipelineRunTable.from_pipeline_run_wrapper(pipeline_run)
+            sql_run = PipelineRunSchema.from_pipeline_run_wrapper(pipeline_run)
             session.add(sql_run)
             session.commit()
 
@@ -1448,7 +1444,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             return [
                 FlavorWrapper(**flavor.dict())
-                for flavor in session.exec(select(ZenFlavor)).all()
+                for flavor in session.exec(select(FlavorSchema)).all()
             ]
 
     def _create_flavor(
@@ -1473,9 +1469,9 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             existing_flavor = session.exec(
-                select(ZenFlavor).where(
-                    ZenFlavor.name == name,
-                    ZenFlavor.type == stack_component_type,
+                select(FlavorSchema).where(
+                    FlavorSchema.name == name,
+                    FlavorSchema.type == stack_component_type,
                 )
             ).first()
             if existing_flavor:
@@ -1483,7 +1479,7 @@ class SqlZenStore(BaseZenStore):
                     f"A {stack_component_type} with '{name}' flavor already "
                     f"exists."
                 )
-            sql_flavor = ZenFlavor(
+            sql_flavor = FlavorSchema(
                 name=name,
                 source=source,
                 type=stack_component_type,
@@ -1506,7 +1502,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             flavors = session.exec(
-                select(ZenFlavor).where(ZenFlavor.type == component_type)
+                select(FlavorSchema).where(FlavorSchema.type == component_type)
             ).all()
         return [
             FlavorWrapper(
@@ -1539,9 +1535,9 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             try:
                 flavor = session.exec(
-                    select(ZenFlavor).where(
-                        ZenFlavor.name == flavor_name,
-                        ZenFlavor.type == component_type,
+                    select(FlavorSchema).where(
+                        FlavorSchema.name == flavor_name,
+                        FlavorSchema.type == component_type,
                     )
                 ).one()
                 return FlavorWrapper(
@@ -1563,7 +1559,7 @@ class SqlZenStore(BaseZenStore):
             List of all stack names.
         """
         with Session(self.engine) as session:
-            return [s.name for s in session.exec(select(ZenStack))]
+            return [s.name for s in session.exec(select(StackSchema))]
 
     def _delete_query_results(self, query: Any) -> None:
         """Deletes all rows returned by the input query.

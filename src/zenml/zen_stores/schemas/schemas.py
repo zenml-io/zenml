@@ -1,19 +1,11 @@
-import datetime as dt
 import json
 from datetime import datetime
-from typing import Optional
 from uuid import UUID, uuid4
 
 from sqlmodel import Field, SQLModel
 
 from zenml.enums import StackComponentType
-from zenml.zen_stores.models import (
-    Project,
-    RoleAssignment,
-    StackWrapper,
-    Team,
-    User,
-)
+from zenml.zen_stores.models import StackWrapper
 from zenml.zen_stores.models.pipeline_models import (
     PipelineRunWrapper,
     PipelineWrapper,
@@ -34,79 +26,90 @@ def _sqlmodel_uuid() -> UUID:
     return uuid
 
 
-class ZenUser(SQLModel, table=True):
+class UserSchema(SQLModel, table=True):
     """SQL Model for users."""
 
-    id: int = Field(primary_key=True)
+    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
     name: str
+    creation_date: datetime = Field(default_factory=datetime.now)
 
 
-class ZenStack(SQLModel, table=True):
+class StackSchema(SQLModel, table=True):
     """SQL Model for stacks."""
 
-    name: str = Field(primary_key=True)
-    created_by: int
-    create_time: Optional[dt.datetime] = Field(default_factory=dt.datetime.now)
+    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    name: str
+    create_time: datetime = Field(default_factory=datetime.now)
+    user_id: UUID = Field(foreign_key="userschema.id")
+    project_id: UUID = Field(foreign_key="projectschema.id")
 
 
 class ComponentSchema(SQLModel, table=True):
     """SQL Model for stack components."""
 
-    id: int = Field(primary_key=True)
+    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
     type: StackComponentType
-    flavor_id: int  # = Field(foreign_key="flavorschema.id")
+    flavor_id: UUID = Field(foreign_key="flavorschema.id")
     name: str
-    component_flavor: str
     configuration: bytes  # e.g. base64 encoded json string
-    create_time: dt.datetime
-    user_id: int  # = Field(foreign_key="userschema.id")
-    project_id: int  # = Field(foreign_key="projectschema.id")
+    create_time: datetime = Field(default_factory=datetime.now)
+    user_id: UUID = Field(foreign_key="userschema.id")
+    project_id: UUID = Field(foreign_key="projectschema.id")
 
 
-class ZenFlavor(SQLModel, table=True):
+class RepositorySchema(SQLModel, table=True):
+    """SQL Model for repositories."""
+
+    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    project_id: UUID = Field(foreign_key="projectschema.id")
+    creation_date: datetime = Field(default_factory=datetime.now)
+    name: str
+
+
+class FlavorSchema(SQLModel, table=True):
     """SQL Model for flavors."""
 
-    type: StackComponentType = Field(primary_key=True)
-    name: str = Field(primary_key=True)
+    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    type: StackComponentType
+    name: str
     source: str
-    integration: Optional[str]
+    git_sha: str
+    integration: str
+    create_time: datetime = Field(default_factory=datetime.now)
+    user_id: UUID = Field(foreign_key="userschema.id")
+    # project_id: UUID = Field(foreign_key="projectschema.id")  # redundant since repository has this
+    repository_id: UUID = Field(foreign_key="repositoryschema.id")
 
 
-class ZenStackDefinition(SQLModel, table=True):
+class CompositionSchema(SQLModel, table=True):
     """SQL Model for stack definitions.
 
     Join table between Stacks and StackComponents.
     """
 
-    stack_name: str = Field(primary_key=True, foreign_key="zenstack.name")
-    component_type: StackComponentType = Field(
-        primary_key=True, foreign_key="zenstackcomponent.component_type"
-    )
-    component_name: str = Field(
-        primary_key=True, foreign_key="zenstackcomponent.name"
+    stack_id: UUID = Field(primary_key=True, foreign_key="stackschema.id")
+    component_id: UUID = Field(
+        primary_key=True, foreign_key="componentschema.id"
     )
 
 
-class UserTable(User, SQLModel, table=True):
-    """SQL Model for users."""
-
-    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
-
-
-class TeamTable(Team, SQLModel, table=True):
+class TeamSchema(SQLModel, table=True):
     """SQL Model for teams."""
 
     id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
-
-
-class ProjectTable(Project, SQLModel, table=True):
-    """SQL Model for projects."""
-
-    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    name: str
     creation_date: datetime = Field(default_factory=datetime.now)
 
 
-class RoleTable(SQLModel, table=True):
+class ProjectSchema(SQLModel, table=True):
+    """SQL Model for projects."""
+
+    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    name: str
+    creation_date: datetime = Field(default_factory=datetime.now)
+
+
+class RoleSchema(SQLModel, table=True):
     """SQL Model for roles."""
 
     id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
@@ -114,46 +117,55 @@ class RoleTable(SQLModel, table=True):
     name: str
 
 
-class TeamAssignmentTable(SQLModel, table=True):
+class TeamAssignmentSchema(SQLModel, table=True):
     """SQL Model for team assignments."""
 
-    user_id: UUID = Field(primary_key=True, foreign_key="usertable.id")
-    team_id: UUID = Field(primary_key=True, foreign_key="teamtable.id")
+    user_id: UUID = Field(primary_key=True, foreign_key="userschema.id")
+    team_id: UUID = Field(primary_key=True, foreign_key="teamschema.id")
 
 
-class RoleAssignmentTable(RoleAssignment, SQLModel, table=True):
+class RoleAssignmentSchema(SQLModel, table=True):
     """SQL Model for role assignments."""
 
     id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
-    role_id: UUID = Field(foreign_key="roletable.id")
-    user_id: Optional[UUID] = Field(default=None, foreign_key="usertable.id")
-    team_id: Optional[UUID] = Field(default=None, foreign_key="teamtable.id")
-    project_id: Optional[UUID] = Field(
-        default=None, foreign_key="projecttable.id"
-    )
+    creation_date: datetime = Field(default_factory=datetime.now)
+    role_id: UUID = Field(foreign_key="roleschema.id")
+    user_id: UUID = Field(foreign_key="userschema.id")
+    team_id: UUID = Field(foreign_key="teamschema.id")
+    project_id: UUID = Field(foreign_key="projectschema.id")
 
 
-class PipelineRunTable(SQLModel, table=True):
+class PipelineSchema(SQLModel, table=True):
+    """SQL Model for pipelines."""
+
+    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    git_sha: str
+    name: str
+    creation_time: datetime = Field(default_factory=datetime.now)
+    user_id: UUID = Field(foreign_key="userschema.id")
+    # project_id: UUID = Field(foreign_key="projectschema.id")  # redundant since repository has this
+    repository_id: UUID = Field(foreign_key="repositoryschema.id")
+
+
+class PipelineRunSchema(SQLModel, table=True):
     """SQL Model for pipeline runs."""
 
-    name: str = Field(primary_key=True)
-    zenml_version: str
-    git_sha: Optional[str]
-
-    pipeline_name: str
-    pipeline: str
-    stack: str
+    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    pipeline_id: UUID = Field(foreign_key="pipelineschema.id")
+    # context_id  TODO ?
+    stack_id: UUID = Field(foreign_key="stackschema.id")
     runtime_configuration: str
-
-    user_id: UUID = Field(foreign_key="usertable.id")
-    project_name: Optional[str] = Field(
-        default=None, foreign_key="projecttable.name"
-    )
+    name: str
+    git_sha: str
+    zenml_version: str
+    creation_time: datetime = Field(default_factory=datetime.now)
+    user_id: UUID = Field(foreign_key="userschema.id")
+    # project_id: UUID = Field(foreign_key="projectschema.id")  # redundant since stack/pipeline has this
 
     @classmethod
     def from_pipeline_run_wrapper(
         cls, wrapper: PipelineRunWrapper
-    ) -> "PipelineRunTable":
+    ) -> "PipelineRunSchema":
         """Creates a PipelineRunTable from a PipelineRunWrapper.
 
         Args:
@@ -162,7 +174,8 @@ class PipelineRunTable(SQLModel, table=True):
         Returns:
             A PipelineRunTable.
         """
-        return PipelineRunTable(
+        # TODO: update
+        return PipelineRunSchema(
             name=wrapper.name,
             zenml_version=wrapper.zenml_version,
             git_sha=wrapper.git_sha,
@@ -180,6 +193,7 @@ class PipelineRunTable(SQLModel, table=True):
         Returns:
             A PipelineRunWrapper.
         """
+        # TODO: update
         return PipelineRunWrapper(
             name=self.name,
             zenml_version=self.zenml_version,
@@ -190,3 +204,30 @@ class PipelineRunTable(SQLModel, table=True):
             user_id=self.user_id,
             project_name=self.project_name,
         )
+
+
+class StepSchema(SQLModel, table=True):
+    """SQL Model for pipeline run steps."""
+
+    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    name: str
+    # user_id: UUID = Field(foreign_key="userschema.id")  # redundant since stack/pipeline has this
+    # create_time: datetime = Field(default_factory=datetime.now)  # redundant since run has this
+    pipeline_run_id: UUID = Field(foreign_key="pipelinerunschema.id")
+    runtime_configuration: str
+
+
+class MLMDSchema(SQLModel, table=True):
+    """SQL Model for MLMD."""
+
+    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    type: str
+    project_id: UUID = Field(foreign_key="projectschema.id")
+
+
+class MLMDPropertySchema(SQLModel, table=True):
+    """SQL Model for MLMD Properties."""
+
+    mlmd_id: UUID = Field(primary_key=True, foreign_key="mlmdschema.id")
+    name: str
+    value: str
