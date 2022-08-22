@@ -135,11 +135,11 @@ class StackComponentSchema(SQLModel, table=True):
 
     name: str
 
-    project_id: UUID = Field(foreign_key="projectschema.id")
+    # project_id - redundant since repository of flavor has this
     flavor_id: UUID = Field(foreign_key="flavorschema.id")
     created_by: UUID = Field(foreign_key="userschema.id")
 
-    type: StackComponentType
+    # type - redundant since flavor has this
     configuration: bytes  # e.g. base64 encoded json string
 
     created_at: datetime = Field(default_factory=datetime.now)
