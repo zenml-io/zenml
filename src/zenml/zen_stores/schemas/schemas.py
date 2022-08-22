@@ -31,7 +31,7 @@ class UserSchema(SQLModel, table=True):
 
     id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
     name: str
-    creation_date: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=datetime.now)
 
 
 class StackSchema(SQLModel, table=True):
@@ -39,8 +39,8 @@ class StackSchema(SQLModel, table=True):
 
     id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
     name: str
-    create_time: datetime = Field(default_factory=datetime.now)
-    user_id: UUID = Field(foreign_key="userschema.id")
+    created_at: datetime = Field(default_factory=datetime.now)
+    created_by: UUID = Field(foreign_key="userschema.id")
     project_id: UUID = Field(foreign_key="projectschema.id")
 
 
@@ -52,8 +52,8 @@ class ComponentSchema(SQLModel, table=True):
     flavor_id: UUID = Field(foreign_key="flavorschema.id")
     name: str
     configuration: bytes  # e.g. base64 encoded json string
-    create_time: datetime = Field(default_factory=datetime.now)
-    user_id: UUID = Field(foreign_key="userschema.id")
+    created_at: datetime = Field(default_factory=datetime.now)
+    created_by: UUID = Field(foreign_key="userschema.id")
     project_id: UUID = Field(foreign_key="projectschema.id")
 
 
@@ -62,7 +62,7 @@ class RepositorySchema(SQLModel, table=True):
 
     id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
     project_id: UUID = Field(foreign_key="projectschema.id")
-    creation_date: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=datetime.now)
     name: str
 
 
@@ -75,8 +75,8 @@ class FlavorSchema(SQLModel, table=True):
     source: str
     git_sha: str
     integration: str
-    create_time: datetime = Field(default_factory=datetime.now)
-    user_id: UUID = Field(foreign_key="userschema.id")
+    created_at: datetime = Field(default_factory=datetime.now)
+    created_by: UUID = Field(foreign_key="userschema.id")
     # project_id: UUID = Field(foreign_key="projectschema.id")  # redundant since repository has this
     repository_id: UUID = Field(foreign_key="repositoryschema.id")
 
@@ -98,7 +98,7 @@ class TeamSchema(SQLModel, table=True):
 
     id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
     name: str
-    creation_date: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=datetime.now)
 
 
 class ProjectSchema(SQLModel, table=True):
@@ -106,14 +106,14 @@ class ProjectSchema(SQLModel, table=True):
 
     id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
     name: str
-    creation_date: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=datetime.now)
 
 
 class RoleSchema(SQLModel, table=True):
     """SQL Model for roles."""
 
     id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
-    creation_date: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=datetime.now)
     name: str
 
 
@@ -128,7 +128,7 @@ class RoleAssignmentSchema(SQLModel, table=True):
     """SQL Model for role assignments."""
 
     id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
-    creation_date: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=datetime.now)
     role_id: UUID = Field(foreign_key="roleschema.id")
     user_id: UUID = Field(foreign_key="userschema.id")
     team_id: UUID = Field(foreign_key="teamschema.id")
@@ -141,8 +141,8 @@ class PipelineSchema(SQLModel, table=True):
     id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
     git_sha: str
     name: str
-    creation_time: datetime = Field(default_factory=datetime.now)
-    user_id: UUID = Field(foreign_key="userschema.id")
+    created_at: datetime = Field(default_factory=datetime.now)
+    created_by: UUID = Field(foreign_key="userschema.id")
     # project_id: UUID = Field(foreign_key="projectschema.id")  # redundant since repository has this
     repository_id: UUID = Field(foreign_key="repositoryschema.id")
 
@@ -158,8 +158,8 @@ class PipelineRunSchema(SQLModel, table=True):
     name: str
     git_sha: str
     zenml_version: str
-    creation_time: datetime = Field(default_factory=datetime.now)
-    user_id: UUID = Field(foreign_key="userschema.id")
+    created_at: datetime = Field(default_factory=datetime.now)
+    created_by: UUID = Field(foreign_key="userschema.id")
     # project_id: UUID = Field(foreign_key="projectschema.id")  # redundant since stack/pipeline has this
 
     @classmethod
@@ -211,8 +211,8 @@ class StepSchema(SQLModel, table=True):
 
     id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
     name: str
-    # user_id: UUID = Field(foreign_key="userschema.id")  # redundant since stack/pipeline has this
-    # create_time: datetime = Field(default_factory=datetime.now)  # redundant since run has this
+    # created_by: UUID = Field(foreign_key="userschema.id")  # redundant since stack/pipeline has this
+    # created_at: datetime = Field(default_factory=datetime.now)  # redundant since run has this
     pipeline_run_id: UUID = Field(foreign_key="pipelinerunschema.id")
     runtime_configuration: str
 
