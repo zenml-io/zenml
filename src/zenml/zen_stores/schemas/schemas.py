@@ -1,15 +1,10 @@
-import json
 from datetime import datetime
 from uuid import UUID, uuid4
 
 from sqlmodel import Field, SQLModel
 
 from zenml.enums import StackComponentType
-from zenml.zen_stores.models import StackWrapper
-from zenml.zen_stores.models.pipeline_models import (
-    PipelineRunWrapper,
-    PipelineWrapper,
-)
+from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
 
 
 def _sqlmodel_uuid() -> UUID:
@@ -77,7 +72,7 @@ class FlavorSchema(SQLModel, table=True):
     integration: str
     created_at: datetime = Field(default_factory=datetime.now)
     created_by: UUID = Field(foreign_key="userschema.id")
-    # project_id: UUID = Field(foreign_key="projectschema.id")  # redundant since repository has this
+    # project_id - redundant since repository has this
     repository_id: UUID = Field(foreign_key="repositoryschema.id")
 
 
@@ -143,7 +138,7 @@ class PipelineSchema(SQLModel, table=True):
     name: str
     created_at: datetime = Field(default_factory=datetime.now)
     created_by: UUID = Field(foreign_key="userschema.id")
-    # project_id: UUID = Field(foreign_key="projectschema.id")  # redundant since repository has this
+    # project_id - redundant since repository has this
     repository_id: UUID = Field(foreign_key="repositoryschema.id")
 
 
@@ -152,7 +147,7 @@ class PipelineRunSchema(SQLModel, table=True):
 
     id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
     pipeline_id: UUID = Field(foreign_key="pipelineschema.id")
-    # context_id  TODO ?
+    # context_id - TODO ?
     stack_id: UUID = Field(foreign_key="stackschema.id")
     runtime_configuration: str
     name: str
@@ -160,7 +155,7 @@ class PipelineRunSchema(SQLModel, table=True):
     zenml_version: str
     created_at: datetime = Field(default_factory=datetime.now)
     created_by: UUID = Field(foreign_key="userschema.id")
-    # project_id: UUID = Field(foreign_key="projectschema.id")  # redundant since stack/pipeline has this
+    # project_id - redundant since stack/pipeline has this
 
     @classmethod
     def from_pipeline_run_wrapper(
@@ -174,18 +169,7 @@ class PipelineRunSchema(SQLModel, table=True):
         Returns:
             A PipelineRunTable.
         """
-        # TODO: update
-        return PipelineRunSchema(
-            name=wrapper.name,
-            zenml_version=wrapper.zenml_version,
-            git_sha=wrapper.git_sha,
-            pipeline_name=wrapper.pipeline.name,
-            pipeline=wrapper.pipeline.json(),
-            stack=wrapper.stack.json(),
-            runtime_configuration=json.dumps(wrapper.runtime_configuration),
-            user_id=wrapper.user_id,
-            project_name=wrapper.project_name,
-        )
+        pass  # TODO
 
     def to_pipeline_run_wrapper(self) -> PipelineRunWrapper:
         """Creates a PipelineRunWrapper from a PipelineRunTable.
@@ -193,17 +177,7 @@ class PipelineRunSchema(SQLModel, table=True):
         Returns:
             A PipelineRunWrapper.
         """
-        # TODO: update
-        return PipelineRunWrapper(
-            name=self.name,
-            zenml_version=self.zenml_version,
-            git_sha=self.git_sha,
-            pipeline=PipelineWrapper.parse_raw(self.pipeline),
-            stack=StackWrapper.parse_raw(self.stack),
-            runtime_configuration=json.loads(self.runtime_configuration),
-            user_id=self.user_id,
-            project_name=self.project_name,
-        )
+        pass  # TODO
 
 
 class PipelineRunStepSchema(SQLModel, table=True):
@@ -211,8 +185,8 @@ class PipelineRunStepSchema(SQLModel, table=True):
 
     id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
     name: str
-    # created_by: UUID = Field(foreign_key="userschema.id")  # redundant since stack/pipeline has this
-    # created_at: datetime = Field(default_factory=datetime.now)  # redundant since run has this
+    # created_by - redundant since run has this
+    # created_at - redundant since run has this
     pipeline_run_id: UUID = Field(foreign_key="pipelinerunschema.id")
     runtime_configuration: str
 
