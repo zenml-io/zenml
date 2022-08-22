@@ -51,15 +51,15 @@ from zenml.zen_stores.schemas.schemas import (
     FlavorSchema,
     PipelineRunSchema,
     ProjectSchema,
-    RoleAssignmentSchema,
     RoleSchema,
     StackComponentSchema,
     StackCompositionSchema,
     StackSchema,
     TeamAssignmentSchema,
+    TeamRoleAssignmentSchema,
     TeamSchema,
+    UserRoleAssignmentSchema,
     UserSchema,
-    UserTable,
 )
 
 SelectOfScalar.inherit_cache = True  # type: ignore
@@ -552,7 +552,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             return [
                 User(**user.dict())
-                for user in session.exec(select(UserTable)).all()
+                for user in session.exec(select(UserSchema)).all()
             ]
 
     def _get_user(self, user_name: str) -> User:
@@ -570,7 +570,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             try:
                 user = session.exec(
-                    select(UserTable).where(UserTable.name == user_name)
+                    select(UserSchema).where(UserSchema.name == user_name)
                 ).one()
             except NoResultFound as error:
                 raise KeyError from error
@@ -591,13 +591,13 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             existing_user = session.exec(
-                select(UserTable).where(UserTable.name == user_name)
+                select(UserSchema).where(UserSchema.name == user_name)
             ).first()
             if existing_user:
                 raise EntityExistsError(
                     f"User with name '{user_name}' already exists."
                 )
-            sql_user = UserTable(name=user_name)
+            sql_user = UserSchema(name=user_name)
             user = User(**sql_user.dict())
             session.add(sql_user)
             session.commit()
@@ -615,7 +615,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             try:
                 user = session.exec(
-                    select(UserTable).where(UserTable.name == user_name)
+                    select(UserSchema).where(UserSchema.name == user_name)
                 ).one()
             except NoResultFound as error:
                 raise KeyError from error
@@ -623,8 +623,8 @@ class SqlZenStore(BaseZenStore):
             session.delete(user)
             session.commit()
             self._delete_query_results(
-                select(RoleAssignmentSchema).where(
-                    RoleAssignmentSchema.user_id == user.id
+                select(UserRoleAssignmentSchema).where(
+                    UserRoleAssignmentSchema.user_id == user.id
                 )
             )
             self._delete_query_results(
@@ -714,8 +714,8 @@ class SqlZenStore(BaseZenStore):
             session.delete(team)
             session.commit()
             self._delete_query_results(
-                select(RoleAssignmentSchema).where(
-                    RoleAssignmentSchema.team_id == team.id
+                select(TeamRoleAssignmentSchema).where(
+                    TeamRoleAssignmentSchema.team_id == team.id
                 )
             )
             self._delete_query_results(
@@ -740,7 +740,7 @@ class SqlZenStore(BaseZenStore):
                     select(TeamSchema).where(TeamSchema.name == team_name)
                 ).one()
                 user = session.exec(
-                    select(UserTable).where(UserTable.name == user_name)
+                    select(UserSchema).where(UserSchema.name == user_name)
                 ).one()
             except NoResultFound as error:
                 raise KeyError from error
@@ -764,8 +764,8 @@ class SqlZenStore(BaseZenStore):
                 assignment = session.exec(
                     select(TeamAssignmentSchema)
                     .where(TeamAssignmentSchema.team_id == TeamSchema.id)
-                    .where(TeamAssignmentSchema.user_id == UserTable.id)
-                    .where(UserTable.name == user_name)
+                    .where(TeamAssignmentSchema.user_id == UserSchema.id)
+                    .where(UserSchema.name == user_name)
                     .where(TeamSchema.name == team_name)
                 ).one()
             except NoResultFound as error:
@@ -862,8 +862,13 @@ class SqlZenStore(BaseZenStore):
             session.delete(project)
             session.commit()
             self._delete_query_results(
-                select(RoleAssignmentSchema).where(
-                    RoleAssignmentSchema.project_id == project.id
+                select(UserRoleAssignmentSchema).where(
+                    UserRoleAssignmentSchema.project_id == project.id
+                )
+            )
+            self._delete_query_results(
+                select(TeamRoleAssignmentSchema).where(
+                    TeamRoleAssignmentSchema.project_id == project.id
                 )
             )
 
@@ -888,11 +893,11 @@ class SqlZenStore(BaseZenStore):
             A list of all registered role assignments.
         """
         with Session(self.engine) as session:
+            user_roles = session.exec(select(UserRoleAssignmentSchema)).all()
+            team_roles = session.exec(select(TeamRoleAssignmentSchema)).all()
             return [
                 RoleAssignment(**assignment.dict())
-                for assignment in session.exec(
-                    select(RoleAssignmentSchema)
-                ).all()
+                for assignment in [*user_roles, *team_roles]
             ]
 
     def _get_role(self, role_name: str) -> Role:
@@ -963,8 +968,13 @@ class SqlZenStore(BaseZenStore):
             session.delete(role)
             session.commit()
             self._delete_query_results(
-                select(RoleAssignmentSchema).where(
-                    RoleAssignmentSchema.role_id == role.id
+                select(UserRoleAssignmentSchema).where(
+                    UserRoleAssignmentSchema.role_id == role.id
+                )
+            )
+            self._delete_query_results(
+                select(TeamRoleAssignmentSchema).where(
+                    TeamRoleAssignmentSchema.role_id == role.id
                 )
             )
 
@@ -1006,27 +1016,32 @@ class SqlZenStore(BaseZenStore):
 
                 if is_user:
                     user_id = session.exec(
-                        select(UserTable.id).where(
-                            UserTable.name == entity_name
+                        select(UserSchema.id).where(
+                            UserSchema.name == entity_name
                         )
                     ).one()
+                    assignment = UserRoleAssignmentSchema(
+                        role_id=role_id,
+                        project_id=project_id,
+                        user_id=user_id,
+                    )
+                    session.add(assignment)
+                    session.commit()
                 else:
                     team_id = session.exec(
                         select(TeamSchema.id).where(
                             TeamSchema.name == entity_name
                         )
                     ).one()
+                    assignment = TeamRoleAssignmentSchema(
+                        role_id=role_id,
+                        project_id=project_id,
+                        team_id=team_id,
+                    )
+                    session.add(assignment)
+                    session.commit()
             except NoResultFound as error:
                 raise KeyError from error
-
-            assignment = RoleAssignmentSchema(
-                role_id=role_id,
-                project_id=project_id,
-                user_id=user_id,
-                team_id=team_id,
-            )
-            session.add(assignment)
-            session.commit()
 
     def revoke_role(
         self,
@@ -1048,25 +1063,31 @@ class SqlZenStore(BaseZenStore):
             KeyError: If no role, entity or project with the given names exists.
         """
         with Session(self.engine) as session:
-            statement = (
-                select(RoleAssignmentSchema)
-                .where(RoleAssignmentSchema.role_id == RoleSchema.id)
-                .where(RoleSchema.name == role_name)
-            )
-
-            if project_name:
-                statement = statement.where(
-                    RoleAssignmentSchema.project_id == ProjectSchema.id
-                ).where(ProjectSchema.name == project_name)
 
             if is_user:
-                statement = statement.where(
-                    RoleAssignmentSchema.user_id == UserTable.id
-                ).where(UserTable.name == entity_name)
+                statement = (
+                    select(UserRoleAssignmentSchema)
+                    .where(UserRoleAssignmentSchema.role_id == RoleSchema.id)
+                    .where(RoleSchema.name == role_name)
+                    .where(UserRoleAssignmentSchema.user_id == UserSchema.id)
+                    .where(UserSchema.name == entity_name)
+                )
+                if project_name:
+                    statement = statement.where(
+                        UserRoleAssignmentSchema.project_id == ProjectSchema.id
+                    ).where(ProjectSchema.name == project_name)
             else:
-                statement = statement.where(
-                    RoleAssignmentSchema.team_id == TeamSchema.id
-                ).where(TeamSchema.name == entity_name)
+                statement = (
+                    select(TeamRoleAssignmentSchema)
+                    .where(TeamRoleAssignmentSchema.role_id == RoleSchema.id)
+                    .where(RoleSchema.name == role_name)
+                    .where(TeamRoleAssignmentSchema.team_id == TeamSchema.id)
+                    .where(TeamSchema.name == entity_name)
+                )
+                if project_name:
+                    statement = statement.where(
+                        TeamRoleAssignmentSchema.project_id == ProjectSchema.id
+                    ).where(ProjectSchema.name == project_name)
 
             try:
                 assignment = session.exec(statement).one()
@@ -1097,8 +1118,8 @@ class SqlZenStore(BaseZenStore):
                 raise KeyError from error
 
             users = session.exec(
-                select(UserTable)
-                .where(UserTable.id == TeamAssignmentSchema.user_id)
+                select(UserSchema)
+                .where(UserSchema.id == TeamAssignmentSchema.user_id)
                 .where(TeamAssignmentSchema.team_id == team_id)
             ).all()
             return [User(**user.dict()) for user in users]
@@ -1118,7 +1139,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             try:
                 user_id = session.exec(
-                    select(UserTable.id).where(UserTable.name == user_name)
+                    select(UserSchema.id).where(UserSchema.name == user_name)
                 ).one()
             except NoResultFound as error:
                 raise KeyError from error
@@ -1154,10 +1175,10 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             try:
                 user_id = session.exec(
-                    select(UserTable.id).where(UserTable.name == user_name)
+                    select(UserSchema.id).where(UserSchema.name == user_name)
                 ).one()
-                statement = select(RoleAssignmentSchema).where(
-                    RoleAssignmentSchema.user_id == user_id
+                statement = select(UserRoleAssignmentSchema).where(
+                    UserRoleAssignmentSchema.user_id == user_id
                 )
                 if project_name:
                     project_id = session.exec(
@@ -1166,7 +1187,7 @@ class SqlZenStore(BaseZenStore):
                         )
                     ).one()
                     statement = statement.where(
-                        RoleAssignmentSchema.project_id == project_id
+                        UserRoleAssignmentSchema.project_id == project_id
                     )
             except NoResultFound as error:
                 raise KeyError from error
@@ -1207,8 +1228,8 @@ class SqlZenStore(BaseZenStore):
                     select(TeamSchema.id).where(TeamSchema.name == team_name)
                 ).one()
 
-                statement = select(RoleAssignmentSchema).where(
-                    RoleAssignmentSchema.team_id == team_id
+                statement = select(TeamRoleAssignmentSchema).where(
+                    TeamRoleAssignmentSchema.team_id == team_id
                 )
                 if project_name:
                     project_id = session.exec(
@@ -1217,7 +1238,7 @@ class SqlZenStore(BaseZenStore):
                         )
                     ).one()
                     statement = statement.where(
-                        RoleAssignmentSchema.project_id == project_id
+                        TeamRoleAssignmentSchema.project_id == project_id
                     )
             except NoResultFound as error:
                 raise KeyError from error
