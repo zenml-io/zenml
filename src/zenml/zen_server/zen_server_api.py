@@ -70,7 +70,10 @@ from zenml.zen_stores.models import (
     Team,
     User,
 )
-from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
+from zenml.zen_stores.models.pipeline_models import (
+    PipelineRunWrapper,
+    PipelineWrapper,
+)
 
 profile_name = os.environ.get(ENV_ZENML_PROFILE_NAME)
 
@@ -1375,60 +1378,74 @@ async def stack_configurations() -> Dict[str, Dict[StackComponentType, str]]:
     return zen_store.stack_configurations
 
 
-@authed.post(STACK_COMPONENTS, responses={409: error_response})
-async def register_stack_component(
-    component: ComponentModel,
-) -> None:
-    """Registers a stack component.
-
-    Args:
-        component: Stack component to register.
-
-    Raises:
-        conflict: when the component already exists.
-    """
-    try:
-        zen_store.register_stack_component(component)
-    except StackComponentExistsError as error:
-        raise conflict(error) from error
-
-
-@authed.post(
-    STACKS,
-    responses={409: error_response},
-)
-async def register_stack(stack: StackWrapper) -> None:
-    """Registers a stack.
-
-    Args:
-        stack: Stack to register.
-
-    Raises:
-        conflict: when a stack with the same name is already registered
-    """
-    try:
-        zen_store.register_stack(stack)
-    except (StackExistsError, StackComponentExistsError) as error:
-        raise conflict(error) from error
-
-
 ## PROJECTS
 
 
-@authed.get(PROJECTS, response_model=List[Project])
-async def projects() -> List[Project]:
-    """Returns all projects.
+@authed.get(
+    PROJECTS,
+    response_model=List[Project],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def get_projects() -> List[Project]:
+    """Lists all projects in the organization.
 
     Returns:
-        All projects.
+        A list of projects.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
     """
-    return zen_store.projects
+    try:
+        return zen_store.projects
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.post(
+    PROJECTS,
+    response_model=Project,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+async def create_project(project: Project) -> Project:
+    """Creates a project based on the requestBody.
+
+    # noqa: DAR401
+
+    Args:
+        project: Project to create.
+
+    Returns:
+        The created project.
+
+    Raises:
+        401 error: when not authorized to login
+        409 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.create_project(
+            project_name=project.name, description=project.description
+        )
+    except EntityExistsError as error:
+        raise conflict(error) from error
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=409, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
 
 
 @authed.get(
     PROJECTS + "/{project_name}",
     response_model=Project,
-    responses={404: error_response},
+    responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def get_project(project_name: str) -> Project:
     """Get a project for given name.
@@ -1440,51 +1457,330 @@ async def get_project(project_name: str) -> Project:
 
     Returns:
         The requested project.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
     """
     try:
         return zen_store.get_project(project_name)
     except KeyError as error:
         raise not_found(error) from error
+    except EntityExistsError as error:
+        raise conflict(error) from error
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
 
 
-@authed.post(
-    PROJECTS,
+@authed.put(
+    PROJECTS + "/{project_name}",
     response_model=Project,
-    responses={409: error_response},
+    responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def create_project(project: Project) -> Project:
-    """Creates a project.
+async def update_project(
+    project_name: str, updated_project: Project
+) -> Project:
+    """Get a project for given name.
 
     # noqa: DAR401
 
     Args:
-        project: Project to create.
+        project_name: Name of the project to update.
+        updated_project: the project to use to update
 
     Returns:
-        The created project.
+        The updated project.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
     """
     try:
-        return zen_store.create_project(
-            project_name=project.name, description=project.description
-        )
+        return zen_store.update_project(project_name, updated_project)
+    except KeyError as error:
+        raise not_found(error) from error
     except EntityExistsError as error:
         raise conflict(error) from error
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
 
 
-@authed.delete(PROJECTS + "/{name}", responses={404: error_response})
-async def delete_project(name: str) -> None:
+@authed.delete(
+    PROJECTS + "/{project_name}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def delete_project(project_name: str) -> None:
     """Deletes a project.
 
     Args:
-        name: Name of the project.
+        project_name: Name of the project.
 
     Raises:
-        not_found: when none are found
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
     """
     try:
-        zen_store.delete_project(project_name=name)
+        zen_store.delete_project(project_name)
     except KeyError as error:
         raise not_found(error) from error
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.get(
+    PROJECTS + "/{project_name}" + STACKS,
+    response_model=List[StackWrapper],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def get_project_stacks(project_name: str) -> List[StackWrapper]:
+    """Get stacks that are part of a specific project.
+
+    # noqa: DAR401
+
+    Args:
+        project_name: Name of the project.
+
+    Returns:
+        All stacks part of the specified project.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.get_stacks(project_name=project_name)
+    except KeyError as error:
+        raise not_found(error) from error
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.post(
+    PROJECTS + "/{project_name}" + STACKS,
+    response_model=StackWrapper,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+async def create_stack(project_name: str, stack: StackWrapper) -> StackWrapper:
+    """Creates a stack for a particular project.
+
+    Args:
+        project_name: Name of the project.
+        stack: Stack to register.
+
+    Raises:
+        401 error: when not authorized to login
+        409 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.create_stack(
+            project_name, stack
+        )  ## TODO: originally register_stack
+    except (StackExistsError, StackComponentExistsError) as error:
+        raise conflict(error) from error
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.get(
+    PROJECTS + "/{project_name}" + STACK_COMPONENTS,
+    response_model=List[ComponentModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def get_project_stack_components(
+    project_name: str,
+) -> List[ComponentModel]:
+    """Get stacks that are part of a specific project.
+
+    # noqa: DAR401
+
+    Args:
+        project_name: Name of the project.
+
+    Returns:
+        All stack components part of the specified project.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.get_project_stack_components(project_name=project_name)
+    except KeyError as error:
+        raise not_found(error) from error
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.get(
+    PROJECTS + "/{project_name}" + STACK_COMPONENTS + "/{component_type}",
+    response_model=List[ComponentModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def get_project_stack_components_by_type(
+    component_type: str,
+    project_name: str,
+) -> List[ComponentModel]:
+    """Get stack components of a certain type that are part of a project.
+
+    # noqa: DAR401
+
+    Args:
+        component_type: Type of the component.
+        project_name: Name of the project.
+
+    Returns:
+        All stack components of a certain type that are part of a project.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.get_project_stack_components_by_type(
+            component_type=component_type, project_name=project_name
+        )
+    except KeyError as error:
+        raise not_found(error) from error
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.post(
+    PROJECTS + "/{project_name}" + STACK_COMPONENTS + "/{component_type}",
+    response_model=ComponentModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+async def create_stack_component_by_type(
+    component_type: str,
+    project_name: str,
+    component: ComponentModel,
+) -> None:
+    """Creates a stack component.
+
+    Args:
+        component_type: Type of the component.
+        project_name: Name of the project.
+        component: Stack component to register.
+
+    Raises:
+        conflict: when the component already exists.
+        401 error: when not authorized to login
+        409 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        zen_store.create_stack_component_by_type(
+            component_type, project_name, component
+        )
+    except StackComponentExistsError as error:
+        raise conflict(error) from error
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=409, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.get(
+    PROJECTS + "/{project_name}" + PIPELINES,
+    response_model=List[Project],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def get_project_pipelines(
+    project_name: str,
+) -> List[Project]:
+    """Gets pipelines defined for a specific project.
+
+    # noqa: DAR401
+
+    Args:
+        project_name: Name of the project.
+
+    Returns:
+        All pipelines within the project.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.get_project_pipelines(project_name)
+    except KeyError as error:
+        raise not_found(error) from error
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.post(
+    PROJECTS + "/{project_name}" + PIPELINES,
+    response_model=PipelineWrapper,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+async def create_pipeline(
+    project_name: str, pipeline: PipelineWrapper
+) -> PipelineWrapper:
+    """Creates a pipeline.
+
+    Args:
+        project_name: Name of the project.
+        pipeline: Pipeline to create.
+
+    Raises:
+        401 error: when not authorized to login
+        409 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.create_pipeline(project_name, pipeline)
+    except (StackExistsError, StackComponentExistsError) as error:
+        raise conflict(error) from error
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=409, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
 
 
 ## REPOSITORY
@@ -1895,29 +2191,6 @@ async def delete_user_role(
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
-
-
-@authed.get(
-    USERS + "/{name}/teams",
-    response_model=List[Team],
-    responses={404: error_response},
-)
-async def teams_for_user(name: str) -> List[Team]:
-    """Returns all teams for a user.
-
-    Args:
-        name: Name of the user.
-
-    Returns:
-        All teams for the user.
-
-    Raises:
-        not_found: when none are found
-    """
-    try:
-        return zen_store.get_teams_for_user(user_name=name)
-    except KeyError as error:
-        raise not_found(error) from error
 
 
 ## ROLES
@@ -2339,3 +2612,26 @@ app.include_router(authed)
 #         True if there are no stacks registered, False otherwise.
 #     """
 #     return zen_store.stacks_empty
+
+
+@authed.get(
+    USERS + "/{name}/teams",
+    response_model=List[Team],
+    responses={404: error_response},
+)
+async def teams_for_user(name: str) -> List[Team]:
+    """Returns all teams for a user.
+
+    Args:
+        name: Name of the user.
+
+    Returns:
+        All teams for the user.
+
+    Raises:
+        not_found: when none are found
+    """
+    try:
+        return zen_store.get_teams_for_user(user_name=name)
+    except KeyError as error:
+        raise not_found(error) from error
