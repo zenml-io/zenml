@@ -178,6 +178,7 @@ OUTPUTS = "/outputs"
 TYPES = "/types"
 COMPONENT_SIDE_EFFECTS = "/component-side-effects"
 METADATA_CONFIG = "/metadata-config"
+REPOSITORIES = "/repositories"
 
 # mandatory stack component attributes
 MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]

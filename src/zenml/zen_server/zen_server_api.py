@@ -36,6 +36,8 @@ from zenml.constants import (
     PIPELINE_RUNS,
     PIPELINES,
     PROJECTS,
+    REPOSITORIES,
+    REPOSITORY,
     ROLE_ASSIGNMENTS,
     ROLES,
     RUNS,
@@ -582,7 +584,7 @@ async def delete_trigger(trigger_id: str) -> None:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.delete_trigger(trigger_id)
+        zen_store.delete_trigger(trigger_id)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:
@@ -802,7 +804,7 @@ async def delete_run(run_id: str) -> None:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.delete_run(run_id)
+        zen_store.delete_run(run_id)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:
@@ -1314,7 +1316,7 @@ async def deregister_stack_component(component_id: str) -> None:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.delete_stack_component(component_id)
+        zen_store.delete_stack_component(component_id)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:
@@ -1485,6 +1487,93 @@ async def delete_project(name: str) -> None:
 
 
 ## REPOSITORY
+
+
+@authed.get(
+    REPOSITORY + "/{repository_id}",
+    response_model=Repository,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def get_repository(repository_id: str) -> Repository:
+    """Returns the requested repository.
+
+    Args:
+        repository_id: ID of the repository.
+
+    Returns:
+        The requested repository.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.get_repository(repository_id)
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.put(
+    REPOSITORIES + "/{repository_id}",
+    response_model=Repository,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def update_repository(
+    repository_id: str, repository: Repository
+) -> Repository:
+    """Updates the requested repository.
+
+    Args:
+        repository_id: ID of the repository.
+        repository: Repository to use for the update.
+
+    Returns:
+        The updated repository.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.update_repository(repository_id, repository)
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.delete(
+    REPOSITORY + "/{repository_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def delete_repository(repository_id: str) -> None:
+    """Deletes the requested repository.
+
+    Args:
+        repository_id: ID of the repository.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        zen_store.delete_repository(repository_id)
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
 
 ## USERS
 
