@@ -1610,14 +1610,30 @@ async def role_assignments_for_user(
 ## ROLES
 
 
-@authed.get(ROLES, response_model=List[Role])
-async def roles() -> List[Role]:
-    """Returns all roles.
+@authed.get(
+    ROLES,
+    response_model=List[Role],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def get_roles() -> List[Role]:
+    """Returns a list of all roles.
 
     Returns:
-        All roles.
+        List of all roles.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
     """
-    return zen_store.roles
+    try:
+        return zen_store.roles
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
 
 
 @authed.get(ROLES + "/{name}", responses={404: error_response})
