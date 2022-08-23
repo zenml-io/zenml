@@ -24,12 +24,14 @@ from pydantic import BaseModel
 import zenml
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
+    COMPONENT_SIDE_EFFECTS,
     DEFAULT_STACK,
     ENV_ZENML_PROFILE_NAME,
     FLAVORS,
     GRAPH,
     LOGIN,
     LOGOUT,
+    METADATA_CONFIG,
     OUTPUTS,
     PIPELINE_RUNS,
     PIPELINES,
@@ -44,6 +46,7 @@ from zenml.constants import (
     STEPS,
     TEAMS,
     TRIGGERS,
+    TYPES,
     USERS,
 )
 from zenml.enums import StackComponentType, StoreType
@@ -1113,12 +1116,12 @@ async def delete_stack(stack_id: str) -> None:
 
 @authed.get(
     STACK_CONFIGURATIONS + "/{stack_id}" + STACK_COMPONENTS,
-    response_model=List[StackComponentType, str],
+    response_model=List[StackComponentType],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def get_stack_configuration(
     stack_id: str,
-) -> List[StackComponentType, str]:
+) -> List[StackComponentType]:
     """Returns the configuration for the requested stack.
 
     This comes in the form of a list of stack components within the stack.
@@ -1144,9 +1147,216 @@ async def get_stack_configuration(
         raise HTTPException(status_code=422, detail=error_detail(error))
 
 
-
 ## STACK COMPONENT
 
+
+@authed.get(
+    STACK_COMPONENTS + TYPES,
+    response_model=List[str],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def get_stack_component_types() -> List[str]:
+    """Get a list of all stack component types.
+
+    Returns:
+        List of stack components.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.get_stack_component_types()
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.get(
+    STACK_COMPONENTS + "/{component_type}",
+    response_model=List[ComponentModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def get_stack_components(component_type: str) -> List[ComponentModel]:
+    """Get a list of all stack components for a specific type.
+
+    Args:
+        component_type: Type of stack component.
+
+    Returns:
+        List of stack components for a specific type.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.get_stack_components(component_type)
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.get(
+    STACK_COMPONENTS + "/{component_type}" + FLAVORS,
+    response_model=List[FlavorWrapper],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def get_flavors_by_type(
+    component_type: StackComponentType,
+) -> List[FlavorWrapper]:
+    """Returns all flavors of a given type.
+
+    Args:
+        component_type: Type of the component.
+
+    Returns:
+        The requested flavors.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.get_flavors_by_type(component_type=component_type)
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.get(
+    STACK_COMPONENTS + "/{component_id}",
+    response_model=ComponentModel,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def get_stack_component(component_id: str) -> ComponentModel:
+    """Returns the requested stack component.
+
+    Args:
+        component_id: ID of the stack component.
+
+    Returns:
+        The requested stack component.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.get_stack_component(component_id)
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.put(
+    STACK_COMPONENTS + "/{component_id}",
+    response_model=ComponentModel,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def update_stack_component(
+    component_id: str,
+    component: ComponentModel,
+) -> ComponentModel:
+    """Updates a stack component.
+
+    Args:
+        component_id: ID of the stack component.
+        component: Stack component to use to update.
+
+    Returns:
+        Updated stack component.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.update_stack_component(component_id, component)
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.delete(
+    STACK_COMPONENTS + "/{component_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def deregister_stack_component(component_id: str) -> None:
+    """Deletes a stack component.
+
+    Args:
+        component_id: ID of the stack component.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.delete_stack_component(component_id)
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.get(
+    STACK_COMPONENTS + "/{component_id}" + COMPONENT_SIDE_EFFECTS,
+    response_model=Dict,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def get_stack_component_side_effects(
+    component_id: str, run_id: str, pipeline_id: str, stack_id: str
+) -> Dict:
+    """Returns the side-effects for a requested stack component.
+
+    Args:
+        component_id: ID of the stack component.
+
+    Returns:
+        The requested stack component side-effects.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.get_stack_component_side_effects(
+            component_id,
+            run_id=run_id,
+            pipeline_id=pipeline_id,
+            stack_id=stack_id,
+        )
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
 
 
 @authed.get(
@@ -1180,7 +1390,6 @@ async def register_stack_component(
         raise conflict(error) from error
 
 
-
 @authed.post(
     STACKS,
     responses={409: error_response},
@@ -1197,107 +1406,6 @@ async def register_stack(stack: StackWrapper) -> None:
     try:
         zen_store.register_stack(stack)
     except (StackExistsError, StackComponentExistsError) as error:
-        raise conflict(error) from error
-
-
-@authed.put(
-    STACK_COMPONENTS + "/{component_type}/{name}",
-    response_model=Dict[str, str],
-    responses={404: error_response},
-)
-async def update_stack_component(
-    name: str,
-    component_type: StackComponentType,
-    component: ComponentModel,
-) -> Dict[str, str]:
-    """Updates a stack component.
-
-    Args:
-        name: Name of the stack component.
-        component_type: Type of the stack component.
-        component: Stack component to update.
-
-    Returns:
-        Updated stack component.
-
-    Raises:
-        not_found: when none are found
-    """
-    try:
-        return zen_store.update_stack_component(name, component_type, component)
-    except KeyError as error:
-        raise not_found(error) from error
-
-
-@authed.get(
-    STACK_COMPONENTS + "/{component_type}/{name}",
-    response_model=ComponentModel,
-    responses={404: error_response},
-)
-async def get_stack_component(
-    component_type: StackComponentType, name: str
-) -> ComponentModel:
-    """Returns the requested stack component.
-
-    Args:
-        component_type: Type of the stack component.
-        name: Name of the stack component.
-
-    Returns:
-        The requested stack component.
-
-    Raises:
-        not_found: when none are found
-    """
-    try:
-        return zen_store.get_stack_component(component_type, name=name)
-    except KeyError as error:
-        raise not_found(error) from error
-
-
-@authed.get(
-    STACK_COMPONENTS + "/{component_type}",
-    response_model=List[ComponentModel],
-)
-async def get_stack_components(
-    component_type: StackComponentType,
-) -> List[ComponentModel]:
-    """Returns all stack components for the requested type.
-
-    Args:
-        component_type: Type of the stack components.
-
-    Returns:
-        All stack components for the requested type.
-    """
-    return zen_store.get_stack_components(component_type)
-
-
-@authed.delete(
-    STACK_COMPONENTS + "/{component_type}/{name}",
-    responses={404: error_response, 409: error_response},
-)
-async def deregister_stack_component(
-    component_type: StackComponentType, name: str
-) -> None:
-    """Deregisters a stack component.
-
-    Args:
-        component_type: Type of the stack component.
-        name: Name of the stack component.
-
-    Returns:
-        None
-
-    Raises:
-        not_found: when none are found
-        conflict: when the stack component is still in use
-    """
-    try:
-        return zen_store.deregister_stack_component(component_type, name=name)
-    except KeyError as error:
-        raise not_found(error) from error
-    except ValueError as error:
         raise conflict(error) from error
 
 
@@ -1637,6 +1745,34 @@ async def revoke_role(data: Dict[str, Any]) -> None:
 ## METADATA-CONFIG
 
 
+@authed.get(
+    METADATA_CONFIG,
+    response_model=Dict,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def get_metadata_config() -> Dict:
+    """Returns the metadata config.
+
+    Returns:
+        The metadata config.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return (
+            zen_store.get_metadata_config()
+        )  # TODO: same as zen_store._get_tfx_metadata_config() ???
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
 ################################# UNUSED BELOW
 
 ## FLAVORS
@@ -1676,27 +1812,6 @@ async def create_flavor(flavor: FlavorWrapper) -> FlavorWrapper:
         )
     except EntityExistsError as error:
         raise conflict(error) from error
-
-
-@authed.get(FLAVORS + "/{component_type}", responses={404: error_response})
-async def get_flavor_by_type(
-    component_type: StackComponentType,
-) -> List[FlavorWrapper]:
-    """Returns all flavors of a given type.
-
-    Args:
-        component_type: Type of the component.
-
-    Returns:
-        The requested flavors.
-
-    Raises:
-        not_found: when none are found.
-    """
-    try:
-        return zen_store.get_flavors_by_type(component_type=component_type)
-    except KeyError as error:
-        raise not_found(error) from error
 
 
 @authed.get(
