@@ -14,11 +14,7 @@
 """CLI for manipulating ZenML local and global config file."""
 
 import ipaddress
-import os
-import shutil
-import textwrap
 from importlib import import_module
-from json import JSONDecodeError
 from typing import Union
 
 import click
@@ -31,16 +27,8 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
-from zenml.utils.io_utils import get_global_config_directory
 
 logger = get_logger(__name__)
-GLOBAL_ZENML_SERVER_CONFIG_PATH = os.path.join(
-    get_global_config_directory(),
-    "zen_server",
-)
-ZENML_SERVER_CONFIG_FILENAME = os.path.join(
-    GLOBAL_ZENML_SERVER_CONFIG_PATH, "service.json"
-)
 
 help_message = "Commands for managing the ZenServer."
 
@@ -48,7 +36,10 @@ try:
     # Make sure all ZenServer dependencies are installed
     import fastapi  # noqa
 
-    from zenml.zen_server import ZenServer, ZenServerConfig  # noqa
+    from zenml.zen_server.deploy.local.local_zen_server import (
+        LocalZenServer,
+        LocalZenServerConfig,
+    )  # noqa
 
     server_installed = True
 except ImportError:
@@ -88,102 +79,116 @@ if server_installed:
     @click.option(
         "--ip-address", type=IP_ADDRESS, default="127.0.0.1", show_default=True
     )
-    @click.option("--port", type=int, default=8000, show_default=True)
+    @click.option("--port", type=int, default=8237, show_default=True)
+    @click.option("--username", type=str, default="default", show_default=True)
+    @click.option("--password", type=str, default="", show_default=True)
     def up_server(
         ip_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address],
         port: int,
+        username: str,
+        password: str,
     ) -> None:
         """Provisions resources for the ZenServer.
 
         Args:
             ip_address: The IP address to bind the server to.
             port: The port to bind the server to.
+            username: The username to use for authentication.
+            password: The password to use for authentication.
         """
-        from zenml.services import ServiceRegistry
-
-        service_config = ZenServerConfig(
-            root_runtime_path=GLOBAL_ZENML_SERVER_CONFIG_PATH,
-            singleton=True,
-            ip_address=str(ip_address),
-            port=port,
+        from zenml.zen_server.deploy.local.local_deployer import (
+            LocalServerDeployer,
+            LocalServerDeploymentConfig,
+            LOCAL_SERVER_SINGLETON_NAME,
         )
-        try:
-            with open(ZENML_SERVER_CONFIG_FILENAME, "r") as f:
-                zen_server = ServiceRegistry().load_service_from_json(f.read())
-                cli_utils.declare(
-                    "An existing ZenServer local instance was found. To start a "
-                    "fresh instance, shut down the current one by running `zenml "
-                    "server down`. Reusing the existing ZenServer instance...",
-                )
-        except (
-            JSONDecodeError,
-            FileNotFoundError,
-            ModuleNotFoundError,
-            TypeError,
-        ):
-            zen_server = ZenServer(service_config)
-            cli_utils.declare("Starting a new ZenServer local instance.")
 
-        zen_server.start(timeout=30)
+        server_config = LocalServerDeploymentConfig(
+            name=LOCAL_SERVER_SINGLETON_NAME,
+            address=ip_address,
+            port=port,
+            username=username,
+            password=password,
+        )
 
-        # won't happen for ZenServer, but mypy complains otherwise
-        assert zen_server.endpoint is not None
+        deployer = LocalServerDeployer()
+        deployer.up(server_config)
 
-        if zen_server.endpoint.status.port != port:
-            cli_utils.warning(
-                textwrap.dedent(
-                    f"""
-                    You specified port={port}, but the current ZenServer is running
-                    at '{zen_server.endpoint.status.uri}'. This can happen in the
-                    case the specified port is in use or if the server was already
-                    running on port {zen_server.endpoint.status.port}.
-                    In case you want to change to port {port}, shut down the server
-                    with `zenml server down` and restart it with a free port of your
-                    choice.
-                    """
-                )
-            )
-        else:
-            cli_utils.declare(
-                f"ZenServer running at '{zen_server.endpoint.status.uri}'."
-            )
+        server_status = deployer.status(LOCAL_SERVER_SINGLETON_NAME)
+        cli_utils.declare(
+            f"Local ZenML server running at '{server_status.url}'."
+        )
 
     @server.command("status")
     def status_server() -> None:
         """Get the status of the ZenServer."""
-        from zenml.services import ServiceRegistry, ServiceState
+        from zenml.zen_server.deploy.local.local_deployer import (
+            LocalServerDeployer,
+            LOCAL_SERVER_SINGLETON_NAME,
+        )
 
+        deployer = LocalServerDeployer()
         try:
-            with open(ZENML_SERVER_CONFIG_FILENAME, "r") as f:
-                zervice = ServiceRegistry().load_service_from_json(f.read())
-        except FileNotFoundError:
-            cli_utils.warning("No ZenServer instance found locally!")
-        else:
-            zen_server_status = zervice.check_status()
+            server_status = deployer.status(LOCAL_SERVER_SINGLETON_NAME)
+        except KeyError:
+            cli_utils.error("No ZenML server running locally!")
 
-            running = (
-                f" and running at {zervice.endpoint.status.uri}."
-                if zen_server_status[0] == ServiceState.ACTIVE
-                and zervice.endpoint
-                else ""
-            )
-
-            cli_utils.declare(
-                f"The ZenServer status is {zen_server_status[0]}{running}."
-            )
+        cli_utils.declare(
+            f"Local ZenML server running at '{server_status.url}'."
+        )
 
     @server.command("down")
     def down_server() -> None:
         """Shut down the local ZenServer instance."""
-        from zenml.services import ServiceRegistry
+        from zenml.zen_server.deploy.local.local_deployer import (
+            LocalServerDeployer,
+            LOCAL_SERVER_SINGLETON_NAME,
+        )
 
+        deployer = LocalServerDeployer()
         try:
-            with open(ZENML_SERVER_CONFIG_FILENAME, "r") as f:
-                zervice = ServiceRegistry().load_service_from_json(f.read())
-        except FileNotFoundError:
-            cli_utils.error("No ZenServer instance found locally!")
-        else:
-            cli_utils.declare("Shutting down the local ZenService instance.")
-            zervice.stop()
+            deployer.get(LOCAL_SERVER_SINGLETON_NAME)
+        except KeyError:
+            cli_utils.error("No ZenML server running locally!")
 
-            shutil.rmtree(GLOBAL_ZENML_SERVER_CONFIG_PATH)
+        deployer.down(LOCAL_SERVER_SINGLETON_NAME)
+
+    @server.command("connect")
+    @click.argument(
+        "server",
+        type=str,
+        required=True,
+    )
+    @click.option("--user", type=str, default="default", show_default=True)
+    def connect_server(server: str, user: str) -> None:
+        """Connect to a ZenServer."""
+        from zenml.zen_server.deploy.local.local_deployer import (
+            LocalServerDeployer,
+        )
+
+        deployer = LocalServerDeployer()
+        try:
+            deployer.connect(server=server, user=user)
+        except KeyError:
+            cli_utils.error("No ZenML server running locally!")
+
+        cli_utils.declare(f"Connected to the {server} server as user {user}.")
+
+    @server.command("disconnect")
+    @click.argument(
+        "server",
+        type=str,
+        required=True,
+    )
+    def disconnect_server(server: str) -> None:
+        """Disconnect from a ZenServer."""
+        from zenml.zen_server.deploy.local.local_deployer import (
+            LocalServerDeployer,
+        )
+
+        deployer = LocalServerDeployer()
+        try:
+            deployer.disconnect(server=server)
+        except KeyError:
+            cli_utils.error("No ZenML server running locally!")
+
+        cli_utils.declare(f"Disconnected from the {server} server.")

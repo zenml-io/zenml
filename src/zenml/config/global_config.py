@@ -427,6 +427,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         self,
         config_path: str,
         load_config_path: Optional[PurePath] = None,
+        store_config: Optional[StoreConfiguration] = None,
     ) -> "GlobalConfiguration":
         """Create a copy of the global config using a different configuration path.
 
@@ -445,6 +446,9 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 path, e.g. when the global config copy is copied to a
                 container image. This will be reflected in the paths and URLs
                 encoded in the copied store configuration.
+            store_config: custom store configuration to use for the copied
+                global configuration. If not specified, the current global store
+                configuration is used.
 
         Returns:
             A new global configuration object copied to the specified path.
@@ -454,7 +458,9 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         self._write_config(config_path)
 
         config_copy = GlobalConfiguration(config_path=config_path)
-        if self.store:
+        if store_config:
+            config_copy.store = store_config
+        elif self.store:
             store_class = BaseZenStore.get_store_class(self.store.type)
 
             store_config_copy = store_class.copy_local_store(
@@ -473,17 +479,25 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         """
         return self._config_path
 
+    def get_default_store(self) -> StoreConfiguration:
+        """Get the default store configuration.
+
+        Returns:
+            The default store configuration.
+        """
+        from zenml.zen_stores.base_zen_store import BaseZenStore
+
+        return BaseZenStore.get_default_store_config(
+            path=self.config_directory
+        )
+
     def set_default_store(self) -> None:
         """Creates and sets the default store configuration.
 
         Call this method to initialize or revert the store configuration to the
         default store.
         """
-        from zenml.zen_stores.base_zen_store import BaseZenStore
-
-        default_store_cfg = BaseZenStore.get_default_store_config(
-            path=self.config_directory
-        )
+        default_store_cfg = self.get_default_store()
         self._configure_store(default_store_cfg)
         logger.info("Using the default store for the global config.")
         track_event(
