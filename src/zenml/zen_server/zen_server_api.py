@@ -29,6 +29,7 @@ from zenml.constants import (
     ENV_ZENML_PROFILE_NAME,
     FLAVORS,
     GRAPH,
+    INVITE_TOKEN,
     LOGIN,
     LOGOUT,
     METADATA_CONFIG,
@@ -1578,39 +1579,42 @@ async def delete_repository(repository_id: str) -> None:
 ## USERS
 
 
-@authed.get(USERS, response_model=List[User])
-async def users() -> List[User]:
-    """Returns all users.
-
-    Returns:
-        All users.
-    """
-    return zen_store.users
-
-
-@authed.get(USERS + "/{name}", responses={404: error_response})
-async def get_user(name: str) -> User:
-    """Gets a specific user.
+@authed.get(
+    USERS,
+    response_model=List[User],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def get_users(project_name: str, invite_token: str) -> List[User]:
+    """Returns a list of all users.
 
     Args:
-        name: Name of the user.
+        project_name: Name of the project.
+        invite_token: Token to use for the invitation.
 
     Returns:
-        The requested user.
+        A list of all users.
 
     Raises:
-        not_found: when none are found
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
     """
     try:
-        return zen_store.get_user(user_name=name)
-    except KeyError as error:
-        raise not_found(error) from error
+        return zen_store.get_users(
+            project_name=project_name, invite_token=invite_token
+        )
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
 
 
 @authed.post(
     USERS,
     response_model=User,
-    responses={409: error_response},
+    responses={401: error_response, 409: error_response, 422: error_response},
 )
 async def create_user(user: User) -> User:
     """Creates a user.
@@ -1622,27 +1626,275 @@ async def create_user(user: User) -> User:
 
     Returns:
         The created user.
+
+    Raises:
+        401 error: when not authorized to login
+        409 error: when trigger does not exist
+        422 error: when unable to validate input
     """
     try:
         return zen_store.create_user(user.name)
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=409, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
     except EntityExistsError as error:
         raise conflict(error) from error
 
 
-@authed.delete(USERS + "/{name}", responses={404: error_response})
-async def delete_user(name: str) -> None:
-    """Deletes a user.
+@authed.get(
+    USERS + "/{user_id}",
+    response_model=User,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def get_user(user_id: str, invite_token: str) -> User:
+    """Returns a specific user.
 
     Args:
-        name: Name of the user.
+        user_id: ID of the user.
+        invite_token: Token to use for the invitation.
+
+    Returns:
+        A specific user.
 
     Raises:
-        not_found: when none are found
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
     """
     try:
-        zen_store.delete_user(user_name=name)
+        return zen_store.get_user(user_name=name)
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
     except KeyError as error:
         raise not_found(error) from error
+
+
+@authed.put(
+    USERS + "/{user_id}",
+    response_model=User,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def update_user(user_id: str, user: User) -> User:
+    """Updates a specific user.
+
+    Args:
+        user_id: ID of the user.
+        user: the user to to use for the update.
+
+    Returns:
+        The updated user.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.update_user(user_id, user)
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+    except KeyError as error:
+        raise not_found(error) from error
+
+
+@authed.delete(
+    USERS + "/{user_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def delete_user(user_id: str) -> None:
+    """Deletes a specific user.
+
+    Args:
+        user_id: ID of the user.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.delete_user(user_id)
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+    except KeyError as error:
+        raise not_found(error) from error
+
+
+@authed.get(
+    USERS + "/{user_id}}" + ROLES,
+    response_model=List[Role],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def get_role_assignments_for_user(user_id: str) -> List[Role]:
+    """Returns a list of all roles that are assigned to a user.
+
+    Args:
+        user_id: ID of the user.
+
+    Returns:
+        A list of all roles that are assigned to a user.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.get_role_assignments_for_user(user_id)
+    except KeyError as error:
+        raise not_found(error) from error
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.post(
+    USERS + "/{user_id}}" + ROLES,
+    response_model=Role,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+async def assign_role(user_id: str, data: Dict[str, Any]) -> Role:
+    """Assign a role to a user for all resources within a given project or globally.
+
+    Args:
+        user_id: ID of the user.
+        data: Data relating to the role to assign to the user.
+
+    Returns:
+        The assigned role.
+
+    Raises:
+        401 error: when not authorized to login
+        409 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    role_name = data["role_name"]
+    entity_name = data["entity_name"]
+    project_name = data.get("project_name")
+    is_user = data.get("is_user", True)
+
+    try:
+        zen_store.assign_role(
+            role_name=role_name,
+            entity_name=entity_name,
+            project_name=project_name,
+            is_user=is_user,
+        )
+    except KeyError as error:
+        raise not_found(error) from error
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=409, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.get(
+    USERS + "/{user_id}}" + INVITE_TOKEN,
+    response_model=str,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def get_invite_token(user_id: str) -> str:
+    """Gets an invite token for a given user.
+
+    If no invite token exists, one is created.
+
+    Args:
+        user_id: ID of the user.
+
+    Returns:
+        An invite token.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.get_invite_token(user_id)
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.delete(
+    USERS + "/{user_id}}" + INVITE_TOKEN,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+async def invalidate_invite_token(user_id: str) -> None:
+    """Invalidates an invite token for a given user.
+
+    Args:
+        user_id: ID of the user.
+
+    Raises:
+        401 error: when not authorized to login
+        409 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.invalidate_invite_token(user_id)
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=409, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.delete(
+    USERS + "/{user_id}}" + ROLES + "/{role_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def delete_user_role(
+    user_id: str, role_id: str, project_name: str
+) -> None:
+    """Remove a users role within a project or globally.
+
+    Args:
+        user_id: ID of the user.
+        role_id: ID of the role.
+        project_name: Name of the project.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        zen_store.delete_role(
+            user_id=user_id, role_id=role_id, project_name=project_name
+        )
+    except KeyError as error:
+        raise not_found(error) from error
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
 
 
 @authed.get(
@@ -1664,34 +1916,6 @@ async def teams_for_user(name: str) -> List[Team]:
     """
     try:
         return zen_store.get_teams_for_user(user_name=name)
-    except KeyError as error:
-        raise not_found(error) from error
-
-
-@authed.get(
-    USERS + "/{name}/role_assignments",
-    response_model=List[RoleAssignment],
-    responses={404: error_response},
-)
-async def role_assignments_for_user(
-    name: str, project_name: Optional[str] = None
-) -> List[RoleAssignment]:
-    """Returns all role assignments for a user.
-
-    Args:
-        name: Name of the user.
-        project_name: Name of the project.
-
-    Returns:
-        All role assignments for the user.
-
-    Raises:
-        not_found: when none are found
-    """
-    try:
-        return zen_store.get_role_assignments_for_user(
-            user_name=name, project_name=project_name, include_team_roles=False
-        )
     except KeyError as error:
         raise not_found(error) from error
 
@@ -1766,22 +1990,6 @@ async def create_role(role: Role) -> Role:
         raise conflict(error) from error
 
 
-@authed.delete(ROLES + "/{name}", responses={404: error_response})
-async def delete_role(name: str) -> None:
-    """Deletes a role.
-
-    Args:
-        name: Name of the role.
-
-    Raises:
-        not_found: when none are found
-    """
-    try:
-        zen_store.delete_role(role_name=name)
-    except KeyError as error:
-        raise not_found(error) from error
-
-
 @authed.get(ROLE_ASSIGNMENTS, response_model=List[RoleAssignment])
 async def role_assignments() -> List[RoleAssignment]:
     """Returns all role assignments.
@@ -1790,35 +1998,6 @@ async def role_assignments() -> List[RoleAssignment]:
         All role assignments.
     """
     return zen_store.role_assignments
-
-
-@authed.post(
-    ROLE_ASSIGNMENTS,
-    responses={404: error_response},
-)
-async def assign_role(data: Dict[str, Any]) -> None:
-    """Assigns a role.
-
-    Args:
-        data: Data containing the role assignment.
-
-    Raises:
-        not_found: when none are found
-    """
-    role_name = data["role_name"]
-    entity_name = data["entity_name"]
-    project_name = data.get("project_name")
-    is_user = data.get("is_user", True)
-
-    try:
-        zen_store.assign_role(
-            role_name=role_name,
-            entity_name=entity_name,
-            project_name=project_name,
-            is_user=is_user,
-        )
-    except KeyError as error:
-        raise not_found(error) from error
 
 
 @authed.delete(ROLE_ASSIGNMENTS, responses={404: error_response})
