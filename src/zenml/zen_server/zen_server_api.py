@@ -1783,6 +1783,76 @@ async def create_pipeline(
         raise HTTPException(status_code=422, detail=error_detail(error))
 
 
+@authed.get(
+    PROJECTS + "/{project_name}" + REPOSITORIES,
+    response_model=List[Repository],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def get_project_repositories(
+    project_name: str,
+) -> List[Repository]:
+    """Gets repositories defined for a specific project.
+
+    # noqa: DAR401
+
+    Args:
+        project_name: Name of the project.
+
+    Returns:
+        All repositories within the project.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.get_project_repositories(project_name)
+    except KeyError as error:
+        raise not_found(error) from error
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.get(
+    PROJECTS + "/{project_name}" + REPOSITORIES,
+    response_model=Repository,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+async def connect_project_repository(
+    project_name: str, repository: Repository
+) -> Repository:
+    """Attach or connect a repository to a project.
+
+    # noqa: DAR401
+
+    Args:
+        project_name: Name of the project.
+
+    Returns:
+        The connected repository.
+
+    Raises:
+        401 error: when not authorized to login
+        409 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.connect_project_repository(project_name, repository)
+    except KeyError as error:
+        raise not_found(error) from error
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=409, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
 ## REPOSITORY
 
 
