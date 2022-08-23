@@ -105,7 +105,7 @@ class BytesMaterializer(BaseMaterializer):
             The data read.
         """
         super().handle_input(data_type)
-        with open(self.data_path, "rb") as file_:
+        with fileio.open(self.data_path, "rb") as file_:
             return file_.read()
 
     def handle_return(self, data: Any) -> None:
@@ -115,7 +115,7 @@ class BytesMaterializer(BaseMaterializer):
             data: The data to store.
         """
         super().handle_return(data)
-        with open(self.data_path, "wb") as file_:
+        with fileio.open(self.data_path, "wb") as file_:
             file_.write(data)
 
 
