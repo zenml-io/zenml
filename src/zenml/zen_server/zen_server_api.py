@@ -41,7 +41,6 @@ from zenml.constants import (
     STACK_COMPONENTS,
     STACK_CONFIGURATIONS,
     STACKS,
-    STACKS_EMPTY,
     STEPS,
     TEAMS,
     TRIGGERS,
@@ -49,7 +48,6 @@ from zenml.constants import (
 )
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import (
-    DoesNotExistException,
     EntityExistsError,
     StackComponentExistsError,
     StackExistsError,
@@ -1003,23 +1001,127 @@ async def get_step_outputs(step_id: str) -> List[Dict]:
 ## STACK
 
 
-@authed.get(STACKS_EMPTY, response_model=bool)
-async def stacks_empty() -> bool:
-    """Returns whether stacks are registered or not.
+@authed.get(
+    STACKS,
+    response_model=List[Dict],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def get_stacks(project_name: str) -> List[Dict]:
+    """Returns all stacks.
 
     Returns:
-        True if there are no stacks registered, False otherwise.
+        All stacks.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
     """
-    return zen_store.stacks_empty
+    try:
+        return zen_store.get_stacks(project_name=project_name)
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
 
 
 @authed.get(
-    STACK_CONFIGURATIONS + "/{name}",
-    response_model=Dict[StackComponentType, str],
-    responses={404: error_response},
+    STACKS + "/{stack_id}",
+    response_model=Dict,
+    responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_stack_configuration(name: str) -> Dict[StackComponentType, str]:
+async def get_stack(stack_id: str) -> Dict:
+    """Returns the requested stack.
+
+    Args:
+        stack_id: ID of the stack.
+
+    Returns:
+        The requested stack.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.get_stack(stack_id)
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.put(
+    STACKS + "/{stack_id}",
+    response_model=Dict,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def update_stack(stack_id: str, stack: StackWrapper) -> Dict:
+    """Updates a stack.
+
+    Args:
+        stack_id: Name of the stack.
+        stack: Stack to use for the update.
+
+    Returns:
+        The updated stack.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        zen_store.update_stack(stack_id, stack)
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.delete(
+    STACKS + "/{stack_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def delete_stack(stack_id: str) -> None:
+    """Deletes a stack.
+
+    Args:
+        stack_id: Name of the stack.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        zen_store.delete_stack(stack_id)  # aka 'deregister_stack'
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@authed.get(
+    STACK_CONFIGURATIONS + "/{stack_id}" + STACK_COMPONENTS,
+    response_model=List[StackComponentType, str],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def get_stack_configuration(
+    stack_id: str,
+) -> List[StackComponentType, str]:
     """Returns the configuration for the requested stack.
+
+    This comes in the form of a list of stack components within the stack.
 
     Args:
         name: Name of the stack.
@@ -1028,12 +1130,18 @@ async def get_stack_configuration(name: str) -> Dict[StackComponentType, str]:
         Configuration for the requested stack.
 
     Raises:
-        not_found: when none are found
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
     """
     try:
-        return zen_store.get_stack_configuration(name)
-    except KeyError as error:
-        raise not_found(error) from error
+        return zen_store.get_stack_configuration(stack_id)
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
 
 
 @authed.get(
@@ -1067,53 +1175,7 @@ async def register_stack_component(
         raise conflict(error) from error
 
 
-@authed.delete(STACKS + "/{name}", responses={404: error_response})
-async def deregister_stack(name: str) -> None:
-    """Deregisters a stack.
-
-    Args:
-        name: Name of the stack to deregister.
-
-    Raises:
-        not_found: when none are found
-    """
-    try:
-        zen_store.deregister_stack(name)
-    except KeyError as error:
-        raise not_found(error) from error
-
-
-@authed.get(STACKS, response_model=List[StackWrapper])
-async def stacks() -> List[StackWrapper]:
-    """Returns all stacks.
-
-    Returns:
-        All stacks.
-    """
-    return zen_store.stacks
-
-
-@authed.get(
-    STACKS + "/{name}",
-    response_model=StackWrapper,
-    responses={404: error_response},
-)
-async def get_stack(name: str) -> StackWrapper:
-    """Returns the requested stack.
-
-    Args:
-        name: Name of the stack.
-
-    Returns:
-        The requested stack.
-
-    Raises:
-        not_found: when none are found
-    """
-    try:
-        return zen_store.get_stack(name)
-    except KeyError as error:
-        raise not_found(error) from error
+## STACK COMPONENT
 
 
 @authed.post(
@@ -1133,29 +1195,6 @@ async def register_stack(stack: StackWrapper) -> None:
         zen_store.register_stack(stack)
     except (StackExistsError, StackComponentExistsError) as error:
         raise conflict(error) from error
-
-
-@authed.put(
-    STACKS + "/{name}",
-    responses={404: error_response},
-)
-async def update_stack(stack: StackWrapper, name: str) -> None:
-    """Updates a stack.
-
-    Args:
-        stack: Stack to update.
-        name: Name of the stack.
-
-    Raises:
-        not_found: when none are found
-    """
-    try:
-        zen_store.update_stack(name, stack)
-    except DoesNotExistException as error:
-        raise not_found(error) from error
-
-
-## STACK COMPONENT
 
 
 @authed.put(
@@ -1888,3 +1927,13 @@ app.include_router(authed)
 #         )
 #     except KeyError as error:
 #         raise not_found(error) from error
+
+
+# @authed.get(STACKS_EMPTY, response_model=bool)
+# async def stacks_empty() -> bool:
+#     """Returns whether stacks are registered or not.
+
+#     Returns:
+#         True if there are no stacks registered, False otherwise.
+#     """
+#     return zen_store.stacks_empty
