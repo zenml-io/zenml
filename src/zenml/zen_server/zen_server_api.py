@@ -1144,6 +1144,11 @@ async def get_stack_configuration(
         raise HTTPException(status_code=422, detail=error_detail(error))
 
 
+
+## STACK COMPONENT
+
+
+
 @authed.get(
     STACK_CONFIGURATIONS,
     response_model=Dict[str, Dict[StackComponentType, str]],
@@ -1174,8 +1179,6 @@ async def register_stack_component(
     except StackComponentExistsError as error:
         raise conflict(error) from error
 
-
-## STACK COMPONENT
 
 
 @authed.post(
