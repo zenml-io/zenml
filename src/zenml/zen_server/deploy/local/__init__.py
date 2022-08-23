@@ -11,12 +11,4 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""ZenML Server Implementation.
-
-The ZenML Server is a simple webserver to let you collaborate on stacks via
-the network. It can be spun up in a background daemon from the command line
-using `zenml server up` and managed from the same command line group.
-
-Using the ZenServer's stacks in your project just requires configuring ZenML
-with a `rest` store-type pointed to the url of the server.
-"""
+"""ZenServer Local Deployment."""

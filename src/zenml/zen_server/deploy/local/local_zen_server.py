@@ -13,14 +13,18 @@
 #  permissions and limitations under the License.
 """Zen Server implementation."""
 
+import os
 from typing import Any, Dict, Optional, Union
 
-import uvicorn  # type: ignore[import]
+import uvicorn
+from zenml.config.global_config import GlobalConfiguration  # type: ignore[import]
 
 from zenml.constants import (
     DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
+    ENV_ZENML_CONFIG_PATH,
     ZEN_SERVER_ENTRYPOINT,
 )
+from zenml.enums import StoreType
 from zenml.logger import get_logger
 from zenml.services import (
     HTTPEndpointHealthMonitor,
@@ -39,7 +43,7 @@ ZEN_SERVER_URL_PATH = ""
 ZEN_SERVER_HEALTHCHECK_URL_PATH = "health"
 
 
-class ZenServerEndpointConfig(LocalDaemonServiceEndpointConfig):
+class LocalZenServerEndpointConfig(LocalDaemonServiceEndpointConfig):
     """ZenServer endpoint configuration.
 
     Attributes:
@@ -49,7 +53,7 @@ class ZenServerEndpointConfig(LocalDaemonServiceEndpointConfig):
     zen_server_uri_path: str
 
 
-class ZenServerEndpoint(LocalDaemonServiceEndpoint):
+class LocalZenServerEndpoint(LocalDaemonServiceEndpoint):
     """A service endpoint exposed by the ZenServer daemon.
 
     Attributes:
@@ -57,7 +61,7 @@ class ZenServerEndpoint(LocalDaemonServiceEndpoint):
         monitor: optional service endpoint health monitor
     """
 
-    config: ZenServerEndpointConfig
+    config: LocalZenServerEndpointConfig
     monitor: HTTPEndpointHealthMonitor
 
     @property
@@ -73,8 +77,8 @@ class ZenServerEndpoint(LocalDaemonServiceEndpoint):
         return f"{uri}{self.config.zen_server_uri_path}"
 
 
-class ZenServerConfig(LocalDaemonServiceConfig):
-    """ZenServer deployment configuration.
+class LocalZenServerConfig(LocalDaemonServiceConfig):
+    """Local ZenMl server deployment configuration.
 
     Attributes:
         ip_address: The IP address where the ZenServer will listen for
@@ -86,7 +90,7 @@ class ZenServerConfig(LocalDaemonServiceConfig):
     port: int = 8000
 
 
-class ZenServer(LocalDaemonService):
+class LocalZenServer(LocalDaemonService):
     """Service daemon that can be used to start a local ZenServer.
 
     Attributes:
@@ -101,12 +105,12 @@ class ZenServer(LocalDaemonService):
         description="ZenServer to manage stacks, users and pipelines",
     )
 
-    config: ZenServerConfig
-    endpoint: ZenServerEndpoint
+    config: LocalZenServerConfig
+    endpoint: LocalZenServerEndpoint
 
     def __init__(
         self,
-        config: Union[ZenServerConfig, Dict[str, Any]],
+        config: Union[LocalZenServerConfig, Dict[str, Any]],
         **attrs: Any,
     ) -> None:
         """Initialize the ZenServer.
@@ -116,14 +120,14 @@ class ZenServer(LocalDaemonService):
             attrs: additional attributes.
         """
         # ensure that the endpoint is created before the service is initialized
-        if isinstance(config, ZenServerConfig) and "endpoint" not in attrs:
+        if isinstance(config, LocalZenServerConfig) and "endpoint" not in attrs:
 
             endpoint_uri_path = ZEN_SERVER_URL_PATH
             healthcheck_uri_path = ZEN_SERVER_HEALTHCHECK_URL_PATH
             use_head_request = True
 
-            endpoint = ZenServerEndpoint(
-                config=ZenServerEndpointConfig(
+            endpoint = LocalZenServerEndpoint(
+                config=LocalZenServerEndpointConfig(
                     protocol=ServiceEndpointProtocol.HTTP,
                     ip_address=config.ip_address,
                     port=config.port,
@@ -140,13 +144,28 @@ class ZenServer(LocalDaemonService):
         super().__init__(config=config, **attrs)
 
     def run(self) -> None:
-        """Run the ZenServer."""
+        """Run the ZenServer.
+
+        Raises:
+            ValueError: if started with a global configuration that connects to
+            another ZenML server.
+        """
+        gc = GlobalConfiguration()
+        if gc.store and gc.store.type == StoreType.REST:
+            raise ValueError(
+                "The ZenML server cannot be started with REST store type."
+            )
         logger.info(
             "Starting ZenServer as blocking "
             "process... press CTRL+C once to stop it."
         )
 
         self.endpoint.prepare_for_start()
+
+        # force the server to use its dedicated global configuration path
+        os.environ[ENV_ZENML_CONFIG_PATH] = os.path.join(
+            self.config.root_runtime_path, ".zenconfig"
+        )
 
         try:
             uvicorn.run(
@@ -169,3 +188,13 @@ class ZenServer(LocalDaemonService):
         if not self.is_running:
             return None
         return self.endpoint.endpoint_uri
+
+    def update(self, config: LocalZenServerConfig) -> None:
+        """Update the ZenServer configuration.
+
+        Args:
+            config: new server configuration.
+        """
+        super().update(config)
+        self.endpoint.config.ip_address = config.ip_address
+        self.endpoint.config.port = config.port

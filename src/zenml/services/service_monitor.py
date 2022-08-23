@@ -119,7 +119,11 @@ class HTTPEndpointHealthMonitor(BaseServiceEndpointHealthMonitor):
         uri = endpoint.status.uri
         if not uri:
             return None
-        return f"{uri}{self.config.healthcheck_uri_path}"
+        if not self.config.healthcheck_uri_path:
+            return uri
+        return (
+            f"{uri.rstrip('/')}/{self.config.healthcheck_uri_path.lstrip('/')}"
+        )
 
     def check_endpoint_status(
         self, endpoint: "BaseServiceEndpoint"
