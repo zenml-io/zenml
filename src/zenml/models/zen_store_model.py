@@ -19,7 +19,7 @@ from typing import DefaultDict, Dict, List, Set
 from pydantic import Field, validator
 
 from zenml.enums import StackComponentType
-from zenml.models.component_models import FlavorModel
+from zenml.models import FlavorModel
 from zenml.models.pipeline_models import PipelineRunModel
 from zenml.models.user_management_models import Project, Role, User
 from zenml.utils.filesync_model import FileSyncModel

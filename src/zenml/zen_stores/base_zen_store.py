@@ -939,7 +939,7 @@ class BaseZenStore(ABC):
                 existing_component = self.get_stack_component(
                     component_type=component.type, name=component.name
                 )
-                if existing_component.uuid != component.uuid:
+                if existing_component.id != component.id:
                     raise StackComponentExistsError(
                         f"Unable to register one of the stacks components: "
                         f"A component of type '{component.type}' and name "
