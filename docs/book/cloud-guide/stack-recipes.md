@@ -89,10 +89,10 @@ We have already discussed the features that the ZenML CLI offers on top of the u
     ```
 
     {% hint style="info" %}
-    You'll notice that a ZenML stack configuration file gets created 🤯! This command will also import this YAML file as a ZenML stack, using the stack recipe's name by default. You can set your own name by using the `--stack-name` option.
+    If you want to allow ZenML to automatically import the created resources as a ZenML stack, pass the `--import` flag to the command above. By default, the imported stack will have the same name as the stack recipe and you can provide your own with the `--stack-name` option.
     {% endhint %}
 
-6. If you wish to prevent this behaviour and prefer making any modifications to the generated configuration file before importing, pass the `--no-import` flag with the deploy command. You can then run the following command to import the resources set as your current stack, manually.
+6. You'll notice that a ZenML stack configuration file gets created after the previous command executes 🤯! This YAML file can be imported as a ZenML stack manually by running the following command.
 
     ```
     zenml stack import <stack-name> <path-to-the-created-stack-config-yaml>

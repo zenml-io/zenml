@@ -220,7 +220,7 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
         Args:
             path: The path to create.
         """
-        self.filesystem.makedir(path=path)
+        self.filesystem.makedir(path=path, exist_ok=True)
 
     def remove(self, path: PathType) -> None:
         """Remove the file at the given path.
