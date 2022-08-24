@@ -30,7 +30,7 @@ from typing import List
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import GCP
 from zenml.integrations.integration import Integration
-from zenml.zen_stores.models import FlavorWrapper
+from zenml.models import FlavorModel
 
 GCP_ARTIFACT_STORE_FLAVOR = "gcp"
 GCP_SECRETS_MANAGER_FLAVOR = "gcp_secrets_manager"
@@ -50,35 +50,35 @@ class GcpIntegration(Integration):
     ]
 
     @classmethod
-    def flavors(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorModel]:
         """Declare the stack component flavors for the GCP integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
         return [
-            FlavorWrapper(
+            FlavorModel(
                 name=GCP_ARTIFACT_STORE_FLAVOR,
                 source="zenml.integrations.gcp.artifact_stores"
                 ".GCPArtifactStore",
                 type=StackComponentType.ARTIFACT_STORE,
                 integration=cls.NAME,
             ),
-            FlavorWrapper(
+            FlavorModel(
                 name=GCP_SECRETS_MANAGER_FLAVOR,
                 source="zenml.integrations.gcp.secrets_manager."
                 "GCPSecretsManager",
                 type=StackComponentType.SECRETS_MANAGER,
                 integration=cls.NAME,
             ),
-            FlavorWrapper(
+            FlavorModel(
                 name=GCP_VERTEX_ORCHESTRATOR_FLAVOR,
                 source="zenml.integrations.gcp.orchestrators"
                 ".VertexOrchestrator",
                 type=StackComponentType.ORCHESTRATOR,
                 integration=cls.NAME,
             ),
-            FlavorWrapper(
+            FlavorModel(
                 name=GCP_VERTEX_STEP_OPERATOR_FLAVOR,
                 source="zenml.integrations.gcp.step_operators"
                 ".VertexStepOperator",

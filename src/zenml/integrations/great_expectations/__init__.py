@@ -22,7 +22,7 @@ from typing import List
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import GREAT_EXPECTATIONS
 from zenml.integrations.integration import Integration
-from zenml.zen_stores.models import FlavorWrapper
+from zenml.models import FlavorModel
 
 GREAT_EXPECTATIONS_DATA_VALIDATOR_FLAVOR = "great_expectations"
 
@@ -41,14 +41,14 @@ class GreatExpectationsIntegration(Integration):
         from zenml.integrations.great_expectations import materializers  # noqa
 
     @classmethod
-    def flavors(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorModel]:
         """Declare the stack component flavors for the Great Expectations integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
         return [
-            FlavorWrapper(
+            FlavorModel(
                 name=GREAT_EXPECTATIONS_DATA_VALIDATOR_FLAVOR,
                 source="zenml.integrations.great_expectations.data_validators.GreatExpectationsDataValidator",
                 type=StackComponentType.DATA_VALIDATOR,

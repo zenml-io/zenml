@@ -18,7 +18,7 @@ from typing import List
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import WHYLOGS
 from zenml.integrations.integration import Integration
-from zenml.zen_stores.models import FlavorWrapper
+from zenml.models import FlavorModel
 
 WHYLOGS_DATA_VALIDATOR_FLAVOR = "whylogs"
 
@@ -37,14 +37,14 @@ class WhylogsIntegration(Integration):
         from zenml.integrations.whylogs import visualizers  # noqa
 
     @classmethod
-    def flavors(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorModel]:
         """Declare the stack component flavors for the Great Expectations integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
         return [
-            FlavorWrapper(
+            FlavorModel(
                 name=WHYLOGS_DATA_VALIDATOR_FLAVOR,
                 source="zenml.integrations.whylogs.data_validators.WhylogsDataValidator",
                 type=StackComponentType.DATA_VALIDATOR,

@@ -34,16 +34,18 @@ from zenml.post_execution.pipeline_run import PipelineRunView
 from zenml.post_execution.step import StepView
 from zenml.utils import io_utils
 from zenml.zen_stores import BaseZenStore
-from zenml.zen_stores.models import (
+from zenml.models import (
     ComponentModel,
-    FlavorWrapper,
+    FlavorModel,
     Project,
     Role,
-    RoleAssignment,
-    Team,
+    StackModel,
     User,
+    Team,
+    PipelineRunModel,
+    RoleAssignment
 )
-from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
+from zenml.models import PipelineRunModel
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -1301,7 +1303,7 @@ class SqlZenStore(BaseZenStore):
         pipeline_name: str,
         run_name: str,
         project_name: Optional[str] = None,
-    ) -> PipelineRunWrapper:
+    ) -> PipelineRunModel:
         """Gets a pipeline run.
 
         Args:
@@ -1337,7 +1339,7 @@ class SqlZenStore(BaseZenStore):
 
     def get_pipeline_run_wrappers(
         self, pipeline_name: str, project_name: Optional[str] = None
-    ) -> List[PipelineRunWrapper]:
+    ) -> List[PipelineRunModel]:
         """Gets pipeline runs.
 
         Args:
@@ -1431,7 +1433,7 @@ class SqlZenStore(BaseZenStore):
 
     def register_pipeline_run(
         self,
-        pipeline_run: PipelineRunWrapper,
+        pipeline_run: PipelineRunModel,
     ) -> None:
         """Registers a pipeline run.
 
@@ -1462,7 +1464,7 @@ class SqlZenStore(BaseZenStore):
     # Handling stack component flavors
 
     @property
-    def flavors(self) -> List[FlavorWrapper]:
+    def flavors(self) -> List[FlavorModel]:
         """All registered flavors.
 
         Returns:
@@ -1470,7 +1472,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             return [
-                FlavorWrapper(**flavor.dict())
+                FlavorModel(**flavor.dict())
                 for flavor in session.exec(select(FlavorSchema)).all()
             ]
 
@@ -1479,7 +1481,7 @@ class SqlZenStore(BaseZenStore):
         source: str,
         name: str,
         stack_component_type: StackComponentType,
-    ) -> FlavorWrapper:
+    ) -> FlavorModel:
         """Creates a new flavor.
 
         Args:
@@ -1511,14 +1513,14 @@ class SqlZenStore(BaseZenStore):
                 source=source,
                 type=stack_component_type,
             )
-            flavor_wrapper = FlavorWrapper(**sql_flavor.dict())
+            flavor_wrapper = FlavorModel(**sql_flavor.dict())
             session.add(sql_flavor)
             session.commit()
         return flavor_wrapper
 
     def get_flavors_by_type(
         self, component_type: StackComponentType
-    ) -> List[FlavorWrapper]:
+    ) -> List[FlavorModel]:
         """Fetch all flavor defined for a specific stack component type.
 
         Args:
@@ -1532,7 +1534,7 @@ class SqlZenStore(BaseZenStore):
                 select(FlavorSchema).where(FlavorSchema.type == component_type)
             ).all()
         return [
-            FlavorWrapper(
+            FlavorModel(
                 name=f.name,
                 source=f.source,
                 type=f.type,
@@ -1545,7 +1547,7 @@ class SqlZenStore(BaseZenStore):
         self,
         flavor_name: str,
         component_type: StackComponentType,
-    ) -> FlavorWrapper:
+    ) -> FlavorModel:
         """Fetch a flavor by a given name and type.
 
         Args:
@@ -1567,7 +1569,7 @@ class SqlZenStore(BaseZenStore):
                         FlavorSchema.type == component_type,
                     )
                 ).one()
-                return FlavorWrapper(
+                return FlavorModel(
                     name=flavor.name,
                     source=flavor.source,
                     type=flavor.type,

@@ -22,7 +22,7 @@ from typing import List
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import VAULT
 from zenml.integrations.integration import Integration
-from zenml.zen_stores.models import FlavorWrapper
+from zenml.models import FlavorModel
 
 VAULT_SECRETS_MANAGER_FLAVOR = "vault"
 
@@ -34,14 +34,14 @@ class VaultSecretsManagerIntegration(Integration):
     REQUIREMENTS = ["hvac>=0.11.2"]
 
     @classmethod
-    def flavors(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorModel]:
         """Declare the stack component flavors for the Vault integration.
 
         Returns:
             List of stack component flavors.
         """
         return [
-            FlavorWrapper(
+            FlavorModel(
                 name=VAULT_SECRETS_MANAGER_FLAVOR,
                 source="zenml.integrations.vault.secrets_manager.VaultSecretsManager",
                 type=StackComponentType.SECRETS_MANAGER,

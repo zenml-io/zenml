@@ -18,7 +18,7 @@ from typing import DefaultDict, Dict
 
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
-from zenml.zen_stores.models import FlavorWrapper
+from zenml.models import FlavorModel
 
 logger = get_logger(__name__)
 
@@ -32,7 +32,7 @@ class FlavorRegistry:
     def __init__(self) -> None:
         """Initialization of the flavors."""
         self._flavors: DefaultDict[
-            StackComponentType, Dict[str, FlavorWrapper]
+            StackComponentType, Dict[str, FlavorModel]
         ] = defaultdict(dict)
 
         self.register_default_flavors()
@@ -63,7 +63,7 @@ class FlavorRegistry:
         ]
         for flavor in default_flavors:
             self._register_flavor(
-                FlavorWrapper(
+                FlavorModel(
                     name=flavor.FLAVOR,  # type: ignore[attr-defined]
                     type=flavor.TYPE,  # type: ignore[attr-defined]
                     source=flavor.__module__ + "." + flavor.__name__,
@@ -83,7 +83,7 @@ class FlavorRegistry:
 
     def _register_flavor(
         self,
-        flavor: FlavorWrapper,
+        flavor: FlavorModel,
     ) -> None:
         """Registers a stack component flavor.
 
@@ -108,7 +108,7 @@ class FlavorRegistry:
 
     def get_flavors_by_type(
         self, component_type: StackComponentType
-    ) -> Dict[str, FlavorWrapper]:
+    ) -> Dict[str, FlavorModel]:
         """Return the list of flavors with given type.
 
         Args:

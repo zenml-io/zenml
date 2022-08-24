@@ -19,17 +19,17 @@ from pydantic import BaseModel
 
 from zenml.enums import StackComponentType
 from zenml.stack import Stack
-from zenml.zen_stores.models import ComponentModel
+from zenml.models import ComponentModel
 
 
-class StackWrapper(BaseModel):
+class StackModel(BaseModel):
     """Network Serializable Wrapper describing a Stack."""
 
     name: str
     components: List[ComponentModel]
 
     @classmethod
-    def from_stack(cls, stack: Stack) -> "StackWrapper":
+    def from_stack(cls, stack: Stack) -> "StackModel":
         """Creates a StackWrapper from an actual Stack instance.
 
         Args:

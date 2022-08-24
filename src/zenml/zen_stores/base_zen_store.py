@@ -30,17 +30,17 @@ from zenml.post_execution.pipeline_run import PipelineRunView
 from zenml.post_execution.step import StepView
 from zenml.stack import Stack
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
-from zenml.zen_stores.models import (
+from zenml.models import (
     ComponentModel,
-    FlavorWrapper,
+    FlavorModel,
     Project,
     Role,
-    RoleAssignment,
-    StackWrapper,
-    Team,
+    StackModel,
     User,
+    Team,
+    PipelineRunModel,
+    RoleAssignment
 )
-from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
 
 logger = get_logger(__name__)
 
@@ -703,7 +703,7 @@ class BaseZenStore(ABC):
         pipeline_name: str,
         run_name: str,
         project_name: Optional[str] = None,
-    ) -> PipelineRunWrapper:
+    ) -> PipelineRunModel:
         """Gets a pipeline run.
 
         Args:
@@ -720,7 +720,7 @@ class BaseZenStore(ABC):
     @abstractmethod
     def get_pipeline_run_wrappers(
         self, pipeline_name: str, project_name: Optional[str] = None
-    ) -> List[PipelineRunWrapper]:
+    ) -> List[PipelineRunModel]:
         """Gets pipeline runs.
 
         Args:
@@ -793,7 +793,7 @@ class BaseZenStore(ABC):
     @abstractmethod
     def register_pipeline_run(
         self,
-        pipeline_run: PipelineRunWrapper,
+        pipeline_run: PipelineRunModel,
     ) -> None:
         """Registers a pipeline run.
 
@@ -809,7 +809,7 @@ class BaseZenStore(ABC):
 
     @property
     @abstractmethod
-    def flavors(self) -> List[FlavorWrapper]:
+    def flavors(self) -> List[FlavorModel]:
         """All registered flavors.
 
         Returns:
@@ -822,7 +822,7 @@ class BaseZenStore(ABC):
         source: str,
         name: str,
         stack_component_type: StackComponentType,
-    ) -> FlavorWrapper:
+    ) -> FlavorModel:
         """Creates a new flavor.
 
         Args:
@@ -841,7 +841,7 @@ class BaseZenStore(ABC):
     @abstractmethod
     def get_flavors_by_type(
         self, component_type: StackComponentType
-    ) -> List[FlavorWrapper]:
+    ) -> List[FlavorModel]:
         """Fetch all flavor defined for a specific stack component type.
 
         Args:
@@ -856,7 +856,7 @@ class BaseZenStore(ABC):
         self,
         flavor_name: str,
         component_type: StackComponentType,
-    ) -> FlavorWrapper:
+    ) -> FlavorModel:
         """Fetch a flavor by a given name and type.
 
         Args:
@@ -874,7 +874,7 @@ class BaseZenStore(ABC):
     # Common code (user facing):
 
     @property
-    def stacks(self) -> List[StackWrapper]:
+    def stacks(self) -> List[StackModel]:
         """All stacks registered in this zen store.
 
         Returns:
@@ -885,7 +885,7 @@ class BaseZenStore(ABC):
             for name, conf in self.stack_configurations.items()
         ]
 
-    def get_stack(self, name: str) -> StackWrapper:
+    def get_stack(self, name: str) -> StackModel:
         """Fetch a stack by name.
 
         Args:
@@ -896,7 +896,7 @@ class BaseZenStore(ABC):
         """
         return self._stack_from_dict(name, self.get_stack_configuration(name))
 
-    def _register_stack(self, stack: StackWrapper) -> None:
+    def _register_stack(self, stack: StackModel) -> None:
         """Register a stack and its components.
 
         If any of the stack's components aren't registered in the zen store
@@ -952,7 +952,7 @@ class BaseZenStore(ABC):
         self._save_stack(stack.name, stack_configuration)
         logger.info("Registered stack with name '%s'.", stack.name)
 
-    def _update_stack(self, name: str, stack: StackWrapper) -> None:
+    def _update_stack(self, name: str, stack: StackModel) -> None:
         """Update a stack and its components.
 
         If any of the stack's components aren't registered in the stack store
@@ -1081,7 +1081,7 @@ class BaseZenStore(ABC):
         store.
         """
         stack = Stack.default_local_stack()
-        sw = StackWrapper.from_stack(stack)
+        sw = StackModel.from_stack(stack)
         self._register_stack(sw)
         metadata = {c.type.value: c.flavor for c in sw.components}
         metadata["store_type"] = self.type.value
@@ -1120,7 +1120,7 @@ class BaseZenStore(ABC):
 
     def _stack_from_dict(
         self, name: str, stack_configuration: Dict[StackComponentType, str]
-    ) -> StackWrapper:
+    ) -> StackModel:
         """Build a StackWrapper from stored configurations.
 
         Args:
@@ -1136,7 +1136,7 @@ class BaseZenStore(ABC):
             )
             for component_type, component_name in stack_configuration.items()
         ]
-        return StackWrapper(name=name, components=stack_components)
+        return StackModel(name=name, components=stack_components)
 
     # Public facing APIs
     # TODO [ENG-894]: Refactor these with the proxy pattern, as noted in
@@ -1354,7 +1354,7 @@ class BaseZenStore(ABC):
         source: str,
         name: str,
         stack_component_type: StackComponentType,
-    ) -> FlavorWrapper:
+    ) -> FlavorModel:
         """Creates a new flavor.
 
         Args:
@@ -1374,7 +1374,7 @@ class BaseZenStore(ABC):
         )
         return self._create_flavor(source, name, stack_component_type)
 
-    def register_stack(self, stack: StackWrapper) -> None:
+    def register_stack(self, stack: StackModel) -> None:
         """Register a stack and its components.
 
         If any of the stack's components aren't registered in the zen store
@@ -1391,7 +1391,7 @@ class BaseZenStore(ABC):
         track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
         return self._register_stack(stack)
 
-    def update_stack(self, name: str, stack: StackWrapper) -> None:
+    def update_stack(self, name: str, stack: StackModel) -> None:
         """Update a stack and its components.
 
         If any of the stack's components aren't registered in the stack store

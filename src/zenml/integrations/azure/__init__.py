@@ -24,7 +24,7 @@ from typing import List
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import AZURE
 from zenml.integrations.integration import Integration
-from zenml.zen_stores.models import FlavorWrapper
+from zenml.models import FlavorModel
 
 AZURE_ARTIFACT_STORE_FLAVOR = "azure"
 AZURE_SECRETS_MANAGER_FLAVOR = "azure_key_vault"
@@ -44,28 +44,28 @@ class AzureIntegration(Integration):
     ]
 
     @classmethod
-    def flavors(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorModel]:
         """Declares the flavors for the integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
         return [
-            FlavorWrapper(
+            FlavorModel(
                 name=AZURE_ARTIFACT_STORE_FLAVOR,
                 source="zenml.integrations.azure.artifact_stores"
                 ".AzureArtifactStore",
                 type=StackComponentType.ARTIFACT_STORE,
                 integration=cls.NAME,
             ),
-            FlavorWrapper(
+            FlavorModel(
                 name=AZURE_SECRETS_MANAGER_FLAVOR,
                 source="zenml.integrations.azure.secrets_managers"
                 ".AzureSecretsManager",
                 type=StackComponentType.SECRETS_MANAGER,
                 integration=cls.NAME,
             ),
-            FlavorWrapper(
+            FlavorModel(
                 name=AZUREML_STEP_OPERATOR_FLAVOR,
                 source="zenml.integrations.azure.step_operators"
                 ".AzureMLStepOperator",

@@ -23,7 +23,7 @@ from zenml.cli.cli import cli
 from zenml.enums import StackComponentType
 from zenml.stack.flavor_registry import flavor_registry
 from zenml.stack.stack_component import StackComponent
-from zenml.zen_stores.models import FlavorWrapper
+from zenml.models import FlavorModel
 
 NOT_STACK_COMPONENTS = ["abc", "my_other_cat_is_called_blupus", "stack123"]
 
@@ -174,9 +174,9 @@ def test_updating_stack_component_with_unconfigured_property_fails(
 
 
 @pytest.fixture
-def test_flavor() -> Iterator[FlavorWrapper]:
+def test_flavor() -> Iterator[FlavorModel]:
     """Create a flavor for testing."""
-    aria_flavor = FlavorWrapper(
+    aria_flavor = FlavorModel(
         name=AriaOrchestrator.FLAVOR,
         type=AriaOrchestrator.TYPE,
         source=f"{AriaOrchestrator.__module__}.{AriaOrchestrator.__name__}",

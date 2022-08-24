@@ -22,7 +22,7 @@ from typing import List
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import KUBERNETES
 from zenml.integrations.integration import Integration
-from zenml.zen_stores.models import FlavorWrapper
+from zenml.models import FlavorModel
 
 KUBERNETES_ORCHESTRATOR_FLAVOR = "kubernetes"
 
@@ -34,14 +34,14 @@ class KubernetesIntegration(Integration):
     REQUIREMENTS = ["kubernetes==18.20.0"]
 
     @classmethod
-    def flavors(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorModel]:
         """Declare the stack component flavors for the Kubernetes integration.
 
         Returns:
             List of new stack component flavors.
         """
         return [
-            FlavorWrapper(
+            FlavorModel(
                 name=KUBERNETES_ORCHESTRATOR_FLAVOR,
                 source="zenml.integrations.kubernetes.orchestrators.KubernetesOrchestrator",
                 type=StackComponentType.ORCHESTRATOR,

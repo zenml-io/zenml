@@ -22,7 +22,7 @@ from typing import List
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import KUBEFLOW
 from zenml.integrations.integration import Integration
-from zenml.zen_stores.models import FlavorWrapper
+from zenml.models import FlavorModel
 
 KUBEFLOW_ORCHESTRATOR_FLAVOR = "kubeflow"
 
@@ -34,14 +34,14 @@ class KubeflowIntegration(Integration):
     REQUIREMENTS = ["kfp==1.8.9"]
 
     @classmethod
-    def flavors(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorModel]:
         """Declare the stack component flavors for the Kubeflow integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
         return [
-            FlavorWrapper(
+            FlavorModel(
                 name=KUBEFLOW_ORCHESTRATOR_FLAVOR,
                 source="zenml.integrations.kubeflow.orchestrators.KubeflowOrchestrator",
                 type=StackComponentType.ORCHESTRATOR,

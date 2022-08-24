@@ -499,17 +499,17 @@ class Stack:
             runtime_configuration: The runtime configuration of the pipeline.
         """
         from zenml.repository import Repository
-        from zenml.zen_stores.models import StackWrapper
-        from zenml.zen_stores.models.pipeline_models import (
-            PipelineRunWrapper,
-            PipelineWrapper,
+        from zenml.models import StackModel
+        from zenml.models import (
+            PipelineRunModel,
+            PipelineModel,
         )
 
         repo = Repository()
         active_project = repo.active_project
-        pipeline_run_wrapper = PipelineRunWrapper(
+        pipeline_run_wrapper = PipelineRunModel(
             name=runtime_configuration.run_name,
-            pipeline=PipelineWrapper.from_pipeline(pipeline),
+            pipeline=PipelineModel.from_pipeline(pipeline),
             stack=StackWrapper.from_stack(self),
             runtime_configuration=runtime_configuration,
             user_id=repo.active_user.id,

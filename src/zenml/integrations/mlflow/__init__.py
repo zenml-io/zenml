@@ -21,7 +21,7 @@ from typing import List
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import MLFLOW
 from zenml.integrations.integration import Integration
-from zenml.zen_stores.models import FlavorWrapper
+from zenml.models import FlavorModel
 
 MLFLOW_MODEL_DEPLOYER_FLAVOR = "mlflow"
 MLFLOW_MODEL_EXPERIMENT_TRACKER_FLAVOR = "mlflow"
@@ -43,20 +43,20 @@ class MlflowIntegration(Integration):
         from zenml.integrations.mlflow import services  # noqa
 
     @classmethod
-    def flavors(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorModel]:
         """Declare the stack component flavors for the MLflow integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
         return [
-            FlavorWrapper(
+            FlavorModel(
                 name=MLFLOW_MODEL_DEPLOYER_FLAVOR,
                 source="zenml.integrations.mlflow.model_deployers.MLFlowModelDeployer",
                 type=StackComponentType.MODEL_DEPLOYER,
                 integration=cls.NAME,
             ),
-            FlavorWrapper(
+            FlavorModel(
                 name=MLFLOW_MODEL_EXPERIMENT_TRACKER_FLAVOR,
                 source="zenml.integrations.mlflow.experiment_trackers.MLFlowExperimentTracker",
                 type=StackComponentType.EXPERIMENT_TRACKER,

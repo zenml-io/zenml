@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Any, List, Optional
 
 from zenml.logger import get_logger
 from zenml.repository import Repository
-from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
+from zenml.models import PipelineRunModel
 
 if TYPE_CHECKING:
     from zenml.post_execution.pipeline_run import PipelineRunView
@@ -136,7 +136,7 @@ class PipelineView:
 
         return orig_pipeline_run
 
-    def _get_run_wrapper(self, run_name: str) -> Optional[PipelineRunWrapper]:
+    def _get_run_wrapper(self, run_name: str) -> Optional[PipelineRunModel]:
         """Gets a run wrapper for the given run name.
 
         This will filter all run wrappers by the pipeline name of this

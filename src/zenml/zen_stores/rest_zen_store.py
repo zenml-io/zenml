@@ -47,17 +47,18 @@ from zenml.post_execution.pipeline import PipelineView
 from zenml.post_execution.pipeline_run import PipelineRunView
 from zenml.post_execution.step import StepView
 from zenml.zen_stores import BaseZenStore
-from zenml.zen_stores.models import (
+from zenml.models import (
     ComponentModel,
-    FlavorWrapper,
+    FlavorModel,
     Project,
     Role,
-    RoleAssignment,
-    StackWrapper,
-    Team,
+    StackModel,
     User,
+    Team,
+    PipelineRunModel,
+    RoleAssignment
 )
-from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
+from zenml.models import PipelineRunModel
 
 logger = get_logger(__name__)
 
@@ -298,11 +299,11 @@ class RestZenStore(BaseZenStore):
     # Custom implementations:
 
     @property
-    def stacks(self) -> List[StackWrapper]:
+    def stacks(self) -> List[StackModel]:
         """All stacks registered in this repository.
 
         Returns:
-            List[StackWrapper] of all stacks registered in this repository.
+            List[StackModel] of all stacks registered in this repository.
 
         Raises:
             ValueError: If the API response is not a list of stacks.
@@ -312,20 +313,20 @@ class RestZenStore(BaseZenStore):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
             )
-        return [StackWrapper.parse_obj(s) for s in body]
+        return [StackModel.parse_obj(s) for s in body]
 
-    def get_stack(self, name: str) -> StackWrapper:
+    def get_stack(self, name: str) -> StackModel:
         """Fetch a stack by name.
 
         Args:
             name: The name of the stack to retrieve.
 
         Returns:
-            StackWrapper instance if the stack exists.
+            StackModel instance if the stack exists.
         """
-        return StackWrapper.parse_obj(self.get(f"{STACKS}/{name}"))
+        return StackModel.parse_obj(self.get(f"{STACKS}/{name}"))
 
-    def _register_stack(self, stack: StackWrapper) -> None:
+    def _register_stack(self, stack: StackModel) -> None:
         """Register a stack and its components.
 
         If any of the stacks' components aren't registered in the stack store
@@ -336,7 +337,7 @@ class RestZenStore(BaseZenStore):
         """
         self.post(STACKS, stack)
 
-    def _update_stack(self, name: str, stack: StackWrapper) -> None:
+    def _update_stack(self, name: str, stack: StackModel) -> None:
         """Update a stack and its components.
 
         If any of the stack's components aren't registered in the stack store
@@ -858,7 +859,7 @@ class RestZenStore(BaseZenStore):
         pipeline_name: str,
         run_name: str,
         project_name: Optional[str] = None,
-    ) -> PipelineRunWrapper:
+    ) -> PipelineRunModel:
         """Gets a pipeline run.
 
         Args:
@@ -875,11 +876,11 @@ class RestZenStore(BaseZenStore):
             path += f"?project_name={project_name}"
 
         body = self.get(path)
-        return PipelineRunWrapper.parse_obj(body)
+        return PipelineRunModel.parse_obj(body)
 
     def get_pipeline_run_wrappers(
         self, pipeline_name: str, project_name: Optional[str] = None
-    ) -> List[PipelineRunWrapper]:
+    ) -> List[PipelineRunModel]:
         """Gets pipeline runs.
 
         Args:
@@ -902,7 +903,7 @@ class RestZenStore(BaseZenStore):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
             )
-        return [PipelineRunWrapper.parse_obj(dict_) for dict_ in body]
+        return [PipelineRunModel.parse_obj(dict_) for dict_ in body]
 
     def get_pipeline_run_steps(
         self, pipeline_run: PipelineRunView
@@ -967,7 +968,7 @@ class RestZenStore(BaseZenStore):
 
     def register_pipeline_run(
         self,
-        pipeline_run: PipelineRunWrapper,
+        pipeline_run: PipelineRunModel,
     ) -> None:
         """Registers a pipeline run.
 
@@ -1040,7 +1041,7 @@ class RestZenStore(BaseZenStore):
     # Handling stack component flavors
 
     @property
-    def flavors(self) -> List[FlavorWrapper]:
+    def flavors(self) -> List[FlavorModel]:
         """All registered flavors.
 
         Returns:
@@ -1054,14 +1055,14 @@ class RestZenStore(BaseZenStore):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
             )
-        return [FlavorWrapper.parse_obj(flavor_dict) for flavor_dict in body]
+        return [FlavorModel.parse_obj(flavor_dict) for flavor_dict in body]
 
     def _create_flavor(
         self,
         source: str,
         name: str,
         stack_component_type: StackComponentType,
-    ) -> FlavorWrapper:
+    ) -> FlavorModel:
         """Creates a new flavor.
 
         Args:
@@ -1072,16 +1073,16 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created flavor.
         """
-        flavor = FlavorWrapper(
+        flavor = FlavorModel(
             name=name,
             source=source,
             type=stack_component_type,
         )
-        return FlavorWrapper.parse_obj(self.post(FLAVORS, body=flavor))
+        return FlavorModel.parse_obj(self.post(FLAVORS, body=flavor))
 
     def get_flavors_by_type(
         self, component_type: StackComponentType
-    ) -> List[FlavorWrapper]:
+    ) -> List[FlavorModel]:
         """Fetch all flavor defined for a specific stack component type.
 
         Args:
@@ -1098,13 +1099,13 @@ class RestZenStore(BaseZenStore):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
             )
-        return [FlavorWrapper.parse_obj(flavor_dict) for flavor_dict in body]
+        return [FlavorModel.parse_obj(flavor_dict) for flavor_dict in body]
 
     def get_flavor_by_name_and_type(
         self,
         flavor_name: str,
         component_type: StackComponentType,
-    ) -> FlavorWrapper:
+    ) -> FlavorModel:
         """Fetch a flavor by a given name and type.
 
         Args:
@@ -1114,7 +1115,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             Flavor instance if it exists
         """
-        return FlavorWrapper.parse_obj(
+        return FlavorModel.parse_obj(
             self.get(f"{FLAVORS}/{component_type}/{flavor_name}")
         )
 

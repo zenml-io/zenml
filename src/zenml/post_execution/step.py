@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional
 from zenml.enums import ExecutionStatus
 from zenml.post_execution.artifact import ArtifactView
 from zenml.repository import Repository
-from zenml.zen_stores.models.pipeline_models import StepWrapper
+from zenml.models import StepModel
 
 
 class StepView:
@@ -58,7 +58,7 @@ class StepView:
 
         # This might be set from the parent pipeline run view in case the run
         # is also tracked in the ZenStore
-        self._step_wrapper: Optional[StepWrapper] = None
+        self._step_wrapper: Optional[StepModel] = None
 
     @property
     def id(self) -> int:

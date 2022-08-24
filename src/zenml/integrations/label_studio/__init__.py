@@ -17,7 +17,7 @@ from typing import List
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import LABEL_STUDIO
 from zenml.integrations.integration import Integration
-from zenml.zen_stores.models import FlavorWrapper
+from zenml.models import FlavorModel
 
 LABEL_STUDIO_ANNOTATOR_FLAVOR = "label_studio"
 
@@ -29,14 +29,14 @@ class LabelStudioIntegration(Integration):
     REQUIREMENTS = ["label-studio", "label-studio-sdk"]
 
     @classmethod
-    def flavors(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorModel]:
         """Declare the stack component flavors for the Label Studio integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
         return [
-            FlavorWrapper(
+            FlavorModel(
                 name=LABEL_STUDIO_ANNOTATOR_FLAVOR,
                 source="zenml.integrations.label_studio.annotators.LabelStudioAnnotator",
                 type=StackComponentType.ANNOTATOR,

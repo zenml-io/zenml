@@ -20,15 +20,13 @@ from pydantic import Field, validator
 
 from zenml.enums import StackComponentType
 from zenml.utils.filesync_model import FileSyncModel
-from zenml.zen_stores.models import (
-    FlavorWrapper,
+from zenml.models.user_management_models import (
     Project,
     Role,
-    RoleAssignment,
-    Team,
     User,
 )
-from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
+from zenml.models.pipeline_models import PipelineRunModel
+from zenml.models.component_models import FlavorModel
 
 
 class ZenStorePipelineModel(FileSyncModel):
@@ -38,14 +36,14 @@ class ZenStorePipelineModel(FileSyncModel):
         pipeline_runs: Maps pipeline names to runs of that pipeline.
     """
 
-    pipeline_runs: DefaultDict[str, List[PipelineRunWrapper]] = Field(
+    pipeline_runs: DefaultDict[str, List[PipelineRunModel]] = Field(
         default=defaultdict(list)
     )
 
     @validator("pipeline_runs")
     def _construct_pipeline_runs_defaultdict(
-        cls, pipeline_runs: Dict[str, List[PipelineRunWrapper]]
-    ) -> DefaultDict[str, List[PipelineRunWrapper]]:
+        cls, pipeline_runs: Dict[str, List[PipelineRunModel]]
+    ) -> DefaultDict[str, List[PipelineRunModel]]:
         """Ensures that `pipeline_runs` is a defaultdict.
 
         This is so runs of a new pipeline can be added without issues.
@@ -94,12 +92,10 @@ class ZenStoreModel(FileSyncModel):
     stack_components: DefaultDict[StackComponentType, Dict[str, str]] = Field(
         default=defaultdict(dict)
     )
-    stack_component_flavors: List[FlavorWrapper] = Field(default_factory=list)
+    stack_component_flavors: List[FlavorModel] = Field(default_factory=list)
     users: List[User] = Field(default_factory=list)
-    teams: List[Team] = Field(default_factory=list)
     projects: List[Project] = Field(default_factory=list)
     roles: List[Role] = Field(default_factory=list)
-    role_assignments: List[RoleAssignment] = Field(default_factory=list)
     team_assignments: DefaultDict[str, Set[str]] = Field(
         default=defaultdict(set)
     )

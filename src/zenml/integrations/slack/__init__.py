@@ -18,7 +18,7 @@ from typing import List
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import SLACK
 from zenml.integrations.integration import Integration
-from zenml.zen_stores.models import FlavorWrapper
+from zenml.models import FlavorModel
 
 SLACK_ALERTER_FLAVOR = "slack"
 
@@ -33,14 +33,14 @@ class SlackIntegration(Integration):
     REQUIREMENTS = ["slack-sdk>=3.16.1", "aiohttp>=3.8.1"]
 
     @classmethod
-    def flavors(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorModel]:
         """Declare the stack component flavors for the Slack integration.
 
         Returns:
             List of new flavors defined by the Slack integration.
         """
         return [
-            FlavorWrapper(
+            FlavorModel(
                 name=SLACK_ALERTER_FLAVOR,
                 source="zenml.integrations.slack.alerters.slack_alerter.SlackAlerter",
                 type=StackComponentType.ALERTER,

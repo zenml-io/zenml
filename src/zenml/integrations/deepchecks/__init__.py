@@ -27,7 +27,7 @@ from typing import List
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import DEEPCHECKS
 from zenml.integrations.integration import Integration
-from zenml.zen_stores.models.flavor_wrapper import FlavorWrapper
+from zenml.models import FlavorModel
 
 DEEPCHECKS_DATA_VALIDATOR_FLAVOR = "deepchecks"
 
@@ -45,14 +45,14 @@ class DeepchecksIntegration(Integration):
         from zenml.integrations.deepchecks import visualizers  # noqa
 
     @classmethod
-    def flavors(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorModel]:
         """Declare the stack component flavors for the Deepchecks integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
         return [
-            FlavorWrapper(
+            FlavorModel(
                 name=DEEPCHECKS_DATA_VALIDATOR_FLAVOR,
                 source="zenml.integrations.deepchecks.data_validators.DeepchecksDataValidator",
                 type=StackComponentType.DATA_VALIDATOR,

@@ -11,21 +11,74 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Flavor wrapper implementation."""
+"""Component wrapper implementation."""
 
-from typing import Optional, Type
+import base64
+import json
+from typing import TYPE_CHECKING, Optional, Type
+from uuid import UUID
 
+import yaml
 from pydantic import BaseModel
 
 from zenml.enums import StackComponentType
-from zenml.stack.stack_component import StackComponent
-from zenml.utils.source_utils import (
-    load_source_path_class,
-    validate_flavor_source,
-)
+from zenml.logger import get_logger
+from zenml.utils.source_utils import validate_flavor_source, \
+    load_source_path_class
+
+if TYPE_CHECKING:
+    from zenml.stack import StackComponent
+
+logger = get_logger(__name__)
 
 
-class FlavorWrapper(BaseModel):
+class ComponentModel(BaseModel):
+    """Serializable Configuration of a StackComponent."""
+
+    type: StackComponentType
+    flavor: str
+    name: str
+    uuid: UUID
+    config: bytes  # b64 encoded yaml config
+
+    @classmethod
+    def from_component(cls, component: "StackComponent") -> "ComponentModel":
+        """Creates a ComponentModel from an instance of a Stack Component.
+
+        Args:
+            component: the instance of a StackComponent
+
+        Returns:
+            a ComponentModel
+        """
+        return cls(
+            type=component.TYPE,
+            flavor=component.FLAVOR,
+            name=component.name,
+            uuid=component.uuid,
+            config=base64.b64encode(
+                yaml.dump(json.loads(component.json())).encode()
+            ),
+        )
+
+    def to_component(self) -> "StackComponent":
+        """Converts the ComponentModel into an actual instance of a Stack Component.
+
+        Returns:
+            a StackComponent
+        """
+        from zenml.repository import Repository
+
+        flavor = Repository(skip_repository_check=True).get_flavor(  # type: ignore[call-arg]
+            name=self.flavor, component_type=self.type
+        )
+
+        config = yaml.safe_load(base64.b64decode(self.config).decode())
+
+        return flavor.parse_obj(config)
+
+
+class FlavorModel(BaseModel):
     """Network serializable wrapper.
 
     This represents the custom implementation of a stack component flavor.
@@ -63,22 +116,22 @@ class FlavorWrapper(BaseModel):
             return False
 
     @classmethod
-    def from_flavor(cls, flavor: Type[StackComponent]) -> "FlavorWrapper":
-        """Creates a FlavorWrapper from a flavor class.
+    def from_flavor(cls, flavor: Type["StackComponent"]) -> "FlavorModel":
+        """Creates a FlavorModel from a flavor class.
 
         Args:
             flavor: the class which defines the flavor
 
         Returns:
-            a FlavorWrapper
+            a FlavorModel
         """
-        return FlavorWrapper(
+        return FlavorModel(
             name=flavor.FLAVOR,
             type=flavor.TYPE,
             source=flavor.__module__ + "." + flavor.__name__,
         )
 
-    def to_flavor(self) -> Type[StackComponent]:
+    def to_flavor(self) -> Type["StackComponent"]:
         """Imports and returns the class of the flavor.
 
         Returns:
