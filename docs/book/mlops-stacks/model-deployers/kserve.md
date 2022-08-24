@@ -104,7 +104,7 @@ you can use `kserve_s3` for AWS S3 or `kserve_gs` for GCS and `kserve_az` for Az
 [Secrets Manager](../secrets-managers/secrets-managers.md).
 
 {% hint style="warning" %}
-The recommended way to pass the credentails to the KServe model depployer is to use a file that contains the credentials. You can acheive this by adding the `@` followed by the path to the file to the `--credentials` argument.
+The recommended way to pass the credentials to the KServe model deployer is to use a file that contains the credentials. You can achieve this by adding the `@` followed by the path to the file to the `--credentials` argument.
 (e.g. `--credentials @/path/to/credentials.json`)
 {% endhint %}
 
@@ -192,13 +192,89 @@ pytorch_model_deployer = kserve_model_deployer_step(
 )
 ```
 
-{% hint style="info" %}
-The model deployment step are expiremntal good for standard use cases. However, if you need to customize the deployment step, you can always create your own model deployment step.
-Find more information about model deployment steps in the [Model Deployment Steps](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.kserve.steps) section.
-{% endhint %}
-
 A concrete example of using the KServe Model Deployer can be found
 [here](https://github.com/zenml-io/zenml/tree/main/examples/kserve_deployment).
 
 For more information and a full list of configurable attributes of the KServe Model Deployer, check out the 
 [API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.kserve.model_deployers).
+
+{% hint style="info" %}
+The model deployment step are expiremntal good for standard use cases. However, if you need to customize the deployment step, you can always create your own model deployment step.
+Find more information about model deployment steps in the [Model Deployment Steps](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.kserve.steps) section.
+{% endhint %}
+
+## Custom Model Deployment
+
+While KServe is a good fit for most use cases with the built-in model servers, it is not always the best fit for your custom model deployment use case. For that reason KServe allows you to create your own model server using the KServe ModelServer API where you can customize the predict, the pre- and post-processing functions.
+With ZenML's KServe Integration, you can create your own custom model
+deployment code by creating a custom predict function that will be passed
+to a custom deployment step responsible for preparing a Docker image for the model server.
+
+This `custom_predict` function should be getting the model and the input data as arguments and returns the output data. ZenML will take care of loading the model
+into memory, starting the KServe `ModelServer` that will be responsible for serving the model, and running the predict function.
+
+```python
+def pre_process(tensor: torch.Tensor) -> dict:
+    """Pre process the data to be used for prediction."""
+    pass
+
+
+def post_process(prediction: torch.Tensor) -> str:
+    """Pre process the data"""
+    pass
+
+
+def custom_predict(
+    model: Any,
+    request: dict,
+) -> dict:
+    """Custom Prediction function.
+
+    The custom predict function is the core of the custom deployment. The function
+    is called by the custom deployment class defined for the serving tool.
+    The current implementation requires the function to get the model loaded in the memory and
+    a request with the data to predict.
+
+    Args:
+        model (Any): The model to use for prediction.
+        request: The prediction response of the model is an array-like object.
+    Returns:
+        The prediction in an array-like format (e.g. np.ndarray, List[Any], str, bytes, Dict[str, Any])
+    """
+    pass
+```
+
+Then this custom predict function `path` can be passed to the custom deployment parameters.
+
+```python
+kserve_pytorch_custom_deployment = kserve_custom_model_deployer_step(
+    config=KServeDeployerStepConfig(
+        service_config=KServeDeploymentConfig(
+            model_name="kserve-pytorch-custom-model",
+            replicas=1,
+            predictor="custom",
+            resources={"requests": {"cpu": "200m", "memory": "500m"}},
+        ),
+        timeout=240,
+        custom_deploy_parameters=CustomDeployParameters(
+            predict_function="kserve_pytorch.steps.pytorch_custom_deploy_code.custom_predict"
+        ),
+    )
+)
+```
+The full code example can be found [here](https://github.com/zenml-io/zenml/blob/main/examples/custom_code_deployment/).
+
+### Advanced Custom Code Deployment with KServe Integration
+
+{% hint style="warning" %}
+Before creating your custom model class, you should take a look at the
+['Deploy Custom Python Model Server with InferenceService'](https://kserve.github.io/website/0.9/modelserving/v1beta1/custom/custom_model/) section of the KServe documentation.
+{% endhint %}
+
+The built-in KServe custom deployment step is a good starting point for
+deploying your custom models. However if you want to deploy more than the
+trained model, you can create your own Custom Model Class and a custom step to achieve this.
+
+Example of the [custom model class](https://apidocs.zenml.io/0.13.0/api_docs/integrations/#zenml.integrations.kserve.custom_deployer.zenml_custom_model.ZenMLCustomModel)
+
+The built-in KServe custom deployment step responsible for packaging, preparing and deploying to KServe can be found [here](https://apidocs.zenml.io/0.13.0/api_docs/integrations/#zenml.integrations.kserve.steps.kserve_deployer.kserve_model_deployer_step)
