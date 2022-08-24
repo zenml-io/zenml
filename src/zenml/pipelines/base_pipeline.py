@@ -363,7 +363,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         This ensures a pipeline instance can be called more than once.
         """
         for step in self.steps.values():
-            step._has_been_called = False
+            step._reset()
 
     def run(
         self,
