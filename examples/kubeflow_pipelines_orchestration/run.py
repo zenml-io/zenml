@@ -19,7 +19,7 @@ from steps.importers import importer
 from steps.normalizers import normalizer
 from steps.trainers import TrainerConfig, trainer
 
-from zenml.integrations.tensorflow.visualizers import (
+from zenml.integrations.tensorboard.visualizers import (
     stop_tensorboard_server,
     visualize_tensorboard,
 )

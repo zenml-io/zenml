@@ -45,3 +45,5 @@ ZenML stacks to the newest version.
 * [Specifying Hardware Resources for Steps](./specify-step-resources.md) explains
 how to specify hardware resources like memory or the amount of CPUs and GPUs that
 a step requires to execute.
+* [Controlling the Step Execution Order](./step-execution-order.md) explains how
+to control the order in which steps of a pipeline get executed.

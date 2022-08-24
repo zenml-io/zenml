@@ -937,4 +937,35 @@ def test_step_can_have_raw_artifacts(clean_repo):
         s4(*s2())
 
     with does_not_raise():
-        p(step_1(), step_2(), step_3(), step_4()).run()
+        p(step_1(), step_2(), step_3(), step_4())
+
+
+def test_upstream_step_computation():
+    """Tests that step upstream consider both data and manual dependencies."""
+
+    @step
+    def step_1() -> int:
+        return 1
+
+    @step
+    def step_2() -> int:
+        return 2
+
+    @step
+    def step_3(a: int, b: int) -> None:
+        pass
+
+    @pipeline
+    def p(s1, s2, s3):
+        s3(s1(), s2())
+        s1.after(s2)
+
+    s1 = step_1()
+    s2 = step_2()
+    s3 = step_3()
+    pipeline_instance = p(s1, s2, s3)
+    pipeline_instance.connect(**pipeline_instance.steps)
+
+    assert s1.upstream_steps == {"step_2"}
+    assert not s2.upstream_steps
+    assert s3.upstream_steps == {"step_1", "step_2"}

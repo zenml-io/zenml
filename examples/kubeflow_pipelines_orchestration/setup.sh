@@ -20,11 +20,11 @@ setup_stack () {
 }
 
 pre_run () {
-  zenml integration install kubeflow tensorflow
+  zenml integration install kubeflow tensorflow tensorboard
 }
 
 pre_run_forced () {
-  zenml integration install kubeflow tensorflow -y
+  zenml integration install kubeflow tensorflow tensorboard -y
 }
 
 post_run () {

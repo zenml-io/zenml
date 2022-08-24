@@ -46,7 +46,7 @@ pip install zenml
 pip install notebook  # if you want to run the example on the notebook
 
 # Install ZenML integrations
-zenml integration install kubeflow tensorflow
+zenml integration install kubeflow tensorflow tensorboard
 
 # Pull the kubeflow example
 zenml example pull kubeflow_pipelines_orchestration
