@@ -181,7 +181,7 @@ async def delete_user(user_id: str) -> None:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.delete_user(user_id)
+        zen_store.delete_user(user_id)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:
@@ -312,7 +312,7 @@ async def invalidate_invite_token(user_id: str) -> None:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.invalidate_invite_token(user_id)
+        zen_store.invalidate_invite_token(user_id)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:
