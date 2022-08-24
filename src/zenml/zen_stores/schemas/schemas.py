@@ -140,7 +140,7 @@ class StackComponentSchema(SQLModel, table=True):
     created_by: UUID = Field(foreign_key="userschema.id")
 
     # type - redundant since flavor has this
-    configuration: bytes  # e.g. base64 encoded json string
+    configuration: str
 
     created_at: datetime = Field(default_factory=datetime.now)
 
@@ -184,6 +184,7 @@ class PipelineSchema(SQLModel, table=True):
     repository_id: UUID = Field(foreign_key="repositoryschema.id")
     created_by: UUID = Field(foreign_key="userschema.id")
 
+    configuration: str
     git_sha: str
 
     created_at: datetime = Field(default_factory=datetime.now)
