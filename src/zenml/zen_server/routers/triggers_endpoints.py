@@ -99,7 +99,7 @@ async def update_trigger(trigger_id: str, trigger) -> Dict:
 async def delete_trigger(trigger_id: str) -> None:
     """Delete a specific pipeline trigger.
 
-    Runs that are in progress are not cancelled by this.
+    Runs that are in progress are not canceled by this.
 
     Args:
         trigger_id: ID of the pipeline to get.
