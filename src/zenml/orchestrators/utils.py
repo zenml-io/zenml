@@ -41,6 +41,10 @@ def create_tfx_pipeline(
 
     Returns:
         The tfx pipeline.
+
+    Raises:
+        KeyError: If a step contains an upstream step which is not part of
+            the pipeline.
     """
     # Connect the inputs/outputs of all steps in the pipeline
     zenml_pipeline.connect(**zenml_pipeline.steps)
@@ -69,7 +73,7 @@ def create_tfx_pipeline(
     # step is executed (see `BaseOrchestrator.run_step(...)`)
     return tfx_pipeline.Pipeline(
         pipeline_name=zenml_pipeline.name,
-        components=list(tfx_components.values()),  # type: ignore[arg-type]
+        components=list(tfx_components.values()),
         pipeline_root=artifact_store.path,
         enable_cache=zenml_pipeline.enable_cache,
     )

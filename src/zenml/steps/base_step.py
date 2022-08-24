@@ -290,7 +290,7 @@ class BaseStep(metaclass=BaseStepMeta):
         self._explicit_materializers: Dict[str, Type[BaseMaterializer]] = {}
         self._component: Optional[_ZenMLSimpleComponent] = None
         self._has_been_called = False
-        self._upstream_steps = set()
+        self._upstream_steps: Set[str] = set()
 
         self._verify_init_arguments(*args, **kwargs)
         self._verify_output_spec()

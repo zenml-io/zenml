@@ -35,6 +35,7 @@
   * [Manage External Services](./developer-guide/advanced-usage/manage-external-services.md)
   * [Manage Docker Images](./developer-guide/advanced-usage/docker.md)
   * [Set Stacks and Profiles with Environment Variables](./developer-guide/advanced-usage/stack-profile-environment-variables.md)
+  * [Control the Step Execution Order](./developer-guide/advanced-usage/step-execution-order.md)
 
 ## MLOps Stacks
 
