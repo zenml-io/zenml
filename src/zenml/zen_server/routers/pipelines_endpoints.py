@@ -16,6 +16,7 @@ from typing import Dict, List
 from fastapi import APIRouter, Depends, HTTPException
 
 from zenml.constants import PIPELINE_CONFIGURATION, PIPELINES, RUNS, TRIGGERS
+from zenml.models import PipelineRunModel
 from zenml.zen_server.utils import (
     authorize,
     error_detail,

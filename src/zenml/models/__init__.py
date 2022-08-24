@@ -31,9 +31,11 @@ from zenml.models.pipeline_models import (
     PipelineRunModel,
     StepModel
 )
+from zenml.models.code_models import CodeRepositoryModel
 
 __all__ = [
     "ComponentModel",
+    "CodeRepositoryModel",
     "FlavorModel",
     "StackModel",
     "PipelineModel",

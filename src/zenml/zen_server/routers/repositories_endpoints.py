@@ -14,7 +14,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from zenml.constants import REPOSITORIES
-from zenml.repository import Repository
+from zenml.models import CodeRepositoryModel
 from zenml.zen_server.utils import authorize, error_detail, error_response, \
     zen_store
 
@@ -28,10 +28,10 @@ router = APIRouter(
 
 @router.get(
     "/{repository_id}",
-    response_model=Repository,
+    response_model=CodeRepositoryModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_repository(repository_id: str) -> Repository:
+async def get_repository(repository_id: str) -> CodeRepositoryModel:
     """Returns the requested repository.
 
     Args:
@@ -57,12 +57,12 @@ async def get_repository(repository_id: str) -> Repository:
 
 @router.put(
     "/{repository_id}",
-    response_model=Repository,
+    response_model=CodeRepositoryModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def update_repository(
-    repository_id: str, repository: Repository
-) -> Repository:
+    repository_id: str, repository: CodeRepositoryModel
+) -> CodeRepositoryModel:
     """Updates the requested repository.
 
     Args:

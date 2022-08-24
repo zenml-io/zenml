@@ -27,11 +27,11 @@ from zenml.exceptions import (
     StackComponentExistsError,
     StackExistsError,
 )
-from zenml.repository import Repository
 from zenml.zen_server.utils import (
     authorize, error_detail, not_found, conflict, error_response, zen_store
 )
-from zenml.models import ComponentModel, Project, StackModel
+from zenml.models import ComponentModel, Project, StackModel, \
+    CodeRepositoryModel
 from zenml.models import PipelineModel
 
 router = APIRouter(
@@ -144,7 +144,7 @@ async def get_project(project_name: str) -> Project:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def update_project(
-    project_name: str, updated_project: Project
+        project_name: str, updated_project: Project
 ) -> Project:
     """Get a project for given name.
 
@@ -273,7 +273,7 @@ async def create_stack(project_name: str, stack: StackModel) -> StackModel:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def get_project_stack_components(
-    project_name: str,
+        project_name: str,
 ) -> List[ComponentModel]:
     """Get stacks that are part of a specific project.
 
@@ -308,8 +308,8 @@ async def get_project_stack_components(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def get_project_stack_components_by_type(
-    component_type: str,
-    project_name: str,
+        component_type: str,
+        project_name: str,
 ) -> List[ComponentModel]:
     """Get stack components of a certain type that are part of a project.
 
@@ -347,9 +347,9 @@ async def get_project_stack_components_by_type(
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 async def create_stack_component_by_type(
-    component_type: str,
-    project_name: str,
-    component: ComponentModel,
+        component_type: str,
+        project_name: str,
+        component: ComponentModel,
 ) -> None:
     """Creates a stack component.
 
@@ -384,7 +384,7 @@ async def create_stack_component_by_type(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def get_project_pipelines(
-    project_name: str,
+        project_name: str,
 ) -> List[Project]:
     """Gets pipelines defined for a specific project.
 
@@ -419,7 +419,7 @@ async def get_project_pipelines(
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 async def create_pipeline(
-    project_name: str, pipeline: PipelineModel
+        project_name: str, pipeline: PipelineModel
 ) -> PipelineModel:
     """Creates a pipeline.
 
@@ -446,12 +446,12 @@ async def create_pipeline(
 
 @router.get(
     "/{project_name}" + REPOSITORIES,
-    response_model=List[Repository],
+    response_model=List[CodeRepositoryModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def get_project_repositories(
-    project_name: str,
-) -> List[Repository]:
+        project_name: str,
+) -> List[CodeRepositoryModel]:
     """Gets repositories defined for a specific project.
 
     # noqa: DAR401
@@ -481,12 +481,12 @@ async def get_project_repositories(
 
 @router.get(
     "/{project_name}" + REPOSITORIES,
-    response_model=Repository,
+    response_model=CodeRepositoryModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 async def connect_project_repository(
-    project_name: str, repository: Repository
-) -> Repository:
+        project_name: str, repository: CodeRepositoryModel
+) -> CodeRepositoryModel:
     """Attach or connect a repository to a project.
 
     # noqa: DAR401
