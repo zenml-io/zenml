@@ -390,6 +390,17 @@ class BaseStep(metaclass=BaseStepMeta):
         which is decorated with the `@pipeline` decorator. Any calls outside
         this function will be ignored.
 
+        Example:
+        The following pipeline will run its steps sequentially in the following
+        order: step_2 -> step_1 -> step_3
+
+        ```python
+        @pipeline
+        def example_pipeline(step_1, step_2, step_3):
+            step_1.after(step_2)
+            step_3(step_1(), step_2())
+        ```
+
         Args:
             step: A step which should finish executing before this step is
                 started.
@@ -398,7 +409,6 @@ class BaseStep(metaclass=BaseStepMeta):
 
     def _reset(self) -> None:
         """Resets internal values that get set during a pipeline run."""
-        self.pipeline_parameter_name = None
         self._component = None
         self._has_been_called = False
         self._upstream_steps.clear()
