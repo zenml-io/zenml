@@ -230,10 +230,10 @@ async def get_pipeline_triggers(pipeline_id: str) -> List[Dict]:
 
 @router.get(
     PIPELINES + "/{pipeline_id}" + RUNS,
-    response_model=List[PipelineRunWrapper],
+    response_model=List[PipelineRunModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_pipeline_runs(pipeline_id: str) -> List[PipelineRunWrapper]:
+async def get_pipeline_runs(pipeline_id: str) -> List[PipelineRunModel]:
     """Returns all runs for a pipeline.
 
     Args:

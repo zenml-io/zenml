@@ -249,17 +249,14 @@ class SqlZenStore(BaseZenStore):
             definitions_and_components = session.exec(
                 select(StackCompositionSchema, StackComponentSchema)
                 .where(
-                    StackCompositionSchema.component_type
-                    == StackComponentSchema.type
+                    StackCompositionSchema.component_id
+                    == StackComponentSchema.id
                 )
-                .where(
-                    StackCompositionSchema.component_name
-                    == StackComponentSchema.name
-                )
-                .where(StackCompositionSchema.stack_name == name)
+                .where(StackCompositionSchema.stack_id == StackSchema.id)
+                .where(StackSchema.name == name)
             )
             params = {
-                component.component_type: component.name
+                component.type: component.name
                 for _, component in definitions_and_components
             }
         return {StackComponentType(typ): name for typ, name in params.items()}
@@ -359,16 +356,6 @@ class SqlZenStore(BaseZenStore):
             # handle any potential renamed component
             updated_component.name = component.name
 
-            # rename components inside stacks
-            updated_stack_definitions = session.exec(
-                select(StackCompositionSchema)
-                .where(StackCompositionSchema.component_type == component_type)
-                .where(StackCompositionSchema.component_name == name)
-            ).all()
-            for stack_definition in updated_stack_definitions:
-                stack_definition.component_name = component.name
-                session.add(stack_definition)
-
             session.add(updated_component)
             session.commit()
         logger.info(
@@ -396,9 +383,9 @@ class SqlZenStore(BaseZenStore):
             except NoResultFound as error:
                 raise KeyError from error
             definitions = session.exec(
-                select(StackCompositionSchema).where(
-                    StackCompositionSchema.stack_name == name
-                )
+                select(StackCompositionSchema)
+                .where(StackCompositionSchema.stack_id == StackSchema.id)
+                .where(StackSchema.name == name)
             ).all()
             for definition in definitions:
                 session.delete(definition)
@@ -441,36 +428,44 @@ class SqlZenStore(BaseZenStore):
                 # clear the existing stack definitions for a stack
                 # that is about to be updated
                 query = select(StackCompositionSchema).where(
-                    StackCompositionSchema.stack_name == name
+                    StackCompositionSchema.stack_id == stack.id
                 )
                 for result in session.exec(query).all():
                     session.delete(result)
 
             for ctype, cname in stack_configuration.items():
+                # get all stack composition schemas for a stack and check if
+                # a stack component with the given type already exists connected
+                # to the stack
                 statement = (
                     select(StackCompositionSchema)
-                    .where(StackCompositionSchema.stack_name == name)
-                    .where(StackCompositionSchema.component_type == ctype)
+                    .where(StackCompositionSchema.stack_id == stack.id)
+                    .where(StackCompositionSchema.component_id == StackComponentSchema.id)
+                    .where(StackComponentSchema.type == ctype)
                 )
                 results = session.exec(statement)
-                component = results.one_or_none()
-                if component is None:
+                composition = results.one_or_none()
+
+                component = session.exec(
+                    select(StackComponentSchema)
+                    .where(StackComponentSchema.name == cname)
+                    .where(StackComponentSchema.type == ctype)
+                ).first()
+                if composition is None:
                     session.add(
                         StackCompositionSchema(
-                            stack_name=name,
-                            component_type=ctype,
-                            component_name=cname,
+                            stack_id=stack.id,
+                            component_id=component.id
                         )
                     )
                 else:
-                    component.component_name = cname
-                    component.component_type = ctype
-                    session.add(component)
+                    composition.component_id = component.id
+                    session.add(composition)
             session.commit()
 
     def _get_component_flavor_and_config(
         self, component_type: StackComponentType, name: str
-    ) -> Tuple[str, bytes]:
+    ) -> Tuple[str, str]:
         """Fetch the flavor and configuration for a stack component.
 
         Args:
@@ -485,17 +480,18 @@ class SqlZenStore(BaseZenStore):
             KeyError: If no stack component exists for the given type and name.
         """
         with Session(self.engine) as session:
-            component = session.exec(
-                select(StackComponentSchema)
+            component_and_flavor = session.exec(
+                select(StackComponentSchema, FlavorSchema)
                 .where(StackComponentSchema.type == component_type)
                 .where(StackComponentSchema.name == name)
+                .where(StackComponentSchema.flavor_id == FlavorSchema.id)
             ).one_or_none()
-            if component is None:
+            if component_and_flavor is None:
                 raise KeyError(
                     f"Unable to find stack component (type: {component_type}) "
                     f"with name '{name}'."
                 )
-        return component.component_flavor, component.configuration
+        return component_and_flavor[1].name, component_and_flavor[0].configuration
 
     def _get_stack_component_names(
         self, component_type: StackComponentType

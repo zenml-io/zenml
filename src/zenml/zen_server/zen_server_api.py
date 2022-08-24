@@ -319,12 +319,12 @@ app.include_router(users_endpoints.router)
 # # NOT PART OF SWAGGER DOCS DESCRIBED
 # # @authed.get(
 # #     PIPELINE_RUNS + "/{pipeline_name}/{run_name}",
-# #     response_model=PipelineRunWrapper,
+# #     response_model=PipelineRunModel,
 # #     responses={404: error_response},
 # # )
 # # async def pipeline_run(
 # #     pipeline_name: str, run_name: str, project_name: Optional[str] = None
-# # ) -> PipelineRunWrapper:
+# # ) -> PipelineRunModel:
 # #     """Returns a single pipeline run.
 #
 # #     Args:

@@ -945,7 +945,6 @@ class BaseZenStore(ABC):
             except KeyError:
                 self._register_stack_component(component)
             return component.type, component.name
-
         stack_configuration = {
             typ: name for typ, name in map(__check_component, stack.components)
         }

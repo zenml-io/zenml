@@ -19,7 +19,7 @@ from uuid import UUID, uuid4
 from sqlmodel import Field, SQLModel
 
 from zenml.enums import StackComponentType
-from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
+from zenml.models.pipeline_models import PipelineRunModel
 
 
 def _sqlmodel_uuid() -> UUID:
@@ -136,8 +136,9 @@ class StackComponentSchema(SQLModel, table=True):
     name: str
 
     # project_id - redundant since repository of flavor has this
-    flavor_id: UUID = Field(foreign_key="flavorschema.id")
-    created_by: UUID = Field(foreign_key="userschema.id")
+    type: StackComponentType
+    flavor_id: UUID = Field(foreign_key="flavorschema.id", nullable=True) # TODO: Prefill flavors
+    created_by: UUID = Field(foreign_key="userschema.id", nullable=True)  # TODO: Automatically parse current user
 
     # type - redundant since flavor has this
     configuration: str
@@ -152,8 +153,8 @@ class StackSchema(SQLModel, table=True):
 
     name: str
 
-    project_id: UUID = Field(foreign_key="projectschema.id")
-    created_by: UUID = Field(foreign_key="userschema.id")
+    project_id: UUID = Field(foreign_key="projectschema.id", nullable=True)  # TODO: Unnullableify this
+    created_by: UUID = Field(foreign_key="userschema.id", nullable=True)  # TODO: Unnullableify this
 
     created_at: datetime = Field(default_factory=datetime.now)
 
@@ -166,7 +167,7 @@ class StackCompositionSchema(SQLModel, table=True):
 
     stack_id: UUID = Field(primary_key=True, foreign_key="stackschema.id")
     component_id: UUID = Field(
-        primary_key=True, foreign_key="componentschema.id"
+        primary_key=True, foreign_key="stackcomponentschema.id"
     )
 
 
@@ -211,23 +212,23 @@ class PipelineRunSchema(SQLModel, table=True):
 
     @classmethod
     def from_pipeline_run_wrapper(
-        cls, wrapper: PipelineRunWrapper
+        cls, wrapper: PipelineRunModel
     ) -> "PipelineRunSchema":
-        """Creates a PipelineRunTable from a PipelineRunWrapper.
+        """Creates a PipelineRunTable from a PipelineRunModel.
 
         Args:
-            wrapper: The PipelineRunWrapper to create the PipelineRunTable from.
+            wrapper: The PipelineRunModel to create the PipelineRunTable from.
 
         Returns:
             A PipelineRunTable.
         """
         pass  # TODO
 
-    def to_pipeline_run_wrapper(self) -> PipelineRunWrapper:
-        """Creates a PipelineRunWrapper from a PipelineRunTable.
+    def to_pipeline_run_wrapper(self) -> PipelineRunModel:
+        """Creates a PipelineRunModel from a PipelineRunTable.
 
         Returns:
-            A PipelineRunWrapper.
+            A PipelineRunModel.
         """
         pass  # TODO
 
