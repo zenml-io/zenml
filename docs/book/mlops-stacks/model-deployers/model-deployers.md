@@ -9,18 +9,6 @@ Model deployers are stack components responsible for serving models on a real-ti
 Online serving is the process of hosting and loading machine-learning models as part of a managed web service and providing access to the models through an API endpoint like HTTP or GRPC. Once deployed, model inference can be triggered at any time and you can send inference requests to the model through the web service's API and receive fast, low-latency responses.
 
 Batch inference or offline inference is the process of making a machine learning model make predictions on a batch observations. This is useful for generating predictions for a large amount of data at once. The predictions are usually stored as files or in a database for end users or business applications.
-#### Custom pre-processing and post-processing
-
-* Pre-processing is the process of transforming the data before it is passed to the machine learning model.
-* Post-processing is the process of transforming the data after it is returned from the machine learning model and before it is returned to the user.
-
-Both pre- and post-processing are very essential to the model deployment process, since majority of the models require specific input format which requires transforming the data before it is passed to the model and after it is returned from the model. ZenML is allowing you to define your own pre- and post-processing 
-within a pipeline level by defining a custom steps before and after the predict step.
-
-{% hint style="warning" %}
-The support for custom pre- and post-processing at the model deployment level is not yet available for use. This is a work in progress and will be available soon.
-You can find more information about the custom deployment [here](https://github.com/zenml-io/zenml/pull/522)
-{% endhint %}
 
 ## When to use it?
 
@@ -183,6 +171,25 @@ zenml model-deployer register seldon --flavor=seldon \
         # delete the service
         model_deployer.delete_service(services[0].uuid, timeout=100, force=False)
     ```
+
+### Custom pre-processing and post-processing
+
+**Pre-processing** is the process of transforming the data before it is passed to the machine learning model.
+
+**Post-processing** is the process of transforming the data after it is returned from the machine learning model and before it is returned to the user.
+
+Both pre- and post-processing are very essential for the model deployment process. Most models require specific input formats which requires transforming the data before it is passed to the model and after it is returned from the model. ZenML allows you to define your own pre- and post-processing in two ways:
+
+1. At the pipeline level by defining custom steps before and after the predict step in the ZenML pipeline.
+2. At the model deployment tool level by defining a custom predict, pre- and post-processing functions that would be wrapped in a Docker container and executed on the model deployment server.
+
+{% hint style="info" %}
+The custom model deployment support is available only for the following integrations:
+
+* [KServe Custom Predictor](./kserve.md#custom-model-deployment)
+* [Seldon Core Custom Python Model](./seldon-core.md#custom-model-deployment)
+
+{% endhint %}
 ### How to Interact with model deployer after deployment?
 
 When a Model Deployer is part of the active ZenML Stack, it is also possible to
