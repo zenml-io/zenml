@@ -205,10 +205,10 @@ For more information and a full list of configurable attributes of the Seldon Co
 
 ## Custom Model Deployment
 
-When you have custom use-case where Seldon Core pre-packaged inference servers cannot cover your needs, you can leverage the language wrappers to Containerise your machine learning model and logic.
+When you have a custom use-case where Seldon Core pre-packaged inference servers cannot cover your needs, you can leverage the language wrappers to containerise your machine learning model(s) and logic.
 With ZenML's Seldon Core Integration, you can create your own custom model
 deployment code by creating a custom predict function that will be passed
-to a custom deployment step responsible for preparing a docker image for the 
+to a custom deployment step responsible for preparing a Docker image for the
 model server.
 
 This `custom_predict` function should be getting the model and the input data as arguments and return the output data. ZenML will take care of loading the model
@@ -238,9 +238,9 @@ def custom_predict(
 
     Args:
         model (Any): The model to use for prediction.
-        request: The prediction response of the model is an Array_Like object.
+        request: The prediction response of the model is an array-like format.
     Returns:
-        The prediction in an Array_Like. (e.g: np.ndarray, List[Any], str, bytes, Dict[str, Any])
+        The prediction in an array-like format. (e.g: np.ndarray, List[Any], str, bytes, Dict[str, Any])
     """
     pass
 ```
@@ -269,10 +269,11 @@ The full code example can be found [here](https://github.com/zenml-io/zenml/blob
 
 {% hint style="warning" %}
 Before creating your custom model class, you should take a look at the
-[custom python model](https://docs.seldon.io/projects/seldon-core/en/latest/python/python_wrapping_docker.html) section of the Seldon Core documentation.
+[custom Python model](https://docs.seldon.io/projects/seldon-core/en/latest/python/python_wrapping_docker.html) 
+section of the Seldon Core documentation.
 {% endhint %}
 
-The built-in seldon custom deployment step is a good starting point for
+The built-in Seldon Core custom deployment step is a good starting point for
 deploying your custom models. However if you want to deploy more than the
 trained model, you can create your own Custom Class and a custom step
 to achieve this.

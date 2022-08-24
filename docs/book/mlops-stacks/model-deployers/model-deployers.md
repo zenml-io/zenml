@@ -178,10 +178,10 @@ zenml model-deployer register seldon --flavor=seldon \
 
 **Post-processing** is the process of transforming the data after it is returned from the machine learning model and before it is returned to the user.
 
-Both pre- and post-processing are very essential to the model deployment process, since majority of the models require specific input format which requires transforming the data before it is passed to the model and after it is returned from the model. ZenML is allowing you to define your own pre- and post-processing in two ways:
+Both pre- and post-processing are very essential for the model deployment process. Most models require specific input formats which requires transforming the data before it is passed to the model and after it is returned from the model. ZenML allows you to define your own pre- and post-processing in two ways:
 
-1. At pipeline level by defining a custom steps before and after the predict step in the ZenML pipeline.
-2. At model deployment tool level by defining a custom predict, pre- and post-processing codes functions that would be wrapped into a docker container and executed on the model deployment server.
+1. At the pipeline level by defining custom steps before and after the predict step in the ZenML pipeline.
+2. At the model deployment tool level by defining a custom predict, pre- and post-processing functions that would be wrapped in a Docker container and executed on the model deployment server.
 
 {% hint style="info" %}
 The custom model deployment support is available only for the following integrations:

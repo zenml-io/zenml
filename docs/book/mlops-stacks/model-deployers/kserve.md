@@ -104,7 +104,7 @@ you can use `kserve_s3` for AWS S3 or `kserve_gs` for GCS and `kserve_az` for Az
 [Secrets Manager](../secrets-managers/secrets-managers.md).
 
 {% hint style="warning" %}
-The recommended way to pass the credentails to the KServe model depployer is to use a file that contains the credentials. You can achieve this by adding the `@` followed by the path to the file to the `--credentials` argument.
+The recommended way to pass the credentials to the KServe model deployer is to use a file that contains the credentials. You can achieve this by adding the `@` followed by the path to the file to the `--credentials` argument.
 (e.g. `--credentials @/path/to/credentials.json`)
 {% endhint %}
 
@@ -205,12 +205,12 @@ Find more information about model deployment steps in the [Model Deployment Step
 
 ## Custom Model Deployment
 
-While KServe is a good fit for most use cases with the built-in model servers, it is not always the best fit for your custom model deployment use case. For that reason KServe allow you to create your own model server using KServe ModelServer API where you can customize the predict, the pre- and post-processing functions.
+While KServe is a good fit for most use cases with the built-in model servers, it is not always the best fit for your custom model deployment use case. For that reason KServe allows you to create your own model server using the KServe ModelServer API where you can customize the predict, the pre- and post-processing functions.
 With ZenML's KServe Integration, you can create your own custom model
 deployment code by creating a custom predict function that will be passed
-to a custom deployment step responsible for preparing a docker image for the model server.
+to a custom deployment step responsible for preparing a Docker image for the model server.
 
-This `custom_predict` function should be getting the model and the input data as arguments and return the output data. ZenML will take care of loading the model
+This `custom_predict` function should be getting the model and the input data as arguments and returns the output data. ZenML will take care of loading the model
 into memory, starting the KServe `ModelServer` that will be responsible for serving the model, and running the predict function.
 
 ```python
@@ -230,16 +230,16 @@ def custom_predict(
 ) -> dict:
     """Custom Prediction function.
 
-    The custom predict function is the core of the custom deployment, the function
+    The custom predict function is the core of the custom deployment. The function
     is called by the custom deployment class defined for the serving tool.
     The current implementation requires the function to get the model loaded in the memory and
     a request with the data to predict.
 
     Args:
         model (Any): The model to use for prediction.
-        request: The prediction response of the model is an Array_Like object.
+        request: The prediction response of the model is an array-like object.
     Returns:
-        The prediction in an Array_Like. (e.g: np.ndarray, List[Any], str, bytes, Dict[str, Any])
+        The prediction in an array-like format (e.g. np.ndarray, List[Any], str, bytes, Dict[str, Any])
     """
     pass
 ```
@@ -268,13 +268,13 @@ The full code example can be found [here](https://github.com/zenml-io/zenml/blob
 
 {% hint style="warning" %}
 Before creating your custom model class, you should take a look at the
-[How to write custom predictor](https://kserve.github.io/website/0.9/modelserving/v1beta1/custom/custom_model/) section of the KServe documentation.
+['Deploy Custom Python Model Server with InferenceService'](https://kserve.github.io/website/0.9/modelserving/v1beta1/custom/custom_model/) section of the KServe documentation.
 {% endhint %}
 
-The built-in kserve custom deployment step is a good starting point for
+The built-in KServe custom deployment step is a good starting point for
 deploying your custom models. However if you want to deploy more than the
 trained model, you can create your own Custom Model Class and a custom step to achieve this.
 
 Example of the [custom model class](https://apidocs.zenml.io/0.13.0/api_docs/integrations/#zenml.integrations.kserve.custom_deployer.zenml_custom_model.ZenMLCustomModel)
 
-The built-in kserve custom deployment step responsible for packaging, preparing and deploying to kserve can be found [here](https://apidocs.zenml.io/0.13.0/api_docs/integrations/#zenml.integrations.kserve.steps.kserve_deployer.kserve_model_deployer_step)
+The built-in KServe custom deployment step responsible for packaging, preparing and deploying to KServe can be found [here](https://apidocs.zenml.io/0.13.0/api_docs/integrations/#zenml.integrations.kserve.steps.kserve_deployer.kserve_model_deployer_step)
