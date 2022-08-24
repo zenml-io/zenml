@@ -16,9 +16,13 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 
 from zenml.constants import ROLES
-from zenml.zen_server.utils import authorize, error_detail, error_response, \
-    zen_store
 from zenml.models import Role
+from zenml.zen_server.utils import (
+    authorize,
+    error_detail,
+    error_response,
+    zen_store,
+)
 
 router = APIRouter(
     tags=["roles"],

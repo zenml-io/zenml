@@ -13,25 +13,22 @@
 #  permissions and limitations under the License.
 """Initialization for ZenML models submodule."""
 
+from zenml.models.code_models import CodeRepositoryModel
 from zenml.models.component_models import ComponentModel, FlavorModel
-from zenml.models.stack_model import StackModel
-from zenml.models.zen_store_model import (
-    ZenStoreModel,
-    ZenStorePipelineModel,
-)
-from zenml.models.user_management_models import (
-    User,
-    Project,
-    Role,
-    Team,
-    RoleAssignment
-)
 from zenml.models.pipeline_models import (
     PipelineModel,
     PipelineRunModel,
-    StepModel
+    StepModel,
 )
-from zenml.models.code_models import CodeRepositoryModel
+from zenml.models.stack_model import StackModel
+from zenml.models.user_management_models import (
+    Project,
+    Role,
+    RoleAssignment,
+    Team,
+    User,
+)
+from zenml.models.zen_store_model import ZenStoreModel, ZenStorePipelineModel
 
 __all__ = [
     "ComponentModel",
@@ -46,5 +43,5 @@ __all__ = [
     "User",
     "Project",
     "Role",
-    "Team"
+    "Team",
 ]

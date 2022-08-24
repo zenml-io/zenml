@@ -54,9 +54,9 @@ if TYPE_CHECKING:
     from zenml.enums import StackComponentType
     from zenml.integrations.integration import Integration
     from zenml.model_deployers import BaseModelDeployer
+    from zenml.models import ComponentModel, FlavorModel
     from zenml.secret import BaseSecretSchema
     from zenml.services import BaseService
-    from zenml.models import ComponentModel, FlavorModel
 
 
 def title(text: str) -> None:

@@ -13,17 +13,10 @@
 #  permissions and limitations under the License.
 """Zen Server API."""
 
-import os
 
 from fastapi import FastAPI
-from fastapi.security import HTTPBasic
 
 import zenml
-from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import ENV_ZENML_PROFILE_NAME
-from zenml.enums import StoreType
-from zenml.repository import Repository
-
 from zenml.zen_server.routers import (
     auth_endpoints,
     metadata_config_endpoints,

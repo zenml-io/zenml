@@ -16,8 +16,8 @@
 from typing import TYPE_CHECKING, Any, List, Optional
 
 from zenml.logger import get_logger
-from zenml.repository import Repository
 from zenml.models import PipelineRunModel
+from zenml.repository import Repository
 
 if TYPE_CHECKING:
     from zenml.post_execution.pipeline_run import PipelineRunView

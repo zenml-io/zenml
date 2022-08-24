@@ -12,11 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Code repository models implementation."""
-from typing import Optional
 
 from pydantic import BaseModel
-
-from zenml.enums import ExecutionStatus
 
 
 class CodeRepositoryModel(BaseModel):
@@ -27,5 +24,3 @@ class CodeRepositoryModel(BaseModel):
     """
 
     name: str
-
-

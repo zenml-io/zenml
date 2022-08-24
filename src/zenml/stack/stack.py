@@ -498,12 +498,8 @@ class Stack:
             pipeline: The pipeline that is being run.
             runtime_configuration: The runtime configuration of the pipeline.
         """
+        from zenml.models import PipelineModel, PipelineRunModel
         from zenml.repository import Repository
-        from zenml.models import StackModel
-        from zenml.models import (
-            PipelineRunModel,
-            PipelineModel,
-        )
 
         repo = Repository()
         active_project = repo.active_project

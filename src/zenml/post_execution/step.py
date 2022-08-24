@@ -16,9 +16,9 @@
 from typing import Any, Dict, List, Optional
 
 from zenml.enums import ExecutionStatus
+from zenml.models import StepModel
 from zenml.post_execution.artifact import ArtifactView
 from zenml.repository import Repository
-from zenml.models import StepModel
 
 
 class StepView:

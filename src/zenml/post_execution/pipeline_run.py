@@ -20,10 +20,10 @@ from ml_metadata import proto
 
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_apidocs_link, get_logger
+from zenml.models import PipelineRunModel
 from zenml.post_execution.step import StepView
 from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
-from zenml.models import PipelineRunModel
 
 logger = get_logger(__name__)
 

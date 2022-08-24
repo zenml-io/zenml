@@ -44,10 +44,10 @@ from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
     from zenml.config.profile_config import ProfileConfiguration
+    from zenml.models import Project, User, ZenStoreModel
     from zenml.pipelines import BasePipeline
     from zenml.post_execution import PipelineView
     from zenml.zen_stores import BaseZenStore
-    from zenml.models import Project, User, ZenStoreModel
 
 logger = get_logger(__name__)
 

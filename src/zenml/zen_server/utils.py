@@ -1,8 +1,8 @@
 import os
-from typing import List, Any
+from typing import Any, List
 
 from fastapi import Depends, HTTPException
-from fastapi.security import HTTPBasicCredentials, HTTPBasic
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
 from starlette import status
 
@@ -17,8 +17,8 @@ profile_name = os.environ.get(ENV_ZENML_PROFILE_NAME)
 # Check if profile name was passed as env variable:
 if profile_name:
     profile = (
-            GlobalConfiguration().get_profile(profile_name)
-            or Repository().active_profile
+        GlobalConfiguration().get_profile(profile_name)
+        or Repository().active_profile
     )
 # Fallback to what Repository thinks is the active profile
 else:

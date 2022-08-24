@@ -19,10 +19,11 @@ from zenml.constants import PIPELINE_CONFIGURATION, PIPELINES, RUNS, TRIGGERS
 from zenml.models import PipelineRunModel
 from zenml.zen_server.utils import (
     authorize,
-    error_detail,
-    not_found,
     conflict,
-    error_response, zen_store
+    error_detail,
+    error_response,
+    not_found,
+    zen_store,
 )
 
 router = APIRouter(

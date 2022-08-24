@@ -21,9 +21,9 @@ from click.testing import CliRunner
 from tests.unit.test_flavor import AriaOrchestrator
 from zenml.cli.cli import cli
 from zenml.enums import StackComponentType
+from zenml.models import FlavorModel
 from zenml.stack.flavor_registry import flavor_registry
 from zenml.stack.stack_component import StackComponent
-from zenml.models import FlavorModel
 
 NOT_STACK_COMPONENTS = ["abc", "my_other_cat_is_called_blupus", "stack123"]
 

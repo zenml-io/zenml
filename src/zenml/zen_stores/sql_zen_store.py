@@ -28,24 +28,22 @@ from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.exceptions import EntityExistsError, StackComponentExistsError
 from zenml.logger import get_logger
 from zenml.metadata_stores.sqlite_metadata_store import SQLiteMetadataStore
+from zenml.models import (
+    ComponentModel,
+    FlavorModel,
+    PipelineRunModel,
+    Project,
+    Role,
+    RoleAssignment,
+    Team,
+    User,
+)
 from zenml.post_execution.artifact import ArtifactView
 from zenml.post_execution.pipeline import PipelineView
 from zenml.post_execution.pipeline_run import PipelineRunView
 from zenml.post_execution.step import StepView
 from zenml.utils import io_utils
 from zenml.zen_stores import BaseZenStore
-from zenml.models import (
-    ComponentModel,
-    FlavorModel,
-    Project,
-    Role,
-    StackModel,
-    User,
-    Team,
-    PipelineRunModel,
-    RoleAssignment
-)
-from zenml.models import PipelineRunModel
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -440,7 +438,10 @@ class SqlZenStore(BaseZenStore):
                 statement = (
                     select(StackCompositionSchema)
                     .where(StackCompositionSchema.stack_id == stack.id)
-                    .where(StackCompositionSchema.component_id == StackComponentSchema.id)
+                    .where(
+                        StackCompositionSchema.component_id
+                        == StackComponentSchema.id
+                    )
                     .where(StackComponentSchema.type == ctype)
                 )
                 results = session.exec(statement)
@@ -454,8 +455,7 @@ class SqlZenStore(BaseZenStore):
                 if composition is None:
                     session.add(
                         StackCompositionSchema(
-                            stack_id=stack.id,
-                            component_id=component.id
+                            stack_id=stack.id, component_id=component.id
                         )
                     )
                 else:
@@ -491,7 +491,10 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to find stack component (type: {component_type}) "
                     f"with name '{name}'."
                 )
-        return component_and_flavor[1].name, component_and_flavor[0].configuration
+        return (
+            component_and_flavor[1].name,
+            component_and_flavor[0].configuration,
+        )
 
     def _get_stack_component_names(
         self, component_type: StackComponentType

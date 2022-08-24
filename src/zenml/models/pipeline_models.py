@@ -114,9 +114,7 @@ class PipelineModel(BaseModel):
         Returns:
             A PipelineWrapper instance.
         """
-        steps = [
-            StepModel.from_step(step) for step in pipeline.steps.values()
-        ]
+        steps = [StepModel.from_step(step) for step in pipeline.steps.values()]
 
         return cls(
             name=pipeline.name,

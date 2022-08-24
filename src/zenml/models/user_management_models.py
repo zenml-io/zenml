@@ -14,8 +14,7 @@
 """User management models implementation."""
 
 from datetime import datetime
-from enum import Enum
-from typing import Any, Dict, Optional, Set
+from typing import Any, Dict, Optional
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field, root_validator
@@ -23,6 +22,7 @@ from pydantic import BaseModel, Field, root_validator
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
+
 
 class Role(BaseModel):
     """Pydantic object representing a role.

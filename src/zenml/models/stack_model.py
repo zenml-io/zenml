@@ -18,8 +18,8 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 from zenml.enums import StackComponentType
-from zenml.stack import Stack
 from zenml.models import ComponentModel
+from zenml.stack import Stack
 
 
 class StackModel(BaseModel):

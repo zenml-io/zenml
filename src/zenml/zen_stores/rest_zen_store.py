@@ -42,23 +42,22 @@ from zenml.exceptions import (
     StackExistsError,
 )
 from zenml.logger import get_logger
+from zenml.models import (
+    ComponentModel,
+    FlavorModel,
+    PipelineRunModel,
+    Project,
+    Role,
+    RoleAssignment,
+    StackModel,
+    Team,
+    User,
+)
 from zenml.post_execution.artifact import ArtifactView
 from zenml.post_execution.pipeline import PipelineView
 from zenml.post_execution.pipeline_run import PipelineRunView
 from zenml.post_execution.step import StepView
 from zenml.zen_stores import BaseZenStore
-from zenml.models import (
-    ComponentModel,
-    FlavorModel,
-    Project,
-    Role,
-    StackModel,
-    User,
-    Team,
-    PipelineRunModel,
-    RoleAssignment
-)
-from zenml.models import PipelineRunModel
 
 logger = get_logger(__name__)
 

@@ -39,11 +39,11 @@ from zenml.constants import MANDATORY_COMPONENT_ATTRIBUTES
 from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import EntityExistsError
 from zenml.io import fileio
+from zenml.models import ComponentModel
 from zenml.repository import Repository
 from zenml.stack import StackComponent
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.source_utils import validate_flavor_source
-from zenml.models import ComponentModel
 
 if TYPE_CHECKING:
     from zenml.annotators.base_annotator import BaseAnnotator

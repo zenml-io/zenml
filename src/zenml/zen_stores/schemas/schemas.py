@@ -137,8 +137,12 @@ class StackComponentSchema(SQLModel, table=True):
 
     # project_id - redundant since repository of flavor has this
     type: StackComponentType
-    flavor_id: UUID = Field(foreign_key="flavorschema.id", nullable=True) # TODO: Prefill flavors
-    created_by: UUID = Field(foreign_key="userschema.id", nullable=True)  # TODO: Automatically parse current user
+    flavor_id: UUID = Field(
+        foreign_key="flavorschema.id", nullable=True
+    )  # TODO: Prefill flavors
+    created_by: UUID = Field(
+        foreign_key="userschema.id", nullable=True
+    )  # TODO: Automatically parse current user
 
     # type - redundant since flavor has this
     configuration: str
@@ -153,8 +157,12 @@ class StackSchema(SQLModel, table=True):
 
     name: str
 
-    project_id: UUID = Field(foreign_key="projectschema.id", nullable=True)  # TODO: Unnullableify this
-    created_by: UUID = Field(foreign_key="userschema.id", nullable=True)  # TODO: Unnullableify this
+    project_id: UUID = Field(
+        foreign_key="projectschema.id", nullable=True
+    )  # TODO: Unnullableify this
+    created_by: UUID = Field(
+        foreign_key="userschema.id", nullable=True
+    )  # TODO: Unnullableify this
 
     created_at: datetime = Field(default_factory=datetime.now)
 

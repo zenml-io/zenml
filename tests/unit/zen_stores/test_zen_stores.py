@@ -42,6 +42,7 @@ from zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator import (
     KubeflowOrchestrator,
 )
 from zenml.logger import get_logger
+from zenml.models import ComponentModel, PipelineModel, PipelineRunModel
 from zenml.orchestrators import LocalOrchestrator
 from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManager,
@@ -50,11 +51,6 @@ from zenml.stack import Stack
 from zenml.utils.networking_utils import scan_for_available_port
 from zenml.zen_stores import BaseZenStore, RestZenStore, SqlZenStore
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
-from zenml.models import ComponentModel, StackModel
-from zenml.models import (
-    PipelineRunModel,
-    PipelineModel,
-)
 
 logger = get_logger(__name__)
 

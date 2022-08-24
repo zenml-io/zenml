@@ -24,23 +24,23 @@ from ml_metadata.proto import metadata_store_pb2
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.logger import get_logger
+from zenml.models import (
+    ComponentModel,
+    FlavorModel,
+    PipelineRunModel,
+    Project,
+    Role,
+    RoleAssignment,
+    StackModel,
+    Team,
+    User,
+)
 from zenml.post_execution.artifact import ArtifactView
 from zenml.post_execution.pipeline import PipelineView
 from zenml.post_execution.pipeline_run import PipelineRunView
 from zenml.post_execution.step import StepView
 from zenml.stack import Stack
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
-from zenml.models import (
-    ComponentModel,
-    FlavorModel,
-    Project,
-    Role,
-    StackModel,
-    User,
-    Team,
-    PipelineRunModel,
-    RoleAssignment
-)
 
 logger = get_logger(__name__)
 
@@ -945,6 +945,7 @@ class BaseZenStore(ABC):
             except KeyError:
                 self._register_stack_component(component)
             return component.type, component.name
+
         stack_configuration = {
             typ: name for typ, name in map(__check_component, stack.components)
         }

@@ -22,9 +22,13 @@ from zenml.constants import (
     TYPES,
 )
 from zenml.enums import StackComponentType
-from zenml.zen_server.utils import authorize, error_detail, error_response, \
-    zen_store
 from zenml.models import ComponentModel, FlavorModel
+from zenml.zen_server.utils import (
+    authorize,
+    error_detail,
+    error_response,
+    zen_store,
+)
 
 router = APIRouter(
     prefix=STACK_COMPONENTS,
