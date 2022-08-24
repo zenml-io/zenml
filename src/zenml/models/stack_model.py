@@ -13,20 +13,50 @@
 #  permissions and limitations under the License.
 """Stack wrapper implementation."""
 
-from typing import List, Optional
+from typing import List, Optional, Union, Dict
+from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
-from zenml.models import ComponentModel
+from zenml.models.component_models import ComponentModel
+from zenml.repository import Repository
 from zenml.stack import Stack
 
 
 class StackModel(BaseModel):
     """Network Serializable Wrapper describing a Stack."""
 
+    id: UUID
     name: str
-    components: List[ComponentModel]
+    description: Union[str, None] = Field(
+        default=None, title="The description of the stack", max_length=300
+    )
+    components: Dict[StackComponentType, str] = Field(
+        title="A mapping of stack component types to the id's of"
+              "instances of components of this type."
+    )
+    created_by: str = Field(
+        title="The id of the user, that created this stack.",
+    )
+    created_at: str = Field(
+        title="The time at which the stack was registered.",
+    )
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "id": "8d0acbc3-c51a-452c-bda3-e1b5469f79fd",
+                "name": "prd_stack",
+                "description": "A stack for running pipelines in production.",
+                "components": {
+                    "alerter": "d3bbe238-d42a-42a2-b6a6-2319c4fbe5c9",
+                    "orchestrator": "5e4286b5-51f4-4286-b1f8-b0143e9a27ce"
+                },
+                "created_by": "8d0acbc3-c51a-452c-bda3-e1b5469f79fd",
+                "created_at": "2022-08-12T07:12:45.931Z"
+            }
+        }
 
     @classmethod
     def from_stack(cls, stack: Stack) -> "StackModel":
@@ -73,8 +103,11 @@ class StackModel(BaseModel):
         Returns:
             the component of the given type or None if not found
         """
-        for component_wrapper in self.components:
-            if component_wrapper.type == component_type:
-                return component_wrapper
+        if component_type in self.components.keys():
+            repo = Repository()
+            component_model = repo.zen_store.get_stack_component(
+                component_type, self.components[component_type])
+
+            return component_model
 
         return None

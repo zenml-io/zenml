@@ -14,7 +14,8 @@
 """Initialization for ZenML models submodule."""
 
 from zenml.models.code_models import CodeRepositoryModel
-from zenml.models.component_models import ComponentModel, FlavorModel
+from zenml.models.component_models import ComponentModel
+from zenml.models.flavor_model import FlavorModel
 from zenml.models.pipeline_models import (
     PipelineModel,
     PipelineRunModel,
@@ -33,7 +34,6 @@ from zenml.models.zen_store_model import ZenStoreModel, ZenStorePipelineModel
 __all__ = [
     "ComponentModel",
     "CodeRepositoryModel",
-    "FlavorModel",
     "StackModel",
     "PipelineModel",
     "PipelineRunModel",

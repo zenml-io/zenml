@@ -274,7 +274,7 @@ def print_stack_component_list(
             "ACTIVE": ":point_right:" if is_active else "",
             "NAME": component.name,
             "FLAVOR": component.flavor,
-            "UUID": component.uuid,
+            "UUID": component.id,
             **{
                 key.upper(): str(value)
                 for key, value in yaml.safe_load(

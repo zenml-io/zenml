@@ -21,7 +21,7 @@ from pydantic import BaseModel, Field
 import zenml
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
-from zenml.models import StackModel
+from zenml.models.stack_model import StackModel
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline

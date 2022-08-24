@@ -35,10 +35,10 @@ router = APIRouter(
 
 @router.get(
     "/",
-    response_model=List[Dict],
+    response_model=List[StackModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_stacks(project_name: str) -> List[Dict]:
+async def get_stacks(project_name: str) -> List[StackModel]:
     """Returns all stacks.
 
     Returns:
@@ -61,10 +61,10 @@ async def get_stacks(project_name: str) -> List[Dict]:
 
 @router.get(
     "/{stack_id}",
-    response_model=Dict,
+    response_model=StackModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_stack(stack_id: str) -> Dict:
+async def get_stack(stack_id: str) -> StackModel:
     """Returns the requested stack.
 
     Args:
@@ -90,10 +90,10 @@ async def get_stack(stack_id: str) -> Dict:
 
 @router.put(
     "/{stack_id}",
-    response_model=Dict,
+    response_model=StackModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def update_stack(stack_id: str, stack: StackModel) -> Dict:
+async def update_stack(stack_id: str, stack: StackModel) -> StackModel:
     """Updates a stack.
 
     Args:

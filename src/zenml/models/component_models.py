@@ -15,18 +15,14 @@
 
 import base64
 import json
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 import yaml
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
-from zenml.utils.source_utils import (
-    load_source_path_class,
-    validate_flavor_source,
-)
 
 if TYPE_CHECKING:
     from zenml.stack import StackComponent
@@ -37,12 +33,40 @@ logger = get_logger(__name__)
 class ComponentModel(BaseModel):
     """Serializable Configuration of a StackComponent."""
 
-    type: StackComponentType
-    flavor: str
-    name: str
-    uuid: UUID
-    config: bytes  # b64 encoded yaml config
+    id: UUID = Field(
+        title="The id of the Stack Component.",
+    )
+    name: str = Field(
+        title="The name of the Stack Component.",
+    )
+    type: StackComponentType = Field(
+        title="The type of the Stack Component.",
+    )
+    flavor: str = Field(
+        title="The flavor of the Stack Component.",
+    )
+    config: bytes = Field(  # b64 encoded yaml config
+        title="The id of the Stack Component.",
+    )
+    created_by: str = Field(
+        title="The id of the user, that created this component.",
+    )
+    created_at: str = Field(
+        title="The time at which the component was registered.",
+    )
 
+    class Config:
+        schema_extra = {
+            "example": {
+                "id": "5e4286b5-51f4-4286-b1f8-b0143e9a27ce",
+                "name": "vertex_prd_orchestrator",
+                "type": "orchestrator",
+                "flavor": "vertex",
+                "config": b'RANDOM64STRING',
+                "created_by": "8d0acbc3-c51a-452c-bda3-e1b5469f79fd",
+                "created_at": "2022-08-12T07:12:44.931Z"
+            }
+        }
     @classmethod
     def from_component(cls, component: "StackComponent") -> "ComponentModel":
         """Creates a ComponentModel from an instance of a Stack Component.
@@ -80,88 +104,3 @@ class ComponentModel(BaseModel):
         return flavor.parse_obj(config)
 
 
-class FlavorModel(BaseModel):
-    """Network serializable wrapper.
-
-    This represents the custom implementation of a stack component flavor.
-    """
-
-    name: str
-    type: StackComponentType
-    source: str
-    integration: Optional[str]
-
-    @property
-    def reachable(self) -> bool:
-        """Indicates whether ZenML can import the module within the source.
-
-        Returns:
-            True if the source is reachable, False otherwise.
-        """
-        from zenml.integrations.registry import integration_registry
-
-        if self.integration:
-            if self.integration == "built-in":
-                return True
-            else:
-                return integration_registry.is_installed(self.integration)
-
-        else:
-            try:
-                validate_flavor_source(
-                    source=self.source, component_type=self.type
-                )
-                return True
-            except (AssertionError, ModuleNotFoundError, ImportError):
-                pass
-
-            return False
-
-    @classmethod
-    def from_flavor(cls, flavor: Type["StackComponent"]) -> "FlavorModel":
-        """Creates a FlavorModel from a flavor class.
-
-        Args:
-            flavor: the class which defines the flavor
-
-        Returns:
-            a FlavorModel
-        """
-        return FlavorModel(
-            name=flavor.FLAVOR,
-            type=flavor.TYPE,
-            source=flavor.__module__ + "." + flavor.__name__,
-        )
-
-    def to_flavor(self) -> Type["StackComponent"]:
-        """Imports and returns the class of the flavor.
-
-        Returns:
-            the class of the flavor
-
-        Raises:
-            ImportError: if the flavor is not able to be imported.
-        """
-        try:
-            return load_source_path_class(source=self.source)  # noqa
-        except (ModuleNotFoundError, ImportError, NotImplementedError):
-            if self.integration:
-                raise ImportError(
-                    f"The {self.type} flavor '{self.name}' is "
-                    f"a part of ZenML's '{self.integration}' "
-                    f"integration, which is currently not installed on your "
-                    f"system. You can install it by executing: 'zenml "
-                    f"integration install {self.integration}'."
-                )
-            else:
-                raise ImportError(
-                    f"The {self.type} that you are trying to register has "
-                    f"a custom flavor '{self.name}'. In order to "
-                    f"register it, ZenML needs to be able to import the flavor "
-                    f"through its source which is defined as: "
-                    f"{self.source}. Unfortunately, this is not "
-                    f"possible due to the current set of available modules/"
-                    f"working directory. Please make sure that this execution "
-                    f"is carried out in an environment where this source "
-                    f"is reachable as a module."
-                )
