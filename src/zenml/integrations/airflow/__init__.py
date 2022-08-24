@@ -22,7 +22,7 @@ from typing import List
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import AIRFLOW
 from zenml.integrations.integration import Integration
-from zenml.zen_stores.models import FlavorWrapper
+from zenml.models import FlavorModel
 
 AIRFLOW_ORCHESTRATOR_FLAVOR = "airflow"
 
@@ -34,14 +34,14 @@ class AirflowIntegration(Integration):
     REQUIREMENTS = ["apache-airflow==2.2.0"]
 
     @classmethod
-    def flavors(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorModel]:
         """Declare the stack component flavors for the Airflow integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
         return [
-            FlavorWrapper(
+            FlavorModel(
                 name=AIRFLOW_ORCHESTRATOR_FLAVOR,
                 source="zenml.integrations.airflow.orchestrators.AirflowOrchestrator",
                 type=StackComponentType.ORCHESTRATOR,

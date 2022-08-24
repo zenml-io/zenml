@@ -16,12 +16,8 @@ from typing import Dict
 from fastapi import APIRouter, Depends, HTTPException
 
 from zenml.constants import METADATA_CONFIG
-from zenml.zen_server.zen_server_api import (
-    authorize,
-    error_detail,
-    error_response,
-    zen_store,
-)
+from zenml.zen_server.utils import authorize, error_detail, error_response, \
+    zen_store
 
 router = APIRouter(
     prefix=METADATA_CONFIG,

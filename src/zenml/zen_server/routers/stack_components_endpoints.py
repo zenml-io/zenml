@@ -22,13 +22,9 @@ from zenml.constants import (
     TYPES,
 )
 from zenml.enums import StackComponentType
-from zenml.zen_server.zen_server_api import (
-    authorize,
-    error_detail,
-    error_response,
-    zen_store,
-)
-from zenml.zen_stores.models import ComponentModel, FlavorWrapper
+from zenml.zen_server.utils import authorize, error_detail, error_response, \
+    zen_store
+from zenml.models import ComponentModel, FlavorModel
 
 router = APIRouter(
     prefix=STACK_COMPONENTS,
@@ -95,12 +91,12 @@ async def get_stack_components(component_type: str) -> List[ComponentModel]:
 
 @router.get(
     "/{component_type}" + FLAVORS,
-    response_model=List[FlavorWrapper],
+    response_model=List[FlavorModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def get_flavors_by_type(
     component_type: StackComponentType,
-) -> List[FlavorWrapper]:
+) -> List[FlavorModel]:
     """Returns all flavors of a given type.
 
     Args:

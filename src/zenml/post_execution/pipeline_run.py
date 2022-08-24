@@ -23,7 +23,7 @@ from zenml.logger import get_apidocs_link, get_logger
 from zenml.post_execution.step import StepView
 from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
-from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
+from zenml.models import PipelineRunModel
 
 logger = get_logger(__name__)
 
@@ -59,7 +59,7 @@ class PipelineRunView:
 
         # This might be set from the parent pipeline view in case this run
         # is also tracked in the ZenStore
-        self._run_wrapper: Optional[PipelineRunWrapper] = None
+        self._run_wrapper: Optional[PipelineRunModel] = None
 
     @property
     def name(self) -> str:

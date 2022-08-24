@@ -17,13 +17,9 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from zenml.constants import STACK_COMPONENTS, STACKS
 from zenml.enums import StackComponentType
-from zenml.zen_server.zen_server_api import (
-    authorize,
-    error_detail,
-    error_response,
-    zen_store,
-)
-from zenml.zen_stores.models import StackWrapper
+from zenml.zen_server.utils import authorize, error_detail, error_response, \
+    zen_store
+from zenml.models import StackModel
 
 router = APIRouter(
     prefix=STACKS,
@@ -93,7 +89,7 @@ async def get_stack(stack_id: str) -> Dict:
     response_model=Dict,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def update_stack(stack_id: str, stack: StackWrapper) -> Dict:
+async def update_stack(stack_id: str, stack: StackModel) -> Dict:
     """Updates a stack.
 
     Args:

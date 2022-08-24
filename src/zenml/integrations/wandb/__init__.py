@@ -21,7 +21,7 @@ from typing import List
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import WANDB
 from zenml.integrations.integration import Integration
-from zenml.zen_stores.models import FlavorWrapper
+from zenml.models import FlavorModel
 
 WANDB_EXPERIMENT_TRACKER_FLAVOR = "wandb"
 
@@ -33,14 +33,14 @@ class WandbIntegration(Integration):
     REQUIREMENTS = ["wandb>=0.12.12", "Pillow>=9.1.0"]
 
     @classmethod
-    def flavors(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorModel]:
         """Declare the stack component flavors for the Weights and Biases integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
         return [
-            FlavorWrapper(
+            FlavorModel(
                 name=WANDB_EXPERIMENT_TRACKER_FLAVOR,
                 source="zenml.integrations.wandb.experiment_trackers.WandbExperimentTracker",
                 type=StackComponentType.EXPERIMENT_TRACKER,

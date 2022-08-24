@@ -56,7 +56,7 @@ if TYPE_CHECKING:
     from zenml.model_deployers import BaseModelDeployer
     from zenml.secret import BaseSecretSchema
     from zenml.services import BaseService
-    from zenml.zen_stores.models import ComponentModel, FlavorWrapper
+    from zenml.models import ComponentModel, FlavorModel
 
 
 def title(text: str) -> None:
@@ -319,7 +319,7 @@ def print_stack_configuration(
 
 
 def print_flavor_list(
-    flavors: List["FlavorWrapper"],
+    flavors: List["FlavorModel"],
     component_type: "StackComponentType",
 ) -> None:
     """Prints the list of flavors.

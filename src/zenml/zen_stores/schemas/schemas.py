@@ -7,16 +7,16 @@ from uuid import UUID, uuid4
 from sqlmodel import Field, SQLModel
 
 from zenml.enums import StackComponentType
-from zenml.zen_stores.models import (
+from zenml.models import (
     Project,
     RoleAssignment,
-    StackWrapper,
+    StackModel,
     Team,
     User,
 )
-from zenml.zen_stores.models.pipeline_models import (
-    PipelineRunWrapper,
-    PipelineWrapper,
+from zenml.models import (
+    PipelineRunModel,
+    PipelineModel,
 )
 
 
@@ -152,7 +152,7 @@ class PipelineRunTable(SQLModel, table=True):
 
     @classmethod
     def from_pipeline_run_wrapper(
-        cls, wrapper: PipelineRunWrapper
+        cls, wrapper: PipelineRunModel
     ) -> "PipelineRunTable":
         """Creates a PipelineRunTable from a PipelineRunWrapper.
 
@@ -174,18 +174,18 @@ class PipelineRunTable(SQLModel, table=True):
             project_name=wrapper.project_name,
         )
 
-    def to_pipeline_run_wrapper(self) -> PipelineRunWrapper:
+    def to_pipeline_run_wrapper(self) -> PipelineRunModel:
         """Creates a PipelineRunWrapper from a PipelineRunTable.
 
         Returns:
             A PipelineRunWrapper.
         """
-        return PipelineRunWrapper(
+        return PipelineRunModel(
             name=self.name,
             zenml_version=self.zenml_version,
             git_sha=self.git_sha,
-            pipeline=PipelineWrapper.parse_raw(self.pipeline),
-            stack=StackWrapper.parse_raw(self.stack),
+            pipeline=PipelineModel.parse_raw(self.pipeline),
+            stack=StackModel.parse_raw(self.stack),
             runtime_configuration=json.loads(self.runtime_configuration),
             user_id=self.user_id,
             project_name=self.project_name,

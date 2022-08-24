@@ -20,7 +20,7 @@ import pkg_resources
 
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
-from zenml.zen_stores.models import FlavorWrapper
+from zenml.models import FlavorModel
 
 logger = get_logger(__name__)
 
@@ -101,5 +101,5 @@ class Integration(metaclass=IntegrationMeta):
         """Abstract method to activate the integration."""
 
     @classmethod
-    def flavors(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorModel]:
         """Abstract method to declare new stack component flavors."""

@@ -47,7 +47,7 @@ if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
     from zenml.post_execution import PipelineView
     from zenml.zen_stores import BaseZenStore
-    from zenml.zen_stores.models import Project, User, ZenStoreModel
+    from zenml.models import Project, User, ZenStoreModel
 
 logger = get_logger(__name__)
 
@@ -95,7 +95,7 @@ class LegacyRepositoryConfig(BaseModel):
         Returns:
             ZenStoreModel: ZenStoreModel object containing the stack data.
         """
-        from zenml.zen_stores.models import ZenStoreModel
+        from zenml.models import ZenStoreModel
 
         return ZenStoreModel(
             config_file=config_file,
@@ -866,7 +866,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         Args:
             stack: The stack to register.
         """
-        from zenml.zen_stores.models import StackWrapper
+        from zenml.models import StackWrapper
 
         stack.validate()
         self.zen_store.register_stack(StackWrapper.from_stack(stack))
@@ -878,7 +878,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             name: The original name of the stack.
             stack: The new stack to use as the updated version.
         """
-        from zenml.zen_stores.models import StackWrapper
+        from zenml.models import StackWrapper
 
         stack.validate()
         self.zen_store.update_stack(name, StackWrapper.from_stack(stack))
@@ -921,7 +921,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             component_type: The type of the component to update.
             component: The new component to update with.
         """
-        from zenml.zen_stores.models import ComponentModel
+        from zenml.models import ComponentModel
 
         self.zen_store.update_stack_component(
             name,
@@ -976,7 +976,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         Args:
             component: The component to register.
         """
-        from zenml.zen_stores.models import ComponentModel
+        from zenml.models import ComponentModel
 
         self.zen_store.register_stack_component(
             ComponentModel.from_component(component)

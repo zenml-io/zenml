@@ -21,7 +21,7 @@ from typing import List
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import S3
 from zenml.integrations.integration import Integration
-from zenml.zen_stores.models import FlavorWrapper
+from zenml.models import FlavorModel
 
 S3_ARTIFACT_STORE_FLAVOR = "s3"
 
@@ -33,14 +33,14 @@ class S3Integration(Integration):
     REQUIREMENTS = ["s3fs==2022.3.0"]
 
     @classmethod
-    def flavors(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorModel]:
         """Declare the stack component flavors for the s3 integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
         return [
-            FlavorWrapper(
+            FlavorModel(
                 name=S3_ARTIFACT_STORE_FLAVOR,
                 source="zenml.integrations.s3.artifact_stores.S3ArtifactStore",
                 type=StackComponentType.ARTIFACT_STORE,

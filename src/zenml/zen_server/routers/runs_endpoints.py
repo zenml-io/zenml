@@ -17,12 +17,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 
 from zenml.constants import GRAPH, RUNS, RUNTIME_CONFIGURATION, STEPS
-from zenml.zen_server.zen_server_api import (
-    authorize,
-    error_detail,
-    error_response,
-    zen_store,
-)
+from zenml.zen_server.utils import authorize, error_detail, error_response, \
+    zen_store
 
 router = APIRouter(
     prefix=RUNS,

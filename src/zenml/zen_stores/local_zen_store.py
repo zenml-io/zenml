@@ -37,24 +37,26 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import io_utils
 from zenml.zen_stores import BaseZenStore
-from zenml.zen_stores.models import (
+from zenml.models import (
     ComponentModel,
-    FlavorWrapper,
+    FlavorModel,
     Project,
     Role,
-    RoleAssignment,
-    Team,
+    StackModel,
     User,
+    Team,
+    PipelineRunModel,
+    RoleAssignment,
     ZenStoreModel,
-    ZenStorePipelineModel,
+    ZenStorePipelineModel
 )
-from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
+from zenml.models import PipelineRunModel
 
 logger = get_logger(__name__)
 
 E = TypeVar(
     "E",
-    bound=Union[User, Team, Project, Role, FlavorWrapper, PipelineRunWrapper],
+    bound=Union[User, Team, Project, Role, FlavorModel, PipelineRunModel],
 )
 
 
@@ -926,7 +928,7 @@ class LocalZenStore(BaseZenStore):
         pipeline_name: str,
         run_name: str,
         project_name: Optional[str] = None,
-    ) -> PipelineRunWrapper:
+    ) -> PipelineRunModel:
         """Gets a pipeline run.
 
         Args:
@@ -962,7 +964,7 @@ class LocalZenStore(BaseZenStore):
 
     def get_pipeline_run_wrappers(
         self, pipeline_name: str, project_name: Optional[str] = None
-    ) -> List[PipelineRunWrapper]:
+    ) -> List[PipelineRunModel]:
         """Gets pipeline runs.
 
         Args:
@@ -981,7 +983,7 @@ class LocalZenStore(BaseZenStore):
 
     def register_pipeline_run(
         self,
-        pipeline_run: PipelineRunWrapper,
+        pipeline_run: PipelineRunModel,
     ) -> None:
         """Registers a pipeline run.
 
@@ -1015,7 +1017,7 @@ class LocalZenStore(BaseZenStore):
     # Handling stack component flavors
 
     @property
-    def flavors(self) -> List[FlavorWrapper]:
+    def flavors(self) -> List[FlavorModel]:
         """All registered flavors.
 
         Returns:
@@ -1028,7 +1030,7 @@ class LocalZenStore(BaseZenStore):
         source: str,
         name: str,
         stack_component_type: StackComponentType,
-    ) -> FlavorWrapper:
+    ) -> FlavorModel:
         """Creates a new flavor.
 
         Args:
@@ -1053,7 +1055,7 @@ class LocalZenStore(BaseZenStore):
                 f"'{stack_component_type.plural}' already exists."
             )
 
-        flavor = FlavorWrapper(
+        flavor = FlavorModel(
             name=name,
             source=source,
             type=stack_component_type,
@@ -1066,7 +1068,7 @@ class LocalZenStore(BaseZenStore):
 
     def get_flavors_by_type(
         self, component_type: StackComponentType
-    ) -> List[FlavorWrapper]:
+    ) -> List[FlavorModel]:
         """Fetch all flavor defined for a specific stack component type.
 
         Args:
@@ -1085,7 +1087,7 @@ class LocalZenStore(BaseZenStore):
         self,
         flavor_name: str,
         component_type: StackComponentType,
-    ) -> FlavorWrapper:
+    ) -> FlavorModel:
         """Fetch a flavor by a given name and type.
 
         Args:

@@ -28,16 +28,11 @@ from zenml.exceptions import (
     StackExistsError,
 )
 from zenml.repository import Repository
-from zenml.zen_server.zen_server_api import (
-    authorize,
-    conflict,
-    error_detail,
-    error_response,
-    not_found,
-    zen_store,
+from zenml.zen_server.utils import (
+    authorize, error_detail, not_found, conflict, error_response, zen_store
 )
-from zenml.zen_stores.models import ComponentModel, Project, StackWrapper
-from zenml.zen_stores.models.pipeline_models import PipelineWrapper
+from zenml.models import ComponentModel, Project, StackModel
+from zenml.models import PipelineModel
 
 router = APIRouter(
     prefix=PROJECTS,
@@ -210,10 +205,10 @@ async def delete_project(project_name: str) -> None:
 
 @router.get(
     "/{project_name}" + STACKS,
-    response_model=List[StackWrapper],
+    response_model=List[StackModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_project_stacks(project_name: str) -> List[StackWrapper]:
+async def get_project_stacks(project_name: str) -> List[StackModel]:
     """Get stacks that are part of a specific project.
 
     # noqa: DAR401
@@ -243,10 +238,10 @@ async def get_project_stacks(project_name: str) -> List[StackWrapper]:
 
 @router.post(
     "/{project_name}" + STACKS,
-    response_model=StackWrapper,
+    response_model=StackModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-async def create_stack(project_name: str, stack: StackWrapper) -> StackWrapper:
+async def create_stack(project_name: str, stack: StackModel) -> StackModel:
     """Creates a stack for a particular project.
 
     Args:
@@ -420,12 +415,12 @@ async def get_project_pipelines(
 
 @router.post(
     "/{project_name}" + PIPELINES,
-    response_model=PipelineWrapper,
+    response_model=PipelineModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 async def create_pipeline(
-    project_name: str, pipeline: PipelineWrapper
-) -> PipelineWrapper:
+    project_name: str, pipeline: PipelineModel
+) -> PipelineModel:
     """Creates a pipeline.
 
     Args:

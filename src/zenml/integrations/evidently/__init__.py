@@ -27,7 +27,7 @@ from typing import List
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import EVIDENTLY
 from zenml.integrations.integration import Integration
-from zenml.zen_stores.models import FlavorWrapper
+from zenml.models import FlavorModel
 
 EVIDENTLY_DATA_VALIDATOR_FLAVOR = "evidently"
 
@@ -45,14 +45,14 @@ class EvidentlyIntegration(Integration):
         from zenml.integrations.evidently import visualizers  # noqa
 
     @classmethod
-    def flavors(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorModel]:
         """Declare the stack component flavors for the Great Expectations integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
         return [
-            FlavorWrapper(
+            FlavorModel(
                 name=EVIDENTLY_DATA_VALIDATOR_FLAVOR,
                 source="zenml.integrations.evidently.data_validators.EvidentlyDataValidator",
                 type=StackComponentType.DATA_VALIDATOR,

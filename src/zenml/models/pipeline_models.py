@@ -19,8 +19,9 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 import zenml
+from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
-from zenml.zen_stores.models import StackWrapper
+from zenml.models import StackModel
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
@@ -59,19 +60,23 @@ def get_git_sha(clean: bool = True) -> Optional[str]:
     return cast(str, repo.head.object.hexsha)
 
 
-class StepWrapper(BaseModel):
-    """Pydantic object representing a step.
+class StepModel(BaseModel):
+    """The representation of an actualized, step that is part of a pipeline run.
 
     Attributes:
         name: Step name
         docstring: Docstring of the step
+        source: Path to the code that implements this step
+        status: Status of the step within its run
     """
 
     name: str
     docstring: Optional[str]
+    source: str
+    status: ExecutionStatus
 
     @classmethod
-    def from_step(cls, step: "BaseStep") -> "StepWrapper":
+    def from_step(cls, step: "BaseStep") -> "StepModel":
         """Creates a StepWrapper from a step instance.
 
         Args:
@@ -86,7 +91,7 @@ class StepWrapper(BaseModel):
         )
 
 
-class PipelineWrapper(BaseModel):
+class PipelineModel(BaseModel):
     """Pydantic object representing a pipeline.
 
     Attributes:
@@ -97,10 +102,10 @@ class PipelineWrapper(BaseModel):
 
     name: str
     docstring: Optional[str]
-    steps: List[StepWrapper]
+    steps: List[StepModel]
 
     @classmethod
-    def from_pipeline(cls, pipeline: "BasePipeline") -> "PipelineWrapper":
+    def from_pipeline(cls, pipeline: "BasePipeline") -> "PipelineModel":
         """Creates a PipelineWrapper from a pipeline instance.
 
         Args:
@@ -110,7 +115,7 @@ class PipelineWrapper(BaseModel):
             A PipelineWrapper instance.
         """
         steps = [
-            StepWrapper.from_step(step) for step in pipeline.steps.values()
+            StepModel.from_step(step) for step in pipeline.steps.values()
         ]
 
         return cls(
@@ -120,7 +125,7 @@ class PipelineWrapper(BaseModel):
         )
 
 
-class PipelineRunWrapper(BaseModel):
+class PipelineRunModel(BaseModel):
     """Pydantic object representing a pipeline run.
 
     Attributes:
@@ -141,8 +146,8 @@ class PipelineRunWrapper(BaseModel):
     zenml_version: str = zenml.__version__
     git_sha: Optional[str] = Field(default_factory=get_git_sha)
 
-    pipeline: PipelineWrapper
-    stack: StackWrapper
+    pipeline: PipelineModel
+    stack: StackModel
     runtime_configuration: Dict[str, Any]
 
     user_id: UUID

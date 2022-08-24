@@ -15,12 +15,8 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from zenml.constants import REPOSITORIES
 from zenml.repository import Repository
-from zenml.zen_server.zen_server_api import (
-    authorize,
-    error_detail,
-    error_response,
-    zen_store,
-)
+from zenml.zen_server.utils import authorize, error_detail, error_response, \
+    zen_store
 
 router = APIRouter(
     prefix=REPOSITORIES,

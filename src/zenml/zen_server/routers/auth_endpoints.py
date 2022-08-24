@@ -14,13 +14,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from zenml.constants import LOGIN, LOGOUT
-from zenml.zen_server.zen_server_api import (
+from zenml.zen_server.utils import (
     authorize,
-    conflict,
     error_detail,
-    error_response,
     not_found,
-    zen_store,
+    conflict,
+    error_response, zen_store
 )
 
 router = APIRouter(

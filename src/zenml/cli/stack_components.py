@@ -43,7 +43,7 @@ from zenml.repository import Repository
 from zenml.stack import StackComponent
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.source_utils import validate_flavor_source
-from zenml.zen_stores.models.component_wrapper import ComponentModel
+from zenml.models import ComponentModel
 
 if TYPE_CHECKING:
     from zenml.annotators.base_annotator import BaseAnnotator

@@ -24,47 +24,6 @@ from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
-
-# This probably makes more sense to be a resource?
-class Operation(BaseModel):
-    """Pydantic object representing an operation that requires permission.
-
-    Attributes:
-        id: Operation id.
-        name: Operation name.
-    """
-
-    id: int
-    name: str
-
-
-class PermissionType(Enum):
-    """All permission types."""
-
-    CREATE = "create"
-    READ = "read"
-    UPDATE = "update"
-    DELETE = "delete"
-
-
-class Permission(BaseModel):
-    """Pydantic object representing permissions on a specific resource.
-
-    Attributes:
-        operation: The operation for which the permissions are.
-        types: Types of permissions.
-    """
-
-    operation: Operation
-    types: Set[PermissionType]
-
-    class Config:
-        """Pydantic configuration."""
-
-        # similar to non-mutable but also makes the object hashable
-        frozen = True
-
-
 class Role(BaseModel):
     """Pydantic object representing a role.
 
@@ -78,7 +37,6 @@ class Role(BaseModel):
     id: UUID = Field(default_factory=uuid4)
     creation_date: datetime = Field(default_factory=datetime.now)
     name: str
-    permissions: Set[Permission] = set()
 
 
 class User(BaseModel):

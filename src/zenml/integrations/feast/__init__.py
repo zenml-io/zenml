@@ -22,7 +22,7 @@ from typing import List
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import FEAST
 from zenml.integrations.integration import Integration
-from zenml.zen_stores.models import FlavorWrapper
+from zenml.models import FlavorModel
 
 FEAST_FEATURE_STORE_FLAVOR = "feast"
 
@@ -34,14 +34,14 @@ class FeastIntegration(Integration):
     REQUIREMENTS = ["feast[redis]>=0.19.4", "redis-server"]
 
     @classmethod
-    def flavors(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorModel]:
         """Declare the stack component flavors for the Feast integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
         return [
-            FlavorWrapper(
+            FlavorModel(
                 name=FEAST_FEATURE_STORE_FLAVOR,
                 source="zenml.integrations.feast.feature_stores.FeastFeatureStore",
                 type=StackComponentType.FEATURE_STORE,

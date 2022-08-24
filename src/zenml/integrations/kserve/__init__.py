@@ -21,7 +21,7 @@ from typing import List
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import KSERVE
 from zenml.integrations.integration import Integration
-from zenml.zen_stores.models import FlavorWrapper
+from zenml.models import FlavorModel
 
 KSERVE_MODEL_DEPLOYER_FLAVOR = "kserve"
 
@@ -44,14 +44,14 @@ class KServeIntegration(Integration):
         from zenml.integrations.kserve import steps  # noqa
 
     @classmethod
-    def flavors(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorModel]:
         """Declare the stack component flavors for KServe.
 
         Returns:
             List of stack component flavors for this integration.
         """
         return [
-            FlavorWrapper(
+            FlavorModel(
                 name=KSERVE_MODEL_DEPLOYER_FLAVOR,
                 source="zenml.integrations.kserve.model_deployers.KServeModelDeployer",
                 type=StackComponentType.MODEL_DEPLOYER,

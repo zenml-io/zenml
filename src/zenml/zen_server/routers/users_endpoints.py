@@ -18,15 +18,10 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from zenml.constants import INVITE_TOKEN, ROLES, USERS
 from zenml.exceptions import EntityExistsError
-from zenml.zen_server.zen_server_api import (
-    authorize,
-    conflict,
-    error_detail,
-    error_response,
-    not_found,
-    zen_store,
+from zenml.zen_server.utils import (
+    authorize, error_detail, not_found, conflict, error_response, zen_store
 )
-from zenml.zen_stores.models import Role, User
+from zenml.models import Role, User
 
 router = APIRouter(
     prefix=USERS,

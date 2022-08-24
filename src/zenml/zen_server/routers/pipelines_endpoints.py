@@ -16,15 +16,13 @@ from typing import Dict, List
 from fastapi import APIRouter, Depends, HTTPException
 
 from zenml.constants import PIPELINE_CONFIGURATION, PIPELINES, RUNS, TRIGGERS
-from zenml.zen_server.zen_server_api import (
+from zenml.zen_server.utils import (
     authorize,
-    conflict,
     error_detail,
-    error_response,
     not_found,
-    zen_store,
+    conflict,
+    error_response, zen_store
 )
-from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
 
 router = APIRouter(
     tags=["pipelines"],

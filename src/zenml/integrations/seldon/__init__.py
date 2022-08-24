@@ -21,7 +21,7 @@ from typing import List
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import SELDON
 from zenml.integrations.integration import Integration
-from zenml.zen_stores.models import FlavorWrapper
+from zenml.models import FlavorModel
 
 SELDON_MODEL_DEPLOYER_FLAVOR = "seldon"
 
@@ -41,14 +41,14 @@ class SeldonIntegration(Integration):
         from zenml.integrations.seldon import services  # noqa
 
     @classmethod
-    def flavors(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorModel]:
         """Declare the stack component flavors for the Seldon Core.
 
         Returns:
             List of stack component flavors for this integration.
         """
         return [
-            FlavorWrapper(
+            FlavorModel(
                 name=SELDON_MODEL_DEPLOYER_FLAVOR,
                 source="zenml.integrations.seldon.model_deployers.SeldonModelDeployer",
                 type=StackComponentType.MODEL_DEPLOYER,

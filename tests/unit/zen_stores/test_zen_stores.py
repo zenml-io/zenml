@@ -50,10 +50,10 @@ from zenml.stack import Stack
 from zenml.utils.networking_utils import scan_for_available_port
 from zenml.zen_stores import BaseZenStore, RestZenStore, SqlZenStore
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
-from zenml.zen_stores.models import ComponentModel, StackWrapper
-from zenml.zen_stores.models.pipeline_models import (
-    PipelineRunWrapper,
-    PipelineWrapper,
+from zenml.models import ComponentModel, StackModel
+from zenml.models import (
+    PipelineRunModel,
+    PipelineModel,
 )
 
 logger = get_logger(__name__)
@@ -701,9 +701,9 @@ def test_pipeline_run_management(
     pipeline = one_step_pipeline(empty_step())
 
     default_user = fresh_zen_store.get_user(DEFAULT_USERNAME)
-    run = PipelineRunWrapper(
+    run = PipelineRunModel(
         name="run_name",
-        pipeline=PipelineWrapper.from_pipeline(pipeline),
+        pipeline=PipelineModel.from_pipeline(pipeline),
         stack=StackWrapper.from_stack(stack),
         runtime_configuration={},
         user_id=default_user.id,
