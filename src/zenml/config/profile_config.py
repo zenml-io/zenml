@@ -71,6 +71,7 @@ class ProfileConfiguration(BaseModel):
 
     name: str
     active_user: str
+    active_project: str
     store_url: Optional[str]
     store_type: StoreType = Field(default_factory=get_default_store_type)
     active_stack: Optional[str]
@@ -164,6 +165,15 @@ class ProfileConfiguration(BaseModel):
         self.active_user = user_name
         self.global_config._write_config()
 
+    def activate_project(self, project_name: str) -> None:
+        """Set the active project for the profile.
+
+        Args:
+            project_name: name of the project to activate
+        """
+        self.active_profile = project_name
+        self.global_config._write_config()
+
     @root_validator(pre=True)
     def _ensure_active_user_is_set(
         cls, attributes: Dict[str, Any]
@@ -198,6 +208,49 @@ class ProfileConfiguration(BaseModel):
         if not attributes.get("active_user"):
             raise RuntimeError(
                 f"Active user missing for profile '{attributes['name']}'."
+            )
+
+        if store_type == StoreType.REST and attributes.get("store_url") is None:
+            raise RuntimeError(
+                f"Store URL missing for profile '{attributes['name']}'."
+            )
+
+        return attributes
+
+    @root_validator(pre=True)
+    def _ensure_active_project_is_set(
+        cls, attributes: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Ensures that an active project is set for this profile.
+
+        If the active project is missing and the profile specifies a local
+        store, a default project is used as fallback.
+
+        Args:
+            attributes: attributes of the profile configuration
+
+        Returns:
+            attributes of the profile configuration
+
+        Raises:
+            RuntimeError: If the active project is missing for a profile with a
+                REST ZenStore.
+        """
+        store_type = attributes.get("store_type") or get_default_store_type()
+
+        if (
+            store_type != StoreType.REST
+            and attributes.get("active_project") is None
+        ):
+            # in case of a local store, fallback to the default project that is
+            # created when initializing the store
+            from zenml.zen_stores.base_zen_store import DEFAULT_PROJECT_NAME
+
+            attributes["active_project"] = DEFAULT_PROJECT_NAME
+
+        if not attributes.get("active_project"):
+            raise RuntimeError(
+                f"Active project missing for profile '{attributes['name']}'."
             )
 
         if store_type == StoreType.REST and attributes.get("store_url") is None:

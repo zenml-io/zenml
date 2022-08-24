@@ -75,6 +75,7 @@ class AnalyticsEvent(str, Enum):
 
     # Projects
     CREATED_PROJECT = "Project created"
+    CREATED_DEFAULT_PROJECT = "Default project created"
     DELETED_PROJECT = "Project deleted"
 
     # Role

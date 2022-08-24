@@ -43,7 +43,11 @@ from zenml.post_execution.pipeline import PipelineView
 from zenml.post_execution.pipeline_run import PipelineRunView
 from zenml.post_execution.step import StepView
 from zenml.utils import io_utils
-from zenml.zen_stores import BaseZenStore
+from zenml.zen_stores.base_zen_store import (
+    DEFAULT_PROJECT_NAME,
+    DEFAULT_USERNAME,
+    BaseZenStore,
+)
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -115,7 +119,8 @@ class SqlZenStore(BaseZenStore):
         SQLModel.metadata.create_all(self.engine)
         with Session(self.engine) as session:
             if not session.exec(select(UserSchema)).first():
-                session.add(UserSchema(id=1, name="LocalZenUser"))
+                session.add(UserSchema(name=DEFAULT_USERNAME))
+                session.add(ProjectSchema(name=DEFAULT_PROJECT_NAME))
             session.commit()
 
         super().initialize(url, *args, **kwargs)

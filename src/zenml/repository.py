@@ -19,7 +19,6 @@ from abc import ABCMeta
 from collections import defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
-from uuid import UUID
 
 from pydantic import BaseModel, ValidationError
 
@@ -62,8 +61,6 @@ class RepositoryConfiguration(FileSyncModel):
 
     active_profile_name: Optional[str]
     active_stack_name: Optional[str]
-    project_name: Optional[str] = None
-    project_id: Optional[UUID] = None
 
     class Config:
         """Pydantic configuration class."""
@@ -1008,32 +1005,6 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 name,
             )
 
-    def set_active_project(self, project: Optional["Project"] = None) -> None:
-        """Set the project for the local repository.
-
-        If no object is passed, this will unset the active project for this
-        repository.
-
-        Args:
-            project: The project to set as active.
-
-        Raises:
-            RuntimeError: if not in an initialized repository directory.
-        """
-        if not self.__config:
-            raise RuntimeError(
-                "Must be in a local ZenML repository to set an active project. "
-                "Make sure you are in the right directory, or first run "
-                "`zenml init` to initialize a ZenML repository."
-            )
-
-        if project:
-            self.__config.project_name = project.name
-            self.__config.project_id = project.id
-        else:
-            self.__config.project_name = None
-            self.__config.project_id = None
-
     @property
     def active_project(self) -> Optional["Project"]:
         """Get the currently active project of the local repository.
@@ -1041,22 +1012,16 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         Returns:
             Project, if one is set that matches the id in the store.
         """
-        if not self.__config:
-            return None
+        return self.zen_store.get_project(self.active_project_name)
 
-        project_name = self.__config.project_name
-        if not project_name:
-            return None
+    @property
+    def active_project_name(self) -> str:
+        """Get the active project name set in the profile.
 
-        project = self.zen_store.get_project(project_name)
-        if self.__config.project_id != project.id:
-            logger.warning(
-                "Local project id and store project id do not match. Treating "
-                "project as unset. Make sure this project was registered with "
-                f"this store under the name `{project_name}`."
-            )
-            return None
-        return project
+        Returns:
+            The name of the active project.
+        """
+        return self.active_profile.active_project
 
     @track(event=AnalyticsEvent.GET_PIPELINES)
     def get_pipelines(

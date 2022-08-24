@@ -45,6 +45,7 @@ from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 logger = get_logger(__name__)
 
 DEFAULT_USERNAME = "default"
+DEFAULT_PROJECT_NAME = "default"
 
 
 class BaseZenStore(ABC):
@@ -81,6 +82,7 @@ class BaseZenStore(ABC):
                 logger.info("Registering default stack...")
                 self.register_default_stack()
             self.create_default_user()
+            self.create_default_project()
 
         if not skip_migration:
             self._migrate_store()
@@ -89,9 +91,10 @@ class BaseZenStore(ABC):
 
     def _migrate_store(self) -> None:
         """Migrates the store to the latest version."""
-        # Older versions of ZenML didn't have users in the zen store, so we
-        # create the default user if it doesn't exists
+        # Older versions of ZenML didn't have users or projects in the zen
+        # store, so we create the default user if it doesn't exists
         self.create_default_user()
+        self.create_default_project()
 
     # Static methods:
 
@@ -1097,6 +1100,15 @@ class BaseZenStore(ABC):
             # Use private interface and send custom tracking event
             self._track_event(AnalyticsEvent.CREATED_DEFAULT_USER)
             self._create_user(user_name=DEFAULT_USERNAME)
+
+    def create_default_project(self) -> None:
+        """Creates a default project."""
+        try:
+            self.get_project(project_name=DEFAULT_PROJECT_NAME)
+        except KeyError:
+            # Use private interface and send custom tracking event
+            self._track_event(AnalyticsEvent.CREATED_DEFAULT_PROJECT)
+            self._create_project(project_name=DEFAULT_PROJECT_NAME)
 
     # Common code (internal implementations, private):
 
