@@ -10,37 +10,67 @@ The expertise of setting up these often-complex stacks up shouldn't be a pre-req
 
 A Stack Recipe is a collection of carefully-crafted Terraform modules and resources which when executed creates a range of stack components that can be used to run your pipelines. Each recipe is designed to offer a great deal of flexibility in configuring the resources while preserving the ease of application through the use of sensible defaults.
 
-Stack recipes create opinionated ZenML stacks. In other words, they have a fixed implementation for each of the stack components that ZenML uses. However, there are multiple recipes available with more being developed actively, that cover most common use-cases. Check out the full list of available recipes at the [mlops-stacks](https://github.com/zenml-io/mlops-stacks) repository.
+Check out the full list of available recipes at the [mlops-stacks repository](https://github.com/zenml-io/mlops-stacks#-list-of-recipes).
 
-## Deploying a recipe
+## Deploying a recipe 🚀
 
-There are two ways in which you can deploy any recipe.
+{% hint style="info" %}
+To use the stack recipe CLI commands, you will have to install some optional dependencies with `zenml`. 
+Run `pip install "zenml[stacks]"` to get started! 
+{% endhint %}
 
-### Using the terraform CLI directly
+Detailed steps are available in the READMEs of respective recipes but here's what a simple flow could look like:
 
-Each recipe is in fact a Terraform module that can be used in the same way as you would any other Terraform module.
-
-1. Once you're inside a recipe's root directory, run the `init` command to download all the provider and module definitions.
-
-    ```
-    terraform init
-    ```
-
-2. Make sure you have the right values set for the `locals.tf` file and the `values.tfvars.json` file which store non-sensitive and sensitive information about your deployment, respectively,
-
-3. Run the apply command!
+1. 📃 List the available recipes in the repository.
 
     ```
-    terraform apply
+    zenml stack recipe list
     ```
 
-4. Once you're done running your pipelines and want to delete all resources, run the `destroy` command.
+2. Pull the recipe that you wish to deploy, to your local system.
 
     ```
-    terraform destroy
+    zenml stack recipe pull <STACK_RECIPE_NAME>
+    ``` 
+
+3. 🎨 Customize your deployment by editing the default values in the `locals.tf` file. This file holds all the configurable parameters for each of the stack components.
+
+4. 🔐 Add your secret information like keys and passwords into the `values.tfvars.json` file which is not committed and only exists locally.
+
+5. 🚀 Deploy the recipe with this simple command.
+
+    ```
+    zenml stack recipe deploy <STACK_RECIPE_NAME>
     ```
 
-### Using the ZenML CLI
+    {% hint style="info" %}
+    If you want to allow ZenML to automatically import the created resources as a ZenML stack, pass the `--import` flag to the command above. By default, the imported stack will have the same name as the stack recipe and you can provide your own with the `--stack-name` option.
+    {% endhint %}
+
+6. You'll notice that a ZenML stack configuration file gets created after the previous command executes 🤯! This YAML file can be imported as a ZenML stack manually by running the following command.
+
+    ```
+    zenml stack import <STACK_NAME> <PATH_TO_THE_CREATED_STACK_CONFIG_YAML>
+    ```
+
+## Deleting resources
+
+1. 🗑️ Once you're done running your pipelines, there's only a single command you need to execute that will take care of cleaning up all the resources that you had created on your cloud. 
+
+    ```
+    zenml stack recipe destroy <STACK_RECIPE_NAME>
+    ```
+
+2. (Optional) 🧹 You can also remove all the downloaded recipe files from the `pull` execution by using the `clean` command.
+
+    ```
+    zenml stack recipe clean
+    ```
+
+Check out the [API docs](https://apidocs.zenml.io/) to learn more about each of these commands and the options that are available.
+
+
+## Integration with the ZenML CLI 🙏
 
 The ZenML CLI offers a set of commands to make it easy for you to list, pull and deploy recipes from anywhere!
 
@@ -56,61 +86,6 @@ More features that are planned 👇:
 - checking your credentials to make sure you have the right permissions for deploying all the stack components.
 - any feature you'd want to see next? Submit a request on our [hellonext board](https://zenml.hellonext.co/roadmap).
 
-
-## Integration with the ZenML CLI 🙏
-
-{% hint style="info" %}
-To use the stack recipe CLI commands, you will have to install some optional dependencies with `zenml`. 
-Run `pip install "zenml[stacks]"` to get started! 
-{% endhint %}
-
-We have already discussed the features that the ZenML CLI offers on top of the usual terraform commands. To see them in action, here's what a simple flow could look like:
-
-1. 📃 List the available recipes in the repository.
-
-    ```
-    zenml stack recipe list
-    ```
-
-2. Pull the recipe that you wish to deploy, to your local system.
-
-    ```
-    zenml stack recipe pull <stack-recipe-name>
-    ``` 
-
-3. 🎨 Customize your deployment by editing the default values in the `locals.tf` file. This file holds all the configurable parameters for each of the stack components.
-
-4. 🔐 Add your secret information like keys and passwords into the `values.tfvars.json` file which is not committed and only exists locally.
-
-5. 🚀 Deploy the recipe with this simple command.
-
-    ```
-    zenml stack recipe deploy <stack-recipe-name>
-    ```
-
-    {% hint style="info" %}
-    If you want to allow ZenML to automatically import the created resources as a ZenML stack, pass the `--import` flag to the command above. By default, the imported stack will have the same name as the stack recipe and you can provide your own with the `--stack-name` option.
-    {% endhint %}
-
-6. You'll notice that a ZenML stack configuration file gets created after the previous command executes 🤯! This YAML file can be imported as a ZenML stack manually by running the following command.
-
-    ```
-    zenml stack import <stack-name> <path-to-the-created-stack-config-yaml>
-    ```
-
-7. 💣 Once you're done running your pipelines, there's only a single command you need to execute that will take care of cleaning up all the resources you had created on your cloud. 
-
-    ```
-    zenml stack recipe destroy <stack-recipe-name>
-    ```
-
-8. You can also remove all the downloaded recipe files from the `pull` execution by using the `clean` command.
-
-    ```
-    zenml stack recipe clean
-    ```
-
-Check out the [API docs](https://apidocs.zenml.io/) to learn more about each of these commands and the options that are available.
 
 ## Creating your own recipe 🧑‍🍳
 
