@@ -17,7 +17,7 @@ This section aims to list out different scenarios that you may find yourself in 
 
 ### Manual Deployments 👷
 
-If you're experienced in operations and prefer having the knowledge of every cloud resource that is being set up, intimately, we have a step-by-step guide for AWS, Azure and GCP grouped under [Manual Deployments](./manual-deployments/aws/aws.md) with detailed information on every stack component along with other essential things like roles, permissions, connection settings and more. Head over to the page corresponding to your cloud provider to get started!
+If you're experienced in operations and prefer having the knowledge of every cloud resource that is being set up, intimately, we have a step-by-step guide for AWS, Azure and GCP grouped under [Manual Deployments](./manual-deployments/) with detailed information on every stack component along with other essential things like roles, permissions, connection settings and more. Head over to the page corresponding to your cloud provider to get started!
 
 ### One Click Deployments with Stack Recipes ⏩
 
