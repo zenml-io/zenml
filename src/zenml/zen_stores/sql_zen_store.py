@@ -273,6 +273,28 @@ class SqlZenStore(BaseZenStore):
         """
         return {n: self.get_stack_configuration(n) for n in self.stack_names}
 
+    def get_stack_component_type(self, name: str) -> List[str]:
+        """Fetches all available stack component types.
+
+        Returns:
+            List of available stack component types.
+        """
+        # TODO: leave this to later in the process
+        return NotImplementedError
+
+    @property
+    def stack_component_types(self) -> List[StackComponentType]:
+        """List of stack component types.
+
+        Returns:
+            List of stack component types.
+        """
+        # get all stack components
+        # get the component for each type
+        # return them as a list
+        # TODO: leave this to later in the process
+        return NotImplementedError
+
     def _register_stack_component(
         self,
         component: ComponentModel,

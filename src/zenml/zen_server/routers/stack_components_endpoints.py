@@ -37,13 +37,13 @@ router = APIRouter(
     responses={401: error_response},
 )
 
-
+# TODO: check what type I'm returning here
 @router.get(
     TYPES,
-    response_model=List[str],
+    response_model=List[StackComponentType],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_stack_component_types() -> List[str]:
+async def get_stack_component_types() -> List[StackComponentType]:
     """Get a list of all stack component types.
 
     Returns:
@@ -55,7 +55,7 @@ async def get_stack_component_types() -> List[str]:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.get_stack_component_types()
+        return zen_store.stack_component_types
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:

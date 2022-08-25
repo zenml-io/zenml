@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Stack wrapper implementation."""
 
-from typing import List, Optional, Union, Dict
+from typing import Dict, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -34,7 +34,7 @@ class StackModel(BaseModel):
     )
     components: Dict[StackComponentType, str] = Field(
         title="A mapping of stack component types to the id's of"
-              "instances of components of this type."
+        "instances of components of this type."
     )
     created_by: str = Field(
         title="The id of the user, that created this stack.",
@@ -51,10 +51,10 @@ class StackModel(BaseModel):
                 "description": "A stack for running pipelines in production.",
                 "components": {
                     "alerter": "d3bbe238-d42a-42a2-b6a6-2319c4fbe5c9",
-                    "orchestrator": "5e4286b5-51f4-4286-b1f8-b0143e9a27ce"
+                    "orchestrator": "5e4286b5-51f4-4286-b1f8-b0143e9a27ce",
                 },
                 "created_by": "8d0acbc3-c51a-452c-bda3-e1b5469f79fd",
-                "created_at": "2022-08-12T07:12:45.931Z"
+                "created_at": "2022-08-12T07:12:45.931Z",
             }
         }
 
@@ -106,7 +106,8 @@ class StackModel(BaseModel):
         if component_type in self.components.keys():
             repo = Repository()
             component_model = repo.zen_store.get_stack_component(
-                component_type, self.components[component_type])
+                component_type, self.components[component_type]
+            )
 
             return component_model
 

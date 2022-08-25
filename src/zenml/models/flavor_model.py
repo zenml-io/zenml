@@ -17,8 +17,10 @@ from pydantic import BaseModel
 
 from zenml.enums import StackComponentType
 from zenml.stack import StackComponent
-from zenml.utils.source_utils import validate_flavor_source, \
-    load_source_path_class
+from zenml.utils.source_utils import (
+    load_source_path_class,
+    validate_flavor_source,
+)
 
 
 class FlavorModel(BaseModel):

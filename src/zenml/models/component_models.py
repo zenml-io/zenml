@@ -62,11 +62,12 @@ class ComponentModel(BaseModel):
                 "name": "vertex_prd_orchestrator",
                 "type": "orchestrator",
                 "flavor": "vertex",
-                "config": b'RANDOM64STRING',
+                "config": b"RANDOM64STRING",
                 "created_by": "8d0acbc3-c51a-452c-bda3-e1b5469f79fd",
-                "created_at": "2022-08-12T07:12:44.931Z"
+                "created_at": "2022-08-12T07:12:44.931Z",
             }
         }
+
     @classmethod
     def from_component(cls, component: "StackComponent") -> "ComponentModel":
         """Creates a ComponentModel from an instance of a Stack Component.
@@ -102,5 +103,3 @@ class ComponentModel(BaseModel):
         config = yaml.safe_load(base64.b64decode(self.config).decode())
 
         return flavor.parse_obj(config)
-
-

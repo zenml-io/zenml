@@ -216,6 +216,23 @@ class RestZenStore(BaseZenStore):
             for key, value in body.items()
         }
 
+    def get_stack_component_types(self) -> List[str]:
+        """Fetches all available stack component types.
+
+        Returns:
+            List of available stack component types.
+        """
+        return NotImplementedError
+
+    @property
+    def stack_component_types(self) -> List[str]:
+        """List of stack component types.
+
+        Returns:
+            List of stack component types.
+        """
+        return NotImplementedError
+
     # Private interface implementations:
 
     def _get_tfx_metadata_config(

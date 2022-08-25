@@ -192,6 +192,23 @@ class BaseZenStore(ABC):
             Dictionary mapping stack names to Dict[StackComponentType, str]'s
         """
 
+    @abstractmethod
+    def get_stack_component_types(self) -> List[str]:
+        """Get the stack component types registered in this zen store.
+
+        Returns:
+            List of stack component types.
+        """
+
+    @property
+    @abstractmethod
+    def stack_component_types(self) -> List[str]:
+        """Get the stack component types registered in this zen store.
+
+        Returns:
+            List of stack component types.
+        """
+
     # Private interface (must be implemented, not to be called by user):
 
     @abstractmethod
