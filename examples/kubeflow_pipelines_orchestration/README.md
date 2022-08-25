@@ -206,7 +206,7 @@ Kubernetes cluster.
 
 ### 🚅 That seems like a lot of infrastructure work. Is there a Zen 🧘 way to run this example?
 
-Yes! With [ZenML Stack Recipes](../../docs/book/cloud-guide/stack-recipes.md), you can now provision all the infrastructure you need to run your ZenML pipelines with just a few simple commands.
+Yes! With [ZenML Stack Recipes](../../docs/book/stack-deployment-guide/stack-recipes.md), you can now provision all the infrastructure you need to run your ZenML pipelines with just a few simple commands.
 
 The flow to get started for this example can be the following:
 

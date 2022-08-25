@@ -108,16 +108,18 @@
   * [Label Studio](./mlops-stacks/annotators/label-studio.md)
   * [Develop a Custom Annotator](./mlops-stacks/annotators/custom.md)
 
-## Cloud Guide
+## Stack Deployment Guide
 
-* [Overview: Options for Deploying Infrastructure](./cloud-guide/overview.md)
-* [Quick Deployments with Stack Recipes](./cloud-guide/stack-recipes.md)
-* [AWS](./cloud-guide/aws/aws.md)
-  * [Set Up a Minimal MLOps Stack on AWS](./cloud-guide/aws/aws-guide.md)
-* [GCP](./cloud-guide/gcp/gcp.md)
-  * [Set Up a Minimal MLOps Stack on GCP](./cloud-guide/gcp/gcp-guide.md)
-* [Azure](./cloud-guide/azure/azure.md)
-  * [Set Up a Minimal MLOps Stack on Azure](./cloud-guide/azure/azure-guide.md)
+* [Overview: Options for Deploying Infrastructure](./stack-deployment-guide/overview.md)
+* [Manual Deployments](./stack-deployment-guide/manual-deployments/aws/aws.md)
+  * [AWS](./stack-deployment-guide/aws/aws.md)
+    * [Set Up a Minimal MLOps Stack on AWS](./stack-deployment-guide/aws/aws-guide.md)
+  * [GCP](./stack-deployment-guide/gcp/gcp.md)
+    * [Set Up a Minimal MLOps Stack on GCP](./stack-deployment-guide/gcp/gcp-guide.md)
+  * [Azure](./stack-deployment-guide/azure/azure.md)
+    * [Set Up a Minimal MLOps Stack on Azure](./stack-deployment-guide/azure/azure-guide.md)
+* [One Click Deployments with Stack Recipes](./stack-deployment-guide/stack-recipes.md)
+* [Deployments with Terraform](./stack-deployment-guide/deploy-terraform.md)
 
 ## Collaborate
 
