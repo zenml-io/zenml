@@ -44,9 +44,8 @@ Detailed steps are available in the READMEs of respective recipes but here's wha
     ```
 
     {% hint style="info" %}
-        If you want to allow ZenML to automatically import the created resources as a ZenML stack, pass the `--import` flag to the command above. 
-
-        By default, the imported stack will have the same name as the stack recipe and you can provide your own with the `--stack-name` option.
+        If you want to allow ZenML to automatically import the created resources as a ZenML stack, pass the --import flag to the command above. 
+        By default, the imported stack will have the same name as the stack recipe and you can provide your own with the --stack-name option.
     {% endhint %}
 
 6. You'll notice that a ZenML stack configuration file gets created after the previous command executes 🤯! This YAML file can be imported as a ZenML stack manually by running the following command.
