@@ -111,7 +111,7 @@
 ## Stack Deployment Guide
 
 * [Overview: Options for Deploying Infrastructure](./stack-deployment-guide/overview.md)
-* [Manual Deployments](./stack-deployment-guide/manual-deployments/aws/aws.md)
+* [Manual Deployments](./stack-deployment-guide/manual-deployments/)
   * [AWS](./stack-deployment-guide/aws/aws.md)
     * [Set Up a Minimal MLOps Stack on AWS](./stack-deployment-guide/aws/aws-guide.md)
   * [GCP](./stack-deployment-guide/gcp/gcp.md)
