@@ -33,10 +33,9 @@ from zenml.io import fileio
 from zenml.logger import get_apidocs_link, get_logger
 from zenml.stack import Stack, StackComponent
 from zenml.utils import io_utils
-from zenml.utils.analytics_utils import AnalyticsEvent, track, track_event
+from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
 from zenml.zen_stores import BaseZenStore
-from zenml.zen_stores.store_config import StoreConfiguration
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
@@ -52,12 +51,10 @@ class RepositoryConfiguration(FileSyncModel):
     Attributes:
         active_stack_name: Optional name of the active stack.
         active_project_name: Optional name of the active project.
-        store: Optional local store configuration.
     """
 
     active_stack_name: Optional[str]
     active_project_name: Optional[str]
-    store: Optional[StoreConfiguration]
 
     class Config:
         """Pydantic configuration class."""
@@ -155,7 +152,6 @@ class Repository(metaclass=RepositoryMetaClass):
     def __init__(
         self,
         root: Optional[Path] = None,
-        store: Optional[StoreConfiguration] = None,
     ) -> None:
         """Initializes the global repository instance.
 
@@ -163,20 +159,16 @@ class Repository(metaclass=RepositoryMetaClass):
         this constructor multiple times will always yield the same instance (see
         the exception below).
 
-        The `root` and `store` arguments are only meant for internal use
-        and testing purposes. User code must never pass them to the constructor.
-        When a custom `root` or `store` value is passed, an anonymous
-        Repository instance is created and returned independently of the
-        Repository singleton and that will have no effect as far as the rest of
-        the ZenML core code is concerned.
+        The `root` argument is only meant for internal use and testing purposes.
+        User code must never pass them to the constructor.
+        When a custom `root` value is passed, an anonymous Repository instance
+        is created and returned independently of the Repository singleton and
+        that will have no effect as far as the rest of the ZenML core code is
+        concerned.
 
         Instead of creating a new Repository instance to reflect a different
-        store configuration or repository root:
-
-          * to change the store configuration in the global Repository,
-          call `Repository().set_store(<new-store-config>)`.
-          * to change the active root in the global Repository,
-          call `Repository().activate_root(<new-root>)`.
+        repository root, to change the active root in the global Repository,
+        call `Repository().activate_root(<new-root>)`.
 
         Args:
             root: (internal use) custom root directory for the repository. If
@@ -185,22 +177,11 @@ class Repository(metaclass=RepositoryMetaClass):
                 recursively searching in the parent directories of the
                 current working directory. Only used to initialize new
                 repositories internally.
-            store: (internal use) custom store configuration to use for the
-                repository. If not provided, the active store configuration is
-                determined from the loaded repository configuration. If no
-                repository configuration is found (i.e. repository root is not
-                initialized), the global store is used. Only used to initialize
-                new repositories internally.
         """
         self._root: Optional[Path] = None
         self._config: Optional[RepositoryConfiguration] = None
-        self._zen_store: Optional[BaseZenStore] = None
 
         self._set_active_root(root)
-        if store:
-            # calling this will initialize the store and create the default
-            # stack configuration, if missing
-            self._configure_store(store)
 
     @classmethod
     def get_instance(cls) -> Optional["Repository"]:
@@ -229,10 +210,9 @@ class Repository(metaclass=RepositoryMetaClass):
         """Set the supplied path as the repository root.
 
         If a repository configuration is found at the given path or the
-        path, it is loaded and used to initialize the repository and its
-        active store. If no repository configuration is found, the
-        global configuration is used instead (e.g. to manage the active
-        store and active stack).
+        path, it is loaded and used to initialize the repository.
+        If no repository configuration is found, the global configuration is
+        used instead to manage the active stack, project etc.
 
         Args:
             root: The path to set as the active repository root. If not set,
@@ -257,40 +237,6 @@ class Repository(metaclass=RepositoryMetaClass):
         # settings
         self._sanitize_config()
 
-    def _configure_store(
-        self,
-        config: StoreConfiguration,
-        skip_default_registrations: bool = False,
-        **kwargs: Any,
-    ) -> None:
-        """Configure the zen store used by the repository.
-
-        This method creates and initializes the repository store associated with
-        the supplied configuration, if the repository uses a local configuration.
-
-        Args:
-            config: new store configuration.
-            skip_default_registrations: If `True`, the creation of the default
-                stack and user in the store will be skipped.
-            **kwargs: Additional keyword arguments to pass to the store
-                constructor.
-        """
-        from zenml.zen_stores.base_zen_store import BaseZenStore
-
-        if not self._config:
-            return
-
-        store = BaseZenStore.create_store(
-            config, skip_default_registrations, **kwargs
-        )
-
-        if self._config.store != store.config or not self._zen_store:
-            self._config.store = store.config
-            self._zen_store = store
-
-            # Sanitize the repository configuration to reflect the new store
-            self._sanitize_config()
-
     def _config_path(self) -> Optional[str]:
         """Path to the repository configuration file.
 
@@ -306,8 +252,8 @@ class Repository(metaclass=RepositoryMetaClass):
         """Sanitize and save the repository configuration.
 
         This method is called to ensure that the repository configuration
-        doesn't contain outdated information, such as an active stack that no
-        longer exists.
+        doesn't contain outdated information, such as an active stack or
+        project that no longer exists.
         """
         if not self._config:
             return
@@ -322,7 +268,7 @@ class Repository(metaclass=RepositoryMetaClass):
         elif stacks:
             backup_stack_name = next(iter(stacks.keys()))
 
-        # Sanitize the repository active stack
+        # Auto-select the repository active stack
         if not self._config.active_stack_name:
             logger.warning(
                 "The repository active stack is not set. Switching the "
@@ -340,6 +286,18 @@ class Repository(metaclass=RepositoryMetaClass):
                 backup_stack_name,
             )
             self._config.active_stack_name = backup_stack_name
+
+        # Ensure that the current repository active project is still valid
+        if self._config.active_project_name:
+            try:
+                self.zen_store.get_project(self._config.active_project_name)
+            except KeyError:
+                logger.warning(
+                    "Project '%s' not found. Resetting the repository active "
+                    "project to the default.",
+                    self._config.active_project_name,
+                )
+                self._config.active_project_name = None
 
     def _load_config(self) -> Optional[RepositoryConfiguration]:
         """Loads the repository configuration from disk.
@@ -408,101 +366,12 @@ class Repository(metaclass=RepositoryMetaClass):
 
     @property
     def zen_store(self) -> BaseZenStore:
-        """Initialize and/or return the zen store.
-
-        If the store hasn't been initialized yet, it is initialized when this
-        property is first accessed according to the repository configuration,
-        if a store is locally configured for the repository. Otherwise, the
-        global store is used.
+        """Shortcut to return the global zen store.
 
         Returns:
-            The current zen store.
+            The global zen store.
         """
-        if not self._config or not self._config.store:
-            return GlobalConfiguration().zen_store
-
-        if self._zen_store is None:
-            self._configure_store(self._config.store)
-
-        assert self._zen_store is not None
-
-        return self._zen_store
-
-    def set_default_store(self) -> None:
-        """Creates and sets the default store configuration.
-
-        Call this method to initialize or revert the store configuration to the
-        default store.
-
-        Raises:
-            RuntimeError: If the repository is not initialized.
-        """
-        from zenml.zen_stores.base_zen_store import BaseZenStore
-
-        if not self.config_directory:
-            raise RuntimeError("Repository root not initialized.")
-
-        default_store_cfg = BaseZenStore.get_default_store_config(
-            path=str(self.config_directory)
-        )
-        self._configure_store(default_store_cfg)
-        logger.info("Using the default store for the repository config.")
-        track_event(
-            AnalyticsEvent.INITIALIZED_STORE,
-            {"store_type": default_store_cfg.type.value},
-        )
-
-    def set_store(
-        self,
-        config: StoreConfiguration,
-        skip_default_registrations: bool = False,
-        **kwargs: Any,
-    ) -> None:
-        """Configure the zen store used by the repository.
-
-        This method creates and initializes the repository store associated with
-        the supplied configuration. If the repository doesn't use a local
-        configuration, the global configuration is updated instead.
-
-        Args:
-            config: new store configuration.
-            skip_default_registrations: If `True`, the creation of the default
-                stack and user in the store will be skipped.
-            **kwargs: Additional keyword arguments to pass to the store
-                constructor.
-        """
-        if not self._config:
-            GlobalConfiguration().set_store(
-                config, skip_default_registrations, **kwargs
-            )
-            # Sanitize the repository configuration to reflect the new store
-            self._sanitize_config()
-            return
-
-        self._configure_store(config, skip_default_registrations, **kwargs)
-        logger.info("Updated the repository store configuration.")
-        track_event(
-            AnalyticsEvent.INITIALIZED_STORE,
-            {"store_type": config.type.value},
-        )
-
-    @property
-    def uses_local_store(self) -> bool:
-        """Check if the repository is using a local store.
-
-        Returns:
-            True if the repository is using a local store, False otherwise.
-        """
-        return self._config is not None and self._config.store is not None
-
-    @property
-    def store_config(self) -> Optional[StoreConfiguration]:
-        """Return the repository store configuration, if set.
-
-        Returns:
-            The repository store configuration.
-        """
-        return self._config.store if self._config else None
+        return GlobalConfiguration().zen_store
 
     @property
     def root(self) -> Optional[Path]:
@@ -559,6 +428,8 @@ class Repository(metaclass=RepositoryMetaClass):
         Args:
             project: The project name to set as active.
         """
+        if project:
+            self.zen_store.get_project(project_name=project)  # raises KeyError
         if self._config:
             self._config.active_project_name = project
         else:
@@ -570,9 +441,8 @@ class Repository(metaclass=RepositoryMetaClass):
     def active_project_name(self) -> Optional[str]:
         """The name of the active project for this repository.
 
-        If no active project is configured locally for the repository and a
-        local store is also not configured, the active project in the global
-        configuration is used instead.
+        If no active project is configured locally for the repository, the
+        active project in the global configuration is used instead.
 
         Returns:
             The name of the active project or None, if an active project name is
@@ -583,13 +453,13 @@ class Repository(metaclass=RepositoryMetaClass):
         if self._config:
             project_name = self._config.active_project_name
 
-        if not project_name and not self.uses_local_store:
+        if not project_name:
             project_name = GlobalConfiguration().active_project_name
 
         if not project_name:
-            logger.warning(
+            logger.info(
                 "No active project is configured. Run "
-                "`zenml project_name set PROJECT_NAME` to set the active "
+                "`zenml project set PROJECT_NAME` to set the active "
                 "project."
             )
 
@@ -599,9 +469,8 @@ class Repository(metaclass=RepositoryMetaClass):
     def active_project(self) -> Optional["Project"]:
         """Get the currently active project of the local repository.
 
-        If no active project is configured locally for the repository and a
-        local store is also not configured, the active project in the global
-        configuration is used instead.
+        If no active project is configured locally for the repository, the
+        active project in the global configuration is used instead.
 
         Returns:
             The active project or None, if an active project name is
@@ -647,6 +516,9 @@ class Repository(metaclass=RepositoryMetaClass):
     def active_stack(self) -> Stack:
         """The active stack for this repository.
 
+        If no active stack is configured locally for the repository, the active
+        stack in the global configuration is used instead.
+
         Returns:
             The active stack for this repository.
         """
@@ -656,9 +528,8 @@ class Repository(metaclass=RepositoryMetaClass):
     def active_stack_name(self) -> str:
         """The name of the active stack for this repository.
 
-        If no active stack is configured locally for the repository and a local
-        store is also not configured, the active stack in the global
-        configuration is used instead.
+        If no active stack is configured locally for the repository, the active
+        stack in the global configuration is used instead.
 
         Returns:
             The name of the active stack.
@@ -671,7 +542,7 @@ class Repository(metaclass=RepositoryMetaClass):
         if self._config:
             stack_name = self._config.active_stack_name
 
-        if not stack_name and not self.uses_local_store:
+        if not stack_name:
             stack_name = GlobalConfiguration().active_stack_name
 
         if not stack_name:

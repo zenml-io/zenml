@@ -23,10 +23,6 @@ from zenml.zen_stores.models.user_management_models import (
     Team,
     User,
 )
-from zenml.zen_stores.models.zen_store_model import (
-    ZenStoreModel,
-    ZenStorePipelineModel,
-)
 
 __all__ = [
     "ComponentWrapper",

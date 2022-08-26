@@ -21,6 +21,7 @@ from uuid import UUID
 import requests
 from pydantic import BaseModel
 
+from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     FLAVORS,
     PIPELINE_RUNS,
@@ -56,7 +57,6 @@ from zenml.zen_stores.models import (
     User,
 )
 from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
-from zenml.zen_stores.store_config import StoreConfiguration
 
 logger = get_logger(__name__)
 

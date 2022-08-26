@@ -24,11 +24,11 @@ from pydantic import BaseModel, Field, ValidationError, validator
 from pydantic.main import ModelMetaclass
 
 from zenml import __version__
+from zenml.config.store_config import StoreConfiguration
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import io_utils, yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
-from zenml.zen_stores.store_config import StoreConfiguration
 
 if TYPE_CHECKING:
     from zenml.zen_stores import BaseZenStore
@@ -50,6 +50,7 @@ class GlobalConfigMetaClass(ModelMetaclass):
     default configuration, if no config file exists yet.
     * the GlobalConfiguration undergoes a schema migration if the version of the
     config file is older than the current version of the ZenML package.
+    * a default store is set if no store is configured yet.
     """
 
     def __init__(cls, *args: Any, **kwargs: Any) -> None:
@@ -87,7 +88,8 @@ class GlobalConfigMetaClass(ModelMetaclass):
                 "GlobalConfiguration", super().__call__(*args, **kwargs)
             )
             cls._global_config._migrate_config()
-
+            if not cls._global_config.store:
+                cls._global_config.set_default_store()
         return cls._global_config
 
 

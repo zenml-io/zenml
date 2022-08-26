@@ -95,26 +95,22 @@ def set_logging_verbosity(verbosity: str) -> None:
     cli_utils.declare(f"Set verbosity to: {verbosity}")
 
 
-# Global and repository configuration
+# Global store configuration
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def config() -> None:
-    """Manage the global and local repository ZenML configuration."""
+    """Manage the global store ZenML configuration."""
 
 
 @config.command(
     "set",
     help=(
-        """Change the global or repository configuration.
+        """Change the global store configuration.
 
     Use this command to configure where ZenML stores its data (e.g. stacks,
     stack components, flavors etc.). You can choose between using the local
     filesystem by passing the `--local-store` flag, or a remote ZenML server
-    by configuring the `--url`, `--username` and an optional `--project`.
-
-    The configuration changes are applied to the global configuration by
-    default. If you need to change the local configuration of a specific
-    repository instead, you can pass the `--repo` flag while running the command
-    from within the repository directory.
+    by configuring the `--url`, `--username`, `--password` and an optional
+    `--project`.
 
     Examples:
 
@@ -126,17 +122,6 @@ def config() -> None:
      - set the global configuration to connect to a remote ZenML server:
 
         zenml config set --url=http://localhost:8080 --username=default --project=default
-
-     - set the repository configuration to use the local filesystem to store
-     stacks, stack components and so on in a database stored in the repository
-     itself:
-
-        zenml config set --local-store
-
-     - set the repository configuration to connect to a remote ZenML
-     server:
-
-        zenml config set --repo --url=http://localhost:8080 --username=default --project=default
 
     """
     ),
@@ -157,21 +142,31 @@ def config() -> None:
     type=str,
 )
 @click.option(
+    "--password",
+    help="The password that is used to authenticate with a ZenML server. This "
+    "is required if you're connected to a ZenML server. If omitted, a prompt "
+    "will be shown to enter the password.",
+    required=False,
+    type=str,
+)
+@click.option(
+    "--project",
+    help="The username that is used to authenticate with a ZenML server. This "
+    "is only required if you're connected to a ZenML server.",
+    required=False,
+    type=str,
+)
+@click.option(
     "--local-store",
     is_flag=True,
     help="Configure ZenML to use the stacks stored on your local filesystem.",
 )
-@click.option(
-    "--repo",
-    is_flag=True,
-    help="Configure the repository local settings instead of the global "
-    "configuration settings.",
-)
 def config_set_command(
     url: Optional[str] = None,
     username: Optional[str] = None,
+    password: Optional[str] = None,
+    project: Optional[str] = None,
     local_store: bool = False,
-    repo: bool = False,
 ) -> None:
     """Change the ZenML configuration.
 
@@ -180,26 +175,19 @@ def config_set_command(
         local_store: Configure ZenML to use the local store.
         username: The username that is used to authenticate with the ZenML
             server.
-        repo: Configure the repository local settings instead of the global ones.
+        password: The password that is used to authenticate with the ZenML
+            server.
+        project: The active project that is used to connect to the ZenML
+            server.
     """
-    if repo and not Repository().root:
-        cli_utils.error(
-            "The `--repo` flag can only be used with an initialized "
-            "repository. You need to run `zenml init` or change the "
-            "current directory to an initialized repository root."
-        )
-
     if local_store:
-        if url or username:
+        if url or username or password or project:
             cli_utils.error(
-                "The `url` and `--username` options can only be used"
-                "to connect to a remote ZenML server. Hint: `--local-store` "
-                "should probably not be set."
+                "The `--url`, `--username`, `--password` and `--project` "
+                "options can only be used to connect to a remote ZenML server. "
+                "Hint: `--local-store` should probably not be set."
             )
-        if repo:
-            Repository().set_default_store()
-        else:
-            GlobalConfiguration().set_default_store()
+        GlobalConfiguration().set_default_store()
     else:
         if url is None or username is None:
             cli_utils.error(
@@ -208,51 +196,54 @@ def config_set_command(
                 "`--local-store` flag to configure ZenML to use the local "
                 "filesystem."
             )
+        if password is None:
+            password = click.prompt(
+                f"Password for user {username}", hide_input=True, default=""
+            )
         store_config = RestZenStoreConfiguration(
             url=url,
             username=username,
         )
-        if repo:
-            Repository().set_store(store_config)
-        else:
-            GlobalConfiguration().set_store(store_config)
+        GlobalConfiguration().set_store(store_config)
+        if project:
+            try:
+                Repository().set_active_project(project)
+            except KeyError:
+                cli_utils.error(
+                    f"The project {project} does not exist on the server "
+                    f"{url}. Please set another project by running `zenml "
+                    f"project set`."
+                )
 
 
 @config.command(
-    "show",
-    help="Show details about the active configuration.",
+    "describe",
+    help="Show details about the active global configuration.",
 )
-def config_show() -> None:
-    """Show details about the active configuration."""
+def config_describe() -> None:
+    """Show details about the active global configuration."""
     gc = GlobalConfiguration()
     repo = Repository()
 
-    repo_cfg = repo.store_config
-    global_cfg = gc.store
+    store_cfg = gc.store
+    active_project_name = repo.active_project_name
 
     if repo.root:
         cli_utils.declare(f"Active repository root: {repo.root}")
-    if repo_cfg is not None:
-        cli_utils.declare(
-            f"The repository store configuration is in effect "
-            f"({repo._config_path()}):"
-        )
-        for key, value in repo_cfg.dict().items():
-            cli_utils.declare(f" - {key}: {value}")
-    elif global_cfg is not None:
-        cli_utils.declare(
-            f"The global store configuration is in effect "
-            f"({gc._config_file()}):"
-        )
-        for key, value in global_cfg.dict().items():
-            cli_utils.declare(f" - {key}: {value}")
+    if store_cfg is not None:
+        store_cfg_dict = store_cfg.dict()
+        store_cfg_dict.pop("type")
+        store_cfg_dict.pop("password", None)
+        cli_utils.declare(f"The global configuration is ({gc._config_file()}):")
+        for key, value in store_cfg_dict.items():
+            cli_utils.declare(f" - {key}: '{value}'")
 
     stack_scope = "repository" if repo.uses_local_active_stack else "global"
     cli_utils.declare(
         f"The active stack is: '{repo.active_stack_name}' ({stack_scope})"
     )
     project_scope = "repository" if repo.uses_local_active_project else "global"
-    if not repo.active_project_name:
+    if not active_project_name:
         cli_utils.declare("The active project is not set.")
     else:
         cli_utils.declare(
@@ -270,18 +261,17 @@ def explain_config() -> None:
                 """
 The ZenML configuration that is managed through `zenml config` determines the
 type of backend that ZenML uses to persist objects such as Stacks, Stack
-Components and Flavors. This can be configured globally as well as independently
-for each ZenML repository that is initialized on a machine.
+Components and Flavors.
 
 The default configuration is to store all this information on the local
 filesystem:
 
 ```
-$ zenml config show
+$ zenml config describe
 Running without an active repository root.
-The global store configuration is in effect (/home/stefan/.config/zenml/config.yaml):
- - type: sql
- - url: sqlite:////home/stefan/.config/zenml/zenml.db
+No active project is configured. Run zenml project set PROJECT_NAME to set the active project.
+The global configuration is (/home/stefan/.config/zenml/config.yaml):
+ - url: 'sqlite:////home/stefan/.config/zenml/zenml.db'
 The active stack is: 'default' (global)
 The active project is not set.
 ```
@@ -294,18 +284,16 @@ To change the global configuration to use a remote ZenML server, pass the URL
 where the server can be reached along with the authentication credentials:
 
 ```
-$ zenml config set --url=http://localhost:8080 --username=default
+$ zenml config set --url=http://localhost:8080 --username=default --project=default --password=
 Updated the global store configuration.
 
-$ zenml config show
+$ zenml config describe
 Running without an active repository root.
-The global store configuration is in effect (/home/stefan/.config/zenml/config.yaml):
- - type: rest
- - url: http://localhost:8080
- - username: default
- - password:
+The global configuration is (/home/stefan/.config/zenml/config.yaml):
+ - url: 'http://localhost:8080'
+ - username: 'default'
 The active stack is: 'default' (global)
-The active project is 'default' (global).
+The active project is: 'default' (global)
 ```
 
 To switch the global configuration back to the default local store, pass the
@@ -315,54 +303,12 @@ To switch the global configuration back to the default local store, pass the
 $ zenml config set --local-store
 Using the default store for the global config.
 
-$ zenml config show
+$ zenml config describe
 Running without an active repository root.
-The global store configuration is in effect (/home/stefan/.config/zenml/config.yaml):
- - type: sql
- - url: sqlite:////home/stefan/.config/zenml/zenml.db
+The global configuration is (/home/stefan/.config/zenml/config.yaml):
+ - url: 'sqlite:////home/stefan/.config/zenml/zenml.db'
 The active stack is: 'default' (global)
-The active project is not set.
-```
-
-Newly initialized repositories don't have a store configuration yet, which
-means that they will use the same stacks available in the global configuration.
-
-```
-/tmp/zenml$ zenml init
-Initializing ZenML repository at /tmp/zenml.
-ZenML repository initialized at /tmp/zenml.
-
-/tmp/zenml$ zenml config show
-Active repository root: /tmp/zenml
-The global store configuration is in effect (/home/stefan/.config/zenml/config.yaml):
- - type: sql
- - url: sqlite:////home/stefan/.config/zenml/zenml.db
-The active stack is: 'default' (repository)
-The active project is not set.
-```
-
-The repository can be configured with storage settings independent from the
-global configuration by passing the `--repo` flag to the `zenml config set`
-command. Note that this only works when a repository is active.
-
-The following configures a repository to store stacks, stack components etc.
-in a database that is stored in the repository root directory. The stacks
-and other objects stored in the repository will only be visible while the
-repository is active:
-
-```
-tmp/zenml$ zenml config set --repo --local-store
-Initializing database...
-Registered stack with name 'default'.
-Using the default store for the repository config.
-
-/tmp/zenml$ zenml config show
-Active repository root: /tmp/zenml
-The repository store configuration is in effect (/tmp/zenml/.zen/config.yaml):
- - type: sql
- - url: sqlite:////tmp/zenml/.zen/zenml.db
-The active stack is: 'default' (repository)
-The active project is not set.
+The active project is: 'default' (global)
 ```
 """
             )

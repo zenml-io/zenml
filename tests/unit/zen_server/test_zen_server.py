@@ -16,41 +16,24 @@ import platform
 import pytest
 import requests
 
-from zenml.config.global_config import GlobalConfiguration
-from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import STACK_CONFIGURATIONS, STACKS, USERS
 from zenml.services import ServiceState
 from zenml.utils.networking_utils import scan_for_available_port
 from zenml.zen_server.zen_server import ZenServer, ZenServerConfig
-from zenml.zen_stores import LocalZenStore
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 
 
 @pytest.fixture
 def running_zen_server(tmp_path_factory: pytest.TempPathFactory) -> ZenServer:
     """Spin up a ZenServer to do tests on."""
-    tmp_path = tmp_path_factory.mktemp("local_zen_store")
-    global_cfg = GlobalConfiguration()
-
-    backing_zen_store = LocalZenStore().initialize(str(tmp_path))
-    store_profile = ProfileConfiguration(
-        name=f"test_profile_{hash(str(tmp_path))}",
-        store_url=backing_zen_store.url,
-        store_type=backing_zen_store.type,
-    )
-    global_cfg.add_or_update_profile(store_profile)
-
     port = scan_for_available_port(start=8003, stop=9000)
-    zen_server = ZenServer(
-        ZenServerConfig(port=port, profile_name=store_profile.name)
-    )
+    zen_server = ZenServer(ZenServerConfig(port=port))
 
     zen_server.start(timeout=10)
 
     yield zen_server
     zen_server.stop(timeout=10)
 
-    global_cfg.delete_profile(store_profile.name)
     assert zen_server.check_status()[0] == ServiceState.INACTIVE
 
 

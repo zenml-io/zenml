@@ -16,7 +16,6 @@ import os
 import shutil
 import sys
 from pathlib import Path
-from typing import Generator
 
 import pytest
 from py._builtin import execfile
@@ -25,7 +24,6 @@ from pytest_mock import MockerFixture
 from tests.venv_clone_utils import clone_virtualenv
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.config.global_config import GlobalConfiguration
-from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import ENV_ZENML_DEBUG
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.pipelines import pipeline
@@ -33,7 +31,7 @@ from zenml.repository import Repository
 from zenml.steps import StepContext, step
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def base_repo(
     tmp_path_factory: pytest.TempPathFactory,
     session_mocker: MockerFixture,
@@ -53,9 +51,6 @@ def base_repo(
     # set env variables
     os.environ[ENV_ZENML_DEBUG] = "true"
     os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"
-    os.environ["ZENML_DEFAULT_STORE_TYPE"] = request.config.getoption(
-        "store_type"
-    )
 
     # change the working directory to a fresh temp path
     tmp_path = tmp_path_factory.mktemp("tmp")
@@ -65,13 +60,14 @@ def base_repo(
     logging.info(f"Tests are running in path: {tmp_path}")
 
     # set the ZENML_CONFIG_PATH environment variable to ensure that the global
-    # configuration, the configuration profiles and the local stacks used during
-    # testing are separate from those used in the current environment
+    # configuration and the local stacks used during testing are separate from
+    # those used in the current environment
     os.environ["ZENML_CONFIG_PATH"] = str(tmp_path / "zenml")
 
     session_mocker.patch("analytics.track")
 
-    # initialize repo at the new path
+    # initialize global config and repo at the new path
+    GlobalConfiguration()
     repo = Repository()
 
     # monkey patch original cwd in for later use and yield
@@ -101,44 +97,6 @@ def base_repo(
     # reset the global configuration and the repository
     GlobalConfiguration._reset_instance()
     Repository._reset_instance()
-
-
-@pytest.fixture(scope="module", autouse=True)
-def base_profile(
-    base_repo: Repository,
-    request: pytest.FixtureRequest,
-) -> Generator[Repository, None, None]:
-    """Creates and activates a clean profile with a fresh default stack for all
-    tests in a module.
-
-    Args:
-        base_repo: The base ZenML repository for tests.
-        request: Pytest FixtureRequest object
-
-    Yields:
-        The input repository with a provisioned profile.
-    """
-    gc = GlobalConfiguration()
-
-    profile_name = request.node.name
-    profile_name = profile_name.replace(".", "_")
-    profile = ProfileConfiguration(name=profile_name)
-
-    gc.add_or_update_profile(profile)
-
-    original_profile = base_repo.active_profile_name
-
-    base_repo.activate_profile(profile_name)
-
-    logging.info(
-        f"Tests are running in clean profile '{profile_name}' with store type "
-        f"'{profile.store_type.value}'"
-    )
-
-    yield base_repo
-
-    base_repo.activate_profile(original_profile)
-    gc.delete_profile(profile_name)
 
 
 @pytest.fixture
@@ -178,12 +136,12 @@ def clean_repo(
     Repository._reset_instance()
 
     # set the ZENML_CONFIG_PATH environment variable to ensure that the global
-    # configuration, the configuration profiles and the local stacks used in
-    # the scope of this function are separate from those used in the global
-    # testing environment
+    # configuration and the local stacks used in the scope of this function are
+    # separate from those used in the global testing environment
     os.environ["ZENML_CONFIG_PATH"] = str(tmp_path / "zenml")
 
-    # initialize repo with new tmp path
+    # initialize global config and repo at the new path
+    GlobalConfiguration()
     repo = Repository()
 
     # monkey patch base repo cwd for later user and yield
@@ -445,7 +403,6 @@ def pytest_addoption(parser):
         * an option to disable the use of the virtualenv fixture. This might be
         useful for local integration testing in case you do not care about your
         base environment being affected
-        * an option to use a specific store type for the profiles
         * an option to use a specific secrets manager flavor in the secrets
         manager integration tests
 
@@ -454,8 +411,6 @@ def pytest_addoption(parser):
         ```pytest tests/integration/test_examples.py --on-kubeflow```
 
         ```pytest tests/integration/test_examples.py --use-virtualenv```
-
-        ```pytest tests/integration/test_examples.py --store-type sql```
 
         ```pytest tests/integration/test_examples.py --secrets-manager-flavor aws```
 
@@ -471,12 +426,6 @@ def pytest_addoption(parser):
         action="store_true",
         default=False,
         help="Run Integration tests in cloned env",
-    )
-    parser.addoption(
-        "--store-type",
-        action="store",
-        default="local",
-        help="The type of store back-end to use for profiles (local, sql, etc)",
     )
     parser.addoption(
         "--secrets-manager-flavor",

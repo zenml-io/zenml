@@ -16,11 +16,9 @@
 from zenml.zen_stores.base_zen_store import BaseZenStore
 from zenml.zen_stores.rest_zen_store import RestZenStore
 from zenml.zen_stores.sql_zen_store import SqlZenStore
-from zenml.zen_stores.store_config import StoreConfiguration
 
 __all__ = [
     "BaseZenStore",
     "RestZenStore",
     "SqlZenStore",
-    "StoreConfiguration",
 ]

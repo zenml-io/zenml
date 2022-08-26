@@ -856,7 +856,7 @@ def generate_stack_component_delete_command(
 
 def generate_stack_component_copy_command(
     component_type: StackComponentType,
-) -> Callable[[str, str, Optional[str]], None]:
+) -> Callable[[str, str], None]:
     """Generates a `copy` command for the specific stack component type.
 
     Args:

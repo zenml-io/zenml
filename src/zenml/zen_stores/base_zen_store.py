@@ -22,6 +22,7 @@ from uuid import UUID
 import yaml
 from pydantic import BaseModel
 
+from zenml.config.store_config import StoreConfiguration
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.logger import get_logger
@@ -39,7 +40,6 @@ from zenml.zen_stores.models import (
     User,
 )
 from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
-from zenml.zen_stores.store_config import StoreConfiguration
 
 logger = get_logger(__name__)
 
@@ -171,11 +171,6 @@ class BaseZenStore(BaseModel):
             logger.info("Initializing database...")
             self.register_default_stack()
         self.create_default_user()
-        # TODO: is this still needed ?
-        # with Session(self.engine) as session:
-        #     if not session.exec(select(ZenUser)).first():
-        #         session.add(ZenUser(id=1, name="LocalZenUser"))
-        #     session.commit()
 
     @property
     def url(self) -> str:

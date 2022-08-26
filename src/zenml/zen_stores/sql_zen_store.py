@@ -26,6 +26,7 @@ from sqlalchemy.exc import ArgumentError, NoResultFound
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
+from zenml.config.store_config import StoreConfiguration
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import EntityExistsError, StackComponentExistsError
 from zenml.io import fileio
@@ -48,7 +49,6 @@ from zenml.zen_stores.models.pipeline_models import (
     PipelineRunWrapper,
     PipelineWrapper,
 )
-from zenml.zen_stores.store_config import StoreConfiguration
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning

@@ -39,9 +39,6 @@ pipeline code in an isolated and well-defined environment.
 * [Setting Stacks and Profiles with Environment Variables](./stack-profile-environment-variables.md)
 enables you to configure pipeline runs with environment variables instead of
 the repository.
-* [Migrating Legacy Stacks to ZenML Profiles](./migrating-legacy-stacks.md)
-contains additional information for returning users that want to port their
-ZenML stacks to the newest version.
 * [Specifying Hardware Resources for Steps](./specify-step-resources.md) explains
 how to specify hardware resources like memory or the amount of CPUs and GPUs that
 a step requires to execute.

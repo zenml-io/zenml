@@ -23,12 +23,10 @@ import requests
 import uvicorn
 
 from zenml.config.global_config import GlobalConfiguration
-from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import (
     DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
     DEFAULT_SERVICE_START_STOP_TIMEOUT,
     ENV_ZENML_CONFIG_PATH,
-    ENV_ZENML_PROFILE_NAME,
     REPOSITORY_DIRECTORY_NAME,
     ZEN_SERVER_ENTRYPOINT,
 )
@@ -48,25 +46,22 @@ from zenml.secrets_managers.local.local_secrets_manager import (
 )
 from zenml.stack import Stack
 from zenml.utils.networking_utils import scan_for_available_port
-from zenml.zen_stores import (
-    BaseZenStore,
-    LocalZenStore,
-    RestZenStore,
-    SqlZenStore,
-)
+from zenml.zen_stores import BaseZenStore, RestZenStore, SqlZenStore
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 from zenml.zen_stores.models import ComponentWrapper, StackWrapper
 from zenml.zen_stores.models.pipeline_models import (
     PipelineRunWrapper,
     PipelineWrapper,
 )
+from zenml.zen_stores.rest_zen_store import RestZenStoreConfiguration
+from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 
 logger = get_logger(__name__)
 
 test_rest = (
     platform.system() != "Windows" and "ZENML_SKIP_TEST_REST" not in os.environ
 )
-store_types = [StoreType.LOCAL, StoreType.SQL] + [StoreType.REST] * test_rest
+store_types = [StoreType.SQL] + [StoreType.REST] * test_rest
 
 
 @pytest.fixture(params=store_types)
@@ -77,33 +72,21 @@ def fresh_zen_store(
     tmp_path = tmp_path_factory.mktemp(f"{store_type.value}_zen_store")
     os.mkdir(tmp_path / REPOSITORY_DIRECTORY_NAME)
 
-    global_cfg = GlobalConfiguration()
-
-    if store_type == StoreType.LOCAL:
-        yield LocalZenStore().initialize(str(tmp_path))
-    elif store_type == StoreType.SQL:
-        yield SqlZenStore().initialize(f"sqlite:///{tmp_path / 'store.db'}")
-    elif store_type == StoreType.REST:
-        # create temporary zen store and profile configuration for unit tests
-        backing_zen_store = LocalZenStore().initialize(str(tmp_path))
-        store_profile = ProfileConfiguration(
-            name=f"test_profile_{hash(str(tmp_path))}",
-            store_url=backing_zen_store.url,
-            store_type=backing_zen_store.type,
+    if store_type == StoreType.SQL:
+        yield SqlZenStore(
+            config=SqlZenStoreConfiguration(
+                url=f"sqlite:///{tmp_path / 'store.db'}"
+            ),
+            track_analytics=False,
         )
-        global_cfg.add_or_update_profile(store_profile)
-        # use environment file to pass profile into the zen service process
-        env_file = str(tmp_path / "environ.env")
-        with open(env_file, "w") as f:
-            f.write(f"{ENV_ZENML_PROFILE_NAME}='{store_profile.name}'\n")
-            f.write(
-                f"{ENV_ZENML_CONFIG_PATH}='{global_cfg.config_directory}'\n"
-            )
-
+    elif store_type == StoreType.REST:
         port = scan_for_available_port(start=8003, stop=9000)
         if not port:
             raise RuntimeError("No available port found.")
 
+        # force the zen service process to use a temporary global configuration
+        orig_config_path = GlobalConfiguration().config_directory
+        os.environ[ENV_ZENML_CONFIG_PATH] = str(tmp_path / ".zenconfig")
         proc = Process(
             target=uvicorn.run,
             args=(ZEN_SERVER_ENTRYPOINT,),
@@ -111,12 +94,12 @@ def fresh_zen_store(
                 host=DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
                 port=port,
                 log_level="info",
-                env_file=env_file,
             ),
             daemon=True,
         )
         url = f"http://{DEFAULT_LOCAL_SERVICE_IP_ADDRESS}:{port}"
         proc.start()
+        os.environ[ENV_ZENML_CONFIG_PATH] = orig_config_path
 
         # wait 10 seconds for server to start
         for t in range(DEFAULT_SERVICE_START_STOP_TIMEOUT):
@@ -130,7 +113,12 @@ def fresh_zen_store(
         else:
             proc.kill()
             raise RuntimeError("Failed to start ZenServer.")
-        yield RestZenStore().initialize(url)
+        yield RestZenStore(
+            config=RestZenStoreConfiguration(
+                url=url, username=DEFAULT_USERNAME, password=""
+            ),
+            track_analytics=False,
+        )
 
         # make sure there's still a server and tear down
         assert proc.is_alive()
@@ -143,8 +131,6 @@ def fresh_zen_store(
                 break
         else:
             raise RuntimeError("Failed to shutdown ZenServer.")
-
-        global_cfg.delete_profile(store_profile.name)
     else:
         raise NotImplementedError(f"No ZenStore for {store_type}")
 

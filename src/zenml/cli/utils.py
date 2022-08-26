@@ -43,8 +43,10 @@ from rich.prompt import Confirm
 from rich.style import Style
 from rich.text import Text
 
+from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console, zenml_style_defaults
 from zenml.constants import IS_DEBUG_ENV
+from zenml.enums import StoreType
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -417,9 +419,21 @@ def print_active_config() -> None:
     """Print the active configuration."""
     from zenml.repository import Repository
 
+    gc = GlobalConfiguration()
     repo = Repository()
-    scope = "local repository" if repo.uses_local_store else "global"
-    declare(f"Using the {scope} configuration")
+    if not gc.store:
+        return
+
+    if gc.store.type == StoreType.SQL:
+        declare("Using the default store database.")
+    elif gc.store.type == StoreType.REST:
+        declare(f"Connected to the ZenML server: {gc.store.url}")
+        if gc.active_project_name:
+            scope = "repository" if repo.uses_local_active_project else "global"
+            declare(
+                f"Running with active project: '{gc.active_project_name}' "
+                f"({scope})"
+            )
 
 
 def print_active_stack() -> None:
