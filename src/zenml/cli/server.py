@@ -19,7 +19,7 @@ import shutil
 import textwrap
 from importlib import import_module
 from json import JSONDecodeError
-from typing import Optional, Union
+from typing import Union
 
 import click
 from click_params import IP_ADDRESS  # type: ignore[import]
@@ -28,7 +28,6 @@ from rich.markdown import Markdown
 import zenml
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
@@ -90,21 +89,15 @@ if server_installed:
         "--ip-address", type=IP_ADDRESS, default="127.0.0.1", show_default=True
     )
     @click.option("--port", type=int, default=8000, show_default=True)
-    @click.option("--profile", type=str, default=None)
     def up_server(
         ip_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address],
         port: int,
-        profile: Optional[str],
     ) -> None:
         """Provisions resources for the ZenServer.
 
         Args:
             ip_address: The IP address to bind the server to.
             port: The port to bind the server to.
-            profile: The profile to use for the server.
-
-        Raises:
-            ValueError: If the profile name wasn't found.
         """
         from zenml.services import ServiceRegistry
 
@@ -114,11 +107,6 @@ if server_installed:
             ip_address=str(ip_address),
             port=port,
         )
-        if profile is not None:
-            if GlobalConfiguration().get_profile(profile) is None:
-                raise ValueError(f"Could not find profile of name {profile}.")
-            service_config.profile_name = profile
-
         try:
             with open(ZENML_SERVER_CONFIG_FILENAME, "r") as f:
                 zen_server = ServiceRegistry().load_service_from_json(f.read())

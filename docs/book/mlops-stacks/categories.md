@@ -9,7 +9,7 @@ with a sea of tools that seemingly all promise and do the same things. It is use
 in this case to try to categorize tools in various groups in order to understand 
 their value in your tool chain in a more precise manner.
 
-ZenML tackles this problem by introducing [Stack](../developer-guide/stacks-profiles-repositories/stack.md) 
+ZenML tackles this problem by introducing [Stack](../developer-guide/stacks-repositories/stack.md) 
 that are composed of **Stack Components**. These stack component represent categories, each of which 
 has a particular function in your MLOps pipeline. ZenML realizes these stack components as base abstractions 
 that standardize the entire workflow for your team. In order to then realize benefit, one can write a 

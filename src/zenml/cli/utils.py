@@ -43,14 +43,15 @@ from rich.prompt import Confirm
 from rich.style import Style
 from rich.text import Text
 
+from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console, zenml_style_defaults
 from zenml.constants import IS_DEBUG_ENV
+from zenml.enums import StoreType
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
-    from zenml.config.profile_config import ProfileConfiguration
     from zenml.enums import StackComponentType
     from zenml.integrations.integration import Integration
     from zenml.model_deployers import BaseModelDeployer
@@ -414,15 +415,25 @@ def print_stack_component_configuration(
     console.print(rich_table)
 
 
-def print_active_profile() -> None:
-    """Print active profile."""
+def print_active_config() -> None:
+    """Print the active configuration."""
     from zenml.repository import Repository
 
+    gc = GlobalConfiguration()
     repo = Repository()
-    scope = "local" if repo.root else "global"
-    declare(
-        f"Running with active profile: '{repo.active_profile_name}' ({scope})"
-    )
+    if not gc.store:
+        return
+
+    if gc.store.type == StoreType.SQL:
+        declare("Using the default local database.")
+    elif gc.store.type == StoreType.REST:
+        declare(f"Connected to the ZenML server: {gc.store.url}")
+        if gc.active_project_name:
+            scope = "repository" if repo.uses_local_active_project else "global"
+            declare(
+                f"Running with active project: '{gc.active_project_name}' "
+                f"({scope})"
+            )
 
 
 def print_active_stack() -> None:
@@ -430,41 +441,8 @@ def print_active_stack() -> None:
     from zenml.repository import Repository
 
     repo = Repository()
-    declare(f"Running with active stack: '{repo.active_stack_name}'")
-
-
-def print_profile(
-    profile: "ProfileConfiguration",
-    active: bool,
-) -> None:
-    """Prints the configuration options of a profile.
-
-    Args:
-        profile: Profile to print.
-        active: Whether the profile is active.
-    """
-    profile_title = f"'{profile.name}' Profile Configuration"
-    if active:
-        profile_title += " (ACTIVE)"
-
-    rich_table = table.Table(
-        box=box.HEAVY_EDGE,
-        title=profile_title,
-        show_lines=True,
-    )
-    rich_table.add_column("PROPERTY")
-    rich_table.add_column("VALUE", overflow="fold")
-    items = profile.dict().items()
-    for item in items:
-        elements = []
-        for idx, elem in enumerate(item):
-            if idx == 0:
-                elements.append(f"{elem.upper()}")
-            else:
-                elements.append(elem)
-        rich_table.add_row(*elements)
-
-    console.print(rich_table)
+    scope = "repository" if repo.uses_local_active_stack else "global"
+    declare(f"Running with active stack: '{repo.active_stack_name}' ({scope})")
 
 
 def format_date(

@@ -338,7 +338,7 @@ class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
             for component_type, component in stack.components.items()
         }
         metadata = {
-            "store_type": Repository().active_profile.store_type.value,
+            "store_type": Repository().zen_store.type.value,
             **stack_metadata,
             "is_custom_code_deployment": config.is_custom_deployment,
         }

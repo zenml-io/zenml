@@ -27,6 +27,7 @@ from typing import (
     Set,
     Type,
 )
+from uuid import uuid4
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
@@ -594,7 +595,7 @@ class Stack:
             pipeline=PipelineModel.from_pipeline(pipeline),
             stack=StackWrapper.from_stack(self),
             runtime_configuration=runtime_configuration,
-            user_id=repo.active_user.id,
+            user_id=repo.zen_store.active_user.id,
             project_name=active_project.name if active_project else None,
         )
 

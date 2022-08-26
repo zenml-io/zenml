@@ -61,8 +61,8 @@ GitHub repository.
     # Repo
     INITIALIZE_REPO = "ZenML initialized"
 
-    # Profile
-    INITIALIZED_PROFILE = "Profile initialized"
+    # Store
+    INITIALIZED_STORE = "Store initialized"
 
     # Components
     REGISTERED_STACK_COMPONENT = "Stack component registered"

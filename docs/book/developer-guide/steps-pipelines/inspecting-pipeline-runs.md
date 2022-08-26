@@ -5,7 +5,7 @@ description: How to inspect a finished pipeline run
 # Inspecting Pipeline Runs
 
 Once a pipeline run has completed, we can access it using the
-[ZenML Repository](../stacks-profiles-repositories/repository.md), about which you will find
+[ZenML Repository](../stacks-repositories/repository.md), about which you will find
 more details in a later section.
 
 Each pipeline can have multiple runs associated with it, and for each run there

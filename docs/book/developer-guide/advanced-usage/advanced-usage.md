@@ -3,7 +3,7 @@ description: An overview of advanced ZenML use cases
 ---
 
 The previous sections on [Steps and Pipelines](../steps-pipelines/steps-and-pipelines.md)
-and [Stacks, Profiles, Repositories](../stacks-profiles-repositories/stacks-profiles-repositories.md)
+and [Stacks and Repositories](../stacks-repositories/stacks-repositories.md)
 already cover most of the concepts you will need for developing ML workflows
 with ZenML.
 
@@ -36,12 +36,9 @@ processes that persist beyond the execution of your pipeline runs.
 * [Managing Docker Images](./docker.md)
 is required for some remote orchestrators and step operators to run your 
 pipeline code in an isolated and well-defined environment.
-* [Setting Stacks and Profiles with Environment Variables](./stack-profile-environment-variables.md)
+* [Setting Stacks with Environment Variables](./stacks-environment-variables.md)
 enables you to configure pipeline runs with environment variables instead of
 the repository.
-* [Migrating Legacy Stacks to ZenML Profiles](./migrating-legacy-stacks.md)
-contains additional information for returning users that want to port their
-ZenML stacks to the newest version.
 * [Specifying Hardware Resources for Steps](./specify-step-resources.md) explains
 how to specify hardware resources like memory or the amount of CPUs and GPUs that
 a step requires to execute.

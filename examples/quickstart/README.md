@@ -100,10 +100,6 @@ zenml integration install dash sklearn mlflow evidently facets
 # Initialize ZenML
 zenml init
 
-# Create a new ZenML profile and set it as active
-zenml profile create quickstart
-zenml profile set quickstart
-
 # Register required ZenML stack
 zenml data-validator register evidently_data_validator --flavor=evidently
 zenml experiment-tracker register mlflow_tracker --flavor=mlflow

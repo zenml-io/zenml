@@ -131,11 +131,11 @@ class DockerConfiguration(BaseModel):
             If this is set to `False`, ZenML will not copy any of your files
             into the Docker image and you're responsible that all the files
             to run your pipeline exist in the right place.
-        copy_profile: If `True`, the configuration of the active profile and
-            stack will be copied into the Docker image. If this is set to
-            `False`, ZenML will not copy this configuration and you're
-            responsible for making sure the right stack is active inside the
-            Docker image.
+        copy_global_config: If `True`, the global configuration will be copied
+            into the Docker image, including the store settings and the contents
+            of the store for local stores. If this is set to `False`, ZenML will
+            not copy this configuration and you're responsible for making sure
+            that ZenML is correctly configured inside the Docker image.
     """
 
     parent_image: Optional[str] = None
@@ -155,7 +155,7 @@ class DockerConfiguration(BaseModel):
     environment: Dict[str, Any] = {}
     dockerignore: Optional[str] = None
     copy_files: bool = True
-    copy_profile: bool = True
+    copy_global_config: bool = True
 
     class Config:
         """Pydantic configuration class."""

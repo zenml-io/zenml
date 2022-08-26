@@ -11,7 +11,7 @@ tools for each category. Once code is organized into a ZenML pipeline, you can s
 your ML workflows with the best-in-class solutions from various MLOps areas.
 
 In short, an integration in ZenML utilizes a third-party tool to implement 
-one or more [Stack Component](../developer-guide/stacks-profiles-repositories/stack.md#stack-components) abstractions.
+one or more [Stack Component](../developer-guide/stacks-repositories/stack.md#stack-components) abstractions.
 
 For example, you can orchestrate your ML pipeline workflows using
 [Airflow](./orchestrators/airflow.md) or [Kubeflow](./orchestrators/kubeflow.md),

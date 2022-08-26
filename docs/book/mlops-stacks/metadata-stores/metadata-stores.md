@@ -27,7 +27,7 @@ tracking and pipeline reproducibility.
 Related concepts:
 
 * the Metadata Store is a type of Stack Component that needs to be registered as
-part of your ZenML [Stack](../../developer-guide/stacks-profiles-repositories/stack.md).
+part of your ZenML [Stack](../../developer-guide/stacks-repositories/stack.md).
 * the Metadata Store stores information about where the artifacts produced by
 your pipelines are kept in the [Artifact Store](../artifact-stores/artifact-stores.md).
 * the [Orchestrators](../orchestrators/orchestrators.md) are the stack components

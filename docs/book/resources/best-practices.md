@@ -113,12 +113,6 @@ would be better to explicitly enable the cache for your step.
 You might run into issues as the metadata store will point to artifacts in
 inactive artifact stores.
 
-### Use Profiles to manage Stacks
-
-Using Profiles allows you to separate your ZenML stacks and work
-locally within independent ZenML instances. See our
-[docs](../developer-guide/stacks-profiles-repositories/profile.md) on profiles to learn more.
-
 ### Use unique pipeline names across projects, especially if used with the same metadata store
 
 Pipeline names are their unique identifiers, so using the same name for
@@ -132,9 +126,9 @@ with `zenml integration install`.
 
 ### Initialize the ZenML repository in the root of the source code tree of a project, even if it's optional
 
-This will set the ZenML project root for the project and create a local profile.
-The advantage is that you create and maintain your active stack on a project
-level.
+This will set the ZenML project root for the project and create a local
+configuration. The advantage is that you create and maintain your active stack
+on a project level.
 
 ### Include a `.dockerignore` in the ZenML repository to exclude files and folders from the container images built by ZenML for containerized environments
 

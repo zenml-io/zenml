@@ -40,7 +40,7 @@ For a full list of configuration options, check out
 
 ZenML will try to determine the root directory of your source files in the following order:
 * If you've created a 
-[ZenML repository](../stacks-profiles-repositories/repository.md)
+[ZenML repository](../stacks-repositories/repository.md)
 for your project, the repository directory will be used.
 * Otherwise, the parent directory of the python file you're executing will be the source root.
 For example, running `python /path/to/file.py`, the source root would be `/path/to`.
@@ -79,9 +79,10 @@ you're on your own and need to copy all the necessary files to the correct paths
 #### Don't include the stack configuration
 
 If you want to prevent ZenML from copying the configuration of your active stack,
-you can do so by setting the `copy_profile` attribute on the Docker configuration to `False`:
+you can do so by setting the `copy_global_config` attribute on the Docker
+configuration to `False`:
 ```python
-docker_config = DockerConfiguration(copy_profile=False)
+docker_config = DockerConfiguration(copy_global_config=False)
 
 @pipeline(docker_configuration=docker_config)
 def my_pipeline(...):

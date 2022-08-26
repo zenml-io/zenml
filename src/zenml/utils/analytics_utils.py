@@ -41,8 +41,8 @@ class AnalyticsEvent(str, Enum):
     UPDATE_REPOSITORY = "Repository updated"
     DELETE_REPOSITORY = "Repository deleted"
 
-    # Profile
-    INITIALIZED_PROFILE = "Profile initialized"
+    # Zen store
+    INITIALIZED_STORE = "Store initialized"
 
     # Components
     REGISTERED_STACK_COMPONENT = "Stack component registered"

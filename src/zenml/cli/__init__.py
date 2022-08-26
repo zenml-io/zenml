@@ -567,13 +567,6 @@ If you want to copy a stack, run the following command:
 ```shell
 zenml stack copy SOURCE_STACK_NAME TARGET_STACK_NAME
 ```
-You can optionally specify profiles from which the stack should be copied 
-to and from:
-```shell
-zenml stack copy SOURCE_STACK_NAME TARGET_STACK_NAME \
-   [--from SOURCE_PROFILE_NAME] \
-   [--to TARGET_PROFILE_NAME]
-```
 
 If you wish to transfer one of your stacks to another machine, you can do so 
 by exporting the stack configuration and then importing it again.
@@ -626,13 +619,6 @@ zenml stack rename STACK_NAME NEW_STACK_NAME
 If you want to copy a stack component, run the following command:
 ```bash
 zenml STACK_COMPONENT copy SOURCE_COMPONENT_NAME TARGET_COMPONENT_NAME
-```
-You can optionally specify profiles from which the component should be copied 
-to and from:
-```bash
-zenml STACK_COMPONENT copy SOURCE_COMPONENT_NAME TARGET_COMPONENT_NAME \
-   [--from SOURCE_PROFILE_NAME] \
-   [--to TARGET_PROFILE_NAME]
 ```
 
 If you wish to update a specific stack component, use the following command,
@@ -859,6 +845,7 @@ from zenml.cli.feature import *  # noqa
 from zenml.cli.integration import *  # noqa
 from zenml.cli.model import *  # noqa
 from zenml.cli.pipeline import *  # noqa
+from zenml.cli.profile import *  # noqa
 from zenml.cli.secret import *  # noqa
 from zenml.cli.server import *  # noqa
 from zenml.cli.stack import *  # noqa

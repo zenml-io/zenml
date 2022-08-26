@@ -32,40 +32,24 @@ def user() -> None:
 @user.command("get")
 def get_user() -> None:
     """Get the active user."""
-    cli_utils.print_active_profile()
-    cli_utils.declare(f"Active user: '{Repository().active_user_name}'")
-
-
-@user.command("set", help="Set the active user.")
-@click.argument("user_name", type=str)
-def set_user(user_name: str) -> None:
-    """Set the active user.
-
-    Args:
-        user_name: The name of the user to set as active.
-    """
-    cli_utils.print_active_profile()
-    repo = Repository()
-    try:
-        repo.zen_store.get_user(user_name)
-    except KeyError:
-        cli_utils.error(f"No user with name {user_name}.")
-
-    Repository().active_profile.activate_user(user_name)
-    cli_utils.declare(f"Active user: '{Repository().active_user_name}'")
+    cli_utils.print_active_config()
+    cli_utils.declare(
+        f"Active user: '{Repository().zen_store.active_user_name}'"
+    )
 
 
 @user.command("list")
 def list_users() -> None:
     """List all users."""
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
     users = Repository().zen_store.users
     if not users:
         cli_utils.declare("No users registered.")
         return
 
     cli_utils.print_pydantic_models(
-        users, is_active=lambda u: u.name == Repository().active_user_name
+        users,
+        is_active=lambda u: u.name == Repository().zen_store.active_user_name,
     )
 
 
@@ -79,7 +63,7 @@ def create_user(user_name: str) -> None:
     Args:
         user_name: The name of the user to create.
     """
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
     Repository().zen_store.create_user(user_name=user_name)
 
 
@@ -91,7 +75,7 @@ def delete_user(user_name: str) -> None:
     Args:
         user_name: The name of the user to delete.
     """
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
     try:
         Repository().zen_store.delete_user(user_name=user_name)
     except KeyError:
@@ -106,7 +90,7 @@ def team() -> None:
 @team.command("list")
 def list_teams() -> None:
     """List all teams."""
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
     teams = Repository().zen_store.teams
     if not teams:
         cli_utils.declare("No teams registered.")
@@ -123,7 +107,7 @@ def describe_team(team_name: str) -> None:
     Args:
         team_name: The name of the team to describe.
     """
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
     try:
         users = Repository().zen_store.get_users_for_team(team_name=team_name)
     except KeyError:
@@ -142,7 +126,7 @@ def create_team(team_name: str) -> None:
     Args:
         team_name: Name of the team to create.
     """
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
     Repository().zen_store.create_team(team_name=team_name)
 
 
@@ -154,7 +138,7 @@ def delete_team(team_name: str) -> None:
     Args:
         team_name (str): The name of the team to delete.
     """
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
     try:
         Repository().zen_store.delete_team(team_name=team_name)
     except KeyError:
@@ -171,7 +155,7 @@ def add_users(team_name: str, user_names: Tuple[str]) -> None:
         team_name: Name of the team.
         user_names: Names of the users to add to the team.
     """
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
     for user_name in user_names:
         cli_utils.declare(f"Adding user '{user_name}' to team '{team_name}'.")
         try:
@@ -194,7 +178,7 @@ def remove_users(team_name: str, user_names: Tuple[str]) -> None:
         team_name: Name of the team.
         user_names: Names of the users.
     """
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
     for user_name in user_names:
         cli_utils.declare(
             f"Removing user '{user_name}' from team '{team_name}'."
@@ -218,7 +202,7 @@ def project() -> None:
 @project.command("list")
 def list_projects() -> None:
     """List all projects."""
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
     projects = Repository().zen_store.projects
 
     if projects:
@@ -246,7 +230,7 @@ def create_project(
         project_name: The name of the project.
         description: A description of the project.
     """
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
     try:
         Repository().zen_store.create_project(
             project_name=project_name, description=description
@@ -260,15 +244,8 @@ def create_project(
 
 @project.command("get")
 def get_project() -> None:
-    """Get the currently active project for the repository."""
-    try:
-        active_project = Repository().active_project
-    except RuntimeError:
-        cli_utils.error(
-            "No Repository configuration found. You must run `zenml init` "
-            "before you can set or use an active project."
-        )
-
+    """Get the currently active project."""
+    active_project = Repository().active_project
     if active_project:
         description = (
             "\nDescription: " + active_project.description
@@ -278,49 +255,36 @@ def get_project() -> None:
         cli_utils.declare(f"ACTIVE PROJECT: {active_project.name}{description}")
     else:
         cli_utils.warning(
-            "No project configured for this Repository. Run "
-            "`zenml project set <PROJECT_NAME>` to associate this "
-            "repository with an existing project."
+            "No project is configured as active. Run "
+            "`zenml project set <PROJECT_NAME>` to set an active project."
         )
 
 
-@project.command("set", help="Set the project for the current repository.")
+@project.command("set", help="Set the active project.")
 @click.argument("project_name", type=str, required=True)
 def set_project(project_name: str) -> None:
-    """Set the project for the current repository.
+    """Set the active project.
 
     Args:
         project_name: The name of the project to set as active.
     """
-    cli_utils.print_active_profile()
-    if Repository.find_repository() is None:
-        cli_utils.error(
-            "Must be in a local ZenML repository to set an active project. "
-            "Make sure you are in the right directory, or first run "
-            "`zenml init` to initialize a ZenML repository."
-        )
+    cli_utils.print_active_config()
     try:
-        active_project = Repository().zen_store.get_project(project_name)
-        Repository().set_active_project(project=active_project)
-        cli_utils.declare(f"Set locally active project '{project_name}'.")
+        Repository().zen_store.get_project(project_name)
+        Repository().set_active_project(project=project_name)
+        cli_utils.declare(f"Set active project '{project_name}'.")
     except KeyError:
         cli_utils.error(
-            f'Cannot set "`{project_name}`" as active project. No such '
-            "project found in the store. If you want to create it, run:"
+            f'Cannot set project "`{project_name}`" as active. No such '
+            "project was found. If you want to create it, run:"
             f"`zenml project create {project_name}`."
         )
 
 
 @project.command("unset")
 def unset_project() -> None:
-    """Unset the active project from current repository."""
-    cli_utils.print_active_profile()
-    if not Repository.find_repository():
-        cli_utils.error(
-            "Must be in a local ZenML repository to unset an active project. "
-            "Make sure you are in the right directory, or first run "
-            "`zenml init` to initialize a ZenML repository."
-        )
+    """Unset the active project."""
+    cli_utils.print_active_config()
     Repository().set_active_project(None)
     cli_utils.declare("Unset active project.")
 
@@ -339,7 +303,7 @@ def delete_project(project_name: str) -> None:
     Args:
         project_name (str): Name of project to delete.
     """
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
     active_project = Repository().active_project
 
     cli_utils.confirmation(
@@ -361,7 +325,7 @@ def role() -> None:
 @role.command("list")
 def list_roles() -> None:
     """List all roles."""
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
     roles = Repository().zen_store.roles
     if not roles:
         cli_utils.declare("No roles registered.")
@@ -378,7 +342,7 @@ def create_role(role_name: str) -> None:
     Args:
         role_name: Name of the role to create.
     """
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
     Repository().zen_store.create_role(role_name=role_name)
 
 
@@ -390,7 +354,7 @@ def delete_role(role_name: str) -> None:
     Args:
         role_name (str): Name of the role to delete.
     """
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
     try:
         Repository().zen_store.delete_role(role_name=role_name)
     except KeyError:
@@ -416,7 +380,7 @@ def assign_role(
         team_names (Tuple[str]): Names of teams to assign the role to.
         project_name (Optional[str]): Name of the project to assign the role to.
     """
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
     for user_name in user_names:
         cli_utils.declare(
             f"Assigning role '{role_name}' to user '{user_name}'."
@@ -471,7 +435,7 @@ def revoke_role(
         team_names: Names of the teams to revoke the role from.
         project_name: Name of the project to revoke the role from.
     """
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
     for user_name in user_names:
         cli_utils.declare(
             f"Revoking role '{role_name}' from user '{user_name}'."
@@ -516,7 +480,7 @@ def assignment() -> None:
 @assignment.command("list")
 def list_role_assignments() -> None:
     """List all role assignments."""
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
     role_assignments = Repository().zen_store.role_assignments
     if not role_assignments:
         cli_utils.declare("No roles assigned.")

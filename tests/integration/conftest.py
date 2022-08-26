@@ -24,8 +24,8 @@ from zenml.stack import Stack
 
 
 @pytest.fixture(scope="module")
-def shared_kubeflow_profile(
-    base_profile: Repository,
+def shared_kubeflow_repo(
+    base_repo: Repository,
     module_mocker: MockerFixture,
 ) -> Generator[Repository, None, None]:
     """Creates and activates a locally provisioned kubeflow stack.
@@ -39,12 +39,11 @@ def shared_kubeflow_profile(
     store.
 
     Args:
-        base_profile: The base ZenML repository for tests with a clean profile.
+        base_repo: The base ZenML repository for tests with a clean repository.
         module_mocker: Mocker fixture
 
     Yields:
-        The input repository with a local kubeflow stack provisioned for the
-        module active profile.
+        The input repository with a local kubeflow stack provisioned.
     """
     from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
 
@@ -59,7 +58,7 @@ def shared_kubeflow_profile(
         custom_docker_base_image_name="zenml-base-image:latest",
         synchronous=True,
     )
-    artifact_store = base_profile.active_stack.artifact_store.copy(
+    artifact_store = base_repo.active_stack.artifact_store.copy(
         update={"name": "local_kubeflow_artifact_store"}
     )
     container_registry = DefaultContainerRegistry(
@@ -71,19 +70,19 @@ def shared_kubeflow_profile(
         artifact_store=artifact_store,
         container_registry=container_registry,
     )
-    base_profile.register_stack(kubeflow_stack)
-    base_profile.activate_stack(kubeflow_stack.name)
+    base_repo.register_stack(kubeflow_stack)
+    base_repo.activate_stack(kubeflow_stack.name)
 
     # Provision resources for the kubeflow stack
     kubeflow_stack.provision()
 
-    yield base_profile
+    yield base_repo
 
     # Deprovision the resources after all tests in this module are finished
     kubeflow_stack.deprovision()
 
 
-def cleanup_active_profile() -> None:
+def cleanup_active_repo() -> None:
     """Clean up all previously stored information from the artifact store and
     metadata store in the current stack.
     """
@@ -96,42 +95,41 @@ def cleanup_active_profile() -> None:
 
 
 @pytest.fixture
-def clean_kubeflow_profile(
-    shared_kubeflow_profile: Repository,
+def clean_kubeflow_repo(
+    shared_kubeflow_repo: Repository,
 ) -> Generator[Repository, None, None]:
     """Creates a clean environment with a provisioned local kubeflow stack.
 
     This fixture reuses the stack configuration from the shared kubeflow
-    profile. The stack resources are already provisioned by the module-scoped
+    repository. The stack resources are already provisioned by the module-scoped
     fixture and all that's done here is to clean up all previously stored
     information from the artifact store and metadata store.
 
     Args:
-        shared_kubeflow_profile: A repository with a provisioned local kubeflow
+        shared_kubeflow_repo: A repository with a provisioned local kubeflow
             stack
 
     Yields:
         An empty repository with a provisioned local kubeflow stack.
     """
-    cleanup_active_profile()
+    cleanup_active_repo()
 
-    yield shared_kubeflow_profile
+    yield shared_kubeflow_repo
 
 
 @pytest.fixture
-def clean_base_profile(
-    base_profile: Repository,
+def clean_base_repo(
+    base_repo: Repository,
 ) -> Generator[Repository, None, None]:
     """Creates a clean environment with an empty artifact store and metadata
-    store out of the shared base profile.
+    store out of the shared base repository.
 
     Args:
-        base_profile: A repository with a provisioned profile shared by all
-            tests in the current module.
+        base_repo: A repository shared by all tests in the current module.
 
     Yields:
         A repository with an empty artifact store and metadata store.
     """
-    cleanup_active_profile()
+    cleanup_active_repo()
 
-    yield base_profile
+    yield base_repo

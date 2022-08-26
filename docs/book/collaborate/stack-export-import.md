@@ -4,7 +4,7 @@ description: How to export and import stacks to YAML files
 
 # Export and Import ZenML Stacks
 
-If you wish to transfer one of your stacks to another profile or even another
+If you wish to transfer one of your stacks to another user or even another
 machine, you can do so by exporting the stack configuration and then importing
 it again.
 

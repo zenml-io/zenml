@@ -9,9 +9,9 @@ ZenML consists of a few components. This guide walks through the various pieces 
 Here's a high-level overview of a typical ZenML workflow:
 
 1. Writing a *[pipeline](../developer-guide/steps-pipelines/steps-and-pipelines.md#pipeline)* to define what happens in your machine learning workflow.
-2. Configuring a ZenML *[stack](../developer-guide/stacks-profiles-repositories/stack.md)*.
+2. Configuring a ZenML *[stack](../developer-guide/stacks-repositories/stack.md)*.
 3. Switching between *stacks* depending on needs.
-4. Customizing your *stack* with different *[components](../developer-guide/stacks-profiles-repositories/stack.md#stack-components)*.
+4. Customizing your *stack* with different *[components](../developer-guide/stacks-repositories/stack.md#stack-components)*.
 
 So first, the basics.
 
@@ -137,11 +137,6 @@ encounter further down the road while using ZenML.
   your own custom materializer. This isn't hard, but you should be aware that
   it's something you might need do to. The ZenML CLI will let you know with a
   clear error message when you need to do this.
-- **Profiles** - Profiles are groupings of stacks. You might want to keep all your
-  AWS stacks separate from your GCP stacks, for example, or your work
-  infrastructure use separate from that which you use for your personal
-  projects. Profiles allow you to separate these out, and switching between them
-  is effortless.
 - **Service** - A service is a longer-lived entity that extends the capabilities of
   ZenML beyond the run of a pipeline. For example, a service could be a
   prediction service that loads models for inference in a production setting.

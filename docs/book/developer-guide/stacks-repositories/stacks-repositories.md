@@ -1,5 +1,5 @@
 ---
-description: What are stacks, profiles, and repositories in ZenML
+description: What are stacks and repositories in ZenML
 ---
 
 Machine learning in production is not just about designing and training models. It is a fractured space consisting of a wide variety of tasks ranging from experiment tracking to orchestration, from model deployment to monitoring, from drift detection to feature stores and much, much more than that. Even though there are already some seemingly well-established solutions for these tasks, it can become increasingly difficult to establish a running production system in a reliable and modular manner once all these solutions are brought together.
@@ -14,7 +14,5 @@ help you simplify infrastructure configuration and management:
 - [Stacks](./stack.md) represent different configurations of MLOps tools and 
 infrastructure; Each stack consists of multiple
 **Stack Components** that each come in several **Flavors**,
-- [Profiles](./profile.md) manage these stacks and enable having various different
-ZenML configurations on the same machine,
 - [Repositories](./repository.md) link stacks to the pipeline and step code of 
 your ML projects.

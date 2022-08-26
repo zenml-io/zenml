@@ -15,16 +15,21 @@
 import base64
 import json
 import os
-from abc import ABC, abstractmethod
-from pathlib import Path
+from abc import abstractmethod
 from typing import Any, Dict, List, Optional, Tuple, Union
 from uuid import UUID
 
 from ml_metadata.proto import metadata_store_pb2
 
+from pathlib import Path, PurePath
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
+from uuid import UUID
+
+from pydantic import BaseModel
+
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.store_config import StoreConfiguration
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
-from zenml.exceptions import StackComponentExistsError
 from zenml.logger import get_logger
 from zenml.models import ComponentModel, FlavorModel, StackModel
 from zenml.models.code_models import CodeRepositoryModel
@@ -33,9 +38,13 @@ from zenml.models.pipeline_models import (
     PipelineRunModel,
     StepModel,
 )
-from zenml.models.user_management_models import ProjectModel, RoleModel, TeamModel, UserModel
+from zenml.models.user_management_models import (
+    ProjectModel,
+    RoleModel,
+    TeamModel,
+    UserModel,
+)
 from zenml.post_execution import ArtifactView
-from zenml.stack import Stack
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
@@ -45,53 +54,132 @@ DEFAULT_USERNAME = "default"
 DEFAULT_PROJECT_NAME = "default"
 
 
-class BaseZenStore(ABC):
-    """Base class for accessing data in ZenML Repository and new Service."""
+class BaseZenStore(BaseModel):
+    """Base class for accessing and persisting ZenML core objects.
 
-    def initialize(
+    Attributes:
+        config: The configuration of the store.
+        track_analytics: Only send analytics if set to `True`.
+    """
+
+    config: StoreConfiguration
+    track_analytics: bool = True
+
+    TYPE: ClassVar[StoreType]
+    CONFIG_TYPE: ClassVar[Type[StoreConfiguration]]
+
+    def __init__(
         self,
-        url: str,
         skip_default_registrations: bool = False,
-        track_analytics: bool = True,
-        skip_migration: bool = False,
-        *args: Any,
         **kwargs: Any,
-    ) -> "BaseZenStore":
-        """Initialize the store.
+    ) -> None:
+        """Create and initialize a store.
 
         Args:
-            url: The URL of the store.
             skip_default_registrations: If `True`, the creation of the default
-                stack and user will be skipped.
-            track_analytics: Only send analytics if set to `True`.
-            skip_migration: If `True`, no migration will be performed.
-            *args: Additional arguments to pass to the concrete store
-                implementation.
-            **kwargs: Additional keyword arguments to pass to the concrete
-                store implementation.
+                stack and user in the store will be skipped.
+            **kwargs: Additional keyword arguments to pass to the Pydantic
+                constructor.
+
+        Raises:
+            RuntimeError: If the store cannot be initialized.
+        """
+        super().__init__(**kwargs)
+
+        try:
+            self._initialize()
+        except Exception as e:
+            raise RuntimeError(
+                f"Error initializing {self.type.value} store with URL "
+                f"'{self.url}': {str(e)}"
+            ) from e
+
+        if not skip_default_registrations:
+            self._initialize_database()
+
+    @staticmethod
+    def get_store_class(type: StoreType) -> Type["BaseZenStore"]:
+        """Returns the class of the given store type.
+
+        Args:
+            type: The type of the store to get the class for.
 
         Returns:
-            The initialized concrete store instance.
+            The class of the given store type or None if the type is unknown.
+
+        Raises:
+            TypeError: If the store type is unsupported.
         """
-        self._track_analytics = track_analytics
-        if not skip_default_registrations:
-            self.create_default_user()
-            self.create_default_project()
-            if self.stacks_empty:
-                logger.info("Registering default stack...")
-                self.register_default_stack()
+        from zenml.zen_stores import SqlZenStore # RestZenStore, SqlZenStore
 
-        if not skip_migration:
-            self._migrate_store()
+        store_class = {
+            StoreType.SQL: SqlZenStore,
+            # StoreType.REST: RestZenStore,
+        }.get(type)
 
-        return self
+        if store_class is None:
+            raise TypeError(
+                f"No store implementation found for store type "
+                f"`{type.value}`."
+            )
 
-    def _migrate_store(self) -> None:
-        """Migrates the store to the latest version."""
-        # Older versions of ZenML didn't have users or projects in the zen
-        # store, so we create the default user if it doesn't exists
+        return store_class
+
+    @staticmethod
+    def create_store(
+        config: StoreConfiguration,
+        skip_default_registrations: bool = False,
+        **kwargs: Any,
+    ) -> "BaseZenStore":
+        """Create and initialize a store from a store configuration.
+
+        Args:
+            config: The store configuration to use.
+            skip_default_registrations: If `True`, the creation of the default
+                stack and user in the store will be skipped.
+            **kwargs: Additional keyword arguments to pass to the store class
+
+        Returns:
+            The initialized store.
+        """
+        logger.debug(f"Creating store with config '{config}'...")
+        store_class = BaseZenStore.get_store_class(config.type)
+        store = store_class(
+            config=config,
+            skip_default_registrations=skip_default_registrations,
+        )
+        return store
+
+    @staticmethod
+    def get_default_store_config(path: str) -> StoreConfiguration:
+        """Get the default store configuration.
+
+        The default store is a SQLite store that saves the DB contents on the
+        local filesystem.
+
+        Args:
+            path: The local path where the store DB will be stored.
+
+        Returns:
+            The default store configuration.
+        """
+        from zenml.zen_stores.sql_zen_store import (
+            SqlZenStore,
+            SqlZenStoreConfiguration,
+        )
+
+        config = SqlZenStoreConfiguration(
+            type=StoreType.SQL, url=SqlZenStore.get_local_url(path)
+        )
+        return config
+
+    def _initialize_database(self) -> None:
+        """Initialize the database on first use."""
         self.create_default_user()
         self.create_default_project()
+        if self.stacks_empty:
+            logger.info("Initializing database...")
+            self.register_default_stack()
 
     @property
     def default_user_id(self) -> UUID:  # TODO: can this be done cleaner?
@@ -132,7 +220,8 @@ class BaseZenStore(ABC):
 
         orchestrator_config = {}
         encoded_orchestrator_config = base64.urlsafe_b64encode(
-            json.dumps(orchestrator_config).encode())
+            json.dumps(orchestrator_config).encode()
+        )
         # Register the default orchestrator
         # try:
         orchestrator = self.register_stack_component(
@@ -142,8 +231,8 @@ class BaseZenStore(ABC):
                 name="default",
                 type=StackComponentType.ORCHESTRATOR,
                 flavor_id="default",
-                configuration=encoded_orchestrator_config
-            )
+                configuration=encoded_orchestrator_config,
+            ),
         )
         # except StackComponentExistsError:
         #     logger.warning("Default Orchestrator exists already, "
@@ -153,12 +242,13 @@ class BaseZenStore(ABC):
         artifact_store_path = os.path.join(
             GlobalConfiguration().config_directory,
             "local_stores",
-            "default_local_store"
+            "default_local_store",
         )
         io_utils.create_dir_recursive_if_not_exists(artifact_store_path)
         artifact_store_config = {"path": artifact_store_path}
         encoded_artifact_store_config = base64.urlsafe_b64encode(
-            json.dumps(artifact_store_config).encode())
+            json.dumps(artifact_store_config).encode()
+        )
         # try:
         artifact_store = self.register_stack_component(
             user_id=self.default_user_id,
@@ -167,8 +257,8 @@ class BaseZenStore(ABC):
                 name="default",
                 type=StackComponentType.ARTIFACT_STORE,
                 flavor_id="default",
-                configuration=encoded_artifact_store_config
-            )
+                configuration=encoded_artifact_store_config,
+            ),
         )
         # except StackComponentExistsError:
         #     logger.warning("Default Artifact Store exists already, "
@@ -177,14 +267,13 @@ class BaseZenStore(ABC):
         components = {c.type: c for c in [orchestrator, artifact_store]}
         # Register the default stack
         stack = StackModel(
-            name="default",
-            components=components,
-            is_shared=True
+            name="default", components=components, is_shared=True
         )
         self._register_stack(
             user_id=self.default_user_id,
             project_id=self.default_project_id,
-            stack=stack)
+            stack=stack,
+        )
         self._track_event(
             AnalyticsEvent.REGISTERED_DEFAULT_STACK,
         )
@@ -197,6 +286,24 @@ class BaseZenStore(ABC):
             A list of all stacks registered in this zen store.
         """
         return self.list_stacks(project_id=self.default_project_id)
+
+    @property
+    def url(self) -> str:
+        """The URL of the store.
+
+        Returns:
+            The URL of the store.
+        """
+        return self.config.url
+
+    @property
+    def type(self) -> StoreType:
+        """The type of the store.
+
+        Returns:
+            The type of the store.
+        """
+        return self.TYPE
 
     # Static methods:
 
@@ -227,35 +334,50 @@ class BaseZenStore(ABC):
 
     @staticmethod
     @abstractmethod
-    def is_valid_url(url: str) -> bool:
+    def validate_url(url: str) -> str:
         """Check if the given url is valid.
+
+        The implementation should raise a ValueError if the url is invalid.
 
         Args:
             url: The url to check.
 
         Returns:
-            True if the url is valid, False otherwise.
+            The modified url, if it is valid.
+        """
+
+    @classmethod
+    @abstractmethod
+    def copy_local_store(
+        cls,
+        config: StoreConfiguration,
+        path: str,
+        load_config_path: Optional[PurePath] = None,
+    ) -> StoreConfiguration:
+        """Copy a local store to a new location.
+
+        Use this method to create a copy of a store database to a new location
+        and return a new store configuration pointing to the database copy. This
+        only applies to stores that use the local filesystem to store their
+        data. Calling this method for remote stores simply returns the input
+        store configuration unaltered.
+
+        Args:
+            config: The configuration of the store to copy.
+            path: The new local path where the store DB will be copied.
+            load_config_path: path that will be used to load the copied store
+                database. This can be set to a value different from `path`
+                if the local database copy will be loaded from a different
+                environment, e.g. when the database is copied to a container
+                image and loaded using a different absolute path. This will be
+                reflected in the paths and URLs encoded in the copied store
+                configuration.
+
+        Returns:
+            The store configuration of the copied store.
         """
 
     # Public Interface:
-
-    @property
-    @abstractmethod
-    def type(self) -> StoreType:
-        """The type of zen store.
-
-        Returns:
-            The type of zen store.
-        """
-
-    @property
-    @abstractmethod
-    def url(self) -> str:
-        """Get the repository URL.
-
-        Returns:
-            The repository URL.
-        """
 
     # .--------.
     # | STACKS |
@@ -312,6 +434,14 @@ class BaseZenStore(ABC):
                        flag
         Returns:
             A list of all stacks.
+        """
+
+    @abstractmethod
+    def _initialize(self) -> None:
+        """Initialize the store.
+
+        This method is called immediately after the store is created. It should
+        be used to set up the backend (database, connection etc.).
         """
 
     def get_stack(self, stack_id: str) -> StackModel:
@@ -397,10 +527,10 @@ class BaseZenStore(ABC):
     #         stack: The stack to register.
     #         user_id: The user that is registering this stack
     #         project_id: The project within which that stack is registered
-        
+
     #     Returns:
     #         The registered stack.
-        
+
     #     Raises:
     #         StackExistsError: In case a stack with that name is already owned
     #             by this user on this project.
@@ -408,20 +538,24 @@ class BaseZenStore(ABC):
     #     for component in stack.components:
     #         try:
     #             self._register_stack_component(
-    #                 user_id=user_id, 
-    #                 project_id=project_id, 
+    #                 user_id=user_id,
+    #                 project_id=project_id,
     #                 component=component
     #             )
     #         except StackComponentExistsError:
     #             pass
     #     return self._register_stack(
-    #         user_id=user_id, 
-    #         project_id=project_id, 
+    #         user_id=user_id,
+    #         project_id=project_id,
     #         stack=stack
     #     )
 
     def update_stack(
-        self, stack_id: str, user: UserModel, project: ProjectModel, stack: StackModel
+        self,
+        stack_id: str,
+        user: UserModel,
+        project: ProjectModel,
+        stack: StackModel,
     ) -> StackModel:
         """Update an existing stack.
 
@@ -441,7 +575,11 @@ class BaseZenStore(ABC):
 
     @abstractmethod
     def _update_stack(
-        self, stack_id: str, user: UserModel, project: ProjectModel, stack: StackModel
+        self,
+        stack_id: str,
+        user: UserModel,
+        project: ProjectModel,
+        stack: StackModel,
     ) -> StackModel:
         """Update a stack.
 
@@ -488,7 +626,7 @@ class BaseZenStore(ABC):
         flavor_id: Optional[str] = None,
         owner: Optional[str] = None,
         name: Optional[str] = None,
-        is_shared: Optional[bool] = None
+        is_shared: Optional[bool] = None,
     ) -> List[ComponentModel]:
         """List all stack components within the filter.
 
@@ -514,7 +652,7 @@ class BaseZenStore(ABC):
         flavor_id: Optional[str] = None,
         owner: Optional[str] = None,
         name: Optional[str] = None,
-        is_shared: Optional[bool] = None
+        is_shared: Optional[bool] = None,
     ) -> List[ComponentModel]:
         """List all stack components within the filter.
 
@@ -557,10 +695,7 @@ class BaseZenStore(ABC):
         """
 
     def register_stack_component(
-        self,
-        user_id: UUID,
-        project_id: str,
-        component: ComponentModel
+        self, user_id: UUID, project_id: str, component: ComponentModel
     ) -> ComponentModel:
         """Create a stack component.
 
@@ -572,16 +707,13 @@ class BaseZenStore(ABC):
         Returns:
             The created stack component.
         """
-        return self._register_stack_component(user_id=user_id,
-                                              project_id=project_id,
-                                              component=component)
+        return self._register_stack_component(
+            user_id=user_id, project_id=project_id, component=component
+        )
 
     @abstractmethod
     def _register_stack_component(
-        self,
-        user_id: UUID,
-        project_id: str,
-        component: ComponentModel
+        self, user_id: UUID, project_id: str, component: ComponentModel
     ) -> ComponentModel:
         """Create a stack component.
 
@@ -599,7 +731,7 @@ class BaseZenStore(ABC):
         user_id: str,
         project_id: str,
         component_id: str,
-        component: ComponentModel
+        component: ComponentModel,
     ) -> ComponentModel:
         """Update an existing stack component.
 
@@ -620,8 +752,9 @@ class BaseZenStore(ABC):
             AnalyticsEvent.UPDATED_STACK_COMPONENT,
             metadata=analytics_metadata,
         )
-        return self._update_stack_component(user_id, project_id,
-                                            component_id, component)
+        return self._update_stack_component(
+            user_id, project_id, component_id, component
+        )
 
     @abstractmethod
     def _update_stack_component(
@@ -629,7 +762,7 @@ class BaseZenStore(ABC):
         user_id: str,
         project_id: str,
         component_id: str,
-        component: ComponentModel
+        component: ComponentModel,
     ) -> ComponentModel:
         """Update an existing stack component.
 
@@ -742,6 +875,15 @@ class BaseZenStore(ABC):
     #  .------.
     # | USERS |
     # '-------'
+
+    @property
+    @abstractmethod
+    def active_user_name(self) -> str:
+        """Gets the active username.
+
+        Returns:
+            The active username.
+        """
 
     # TODO: make the invite_token optional
     # TODO: [ALEX] add filtering param(s)
@@ -1107,7 +1249,9 @@ class BaseZenStore(ABC):
             KeyError: If there is no such project.
         """
 
-    def update_project(self, project_name: str, project: ProjectModel) -> ProjectModel:
+    def update_project(
+        self, project_name: str, project: ProjectModel
+    ) -> ProjectModel:
         """Updates an existing project.
 
         Args:
@@ -1124,7 +1268,9 @@ class BaseZenStore(ABC):
         return self._update_project(project_name, project)
 
     @abstractmethod
-    def _update_project(self, project_name: str, project: ProjectModel) -> ProjectModel:
+    def _update_project(
+        self, project_name: str, project: ProjectModel
+    ) -> ProjectModel:
         """Update an existing project.
 
         Args:
@@ -2004,6 +2150,15 @@ class BaseZenStore(ABC):
     # PROPERTIES
 
     @property
+    def active_user(self) -> UserModel:
+        """The active user.
+
+        Returns:
+            The active user.
+        """
+        return self.get_user(self.active_user_name)
+
+    @property
     @abstractmethod
     def users(self) -> List[UserModel]:
         """All registered users.
@@ -2547,26 +2702,18 @@ class BaseZenStore(ABC):
         Returns:
             True if the event was successfully tracked, False otherwise.
         """
-        if self._track_analytics:
+        if self.track_analytics:
             return track_event(event, metadata)
         return False
 
-    def _stack_from_dict(
-        self, name: str, stack_configuration: Dict[StackComponentType, str]
-    ) -> StackModel:
-        """Build a StackWrapper from stored configurations.
+    class Config:
+        """Pydantic configuration class."""
 
-        Args:
-            name: The name of the stack.
-            stack_configuration: The configuration of the stack.
-
-        Returns:
-            A StackWrapper instance.
-        """
-        stack_components = [
-            self.get_stack_component(
-                component_type=component_type, name=component_name
-            )
-            for component_type, component_name in stack_configuration.items()
-        ]
-        return StackModel(name=name, components=stack_components)
+        # Validate attributes when assigning them. We need to set this in order
+        # to have a mix of mutable and immutable attributes
+        validate_assignment = True
+        # Ignore extra attributes from configs of previous ZenML versions
+        extra = "ignore"
+        # all attributes with leading underscore are private and therefore
+        # are mutable and not included in serialization
+        underscore_attrs_are_private = True

@@ -22,10 +22,6 @@ a Pydantic configuration object that is used to store and retrieve
 configuration. This ``GlobalConfiguration`` object handles the serialization and
 deserialization of the configuration options that are stored in the file in
 order to persist the configuration across sessions.
-
-The ``ProfileConfiguration`` class is used to model the configuration of a
-Profile. A ``GlobalConfiguration`` object can contain multiple
-``ProfileConfiguration`` instances.
 """
 from zenml.config.docker_configuration import DockerConfiguration
 from zenml.config.resource_configuration import ResourceConfiguration

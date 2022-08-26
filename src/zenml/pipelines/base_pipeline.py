@@ -431,7 +431,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         track_event(
             event=AnalyticsEvent.RUN_PIPELINE,
             metadata={
-                "store_type": Repository().active_profile.store_type.value,
+                "store_type": Repository().zen_store.type.value,
                 **stack_metadata,
                 "total_steps": len(self.steps),
                 "schedule": bool(schedule),

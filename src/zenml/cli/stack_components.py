@@ -36,7 +36,6 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.cli.feature import register_feature_store_subcommands
 from zenml.cli.model import register_model_deployer_subcommands
 from zenml.cli.secret import register_secrets_manager_subcommands
-from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.constants import MANDATORY_COMPONENT_ATTRIBUTES
 from zenml.enums import CliCategories, StackComponentType
@@ -195,7 +194,7 @@ def generate_stack_component_get_command(
 
     def get_stack_component_command() -> None:
         """Prints the name of the active component."""
-        cli_utils.print_active_profile()
+        cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
         active_stack = Repository().active_stack
@@ -235,7 +234,7 @@ def generate_stack_component_describe_command(
         Args:
             name: Name of the component to describe.
         """
-        cli_utils.print_active_profile()
+        cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
         singular_display_name = _component_display_name(component_type)
@@ -266,7 +265,7 @@ def generate_stack_component_list_command(
 
     def list_stack_components_command() -> None:
         """Prints a table of stack components."""
-        cli_utils.print_active_profile()
+        cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
         repo = Repository()
@@ -368,7 +367,7 @@ def generate_stack_component_register_command(
             interactive: Use interactive mode to fill missing values.
             args: Additional arguments to pass to the component.
         """
-        cli_utils.print_active_profile()
+        cli_utils.print_active_config()
         if flavor or old_flavor:
             if old_flavor:
                 if flavor:
@@ -488,7 +487,7 @@ def generate_stack_component_flavor_register_command(
         Args:
             source: The source file to read the flavor from.
         """
-        cli_utils.print_active_profile()
+        cli_utils.print_active_config()
 
         # Check whether the module exists and is the right type
         try:
@@ -551,7 +550,7 @@ def generate_stack_component_flavor_list_command(
 
     def list_stack_component_flavor_command() -> None:
         """Adds a flavor for a stack component type."""
-        cli_utils.print_active_profile()
+        cli_utils.print_active_config()
 
         from zenml.stack.flavor_registry import flavor_registry
 
@@ -602,7 +601,7 @@ def generate_stack_component_update_command(
             name: The name of the stack component to update.
             args: Additional arguments to pass to the update command.
         """
-        cli_utils.print_active_profile()
+        cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
         kwargs = list(args)
@@ -704,7 +703,7 @@ def generate_stack_component_remove_attribute_command(
             name: The name of the stack component to remove the attribute from.
             args: Additional arguments to pass to the remove_attribute command.
         """
-        cli_utils.print_active_profile()
+        cli_utils.print_active_config()
         with console.status(f"Updating {display_name} '{name}'...\n"):
             repo = Repository()
             current_component = repo.get_stack_component(component_type, name)
@@ -788,7 +787,7 @@ def generate_stack_component_rename_command(
             name: The name of the stack component to rename.
             new_name: The new name of the stack component.
         """
-        cli_utils.print_active_profile()
+        cli_utils.print_active_config()
         with console.status(f"Renaming {display_name} '{name}'...\n"):
             repo = Repository()
             current_component = repo.get_stack_component(component_type, name)
@@ -843,7 +842,7 @@ def generate_stack_component_delete_command(
         Args:
             name: The name of the stack component to delete.
         """
-        cli_utils.print_active_profile()
+        cli_utils.print_active_config()
 
         with console.status(f"Deleting {display_name} '{name}'...\n"):
             Repository().deregister_stack_component(
@@ -857,7 +856,7 @@ def generate_stack_component_delete_command(
 
 def generate_stack_component_copy_command(
     component_type: StackComponentType,
-) -> Callable[[str, str, Optional[str]], None]:
+) -> Callable[[str, str], None]:
     """Generates a `copy` command for the specific stack component type.
 
     Args:
@@ -870,70 +869,25 @@ def generate_stack_component_copy_command(
 
     @click.argument("source_component", type=str, required=True)
     @click.argument("target_component", type=str, required=True)
-    @click.option(
-        "--from",
-        "source_profile_name",
-        type=str,
-        required=False,
-        help=f"The profile from which to copy the {display_name}.",
-    )
-    @click.option(
-        "--to",
-        "target_profile_name",
-        type=str,
-        required=False,
-        help=f"The profile to which to copy the {display_name}.",
-    )
     def copy_stack_component_command(
         source_component: str,
         target_component: str,
-        source_profile_name: Optional[str] = None,
-        target_profile_name: Optional[str] = None,
     ) -> None:
         """Copies a stack component.
 
         Args:
             source_component: Name of the component to copy.
             target_component: Name of the copied component.
-            source_profile_name: Name of the profile from which to copy.
-            target_profile_name: Name of the profile to which to copy.
         """
         track_event(AnalyticsEvent.COPIED_STACK_COMPONENT)
 
-        if source_profile_name:
-            try:
-                source_profile = GlobalConfiguration().profiles[
-                    source_profile_name
-                ]
-            except KeyError:
-                cli_utils.error(
-                    f"Unable to find source profile '{source_profile_name}'."
-                )
-        else:
-            source_profile = Repository().active_profile
-
-        if target_profile_name:
-            try:
-                target_profile = GlobalConfiguration().profiles[
-                    target_profile_name
-                ]
-            except KeyError:
-                cli_utils.error(
-                    f"Unable to find target profile '{target_profile_name}'."
-                )
-        else:
-            target_profile = Repository().active_profile
-
-        # Use different repositories for fetching/registering the stack
-        # depending on the source/target profile
-        source_repo = Repository(profile=source_profile)
-        target_repo = Repository(profile=target_profile)
+        repo = Repository()
 
         with console.status(
             f"Copying {display_name} `{source_component}`...\n"
         ):
             try:
-                component = source_repo.get_stack_component(
+                component = repo.get_stack_component(
                     component_type=component_type, name=source_component
                 )
             except KeyError:
@@ -944,7 +898,7 @@ def generate_stack_component_copy_command(
 
             existing_component_names = {
                 wrapper.name
-                for wrapper in target_repo.zen_store.get_stack_components(
+                for wrapper in repo.zen_store.get_stack_components(
                     component_type=component_type
                 )
             }
@@ -960,7 +914,7 @@ def generate_stack_component_copy_command(
             component_config["name"] = target_component
             copied_component = component.__class__.parse_obj(component_config)
 
-            target_repo.register_stack_component(copied_component)
+            repo.register_stack_component(copied_component)
 
     return copy_stack_component_command
 
@@ -984,7 +938,7 @@ def generate_stack_component_up_command(
         Args:
             name: The name of the stack component to deploy.
         """
-        cli_utils.print_active_profile()
+        cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
         component_wrapper, _ = _get_stack_component_wrapper(
@@ -1073,7 +1027,7 @@ def generate_stack_component_down_command(
                 "The `--yes` flag will soon be deprecated. Use `--force` "
                 "or `-f` instead."
             )
-        cli_utils.print_active_profile()
+        cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
         component_wrapper, _ = _get_stack_component_wrapper(
@@ -1150,7 +1104,7 @@ def generate_stack_component_logs_command(
             follow: Follow the log file instead of just displaying the current
                 logs.
         """
-        cli_utils.print_active_profile()
+        cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
         component_wrapper, _ = _get_stack_component_wrapper(

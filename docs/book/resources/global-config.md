@@ -6,14 +6,12 @@ description: What is the global ZenML config
 
 ZenML has two main locations where it stores information on the local machine.
 These are the _Global Config_ and the _Repository_ (see 
-[here](../developer-guide/stacks-profiles-repositories/repository.md)
+[here](../developer-guide/stacks-repositories/repository.md)
 for more information on the repository).
 
 Most of the information stored by ZenML on a machine, such as the global
-settings, the configured 
-[Profiles](../developer-guide/stacks-profiles-repositories/profile.md),
-and even the configured 
-[Stacks and Stack Components](../developer-guide/stacks-profiles-repositories/stack.md), 
+settings and even the configured 
+[Stacks and Stack Components](../developer-guide/stacks-repositories/stack.md), 
 is kept in a folder commonly referred to as the _ZenML Global Config Directory_
 or the _ZenML Config Path_. The location of this folder depends on the 
 operating system type and the current system user, but is usually located in 
@@ -39,7 +37,7 @@ of the ZenML configuration. As an alternative, ZenML provides CLI commands that
 can be used to manage the information stored there:
 
 * `zenml analytics` - manage the analytics settings
-* `zenml profile` - manage configuration Profiles
+* `zenml config` - manage the global configuration
 * `zenml stack` - manage Stacks
 * `zenml <stack-component>` - manage Stack Components
 * `zenml clean` - to be used only in case of emergency, to bring the ZenML
@@ -49,30 +47,23 @@ configuration back to its default factory state
 
 The first time that ZenML is run on a machine, it creates the _Global Config
 Directory_ and initializes the default configuration in it, along with a default
-Profile and Stack:
+Stack:
 
 ```
 $ zenml stack list
-Unable to find ZenML repository in your current working directory (/home/stefan)
-or any parent directories. If you want to use an existing repository which is in
-a different location, set the environment variable 'ZENML_REPOSITORY_PATH'. If
-you want to create a new repository, run zenml init.
-Initializing the ZenML global configuration version to 0.7.3
-Creating default profile...
-Initializing profile default...
-Registering default stack...
-Registered stack component with type 'orchestrator' and name 'default'.
-Registered stack component with type 'metadata_store' and name 'default'.
-Registered stack component with type 'artifact_store' and name 'default'.
+Initializing the ZenML global configuration version to 0.13.1
+Initializing database...
 Registered stack with name 'default'.
-Created and activated default profile.
+The global active stack is not set. Switching the global active stack to 'default'
+Using the default store for the global config.
+Unable to find ZenML repository in your current working directory (/tmp/zenserver) or any parent directories. If you want to use an existing repository which is in a different location, set the environment variable 'ZENML_REPOSITORY_PATH'. If you want to create a new repository, run zenml init.
 Running without an active repository root.
-Running with active profile: 'default' (global)
-┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ METADATA_STORE │ ORCHESTRATOR ┃
-┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
-┃   👉   │ default    │ default        │ default        │ default      ┃
-┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+Using the default store database.
+┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┓
+┃ ACTIVE │ STACK NAME │ ORCHESTRATOR │ METADATA_STORE │ ARTIFACT_STORE ┃
+┠────────┼────────────┼──────────────┼────────────────┼────────────────┨
+┃   👉   │ default    │ default      │ default        │ default        ┃
+┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
 ```
 
 The following is an example of the layout of the _Global Config Directory_
@@ -84,45 +75,31 @@ immediately after initialization:
 ├── local_stores             <- Every Stack component that stores information
 |   |                        locally will have its own subdirectory here.
 |   |                        
-│   └── 09fcdb1c-4079-4d20-afdb-957965405863   <- Local Store path for the `default`
+│   └── a1a0d3d0-d552-4a80-be09-67e5e29be8ee   <- Local Store path for the `default`
 |                                              local Artifact Store
 |
-└── profiles                 <- root path where Profiles data (stacks, components,
-    |                        etc) are stored by default. Every Profile will have
-    |                        its own subdirectory here, unless the Profile is
-    |                        configured with a custom configuration path.
-    |
-    └── default              <- configuration folder for the `default` Profile.
-        ├── artifact_stores
-        │   └── default.yaml
-        ├── metadata_stores
-        │   └── default.yaml
-        ├── orchestrators
-        │   └── default.yaml
-        └── stacks.yaml
+└── zenml.db                 <- SQLite database where ZenML data (stacks, components,
+                             etc) are stored by default.
 ```
 
 As shown above, the _Global Config Directory_ stores the following
 information:
 
 1. The `global.yaml` file stores the global configuration settings: the unique
-ZenML user ID, the active Profile, the analytics related options and a list of all configured Profiles, along with their configuration attributes, such as the
-active Stack set for each Profile. This is an example of the `global.yaml` file
-contents immediately after initialization:
+ZenML user ID, the active database configuration, the analytics related options
+the active Stack and active Project. This is an example of the `global.yaml`
+file contents immediately after initialization:
 
     ```yaml
-    activated_profile: default
+    active_project_name: null
+    active_stack_name: default
     analytics_opt_in: true
-    profiles:
-    default:
-        active_stack: default
-        active_user: default
-        name: default
-        store_type: local
-        store_url: file:///home/stefan/.config/zenml/profiles/default
-    user_id: 4b773740-fddc-46ee-938e-1c78a075cfc7
+    store:
+        type: sql
+        url: sqlite:////home/stefan/.config/zenml/zenml.db
+    user_id: 5757e09d-f82d-43ba-98e4-59cca1d9daca
     user_metadata: null
-    version: 0.7.3
+    version: 0.13.1
     ```
 
 2. The `local_stores` directory is where some "local" flavors of Stack Components,
@@ -133,13 +110,9 @@ example is the `local` Artifact Store flavor that, when part of the active Stack
 stores all the artifacts generated by Pipeline runs in the designated local
 directory.
 
-3. The `profiles` directory is used as a default root path location where ZenML
-stores information about the Stacks, Stack Components, custom Stack Component
-flavors etc. that are configured under each Profile. Every Profile will have its
-own subdirectory here, unless the Profile is explicitly created with a custom
-configuration path. (See the `zenml profile` command and the section on
-[ZenML Profiles](../developer-guide/stacks-profiles-repositories/profile.md) for more information about
-Profiles.)
+3. The `zenml.db` file is the default SQLite database where ZenML stores all
+information about the Stacks, Stack Components, custom Stack Component flavors
+etc.
 
 In addition to the above, you may also find the following files and folders under
 the _Global Config Directory_, depending on what you do with ZenML:
@@ -159,24 +132,7 @@ from zenml.config.global_config import GlobalConfiguration
 config = GlobalConfiguration()
 ```
 
-This can be used to manage your profiles and other global settings from within
-Python. For instance, we can use it to create and activate a new profile:
-
-```python
-from zenml.repository import Repository
-from zenml.config.global_config import GlobalConfiguration
-from zenml.config.profile_config import ProfileConfiguration
-
-repo = Repository()
-config = GlobalConfiguration()
-
-# Create a new profile called "local"
-profile = ProfileConfiguration(name="local")
-config.add_or_update_profile(profile)
-
-# Set the profile as active profile of the repository
-repo.activate_profile("local")
-```
+This can be used to manage your global settings from within Python.
 
 To explore all possible operations that can be performed via the 
 `GlobalConfiguration`, please consult the API docs sections on 
