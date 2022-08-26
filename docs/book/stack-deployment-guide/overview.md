@@ -14,23 +14,21 @@ This guide focuses on the stack infrastructure deployment and has three sections
 
 This section aims to list out different scenarios that you may find yourself in (subject to your background) and helps you to navigate between the available choices.
 
+### One Click Deployments with Stack Recipes ⏩
+
+If you've have never worked on the infrastructure side of things before and don't want to invest my time in it, check out [One Click Deployments with Stack Recipes](./stack-recipes.md) that shows how you can use the ZenML CLI to setup specialized stacks with the execution of a single command 🚀.
 
 ### Manual Deployments 👷
 
 If you're experienced in operations and prefer having the knowledge of every cloud resource that is being set up, intimately, we have a step-by-step guide for AWS, Azure and GCP grouped under [Manual Deployments](./manual-deployments/) with detailed information on every stack component along with other essential things like roles, permissions, connection settings and more. Head over to the page corresponding to your cloud provider to get started!
-
-### One Click Deployments with Stack Recipes ⏩
-
-If you've have never worked on the infrastructure side of things before and don't want to invest my time in it, check out [One Click Deployments with Stack Recipes](./stack-recipes.md) that shows how you can use the ZenML CLI to setup specialized stacks with the execution of a single command 🚀.
 
 ### Deployments using Terraform 🙅
 
 If you don't want to use ZenML but still need the speed that comes with stack recipes,
 we've got you covered, yet again! Check out [Deployments using Terraform](./deploy-terraform.md) to learn how you can use Terraform to create new stacks using the stack recipes, without having to install ZenML.
 
-
 ## 🙆 I can't really decide between these options. What is the recommended approach?
-ZenML recommends the use of the stack recipes inside the `mlops-stacks` repository as the fastest and most reliable way to set up your stack. It has the following advantages:
+ZenML recommends the use of the stack recipes inside the [mlops-stacks repository](https://github.com/zenml-io/mlops-stacks) as the fastest and most reliable way to set up your stack. It has the following advantages:
 - Easy and fast deployment with a single command 🤯.
 - Simple and efficient to modify any of the components: You can change properties in a config file and Terraform identifies and applies only the relevant changes 😎.
 - Comprehensive clean-up: `zenml stack recipe destroy <RECIPE_NAME>` completely deletes any resources that the module had created anywhere in your cloud. Thus, you can be sure that there are no extra bills that you will tragically discover going forward 😉.
