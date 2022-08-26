@@ -11,22 +11,3 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization for TensorBoard integration."""
-
-from zenml.integrations.constants import TENSORBOARD
-from zenml.integrations.integration import Integration
-
-
-class TensorBoardIntegration(Integration):
-    """Definition of TensorBoard integration for ZenML."""
-
-    NAME = TENSORBOARD
-    REQUIREMENTS = ["tensorboard==2.8.0"]
-
-    @classmethod
-    def activate(cls) -> None:
-        """Activates the integration."""
-        from zenml.integrations.tensorboard import services  # noqa
-
-
-TensorBoardIntegration.check_installation()

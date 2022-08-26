@@ -357,13 +357,13 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     f"{available_step_operators}."
                 )
 
-    def _reset_step_flags(self) -> None:
-        """Reset the `_has_been_called` flag at the beginning of a pipeline run.
+    def _reset_steps(self) -> None:
+        """Reset step values from previous pipeline runs.
 
         This ensures a pipeline instance can be called more than once.
         """
         for step in self.steps.values():
-            step._has_been_called = False
+            step._reset()
 
     def run(
         self,
@@ -438,7 +438,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             },
         )
 
-        self._reset_step_flags()
+        self._reset_steps()
         self.validate_stack(stack)
 
         # Prevent execution of nested pipelines which might lead to unexpected
