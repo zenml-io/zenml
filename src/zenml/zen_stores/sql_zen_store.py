@@ -16,10 +16,11 @@
 import datetime as dt
 import json
 from datetime import datetime
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from pathlib import Path, PurePath
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
 from uuid import UUID, uuid4
 
+from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.exc import ArgumentError, NoResultFound
 from sqlmodel import Field, Session, SQLModel, create_engine, select
@@ -27,9 +28,11 @@ from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import EntityExistsError, StackComponentExistsError
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import io_utils
 from zenml.zen_stores import BaseZenStore
+from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 from zenml.zen_stores.models import (
     ComponentWrapper,
     FlavorWrapper,
@@ -45,6 +48,7 @@ from zenml.zen_stores.models.pipeline_models import (
     PipelineRunWrapper,
     PipelineWrapper,
 )
+from zenml.zen_stores.store_config import StoreConfiguration
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -229,81 +233,75 @@ class PipelineRunTable(SQLModel, table=True):
         )
 
 
-class SqlZenStore(BaseZenStore):
-    """Repository Implementation that uses SQL database backend."""
+class SqlZenStoreConfiguration(StoreConfiguration):
+    """SQL ZenML store configuration.
 
-    def initialize(
-        self,
-        url: str,
-        *args: Any,
-        **kwargs: Any,
-    ) -> "SqlZenStore":
-        """Initialize a new SqlZenStore.
+    Attributes:
+        _sql_kwargs: Additional keyword arguments to pass to the SQLAlchemy
+            engine.
+    """
+
+    type: StoreType = StoreType.SQL
+    _sql_kwargs: Dict[str, Any] = {}
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initializes the SQL ZenML store configuration.
+
+        The constructor collects all extra fields into a private _sql_kwargs
+        attribute.
 
         Args:
-            url: odbc path to a database.
-            *args: Additional positional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            The initialized zen store instance.
-
-        Raises:
-            ValueError: If the database is not found.
+            **kwargs: Keyword arguments to pass to the Pydantic constructor.
         """
-        if not self.is_valid_url(url):
-            raise ValueError(f"Invalid URL for SQL store: {url}")
+        # Create a list of fields that are in the Pydantic schema
+        field_names = {
+            field.alias
+            for field in self.__fields__.values()
+            if field.alias != "_sql_kwargs"
+        }
 
-        logger.debug("Initializing SqlZenStore at %s", url)
-        self._url = url
+        sql_kwargs: Dict[str, Any] = {}
+        for field_name in list(kwargs):
+            if field_name not in field_names:
+                # Remove fields that are not in the Pydantic schema and add them
+                # to the sql_kwargs dict
+                sql_kwargs[field_name] = kwargs.get(field_name)
+        super().__init__(**kwargs)
+        self._sql_kwargs = sql_kwargs
 
-        local_path = self.get_path_from_url(url)
+
+class SqlZenStore(BaseZenStore):
+    """Store Implementation that uses SQL database backend."""
+
+    config: SqlZenStoreConfiguration
+    TYPE: ClassVar[StoreType] = StoreType.SQL
+    CONFIG_TYPE: ClassVar[Type[StoreConfiguration]] = SqlZenStoreConfiguration
+
+    _engine: Optional[Engine] = None
+
+    def _initialize(self) -> None:
+        """Initialize the SQL store."""
+        logger.debug("Initializing SqlZenStore at %s", self.config.url)
+
+        local_path = self.get_path_from_url(self.config.url)
         if local_path:
             io_utils.create_dir_recursive_if_not_exists(str(local_path.parent))
-
-        # we need to remove `skip_default_registrations` from the kwargs,
-        # because SQLModel will raise an error if it is present
-        sql_kwargs = kwargs.copy()
-        sql_kwargs.pop("skip_default_registrations", False)
-        sql_kwargs.pop("track_analytics", False)
-        sql_kwargs.pop("skip_migration", False)
-        self.engine = create_engine(url, *args, **sql_kwargs)
-        SQLModel.metadata.create_all(self.engine)
-        with Session(self.engine) as session:
-            if not session.exec(select(ZenUser)).first():
-                session.add(ZenUser(id=1, name="LocalZenUser"))
-            session.commit()
-
-        super().initialize(url, *args, **kwargs)
-        return self
-
-    # Public interface implementations:
+        self._engine = create_engine(self.config.url, **self.config._sql_kwargs)
+        SQLModel.metadata.create_all(self._engine)
 
     @property
-    def type(self) -> StoreType:
-        """The type of zen store.
+    def engine(self) -> Engine:
+        """The SQLAlchemy engine.
 
         Returns:
-            The type of zen store.
-        """
-        return StoreType.SQL
-
-    @property
-    def url(self) -> str:
-        """URL of the repository.
-
-        Returns:
-            The URL of the repository.
+            The SQLAlchemy engine.
 
         Raises:
-            RuntimeError: If the SQL zen store is not initialized.
+            ValueError: If the store is not initialized.
         """
-        if not self._url:
-            raise RuntimeError(
-                "SQL zen store has not been initialized. Call `initialize` "
-                "before using the store."
-            )
-        return self._url
+        if not self._engine:
+            raise ValueError("Store not initialized")
+        return self._engine
 
     # Static methods:
 
@@ -322,12 +320,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The path extracted from the URL, or None, if the URL does not
             point to a local sqlite file.
-
-        Raises:
-            ValueError: If the URL is not a valid SQLite URL.
         """
-        if not SqlZenStore.is_valid_url(url):
-            raise ValueError(f"Invalid URL for SQL store: {url}")
+        url = SqlZenStore.validate_url(url)
         if not url.startswith("sqlite:///"):
             return None
         url = url.replace("sqlite:///", "")
@@ -346,22 +340,77 @@ class SqlZenStore(BaseZenStore):
         return f"sqlite:///{path}/zenml.db"
 
     @staticmethod
-    def is_valid_url(url: str) -> bool:
-        """Check if the given url is a valid SQL url.
+    def validate_url(url: str) -> str:
+        """Check if the given url is valid.
 
         Args:
             url: The url to check.
 
         Returns:
-            True if the url is a valid SQL url, False otherwise.
+            The validated url.
+
+        Raises:
+            ValueError: If the url is not valid.
         """
         try:
             make_url(url)
-        except ArgumentError:
-            logger.debug("Invalid SQL URL: %s", url)
-            return False
+        except ArgumentError as e:
+            raise ValueError(
+                "Invalid SQLAlchemy URL `%s`: %s. Check the SQLAlchemy "
+                "documentation at https://docs.sqlalchemy.org/en/14/core/engines.html#database-urls "
+                "for the correct format.",
+                url,
+                str(e),
+            )
+        return url
 
-        return True
+    @classmethod
+    def copy_local_store(
+        cls,
+        config: StoreConfiguration,
+        path: str,
+        load_config_path: Optional[PurePath] = None,
+    ) -> StoreConfiguration:
+        """Copy a local store to a new location.
+
+        Use this method to create a copy of a store database to a new location
+        and return a new store configuration pointing to the database copy. This
+        only applies to stores that use the local filesystem to store their
+        data. Calling this method for remote stores simply returns the input
+        store configuration unaltered.
+
+        Args:
+            config: The configuration of the store to copy.
+            path: The new local path where the store DB will be copied.
+            load_config_path: path that will be used to load the copied store
+                database. This can be set to a value different from `path`
+                if the local database copy will be loaded from a different
+                environment, e.g. when the database is copied to a container
+                image and loaded using a different absolute path. This will be
+                reflected in the paths and URLs encoded in the copied store
+                configuration.
+
+        Returns:
+            The store configuration of the copied store.
+        """
+        config_copy = config.copy()
+
+        local_path = cls.get_path_from_url(config.url)
+        if not local_path:
+            # this is not a configuration backed by a local filesystem
+            return config_copy
+        io_utils.create_dir_recursive_if_not_exists(path)
+        fileio.copy(
+            str(local_path), str(Path(path) / local_path.name), overwrite=True
+        )
+        if load_config_path:
+            config_copy.url = cls.get_local_url(str(load_config_path))
+        else:
+            config_copy.url = cls.get_local_url(path)
+
+        return config_copy
+
+    # Public interface:
 
     @property
     def stacks_empty(self) -> bool:
@@ -671,6 +720,15 @@ class SqlZenStore(BaseZenStore):
                 )
 
     # User, project and role management
+
+    @property
+    def active_user_name(self) -> str:
+        """Gets the active username.
+
+        Returns:
+            The active username.
+        """
+        return DEFAULT_USERNAME
 
     @property
     def users(self) -> List[User]:

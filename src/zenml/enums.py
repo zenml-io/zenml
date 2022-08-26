@@ -71,7 +71,6 @@ class StackComponentType(StrEnum):
 class StoreType(StrEnum):
     """Repository Store Backend Types."""
 
-    LOCAL = "local"
     SQL = "sql"
     REST = "rest"
 

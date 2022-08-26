@@ -17,8 +17,8 @@ The ZenServer is a simple webserver to let you collaborate on stacks via
 the network. It can be spun up in a background daemon from the command line
 using `zenml server up` and managed from the same command line group.
 
-Using the ZenServer's stacks in your project just requires setting up a
-profile with `rest` store-type pointed to the url of the server.
+Using the ZenServer's stacks in your project just requires configuring ZenML
+with a `rest` store-type pointed to the url of the server.
 """
 
 from zenml.zen_server.zen_server import (

@@ -199,7 +199,7 @@ def register_stack(
         decouple_stores: Resets the previous couplings of the given
             artifact/metadata stores and creates a new one.
     """
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
 
     with console.status(f"Registering stack '{stack_name}'...\n"):
         repo = Repository()
@@ -448,7 +448,7 @@ def update_stack(
         decouple_stores: Resets the previous couplings of the given
             artifact/metadata stores and creates a new one.
     """
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
 
     repo = Repository()
 
@@ -678,7 +678,7 @@ def remove_stack_component(
         annotator_flag: To remove the annotator from this stack.
         data_validator_flag: To remove the data validator from this stack.
     """
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
 
     repo = Repository()
 
@@ -773,8 +773,8 @@ def rename_stack(
 
 @stack.command("list")
 def list_stacks() -> None:
-    """List all available stacks in the active profile."""
-    cli_utils.print_active_profile()
+    """List all available stacks."""
+    cli_utils.print_active_config()
 
     repo = Repository()
 
@@ -814,7 +814,7 @@ def describe_stack(stack_name: Optional[str]) -> None:
     Args:
         stack_name: Name of the stack to describe.
     """
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
 
     repo = Repository()
 
@@ -863,7 +863,7 @@ def delete_stack(
             "The `--force` flag will soon be deprecated. Use `--yes` or "
             "`-y` instead."
         )
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
     confirmation = yes or cli_utils.confirmation(
         f"This will delete stack '{stack_name}' from your repository. \n"
         "Are you sure you want to proceed?"
@@ -896,66 +896,49 @@ def delete_stack(
 
 @stack.command("set", help="Sets a stack as active.")
 @click.argument("stack_name", type=str)
-@click.option(
-    "--global",
-    "-g",
-    "global_profile",
-    is_flag=True,
-    help="Set the active stack globally.",
-)
-def set_active_stack_command(
-    stack_name: str, global_profile: bool = False
-) -> None:
+def set_active_stack_command(stack_name: str) -> None:
     """Sets a stack as active.
-
-    If the '--global' flag is set, the global active stack will be set,
-    otherwise the repository active stack takes precedence.
 
     Args:
         stack_name: Name of the stack to set as active.
-        global_profile: Set the active stack globally.
     """
-    set_active_stack(stack_name, global_profile)
+    set_active_stack(stack_name)
 
 
-def set_active_stack(stack_name: str, global_profile: bool = False) -> None:
+def set_active_stack(stack_name: str) -> None:
     """Sets a stack as active.
-
-    If the '--global' flag is set, the global active stack will be set,
-    otherwise the repository active stack takes precedence.
 
     Args:
         stack_name: Unique name of the stack
-        global_profile: If the stack should be created on the global profile
     """
-    cli_utils.print_active_profile()
-    scope = " global" if global_profile else ""
+    cli_utils.print_active_config()
+    scope = " repository" if Repository().root else " global"
     repo = Repository()
     with console.status(
         f"Setting the{scope} active stack to '{stack_name}'..."
     ):
-        if global_profile:
-            repo.active_profile.activate_stack(stack_name)
-        else:
-            repo.activate_stack(stack_name)
-
+        repo.activate_stack(stack_name)
         cli_utils.declare(f"Active{scope} stack set to: '{stack_name}'")
 
 
 @stack.command("get")
 def get_active_stack() -> None:
     """Gets the active stack."""
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
+
+    scope = " repository" if Repository().uses_local_active_stack else " global"
 
     with console.status("Getting the active stack..."):
         repo = Repository()
-        cli_utils.declare(f"The active stack is: '{repo.active_stack_name}'")
+        cli_utils.declare(
+            f"The{scope} active stack is: '{repo.active_stack_name}'"
+        )
 
 
 @stack.command("up")
 def up_stack() -> None:
     """Provisions resources for the active stack."""
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
 
     stack_ = Repository().active_stack
     cli_utils.declare(
@@ -1000,7 +983,7 @@ def down_stack(force: bool = False, old_force: bool = False) -> None:
             "The `--yes` flag will soon be deprecated. Use `--force` "
             "or `-f` instead."
         )
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
 
     stack_ = Repository().active_stack
 
@@ -1243,76 +1226,35 @@ def import_stack(
 @stack.command("copy", help="Copy a stack to a new stack name.")
 @click.argument("source_stack", type=str, required=True)
 @click.argument("target_stack", type=str, required=True)
-@click.option(
-    "--from",
-    "source_profile_name",
-    type=str,
-    required=False,
-    help="The profile from which to copy the stack.",
-)
-@click.option(
-    "--to",
-    "target_profile_name",
-    type=str,
-    required=False,
-    help="The profile to which to copy the stack.",
-)
 def copy_stack(
     source_stack: str,
     target_stack: str,
-    source_profile_name: Optional[str] = None,
-    target_profile_name: Optional[str] = None,
 ) -> None:
     """Copy a stack.
 
     Args:
         source_stack: The name of the stack to copy.
         target_stack: Name of the copied stack.
-        source_profile_name: Name of the profile from which to copy.
-        target_profile_name: Name of the profile to which to copy.
     """
     track_event(AnalyticsEvent.COPIED_STACK)
 
-    if source_profile_name:
-        try:
-            source_profile = GlobalConfiguration().profiles[source_profile_name]
-        except KeyError:
-            cli_utils.error(
-                f"Unable to find source profile '{source_profile_name}'."
-            )
-    else:
-        source_profile = Repository().active_profile
-
-    if target_profile_name:
-        try:
-            target_profile = GlobalConfiguration().profiles[target_profile_name]
-        except KeyError:
-            cli_utils.error(
-                f"Unable to find target profile '{target_profile_name}'."
-            )
-    else:
-        target_profile = Repository().active_profile
-
-    # Use different repositories for fetching/registering the stack depending
-    # on the source/target profile
-    source_repo = Repository(profile=source_profile)
-    target_repo = Repository(profile=target_profile)
+    repo = Repository()
 
     with console.status(f"Copying stack `{source_stack}`...\n"):
         try:
-            stack_wrapper = source_repo.zen_store.get_stack(source_stack)
+            stack_wrapper = repo.zen_store.get_stack(source_stack)
         except KeyError:
             cli_utils.error(
                 f"Stack `{source_stack}` cannot be copied as it does not exist."
             )
 
-        if target_stack in target_repo.stack_configurations:
+        if target_stack in repo.stack_configurations:
             cli_utils.error(
                 f"Can't copy stack as a stack with the name '{target_stack}' "
                 "already exists."
             )
         stack_wrapper.name = target_stack
-        target_repo.zen_store.register_stack(stack_wrapper)
+        repo.zen_store.register_stack(stack_wrapper)
 
 
 @stack.command(
@@ -1340,7 +1282,7 @@ def register_secrets(
         stack_name: Name of the stack for which to register secrets. If empty,
             the active stack will be used.
     """
-    cli_utils.print_active_profile()
+    cli_utils.print_active_config()
 
     if stack_name:
         try:

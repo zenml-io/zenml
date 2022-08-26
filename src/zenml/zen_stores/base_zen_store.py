@@ -14,12 +14,13 @@
 """Base Zen Store implementation."""
 
 import base64
-from abc import ABC, abstractmethod
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from abc import abstractmethod
+from pathlib import Path, PurePath
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
 from uuid import UUID
 
 import yaml
+from pydantic import BaseModel
 
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError, StackExistsError
@@ -38,57 +39,161 @@ from zenml.zen_stores.models import (
     User,
 )
 from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
+from zenml.zen_stores.store_config import StoreConfiguration
 
 logger = get_logger(__name__)
 
 DEFAULT_USERNAME = "default"
 
 
-class BaseZenStore(ABC):
-    """Base class for accessing data in ZenML Repository and new Service."""
+class BaseZenStore(BaseModel):
+    """Base class for accessing and persisting ZenML core objects.
 
-    def initialize(
+    Attributes:
+        config: The configuration of the store.
+        track_analytics: Only send analytics if set to `True`.
+    """
+
+    config: StoreConfiguration
+    track_analytics: bool = True
+
+    TYPE: ClassVar[StoreType]
+    CONFIG_TYPE: ClassVar[Type[StoreConfiguration]]
+
+    def __init__(
         self,
-        url: str,
         skip_default_registrations: bool = False,
-        track_analytics: bool = True,
-        skip_migration: bool = False,
-        *args: Any,
         **kwargs: Any,
-    ) -> "BaseZenStore":
-        """Initialize the store.
+    ) -> None:
+        """Create and initialize a store.
 
         Args:
-            url: The URL of the store.
             skip_default_registrations: If `True`, the creation of the default
-                stack and user will be skipped.
-            track_analytics: Only send analytics if set to `True`.
-            skip_migration: If `True`, no migration will be performed.
-            *args: Additional arguments to pass to the concrete store
-                implementation.
-            **kwargs: Additional keyword arguments to pass to the concrete
-                store implementation.
+                stack and user in the store will be skipped.
+            **kwargs: Additional keyword arguments to pass to the Pydantic
+                constructor.
+
+        Raises:
+            RuntimeError: If the store cannot be initialized.
+        """
+        super().__init__(**kwargs)
+
+        try:
+            self._initialize()
+        except Exception as e:
+            raise RuntimeError(
+                f"Error initializing {self.type.value} store with URL "
+                f"'{self.url}': {str(e)}"
+            ) from e
+
+        if not skip_default_registrations:
+            self._initialize_database()
+
+    @staticmethod
+    def get_store_class(type: StoreType) -> Type["BaseZenStore"]:
+        """Returns the class of the given store type.
+
+        Args:
+            type: The type of the store to get the class for.
 
         Returns:
-            The initialized concrete store instance.
+            The class of the given store type or None if the type is unknown.
+
+        Raises:
+            TypeError: If the store type is unsupported.
         """
-        self._track_analytics = track_analytics
-        if not skip_default_registrations:
-            if self.stacks_empty:
-                logger.info("Registering default stack...")
-                self.register_default_stack()
-            self.create_default_user()
+        from zenml.zen_stores import RestZenStore, SqlZenStore
 
-        if not skip_migration:
-            self._migrate_store()
+        store_class = {
+            StoreType.SQL: SqlZenStore,
+            StoreType.REST: RestZenStore,
+        }.get(type)
 
-        return self
+        if store_class is None:
+            raise TypeError(
+                f"No store implementation found for store type "
+                f"`{type.value}`."
+            )
 
-    def _migrate_store(self) -> None:
-        """Migrates the store to the latest version."""
-        # Older versions of ZenML didn't have users in the zen store, so we
-        # create the default user if it doesn't exists
+        return store_class
+
+    @staticmethod
+    def create_store(
+        config: StoreConfiguration,
+        skip_default_registrations: bool = False,
+        **kwargs: Any,
+    ) -> "BaseZenStore":
+        """Create and initialize a store from a store configuration.
+
+        Args:
+            config: The store configuration to use.
+            skip_default_registrations: If `True`, the creation of the default
+                stack and user in the store will be skipped.
+            **kwargs: Additional keyword arguments to pass to the store class
+
+        Returns:
+            The initialized store.
+        """
+        logger.debug(f"Creating store with config '{config}'...")
+        store_class = BaseZenStore.get_store_class(config.type)
+        store = store_class(
+            config=config,
+            skip_default_registrations=skip_default_registrations,
+        )
+        return store
+
+    @staticmethod
+    def get_default_store_config(path: str) -> StoreConfiguration:
+        """Get the default store configuration.
+
+        The default store is a SQLite store that saves the DB contents on the
+        local filesystem.
+
+        Args:
+            path: The local path where the store DB will be stored.
+
+        Returns:
+            The default store configuration.
+        """
+        from zenml.zen_stores.sql_zen_store import (
+            SqlZenStore,
+            SqlZenStoreConfiguration,
+        )
+
+        config = SqlZenStoreConfiguration(
+            type=StoreType.SQL, url=SqlZenStore.get_local_url(path)
+        )
+        return config
+
+    def _initialize_database(self) -> None:
+        """Initialize the database on first use."""
+        if self.stacks_empty:
+            logger.info("Initializing database...")
+            self.register_default_stack()
         self.create_default_user()
+        # TODO: is this still needed ?
+        # with Session(self.engine) as session:
+        #     if not session.exec(select(ZenUser)).first():
+        #         session.add(ZenUser(id=1, name="LocalZenUser"))
+        #     session.commit()
+
+    @property
+    def url(self) -> str:
+        """The URL of the store.
+
+        Returns:
+            The URL of the store.
+        """
+        return self.config.url
+
+    @property
+    def type(self) -> StoreType:
+        """The type of the store.
+
+        Returns:
+            The type of the store.
+        """
+        return self.TYPE
 
     # Static methods:
 
@@ -119,35 +224,50 @@ class BaseZenStore(ABC):
 
     @staticmethod
     @abstractmethod
-    def is_valid_url(url: str) -> bool:
+    def validate_url(url: str) -> str:
         """Check if the given url is valid.
+
+        The implementation should raise a ValueError if the url is invalid.
 
         Args:
             url: The url to check.
 
         Returns:
-            True if the url is valid, False otherwise.
+            The modified url, if it is valid.
+        """
+
+    @classmethod
+    @abstractmethod
+    def copy_local_store(
+        cls,
+        config: StoreConfiguration,
+        path: str,
+        load_config_path: Optional[PurePath] = None,
+    ) -> StoreConfiguration:
+        """Copy a local store to a new location.
+
+        Use this method to create a copy of a store database to a new location
+        and return a new store configuration pointing to the database copy. This
+        only applies to stores that use the local filesystem to store their
+        data. Calling this method for remote stores simply returns the input
+        store configuration unaltered.
+
+        Args:
+            config: The configuration of the store to copy.
+            path: The new local path where the store DB will be copied.
+            load_config_path: path that will be used to load the copied store
+                database. This can be set to a value different from `path`
+                if the local database copy will be loaded from a different
+                environment, e.g. when the database is copied to a container
+                image and loaded using a different absolute path. This will be
+                reflected in the paths and URLs encoded in the copied store
+                configuration.
+
+        Returns:
+            The store configuration of the copied store.
         """
 
     # Public Interface:
-
-    @property
-    @abstractmethod
-    def type(self) -> StoreType:
-        """The type of zen store.
-
-        Returns:
-            The type of zen store.
-        """
-
-    @property
-    @abstractmethod
-    def url(self) -> str:
-        """Get the repository URL.
-
-        Returns:
-            The repository URL.
-        """
 
     @property
     @abstractmethod
@@ -187,6 +307,14 @@ class BaseZenStore(ABC):
         """
 
     # Private interface (must be implemented, not to be called by user):
+
+    @abstractmethod
+    def _initialize(self) -> None:
+        """Initialize the store.
+
+        This method is called immediately after the store is created. It should
+        be used to set up the backend (database, connection etc.).
+        """
 
     @abstractmethod
     def _register_stack_component(
@@ -291,6 +419,15 @@ class BaseZenStore(ABC):
         """
 
     # User, project and role management
+
+    @property
+    @abstractmethod
+    def active_user_name(self) -> str:
+        """Gets the active username.
+
+        Returns:
+            The active username.
+        """
 
     @property
     @abstractmethod
@@ -1080,7 +1217,7 @@ class BaseZenStore(ABC):
         Returns:
             True if the event was successfully tracked, False otherwise.
         """
-        if self._track_analytics:
+        if self.track_analytics:
             return track_event(event, metadata)
         return False
 
@@ -1155,6 +1292,15 @@ class BaseZenStore(ABC):
             metadata=analytics_metadata,
         )
         return self._update_stack_component(name, component_type, component)
+
+    @property
+    def active_user(self) -> "User":
+        """The active user.
+
+        Returns:
+            The active user.
+        """
+        return self.get_user(self.active_user_name)
 
     def create_user(self, user_name: str) -> User:
         """Creates a new user.
@@ -1374,3 +1520,15 @@ class BaseZenStore(ABC):
         """
         # No tracking events, here for consistency
         return self._deregister_stack(name)
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # Validate attributes when assigning them. We need to set this in order
+        # to have a mix of mutable and immutable attributes
+        validate_assignment = True
+        # Ignore extra attributes from configs of previous ZenML versions
+        extra = "ignore"
+        # all attributes with leading underscore are private and therefore
+        # are mutable and not included in serialization
+        underscore_attrs_are_private = True

@@ -14,8 +14,8 @@
 """REST Zen Store implementation."""
 
 import re
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from pathlib import Path, PurePath
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union, cast
 from uuid import UUID
 
 import requests
@@ -56,6 +56,7 @@ from zenml.zen_stores.models import (
     User,
 )
 from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
+from zenml.zen_stores.store_config import StoreConfiguration
 
 logger = get_logger(__name__)
 
@@ -63,38 +64,45 @@ logger = get_logger(__name__)
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 
+class RestZenStoreConfiguration(StoreConfiguration):
+    """REST ZenML store configuration.
+
+    Attributes:
+        username: The username to use to connect to the Zen server.
+        password: The password to use to connect to the Zen server.
+    """
+
+    type: StoreType = StoreType.REST
+    username: str
+    password: str = ""
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # Validate attributes when assigning them. We need to set this in order
+        # to have a mix of mutable and immutable attributes
+        validate_assignment = True
+        # Ignore extra attributes set in the class.
+        extra = "ignore"
+
+
 class RestZenStore(BaseZenStore):
-    """ZenStore implementation for accessing data from a REST API."""
+    """Store implementation for accessing data from a REST API."""
 
-    def initialize(
-        self,
-        url: str,
-        *args: Any,
-        **kwargs: Any,
-    ) -> "RestZenStore":
-        """Initializes a rest zen store instance.
+    config: RestZenStoreConfiguration
+    TYPE: ClassVar[StoreType] = StoreType.REST
+    CONFIG_TYPE: ClassVar[Type[StoreConfiguration]] = RestZenStoreConfiguration
 
-        Args:
-            url: Endpoint URL of the service for zen storage.
-            args: additional positional arguments (ignored).
-            kwargs: additional keyword arguments (ignored).
+    def _initialize(self) -> None:
+        """Initialize the REST store."""
+        # try to connect to the server to validate the configuration
+        self._handle_response(
+            requests.get(self.url + "/", auth=self._get_authentication())
+        )
 
-        Returns:
-            The initialized zen store instance.
-
-        Raises:
-            ValueError: if the url is not a valid URL.
-        """
-        if not self.is_valid_url(url.strip("/")):
-            raise ValueError("Invalid URL for REST store: {url}")
-        self._url = url.strip("/")
-        super().initialize(url, *args, **kwargs)
-        return self
-
-    def _migrate_store(self) -> None:
-        """Migrates the store to the latest version."""
-        # Don't do anything here in the rest store, as the migration has to be
-        # done server-side.
+    def _initialize_database(self) -> None:
+        """Initialize the database."""
+        # don't do anything for a REST store
 
     # Static methods:
 
@@ -123,41 +131,61 @@ class RestZenStore(BaseZenStore):
         raise NotImplementedError("Cannot build a REST url from a path.")
 
     @staticmethod
-    def is_valid_url(url: str) -> bool:
-        """Check if the given url is a valid local path.
+    def validate_url(url: str) -> str:
+        """Check if the given url is a valid REST URL.
 
         Args:
             url: The url to check.
 
         Returns:
-            True, if the url is a valid local path, False otherwise.
+            The validated url.
+
+        Raises:
+            ValueError: If the url is not valid.
         """
+        url = url.rstrip("/")
         scheme = re.search("^([a-z0-9]+://)", url)
-        return (
-            scheme is not None
-            and scheme.group() in ("https://", "http://")
-            and url[-1] != "/"
-        )
+        if scheme is None or scheme.group() not in ("https://", "http://"):
+            raise ValueError(
+                "Invalid URL for REST store: {url}. Should be in the form "
+                "https://hostname[:port] or http://hostname[:port]."
+            )
+
+        return url
+
+    @classmethod
+    def copy_local_store(
+        cls,
+        config: StoreConfiguration,
+        path: str,
+        load_config_path: Optional[PurePath] = None,
+    ) -> StoreConfiguration:
+        """Copy a local store to a new location.
+
+        Use this method to create a copy of a store database to a new location
+        and return a new store configuration pointing to the database copy. This
+        only applies to stores that use the local filesystem to store their
+        data. Calling this method for remote stores simply returns the input
+        store configuration unaltered.
+
+        Args:
+            config: The configuration of the store to copy.
+            path: The new local path where the store DB will be copied.
+            load_config_path: path that will be used to load the copied store
+                database. This can be set to a value different from `path`
+                if the local database copy will be loaded from a different
+                environment, e.g. when the database is copied to a container
+                image and loaded using a different absolute path. This will be
+                reflected in the paths and URLs encoded in the copied store
+                configuration.
+
+        Returns:
+            The store configuration of the copied store.
+        """
+        # REST zen stores are not backed by local files
+        return config
 
     # Public Interface:
-
-    @property
-    def type(self) -> StoreType:
-        """The type of stack store.
-
-        Returns:
-            The type of the stack store.
-        """
-        return StoreType.REST
-
-    @property
-    def url(self) -> str:
-        """Get the stack store URL.
-
-        Returns:
-            The URL of the stack store.
-        """
-        return self._url
 
     @property
     def stacks_empty(self) -> bool:
@@ -382,6 +410,15 @@ class RestZenStore(BaseZenStore):
         self.delete(f"{STACK_COMPONENTS}/{component_type}/{name}")
 
     # User, project and role management
+
+    @property
+    def active_user_name(self) -> str:
+        """Gets the active username.
+
+        Returns:
+            The active username.
+        """
+        return self.config.username
 
     @property
     def users(self) -> List[User]:
@@ -1206,16 +1243,13 @@ class RestZenStore(BaseZenStore):
                 f"{response.status_code} with body:\n{response.text}"
             )
 
-    @staticmethod
-    def _get_authentication() -> Tuple[str, str]:
+    def _get_authentication(self) -> Tuple[str, str]:
         """Gets HTTP basic auth credentials.
 
         Returns:
             A tuple of the username and password.
         """
-        from zenml.repository import Repository
-
-        return Repository().active_user_name, ""
+        return self.config.username, self.config.password
 
     def get(self, path: str) -> Json:
         """Make a GET request to the given endpoint path.

@@ -50,11 +50,11 @@ DEFAULT_DOCKER_PARENT_IMAGE = (
 
 
 @contextlib.contextmanager
-def _include_active_profile(
+def _include_global_config(
     build_context_root: str,
     load_config_path: PurePath = PurePosixPath(DOCKER_IMAGE_ZENML_CONFIG_PATH),
 ) -> Iterator[None]:
-    """Context manager to include the active profile in a Docker build context.
+    """Context manager to include the global configuration in a Docker build context.
 
     Args:
         build_context_root: The root of the build context.
@@ -65,14 +65,14 @@ def _include_active_profile(
         None.
     """
     # Save a copy of the current global configuration with the
-    # active profile and the active stack configuration into the build
-    # context, to have the active profile and active stack accessible from
+    # store configuration and the active stack configuration into the build
+    # context, to have the store and active stack accessible from
     # within the container.
     config_path = os.path.join(
         build_context_root, DOCKER_IMAGE_ZENML_CONFIG_DIR
     )
     try:
-        GlobalConfiguration().copy_active_configuration(
+        GlobalConfiguration().copy_configuration(
             config_path, load_config_path=load_config_path
         )
         yield
@@ -223,7 +223,7 @@ class PipelineDockerImageBuilder(BaseModel):
         """
         lines = [f"FROM {parent_image}", f"WORKDIR {DOCKER_IMAGE_WORKDIR}"]
 
-        if docker_configuration.copy_profile:
+        if docker_configuration.copy_global_config:
             lines.append(
                 f"ENV {ENV_ZENML_CONFIG_PATH}={DOCKER_IMAGE_ZENML_CONFIG_PATH}"
             )
@@ -237,7 +237,7 @@ class PipelineDockerImageBuilder(BaseModel):
 
         if docker_configuration.copy_files:
             lines.append("COPY . .")
-        elif docker_configuration.copy_profile:
+        elif docker_configuration.copy_global_config:
             lines.append(f"COPY {DOCKER_IMAGE_ZENML_CONFIG_DIR} .")
 
         lines.append("RUN chmod -R a+rw .")
@@ -303,7 +303,7 @@ class PipelineDockerImageBuilder(BaseModel):
                 docker_configuration.install_stack_requirements,
                 docker_configuration.environment,
                 docker_configuration.copy_files,
-                docker_configuration.copy_profile,
+                docker_configuration.copy_global_config,
                 entrypoint,
             ]
         )
@@ -381,20 +381,20 @@ class PipelineDockerImageBuilder(BaseModel):
             # Leave the build context empty if we don't want to copy any files
             requires_build_context = (
                 docker_configuration.copy_files
-                or docker_configuration.copy_profile
+                or docker_configuration.copy_global_config
             )
             build_context_root = (
                 source_utils.get_source_root_path()
                 if requires_build_context
                 else None
             )
-            maybe_include_active_profile = (
-                _include_active_profile(build_context_root=build_context_root)  # type: ignore[arg-type]
-                if docker_configuration.copy_profile
+            maybe_include_global_config = (
+                _include_global_config(build_context_root=build_context_root)  # type: ignore[arg-type]
+                if docker_configuration.copy_global_config
                 else contextlib.nullcontext()
             )
 
-            with maybe_include_active_profile:
+            with maybe_include_global_config:
                 docker_utils.build_image(
                     image_name=target_image_name,
                     dockerfile=dockerfile,

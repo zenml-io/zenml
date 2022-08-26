@@ -42,7 +42,7 @@ from zenml.utils import deprecation_utils
 from zenml.utils.pipeline_docker_image_builder import (
     DOCKER_IMAGE_ZENML_CONFIG_DIR,
     PipelineDockerImageBuilder,
-    _include_active_profile,
+    _include_global_config,
 )
 from zenml.utils.secret_utils import SecretField
 from zenml.utils.source_utils import get_source_root_path
@@ -241,7 +241,7 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
             "docker_target_repository",
             "dockerignore",
             "copy_files",
-            "copy_profile",
+            "copy_global_config",
         ]
         ignored_docker_fields = (
             docker_configuration.__fields_set__.intersection(
@@ -265,7 +265,7 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
         )
 
         source_directory = get_source_root_path()
-        with _include_active_profile(
+        with _include_global_config(
             build_context_root=source_directory,
             load_config_path=PurePosixPath(
                 f"./{DOCKER_IMAGE_ZENML_CONFIG_DIR}"

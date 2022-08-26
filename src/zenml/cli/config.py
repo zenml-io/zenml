@@ -20,16 +20,12 @@ from rich.markdown import Markdown
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.config.base_config import BaseConfiguration
 from zenml.config.global_config import GlobalConfiguration
-from zenml.config.profile_config import (
-    ProfileConfiguration,
-    get_default_store_type,
-)
 from zenml.console import console
-from zenml.enums import CliCategories, LoggingLevels, StoreType
+from zenml.enums import CliCategories, LoggingLevels
 from zenml.repository import Repository
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
+from zenml.zen_stores.rest_zen_store import RestZenStoreConfiguration
 
 if TYPE_CHECKING:
     pass
@@ -99,380 +95,274 @@ def set_logging_verbosity(verbosity: str) -> None:
     cli_utils.declare(f"Set verbosity to: {verbosity}")
 
 
-# Profiles
-@cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
-def profile() -> None:
-    """Configuration of ZenML profiles."""
+# Global and repository configuration
+@cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
+def config() -> None:
+    """Manage the global and local repository ZenML configuration."""
 
 
-@profile.command("create")
-@click.argument(
-    "name",
-    type=str,
-    required=True,
+@config.command(
+    "set",
+    help=(
+        """Change the global or repository configuration.
+
+    Use this command to configure where ZenML stores its data (e.g. stacks,
+    stack components, flavors etc.). You can choose between using the local
+    filesystem by passing the `--local-store` flag, or a remote ZenML server
+    by configuring the `--url`, `--username` and an optional `--project`.
+
+    The configuration changes are applied to the global configuration by
+    default. If you need to change the local configuration of a specific
+    repository instead, you can pass the `--repo` flag while running the command
+    from within the repository directory.
+
+    Examples:
+
+     - set the global configuration to use the local filesystem to store stacks,
+     stack components and so on:
+
+        zenml config set --local-store
+
+     - set the global configuration to connect to a remote ZenML server:
+
+        zenml config set --url=http://localhost:8080 --username=default --project=default
+
+     - set the repository configuration to use the local filesystem to store
+     stacks, stack components and so on in a database stored in the repository
+     itself:
+
+        zenml config set --local-store
+
+     - set the repository configuration to connect to a remote ZenML
+     server:
+
+        zenml config set --repo --url=http://localhost:8080 --username=default --project=default
+
+    """
+    ),
 )
 @click.option(
     "--url",
     "-u",
-    "url",
-    help="The store URL to use for the profile. This is required if you're "
-    "creating a profile with REST storage.",
+    help="The ZenML server URL to use for the configuration. This is required "
+    "if you're connecting to a ZenML server.",
     required=False,
     type=str,
 )
 @click.option(
-    "--store-type",
-    "-t",
-    "store_type",
-    help="The store type to use for the profile.",
-    required=False,
-    type=click.Choice(list(StoreType), case_sensitive=False),
-    default=get_default_store_type(),
-)
-@click.option(
-    "--user",
-    "user_name",
-    help="The username that is used to authenticate with the ZenServer. This "
-    "is required if you're creating a profile with REST storage.",
+    "--username",
+    help="The username that is used to authenticate with a ZenML server. This "
+    "is required if you're connected to a ZenML server.",
     required=False,
     type=str,
 )
-def create_profile_command(
-    name: str,
-    url: Optional[str],
-    store_type: Optional[StoreType],
-    user_name: Optional[str],
-) -> None:
-    """Create a new configuration profile.
-
-    Args:
-        name: The name of the profile.
-        url: The URL of the store.
-        store_type: The store type.
-        user_name: The username that is used to authenticate with the ZenServer.
-    """
-    cli_utils.print_active_profile()
-
-    cfg = GlobalConfiguration()
-
-    if cfg.get_profile(name):
-        cli_utils.error(f"Profile '{name}' already exists.")
-        return
-    try:
-        profile = ProfileConfiguration(
-            name=name,
-            store_url=url,
-            store_type=store_type,
-            active_user=user_name,
-        )
-    except RuntimeError as err:
-        cli_utils.error(f"Failed to create profile: {err.args[0]}")
-    cfg.add_or_update_profile(profile)
-    cli_utils.declare(f"Profile '{name}' successfully created.")
-
-
-@profile.command("list")
-def list_profiles_command() -> None:
-    """List configuration profiles."""
-    cli_utils.print_active_profile()
-
-    cfg = GlobalConfiguration()
-    repo = Repository()
-
-    profiles = cfg.profiles
-
-    if len(profiles) == 0:
-        cli_utils.warning("No profiles configured!")
-        return
-
-    profile_dicts = []
-    for profile_name, profile in profiles.items():
-        is_active = profile_name == repo.active_profile_name
-        active_stack = profile.active_stack
-        if is_active:
-            active_stack = repo.active_stack_name
-        profile_config = {
-            "ACTIVE": ":point_right:" if is_active else "",
-            "PROFILE NAME": profile_name,
-            "STORE TYPE": profile.store_type.value,
-            "URL": profile.store_url,
-            "ACTIVE STACK": active_stack,
-        }
-        profile_dicts.append(profile_config)
-
-    cli_utils.print_table(profile_dicts)
-
-
-@profile.command(
-    "describe",
-    help="Show details about the active profile.",
-)
-@click.argument(
-    "name",
-    type=click.STRING,
-    required=False,
-)
-def describe_profile(name: Optional[str]) -> None:
-    """Show details about a named profile or the active profile.
-
-    Args:
-        name: The name of the profile.
-    """
-    cli_utils.print_active_profile()
-
-    repo = Repository()
-    name = name or repo.active_profile_name
-
-    profile = GlobalConfiguration().get_profile(name)
-    if not profile:
-        cli_utils.error(f"Profile '{name}' does not exist.")
-        return
-
-    cli_utils.print_profile(
-        profile,
-        active=name == repo.active_profile_name,
-    )
-
-
-@profile.command("delete")
-@click.argument("name", type=str)
-def delete_profile(name: str) -> None:
-    """Delete a profile.
-
-    If the profile is currently active, it cannot be deleted.
-
-    Args:
-        name: The name of the profile.
-    """
-    cli_utils.print_active_profile()
-
-    with console.status(f"Deleting profile '{name}'...\n"):
-
-        cfg = GlobalConfiguration()
-        repo = Repository()
-        if not cfg.get_profile(name):
-            cli_utils.error(f"Profile {name} doesn't exist.")
-            return
-        if cfg.active_profile_name == name:
-            cli_utils.error(
-                f"Profile '{name}' cannot be deleted because it's globally "
-                f" active. Please choose a different active global profile "
-                f"first by running 'zenml profile set --global PROFILE'."
-            )
-            return
-
-        if repo.active_profile_name == name:
-            cli_utils.error(
-                f"Profile '{name}' cannot be deleted because it's locally "
-                f"active. Please choose a different active profile first by "
-                f"running 'zenml profile set PROFILE'."
-            )
-            return
-
-        cfg.delete_profile(name)
-        cli_utils.declare(f"Deleted profile '{name}'.")
-
-
-@profile.command("set")
-@click.argument("name", type=str)
 @click.option(
-    "--global",
-    "-g",
-    "global_profile",
+    "--local-store",
     is_flag=True,
-    help="Set the global active profile",
+    help="Configure ZenML to use the stacks stored on your local filesystem.",
 )
-def set_active_profile(name: str, global_profile: bool = False) -> None:
-    """Set a profile as active.
-
-    If the '--global' flag is set, the profile will be set as the global
-    active profile, otherwise as the repository local active profile.
+@click.option(
+    "--repo",
+    is_flag=True,
+    help="Configure the repository local settings instead of the global "
+    "configuration settings.",
+)
+def config_set_command(
+    url: Optional[str] = None,
+    username: Optional[str] = None,
+    local_store: bool = False,
+    repo: bool = False,
+) -> None:
+    """Change the ZenML configuration.
 
     Args:
-        name: The name of the profile.
-        global_profile: Set the profile as the global active profile.
+        url: The URL where the ZenML server is reachable.
+        local_store: Configure ZenML to use the local store.
+        username: The username that is used to authenticate with the ZenML
+            server.
+        repo: Configure the repository local settings instead of the global ones.
     """
-    cli_utils.print_active_profile()
-    scope = " global" if global_profile else ""
-
-    with console.status(f"Setting the{scope} active profile to '{name}'..."):
-
-        cfg: BaseConfiguration = (
-            GlobalConfiguration() if global_profile else Repository()
+    if repo and not Repository().root:
+        cli_utils.error(
+            "The `--repo` flag can only be used with an initialized "
+            "repository. You need to run `zenml init` or change the "
+            "current directory to an initialized repository root."
         )
 
-        current_profile_name = cfg.active_profile_name
-        if current_profile_name == name:
-            cli_utils.declare(f"Profile '{name}' is already{scope}ly active.")
-            return
+    if local_store:
+        if url or username:
+            cli_utils.error(
+                "The `url` and `--username` options can only be used"
+                "to connect to a remote ZenML server. Hint: `--local-store` "
+                "should probably not be set."
+            )
+        if repo:
+            Repository().set_default_store()
+        else:
+            GlobalConfiguration().set_default_store()
+    else:
+        if url is None or username is None:
+            cli_utils.error(
+                "The `--url` and `--username` options are required to connect "
+                "to a remote ZenML server. Alternatively, you can use the "
+                "`--local-store` flag to configure ZenML to use the local "
+                "filesystem."
+            )
+        store_config = RestZenStoreConfiguration(
+            url=url,
+            username=username,
+        )
+        if repo:
+            Repository().set_store(store_config)
+        else:
+            GlobalConfiguration().set_store(store_config)
 
-        try:
-            cfg.activate_profile(name)
-        except Exception as e:
-            cli_utils.error(f"Error activating{scope} profile: {str(e)}. ")
-            if current_profile_name:
-                cli_utils.declare(
-                    f"Keeping current{scope} profile: '{current_profile_name}'."
-                )
-                cfg.activate_profile(current_profile_name)
-            return
-        cli_utils.declare(f"Active{scope} profile changed to: '{name}'")
 
+@config.command(
+    "show",
+    help="Show details about the active configuration.",
+)
+def config_show() -> None:
+    """Show details about the active configuration."""
+    gc = GlobalConfiguration()
+    repo = Repository()
 
-@profile.command("get")
-def get_active_profile() -> None:
-    """Get the active profile."""
-    with console.status("Getting the active profile..."):
+    repo_cfg = repo.store_config
+    global_cfg = gc.store
+
+    if repo.root:
+        cli_utils.declare(f"Active repository root: {repo.root}")
+    if repo_cfg is not None:
         cli_utils.declare(
-            f"Active profile is: {Repository().active_profile_name}"
+            f"The repository store configuration is in effect "
+            f"({repo._config_path()}):"
+        )
+        for key, value in repo_cfg.dict().items():
+            cli_utils.declare(f" - {key}: {value}")
+    elif global_cfg is not None:
+        cli_utils.declare(
+            f"The global store configuration is in effect "
+            f"({gc._config_file()}):"
+        )
+        for key, value in global_cfg.dict().items():
+            cli_utils.declare(f" - {key}: {value}")
+
+    stack_scope = "repository" if repo.uses_local_active_stack else "global"
+    cli_utils.declare(
+        f"The active stack is: '{repo.active_stack_name}' ({stack_scope})"
+    )
+    project_scope = "repository" if repo.uses_local_active_project else "global"
+    if not repo.active_project_name:
+        cli_utils.declare("The active project is not set.")
+    else:
+        cli_utils.declare(
+            f"The active project is: '{repo.active_project_name}' "
+            f"({project_scope})"
         )
 
 
-@profile.command("explain")
-def explain_profile() -> None:
-    """Explains the concept of ZenML profiles."""
+@config.command("explain")
+def explain_config() -> None:
+    """Explains the concept of ZenML configurations."""
     with console.pager():
         console.print(
             Markdown(
                 """
-Profiles are configuration contexts that can be used to manage multiple
-individual ZenML global configurations on the same machine. ZenML Stacks and
-Stack Components, as well as the active Stack can be configured for a Profile
-independently of other Profiles.
+The ZenML configuration that is managed through `zenml config` determines the
+type of backend that ZenML uses to persist objects such as Stacks, Stack
+Components and Flavors. This can be configured globally as well as independently
+for each ZenML repository that is initialized on a machine.
 
-A `default` Profile is created automatically and set as the active Profile the
-first time ZenML runs on a machine:
-
-```
-$ zenml profile list
-Creating default profile...
-Initializing profile `default`...
-Initializing store...
-Registered stack component with type 'orchestrator' and name 'default'.
-Registered stack component with type 'metadata_store' and name 'default'.
-Registered stack component with type 'artifact_store' and name 'default'.
-Registered stack with name 'default'.
-Created and activated default profile.
-Running without an active repository root.
-Running with active profile: 'default' (global)
-┏━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃ ACTIVE │ PROFILE NAME │ STORE TYPE │ URL               │ ACTIVE STACK ┃
-┠────────┼──────────────┼────────────┼───────────────────┼──────────────┨
-┃   👉   │ default      │ local      │ file:///home/ste… │ default      ┃
-┗━━━━━━━━┷━━━━━━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
-```
-
-Additional Profiles can be created by running `zenml profile create`. Every
-Profile, including the `default` profile will have a `default` local Stack
-automatically registered and set as the active Stack for that Profile.
+The default configuration is to store all this information on the local
+filesystem:
 
 ```
-$ zenml profile create zenml
+$ zenml config show
 Running without an active repository root.
-Running with active profile: 'default' (global)
-Initializing profile `zenml`...
-Initializing store...
-Registered stack component with type 'orchestrator' and name 'default'.
-Registered stack component with type 'metadata_store' and name 'default'.
-Registered stack component with type 'artifact_store' and name 'default'.
-Registered stack with name 'default'.
-Profile 'zenml' successfully created.
-
-$ zenml profile list
-Running without an active repository root.
-Running with active profile: 'default' (global)
-┏━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃ ACTIVE │ PROFILE NAME │ STORE TYPE │ URL               │ ACTIVE STACK ┃
-┠────────┼──────────────┼────────────┼───────────────────┼──────────────┨
-┃   👉   │ default      │ local      │ file:///home/ste… │ default      ┃
-┃        │ zenml        │ local      │ file:///home/ste… │ default      ┃
-┗━━━━━━━━┷━━━━━━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+The global store configuration is in effect (/home/stefan/.config/zenml/config.yaml):
+ - type: sql
+ - url: sqlite:////home/stefan/.config/zenml/zenml.db
+The active stack is: 'default' (global)
+The active project is not set.
 ```
 
-Any Profile can be set as the active Profile by running `zenml profile set`.
-The active Profile determines the Stacks and Stack Components that are
-available for use by ZenML pipelines. New Stacks and Stack Components
-registered via the CLI are added to the active Profile and will only be
-available as long as that Profile is active.
+The `zenml config set` CLI command can be used to change the global
+configuration as well as the local configuration of a specific repository to
+store the data on a remote ZenML server.
+
+To change the global configuration to use a remote ZenML server, pass the URL
+where the server can be reached along with the authentication credentials:
 
 ```
-$ zenml profile set zenml
-Running without an active repository root.
-Running with active profile: 'default' (global)
-Active profile changed to: 'zenml'
+$ zenml config set --url=http://localhost:8080 --username=default
+Updated the global store configuration.
 
-$ zenml stack register local -m default -a default -o default
+$ zenml config show
 Running without an active repository root.
-Running with active profile: 'zenml' (global)
-Registered stack with name 'local'.
-Stack 'local' successfully registered!
-
-$ zenml stack set local
-Running without an active repository root.
-Running with active profile: 'zenml' (global)
-Active stack set to: 'local'
-
-$ zenml stack list
-Running without an active repository root.
-Running with active profile: 'zenml' (global)
-┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ METADATA_STORE │ ORCHESTRATOR ┃
-┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
-┃        │ default    │ default        │ default        │ default      ┃
-┃   👉   │ local      │ default        │ default        │ default      ┃
-┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+The global store configuration is in effect (/home/stefan/.config/zenml/config.yaml):
+ - type: rest
+ - url: http://localhost:8080
+ - username: default
+ - password:
+The active stack is: 'default' (global)
+The active project is 'default' (global).
 ```
 
-All other ZenML commands and the ZenML pipeline themselves will run
-in the context of the active Profile and will only have access to the
-Stacks and Stack Components configured for that Profile.
+To switch the global configuration back to the default local store, pass the
+`--local-store` flag:
 
-When running inside an initialized ZenML Repository, the active Profile
-and active Stack can also be configured locally, just for that particular
-Repository. The Stacks and Stack Components visible inside a Repository are
-those configured for the active Profile.
+```
+$ zenml config set --local-store
+Using the default store for the global config.
+
+$ zenml config show
+Running without an active repository root.
+The global store configuration is in effect (/home/stefan/.config/zenml/config.yaml):
+ - type: sql
+ - url: sqlite:////home/stefan/.config/zenml/zenml.db
+The active stack is: 'default' (global)
+The active project is not set.
+```
+
+Newly initialized repositories don't have a store configuration yet, which
+means that they will use the same stacks available in the global configuration.
 
 ```
 /tmp/zenml$ zenml init
+Initializing ZenML repository at /tmp/zenml.
 ZenML repository initialized at /tmp/zenml.
-The local active profile was initialized to 'zenml' and the local active stack
-to 'local'. This local configuration will only take effect when you're running
-ZenML from the initialized repository root, or from a subdirectory. For more
-information on profile and stack configuration, please run 'zenml profile
-explain'.
 
-/tmp/zenml$ zenml stack list
-Running with active profile: 'zenml' (local)
-┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ METADATA_STORE │ ORCHESTRATOR ┃
-┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
-┃        │ default    │ default        │ default        │ default      ┃
-┃   👉   │ local      │ default        │ default        │ default      ┃
-┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+/tmp/zenml$ zenml config show
+Active repository root: /tmp/zenml
+The global store configuration is in effect (/home/stefan/.config/zenml/config.yaml):
+ - type: sql
+ - url: sqlite:////home/stefan/.config/zenml/zenml.db
+The active stack is: 'default' (repository)
+The active project is not set.
+```
 
-/tmp/zenml$ zenml stack set default
-Running with active profile: 'zenml' (local)
-Active stack set to: 'default'
+The repository can be configured with storage settings independent from the
+global configuration by passing the `--repo` flag to the `zenml config set`
+command. Note that this only works when a repository is active.
 
-/tmp/zenml$ zenml stack list
-Running with active profile: 'zenml' (local)
-┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ METADATA_STORE │ ORCHESTRATOR ┃
-┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
-┃   👉   │ default    │ default        │ default        │ default      ┃
-┃        │ local      │ default        │ default        │ default      ┃
-┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+The following configures a repository to store stacks, stack components etc.
+in a database that is stored in the repository root directory. The stacks
+and other objects stored in the repository will only be visible while the
+repository is active:
 
-/tmp/zenml$ cd ..
-/tmp$ zenml stack list
-Running without an active repository root.
-Running with active profile: 'zenml' (global)
-┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ METADATA_STORE │ ORCHESTRATOR ┃
-┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
-┃        │ default    │ default        │ default        │ default      ┃
-┃   👉   │ local      │ default        │ default        │ default      ┃
-┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+```
+tmp/zenml$ zenml config set --repo --local-store
+Initializing database...
+Registered stack with name 'default'.
+Using the default store for the repository config.
+
+/tmp/zenml$ zenml config show
+Active repository root: /tmp/zenml
+The repository store configuration is in effect (/tmp/zenml/.zen/config.yaml):
+ - type: sql
+ - url: sqlite:////tmp/zenml/.zen/zenml.db
+The active stack is: 'default' (repository)
+The active project is not set.
 ```
 """
             )

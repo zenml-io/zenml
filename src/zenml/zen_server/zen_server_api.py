@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Zen Server API."""
 
-import os
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
@@ -23,9 +22,7 @@ from pydantic import BaseModel
 
 import zenml
 from zenml.config.global_config import GlobalConfiguration
-from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import (
-    ENV_ZENML_PROFILE_NAME,
     FLAVORS,
     PIPELINE_RUNS,
     PROJECTS,
@@ -47,7 +44,6 @@ from zenml.exceptions import (
     StackExistsError,
 )
 from zenml.repository import Repository
-from zenml.zen_stores import BaseZenStore
 from zenml.zen_stores.models import (
     ComponentWrapper,
     FlavorWrapper,
@@ -61,35 +57,17 @@ from zenml.zen_stores.models import (
 )
 from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
 
-profile_name = os.environ.get(ENV_ZENML_PROFILE_NAME)
-
-# Check if profile name was passed as env variable:
-if profile_name:
-    profile = (
-        GlobalConfiguration().get_profile(profile_name)
-        or Repository().active_profile
-    )
-# Fallback to what Repository thinks is the active profile
-else:
-    profile = Repository().active_profile
-
-if profile.store_type == StoreType.REST:
-    raise ValueError(
-        "Server cannot be started with REST store type. Make sure you "
-        "specify a profile with a non-networked persistence backend "
-        "when trying to start the ZenServer. (use command line flag "
-        "`--profile=$PROFILE_NAME` or set the env variable "
-        f"{ENV_ZENML_PROFILE_NAME} to specify the use of a profile "
-        "other than the currently active one)"
-    )
-# We initialize with track_analytics=False because we do not
+zen_store = Repository().zen_store
+# We override track_analytics=False because we do not
 # want to track anything server side.
-zen_store: BaseZenStore = Repository.create_store(
-    profile,
-    skip_default_registrations=True,
-    track_analytics=False,
-    skip_migration=True,
-)
+zen_store.track_analytics = False
+
+if zen_store.type == StoreType.REST:
+    raise ValueError(
+        "Server cannot be started with a REST store type. Make sure you "
+        "configure ZenML to use a non-networked store backend "
+        "when trying to start the ZenServer."
+    )
 
 
 class ErrorModel(BaseModel):
@@ -170,14 +148,14 @@ def conflict(error: Exception) -> HTTPException:
     return HTTPException(status_code=409, detail=error_detail(error))
 
 
-@authed.get("/", response_model=ProfileConfiguration)
-async def service_info() -> ProfileConfiguration:
-    """Returns the profile configuration for this service.
+@authed.get("/", response_model=GlobalConfiguration)
+async def service_info() -> GlobalConfiguration:
+    """Returns the global configuration for this service.
 
     Returns:
-        Profile configuration for this service.
+        Global configuration for this service.
     """
-    return profile
+    return GlobalConfiguration()
 
 
 @app.head("/health")

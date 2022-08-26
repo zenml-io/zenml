@@ -13,21 +13,15 @@
 #  permissions and limitations under the License.
 """Zen Server implementation."""
 
-import os
 from typing import Any, Dict, Optional, Union
 
 import uvicorn  # type: ignore[import]
-from pydantic import Field
 
-from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
-    ENV_ZENML_PROFILE_NAME,
     ZEN_SERVER_ENTRYPOINT,
 )
-from zenml.enums import StoreType
 from zenml.logger import get_logger
-from zenml.repository import Repository
 from zenml.services import (
     HTTPEndpointHealthMonitor,
     HTTPEndpointHealthMonitorConfig,
@@ -86,14 +80,10 @@ class ZenServerConfig(LocalDaemonServiceConfig):
         ip_address: The IP address where the ZenServer will listen for
             connections
         port: Port at which the the ZenServer is accepting connections
-        profile_name: name of the Profile to use to store data.
     """
 
     ip_address: str = DEFAULT_LOCAL_SERVICE_IP_ADDRESS
     port: int = 8000
-    profile_name: str = Field(
-        default_factory=lambda: Repository().active_profile_name
-    )
 
 
 class ZenServer(LocalDaemonService):
@@ -150,35 +140,13 @@ class ZenServer(LocalDaemonService):
         super().__init__(config=config, **attrs)
 
     def run(self) -> None:
-        """Run the ZenServer.
-
-        Raises:
-            ValueError: if unable to find the profile.
-        """
-        profile = GlobalConfiguration().get_profile(self.config.profile_name)
-        if profile is None:
-            raise ValueError(
-                f"Could not find profile with name {self.config.profile_name}."
-            )
-
-        if profile.store_type == StoreType.REST:
-            raise ValueError(
-                "Service cannot be started with REST store type. Make sure you "
-                "specify a profile with a non-networked persistence backend "
-                "when trying to start the ZenServer. (use command line flag "
-                "`--profile=$PROFILE_NAME` or set the env variable "
-                f"{ENV_ZENML_PROFILE_NAME} to specify the use of a profile "
-                "other than the currently active one)"
-            )
+        """Run the ZenServer."""
         logger.info(
             "Starting ZenServer as blocking "
             "process... press CTRL+C once to stop it."
         )
 
         self.endpoint.prepare_for_start()
-
-        # this is the only way to pass information into the FastAPI app??
-        os.environ["ZENML_PROFILE_NAME"] = self.config.profile_name
 
         try:
             uvicorn.run(
