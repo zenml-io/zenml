@@ -42,20 +42,20 @@ class StackModel(BaseModel):
     )
     components: Dict[StackComponentType, str] = Field(
         title="A mapping of stack component types to the id's of"
-              "instances of components of this type."
+        "instances of components of this type."
     )
     is_shared: bool = Field(
-        default=False, title="The id of the user, that owns this stack.",
+        default=False,
+        title="The id of the user, that owns this stack.",
     )
-    project: str = Field(
-        title="The project that contains this stack. "
-    )
+    project: str = Field(title="The project that contains this stack. ")
     owner: str = Field(
         title="The id of the user, that created this stack.",
     )
     created_at: str = Field(
         title="The time at which the stack was registered.",
     )
+
     class Config:
         schema_extra = {
             "example": {
@@ -69,7 +69,7 @@ class StackModel(BaseModel):
                 "is_shared": "True",
                 "project": "cat_project",
                 "owner": "8d0acbc3-c51a-452c-bda3-e1b5469f79fd",
-                "created_at": "2022-08-12T07:12:45.931Z"
+                "created_at": "2022-08-12T07:12:45.931Z",
             }
         }
 
@@ -121,7 +121,8 @@ class StackModel(BaseModel):
         if component_type in self.components.keys():
             repo = Repository()
             component_model = repo.zen_store.get_stack_component(
-                component_type, self.components[component_type])
+                component_type, self.components[component_type]
+            )
 
             return component_model
 
