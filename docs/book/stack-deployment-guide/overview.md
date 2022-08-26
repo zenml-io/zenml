@@ -2,7 +2,7 @@
 description: An overview of cloud infrastructure for your ML workflows
 ---
 
-There can be many motivations behind taking your ML application setup to a cloud environment, from needing specialized compute 💪 for training jobs to having a 24x7 load-balanced deployment of your trained model, serving user requests 🚀. 
+There are many reasons why you might want to move your ML application setup to a cloud environment, from a need for specialized compute 💪 for training jobs to having requirements for a 24x7 load-balanced deployment of your trained model, serving user requests 🚀. 
 
 With ZenML, there are two kinds of deployments to keep in mind:
 - The ZenML Core infrastructure deployment - this pertains to deploying ZenML itself. Once ZenServer is integrated with the ZenML metadata store, this will hold more relevance so keep an eye out!
@@ -20,12 +20,12 @@ If you've have never worked on the infrastructure side of things before and don'
 
 ### Manual Deployments 👷
 
-If you're experienced in operations and prefer having the knowledge of every cloud resource that is being set up, intimately, we have a step-by-step guide for AWS, Azure and GCP grouped under [Manual Deployments](./manual-deployments/) with detailed information on every stack component along with other essential things like roles, permissions, connection settings and more. Head over to the page corresponding to your cloud provider to get started!
+If you're experienced in operations and prefer to manage every last specific of every cloud resource that is being set up, we have a step-by-step guide for AWS, Azure and GCP grouped under [Manual Deployments](./manual-deployments/) with detailed information on every stack component along with other essential things like roles, permissions, connection settings and more. Head over to the page corresponding to your cloud provider to get started!
 
 ### Deployments using Terraform 🙅
 
 If you don't want to use ZenML but still need the speed that comes with stack recipes,
-we've got you covered, yet again! Check out [Deployments using Terraform](./deploy-terraform.md) to learn how you can use Terraform to create new stacks using the stack recipes, without having to install ZenML.
+we've still got you covered! Check out [Deployments using Terraform](./deploy-terraform.md) to learn how you can use Terraform to create new stacks using the stack recipes, without having to install ZenML.
 
 ## 🙆 I can't really decide between these options. What is the recommended approach?
 ZenML recommends the use of the stack recipes inside the [mlops-stacks repository](https://github.com/zenml-io/mlops-stacks) as the fastest and most reliable way to set up your stack. It has the following advantages:

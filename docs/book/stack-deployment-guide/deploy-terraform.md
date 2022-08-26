@@ -10,7 +10,7 @@ As mentioned in the [overview](./overview.md), you can still use the recipe with
 
 2. 🔐 Add your secret information like keys and passwords into the `values.tfvars.json` file which is not committed and only exists locally.
 
-3. Initiliaze Terraform modules and download provider definitions.
+3. Initialize Terraform modules and download provider definitions.
     ```
     terraform init
     ```
@@ -22,7 +22,7 @@ As mentioned in the [overview](./overview.md), you can still use the recipe with
 
 ## Getting the outputs
 
-For outputs that are sensitive, you'll see that they are not shown directly on the logs. To view the full list of outputs, run the following command.
+For outputs that are sensitive, you'll see that they are not shown directly on the logs. To view the full list of outputs, run the following command:
 
 ```
 terraform output
