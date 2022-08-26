@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the local Docker entrypoint configuration."""
 
-from typing import Any, List, Set
+from typing import Any, List, Set, cast
 
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.steps import BaseStep
@@ -61,4 +61,4 @@ class LocalDockerEntrypointConfiguration(StepEntrypointConfiguration):
         Returns:
             The pipeline run name.
         """
-        return self.entrypoint_args[RUN_NAME_OPTION]
+        return cast(str, self.entrypoint_args[RUN_NAME_OPTION])

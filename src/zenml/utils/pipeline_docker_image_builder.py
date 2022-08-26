@@ -266,6 +266,11 @@ class PipelineDockerImageBuilder(BaseModel):
             stack: The stack on which the pipeline will be executed.
             entrypoint: Entrypoint to use for the final image. If left empty,
                 no entrypoint will be included in the image.
+
+        Raises:
+            ValueError: If no Dockerfile and/or custom parent image is
+                specified and the Docker configuration doesn't require an
+                image build.
         """
         requires_zenml_build = any(
             [
@@ -405,9 +410,6 @@ class PipelineDockerImageBuilder(BaseModel):
 
         Raises:
             RuntimeError: If the stack doesn't contain a container registry.
-            ValueError: If no Dockerfile and/or custom parent image is
-                specified and the Docker configuration doesn't require an
-                image build.
         """
         container_registry = stack.container_registry
         if not container_registry:
