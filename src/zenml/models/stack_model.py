@@ -25,7 +25,15 @@ from zenml.stack import Stack
 
 
 class StackModel(BaseModel):
-    """Network Serializable Wrapper describing a Stack."""
+    """Network Serializable Model describing the Stack.
+
+    name, description, components and is_shared can be specified explicitly by
+    the user through the user interface.
+
+    project, owner, created_at are added implicitly within domain logic
+
+    id is set when the database entry is created
+    """
 
     id: UUID
     name: str
@@ -34,15 +42,20 @@ class StackModel(BaseModel):
     )
     components: Dict[StackComponentType, str] = Field(
         title="A mapping of stack component types to the id's of"
-        "instances of components of this type."
+              "instances of components of this type."
     )
-    created_by: str = Field(
+    is_shared: bool = Field(
+        default=False, title="The id of the user, that owns this stack.",
+    )
+    project: str = Field(
+        title="The project that contains this stack. "
+    )
+    owner: str = Field(
         title="The id of the user, that created this stack.",
     )
     created_at: str = Field(
         title="The time at which the stack was registered.",
     )
-
     class Config:
         schema_extra = {
             "example": {
@@ -53,8 +66,10 @@ class StackModel(BaseModel):
                     "alerter": "d3bbe238-d42a-42a2-b6a6-2319c4fbe5c9",
                     "orchestrator": "5e4286b5-51f4-4286-b1f8-b0143e9a27ce",
                 },
-                "created_by": "8d0acbc3-c51a-452c-bda3-e1b5469f79fd",
-                "created_at": "2022-08-12T07:12:45.931Z",
+                "is_shared": "True",
+                "project": "cat_project",
+                "owner": "8d0acbc3-c51a-452c-bda3-e1b5469f79fd",
+                "created_at": "2022-08-12T07:12:45.931Z"
             }
         }
 
@@ -106,8 +121,7 @@ class StackModel(BaseModel):
         if component_type in self.components.keys():
             repo = Repository()
             component_model = repo.zen_store.get_stack_component(
-                component_type, self.components[component_type]
-            )
+                component_type, self.components[component_type])
 
             return component_model
 

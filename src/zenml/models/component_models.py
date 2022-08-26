@@ -31,7 +31,15 @@ logger = get_logger(__name__)
 
 
 class ComponentModel(BaseModel):
-    """Serializable Configuration of a StackComponent."""
+    """Network Serializable Model describing the StackComponent.
+
+    name, type, flavor and config are specified explicitly by the user
+    through the user interface. These values + owner can be updated.
+
+    owner, created_by, created_at are added implicitly set within domain logic
+
+    id is set when the database entry is created
+    """
 
     id: UUID = Field(
         title="The id of the Stack Component.",
@@ -48,6 +56,9 @@ class ComponentModel(BaseModel):
     config: bytes = Field(  # b64 encoded yaml config
         title="The id of the Stack Component.",
     )
+    owner: str = Field(
+        title="The id of the user, that owns this component.",
+    )
     created_by: str = Field(
         title="The id of the user, that created this component.",
     )
@@ -62,7 +73,8 @@ class ComponentModel(BaseModel):
                 "name": "vertex_prd_orchestrator",
                 "type": "orchestrator",
                 "flavor": "vertex",
-                "config": b"RANDOM64STRING",
+                "config": b'RANDOM64STRING',
+                "owner": "8d0acbc3-c51a-452c-bda3-e1b5469f79fd",
                 "created_by": "8d0acbc3-c51a-452c-bda3-e1b5469f79fd",
                 "created_at": "2022-08-12T07:12:44.931Z",
             }

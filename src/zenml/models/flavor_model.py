@@ -29,6 +29,7 @@ class FlavorModel(BaseModel):
     This represents the custom implementation of a stack component flavor.
     """
 
+    id: Optional[str]
     name: str
     type: StackComponentType
     source: str
