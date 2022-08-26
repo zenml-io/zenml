@@ -28,7 +28,7 @@ If you don't want to use ZenML but still need the speed that comes with stack re
 we've still got you covered! Check out [Deployments using Terraform](./deploy-terraform.md) to learn how you can use Terraform to create new stacks using the stack recipes, without having to install ZenML.
 
 ## 🙆 I can't really decide between these options. What is the recommended approach?
-ZenML recommends the use of the stack recipes inside the [mlops-stacks repository](https://github.com/zenml-io/mlops-stacks) as the fastest and most reliable way to set up your stack. It has the following advantages:
+ZenML recommends you use the stack recipes inside the [mlops-stacks repository](https://github.com/zenml-io/mlops-stacks) as the fastest and most reliable way to set up your stack. It has the following advantages:
 - Easy and fast deployment with a single command 🤯.
 - Simple and efficient to modify any of the components: You can change properties in a config file and Terraform identifies and applies only the relevant changes 😎.
 - Comprehensive clean-up: `zenml stack recipe destroy <RECIPE_NAME>` completely deletes any resources that the module had created anywhere in your cloud. Thus, you can be sure that there are no extra bills that you will tragically discover going forward 😉.
