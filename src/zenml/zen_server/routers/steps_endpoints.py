@@ -16,6 +16,7 @@ from typing import Dict, List
 from fastapi import APIRouter, Depends, HTTPException
 
 from zenml.constants import OUTPUTS, STEPS
+from zenml.models.pipeline_models import StepModel
 from zenml.zen_server.utils import (
     authorize,
     error_detail,
@@ -36,7 +37,7 @@ router = APIRouter(
     response_model=Dict,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_step(step_id: str) -> Dict:
+async def get_step(step_id: str) -> StepModel:
     """Get one specific step.
 
     Args:

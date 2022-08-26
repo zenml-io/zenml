@@ -94,14 +94,13 @@ async def create_project(project: Project) -> Project:
         The created project.
 
     Raises:
+        conflict: when project already exists
         401 error: when not authorized to login
         409 error: when trigger does not exist
         422 error: when unable to validate input
     """
     try:
-        return zen_store.create_project(
-            project_name=project.name, description=project.description
-        )
+        return zen_store.create_project(project)
     except EntityExistsError as error:
         raise conflict(error) from error
     except NotAuthorizedError as error:
@@ -129,6 +128,7 @@ async def get_project(project_name: str) -> Project:
         The requested project.
 
     Raises:
+        not_found: when project does not exist
         401 error: when not authorized to login
         404 error: when trigger does not exist
         422 error: when unable to validate input
@@ -137,8 +137,6 @@ async def get_project(project_name: str) -> Project:
         return zen_store.get_project(project_name)
     except KeyError as error:
         raise not_found(error) from error
-    except EntityExistsError as error:
-        raise conflict(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:
@@ -152,31 +150,28 @@ async def get_project(project_name: str) -> Project:
     response_model=Project,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def update_project(
-    project_name: str, updated_project: Project
-) -> Project:
+async def update_project(project_name: str, project: Project) -> Project:
     """Get a project for given name.
 
     # noqa: DAR401
 
     Args:
         project_name: Name of the project to update.
-        updated_project: the project to use to update
+        project: the project to use to update
 
     Returns:
         The updated project.
 
     Raises:
+        not_found: when project does not exist
         401 error: when not authorized to login
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
     try:
-        return zen_store.update_project(project_name, updated_project)
+        return zen_store.update_project(project_name, project)
     except KeyError as error:
         raise not_found(error) from error
-    except EntityExistsError as error:
-        raise conflict(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:
@@ -229,6 +224,7 @@ async def get_project_stacks(project_name: str) -> List[StackModel]:
         All stacks part of the specified project.
 
     Raises:
+        not_found: when project does not exist
         401 error: when not authorized to login
         404 error: when trigger does not exist
         422 error: when unable to validate input
@@ -257,16 +253,22 @@ async def create_stack(project_name: str, stack: StackModel) -> StackModel:
         project_name: Name of the project.
         stack: Stack to register.
 
+    Returns:
+        The created stack.
+
     Raises:
+        conflict: when an identical stack already exists
         401 error: when not authorized to login
         409 error: when trigger does not exist
         422 error: when unable to validate input
     """
     try:
-        return zen_store.create_stack(
-            project_name, stack
-        )  ## TODO: originally register_stack
-    except (StackExistsError, StackComponentExistsError) as error:
+        return zen_store.create_stack(project_name, stack)
+    except (
+        StackExistsError,
+        StackComponentExistsError,
+        EntityExistsError,
+    ) as error:
         raise conflict(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))

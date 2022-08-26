@@ -11,9 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Dict
+from typing import Union
 
 from fastapi import APIRouter, Depends, HTTPException
+from ml_metadata.proto import metadata_store_pb2
 
 from zenml.constants import METADATA_CONFIG
 from zenml.zen_server.utils import (
@@ -33,11 +34,17 @@ router = APIRouter(
 
 @router.get(
     "/",
-    response_model=Dict,
+    response_model=Union[
+        metadata_store_pb2.ConnectionConfig,
+        metadata_store_pb2.MetadataStoreClientConfig,
+    ],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_metadata_config() -> Dict:
-    """Returns the metadata config.
+async def get_metadata_config() -> Union[
+    metadata_store_pb2.ConnectionConfig,
+    metadata_store_pb2.MetadataStoreClientConfig,
+]:
+    """Gets the metadata config.
 
     Returns:
         The metadata config.
@@ -48,9 +55,7 @@ async def get_metadata_config() -> Dict:
         422 error: when unable to validate input
     """
     try:
-        return (
-            zen_store.get_metadata_config()
-        )  # TODO: same as zen_store._get_tfx_metadata_config() ???
+        return zen_store.get_metadata_config()
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:

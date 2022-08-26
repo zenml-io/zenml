@@ -15,12 +15,18 @@
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+from ml_metadata.proto import metadata_store_pb2
 
 from zenml.enums import StackComponentType, StoreType
+from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.logger import get_logger
 from zenml.models import ComponentModel, FlavorModel, StackModel
+from zenml.models.pipeline_models import StepModel
+from zenml.models.user_management_models import Project, Role, User
 from zenml.stack import Stack
+from zenml.utils.analytics_utils import AnalyticsEvent
 
 logger = get_logger(__name__)
 
@@ -286,6 +292,341 @@ class BaseZenStore(ABC):
             component_id, run_id, pipeline_id, stack_id
         )
 
+    #  .------.
+    # | STEPS |
+    # '-------'
+
+    # TODO: change into an abstract method
+    def get_step(self, step_id: str) -> StepModel:
+        """Get a step by id.
+
+        Args:
+            step_id: The id of the step to get.
+
+        Returns:
+            The step with the given id.
+        """
+        return self._get_step(step_id)
+
+    # TODO: change into an abstract method
+    # TODO: use the correct return value + also amend the endpoint as well
+    def get_step_outputs(self, step_id: str) -> Dict[str, ArtifactView]:
+        """Get a list of outputs for a specific step.
+
+        Args:
+            step_id: The id of the step to get outputs for.
+
+        Returns:
+            A list of Dicts mapping artifact names to the output artifacts for the step.
+        """
+        return self._get_step_outputs(step_id)
+
+    # TODO: change into an abstract method
+    # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
+    def get_step_inputs(self, step_id: str) -> Dict[str, ArtifactView]:
+        """Get a list of inputs for a specific step.
+
+        Args:
+            step_id: The id of the step to get inputs for.
+
+        Returns:
+            A list of Dicts mapping artifact names to the input artifacts for the step.
+        """
+        return self._get_step_inputs(step_id)
+
+    # TODO: change into an abstract method
+    # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
+    # TODO: Discuss whether we even need this, given that the endpoint is on
+    # pipeline RUNs
+    # TODO: [ALEX] add filtering param(s)
+    def list_steps(self, pipeline_id: str) -> List[StepModel]:
+        """List all steps for a specific pipeline.
+
+        Args:
+            pipeline_id: The id of the pipeline to get steps for.
+
+        Returns:
+            A list of all steps for the pipeline.
+        """
+        return self._list_steps(pipeline_id)
+
+    #  .------.
+    # | USERS |
+    # '-------'
+
+    # TODO: make the invite_token optional
+    # TODO: [ALEX] add filtering param(s)
+    def list_users(self, invite_token: str = None) -> List[User]:
+        """List all users.
+
+        Args:
+            invite_token: Token to use for the invitation.
+
+        Returns:
+            A list of all users.
+        """
+        return self._list_users(invite_token=invite_token)
+
+    def create_user(self, user: User) -> User:
+        """Creates a new user.
+
+        Args:
+            user: User to be created.
+
+        Returns:
+            The newly created user.
+        """
+        self._track_event(AnalyticsEvent.CREATED_USER)
+        return self._create_user(user)
+
+    def get_user(self, user_id: str, invite_token: str = None) -> User:
+        """Gets a specific user.
+
+        Args:
+            user_name: Name of the user to get.
+            invite_token: Token to use for the invitation.
+
+        Returns:
+            The requested user.
+        """
+        # No tracking events, here for consistency
+        return self._get_user(user_id, invite_token=invite_token)
+
+    def update_user(self, user_id: str, user: User) -> User:
+        """Updates an existing user.
+
+        Args:
+            user_id: The id of the user to update.
+            user: The user to use for the update.
+
+        Returns:
+            The updated user.
+        """
+        # No tracking events, here for consistency
+        return self._update_user(user_id, user)
+
+    def delete_user(self, user_id: str) -> None:
+        """Deletes a user.
+
+        Args:
+            user_id: ID of the user to delete.
+        """
+        self._track_event(AnalyticsEvent.DELETED_USER)
+        return self._delete_user(user_id)
+
+    @abstractmethod
+    def get_role_assignments_for_user(
+        self,
+        user_id: str,
+        # include_team_roles: bool = True, # TODO: Remove these from the
+        # SQLStore implementation
+    ) -> List[Role]:
+        """Fetches all role assignments for a user.
+
+        Args:
+            user_id: ID of the user.
+
+        Returns:
+            List of role assignments for this user.
+
+        Raises:
+            KeyError: If no user or project with the given names exists.
+        """
+
+    @abstractmethod
+    def assign_role(
+        self,
+        user_id: str,
+        role: Role,
+    ) -> None:
+        """Assigns a role to a user or team.
+
+        Args:
+            user_id: ID of the user.
+            role: Role to assign to the user.
+
+        Raises:
+            KeyError: If no user with the given ID exists.
+        """
+
+    # TODO: Check whether this needs to be an abstract method or not (probably?)
+    @abstractmethod
+    def get_invite_token(self, user_id: str) -> str:
+        """Gets an invite token for a user.
+
+        Args:
+            user_id: ID of the user.
+
+        Returns:
+            The invite token for the specific user.
+        """
+
+    @abstractmethod
+    def invalidate_invite_token(self, user_id: str) -> None:
+        """Invalidates an invite token for a user.
+
+        Args:
+            user_id: ID of the user.
+        """
+
+    def delete_role(self, user_id: str, role_id: str) -> None:
+        """Deletes a role.
+
+        Args:
+            user_id: ID of the user.
+            role_id: ID of the role.
+        """
+        self._track_event(AnalyticsEvent.DELETED_ROLE)
+        return self._delete_role(user_id, role_id)
+
+    #  .------.
+    # | ROLES |
+    # '-------'
+
+    # TODO: [ALEX] add filtering param(s)
+    @abstractmethod
+    def list_roles(self) -> List[Role]:
+        """List all roles.
+
+        Returns:
+            A list of all roles.
+        """
+
+    #  .----------------.
+    # | METADATA_CONFIG |
+    # '-----------------'
+
+    @abstractmethod
+    def get_metadata_config(
+        self,
+    ) -> Union[
+        metadata_store_pb2.ConnectionConfig,
+        metadata_store_pb2.MetadataStoreClientConfig,
+    ]:
+        """Get the TFX metadata config of this ZenStore.
+
+        Returns:
+            The TFX metadata config of this ZenStore.
+        """
+
+    #  .---------.
+    # | PROJECTS |
+    # '----------'
+
+    # TODO: [ALEX] add filtering param(s)
+    @abstractmethod
+    def list_projects(self) -> List[Project]:
+        """List all projects.
+
+        Returns:
+            A list of all projects.
+        """
+
+    def create_project(self, project: Project) -> Project:
+        """Creates a new project.
+
+        Args:
+            project: The project to create.
+
+        Returns:
+            The newly created project.
+
+        Raises:
+            EntityExistsError: If an identical project already exists.
+        """
+        self._track_event(AnalyticsEvent.CREATED_PROJECT)
+        return self._create_project(project)
+
+    def get_project(self, project_name: str) -> Project:
+        """Gets a specific project.
+
+        Args:
+            project_name: Name of the project to get.
+
+        Returns:
+            The requested project.
+
+        Raises:
+            KeyError: If there is no such project.
+        """
+        # No tracking events, here for consistency
+        return self._get_project(project_name)
+
+    def update_project(self, project_name: str, project: Project) -> Project:
+        """Updates an existing project.
+
+        Args:
+            project_name: Name of the project to update.
+            project: The project to use for the update.
+
+        Returns:
+            The updated project.
+
+        Raises:
+            KeyError: if the project does not exist.
+        """
+        # No tracking events, here for consistency
+        return self._update_project(project_name, project)
+
+    def delete_project(self, project_name: str) -> None:
+        """Deletes a project.
+
+        Args:
+            project_name: Name of the project to delete.
+
+        Raises:
+            KeyError: If the project does not exist.
+        """
+        self._track_event(AnalyticsEvent.DELETED_PROJECT)
+        return self._delete_project(project_name)
+
+    def get_project_stacks(self, project_name: str) -> List[StackModel]:
+        """Gets all stacks in a project.
+
+        Args:
+            project_name: Name of the project to get.
+
+        Returns:
+            A list of all stacks in the project.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
+        return self._get_project_stacks(project_name)
+
+    def create_stack(self, project_name: str, stack: StackModel) -> StackModel:
+        """Creates a new stack in a project.
+
+        Args:
+            project_name: Name of the project to create the stack in.
+            stack: The stack to create.
+
+        Returns:
+            The newly created stack.
+
+        Raises:
+            EntityExistsError: If an identical stack already exists.
+        """
+        self._track_event(AnalyticsEvent.CREATED_STACK)
+        return self._create_stack(project_name, stack)
+
+    # TODO: [ALEX] add filtering param(s)
+    def list_project_stack_components(
+        self, project_name: str
+    ) -> List[ComponentModel]:
+        """Gets all components in a project.
+
+        Args:
+            project_name: Name of the project for which to get the components.
+
+        Returns:
+            A list of all components in the project.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
+        return self._list_project_stack_components(project_name)
+
     # @abstractmethod
     # def get_stack_configuration(
     #     self, name: str
@@ -312,19 +653,6 @@ class BaseZenStore(ABC):
     #     """
 
     # # Private interface (must be implemented, not to be called by user):
-
-    # @abstractmethod
-    # def _get_tfx_metadata_config(
-    #     self,
-    # ) -> Union[
-    #     metadata_store_pb2.ConnectionConfig,
-    #     metadata_store_pb2.MetadataStoreClientConfig,
-    # ]:
-    #     """Get the TFX metadata config of this ZenStore.
-
-    #     Returns:
-    #         The TFX metadata config of this ZenStore.
-    #     """
 
     # @abstractmethod
     # def _register_stack_component(
@@ -432,54 +760,6 @@ class BaseZenStore(ABC):
 
     # @property
     # @abstractmethod
-    # def users(self) -> List[User]:
-    #     """All registered users.
-
-    #     Returns:
-    #         A list of all registered users.
-    #     """
-
-    # @abstractmethod
-    # def _get_user(self, user_name: str) -> User:
-    #     """Get a specific user by name.
-
-    #     Args:
-    #         user_name: Name of the user to get.
-
-    #     Returns:
-    #         The requested user, if it was found.
-
-    #     Raises:
-    #         KeyError: If no user with the given name exists.
-    #     """
-
-    # @abstractmethod
-    # def _create_user(self, user_name: str) -> User:
-    #     """Creates a new user.
-
-    #     Args:
-    #         user_name: Unique username.
-
-    #     Returns:
-    #          The newly created user.
-
-    #     Raises:
-    #         EntityExistsError: If a user with the given name already exists.
-    #     """
-
-    # @abstractmethod
-    # def _delete_user(self, user_name: str) -> None:
-    #     """Deletes a user.
-
-    #     Args:
-    #         user_name: Name of the user to delete.
-
-    #     Raises:
-    #         KeyError: If no user with the given name exists.
-    #     """
-
-    # @property
-    # @abstractmethod
     # def teams(self) -> List[Team]:
     #     """All registered teams.
 
@@ -552,66 +832,6 @@ class BaseZenStore(ABC):
 
     # @property
     # @abstractmethod
-    # def projects(self) -> List[Project]:
-    #     """All registered projects.
-
-    #     Returns:
-    #         A list of all registered projects.
-    #     """
-
-    # @abstractmethod
-    # def _get_project(self, project_name: str) -> Project:
-    #     """Get an existing project by name.
-
-    #     Args:
-    #         project_name: Name of the project to get.
-
-    #     Returns:
-    #         The requested project if one was found.
-
-    #     Raises:
-    #         KeyError: If there is no such project.
-    #     """
-
-    # @abstractmethod
-    # def _create_project(
-    #     self, project_name: str, description: Optional[str] = None
-    # ) -> Project:
-    #     """Creates a new project.
-
-    #     Args:
-    #         project_name: Unique project name.
-    #         description: Optional project description.
-
-    #     Returns:
-    #         The newly created project.
-
-    #     Raises:
-    #         EntityExistsError: If a project with the given name already exists.
-    #     """
-
-    # @abstractmethod
-    # def _delete_project(self, project_name: str) -> None:
-    #     """Deletes a project.
-
-    #     Args:
-    #         project_name: Name of the project to delete.
-
-    #     Raises:
-    #         KeyError: If no project with the given name exists.
-    #     """
-
-    # @property
-    # @abstractmethod
-    # def roles(self) -> List[Role]:
-    #     """All registered roles.
-
-    #     Returns:
-    #         A list of all registered roles.
-    #     """
-
-    # @property
-    # @abstractmethod
     # def role_assignments(self) -> List[RoleAssignment]:
     #     """All registered role assignments.
 
@@ -645,38 +865,6 @@ class BaseZenStore(ABC):
 
     #     Raises:
     #         EntityExistsError: If a role with the given name already exists.
-    #     """
-
-    # @abstractmethod
-    # def _delete_role(self, role_name: str) -> None:
-    #     """Deletes a role.
-
-    #     Args:
-    #         role_name: Name of the role to delete.
-
-    #     Raises:
-    #         KeyError: If no role with the given name exists.
-    #     """
-
-    # @abstractmethod
-    # def assign_role(
-    #     self,
-    #     role_name: str,
-    #     entity_name: str,
-    #     project_name: Optional[str] = None,
-    #     is_user: bool = True,
-    # ) -> None:
-    #     """Assigns a role to a user or team.
-
-    #     Args:
-    #         role_name: Name of the role to assign.
-    #         entity_name: User or team name.
-    #         project_name: Optional project name.
-    #         is_user: Boolean indicating whether the given `entity_name` refers
-    #             to a user.
-
-    #     Raises:
-    #         KeyError: If no role, entity or project with the given names exists.
     #     """
 
     # @abstractmethod
@@ -726,29 +914,6 @@ class BaseZenStore(ABC):
 
     #     Raises:
     #         KeyError: If no user with the given name exists.
-    #     """
-
-    # @abstractmethod
-    # def get_role_assignments_for_user(
-    #     self,
-    #     user_name: str,
-    #     project_name: Optional[str] = None,
-    #     include_team_roles: bool = True,
-    # ) -> List[RoleAssignment]:
-    #     """Fetches all role assignments for a user.
-
-    #     Args:
-    #         user_name: Name of the user.
-    #         project_name: Optional filter to only return roles assigned for
-    #             this project.
-    #         include_team_roles: If `True`, includes roles for all teams that
-    #             the user is part of.
-
-    #     Returns:
-    #         List of role assignments for this user.
-
-    #     Raises:
-    #         KeyError: If no user or project with the given names exists.
     #     """
 
     # @abstractmethod
@@ -865,17 +1030,6 @@ class BaseZenStore(ABC):
     #     """
 
     # @abstractmethod
-    # def get_step_by_id(self, step_id: int) -> StepView:
-    #     """Gets a `StepView` by its ID.
-
-    #     Args:
-    #         step_id (int): The ID of the step to get.
-
-    #     Returns:
-    #         StepView: The `StepView` with the given ID.
-    #     """
-
-    # @abstractmethod
     # def get_step_status(self, step: StepView) -> ExecutionStatus:
     #     """Gets the execution status of a single step.
 
@@ -884,21 +1038,6 @@ class BaseZenStore(ABC):
 
     #     Returns:
     #         ExecutionStatus: The status of the step.
-    #     """
-
-    # @abstractmethod
-    # def get_step_artifacts(
-    #     self, step: StepView
-    # ) -> Tuple[Dict[str, ArtifactView], Dict[str, ArtifactView]]:
-    #     """Returns input and output artifacts for the given step.
-
-    #     Args:
-    #         step: The step for which to get the artifacts.
-
-    #     Returns:
-    #         A tuple (inputs, outputs) where inputs and outputs
-    #         are both Dicts mapping artifact names
-    #         to the input and output artifacts respectively.
     #     """
 
     # @abstractmethod
@@ -1017,62 +1156,6 @@ class BaseZenStore(ABC):
     #         StackWrapper instance if the stack exists.
     #     """
     #     return self._stack_from_dict(name, self.get_stack_configuration(name))
-
-    # def _register_stack(self, stack: StackModel) -> None:
-    #     """Register a stack and its components.
-
-    #     If any of the stack's components aren't registered in the zen store
-    #     yet, this method will try to register them as well.
-
-    #     Args:
-    #         stack: The stack to register.
-
-    #     Raises:
-    #         StackExistsError: If a stack with the same name already exists.
-    #     """
-    #     try:
-    #         self.get_stack(stack.name)
-    #     except KeyError:
-    #         pass
-    #     else:
-    #         raise StackExistsError(
-    #             f"Unable to register stack with name '{stack.name}': Found "
-    #             f"existing stack with this name."
-    #         )
-
-    #     def __check_component(
-    #         component: ComponentModel,
-    #     ) -> Tuple[StackComponentType, str]:
-    #         """Try to register a stack component, if it doesn't exist.
-
-    #         Args:
-    #             component: StackComponentWrapper to register.
-
-    #         Returns:
-    #             The type and name of the component.
-
-    #         Raises:
-    #             StackComponentExistsError: If a component with same name exists.
-    #         """
-    #         try:
-    #             existing_component = self.get_stack_component(
-    #                 component_type=component.type, name=component.name
-    #             )
-    #             if existing_component.id != component.id:
-    #                 raise StackComponentExistsError(
-    #                     f"Unable to register one of the stacks components: "
-    #                     f"A component of type '{component.type}' and name "
-    #                     f"'{component.name}' already exists."
-    #                 )
-    #         except KeyError:
-    #             self._register_stack_component(component)
-    #         return component.type, component.name
-
-    #     stack_configuration = {
-    #         typ: name for typ, name in map(__check_component, stack.components)
-    #     }
-    #     self._save_stack(stack.name, stack_configuration)
-    #     logger.info("Registered stack with name '%s'.", stack.name)
 
     # def _update_stack(self, name: str, stack: StackModel) -> None:
     #     """Update a stack and its components.
@@ -1333,42 +1416,6 @@ class BaseZenStore(ABC):
     #     # No tracking events, here for consistency
     #     return self._deregister_stack(name)
 
-    # def create_user(self, user_name: str) -> User:
-    #     """Creates a new user.
-
-    #     Args:
-    #         user_name: Unique username.
-
-    #     Returns:
-    #         The newly created user.
-    #     """
-    #     self._track_event(AnalyticsEvent.CREATED_USER)
-    #     return self._create_user(user_name)
-
-    # def delete_user(self, user_name: str) -> None:
-    #     """Deletes a user.
-
-    #     Args:
-    #         user_name: Name of the user to delete.
-
-    #     Returns:
-    #         None.
-    #     """
-    #     self._track_event(AnalyticsEvent.DELETED_USER)
-    #     return self._delete_user(user_name)
-
-    # def get_user(self, user_name: str) -> User:
-    #     """Gets a specific user.
-
-    #     Args:
-    #         user_name: Name of the user to get.
-
-    #     Returns:
-    #         The requested user.
-    #     """
-    #     # No tracking events, here for consistency
-    #     return self._get_user(user_name)
-
     # def create_team(self, team_name: str) -> Team:
     #     """Creates a new team.
 
@@ -1405,45 +1452,6 @@ class BaseZenStore(ABC):
     #     self._track_event(AnalyticsEvent.DELETED_TEAM)
     #     return self._delete_team(team_name)
 
-    # def get_project(self, project_name: str) -> Project:
-    #     """Gets a specific project.
-
-    #     Args:
-    #         project_name: Name of the project to get.
-
-    #     Returns:
-    #         The requested project.
-    #     """
-    #     # No tracking events, here for consistency
-    #     return self._get_project(project_name)
-
-    # def create_project(
-    #     self, project_name: str, description: Optional[str] = None
-    # ) -> Project:
-    #     """Creates a new project.
-
-    #     Args:
-    #         project_name: Unique project name.
-    #         description: Optional project description.
-
-    #     Returns:
-    #         The newly created project.
-    #     """
-    #     self._track_event(AnalyticsEvent.CREATED_PROJECT)
-    #     return self._create_project(project_name, description)
-
-    # def delete_project(self, project_name: str) -> None:
-    #     """Deletes a project.
-
-    #     Args:
-    #         project_name: Name of the project to delete.
-
-    #     Returns:
-    #         None.
-    #     """
-    #     self._track_event(AnalyticsEvent.DELETED_PROJECT)
-    #     return self._delete_project(project_name)
-
     # def get_role(self, role_name: str) -> Role:
     #     """Gets a specific role.
 
@@ -1467,18 +1475,6 @@ class BaseZenStore(ABC):
     #     """
     #     self._track_event(AnalyticsEvent.CREATED_ROLE)
     #     return self._create_role(role_name)
-
-    # def delete_role(self, role_name: str) -> None:
-    #     """Deletes a role.
-
-    #     Args:
-    #         role_name: Name of the role to delete
-
-    #     Returns:
-    #         None.
-    #     """
-    #     self._track_event(AnalyticsEvent.DELETED_ROLE)
-    #     return self._delete_role(role_name)
 
     # def create_flavor(
     #     self,
@@ -1539,3 +1535,243 @@ class BaseZenStore(ABC):
     #     metadata["store_type"] = self.type.value
     #     track_event(AnalyticsEvent.UPDATED_STACK, metadata=metadata)
     #     return self._update_stack(name, stack)
+
+    ## PRIVATE PAIRED METHODS
+
+    @abstractmethod
+    def _create_user(self, user: User) -> User:
+        """Creates a new user.
+
+        Args:
+            user_name: Unique username.
+
+        Returns:
+                The newly created user.
+
+        Raises:
+            EntityExistsError: If a user with the given name already exists.
+        """
+
+    @abstractmethod
+    def _get_user(self, user_id: str, invite_token: str = None) -> User:
+        """Get a specific user by name.
+
+        Args:
+            user_name: Name of the user to get.
+
+        Returns:
+            The requested user, if it was found.
+
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
+
+    @abstractmethod
+    def _update_user(self, user_id: str, user: User) -> User:
+        """Update the user.
+
+        Args:
+            user_id: ID of the user.
+            user: The User model to use for the update.
+
+        Returns:
+            The updated user.
+        """
+
+    @abstractmethod
+    def _delete_user(self, user_id: str) -> None:
+        """Deletes a user.
+
+        Args:
+            user_id: The ID of the user to delete.
+
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
+
+    @abstractmethod
+    def _delete_role(self, role_name: str) -> None:
+        """Deletes a role.
+
+        Args:
+            role_name: Name of the role to delete.
+
+        Raises:
+            KeyError: If no role with the given name exists.
+        """
+
+    @abstractmethod
+    def _create_project(self, project: Project) -> Project:
+        """Creates a new project.
+
+        Args:
+            project: The project to create.
+
+        Returns:
+            The newly created project.
+
+        Raises:
+            EntityExistsError: If a project with the given name already exists.
+        """
+
+    @abstractmethod
+    def _get_project(self, project_name: str) -> Project:
+        """Get an existing project by name.
+
+        Args:
+            project_name: Name of the project to get.
+
+        Returns:
+            The requested project if one was found.
+
+        Raises:
+            KeyError: If there is no such project.
+        """
+
+    @abstractmethod
+    def _update_project(self, project_name: str, project: Project) -> Project:
+        """Update an existing project.
+
+        Args:
+            project_name: Name of the project to update.
+            project: The project to use for the update.
+
+        Returns:
+            The updated project.
+
+        Raises:
+            KeyError: if the project does not exist.
+        """
+
+    @abstractmethod
+    def _delete_project(self, project_name: str) -> None:
+        """Deletes a project.
+
+        Args:
+            project_name: Name of the project to delete.
+
+        Raises:
+            KeyError: If no project with the given name exists.
+        """
+
+    @abstractmethod
+    def _get_project_stacks(self, project_name: str) -> List[StackModel]:
+        """Get all stacks in the project.
+
+        Args:
+            project_name: the name of the project.
+
+        Returns:
+            A list of all stacks in the project.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
+
+    # TODO: rework to use the project_name
+    def _create_stack(self, project_name: str, stack: StackModel) -> None:
+        """Create a stack and its components for a particular project.
+
+        If any of the stack's components aren't registered in the ZenStore
+        yet, this method will try to register them as well.
+
+        Args:
+            project_name: Name of the project.
+            stack: The stack to create.
+
+        Raises:
+            StackExistsError: If a stack with the same name already exists.
+        """
+        try:
+            self.get_stack(stack.name)
+        except KeyError:
+            pass
+        else:
+            raise StackExistsError(
+                f"Unable to create stack with name '{stack.name}': Found "
+                f"existing stack with this name."
+            )
+
+        def __check_component(
+            component: ComponentModel,
+        ) -> Tuple[StackComponentType, str]:
+            """Try to register a stack component, if it doesn't exist.
+
+            Args:
+                component: StackComponentWrapper to register.
+
+            Returns:
+                The type and name of the component.
+
+            Raises:
+                StackComponentExistsError: If a component with same name exists.
+            """
+            try:
+                existing_component = self.get_stack_component(
+                    component_type=component.type, name=component.name
+                )
+                if existing_component.id != component.id:
+                    raise StackComponentExistsError(
+                        f"Unable to register one of the stacks components: "
+                        f"A component of type '{component.type}' and name "
+                        f"'{component.name}' already exists."
+                    )
+            except KeyError:
+                self._register_stack_component(component)
+            return component.type, component.name
+
+        stack_configuration = {
+            typ: name for typ, name in map(__check_component, stack.components)
+        }
+        self._save_stack(stack.name, stack_configuration)
+        logger.info("Created stack with name '%s'.", stack.name)
+
+    @abstractmethod
+    def _list_project_stack_components(
+        self, project_name: str
+    ) -> List[ComponentModel]:
+        """List all stack components in the project.
+
+        Args:
+            project_name: Name of the project.
+
+        Returns:
+            A list of stack components.
+
+        Raises:
+            KeyError: if the project does not exist.
+        """
+
+    # PROPERTIES
+
+    @property
+    @abstractmethod
+    def users(self) -> List[User]:
+        """All registered users.
+
+        Returns:
+            A list of all registered users.
+        """
+
+    @property
+    @abstractmethod
+    def roles(self) -> List[Role]:
+        """All registered roles.
+
+        Returns:
+            A list of all registered roles.
+        """
+
+    @property
+    @abstractmethod
+    def projects(self) -> List[Project]:
+        """All registered projects.
+
+        Returns:
+            A list of all registered projects.
+        """
+
+
+# Generalised TODOs
+# - fix the exceptions
+# - be consistent about which raise KeyErrors

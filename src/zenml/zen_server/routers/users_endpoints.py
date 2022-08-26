@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Any, Dict, List
+from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -41,11 +41,10 @@ router = APIRouter(
     response_model=List[User],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_users(project_name: str, invite_token: str) -> List[User]:
+async def list_users(invite_token: str) -> List[User]:
     """Returns a list of all users.
 
     Args:
-        project_name: Name of the project.
         invite_token: Token to use for the invitation.
 
     Returns:
@@ -57,9 +56,7 @@ async def get_users(project_name: str, invite_token: str) -> List[User]:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.get_users(
-            project_name=project_name, invite_token=invite_token
-        )
+        return zen_store.list_users(invite_token=invite_token)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:
@@ -122,7 +119,7 @@ async def get_user(user_id: str, invite_token: str) -> User:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.get_user(user_name=name)
+        return zen_store.get_user(user_id=user_id, invite_token=invite_token)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:
@@ -176,12 +173,15 @@ async def delete_user(user_id: str) -> None:
         user_id: ID of the user.
 
     Raises:
+        not_found: when user does not exist
         401 error: when not authorized to login
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
     try:
         zen_store.delete_user(user_id)
+    except KeyError as error:
+        raise not_found(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:
@@ -225,35 +225,35 @@ async def get_role_assignments_for_user(user_id: str) -> List[Role]:
 
 @router.post(
     "/{user_id}}" + ROLES,
-    response_model=Role,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-async def assign_role(user_id: str, data: Dict[str, Any]) -> Role:
+async def assign_role(user_id: str, role: Role) -> None:
     """Assign a role to a user for all resources within a given project or globally.
 
     Args:
         user_id: ID of the user.
-        data: Data relating to the role to assign to the user.
-
-    Returns:
-        The assigned role.
+        role: The role to assign to the user.
 
     Raises:
+        not_found: when user does not exist
         401 error: when not authorized to login
         409 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    role_name = data["role_name"]
-    entity_name = data["entity_name"]
-    project_name = data.get("project_name")
-    is_user = data.get("is_user", True)
+    # TODO: Delete when no longer needed
+    # role_name = data["role_name"]
+    # entity_name = data["entity_name"]
+    # project_name = data.get("project_name")
+    # is_user = data.get("is_user", True)
 
     try:
         zen_store.assign_role(
-            role_name=role_name,
-            entity_name=entity_name,
-            project_name=project_name,
-            is_user=is_user,
+            # role_name=role_name,
+            # entity_name=entity_name,
+            # project_name=project_name,
+            # is_user=is_user,
+            user_id=user_id,
+            role=role,
         )
     except KeyError as error:
         raise not_found(error) from error
@@ -325,15 +325,12 @@ async def invalidate_invite_token(user_id: str) -> None:
     "/{user_id}}" + ROLES + "/{role_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def delete_user_role(
-    user_id: str, role_id: str, project_name: str
-) -> None:
+async def delete_role(user_id: str, role_id: str) -> None:
     """Remove a users role within a project or globally.
 
     Args:
         user_id: ID of the user.
         role_id: ID of the role.
-        project_name: Name of the project.
 
     Raises:
         401 error: when not authorized to login
