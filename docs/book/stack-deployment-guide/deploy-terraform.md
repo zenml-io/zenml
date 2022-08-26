@@ -2,7 +2,7 @@
 description: Deploy stack recipes without having to install ZenML
 ---
 
-As mentioned in the [overview](./overview.md), you can still use the recipe without having using the `zenml stack recipe` CLI commands or even without installing ZenML. Since each recipe is a group of Terraform modules, you can simply employ the terraform CLI to perform apply and destroy operations.
+As mentioned in the [overview](./overview.md), you can still use the recipe without having using the `zenml stack recipe` CLI commands or even without installing ZenML. Since each recipe is a group of Terraform modules, you can simply use the Terraform CLI to perform apply and destroy operations.
 
 ## Create the stack
 
