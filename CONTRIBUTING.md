@@ -141,6 +141,7 @@ linting is in order:
 ```
 poetry run bash scripts/format.sh
 poetry run bash scripts/lint.sh
+poetry run bash scripts/docstring.sh
 poetry run bash scripts/check-spelling.sh
 ```
 
