@@ -43,6 +43,7 @@
 * [Integration Overview](./mlops-stacks/integrations.md)
 * [Orchestrators](./mlops-stacks/orchestrators/orchestrators.md)
   * [Local Orchestrator](./mlops-stacks/orchestrators/local.md)
+  * [Local Docker Orchestrator](./mlops-stacks/orchestrators/local-docker.md)
   * [Kubeflow Orchestrator](./mlops-stacks/orchestrators/kubeflow.md)
   * [Kubernetes Orchestrator](./mlops-stacks/orchestrators/kubernetes.md)
   * [Google Cloud VertexAI Orchestrator](./mlops-stacks/orchestrators/gcloud-vertexai.md)
