@@ -6,10 +6,10 @@ description: How to collaboratively use ZenML in larger organizations with the Z
 
 Sometimes, you may need to exchange or collaborate on Stack configurations with
 other developers or even just have your Stacks available on multiple machines.
-While you can always zip up your Profile files or check [the local ZenStore](./zenml-store.md)
-files into version control, a more elegant solution is to have some kind of service
-accessible from anywhere in your network that provides a REST API that can be
-used to store and access your Stacks over the network.
+While you can always zip up your global configuration and database files or
+check them into version control, a more elegant solution is to have some kind of
+service accessible from anywhere in your network that provides a REST API that
+can be used to store and access your Stacks over the network.
 
 The ZenServer, short for ZenML Server, is a distributed client-server ZenML
 deployment scenario in which multiple ZenML clients can connect to a remote
@@ -38,10 +38,8 @@ security and robustness.
 
 ## Interacting with a Remote ZenServer
 
-The [ZenML Profile and ZenStore](./zenml-store.md) are the main configuration
-concepts behind the ZenServer architecture. To connect your ZenML client to a
-remote ZenServer instance, you need the URL of the ZenServer REST API and
-[a user that has been configured on the server](#zenserver-user-management).
+To connect your ZenML client to a remote ZenServer instance, you need the URL of
+the ZenServer REST API and [a user that has been configured on the server](#zenserver-user-management).
 
 Connecting to the ZenServer is just a matter of creating a ZenML Profile backed
 by a ZenStore of type `rest` and pointing it to the ZenServer REST API URL, e.g.:

@@ -40,7 +40,7 @@ is such an example.
 Related concepts:
 
 * the Artifact Store is a type of Stack Component that needs to be registered as
-part of your ZenML [Stack](../../developer-guide/stacks-profiles-repositories/stack.md).
+part of your ZenML [Stack](../../developer-guide/stacks-repositories/stack.md).
 * the objects circulated through your pipelines are serialized and stored in the
 Artifact Store using [Materializers](../../developer-guide/advanced-usage/materializer.md).
 Materializers implement the logic required to serialize and deserialize the

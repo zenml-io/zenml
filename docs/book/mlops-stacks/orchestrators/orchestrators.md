@@ -48,7 +48,7 @@ zenml orchestrator flavor list
 
 You don't need to directly interact with any ZenML orchestrator in your code.
 As long as the orchestrator that you want to use is part of your active 
-[ZenML stack](../../developer-guide/stacks-profiles-repositories/stack.md),
+[ZenML stack](../../developer-guide/stacks-repositories/stack.md),
 using the orchestrator is as simple as executing a python file which 
 [runs a ZenML pipeline](../../developer-guide/steps-pipelines/steps-and-pipelines.md#instantiate-and-run-your-pipeline):
 

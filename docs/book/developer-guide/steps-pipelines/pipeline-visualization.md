@@ -24,7 +24,7 @@ details on ZenML integrations and how to install and use them.
 ## Visualizing Pipelines
 
 After a pipeline run has been started, we can access it using the 
-[Repository](../stacks-profiles-repositories/repository.md),
+[Repository](../stacks-repositories/repository.md),
 as you learned in the last section on 
 [Inspecting Finished Pipeline Runs](./inspecting-pipeline-runs.md).
 

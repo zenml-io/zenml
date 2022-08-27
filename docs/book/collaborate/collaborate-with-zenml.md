@@ -49,14 +49,6 @@ If you need to quickly share your Stack configuration with someone else, there
 is nothing easier than [using the ZenML CLI to export a Stack](./stack-export-import.md)
 in the form of a YAML file and import it somewhere else.
 
-## Organize and Share with Profiles
-
-With [ZenML Profiles](./zenml-store.md), you can unlock a range of strategies for
-organizing and managing ZenML configurations that are available across your
-entire team. Stacks, Stack Components and other classes of ZenML objects can be
-stored in a central location and shared across multiple users, teams and
-automated systems such as CI/CD processes.
-
 ## Centralized ZenML Management with ZenServer
 
 With the [_ZenServer_](./zenml-server.md), you can deploy ZenML as a centralized

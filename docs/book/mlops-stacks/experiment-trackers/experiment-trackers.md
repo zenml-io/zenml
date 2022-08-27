@@ -12,7 +12,7 @@ components. This establishes a clear link between pipeline runs and experiments.
 Related concepts:
 
 * the Experiment Tracker is an optional type of Stack Component that needs to be
-registered as part of your ZenML [Stack](../../developer-guide/stacks-profiles-repositories/stack.md).
+registered as part of your ZenML [Stack](../../developer-guide/stacks-repositories/stack.md).
 * ZenML already includes versioning and tracking for the pipeline artifacts by
 storing artifacts in the [Artifact Store](../artifact-stores/artifact-stores.md) and
 maintaining a record of pipeline executions through the [Metadata Store](../metadata-stores/metadata-stores.md).

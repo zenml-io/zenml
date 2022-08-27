@@ -76,7 +76,7 @@ def init(path: Optional[Path]) -> None:
         f"effect when you're running ZenML from the initialized repository "
         f"root, or from a subdirectory. For more information on repositories "
         f"and configurations, please visit "
-        f"https://docs.zenml.io/developer-guide/stacks-profiles-repositories."
+        f"https://docs.zenml.io/developer-guide/stacks-repositories."
     )
 
 

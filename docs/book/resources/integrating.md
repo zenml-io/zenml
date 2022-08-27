@@ -18,7 +18,7 @@ Note that one integration may belong to different categories: For example, the c
 
 ## Step 2: Create individual stack components
 
-Each category selected above would correspond to a [stack component](../developer-guide/stacks-profiles-repositories/stack.md#stack-components). You can now start developing these individual stack components by following the detailed instructions on each stack component page.
+Each category selected above would correspond to a [stack component](../developer-guide/stacks-repositories/stack.md#stack-components). You can now start developing these individual stack components by following the detailed instructions on each stack component page.
 
 Before you package your new components into an integration, you may want to first register them with the `zenml <STACK_COMPONENT> flavor register` command and use/test them as a regular custom flavor. E.g., when [developing an orchestrator](../mlops-stacks/orchestrators/custom.md) you can use:
 

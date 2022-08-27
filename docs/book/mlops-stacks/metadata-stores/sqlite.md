@@ -42,7 +42,7 @@ SQLite Metadata Store:
 ```
 $ zenml stack list
 Running without an active repository root.
-Running with active profile: 'default' (global)
+Using the default local database.
 ┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
 ┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ METADATA_STORE │ ORCHESTRATOR ┃
 ┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
@@ -51,7 +51,7 @@ Running with active profile: 'default' (global)
 
 $ zenml metadata-store describe
 Running without an active repository root.
-Running with active profile: 'default' (global)
+Using the default local database.
 Running with active stack: 'default'
 No component name given; using `default` from active stack.
                                     METADATA_STORE Component Configuration (ACTIVE)                                     

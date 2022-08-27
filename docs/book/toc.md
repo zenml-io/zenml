@@ -21,10 +21,9 @@
   * [Inspect Pipeline Runs](./developer-guide/steps-pipelines/inspecting-pipeline-runs.md)
   * [Configure Automated Caching](./developer-guide/steps-pipelines/caching.md)
   * [Visualize Data Lineage](./developer-guide/steps-pipelines/pipeline-visualization.md)
-* [Stacks, Profiles, Repositories](./developer-guide/stacks-profiles-repositories/stacks-profiles-repositories.md)
-  * [Stacks: Configure MLOps Tooling and Infrastructure](./developer-guide/stacks-profiles-repositories/stack.md)
-  * [Profiles: Manage Stack Configurations](./developer-guide/stacks-profiles-repositories/profile.md)
-  * [Repositories: Link Stacks to Code](./developer-guide/stacks-profiles-repositories/repository.md)
+* [Stacks & Repositories](./developer-guide/stacks-repositories/stacks-repositories.md)
+  * [Stacks: Configure MLOps Tooling and Infrastructure](./developer-guide/stacks-repositories/stack.md)
+  * [Repositories: Link Stacks to Code](./developer-guide/stacks-repositories/repository.md)
 * [Advanced Usage](./developer-guide/advanced-usage/advanced-usage.md)
   * [Write Custom Stack Component Flavors](./developer-guide/advanced-usage/custom-flavors.md)
   * [Manage Stack Component States](./developer-guide/advanced-usage/stack-state-management.md)
@@ -34,7 +33,7 @@
   * [Specify Step Resources](./developer-guide/advanced-usage/specify-step-resources.md)
   * [Manage External Services](./developer-guide/advanced-usage/manage-external-services.md)
   * [Manage Docker Images](./developer-guide/advanced-usage/docker.md)
-  * [Set Stacks and Profiles with Environment Variables](./developer-guide/advanced-usage/stack-profile-environment-variables.md)
+  * [Set Stacks with Environment Variables](./developer-guide/advanced-usage/stacks-environment-variables.md)
   * [Control the Step Execution Order](./developer-guide/advanced-usage/step-execution-order.md)
 
 ## MLOps Stacks
@@ -124,7 +123,6 @@
 
 * [Collaborate with ZenML](./collaborate/collaborate-with-zenml.md)
 * [Export/Import Stacks](./collaborate/stack-export-import.md)
-* [Share Stacks and Profiles via ZenStores](./collaborate/zenml-store.md)
 * [Organization-Wide Collaboration with ZenServer](./collaborate/zenml-server.md)
 
 ## Resources

@@ -27,7 +27,6 @@ from zenml.constants import (
     DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
     DEFAULT_SERVICE_START_STOP_TIMEOUT,
     ENV_ZENML_CONFIG_PATH,
-    REPOSITORY_DIRECTORY_NAME,
     ZEN_SERVER_ENTRYPOINT,
 )
 from zenml.enums import StackComponentType, StoreType
@@ -41,6 +40,7 @@ from zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator import (
 )
 from zenml.logger import get_logger
 from zenml.orchestrators import LocalOrchestrator
+from zenml.repository import Repository
 from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManager,
 )
@@ -70,7 +70,6 @@ def fresh_zen_store(
 ) -> BaseZenStore:
     store_type = request.param
     tmp_path = tmp_path_factory.mktemp(f"{store_type.value}_zen_store")
-    os.mkdir(tmp_path / REPOSITORY_DIRECTORY_NAME)
 
     if store_type == StoreType.SQL:
         yield SqlZenStore(
@@ -86,20 +85,35 @@ def fresh_zen_store(
 
         # force the zen service process to use a temporary global configuration
         orig_config_path = GlobalConfiguration().config_directory
+
+        # save the current global configuration and repository singleton instances
+        # to restore them later, then reset them
+        original_config = GlobalConfiguration.get_instance()
+        original_repository = Repository.get_instance()
+        GlobalConfiguration._reset_instance()
+        Repository._reset_instance()
+
         os.environ[ENV_ZENML_CONFIG_PATH] = str(tmp_path / ".zenconfig")
+
+        # NOTE: the child process will be forked from this process and inherit
+        # the global configuration and repository singleton instances.
         proc = Process(
             target=uvicorn.run,
             args=(ZEN_SERVER_ENTRYPOINT,),
             kwargs=dict(
                 host=DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
                 port=port,
-                log_level="info",
+                log_level="debug",
             ),
             daemon=True,
         )
         url = f"http://{DEFAULT_LOCAL_SERVICE_IP_ADDRESS}:{port}"
         proc.start()
+
         os.environ[ENV_ZENML_CONFIG_PATH] = orig_config_path
+        # restore the original global configuration and the repository singleton
+        GlobalConfiguration._reset_instance(original_config)
+        Repository._reset_instance(original_repository)
 
         # wait 10 seconds for server to start
         for t in range(DEFAULT_SERVICE_START_STOP_TIMEOUT):

@@ -440,7 +440,7 @@ def pytest_generate_tests(metafunc):
     the cli options."""
     if "repo_fixture_name" in metafunc.fixturenames:
         if metafunc.config.getoption("on_kubeflow"):
-            repos = ["clean_kubeflow_profile"]
+            repos = ["clean_kubeflow_repo"]
         else:
-            repos = ["clean_base_profile"]
+            repos = ["clean_base_repo"]
         metafunc.parametrize("repo_fixture_name", repos)

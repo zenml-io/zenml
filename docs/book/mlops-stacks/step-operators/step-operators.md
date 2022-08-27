@@ -51,7 +51,7 @@ zenml step-operator flavor list
 
 You don't need to directly interact with any ZenML step operator in your code.
 As long as the step operator that you want to use is part of your active 
-[ZenML stack](../../developer-guide/stacks-profiles-repositories/stack.md),
+[ZenML stack](../../developer-guide/stacks-repositories/stack.md),
 you can simply specify it in the `@step `decorator of your
 [step](../../developer-guide/steps-pipelines/steps-and-pipelines.md#step):
 
