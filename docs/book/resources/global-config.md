@@ -75,7 +75,7 @@ immediately after initialization:
 ├── local_stores             <- Every Stack component that stores information
 |   |                        locally will have its own subdirectory here.
 |   |                        
-│   └── a1a0d3d0-d552-4a80-bd09-67ebb29bb8ee   <- Local Store path for the `default`
+│   └── a1a0d3d0-d552-4a80-be09-67ebe29be8ee   <- Local Store path for the `default`
 |                                              local Artifact Store
 |
 └── zenml.db                 <- SQLite database where ZenML data (stacks, components,
