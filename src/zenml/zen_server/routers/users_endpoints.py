@@ -227,12 +227,13 @@ async def get_role_assignments_for_user(user_id: str) -> List[Role]:
     "/{user_id}}" + ROLES,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-async def assign_role(user_id: str, role: Role) -> None:
+async def assign_role(user_id: str, role_id: str, project_id: str) -> None:
     """Assign a role to a user for all resources within a given project or globally.
 
     Args:
         user_id: ID of the user.
-        role: The role to assign to the user.
+        role_id: The ID of the role to assign to the user.
+        project_id: ID of the project in which to assign the role to the user.
 
     Raises:
         not_found: when user does not exist
@@ -325,7 +326,7 @@ async def invalidate_invite_token(user_id: str) -> None:
     "/{user_id}}" + ROLES + "/{role_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def delete_role(user_id: str, role_id: str) -> None:
+async def unassign_role(user_id: str, role_id: str, project_id: str) -> None:
     """Remove a users role within a project or globally.
 
     Args:
@@ -338,8 +339,8 @@ async def delete_role(user_id: str, role_id: str) -> None:
         422 error: when unable to validate input
     """
     try:
-        zen_store.delete_role(
-            user_id=user_id, role_id=role_id, project_name=project_name
+        zen_store._unassign_role(
+            user_id=user_id, role_id=role_id, project_id=project_id
         )
     except KeyError as error:
         raise not_found(error) from error

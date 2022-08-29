@@ -389,6 +389,17 @@ class BaseZenStore(ABC):
         """
         return self._list_users(invite_token=invite_token)
 
+    @abstractmethod
+    def _list_users(self, invite_token: str = None) -> List[User]:
+        """List all users.
+
+        Args:
+            invite_token: The invite token to filter by.
+
+        Returns:
+            A list of all users.
+        """
+
     def create_user(self, user: User) -> User:
         """Creates a new user.
 
@@ -397,44 +408,111 @@ class BaseZenStore(ABC):
 
         Returns:
             The newly created user.
+
+        Raises:
+            EntityExistsError: If a user with the given name already exists.
         """
         self._track_event(AnalyticsEvent.CREATED_USER)
         return self._create_user(user)
+
+    @abstractmethod
+    def _create_user(self, user: User) -> User:
+        """Creates a new user.
+
+        Args:
+            user: User to be created.
+
+        Returns:
+            The newly created user.
+
+        Raises:
+            EntityExistsError: If a user with the given name already exists.
+        """
 
     def get_user(self, user_id: str, invite_token: str = None) -> User:
         """Gets a specific user.
 
         Args:
-            user_name: Name of the user to get.
+            user_id: The ID of the user to get.
             invite_token: Token to use for the invitation.
 
         Returns:
-            The requested user.
+            The requested user, if it was found.
+
+        Raises:
+            KeyError: If no user with the given name exists.
         """
         # No tracking events, here for consistency
         return self._get_user(user_id, invite_token=invite_token)
+
+    @abstractmethod
+    def _get_user(self, user_id: str, invite_token: str = None) -> User:
+        """Gets a specific user.
+
+        Args:
+            user_id: The ID of the user to get.
+            invite_token: Token to use for the invitation.
+
+        Returns:
+            The requested user, if it was found.
+
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
 
     def update_user(self, user_id: str, user: User) -> User:
         """Updates an existing user.
 
         Args:
-            user_id: The id of the user to update.
-            user: The user to use for the update.
+            user_id: The ID of the user to update.
+            user: The User model to use for the update.
 
         Returns:
             The updated user.
+        
+        Raises:
+            KeyError: If no user with the given name exists.
         """
         # No tracking events, here for consistency
         return self._update_user(user_id, user)
+
+    @abstractmethod
+    def _update_user(self, user_id: str, user: User) -> User:
+        """Update the user.
+
+        Args:
+            user_id: The ID of the user to update.
+            user: The User model to use for the update.
+
+        Returns:
+            The updated user.
+        
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
 
     def delete_user(self, user_id: str) -> None:
         """Deletes a user.
 
         Args:
-            user_id: ID of the user to delete.
+            user_id: The ID of the user to delete.
+
+        Raises:
+            KeyError: If no user with the given name exists.
         """
         self._track_event(AnalyticsEvent.DELETED_USER)
         return self._delete_user(user_id)
+
+    @abstractmethod
+    def _delete_user(self, user_id: str) -> None:
+        """Deletes a user.
+
+        Args:
+            user_id: The ID of the user to delete.
+
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
 
     def get_role_assignments_for_user(
         self,
@@ -455,21 +533,81 @@ class BaseZenStore(ABC):
         """
         return self._get_role_assignments_for_user(user_id)
 
-    def assign_role(
-        self,
-        user_id: str,
-        role: Role,
-    ) -> None:
-        """Assigns a role to a user or team.
+    @abstractmethod
+    def _get_role_assignments_for_user(self, user_id: str) -> List[Role]:
+        """Fetches all role assignments for a user.
 
         Args:
             user_id: ID of the user.
-            role: Role to assign to the user.
+
+        Returns:
+            List of role assignments for this user.
 
         Raises:
-            KeyError: If no user with the given ID exists.
+            KeyError: If no user or project with the given names exists.
         """
-        return self._assign_role(user_id, role)
+
+    def assign_role(self, user_id: str, role_id: str, project_id: str) -> None:
+        """Assigns a role to a user or team, scoped to a specific project.
+
+        Args:
+            user_id: ID of the user.
+            role_id: ID of the role to assign to the user.
+            project_id: ID of the project in which to assign the role to the 
+                user.
+
+        Raises:
+            KeyError: If no user, role, or project with the given IDs exists.
+        """
+        return self._assign_role(user_id, role_id, project_id)
+
+    @abstractmethod
+    def _assign_role(self, user_id: str, role: Role) -> None:
+        """Assigns a role to a user or team, scoped to a specific project.
+
+        Args:
+            user_id: ID of the user.
+            role_id: ID of the role to assign to the user.
+            project_id: ID of the project in which to assign the role to the 
+                user.
+
+        Raises:
+            KeyError: If no user, role, or project with the given IDs exists.
+        """
+
+    def unassign_role(
+        self, user_id: str, role_id: str, project_id: str
+    ) -> None:
+        """Unassigns a role from a user or team for a given project.
+
+        Args:
+            user_id: ID of the user.
+            role_id: ID of the role to unassign.
+            project_id: ID of the project in which to unassign the role from the 
+                user.
+
+        Raises:
+            KeyError: If the role was not assigned to the user in the given 
+                project.
+        """
+        return self._unassign_role(user_id, role_id, project_id)
+    
+    @abstractmethod
+    def _unassign_role(
+        self, user_id: str, role_id: str, project_id: str
+    ) -> None:
+        """Unassigns a role from a user or team for a given project.
+
+        Args:
+            user_id: ID of the user.
+            role_id: ID of the role to unassign.
+            project_id: ID of the project in which to unassign the role from the 
+                user.
+
+        Raises:
+            KeyError: If the role was not assigned to the user in the given 
+                project.
+        """
 
     # TODO: Check whether this needs to be an abstract method or not (probably?)
     @abstractmethod
@@ -490,16 +628,6 @@ class BaseZenStore(ABC):
         Args:
             user_id: ID of the user.
         """
-
-    def delete_role(self, user_id: str, role_id: str) -> None:
-        """Deletes a role.
-
-        Args:
-            user_id: ID of the user.
-            role_id: ID of the role.
-        """
-        self._track_event(AnalyticsEvent.DELETED_ROLE)
-        return self._delete_role(user_id, role_id)
 
     #  .------.
     # | ROLES |
@@ -1120,57 +1248,6 @@ class BaseZenStore(ABC):
     # '-------------------------'
 
     @abstractmethod
-    def _create_user(self, user: User) -> User:
-        """Creates a new user.
-
-        Args:
-            user_name: Unique username.
-
-        Returns:
-                The newly created user.
-
-        Raises:
-            EntityExistsError: If a user with the given name already exists.
-        """
-
-    @abstractmethod
-    def _get_user(self, user_id: str, invite_token: str = None) -> User:
-        """Get a specific user by name.
-
-        Args:
-            user_name: Name of the user to get.
-
-        Returns:
-            The requested user, if it was found.
-
-        Raises:
-            KeyError: If no user with the given name exists.
-        """
-
-    @abstractmethod
-    def _update_user(self, user_id: str, user: User) -> User:
-        """Update the user.
-
-        Args:
-            user_id: ID of the user.
-            user: The User model to use for the update.
-
-        Returns:
-            The updated user.
-        """
-
-    @abstractmethod
-    def _delete_user(self, user_id: str) -> None:
-        """Deletes a user.
-
-        Args:
-            user_id: The ID of the user to delete.
-
-        Raises:
-            KeyError: If no user with the given name exists.
-        """
-
-    @abstractmethod
     def _delete_role(self, role_name: str) -> None:
         """Deletes a role.
 
@@ -1645,37 +1722,6 @@ class BaseZenStore(ABC):
 
         Returns:
             A list of all steps.
-        """
-
-    @abstractmethod
-    def _list_users(self, invite_token: str = None) -> List[User]:
-        """List all users.
-
-        Args:
-            invite_token: The invite token to filter by.
-
-        Returns:
-            A list of all users.
-        """
-
-    @abstractmethod
-    def _get_role_assignments_for_user(self, user_id: str) -> List[Role]:
-        """Get the role assignments for a user.
-
-        Args:
-            user_id: The ID of the user to get role assignments for.
-
-        Returns:
-            The role assignments for the user.
-        """
-
-    @abstractmethod
-    def _assign_role(self, user_id: str, role: Role) -> None:
-        """Assign a role to a user.
-
-        Args:
-            user_id: The ID of the user to assign the role to.
-            role: The role to assign.
         """
 
     def _login(self) -> None:

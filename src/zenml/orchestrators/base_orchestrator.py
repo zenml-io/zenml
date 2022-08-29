@@ -335,7 +335,7 @@ class BaseOrchestrator(StackComponent, ABC):
         # Query the ZenStore for the metadata connection
         repo = Repository()
         metadata_connection = metadata.Metadata(
-            Repository().zen_store._get_tfx_metadata_config()
+            Repository().zen_store.get_metadata_config()
         )
 
         custom_executor_operators = {

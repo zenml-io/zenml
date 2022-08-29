@@ -404,6 +404,283 @@ class SqlZenStore(BaseZenStore):
 
             session.commit()
 
+    #  .------.
+    # | USERS |
+    # '-------'
+
+    def _list_users(self, invite_token: str = None) -> List[User]:
+        """List all users.
+
+        Args:
+            invite_token: The invite token to filter by.
+
+        Returns:
+            A list of all users.
+        """
+        with Session(self.engine) as session:
+            users = session.exec(select(UserSchema)).all()
+
+        return [User(**user.dict()) for user in users]
+
+    def _create_user(self, user: User) -> User:
+        """Creates a new user.
+
+        Args:
+            user: User to be created.
+
+        Returns:
+            The newly created user.
+
+        Raises:
+            EntityExistsError: If a user with the given name already exists.
+        """
+        with Session(self.engine) as session:
+            # Check if user with the given name already exists
+            existing_user = session.exec(
+                select(UserSchema).where(UserSchema.name == user.name)
+            ).first()
+            if existing_user is not None:
+                raise EntityExistsError(
+                    f"Unable to create user with name "
+                    f"'{user.name}': Found "
+                    f"existing user with this name."
+                )
+
+            # Create the user
+            user_in_db = UserSchema(name=user.name)
+            session.add(user_in_db)
+            session.commit()
+
+            # After committing the model, sqlmodel takes care of updating the
+            #  object with id, created_at, etc ...
+
+    def _get_user(self, user_id: str, invite_token: str = None) -> User:
+        """Gets a specific user.
+
+        Args:
+            user_id: The ID of the user to get.
+            invite_token: Token to use for the invitation.
+
+        Returns:
+            The requested user, if it was found.
+
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
+        with Session(self.engine) as session:
+            try:
+                user = session.exec(
+                    select(UserSchema).where(UserSchema.id == user_id)
+                ).one()
+            except NoResultFound as error:
+                raise KeyError from error
+
+            return User(**user.dict())
+
+    def _update_user(self, user_id: str, user: User) -> User:
+        """Updates an existing user.
+
+        Args:
+            user_id: The ID of the user to update.
+            user: The User model to use for the update.
+
+        Returns:
+            The updated user.
+        
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
+        with Session(self.engine) as session:
+            try:
+                existing_user = session.exec(
+                    select(UserSchema).where(UserSchema.id == user_id)
+                ).one()
+            except NoResultFound as error:
+                raise KeyError from error
+            
+            existing_user.name = user.name
+            existing_user.created_at = user.created_at
+            session.add(existing_user)
+            session.commit()
+
+    def _delete_user(self, user_id: str) -> None:
+        """Deletes a user.
+
+        Args:
+            user_id: The ID of the user to delete.
+
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
+        with Session(self.engine) as session:
+            try:
+                user = session.exec(
+                    select(UserSchema).where(UserSchema.id == user_id)
+                ).one()
+            except NoResultFound as error:
+                raise KeyError from error
+
+            session.delete(user)
+            session.commit()
+
+    def _get_role_assignments_for_user(self, user_id: str) -> List[Role]:
+        """Fetches all role assignments for a user.
+
+        Args:
+            user_id: ID of the user.
+
+        Returns:
+            List of role assignments for this user.
+
+        Raises:
+            KeyError: If no user or project with the given names exists.
+        """
+        with Session(self.engine) as session:
+            roles = session.exec(
+                select(RoleSchema)
+                .where(UserRoleAssignmentSchema.role_id == RoleSchema.id)
+                .where(UserRoleAssignmentSchema.user_id == user_id)
+            ).all()
+
+        return [Role(**role.dict()) for role in roles]
+
+    def _assign_role(self, user_id: str, role_id: str, project_id: str) -> None:
+        """Assigns a role to a user or team, scoped to a specific project.
+
+        Args:
+            user_id: ID of the user.
+            role_id: ID of the role to assign to the user.
+            project_id: ID of the project in which to assign the role to the 
+                user.
+
+        Raises:
+            KeyError: If no user, role, or project with the given IDs exists.
+        """
+        with Session(self.engine) as session:
+            # Check if user with the given name already exists
+            existing_user = session.exec(
+                select(UserSchema).where(UserSchema.id == user_id)
+            ).first()
+            if existing_user is None:
+                raise KeyError(f"Unable to assign role to user with id "
+                               f"'{user_id}': No user with this id found.")
+
+            # Check if role with the given name already exists
+            existing_role = session.exec(
+                select(RoleSchema).where(RoleSchema.id == role_id)
+            ).first()
+            if existing_role is None:
+                raise KeyError(f"Unable to assign role to user with id "
+                               f"'{role_id}': No role with this id found.")
+
+            # Check if project with the given name already exists
+            existing_project = session.exec(
+                select(ProjectSchema).where(ProjectSchema.id == project_id)
+            ).first()
+            if existing_project is None:
+                raise KeyError(
+                    f"Unable to assign role in project with id "
+                    f"'{project_id}': No project with this id found."
+                )
+
+            # Create the user role assignment
+            user_role_assignment = UserRoleAssignmentSchema(
+                user_id=user_id,
+                role_id=role_id,
+                project_id=project_id
+            )
+            session.add(user_role_assignment)
+            session.commit()
+
+    def _unassign_role(self, user_id: str, role_id: str, project_id: str) -> None:
+        """Unassigns a role from a user or team for a given project.
+
+        Args:
+            user_id: ID of the user.
+            role_id: ID of the role to unassign.
+            project_id: ID of the project in which to unassign the role from the 
+                user.
+
+        Raises:
+            KeyError: If the role was not assigned to the user in the given 
+                project.
+        """
+        with Session(self.engine) as session:
+            # Check if role with the given name already exists
+            existing_role = session.exec(
+                select(UserRoleAssignmentSchema)
+                .where(UserRoleAssignmentSchema.user_id == user_id)
+                .where(UserRoleAssignmentSchema.role_id == role_id)
+                .where(UserRoleAssignmentSchema.project_id == project_id)
+            ).first()
+            if existing_role is None:
+                raise KeyError(f"Unable to unassign role {role_id} from user {user_id} in project {project_id}: The role is currently not assigned to the user.")
+
+            session.delete(existing_role)
+            session.commit()
+
+    def get_invite_token(self, user_id: str) -> str:
+        """Gets an invite token for a user.
+
+        Args:
+            user_id: ID of the user.
+
+        Returns:
+            The invite token for the specific user.
+        """
+        raise NotImplementedError()  # TODO
+
+    def invalidate_invite_token(self, user_id: str) -> None:
+        """Invalidates an invite token for a user.
+
+        Args:
+            user_id: ID of the user.
+        """
+        raise NotImplementedError()  # TODO
+
+    #  .------.
+    # | ROLES |
+    # '-------'
+
+    def list_roles(self) -> List[Role]:
+        """List all roles.
+
+        Returns:
+            A list of all roles.
+        """
+        with Session(self.engine) as session:
+            roles = session.exec(select(RoleSchema)).all()
+
+        return [Role(**role.dict()) for role in roles]
+
+    #  .----------------.
+    # | METADATA_CONFIG |
+    # '-----------------'
+
+    def get_metadata_config(
+        self,
+    ) -> Union[
+        metadata_store_pb2.ConnectionConfig,
+        metadata_store_pb2.MetadataStoreClientConfig,
+    ]:
+        """Get the TFX metadata config of this ZenStore.
+
+        Returns:
+            The TFX metadata config of this ZenStore.
+        """
+        return self._metadata_store.get_tfx_metadata_config()
+
+    #  .---------.
+    # | PROJECTS |
+    # '----------'
+
+    def list_projects(self) -> List[Project]:
+        """List all projects.
+
+        Returns:
+            A list of all projects.
+        """
+
     # OLD STUFF BELOW HERE #############################################################################################################################
 
     def get_stack_configuration(
@@ -602,19 +879,6 @@ class SqlZenStore(BaseZenStore):
 
     # Private interface implementations:
 
-    def _get_tfx_metadata_config(
-        self,
-    ) -> Union[
-        metadata_store_pb2.ConnectionConfig,
-        metadata_store_pb2.MetadataStoreClientConfig,
-    ]:
-        """Get the TFX metadata config of this ZenStore.
-
-        Returns:
-            The TFX metadata config of this ZenStore.
-        """
-        return self._metadata_store.get_tfx_metadata_config()
-
     def _save_stack(
         self,
         name: str,
@@ -766,28 +1030,6 @@ class SqlZenStore(BaseZenStore):
                 User(**user.dict())
                 for user in session.exec(select(UserSchema)).all()
             ]
-
-    def _get_user(self, user_name: str) -> User:
-        """Get a specific user by name.
-
-        Args:
-            user_name: Name of the user to get.
-
-        Returns:
-            The requested user, if it was found.
-
-        Raises:
-            KeyError: If no user with the given name exists.
-        """
-        with Session(self.engine) as session:
-            try:
-                user = session.exec(
-                    select(UserSchema).where(UserSchema.name == user_name)
-                ).one()
-            except NoResultFound as error:
-                raise KeyError from error
-
-            return User(**user.dict())
 
     def _create_user(self, user_name: str) -> User:
         """Creates a new user.
