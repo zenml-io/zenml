@@ -44,8 +44,6 @@ from zenml.models import (
     RoleAssignment,
     Team,
     User,
-    ZenStoreModel,
-    ZenStorePipelineModel,
 )
 from zenml.utils import io_utils
 from zenml.zen_stores import BaseZenStore
@@ -113,7 +111,7 @@ class LocalZenStore(BaseZenStore):
         self,
         url: str,
         *args: Any,
-        store_data: Optional[ZenStoreModel] = None,
+        store_data: Optional[None] = None,
         **kwargs: Any,
     ) -> "LocalZenStore":
         """Initializes a local ZenStore instance.

@@ -25,7 +25,8 @@ from sqlmodel import Session, SQLModel, create_engine, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
-from zenml.exceptions import EntityExistsError, StackComponentExistsError
+from zenml.exceptions import EntityExistsError, StackComponentExistsError, \
+    StackExistsError
 from zenml.logger import get_logger
 from zenml.metadata_stores.sqlite_metadata_store import SQLiteMetadataStore
 from zenml.models import (
@@ -36,7 +37,7 @@ from zenml.models import (
     Role,
     RoleAssignment,
     Team,
-    User,
+    User, StackModel,
 )
 from zenml.post_execution.artifact import ArtifactView
 from zenml.post_execution.pipeline import PipelineView
@@ -221,6 +222,174 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             return session.exec(select(StackSchema)).first() is None
+
+    #  .--------.
+    # | STACKS |
+    # '--------'
+
+    def _list_stacks(self) -> List[StackModel]:
+        """List all stacks.
+
+        Returns:
+            A list of all stacks.
+        """
+        # TODO: apply filters
+        with Session(self.engine) as session:
+            list_of_stacks_and_components = session.exec(
+                select(StackSchema, StackComponentSchema)
+                .where(StackSchema.id == StackCompositionSchema.stack_id)
+                .where(StackComponentSchema.id == StackCompositionSchema.component_id)
+            ).all()
+
+        for stack, components in list_of_stacks_and_components:
+            # TODO: construct StackModel
+            return None
+
+    def _get_stack(self, stack_id: str) -> StackModel:
+        """Get a stack by id.
+
+        Args:
+            stack_id: The id of the stack to get.
+
+        Returns:
+            The stack with the given id.
+        """
+        with Session(self.engine) as session:
+            list_of_stacks_and_components = session.exec(
+                select(StackSchema, StackComponentSchema)
+                .where(StackSchema.id == stack_id)
+                .where(StackSchema.id == StackCompositionSchema.stack_id)
+                .where(StackComponentSchema.id == StackCompositionSchema.component_id)
+            ).all()
+
+        for stack, components in list_of_stacks_and_components:
+            # TODO: construct StackModel from Stack and corresponding Components
+            return None
+
+    def _register_stack(self, stack: StackModel, user: User) -> StackModel:
+        """Register a new stack.
+
+        Args:
+            stack: The stack to register.
+
+        Returns:
+            The registered stack.
+        """
+        with Session(self.engine) as session:
+            # Check if stack with the domain key (name, prj, owner) already
+            #  exists
+            existing_stack = session.exec(
+                select(StackSchema)
+                .where(StackSchema.name == stack.name)
+                .where(StackSchema.project_id == stack.project)
+                .where(StackSchema.owner == user.id)
+            ).first()
+            # TODO: verify if is_shared status needs to be checked here
+            if existing_stack is not None:
+                raise StackExistsError(
+                    f"Unable to register stack with name "
+                    f"'{stack.name}': Found "
+                    f"existing stack with this name. in the project for"
+                    f"this user."
+                )
+
+            # TODO: validate the the composition of components is a valid stack
+            # Get the Schemas of all components mentioned
+            defined_components = session.exec(
+                select(StackComponentSchema)
+                .where(StackComponentSchema.id in stack.components.values())
+            ).all
+
+            # Create the stack
+            stack_in_db = StackSchema(name=stack.name,
+                                      project_id=stack.project,
+                                      owner=user.id,
+                                      components=defined_components)
+            session.add(stack_in_db)
+            session.commit()
+
+            # After committing the model, sqlmodel takes care of updating the
+            #  object with id, created_at, etc ...
+            # TODO: construct StackModel
+            return None
+
+
+    def _update_stack(self, stack_id: str, stack: StackModel) -> StackModel:
+        """Update an existing stack.
+
+        Args:
+            stack_id: The id of the stack to update.
+            stack: The stack to update.
+
+        Returns:
+            The updated stack.
+        """
+        with Session(self.engine) as session:
+            # Check if stack with the domain key (name, prj, owner) already
+            #  exists
+            existing_stack = session.exec(
+                select(StackSchema)
+                .where(StackSchema.name == stack.name)
+                .where(StackSchema.project_id == stack.project)
+                .where(StackSchema.owner == user.id)
+            ).first()
+            # TODO: verify if is_shared status needs to be checked here
+            if existing_stack is not None:
+                raise StackExistsError(
+                    f"Unable to register stack with name "
+                    f"'{stack.name}': Found "
+                    f"existing stack with this name. in the project for"
+                    f"this user."
+                )
+
+            # TODO: validate the the composition of components is a valid stack
+            # Get the Schemas of all components mentioned
+            defined_components = session.exec(
+                select(StackComponentSchema)
+                .where(StackComponentSchema.id in stack.components.values())
+            ).all
+
+            # Create the stack
+            stack_in_db = StackSchema(name=stack.name,
+                                      project_id=stack.project,
+                                      owner=user.id,
+                                      components=defined_components)
+            session.add(stack_in_db)
+            session.commit()
+
+            # After committing the model, sqlmodel takes care of updating the
+            #  object with id, created_at, etc ...
+            # TODO: construct StackModel
+            return None
+
+    def _delete_stack(self, stack_id: str) -> None:
+        """Delete a stack.
+
+        Args:
+            stack_id: The id of the stack to delete.
+        """
+        with Session(self.engine) as session:
+            try:
+                stack = session.exec(
+                    select(StackSchema).where(StackSchema.id == id)
+                ).one()
+                session.delete(stack)
+            except NoResultFound as error:
+                raise KeyError from error
+
+            # TODO: verify this is actually necessary, this might already
+            #  be handled by sqlmodel
+            definitions = session.exec(
+                select(StackCompositionSchema)
+                .where(StackCompositionSchema.stack_id == StackSchema.id)
+            ).all()
+            for definition in definitions:
+                session.delete(definition)
+
+            session.commit()
+
+
+# OLD STUFF BELOW HERE #############################################################################################################################
 
     def get_stack_configuration(
         self, name: str

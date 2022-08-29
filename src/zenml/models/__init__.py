@@ -29,7 +29,6 @@ from zenml.models.user_management_models import (
     Team,
     User,
 )
-from zenml.models.zen_store_model import ZenStoreModel, ZenStorePipelineModel
 
 __all__ = [
     "ComponentModel",
@@ -38,8 +37,6 @@ __all__ = [
     "PipelineModel",
     "PipelineRunModel",
     "StepModel",
-    "ZenStoreModel",
-    "ZenStorePipelineModel",
     "User",
     "Project",
     "Role",
