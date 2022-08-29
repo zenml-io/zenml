@@ -35,7 +35,7 @@ app = FastAPI(title="ZenML", version=zenml.__version__)
 
 
 # Basic Health Endpoint
-@app.head("/health")
+@app.head("/health", include_in_schema=False)
 @app.get("/health")
 async def health() -> str:
     """Get health status of the server.
