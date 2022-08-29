@@ -26,7 +26,6 @@ from zenml.models import ComponentModel, FlavorModel, StackModel
 from zenml.models.code_models import CodeRepositoryModel
 from zenml.models.pipeline_models import PipelineModel, StepModel
 from zenml.models.user_management_models import Project, Role, User
-from zenml.stack import Stack
 from zenml.utils.analytics_utils import AnalyticsEvent
 
 logger = get_logger(__name__)
@@ -167,7 +166,7 @@ class BaseZenStore(ABC):
         """
         return self._list_stacks()
 
-    def register_stack(self, stack: Stack) -> StackModel:
+    def register_stack(self, stack: StackModel) -> StackModel:
         """Register a new stack.
 
         Args:
@@ -186,10 +185,13 @@ class BaseZenStore(ABC):
 
         Returns:
             The stack with the given id.
+
+        Raises:
+            KeyError: if the stack doesn't exist.
         """
         return self._get_stack(stack_id)
 
-    def update_stack(self, stack_id: str, stack: Stack) -> StackModel:
+    def update_stack(self, stack_id: str, stack: StackModel) -> StackModel:
         """Update an existing stack.
 
         Args:
@@ -263,7 +265,7 @@ class BaseZenStore(ABC):
 
         Args:
             component_id: The id of the stack component to update.
-            component: The stack component to update.
+            component: The stack component to use for the update.
 
         Returns:
             The updated stack component.
@@ -275,6 +277,9 @@ class BaseZenStore(ABC):
 
         Args:
             component_id: The id of the stack component to delete.
+
+        Raises:
+            KeyError: if the stack component doesn't exist.
         """
         self._delete_stack_component(component_id)
 
@@ -415,7 +420,6 @@ class BaseZenStore(ABC):
         self._track_event(AnalyticsEvent.DELETED_USER)
         return self._delete_user(user_id)
 
-    @abstractmethod
     def get_role_assignments_for_user(
         self,
         user_id: str,
@@ -433,8 +437,8 @@ class BaseZenStore(ABC):
         Raises:
             KeyError: If no user or project with the given names exists.
         """
+        return self._get_role_assignments_for_user(user_id)
 
-    @abstractmethod
     def assign_role(
         self,
         user_id: str,
@@ -449,6 +453,7 @@ class BaseZenStore(ABC):
         Raises:
             KeyError: If no user with the given ID exists.
         """
+        return self._assign_role(user_id, role)
 
     # TODO: Check whether this needs to be an abstract method or not (probably?)
     @abstractmethod
@@ -2031,6 +2036,227 @@ class BaseZenStore(ABC):
 
         Raises:
             KeyError: if the repository doesn't exist.
+        """
+
+    @abstractmethod
+    def _list_stacks(self) -> List[StackModel]:
+        """List all stacks.
+
+        Returns:
+            A list of all stacks.
+        """
+
+    @abstractmethod
+    def _register_stack(self, stack: StackModel) -> StackModel:
+        """Register a new stack.
+
+        Args:
+            stack: The stack to register.
+
+        Returns:
+            The registered stack.
+        """
+
+    @abstractmethod
+    def _get_stack(self, stack_id: str) -> StackModel:
+        """Get a stack by ID.
+
+        Args:
+            stack_id: The ID of the stack to get.
+
+        Returns:
+            The stack.
+
+        Raises:
+            KeyError: if the stack doesn't exist.
+        """
+
+    @abstractmethod
+    def _update_stack(self, stack_id: str, stack: StackModel) -> StackModel:
+        """Update a stack.
+
+        Args:
+            stack_id: The ID of the stack to update.
+            stack: The stack to use for the update.
+
+        Returns:
+            The updated stack.
+
+        Raises:
+            KeyError: if the stack doesn't exist.
+        """
+
+    @abstractmethod
+    def _delete_stack(self, stack_id: str) -> None:
+        """Delete a stack.
+
+        Args:
+            stack_id: The ID of the stack to delete.
+
+        Raises:
+            KeyError: if the stack doesn't exist.
+        """
+
+    @abstractmethod
+    def _list_stack_component_types(self) -> List[StackComponentType]:
+        """List all stack component types.
+
+        Returns:
+            A list of all stack component types.
+        """
+
+    @abstractmethod
+    def _list_stack_component_flavors_by_type(
+        self, component_type: StackComponentType
+    ) -> List[FlavorModel]:
+        """List all stack component flavors by type.
+
+        Args:
+            component_type: The stack component for which to get flavors.
+
+        Returns:
+            List of stack component flavors.
+        """
+
+    @abstractmethod
+    def _list_stack_components(self) -> List[ComponentModel]:
+        """List all stack components.
+
+        Returns:
+            A list of all stack components.
+        """
+
+    @abstractmethod
+    def _get_stack_component(self, component_id: str) -> ComponentModel:
+        """Get a stack component by ID.
+
+        Args:
+            component_id: The ID of the stack component to get.
+
+        Returns:
+            The stack component.
+
+        Raises:
+            KeyError: if the stack component doesn't exist.
+        """
+
+    @abstractmethod
+    def _update_stack_component(
+        self, component_id: str, component: ComponentModel
+    ):
+        """Update a stack component.
+
+        Args:
+            component_id: The ID of the stack component to update.
+            component: The stack component to use for the update.
+
+        Returns:
+            The updated stack component.
+
+        Raises:
+            KeyError: if the stack component doesn't exist.
+        """
+
+    @abstractmethod
+    def _delete_stack_component(self, component_id: str) -> None:
+        """Delete a stack component.
+
+        Args:
+            component_id: The ID of the stack component to delete.
+
+        Raises:
+            KeyError: if the stack component doesn't exist.
+        """
+
+    @abstractmethod
+    def _get_stack_component_side_effects(
+        self, component_id: str, run_id: str, pipeline_id: str, stack_id: str
+    ) -> Dict[Any]:
+        """Get the side effects of a stack component.
+
+        Args:
+            component_id: The ID of the stack component to get side effects for.
+            run_id: The ID of the run to get side effects for.
+            pipeline_id: The ID of the pipeline to get side effects for.
+            stack_id: The ID of the stack to get side effects for.
+        """
+
+    @abstractmethod
+    def _get_step(self, step_id: str) -> StepModel:
+        """Get a step by ID.
+
+        Args:
+            step_id: The ID of the step to get.
+
+        Returns:
+            The step.
+
+        Raises:
+            KeyError: if the step doesn't exist.
+        """
+
+    @abstractmethod
+    def _get_step_outputs(self, step_id: str) -> Dict[str, ArtifactView]:
+        """Get the outputs of a step.
+
+        Args:
+            step_id: The ID of the step to get outputs for.
+
+        Returns:
+            The outputs of the step.
+        """
+
+    @abstractmethod
+    def _get_step_inputs(self, step_id: str) -> Dict[str, ArtifactView]:
+        """Get the inputs of a step.
+
+        Args:
+            step_id: The ID of the step to get inputs for.
+
+        Returns:
+            The inputs of the step.
+        """
+
+    @abstractmethod
+    def _list_steps(self, pipeline_id: str) -> List[StepModel]:
+        """List all steps.
+
+        Args:
+            pipeline_id: The ID of the pipeline to list steps for.
+
+        Returns:
+            A list of all steps.
+        """
+
+    @abstractmethod
+    def _list_users(self, invite_token: str = None) -> List[User]:
+        """List all users.
+
+        Args:
+            invite_token: The invite token to filter by.
+
+        Returns:
+            A list of all users.
+        """
+
+    @abstractmethod
+    def _get_role_assignments_for_user(self, user_id: str) -> List[Role]:
+        """Get the role assignments for a user.
+
+        Args:
+            user_id: The ID of the user to get role assignments for.
+
+        Returns:
+            The role assignments for the user.
+        """
+
+    @abstractmethod
+    def _assign_role(self, user_id: str, role: Role) -> None:
+        """Assign a role to a user.
+
+        Args:
+            user_id: The ID of the user to assign the role to.
+            role: The role to assign.
         """
 
     # PROPERTIES
