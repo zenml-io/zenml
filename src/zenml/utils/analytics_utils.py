@@ -92,6 +92,10 @@ class AnalyticsEvent(str, Enum):
     # Test event
     EVENT_TEST = "Test event"
 
+    # Login events
+    LOGIN = "Login"
+    LOGOUT = "Logout"
+
 
 def get_segment_key() -> str:
     """Get key for authorizing to Segment backend.

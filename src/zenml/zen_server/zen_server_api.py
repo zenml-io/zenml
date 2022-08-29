@@ -46,11 +46,6 @@ async def health() -> str:
     return "OK"
 
 
-# TODO: Remove this after the rest of the routers are imported
-# authed = APIRouter(
-#     dependencies=[Depends(authorize)], responses={401: error_response}
-# )
-
 # to run this file locally, execute:
 # uvicorn zenml.zen_server.zen_server_api:app --reload
 

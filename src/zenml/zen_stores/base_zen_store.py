@@ -834,6 +834,16 @@ class BaseZenStore(ABC):
         self._track_event(AnalyticsEvent.DELETE_REPOSITORY)
         return self._delete_repository(repository_id)
 
+    def login(self) -> None:
+        """Logs in to the server."""
+        self._track_event(AnalyticsEvent.LOGIN)
+        self._login()
+
+    def logout(self) -> None:
+        """Logs out of the server."""
+        self._track_event(AnalyticsEvent.LOGOUT)
+        self._logout()
+
     # @abstractmethod
     # def get_stack_configuration(
     #     self, name: str
@@ -2258,6 +2268,12 @@ class BaseZenStore(ABC):
             user_id: The ID of the user to assign the role to.
             role: The role to assign.
         """
+
+    def _login(self) -> None:
+        """Logs in to the server."""
+
+    def _logout(self) -> None:
+        """Logs out of the server."""
 
     # PROPERTIES
 

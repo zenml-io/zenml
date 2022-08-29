@@ -65,7 +65,7 @@ async def logout() -> None:
         validation error: when unable to validate credentials
     """
     try:
-        zen_store.login()
+        zen_store.logout()
     except NotAuthorizedError as error:
         raise conflict(error) from error
     except NotFoundError as error:
