@@ -8,7 +8,7 @@ ZenML and runs your pipelines locally using Docker.
 ## When to use it
 
 You should use the local Docker orchestrator if
-* you want the steps of your pipeline run locally in isolated environments.
+* you want the steps of your pipeline to run locally in isolated environments.
 * you want to debug issues that happen when running your pipeline in Docker containers without
 waiting and paying for remote infrastructure.
 
