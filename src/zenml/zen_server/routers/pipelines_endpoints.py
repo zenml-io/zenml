@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -110,12 +110,15 @@ async def update_pipeline(pipeline_id: str, updated_pipeline) -> PipelineModel:
         The updated pipeline object.
 
     Raises:
+        not_found: when pipeline does not exist
         conflict: when not authorized to login
         not_found: when user does not exist
         validation error: when unable to validate credentials
     """
     try:
         return zen_store.update_pipeline(pipeline_id, updated_pipeline)
+    except:
+        raise not_found(error_detail(e)) from e
     except NotAuthorizedError as error:
         raise conflict(error) from error
     except NotFoundError as error:
@@ -253,7 +256,7 @@ async def get_pipeline_runs(pipeline_id: str) -> List[PipelineRunModel]:
         validation error: when unable to validate credentials
     """
     try:
-        return zen_store.get_pipeline_run_wrappers(pipeline_id=pipeline_id)
+        return zen_store.get_pipeline_runs(pipeline_id=pipeline_id)
     except NotAuthorizedError as error:
         raise conflict(error) from error
     except NotFoundError as error:
@@ -266,7 +269,9 @@ async def get_pipeline_runs(pipeline_id: str) -> List[PipelineRunModel]:
     PIPELINES + "/{pipeline_id}" + RUNS,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-async def create_pipeline_run(pipeline_id: str, pipeline_run) -> None:
+async def create_pipeline_run(
+    pipeline_id: str, pipeline_run: PipelineRunModel
+) -> PipelineRunModel:
     """Create a run for a pipeline.
 
     This endpoint is not meant to be used explicitly once ZenML follows the
@@ -300,7 +305,7 @@ async def create_pipeline_run(pipeline_id: str, pipeline_run) -> None:
     response_model=Dict,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_pipeline_configuration(pipeline_id: str) -> Dict:
+async def get_pipeline_configuration(pipeline_id: str) -> Dict[Any, Any]:
     """Get the pipeline configuration for a given pipeline.
 
     Args:

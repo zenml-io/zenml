@@ -24,7 +24,11 @@ from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.logger import get_logger
 from zenml.models import ComponentModel, FlavorModel, StackModel
 from zenml.models.code_models import CodeRepositoryModel
-from zenml.models.pipeline_models import PipelineModel, StepModel
+from zenml.models.pipeline_models import (
+    PipelineModel,
+    PipelineRunModel,
+    StepModel,
+)
 from zenml.models.user_management_models import Project, Role, User
 from zenml.utils.analytics_utils import AnalyticsEvent
 
@@ -877,6 +881,83 @@ class BaseZenStore(ABC):
         Returns:
             PipelineModel if found, None otherwise.
         """
+
+    @abstractmethod
+    def update_pipeline(
+        self, pipeline_id: str, pipeline: PipelineModel
+    ) -> PipelineModel:
+        """Updates a pipeline.
+
+        Args:
+            pipeline_id: The ID of the pipeline to update.
+            pipeline: The pipeline to use for the update.
+
+        Returns:
+            The updated pipeline.
+
+        Raises:
+            KeyError: if the pipeline doesn't exist.
+        """
+        self._track_event(AnalyticsEvent.UPDATE_PIPELINE)
+        return self._update_pipeline(pipeline_id, pipeline)
+
+    @abstractmethod
+    def delete_pipeline(self, pipeline_id: str) -> None:
+        """Deletes a pipeline.
+
+        Args:
+            pipeline_id: The ID of the pipeline to delete.
+
+        Raises:
+            KeyError: if the pipeline doesn't exist.
+        """
+        self._track_event(AnalyticsEvent.DELETE_PIPELINE)
+        return self._delete_pipeline(pipeline_id)
+
+    def get_pipeline_runs(self, pipeline_id: str) -> List[PipelineRunModel]:
+        """Gets all pipeline runs in a pipeline.
+
+        Args:
+            pipeline_id: The ID of the pipeline to get.
+
+        Returns:
+            A list of all pipeline runs in the pipeline.
+
+        Raises:
+            KeyError: if the pipeline doesn't exist.
+        """
+        return self._get_pipeline_runs(pipeline_id)
+
+    def create_pipeline_run(
+        self, pipeline_id: str, pipeline_run: PipelineRunModel
+    ) -> PipelineRunModel:
+        """Creates a pipeline run.
+
+        Args:
+            pipeline_id: The ID of the pipeline to create the run in.
+            pipeline_run: The pipeline run to create.
+
+        Returns:
+            The created pipeline run.
+
+        Raises:
+            KeyError: if the pipeline doesn't exist.
+        """
+        return self._create_pipeline_run(pipeline_id, pipeline_run)
+
+    def get_pipeline_configuration(self, pipeline_id: str) -> Dict[Any, Any]:
+        """Gets the pipeline configuration.
+
+        Args:
+            pipeline_id: The ID of the pipeline to get.
+
+        Returns:
+            The pipeline configuration.
+
+        Raises:
+            KeyError: if the pipeline doesn't exist.
+        """
+        return self._get_pipeline_configuration(pipeline_id)
 
     # @abstractmethod
     # def get_stack_configuration(
@@ -2310,6 +2391,79 @@ class BaseZenStore(ABC):
 
         Raises:
             KeyError: if the project doesn't exist.
+        """
+
+    @abstractmethod
+    def _update_pipeline(
+        self, pipeline_id: str, pipeline: PipelineModel
+    ) -> PipelineModel:
+        """Updates a pipeline.
+
+        Args:
+            pipeline_id: The ID of the pipeline to update.
+            pipeline: The pipeline to use for the update.
+
+        Returns:
+            The updated pipeline.
+
+        Raises:
+            KeyError: if the pipeline doesn't exist.
+        """
+
+    @abstractmethod
+    def _delete_pipeline(self, pipeline_id: str) -> None:
+        """Deletes a pipeline.
+
+        Args:
+            pipeline_id: The ID of the pipeline to delete.
+
+        Raises:
+            KeyError: if the pipeline doesn't exist.
+        """
+
+    @abstractmethod
+    def _get_pipeline_runs(self, pipeline_id: str) -> List[PipelineRunModel]:
+        """Gets all pipeline runs in a pipeline.
+
+        Args:
+            pipeline_id: The ID of the pipeline to get.
+
+        Returns:
+            A list of all pipeline runs in the pipeline.
+
+        Raises:
+            KeyError: if the pipeline doesn't exist.
+        """
+
+    @abstractmethod
+    def _create_pipeline_run(
+        self, pipeline_id: str, pipeline_run: PipelineRunModel
+    ) -> PipelineRunModel:
+        """Creates a pipeline run.
+
+        Args:
+            pipeline_id: The ID of the pipeline to create the run in.
+            pipeline_run: The pipeline run to create.
+
+        Returns:
+            The created pipeline run.
+
+        Raises:
+            KeyError: if the pipeline doesn't exist.
+        """
+
+    @abstractmethod
+    def get_pipeline_configuration(self, pipeline_id: str) -> Dict[Any, Any]:
+        """Gets the pipeline configuration.
+
+        Args:
+            pipeline_id: The ID of the pipeline to get.
+
+        Returns:
+            The pipeline configuration.
+
+        Raises:
+            KeyError: if the pipeline doesn't exist.
         """
 
     # PROPERTIES
