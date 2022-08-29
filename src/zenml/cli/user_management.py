@@ -227,7 +227,7 @@ def list_projects() -> None:
 
         cli_utils.print_pydantic_models(
             projects,
-            columns=("name", "description", "creation_date"),
+            columns=("name", "description", "created_at"),
             is_active=(lambda p: p.id == active_project_id),
         )
     else:

@@ -29,13 +29,13 @@ class Role(BaseModel):
 
     Attributes:
         id: Id of the role.
-        creation_date: Date when the role was created.
+        created_at: Date when the role was created.
         name: Name of the role.
         permissions: Set of permissions allowed by this role.
     """
 
     id: UUID = Field(default_factory=uuid4)
-    creation_date: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=datetime.now)
     name: str
 
 
@@ -44,12 +44,12 @@ class User(BaseModel):
 
     Attributes:
         id: Id of the user.
-        creation_date: Date when the user was created.
+        created_at: Date when the user was created.
         name: Name of the user.
     """
 
     id: UUID = Field(default_factory=uuid4)
-    creation_date: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=datetime.now)
     name: str
     # email: str
     # password: str
@@ -60,12 +60,12 @@ class Team(BaseModel):
 
     Attributes:
         id: Id of the team.
-        creation_date: Date when the team was created.
+        created_at: Date when the team was created.
         name: Name of the team.
     """
 
     id: UUID = Field(default_factory=uuid4)
-    creation_date: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=datetime.now)
     name: str
 
 
@@ -74,13 +74,13 @@ class Project(BaseModel):
 
     Attributes:
         id: Id of the project.
-        creation_date: Date when the project was created.
+        created_at: Date when the project was created.
         name: Name of the project.
         description: Optional project description.
     """
 
     id: UUID = Field(default_factory=uuid4)
-    creation_date: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=datetime.now)
     name: str
     description: Optional[str] = None
 
@@ -90,7 +90,7 @@ class RoleAssignment(BaseModel):
 
     Attributes:
         id: Id of the role assignment.
-        creation_date: Date when the role was assigned.
+        created_at: Date when the role was assigned.
         role_id: Id of the role.
         project_id: Optional ID of a project that the role is limited to.
         team_id: Id of a team to which the role is assigned.
@@ -98,7 +98,7 @@ class RoleAssignment(BaseModel):
     """
 
     id: UUID = Field(default_factory=uuid4)
-    creation_date: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=datetime.now)
     role_id: UUID
     project_id: Optional[UUID] = None
     team_id: Optional[UUID] = None
