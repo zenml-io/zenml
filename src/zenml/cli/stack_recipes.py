@@ -141,7 +141,9 @@ class Terraform:
         )
 
         # return the path of the stack yaml file
-        _, stack_file_path, _ = self.tf.output("stack-yaml-path")
+        _, stack_file_path, _ = self.tf.output(
+            "stack-yaml-path", full_value=True
+        )
         return str(stack_file_path)
 
     def _get_vars(self, path: str) -> Any:
