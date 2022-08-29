@@ -21,6 +21,7 @@ from zenml.zen_server.utils import (
     authorize,
     error_detail,
     error_response,
+    not_found,
     zen_store,
 )
 
@@ -47,12 +48,15 @@ async def get_step(step_id: str) -> StepModel:
         The step.
 
     Raises:
+        not_found: If the step does not exist.
         401 error: when not authorized to login
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
     try:
         return zen_store.get_step(step_id)
+    except KeyError as e:
+        raise not_found(error_detail(e)) from e
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:

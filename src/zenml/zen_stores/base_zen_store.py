@@ -834,6 +834,10 @@ class BaseZenStore(ABC):
         self._track_event(AnalyticsEvent.DELETE_REPOSITORY)
         return self._delete_repository(repository_id)
 
+    #  .-----.
+    # | AUTH |
+    # '------'
+
     def login(self) -> None:
         """Logs in to the server."""
         self._track_event(AnalyticsEvent.LOGIN)
@@ -843,6 +847,36 @@ class BaseZenStore(ABC):
         """Logs out of the server."""
         self._track_event(AnalyticsEvent.LOGOUT)
         self._logout()
+
+    #  .----------.
+    # | PIPELINES |
+    # '-----------'
+
+    # TODO: [ALEX] add filtering param(s)
+    def list_pipelines(self, project_name: str) -> List[PipelineModel]:
+        """Gets all pipelines in a project.
+
+        Args:
+            project_name: Name of the project to get.
+
+        Returns:
+            A list of all pipelines in the project.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
+        return self._list_pipelines(project_name)
+
+    @abstractmethod
+    def get_pipeline(self, pipeline_id: str) -> Optional[PipelineModel]:
+        """Returns a pipeline for the given name.
+
+        Args:
+            pipeline_id: ID of the pipeline.
+
+        Returns:
+            PipelineModel if found, None otherwise.
+        """
 
     # @abstractmethod
     # def get_stack_configuration(
@@ -1139,17 +1173,6 @@ class BaseZenStore(ABC):
     #     """
 
     # # Pipelines and pipeline runs
-
-    # @abstractmethod
-    # def get_pipeline(self, pipeline_name: str) -> Optional[PipelineView]:
-    #     """Returns a pipeline for the given name.
-
-    #     Args:
-    #         pipeline_name: Name of the pipeline.
-
-    #     Returns:
-    #         PipelineView if found, None otherwise.
-    #     """
 
     # @abstractmethod
     # def get_pipeline_run(
@@ -2274,6 +2297,20 @@ class BaseZenStore(ABC):
 
     def _logout(self) -> None:
         """Logs out of the server."""
+
+    @abstractmethod
+    def _list_pipelines(self, project_name: str) -> List[PipelineModel]:
+        """Gets all pipelines in a project.
+
+        Args:
+            project_name: Name of the project to get.
+
+        Returns:
+            A list of all pipelines in the project.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
 
     # PROPERTIES
 

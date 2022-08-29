@@ -17,6 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from zenml.constants import PIPELINE_CONFIGURATION, PIPELINES, RUNS, TRIGGERS
 from zenml.models import PipelineRunModel
+from zenml.models.pipeline_models import PipelineModel
 from zenml.zen_server.utils import (
     authorize,
     conflict,
@@ -35,10 +36,10 @@ router = APIRouter(
 
 @router.get(
     PIPELINES,
-    response_model=List[Dict],
+    response_model=List[PipelineModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_pipelines(project_name: str) -> List[Dict]:
+async def get_pipelines(project_name: str) -> List[PipelineModel]:
     """Gets a list of pipelines.
 
     Args:
@@ -53,7 +54,9 @@ async def get_pipelines(project_name: str) -> List[Dict]:
         validation error: when unable to validate credentials
     """
     try:
-        return zen_store.get_pipelines(project_name)
+        return zen_store.list_pipelines(project_name)
+    except KeyError as e:
+        raise not_found(error_detail(e)) from e
     except NotAuthorizedError as error:
         raise conflict(error) from error
     except NotFoundError as error:
@@ -64,10 +67,10 @@ async def get_pipelines(project_name: str) -> List[Dict]:
 
 @router.get(
     PIPELINES + "/{pipeline_id}",
-    response_model=Dict,
+    response_model=PipelineModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_pipeline(pipeline_id: str) -> Dict:
+async def get_pipeline(pipeline_id: str) -> PipelineModel:
     """Gets a specific pipeline using its unique id.
 
     Args:
@@ -93,10 +96,10 @@ async def get_pipeline(pipeline_id: str) -> Dict:
 
 @router.put(
     PIPELINES + "/{pipeline_id}",
-    response_model=Dict,
+    response_model=PipelineModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def update_pipeline(pipeline_id: str, updated_pipeline) -> Dict:
+async def update_pipeline(pipeline_id: str, updated_pipeline) -> PipelineModel:
     """Updates the attribute on a specific pipeline using its unique id.
 
     Args:
