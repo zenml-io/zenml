@@ -213,16 +213,6 @@ class SqlZenStore(BaseZenStore):
 
         return True
 
-    @property
-    def stacks_empty(self) -> bool:
-        """Check if the zen store is empty.
-
-        Returns:
-            True if the zen store is empty, False otherwise.
-        """
-        with Session(self.engine) as session:
-            return session.exec(select(StackSchema)).first() is None
-
     #  .--------.
     # | STACKS |
     # '--------'
@@ -266,7 +256,11 @@ class SqlZenStore(BaseZenStore):
             # TODO: construct StackModel from Stack and corresponding Components
             return None
 
-    def _register_stack(self, stack: StackModel, user: User) -> StackModel:
+    def _register_stack(self,
+                      stack_id: str,
+                      user: User,
+                      project: Project,
+                      stack: StackModel) -> StackModel:
         """Register a new stack.
 
         Args:
@@ -281,7 +275,7 @@ class SqlZenStore(BaseZenStore):
             existing_stack = session.exec(
                 select(StackSchema)
                 .where(StackSchema.name == stack.name)
-                .where(StackSchema.project_id == stack.project)
+                .where(StackSchema.project_id == project.id)
                 .where(StackSchema.owner == user.id)
             ).first()
             # TODO: verify if is_shared status needs to be checked here
@@ -313,16 +307,24 @@ class SqlZenStore(BaseZenStore):
             # TODO: construct StackModel
             return None
 
-
-    def _update_stack(self, stack_id: str, stack: StackModel) -> StackModel:
+    def _update_stack(self,
+                      stack_id: str,
+                      user: User,
+                      project: Project,
+                      stack: StackModel) -> StackModel:
         """Update an existing stack.
 
         Args:
             stack_id: The id of the stack to update.
+            user: The user that created the stack
+            project: The project the user created this stack within
             stack: The stack to update.
 
         Returns:
             The updated stack.
+
+        Raises:
+            StackExistsError: If a stack of that domain key already exists
         """
         with Session(self.engine) as session:
             # Check if stack with the domain key (name, prj, owner) already
@@ -330,7 +332,7 @@ class SqlZenStore(BaseZenStore):
             existing_stack = session.exec(
                 select(StackSchema)
                 .where(StackSchema.name == stack.name)
-                .where(StackSchema.project_id == stack.project)
+                .where(StackSchema.project_id == project.id)
                 .where(StackSchema.owner == user.id)
             ).first()
             # TODO: verify if is_shared status needs to be checked here
@@ -377,19 +379,114 @@ class SqlZenStore(BaseZenStore):
             except NoResultFound as error:
                 raise KeyError from error
 
-            # TODO: verify this is actually necessary, this might already
-            #  be handled by sqlmodel
-            definitions = session.exec(
-                select(StackCompositionSchema)
-                .where(StackCompositionSchema.stack_id == StackSchema.id)
-            ).all()
-            for definition in definitions:
-                session.delete(definition)
+            session.commit()
+
+    #  .-----------------.
+    # | STACK COMPONENTS |
+    # '------------------'
+
+    # TODO: [ALEX] add filtering param(s)
+    def _list_stack_component_types(self) -> List[str]:
+        """List all stack component types.
+
+        Returns:
+            A list of all stack component types.
+        """
+        return StackComponentType.values()
+
+    def _list_stack_component_flavors_by_type(
+        self,
+        component_type: StackComponentType,
+    ) -> List[FlavorModel]:
+        """List all stack component flavors by type.
+
+        Args:
+            component_type: The stack component for which to get flavors.
+
+        Returns:
+            List of stack component flavors.
+        """
+        # TODO: implement this
+
+    def _list_stack_components(self) -> List[ComponentModel]:
+        """List all stack components.
+
+        Returns:
+            All stack components currently registered.
+        """
+        # TODO: implement this
+
+    def _get_stack_component(self, component_id: str) -> ComponentModel:
+        """Get a stack component by id.
+
+        Args:
+            component_id: The id of the stack component to get.
+
+        Returns:
+            The stack component with the given id.
+        """
+        # TODO: implement this
+
+    def _update_stack_component(
+        self, component_id: str, component: ComponentModel
+    ) -> ComponentModel:
+        """Update an existing stack component.
+
+        Args:
+            component_id: The id of the stack component to update.
+            component: The stack component to use for the update.
+
+        Returns:
+            The updated stack component.
+        """
+        # TODO: implement this
+
+    def _delete_stack_component(self, component_id: str) -> None:
+        """Delete a stack component.
+
+        Args:
+            component_id: The id of the stack component to delete.
+
+        Raises:
+            KeyError: if the stack component doesn't exist.
+        """
+        with Session(self.engine) as session:
+            try:
+                stack_component = session.exec(
+                    select(StackComponentSchema)
+                    .where(StackComponentSchema.id == component_id)
+                ).one()
+                session.delete(stack_component)
+            except NoResultFound as error:
+                raise KeyError from error
 
             session.commit()
 
+    def _get_stack_component_side_effects(
+        self, component_id: str, run_id: str, pipeline_id: str, stack_id: str
+    ) -> Dict[Any, Any]:
+        """Get the side effects of a stack component.
+
+        Args:
+            component_id: The id of the stack component to get side effects for.
+            run_id: The id of the run to get side effects for.
+            pipeline_id: The id of the pipeline to get side effects for.
+            stack_id: The id of the stack to get side effects for.
+        """
+        # TODO: implement this
+
 
 # OLD STUFF BELOW HERE #############################################################################################################################
+
+    @property
+    def stacks_empty(self) -> bool:
+        """Check if the zen store is empty.
+
+        Returns:
+            True if the zen store is empty, False otherwise.
+        """
+        with Session(self.engine) as session:
+            return session.exec(select(StackSchema)).first() is None
 
     def get_stack_configuration(
         self, name: str
