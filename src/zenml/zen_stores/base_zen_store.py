@@ -23,7 +23,8 @@ from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.logger import get_logger
 from zenml.models import ComponentModel, FlavorModel, StackModel
-from zenml.models.pipeline_models import StepModel
+from zenml.models.code_models import CodeRepositoryModel
+from zenml.models.pipeline_models import PipelineModel, StepModel
 from zenml.models.user_management_models import Project, Role, User
 from zenml.stack import Stack
 from zenml.utils.analytics_utils import AnalyticsEvent
@@ -627,6 +628,156 @@ class BaseZenStore(ABC):
         """
         return self._list_project_stack_components(project_name)
 
+    def get_project_stack_components_by_type(
+        self, project_name: str, component_type: ComponentModel
+    ) -> List[ComponentModel]:
+        """Gets all components in a project of a specific type.
+
+        Args:
+            project_name: Name of the project for which to get the components.
+            component_type: Type of the components to get.
+
+        Returns:
+            A list of all components in the project of the specified type.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
+        return self._get_project_stack_components_by_type(
+            project_name, component_type
+        )
+
+    def create_stack_component(
+        self,
+        project_name: str,
+        component_type: ComponentModel,
+        component: ComponentModel,
+    ) -> ComponentModel:
+        """Creates a new component in a project.
+
+        Args:
+            project_name: Name of the project to create the component in.
+            component_type: The component to create.
+            component: The component to create.
+
+        Returns:
+            The newly created component.
+
+        Raises:
+            StackComponentExistsError: If an identical component already exists.
+        """
+        analytics_metadata = {
+            "type": component.type.value,
+            "flavor": component.flavor,
+        }
+        self._track_event(
+            AnalyticsEvent.REGISTERED_STACK_COMPONENT,
+            metadata=analytics_metadata,
+        )
+        return self._create_stack_component(
+            project_name, component_type, component
+        )
+
+    # TODO: [ALEX] add filtering param(s)
+    @abstractmethod
+    def list_pipelines(self, project_name: str) -> List[PipelineModel]:
+        """Gets all pipelines in a project.
+
+        Args:
+            project_name: Name of the project to get.
+
+        Returns:
+            A list of all pipelines in the project.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
+        return self._list_pipelines(project_name)
+
+    @abstractmethod
+    def create_pipeline(
+        self, project_name: str, pipeline: PipelineModel
+    ) -> PipelineModel:
+        """Creates a new pipeline in a project.
+
+        Args:
+            project_name: Name of the project to create the pipeline in.
+            pipeline: The pipeline to create.
+
+        Returns:
+            The newly created pipeline.
+
+        Raises:
+            PipelineExistsError: If an identical pipeline already exists.
+        """
+        self._track_event(AnalyticsEvent.CREATE_PIPELINE)
+        return self._create_pipeline(project_name, pipeline)
+
+    @abstractmethod
+    def get_default_stack(self, project_name: str) -> StackModel:
+        """Gets the default stack in a project.
+
+        Args:
+            project_name: Name of the project to get.
+
+        Returns:
+            The default stack in the project.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
+        return self._get_default_stack(project_name)
+
+    @abstractmethod
+    def set_default_stack(self, project_name: str, stack_id: str) -> StackModel:
+        """Sets the default stack in a project.
+
+        Args:
+            project_name: Name of the project to set.
+            stack_id: The ID of the stack to set as the default.
+
+        Raises:
+            KeyError: if the project or stack doesn't exist.
+        """
+        return self._set_default_stack(project_name, stack_id)
+
+    # TODO: [ALEX] add filtering param(s)
+    @abstractmethod
+    def list_project_repositories(
+        self, project_name: str
+    ) -> List[CodeRepositoryModel]:
+        """Gets all repositories in a project.
+
+        Args:
+            project_name: Name of the project to get.
+
+        Returns:
+            A list of all repositories in the project.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
+        return self._list_project_repositories(project_name)
+
+    @abstractmethod
+    def connect_project_repository(
+        self, project_name: str, repository: CodeRepositoryModel
+    ) -> CodeRepositoryModel:
+        """Connects a repository to a project.
+
+        Args:
+            project_name: Name of the project to connect the repository to.
+            repository: The repository to connect.
+
+        Returns:
+            The connected repository.
+
+        Raises:
+            KeyError: if the project or repository doesn't exist.
+        """
+        self._track_event(AnalyticsEvent.CONNECT_REPOSITORY)
+        return self._connect_project_repository(project_name, repository)
+
     # @abstractmethod
     # def get_stack_configuration(
     #     self, name: str
@@ -653,21 +804,6 @@ class BaseZenStore(ABC):
     #     """
 
     # # Private interface (must be implemented, not to be called by user):
-
-    # @abstractmethod
-    # def _register_stack_component(
-    #     self,
-    #     component: ComponentModel,
-    # ) -> None:
-    #     """Register a stack component.
-
-    #     Args:
-    #         component: The component to register.
-
-    #     Raises:
-    #         StackComponentExistsError: If a stack component with the same type
-    #             and name already exists.
-    #     """
 
     # @abstractmethod
     # def _update_stack_component(
@@ -947,14 +1083,6 @@ class BaseZenStore(ABC):
 
     #     Returns:
     #         PipelineView if found, None otherwise.
-    #     """
-
-    # @abstractmethod
-    # def get_pipelines(self) -> List[PipelineView]:
-    #     """Returns a list of all pipelines stored in this ZenStore.
-
-    #     Returns:
-    #         A list of all pipelines stored in this ZenStore.
     #     """
 
     # @abstractmethod
@@ -1356,28 +1484,6 @@ class BaseZenStore(ABC):
     # # TODO [ENG-894]: Refactor these with the proxy pattern, as noted in
     # #  the [review comment](https://github.com/zenml-io/zenml/pull/589#discussion_r875003334)
 
-    # def register_stack_component(
-    #     self,
-    #     component: ComponentModel,
-    # ) -> None:
-    #     """Register a stack component.
-
-    #     Args:
-    #         component: The component to register.
-
-    #     Returns:
-    #         None
-    #     """
-    #     analytics_metadata = {
-    #         "type": component.type.value,
-    #         "flavor": component.flavor,
-    #     }
-    #     self._track_event(
-    #         AnalyticsEvent.REGISTERED_STACK_COMPONENT,
-    #         metadata=analytics_metadata,
-    #     )
-    #     return self._register_stack_component(component)
-
     # def update_stack_component(
     #     self,
     #     name: str,
@@ -1740,6 +1846,98 @@ class BaseZenStore(ABC):
 
         Raises:
             KeyError: if the project does not exist.
+        """
+
+    @abstractmethod
+    def _list_pipelines(self, project_name: str) -> List[PipelineModel]:
+        """List all pipelines in the project.
+
+        Args:
+            project_name: Name of the project.
+
+        Returns:
+            A list of pipelines.
+
+        Raises:
+            KeyError: if the project does not exist.
+        """
+
+    @abstractmethod
+    def _create_pipeline(
+        self, project_name: str, pipeline: PipelineModel
+    ) -> PipelineModel:
+        """Creates a new pipeline in a project.
+
+        Args:
+            project_name: Name of the project to create the pipeline in.
+            pipeline: The pipeline to create.
+
+        Returns:
+            The newly created pipeline.
+
+        Raises:
+            PipelineExistsError: If an identical pipeline already exists.
+        """
+
+    @abstractmethod
+    def _get_default_stack(self, project_name: str) -> StackModel:
+        """Gets the default stack in a project.
+
+        Args:
+            project_name: Name of the project to get.
+
+        Returns:
+            The default stack in the project.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
+
+    @abstractmethod
+    def _set_default_stack(
+        self, project_name: str, stack_id: str
+    ) -> StackModel:
+        """Sets the default stack in a project.
+
+        Args:
+            project_name: Name of the project to set.
+            stack_id: The ID of the stack to set as the default.
+
+        Raises:
+            KeyError: if the project or stack doesn't exist.
+        """
+
+    @abstractmethod
+    def _list_project_repositories(
+        self, project_name: str
+    ) -> List[CodeRepositoryModel]:
+        """Get all repositories in the project.
+
+        Args:
+            project_name: the name of the project.
+
+        Returns:
+            A list of all repositories in the project.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
+
+    @abstractmethod
+    def _connect_project_repository(
+        self, project_name: str, repository: CodeRepositoryModel
+    ) -> CodeRepositoryModel:
+        """Connect a repository to a project.
+
+        Args:
+            project_name: the name of the project.
+            repository: the repository to connect.
+
+        Returns:
+            The connected repository.
+
+        Raises:
+            KeyError: if the project or repository doesn't exist.
         """
 
     # PROPERTIES

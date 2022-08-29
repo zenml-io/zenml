@@ -31,9 +31,11 @@ class AnalyticsEvent(str, Enum):
     RUN_PIPELINE = "Pipeline run"
     GET_PIPELINES = "Pipelines fetched"
     GET_PIPELINE = "Pipeline fetched"
+    CREATE_PIPELINE = "Pipeline created"
 
     # Repo
     INITIALIZE_REPO = "ZenML initialized"
+    CONNECT_REPOSITORY = "Repository connected"
 
     # Profile
     INITIALIZED_PROFILE = "Profile initialized"

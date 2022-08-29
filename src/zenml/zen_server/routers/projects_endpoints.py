@@ -16,6 +16,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 
 from zenml.constants import (
+    DEFAULT_STACK,
     PIPELINES,
     PROJECTS,
     REPOSITORIES,
@@ -302,7 +303,9 @@ async def get_project_stack_components(
         422 error: when unable to validate input
     """
     try:
-        return zen_store.get_project_stack_components(project_name=project_name)
+        return zen_store.list_project_stack_components(
+            project_name=project_name
+        )
     except KeyError as error:
         raise not_found(error) from error
     except NotAuthorizedError as error:
@@ -376,8 +379,8 @@ async def create_stack_component_by_type(
         422 error: when unable to validate input
     """
     try:
-        zen_store.create_stack_component_by_type(
-            component_type, project_name, component
+        zen_store.create_stack_component(
+            project_name, component_type, component
         )
     except StackComponentExistsError as error:
         raise conflict(error) from error
@@ -391,12 +394,12 @@ async def create_stack_component_by_type(
 
 @router.get(
     "/{project_name}" + PIPELINES,
-    response_model=List[Project],
+    response_model=List[PipelineModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def get_project_pipelines(
     project_name: str,
-) -> List[Project]:
+) -> List[PipelineModel]:
     """Gets pipelines defined for a specific project.
 
     # noqa: DAR401
@@ -408,12 +411,13 @@ async def get_project_pipelines(
         All pipelines within the project.
 
     Raises:
+        not_found: when the project does not exist.
         401 error: when not authorized to login
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
     try:
-        return zen_store.get_project_pipelines(project_name)
+        return zen_store.list_pipelines(project_name)
     except KeyError as error:
         raise not_found(error) from error
     except NotAuthorizedError as error:
@@ -439,6 +443,7 @@ async def create_pipeline(
         pipeline: Pipeline to create.
 
     Raises:
+        conflict: when the pipeline already exists.
         401 error: when not authorized to login
         409 error: when trigger does not exist
         422 error: when unable to validate input
@@ -447,10 +452,83 @@ async def create_pipeline(
         return zen_store.create_pipeline(project_name, pipeline)
     except (StackExistsError, StackComponentExistsError) as error:
         raise conflict(error) from error
+    except PipelineExistsError as error:
+        raise conflict(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:
         raise HTTPException(status_code=409, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@router.get(
+    "/{project_name}" + DEFAULT_STACK,
+    response_model=StackModel,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def get_default_stack(
+    project_name: str,
+) -> StackModel:
+    """Gets the default stack defined for a specific project.
+
+    # noqa: DAR401
+
+    Args:
+        project_name: Name of the project.
+
+    Returns:
+        The default stack for the project.
+
+    Raises:
+        not_found: when the project does not exist.
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.get_default_stack(project_name)
+    except KeyError as error:
+        raise not_found(error) from error
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@router.put(
+    "/{project_name}" + DEFAULT_STACK + "/{stack_id}",
+    response_model=StackModel,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def set_default_stack(project_name: str, stack_id: str) -> StackModel:
+    """Gets the default stack defined for a specific project.
+
+    # noqa: DAR401
+
+    Args:
+        project_name: Name of the project.
+        stack_id: ID of the stack to set as default.
+
+    Returns:
+        The updated default stack for the project.
+
+    Raises:
+        not_found: when the project or stack does not exist.
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return zen_store.set_default_stack(project_name, stack_id)
+    except KeyError as error:
+        raise not_found(error) from error
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
 
@@ -474,12 +552,13 @@ async def get_project_repositories(
         All repositories within the project.
 
     Raises:
+        not_found: when the project does not exist.
         401 error: when not authorized to login
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
     try:
-        return zen_store.get_project_repositories(project_name)
+        return zen_store.list_project_repositories(project_name)
     except KeyError as error:
         raise not_found(error) from error
     except NotAuthorizedError as error:
@@ -509,6 +588,7 @@ async def connect_project_repository(
         The connected repository.
 
     Raises:
+        not_found: when the project does not exist.
         401 error: when not authorized to login
         409 error: when trigger does not exist
         422 error: when unable to validate input
