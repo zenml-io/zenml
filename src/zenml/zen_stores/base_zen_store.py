@@ -2453,7 +2453,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def get_pipeline_configuration(self, pipeline_id: str) -> Dict[Any, Any]:
+    def _get_pipeline_configuration(self, pipeline_id: str) -> Dict[Any, Any]:
         """Gets the pipeline configuration.
 
         Args:
