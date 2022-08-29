@@ -19,6 +19,7 @@ from zenml.zen_server.utils import (
     authorize,
     error_detail,
     error_response,
+    not_found,
     zen_store,
 )
 
@@ -45,12 +46,15 @@ async def get_repository(repository_id: str) -> CodeRepositoryModel:
         The requested repository.
 
     Raises:
+        not_found: If the repository does not exist.
         401 error: when not authorized to login
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
     try:
         return zen_store.get_repository(repository_id)
+    except KeyError as error:
+        raise not_found(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:
@@ -77,12 +81,15 @@ async def update_repository(
         The updated repository.
 
     Raises:
+        not_found: If the repository does not exist.
         401 error: when not authorized to login
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
     try:
         return zen_store.update_repository(repository_id, repository)
+    except KeyError as error:
+        raise not_found(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:
@@ -102,12 +109,15 @@ async def delete_repository(repository_id: str) -> None:
         repository_id: ID of the repository.
 
     Raises:
+        not_found: If the repository does not exist.
         401 error: when not authorized to login
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
     try:
         zen_store.delete_repository(repository_id)
+    except KeyError as error:
+        raise not_found(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:

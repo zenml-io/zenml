@@ -36,6 +36,8 @@ class AnalyticsEvent(str, Enum):
     # Repo
     INITIALIZE_REPO = "ZenML initialized"
     CONNECT_REPOSITORY = "Repository connected"
+    UPDATE_REPOSITORY = "Repository updated"
+    DELETE_REPOSITORY = "Repository deleted"
 
     # Profile
     INITIALIZED_PROFILE = "Profile initialized"

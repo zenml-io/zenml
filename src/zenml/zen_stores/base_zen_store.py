@@ -778,6 +778,57 @@ class BaseZenStore(ABC):
         self._track_event(AnalyticsEvent.CONNECT_REPOSITORY)
         return self._connect_project_repository(project_name, repository)
 
+    #  .-------------.
+    # | REPOSITORIES |
+    # '--------------'
+
+    @abstractmethod
+    def get_repository(self, repository_id: str) -> CodeRepositoryModel:
+        """Gets a repository.
+
+        Args:
+            repository_id: The ID of the repository to get.
+
+        Returns:
+            The repository.
+
+        Raises:
+            KeyError: if the repository doesn't exist.
+        """
+        return self._get_repository(repository_id)
+
+    @abstractmethod
+    def update_repository(
+        self, repository_id: str, repository: CodeRepositoryModel
+    ):
+        """Updates a repository.
+
+        Args:
+            repository_id: The ID of the repository to update.
+            repository: The repository to use for the update.
+
+        Returns:
+            The updated repository.
+
+        Raises:
+            KeyError: if the repository doesn't exist.
+        """
+        self._track_event(AnalyticsEvent.UPDATE_REPOSITORY)
+        return self._update_repository(repository_id, repository)
+
+    @abstractmethod
+    def delete_repository(self, repository_id: str):
+        """Deletes a repository.
+
+        Args:
+            repository_id: The ID of the repository to delete.
+
+        Raises:
+            KeyError: if the repository doesn't exist.
+        """
+        self._track_event(AnalyticsEvent.DELETE_REPOSITORY)
+        return self._delete_repository(repository_id)
+
     # @abstractmethod
     # def get_stack_configuration(
     #     self, name: str
@@ -1938,6 +1989,48 @@ class BaseZenStore(ABC):
 
         Raises:
             KeyError: if the project or repository doesn't exist.
+        """
+
+    @abstractmethod
+    def _get_repository(self, repository_id: str) -> CodeRepositoryModel:
+        """Get a repository by ID.
+
+        Args:
+            repository_id: The ID of the repository to get.
+
+        Returns:
+            The repository.
+
+        Raises:
+            KeyError: if the repository doesn't exist.
+        """
+
+    @abstractmethod
+    def _update_repository(
+        self, repository_id: str, repository: CodeRepositoryModel
+    ) -> CodeRepositoryModel:
+        """Update a repository.
+
+        Args:
+            repository_id: The ID of the repository to update.
+            repository: The repository to use for the update.
+
+        Returns:
+            The updated repository.
+
+        Raises:
+            KeyError: if the repository doesn't exist.
+        """
+
+    @abstractmethod
+    def _delete_repository(self, repository_id: str) -> None:
+        """Delete a repository.
+
+        Args:
+            repository_id: The ID of the repository to delete.
+
+        Raises:
+            KeyError: if the repository doesn't exist.
         """
 
     # PROPERTIES
