@@ -242,6 +242,9 @@ class Terraform:
         # read values into a dict and return
         with fileio.open(variables_file_path, "r") as f:
             variables = json.load(f)
+
+            # update zenml-version variable to current version
+            variables["zenml-version"] = zenml.__version__
         return variables
 
     def set_log_level(self, log_level: str) -> None:
