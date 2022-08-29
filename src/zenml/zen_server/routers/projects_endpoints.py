@@ -569,7 +569,7 @@ async def get_project_repositories(
         raise HTTPException(status_code=422, detail=error_detail(error))
 
 
-@router.get(
+@router.post(
     "/{project_name}" + REPOSITORIES,
     response_model=CodeRepositoryModel,
     responses={401: error_response, 409: error_response, 422: error_response},
