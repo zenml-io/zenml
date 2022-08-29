@@ -272,6 +272,9 @@ class PipelineDockerImageBuilder(BaseModel):
                 specified and the Docker configuration doesn't require an
                 image build.
         """
+        logger.info(
+            "Building Docker image(s) for pipeline `%s`.", pipeline_name
+        )
         requires_zenml_build = any(
             [
                 docker_configuration.requirements,
@@ -418,9 +421,6 @@ class PipelineDockerImageBuilder(BaseModel):
                 f"`{stack.name}` has no container registry."
             )
 
-        logger.info(
-            "Building Docker image(s) for pipeline `%s`.", pipeline_name
-        )
         target_image_name = (
             f"{container_registry.uri}/"
             f"{docker_configuration.target_repository}:{pipeline_name}"
