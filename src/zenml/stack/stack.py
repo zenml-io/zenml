@@ -26,6 +26,7 @@ from typing import (
     Set,
     Type,
 )
+from uuid import uuid4
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
@@ -269,11 +270,10 @@ class Stack:
         from zenml.artifact_stores import LocalArtifactStore
         from zenml.metadata_stores import SQLiteMetadataStore
         from zenml.orchestrators import LocalOrchestrator
-        from zenml.stack.stack_component import uuid_factory
 
         orchestrator = LocalOrchestrator(name="default")
 
-        artifact_store_uuid = uuid_factory()
+        artifact_store_uuid = uuid4()
         artifact_store_path = os.path.join(
             GlobalConfiguration().config_directory,
             "local_stores",

@@ -58,20 +58,6 @@ Select.inherit_cache = True  # type: ignore
 logger = get_logger(__name__)
 
 
-def _sqlmodel_uuid() -> UUID:
-    """Generates a UUID whose hex string does not start with a '0'.
-
-    Returns:
-        A UUID whose hex string does not start with a '0'.
-    """
-    # SQLModel crashes when a UUID hex string starts with '0'
-    # (see: https://github.com/tiangolo/sqlmodel/issues/25)
-    uuid = uuid4()
-    while uuid.hex[0] == "0":
-        uuid = uuid4()
-    return uuid
-
-
 class ZenUser(SQLModel, table=True):
     """SQL Model for users."""
 
@@ -121,26 +107,26 @@ class ZenStackDefinition(SQLModel, table=True):
 class UserTable(User, SQLModel, table=True):
     """SQL Model for users."""
 
-    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
 
 
 class TeamTable(Team, SQLModel, table=True):
     """SQL Model for teams."""
 
-    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
 
 
 class ProjectTable(Project, SQLModel, table=True):
     """SQL Model for projects."""
 
-    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
     creation_date: datetime = Field(default_factory=datetime.now)
 
 
 class RoleTable(SQLModel, table=True):
     """SQL Model for roles."""
 
-    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
     creation_date: datetime = Field(default_factory=datetime.now)
     name: str
 
@@ -155,7 +141,7 @@ class TeamAssignmentTable(SQLModel, table=True):
 class RoleAssignmentTable(RoleAssignment, SQLModel, table=True):
     """SQL Model for role assignments."""
 
-    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
     role_id: UUID = Field(foreign_key="roletable.id")
     user_id: Optional[UUID] = Field(default=None, foreign_key="usertable.id")
     team_id: Optional[UUID] = Field(default=None, foreign_key="teamtable.id")
