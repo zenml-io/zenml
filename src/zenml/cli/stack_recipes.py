@@ -81,28 +81,98 @@ class Terraform:
         self.tf = python_terraform.Terraform(working_dir=str(path))
 
     def check_installation(self) -> None:
-        """Checks if terraform is installed on the host system.
+        """Checks if necessary tools are installed on the host system.
 
         Raises:
-            RuntimeError: if terraform is not installed.
+            RuntimeError: if any tool is not installed.
         """
-        if not self._is_installed():
+        if not self._is_terraform_installed():
             raise RuntimeError(
                 "Terraform is required for stack recipes to run and was not "
-                "found installed on your machine. Please visit "
+                "found installed on your machine or not available on  "
+                "your $PATH. Please visit "
                 "https://learn.hashicorp.com/tutorials/terraform/install-cli "
                 "to install it."
             )
+        if not self._is_kubectl_installed():
+            raise RuntimeError(
+                "kubectl is not installed on your machine or not available on  "
+                "your $PATH. It is used by stack recipes to create some "
+                "resources on Kubernetes and to configure access to your "
+                "cluster. Please visit "
+                "https://kubernetes.io/docs/tasks/tools/#kubectl "
+                "to install it."
+            )
+        if not self._is_helm_installed():
+            raise RuntimeError(
+                "helm is not installed on your machine or not available on  "
+                "your $PATH. It is required for stack recipes to create releases "
+                "on Kubernetes. Please visit "
+                "https://helm.sh/docs/intro/install/ "
+                "to install it."
+            )
+        if not self._is_docker_installed():
+            raise RuntimeError(
+                "docker is not installed on your machine or not available on  "
+                "your $PATH. It is required for stack recipes to configure "
+                "access to the container registry. Please visit "
+                "https://docs.docker.com/engine/install/ "
+                "to install it."
+            )
 
-    def _is_installed(self) -> bool:
+    def _is_terraform_installed(self) -> bool:
         """Checks if terraform is installed on the host system.
 
         Returns:
             True if terraform is installed, false otherwise.
         """
         # check terraform version to verify installation.
-        ret_code, _, _ = self.tf.cmd("-version")
-        return bool(ret_code == 0)
+        try:
+            self.tf.cmd("-version")
+        except FileNotFoundError:
+            return False
+        
+        return True
+
+    def _is_kubectl_installed(self) -> bool:
+        """Checks if kubectl is installed on the host system.
+
+        Returns:
+            True if kubectl is installed, false otherwise.
+        """
+        try:
+            subprocess.check_call(["kubectl", "version"])
+        except subprocess.CalledProcessError:
+            return False
+        
+        return True
+
+    def _is_helm_installed(self) -> bool:
+        """Checks if helm is installed on the host system.
+
+        Returns:
+            True if helm is installed, false otherwise.
+        """
+        try:
+            subprocess.check_call(["helm", "version"])
+        except subprocess.CalledProcessError:
+            return False
+        
+        return True
+
+    def _is_docker_installed(self) -> bool:
+        """Checks if docker is installed on the host system.
+
+        Returns:
+            True if docker is installed, false otherwise.
+        """
+        try:
+            subprocess.check_call(["docker", "--version"])
+        except subprocess.CalledProcessError:
+            return False
+        
+        return True            
+
 
     def apply(self) -> str:
         """Function to call terraform init and terraform apply.
