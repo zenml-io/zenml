@@ -23,10 +23,9 @@ from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.logger import get_logger
 from zenml.models import ComponentModel, FlavorModel, StackModel
-from zenml.models.pipeline_models import StepModel, PipelineModel
+from zenml.models.pipeline_models import PipelineModel, StepModel
 from zenml.models.user_management_models import Project, Role, User
 from zenml.post_execution import ArtifactView
-from zenml.stack import Stack
 from zenml.utils.analytics_utils import AnalyticsEvent
 
 logger = get_logger(__name__)

@@ -25,8 +25,11 @@ from sqlmodel import Session, SQLModel, create_engine, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
-from zenml.exceptions import EntityExistsError, StackComponentExistsError, \
-    StackExistsError
+from zenml.exceptions import (
+    EntityExistsError,
+    StackComponentExistsError,
+    StackExistsError,
+)
 from zenml.logger import get_logger
 from zenml.metadata_stores.sqlite_metadata_store import SQLiteMetadataStore
 from zenml.models import (
@@ -36,8 +39,9 @@ from zenml.models import (
     Project,
     Role,
     RoleAssignment,
+    StackModel,
     Team,
-    User, StackModel,
+    User,
 )
 from zenml.post_execution.artifact import ArtifactView
 from zenml.post_execution.pipeline import PipelineView
@@ -238,7 +242,10 @@ class SqlZenStore(BaseZenStore):
             list_of_stacks_and_components = session.exec(
                 select(StackSchema, StackComponentSchema)
                 .where(StackSchema.id == StackCompositionSchema.stack_id)
-                .where(StackComponentSchema.id == StackCompositionSchema.component_id)
+                .where(
+                    StackComponentSchema.id
+                    == StackCompositionSchema.component_id
+                )
             ).all()
 
         for stack, components in list_of_stacks_and_components:
@@ -259,7 +266,10 @@ class SqlZenStore(BaseZenStore):
                 select(StackSchema, StackComponentSchema)
                 .where(StackSchema.id == stack_id)
                 .where(StackSchema.id == StackCompositionSchema.stack_id)
-                .where(StackComponentSchema.id == StackCompositionSchema.component_id)
+                .where(
+                    StackComponentSchema.id
+                    == StackCompositionSchema.component_id
+                )
             ).all()
 
         for stack, components in list_of_stacks_and_components:
@@ -296,15 +306,18 @@ class SqlZenStore(BaseZenStore):
             # TODO: validate the the composition of components is a valid stack
             # Get the Schemas of all components mentioned
             defined_components = session.exec(
-                select(StackComponentSchema)
-                .where(StackComponentSchema.id in stack.components.values())
+                select(StackComponentSchema).where(
+                    StackComponentSchema.id in stack.components.values()
+                )
             ).all
 
             # Create the stack
-            stack_in_db = StackSchema(name=stack.name,
-                                      project_id=stack.project,
-                                      owner=user.id,
-                                      components=defined_components)
+            stack_in_db = StackSchema(
+                name=stack.name,
+                project_id=stack.project,
+                owner=user.id,
+                components=defined_components,
+            )
             session.add(stack_in_db)
             session.commit()
 
@@ -312,7 +325,6 @@ class SqlZenStore(BaseZenStore):
             #  object with id, created_at, etc ...
             # TODO: construct StackModel
             return None
-
 
     def _update_stack(self, stack_id: str, stack: StackModel) -> StackModel:
         """Update an existing stack.
@@ -345,15 +357,18 @@ class SqlZenStore(BaseZenStore):
             # TODO: validate the the composition of components is a valid stack
             # Get the Schemas of all components mentioned
             defined_components = session.exec(
-                select(StackComponentSchema)
-                .where(StackComponentSchema.id in stack.components.values())
+                select(StackComponentSchema).where(
+                    StackComponentSchema.id in stack.components.values()
+                )
             ).all
 
             # Create the stack
-            stack_in_db = StackSchema(name=stack.name,
-                                      project_id=stack.project,
-                                      owner=user.id,
-                                      components=defined_components)
+            stack_in_db = StackSchema(
+                name=stack.name,
+                project_id=stack.project,
+                owner=user.id,
+                components=defined_components,
+            )
             session.add(stack_in_db)
             session.commit()
 
@@ -380,16 +395,16 @@ class SqlZenStore(BaseZenStore):
             # TODO: verify this is actually necessary, this might already
             #  be handled by sqlmodel
             definitions = session.exec(
-                select(StackCompositionSchema)
-                .where(StackCompositionSchema.stack_id == StackSchema.id)
+                select(StackCompositionSchema).where(
+                    StackCompositionSchema.stack_id == StackSchema.id
+                )
             ).all()
             for definition in definitions:
                 session.delete(definition)
 
             session.commit()
 
-
-# OLD STUFF BELOW HERE #############################################################################################################################
+    # OLD STUFF BELOW HERE #############################################################################################################################
 
     def get_stack_configuration(
         self, name: str
