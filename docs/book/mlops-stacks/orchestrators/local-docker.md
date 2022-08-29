@@ -1,5 +1,5 @@
 ---
-description: How to orchestrate pipelines locally
+description: How to orchestrate pipelines locally in Docker
 ---
 
 The local Docker orchestrator is an [orchestrator](./orchestrators.md) flavor which comes built-in with 
