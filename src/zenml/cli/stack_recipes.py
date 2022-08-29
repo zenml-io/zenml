@@ -131,7 +131,7 @@ class Terraform:
             self.tf.cmd("-version")
         except FileNotFoundError:
             return False
-        
+
         return True
 
     def _is_kubectl_installed(self) -> bool:
@@ -144,7 +144,7 @@ class Terraform:
             subprocess.check_call(["kubectl", "version"])
         except subprocess.CalledProcessError:
             return False
-        
+
         return True
 
     def _is_helm_installed(self) -> bool:
@@ -157,7 +157,7 @@ class Terraform:
             subprocess.check_call(["helm", "version"])
         except subprocess.CalledProcessError:
             return False
-        
+
         return True
 
     def _is_docker_installed(self) -> bool:
@@ -170,9 +170,8 @@ class Terraform:
             subprocess.check_call(["docker", "--version"])
         except subprocess.CalledProcessError:
             return False
-        
-        return True            
 
+        return True
 
     def apply(self) -> str:
         """Function to call terraform init and terraform apply.
@@ -846,9 +845,9 @@ if terraform_installed:  # noqa: C901
         "-f",
         "force",
         is_flag=True,
-        help="Force the run of the stack_recipe. This deletes the .zen folder from the "
-        "stack_recipe folder and force installs all necessary integration "
-        "requirements.",
+        help="Force pull the stack recipe. This overwrites any existing recipe "
+        "files present locally, including the terraform state files and the "
+        "local configuration.",
     )
     @click.option(
         "--stack-name",
@@ -874,6 +873,12 @@ if terraform_installed:  # noqa: C901
         "log level for the deploy operation.",
         default="ERROR",
     )
+    @click.option(
+        "--skip-check",
+        "-s",
+        is_flag=True,
+        help="Skip the checking of locals.tf file before executing the recipe.",
+    )
     @pass_git_stack_recipes_handler
     @click.pass_context
     def deploy(
@@ -884,6 +889,7 @@ if terraform_installed:  # noqa: C901
         force: bool,
         import_stack_flag: bool,
         log_level: str,
+        skip_check: bool,
         stack_name: Optional[str],
     ) -> None:
         """Run the stack_recipe at the specified relative path.
@@ -896,7 +902,7 @@ if terraform_installed:  # noqa: C901
             git_stack_recipes_handler: The GitStackRecipesHandler instance.
             stack_recipe_name: The name of the stack_recipe.
             path: The path at which you want to install the stack_recipe(s).
-            force: Force the run of the stack_recipe.
+            force: Force pull the stack recipe overwriting any existing files.
             stack_name: A name for the ZenML stack that gets imported as a result
                 of the recipe deployment.
             import_stack_flag: Import the stack automatically after the recipe is
@@ -904,6 +910,7 @@ if terraform_installed:  # noqa: C901
                 can be imported manually otherwise.
             log_level: Choose one of TRACE, DEBUG, INFO, WARN or ERROR (case insensitive)
                 as log level for the deploy operation.
+            skip_check: Skip the checking of locals.tf file before executing the recipe.
         """
         cli_utils.warning(ALPHA_MESSAGE)
         stack_recipes_dir = Path(os.getcwd()) / path
@@ -947,17 +954,18 @@ if terraform_installed:  # noqa: C901
                 # set terraform log level
                 tf_client.set_log_level(log_level=log_level)
 
-                logger.info(
-                    "The following values are selected for the configuration "
-                    "of your cloud resources. You can change it by modifying "
-                    "the contents of the locals.tf file here: "
-                    f"{os.path.join(local_stack_recipe.path, 'locals.tf')}\n"
-                )
+                if not skip_check:
+                    logger.info(
+                        "The following values are selected for the configuration "
+                        "of your cloud resources. You can change it by modifying "
+                        "the contents of the locals.tf file here: "
+                        f"{os.path.join(local_stack_recipe.path, 'locals.tf')}\n"
+                    )
 
-                with console.pager(styles=False):
-                    console.print(local_stack_recipe.locals_content)
+                    with console.pager(styles=False):
+                        console.print(local_stack_recipe.locals_content)
 
-                if cli_utils.confirmation(
+                if skip_check or cli_utils.confirmation(
                     f"\nDo you wish to deploy the {stack_recipe_name} recipe "
                     "with the above configuration? Please make sure that "
                     "resources with the same values as above don't already "
