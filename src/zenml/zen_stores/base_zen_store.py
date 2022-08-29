@@ -23,7 +23,11 @@ from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.logger import get_logger
 from zenml.models import ComponentModel, FlavorModel, StackModel
-from zenml.models.pipeline_models import PipelineModel, StepModel
+from zenml.models.pipeline_models import (
+    PipelineModel,
+    PipelineRunModel,
+    StepModel,
+)
 from zenml.models.user_management_models import Project, Role, User
 from zenml.post_execution import ArtifactView
 from zenml.utils.analytics_utils import AnalyticsEvent
@@ -954,6 +958,148 @@ class BaseZenStore(ABC):
             KeyError: if the pipeline doesn't exist.
         """
         return self._get_pipeline_configuration(pipeline_id)
+
+    #  .-----.
+    # | RUNS |
+    # '------'
+
+    # TODO: [ALEX] add filtering param(s)
+    def list_runs(
+        self,
+        project_name: Optional[str] = None,
+        stack_id: Optional[str] = None,
+        pipeline_id: Optional[str] = None,
+        trigger_id: Optional[str] = None,
+    ) -> List[PipelineRunModel]:
+        """Gets all pipeline runs in a project.
+
+        Args:
+            project_name: Name of the project to get.
+            stack_id: ID of the stack to get.
+            pipeline_id: ID of the pipeline to get.
+            trigger_id: ID of the trigger to get.
+
+        Returns:
+            A list of all pipeline runs in the project.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
+        return self._list_pipeline_runs(
+            project_name=project_name,
+            stack_id=stack_id,
+            pipeline_id=pipeline_id,
+            trigger_id=trigger_id,
+        )
+
+    def get_run(self, run_id: str) -> PipelineRunModel:
+        """Gets a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            The pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        return self._get_run(run_id)
+
+    def update_run(
+        self, run_id: str, run: PipelineRunModel
+    ) -> PipelineRunModel:
+        """Updates a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to update.
+            run: The pipeline run to use for the update.
+
+        Returns:
+            The updated pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        return self._update_run(run_id, run)
+
+    def delete_run(self, run_id: str) -> None:
+        """Deletes a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to delete.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        return self._delete_run(run_id)
+
+    # TODO: figure out args and output for this
+    def get_run_dag(self, run_id: str) -> str:
+        """Gets the DAG for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            The DAG for the pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        return self._get_run_dag(run_id)
+
+    # TODO: [ALEX] add filtering param(s)
+    def list_run_steps(self, run_id: str) -> List[StepModel]:
+        """Gets all steps in a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            A list of all steps in the pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        return self._list_run_steps(run_id)
+
+    def get_run_runtime_configuration(self, run_id: str) -> Dict:
+        """Gets the runtime configuration for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            The runtime configuration for the pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        return self._get_run_runtime_configuration(run_id)
+
+    # TODO: Figure out what exactly gets returned from this
+    def get_run_component_side_effects(
+        self,
+        run_id: str,
+        component_id: Optional[str] = None,
+        component_type: Optional[StackComponentType] = None,
+    ) -> Dict:
+        """Gets the side effects for a component in a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+            component_id: The ID of the component to get.
+
+        Returns:
+            The side effects for the component in the pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        return self._get_run_component_side_effects(
+            run_id, component_id=component_id, component_type=component_type
+        )
 
     # @abstractmethod
     # def get_stack_configuration(
@@ -2460,6 +2606,136 @@ class BaseZenStore(ABC):
 
         Raises:
             KeyError: if the pipeline doesn't exist.
+        """
+
+    # TODO: [ALEX] add filtering param(s)
+    @abstractmethod
+    def _list_pipeline_runs(
+        self,
+        project_name: Optional[str] = None,
+        stack_id: Optional[str] = None,
+        pipeline_id: Optional[str] = None,
+        trigger_id: Optional[str] = None,
+    ) -> List[PipelineRunModel]:
+        """Gets all pipeline runs in a project.
+
+        Args:
+            project_name: Name of the project to get.
+            stack_id: ID of the stack to get.
+            pipeline_id: ID of the pipeline to get.
+            trigger_id: ID of the trigger to get.
+
+        Returns:
+            A list of all pipeline runs in the project.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
+
+    @abstractmethod
+    def _get_run(self, run_id: str) -> PipelineRunModel:
+        """Gets a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            The pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
+    @abstractmethod
+    def _update_run(
+        self, run_id: str, run: PipelineRunModel
+    ) -> PipelineRunModel:
+        """Updates a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to update.
+            run: The pipeline run to use for the update.
+
+        Returns:
+            The updated pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
+    @abstractmethod
+    def _delete_run(self, run_id: str) -> None:
+        """Deletes a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to delete.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
+    # TODO: figure out args and output for this
+    @abstractmethod
+    def _get_run_dag(self, run_id: str) -> str:
+        """Gets the DAG for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            The DAG for the pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
+    # TODO: [ALEX] add filtering param(s)
+    @abstractmethod
+    def _list_run_steps(self, run_id: str) -> List[StepModel]:
+        """Gets all steps in a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            A list of all steps in the pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
+    @abstractmethod
+    def _get_run_runtime_configuration(self, run_id: str) -> Dict:
+        """Gets the runtime configuration for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            The runtime configuration for the pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
+    @abstractmethod
+    def _get_run_component_side_effects(
+        self,
+        run_id: str,
+        component_id: Optional[str] = None,
+        component_type: Optional[StackComponentType] = None,
+    ) -> Dict:
+        """Gets the side effects for a component in a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+            component_id: The ID of the component to get.
+
+        Returns:
+            The side effects for the component in the pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
         """
 
     # PROPERTIES
