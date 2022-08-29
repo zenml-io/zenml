@@ -723,9 +723,13 @@ if terraform_installed:  # noqa: C901
                     name=stack_recipe.name, path=Path(destination_dir)
                 ).is_present():
                     if force or cli_utils.confirmation(
-                        f"Stack recipe {stack_recipe.name} is already pulled. "
-                        "Do you wish to overwrite the directory at "
-                        f"{destination_dir}?"
+                        f"Stack recipe {stack_recipe.name} is already pulled at "
+                        f"{destination_dir}."
+                        "\nOverwriting this directory will delete all terraform "
+                        "state files and the local configuration. We recommend "
+                        "that you do this only once the remote resources have "
+                        "been destroyed."
+                        "Do you wish to proceed with overwriting?"
                     ):
                         fileio.rmtree(destination_dir)
                     else:
