@@ -25,8 +25,11 @@ from sqlmodel import Session, SQLModel, create_engine, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
-from zenml.exceptions import EntityExistsError, StackComponentExistsError, \
-    StackExistsError
+from zenml.exceptions import (
+    EntityExistsError,
+    StackComponentExistsError,
+    StackExistsError,
+)
 from zenml.logger import get_logger
 from zenml.metadata_stores.sqlite_metadata_store import SQLiteMetadataStore
 from zenml.models import (
@@ -36,8 +39,9 @@ from zenml.models import (
     Project,
     Role,
     RoleAssignment,
+    StackModel,
     Team,
-    User, StackModel,
+    User,
 )
 from zenml.post_execution.artifact import ArtifactView
 from zenml.post_execution.pipeline import PipelineView
@@ -228,7 +232,10 @@ class SqlZenStore(BaseZenStore):
             list_of_stacks_and_components = session.exec(
                 select(StackSchema, StackComponentSchema)
                 .where(StackSchema.id == StackCompositionSchema.stack_id)
-                .where(StackComponentSchema.id == StackCompositionSchema.component_id)
+                .where(
+                    StackComponentSchema.id
+                    == StackCompositionSchema.component_id
+                )
             ).all()
 
         for stack, components in list_of_stacks_and_components:
@@ -249,7 +256,10 @@ class SqlZenStore(BaseZenStore):
                 select(StackSchema, StackComponentSchema)
                 .where(StackSchema.id == stack_id)
                 .where(StackSchema.id == StackCompositionSchema.stack_id)
-                .where(StackComponentSchema.id == StackCompositionSchema.component_id)
+                .where(
+                    StackComponentSchema.id
+                    == StackCompositionSchema.component_id
+                )
             ).all()
 
         for stack, components in list_of_stacks_and_components:
@@ -290,15 +300,18 @@ class SqlZenStore(BaseZenStore):
             # TODO: validate the the composition of components is a valid stack
             # Get the Schemas of all components mentioned
             defined_components = session.exec(
-                select(StackComponentSchema)
-                .where(StackComponentSchema.id in stack.components.values())
+                select(StackComponentSchema).where(
+                    StackComponentSchema.id in stack.components.values()
+                )
             ).all
 
             # Create the stack
-            stack_in_db = StackSchema(name=stack.name,
-                                      project_id=stack.project,
-                                      owner=user.id,
-                                      components=defined_components)
+            stack_in_db = StackSchema(
+                name=stack.name,
+                project_id=stack.project,
+                owner=user.id,
+                components=defined_components,
+            )
             session.add(stack_in_db)
             session.commit()
 
@@ -307,6 +320,7 @@ class SqlZenStore(BaseZenStore):
             # TODO: construct StackModel
             return None
 
+    def _update_stack(self, stack_id: str, stack: StackModel) -> StackModel:
     def _update_stack(self,
                       stack_id: str,
                       user: User,
@@ -347,15 +361,18 @@ class SqlZenStore(BaseZenStore):
             # TODO: validate the the composition of components is a valid stack
             # Get the Schemas of all components mentioned
             defined_components = session.exec(
-                select(StackComponentSchema)
-                .where(StackComponentSchema.id in stack.components.values())
+                select(StackComponentSchema).where(
+                    StackComponentSchema.id in stack.components.values()
+                )
             ).all
 
             # Create the stack
-            stack_in_db = StackSchema(name=stack.name,
-                                      project_id=stack.project,
-                                      owner=user.id,
-                                      components=defined_components)
+            stack_in_db = StackSchema(
+                name=stack.name,
+                project_id=stack.project,
+                owner=user.id,
+                components=defined_components,
+            )
             session.add(stack_in_db)
             session.commit()
 

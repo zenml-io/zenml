@@ -17,10 +17,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 
 from zenml.constants import GRAPH, RUNS, RUNTIME_CONFIGURATION, STEPS
+from zenml.models.pipeline_models import PipelineRunModel
 from zenml.zen_server.utils import (
     authorize,
     error_detail,
     error_response,
+    not_found,
     zen_store,
 )
 
@@ -52,17 +54,20 @@ async def get_runs(
         The pipeline runs according to query filters.
 
     Raises:
+        not_found: If the project, stack, pipeline, or trigger do not exist.
         401 error: when not authorized to login
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
     try:
-        return zen_store.get_runs(
+        return zen_store.list_runs(
             project_name=project_name,
             stack_id=stack_id,
             pipeline_id=pipeline_id,
             trigger_id=trigger_id,
         )
+    except KeyError as e:
+        raise not_found(error_detail(e)) from e
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:
@@ -73,10 +78,10 @@ async def get_runs(
 
 @router.get(
     "/{run_id}",
-    response_model=Dict,
+    response_model=PipelineRunModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_run(run_id: str) -> Dict:
+async def get_run(run_id: str) -> PipelineRunModel:
     """Get a specific pipeline run using its ID.
 
     Args:
@@ -86,12 +91,15 @@ async def get_run(run_id: str) -> Dict:
         The pipeline run.
 
     Raises:
+        not_found: If the pipeline run does not exist.
         401 error: when not authorized to login
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
     try:
         return zen_store.get_run(run_id)
+    except KeyError as e:
+        raise not_found(error_detail(e)) from e
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:
@@ -102,15 +110,15 @@ async def get_run(run_id: str) -> Dict:
 
 @router.put(
     "/{run_id}",
-    response_model=Dict,
+    response_model=PipelineRunModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def update_run(run_id: str, pipeline_run) -> Dict:
+async def update_run(run_id: str, run: PipelineRunModel) -> PipelineRunModel:
     """Update the attributes on a specific pipeline run using its ID.
 
     Args:
         run_id: ID of the pipeline run to get.
-        pipeline_run: The pipeline run to use for the update.
+        run: The pipeline run to use for the update.
 
     Returns:
         The updated pipeline run.
@@ -121,7 +129,7 @@ async def update_run(run_id: str, pipeline_run) -> Dict:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.update_run(run_id)
+        return zen_store.update_run(run_id, run)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:
@@ -207,7 +215,7 @@ async def get_run_steps(run_id: str) -> List[Dict]:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.get_run_steps(run_id)
+        return zen_store.list_run_steps(run_id)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:
@@ -216,6 +224,7 @@ async def get_run_steps(run_id: str) -> List[Dict]:
         raise HTTPException(status_code=422, detail=error_detail(error))
 
 
+# TODO: Figure out what exactly gets returned from this
 @router.get(
     "/{run_id}" + RUNTIME_CONFIGURATION,
     response_model=Dict,

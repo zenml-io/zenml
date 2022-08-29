@@ -23,11 +23,14 @@ from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.logger import get_logger
 from zenml.models import ComponentModel, FlavorModel, StackModel
-from zenml.models.pipeline_models import StepModel, PipelineModel
-from zenml.models.user_management_models import Project, Role, User
+from zenml.models.pipeline_models import (
+    PipelineModel,
+    PipelineRunModel,
+    StepModel,
+)
+from zenml.models.user_management_models import Project, Role, Team, User
 from zenml.post_execution import ArtifactView
-from zenml.stack import Stack
-from zenml.utils.analytics_utils import AnalyticsEvent
+from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 logger = get_logger(__name__)
 
@@ -202,6 +205,9 @@ class BaseZenStore(ABC):
         Returns:
             The updated stack.
         """
+        metadata = {c.type.value: c.flavor for c in stack.components}
+        metadata["store_type"] = self.type.value
+        track_event(AnalyticsEvent.UPDATED_STACK, metadata=metadata)
         return self._update_stack(stack_id, stack)
 
     def delete_stack(self, stack_id: str) -> None:
@@ -210,6 +216,7 @@ class BaseZenStore(ABC):
         Args:
             stack_id: The id of the stack to delete.
         """
+        # No tracking events, here for consistency
         self._delete_stack(stack_id)
 
     #  .-----------------.
@@ -271,6 +278,14 @@ class BaseZenStore(ABC):
         Returns:
             The updated stack component.
         """
+        analytics_metadata = {
+            "type": component.type.value,
+            "flavor": component.flavor,
+        }
+        self._track_event(
+            AnalyticsEvent.UPDATED_STACK_COMPONENT,
+            metadata=analytics_metadata,
+        )
         return self._update_stack_component(component_id, component)
 
     def delete_stack_component(self, component_id: str) -> None:
@@ -614,7 +629,9 @@ class BaseZenStore(ABC):
         Raises:
             EntityExistsError: If an identical stack already exists.
         """
-        self._track_event(AnalyticsEvent.CREATED_STACK)
+        metadata = {c.type.value: c.flavor for c in stack.components}
+        metadata["store_type"] = self.type.value
+        self._track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
         return self._create_stack(project_name, stack)
 
     # TODO: [ALEX] add filtering param(s)
@@ -956,860 +973,151 @@ class BaseZenStore(ABC):
         """
         return self._get_pipeline_configuration(pipeline_id)
 
-    # @abstractmethod
-    # def get_stack_configuration(
-    #     self, name: str
-    # ) -> Dict[StackComponentType, str]:
-    #     """Fetches a stack configuration by name.
-
-    #     Args:
-    #         name: The name of the stack to fetch.
-
-    #     Returns:
-    #         Dict[StackComponentType, str] for the requested stack name.
-
-    #     Raises:
-    #         KeyError: If no stack exists for the given name.
-    #     """
-
-    # @property
-    # @abstractmethod
-    # def stack_configurations(self) -> Dict[str, Dict[StackComponentType, str]]:
-    #     """Configurations for all stacks registered in this zen store.
-
-    #     Returns:
-    #         Dictionary mapping stack names to Dict[StackComponentType, str]'s
-    #     """
-
-    # # Private interface (must be implemented, not to be called by user):
-
-    # @abstractmethod
-    # def _update_stack_component(
-    #     self,
-    #     name: str,
-    #     component_type: StackComponentType,
-    #     component: ComponentModel,
-    # ) -> Dict[str, str]:
-    #     """Update a stack component.
-
-    #     Args:
-    #         name: The original name of the stack component.
-    #         component_type: The type of the stack component to update.
-    #         component: The new component to update with.
-
-    #     Raises:
-    #         KeyError: If no stack component exists with the given name.
-    #     """
-
-    # @abstractmethod
-    # def _deregister_stack(self, name: str) -> None:
-    #     """Delete a stack from storage.
-
-    #     Args:
-    #         name: The name of the stack to be deleted.
-
-    #     Raises:
-    #         KeyError: If no stack exists for the given name.
-    #     """
-
-    # @abstractmethod
-    # def _save_stack(
-    #     self,
-    #     name: str,
-    #     stack_configuration: Dict[StackComponentType, str],
-    # ) -> None:
-    #     """Add a stack to storage.
-
-    #     Args:
-    #         name: The name to save the stack as.
-    #         stack_configuration: Dict[StackComponentType, str] to persist.
-    #     """
-
-    # @abstractmethod
-    # def _get_component_flavor_and_config(
-    #     self, component_type: StackComponentType, name: str
-    # ) -> Tuple[str, bytes]:
-    #     """Fetch the flavor and configuration for a stack component.
-
-    #     Args:
-    #         component_type: The type of the component to fetch.
-    #         name: The name of the component to fetch.
-
-    #     Returns:
-    #         Pair of (flavor, configuration) for stack component, as string and
-    #         base64-encoded yaml document, respectively
-
-    #     Raises:
-    #         KeyError: If no stack component exists for the given type and name.
-    #     """
-
-    # @abstractmethod
-    # def _get_stack_component_names(
-    #     self, component_type: StackComponentType
-    # ) -> List[str]:
-    #     """Get names of all registered stack components of a given type.
-
-    #     Args:
-    #         component_type: The type of the component to list names for.
-
-    #     Returns:
-    #         A list of names as strings.
-    #     """
-
-    # @abstractmethod
-    # def _delete_stack_component(
-    #     self, component_type: StackComponentType, name: str
-    # ) -> None:
-    #     """Remove a StackComponent from storage.
-
-    #     Args:
-    #         component_type: The type of component to delete.
-    #         name: Then name of the component to delete.
-
-    #     Raises:
-    #         KeyError: If no component exists for given type and name.
-    #     """
-
-    # # User, project and role management
-
-    # @property
-    # @abstractmethod
-    # def teams(self) -> List[Team]:
-    #     """All registered teams.
-
-    #     Returns:
-    #         A list of all registered teams.
-    #     """
-
-    # @abstractmethod
-    # def _create_team(self, team_name: str) -> Team:
-    #     """Creates a new team.
-
-    #     Args:
-    #         team_name: Unique team name.
-
-    #     Returns:
-    #         The newly created team.
-
-    #     Raises:
-    #         EntityExistsError: If a team with the given name already exists.
-    #     """
-
-    # @abstractmethod
-    # def _get_team(self, team_name: str) -> Team:
-    #     """Gets a specific team.
-
-    #     Args:
-    #         team_name: Name of the team to get.
-
-    #     Returns:
-    #         The requested team.
-
-    #     Raises:
-    #         KeyError: If no team with the given name exists.
-    #     """
-
-    # @abstractmethod
-    # def _delete_team(self, team_name: str) -> None:
-    #     """Deletes a team.
-
-    #     Args:
-    #         team_name: Name of the team to delete.
-
-    #     Raises:
-    #         KeyError: If no team with the given name exists.
-    #     """
-
-    # @abstractmethod
-    # def add_user_to_team(self, team_name: str, user_name: str) -> None:
-    #     """Adds a user to a team.
-
-    #     Args:
-    #         team_name: Name of the team.
-    #         user_name: Name of the user.
-
-    #     Raises:
-    #         KeyError: If no user and team with the given names exists.
-    #     """
-
-    # @abstractmethod
-    # def remove_user_from_team(self, team_name: str, user_name: str) -> None:
-    #     """Removes a user from a team.
-
-    #     Args:
-    #         team_name: Name of the team.
-    #         user_name: Name of the user.
-
-    #     Raises:
-    #         KeyError: If no user and team with the given names exists.
-    #     """
-
-    # @property
-    # @abstractmethod
-    # def role_assignments(self) -> List[RoleAssignment]:
-    #     """All registered role assignments.
-
-    #     Returns:
-    #         A list of all registered role assignments.
-    #     """
-
-    # @abstractmethod
-    # def _get_role(self, role_name: str) -> Role:
-    #     """Gets a specific role.
-
-    #     Args:
-    #         role_name: Name of the role to get.
-
-    #     Returns:
-    #         The requested role.
-
-    #     Raises:
-    #         KeyError: If no role with the given name exists.
-    #     """
-
-    # @abstractmethod
-    # def _create_role(self, role_name: str) -> Role:
-    #     """Creates a new role.
-
-    #     Args:
-    #         role_name: Unique role name.
-
-    #     Returns:
-    #         The newly created role.
-
-    #     Raises:
-    #         EntityExistsError: If a role with the given name already exists.
-    #     """
-
-    # @abstractmethod
-    # def revoke_role(
-    #     self,
-    #     role_name: str,
-    #     entity_name: str,
-    #     project_name: Optional[str] = None,
-    #     is_user: bool = True,
-    # ) -> None:
-    #     """Revokes a role from a user or team.
-
-    #     Args:
-    #         role_name: Name of the role to revoke.
-    #         entity_name: User or team name.
-    #         project_name: Optional project name.
-    #         is_user: Boolean indicating whether the given `entity_name` refers
-    #             to a user.
-
-    #     Raises:
-    #         KeyError: If no role, entity or project with the given names exists.
-    #     """
-
-    # @abstractmethod
-    # def get_users_for_team(self, team_name: str) -> List[User]:
-    #     """Fetches all users of a team.
-
-    #     Args:
-    #         team_name: Name of the team.
-
-    #     Returns:
-    #         List of users that are part of the team.
-
-    #     Raises:
-    #         KeyError: If no team with the given name exists.
-    #     """
-
-    # @abstractmethod
-    # def get_teams_for_user(self, user_name: str) -> List[Team]:
-    #     """Fetches all teams for a user.
-
-    #     Args:
-    #         user_name: Name of the user.
-
-    #     Returns:
-    #         List of teams that the user is part of.
-
-    #     Raises:
-    #         KeyError: If no user with the given name exists.
-    #     """
-
-    # @abstractmethod
-    # def get_role_assignments_for_team(
-    #     self,
-    #     team_name: str,
-    #     project_name: Optional[str] = None,
-    # ) -> List[RoleAssignment]:
-    #     """Fetches all role assignments for a team.
-
-    #     Args:
-    #         team_name: Name of the user.
-    #         project_name: Optional filter to only return roles assigned for
-    #             this project.
-
-    #     Returns:
-    #         List of role assignments for this team.
-
-    #     Raises:
-    #         KeyError: If no team or project with the given names exists.
-    #     """
-
-    # # Pipelines and pipeline runs
-
-    # @abstractmethod
-    # def get_pipeline_run(
-    #     self, pipeline: PipelineView, run_name: str
-    # ) -> Optional[PipelineRunView]:
-    #     """Gets a specific run for the given pipeline.
-
-    #     Args:
-    #         pipeline: The pipeline for which to get the run.
-    #         run_name: The name of the run to get.
-
-    #     Returns:
-    #         The pipeline run with the given name.
-    #     """
-
-    # @abstractmethod
-    # def get_pipeline_runs(
-    #     self, pipeline: PipelineView
-    # ) -> Dict[str, PipelineRunView]:
-    #     """Gets all runs for the given pipeline.
-
-    #     Args:
-    #         pipeline: a Pipeline object for which you want the runs.
-
-    #     Returns:
-    #         A dictionary of pipeline run names to PipelineRunView.
-    #     """
-
-    # @abstractmethod
-    # def get_pipeline_run_wrapper(
-    #     self,
-    #     pipeline_name: str,
-    #     run_name: str,
-    #     project_name: Optional[str] = None,
-    # ) -> PipelineRunModel:
-    #     """Gets a pipeline run.
-
-    #     Args:
-    #         pipeline_name: Name of the pipeline for which to get the run.
-    #         run_name: Name of the pipeline run to get.
-    #         project_name: Optional name of the project from which to get the
-    #             pipeline run.
-
-    #     Raises:
-    #         KeyError: If no pipeline run (or project) with the given name
-    #             exists.
-    #     """
-
-    # @abstractmethod
-    # def get_pipeline_run_wrappers(
-    #     self, pipeline_name: str, project_name: Optional[str] = None
-    # ) -> List[PipelineRunModel]:
-    #     """Gets pipeline runs.
-
-    #     Args:
-    #         pipeline_name: Name of the pipeline for which to get runs.
-    #         project_name: Optional name of the project from which to get the
-    #             pipeline runs.
-    #     """
-
-    # @abstractmethod
-    # def get_pipeline_run_steps(
-    #     self, pipeline_run: PipelineRunView
-    # ) -> Dict[str, StepView]:
-    #     """Gets all steps for the given pipeline run.
-
-    #     Args:
-    #         pipeline_run: The pipeline run to get the steps for.
-
-    #     Returns:
-    #         A dictionary of step names to step views.
-    #     """
-
-    # @abstractmethod
-    # def get_step_status(self, step: StepView) -> ExecutionStatus:
-    #     """Gets the execution status of a single step.
-
-    #     Args:
-    #         step (StepView): The step to get the status for.
-
-    #     Returns:
-    #         ExecutionStatus: The status of the step.
-    #     """
-
-    # @abstractmethod
-    # def get_producer_step_from_artifact(self, artifact_id: int) -> StepView:
-    #     """Returns original StepView from an ArtifactView.
-
-    #     Args:
-    #         artifact_id: ID of the ArtifactView to be queried.
-
-    #     Returns:
-    #         Original StepView that produced the artifact.
-    #     """
-
-    # @abstractmethod
-    # def register_pipeline_run(
-    #     self,
-    #     pipeline_run: PipelineRunModel,
-    # ) -> None:
-    #     """Registers a pipeline run.
-
-    #     Args:
-    #         pipeline_run: The pipeline run to register.
-
-    #     Raises:
-    #         EntityExistsError: If a pipeline run with the same name already
-    #             exists.
-    #     """
-
-    # # Stack component flavors
-
-    # @property
-    # @abstractmethod
-    # def flavors(self) -> List[FlavorModel]:
-    #     """All registered flavors.
-
-    #     Returns:
-    #         A list of all registered flavors.
-    #     """
-
-    # @abstractmethod
-    # def _create_flavor(
-    #     self,
-    #     source: str,
-    #     name: str,
-    #     stack_component_type: StackComponentType,
-    # ) -> FlavorModel:
-    #     """Creates a new flavor.
-
-    #     Args:
-    #         source: the source path to the implemented flavor.
-    #         name: the name of the flavor.
-    #         stack_component_type: the corresponding StackComponentType.
-
-    #     Returns:
-    #         The newly created flavor.
-
-    #     Raises:
-    #         EntityExistsError: If a flavor with the given name and type
-    #             already exists.
-    #     """
-
-    # @abstractmethod
-    # def get_flavors_by_type(
-    #     self, component_type: StackComponentType
-    # ) -> List[FlavorModel]:
-    #     """Fetch all flavor defined for a specific stack component type.
-
-    #     Args:
-    #         component_type: The type of the stack component.
-
-    #     Returns:
-    #         List of all the flavors for the given stack component type.
-    #     """
-
-    # @abstractmethod
-    # def get_flavor_by_name_and_type(
-    #     self,
-    #     flavor_name: str,
-    #     component_type: StackComponentType,
-    # ) -> FlavorModel:
-    #     """Fetch a flavor by a given name and type.
-
-    #     Args:
-    #         flavor_name: The name of the flavor.
-    #         component_type: Optional, the type of the component.
-
-    #     Returns:
-    #         Flavor instance if it exists
-
-    #     Raises:
-    #         KeyError: If no flavor exists with the given name and type
-    #             or there are more than one instances
-    #     """
-
-    # # Common code (user facing):
-
-    # @property
-    # def stacks(self) -> List[StackModel]:
-    #     """All stacks registered in this zen store.
-
-    #     Returns:
-    #         A list of all stacks registered in this zen store.
-    #     """
-    #     return [
-    #         self._stack_from_dict(name, conf)
-    #         for name, conf in self.stack_configurations.items()
-    #     ]
-
-    # def get_stack(self, name: str) -> StackModel:
-    #     """Fetch a stack by name.
-
-    #     Args:
-    #         name: The name of the stack to retrieve.
-
-    #     Returns:
-    #         StackWrapper instance if the stack exists.
-    #     """
-    #     return self._stack_from_dict(name, self.get_stack_configuration(name))
-
-    # def _update_stack(self, name: str, stack: StackModel) -> None:
-    #     """Update a stack and its components.
-
-    #     If any of the stack's components aren't registered in the stack store
-    #     yet, this method will try to register them as well.
-
-    #     Args:
-    #         name: The original name of the stack.
-    #         stack: The new stack to use in the update.
-
-    #     Raises:
-    #         KeyError: If no stack exists with the given name.
-    #         StackExistsError: If a stack with the same name already exists.
-    #     """
-    #     try:
-    #         self.get_stack(name)
-    #     except KeyError:
-    #         raise KeyError(
-    #             f"Unable to update stack with name '{stack.name}': No existing "
-    #             f"stack found with this name."
-    #         )
-
-    #     try:
-    #         renamed_stack = self.get_stack(stack.name)
-    #         if (name != stack.name) and renamed_stack:
-    #             raise StackExistsError(
-    #                 f"Unable to update stack with name '{stack.name}': Found "
-    #                 f"existing stack with this name."
-    #             )
-    #     except KeyError:
-    #         pass
-
-    #     def __check_component(
-    #         component: ComponentModel,
-    #     ) -> Tuple[StackComponentType, str]:
-    #         """Try to register a stack component, if it doesn't exist.
-
-    #         Args:
-    #             component: StackComponentWrapper to register.
-
-    #         Returns:
-    #             The type and name of the component.
-    #         """
-    #         try:
-    #             _ = self.get_stack_component(
-    #                 component_type=component.type, name=component.name
-    #             )
-    #         except KeyError:
-    #             self._register_stack_component(component)
-    #         return component.type, component.name
-
-    #     stack_configuration = {
-    #         typ: name for typ, name in map(__check_component, stack.components)
-    #     }
-    #     self._save_stack(stack.name, stack_configuration)
-
-    #     logger.info("Updated stack with name '%s'.", name)
-    #     if name != stack.name:
-    #         self.deregister_stack(name)
-
-    # def get_stack_component(
-    #     self, component_type: StackComponentType, name: str
-    # ) -> ComponentModel:
-    #     """Get a registered stack component.
-
-    #     Args:
-    #         component_type: The type of the component.
-    #         name: The name of the component.
-
-    #     Returns:
-    #         The component.
-    #     """
-    #     flavor, config = self._get_component_flavor_and_config(
-    #         component_type, name=name
-    #     )
-    #     uuid = yaml.safe_load(base64.b64decode(config).decode())["uuid"]
-    #     return ComponentModel(
-    #         type=component_type,
-    #         flavor=flavor,
-    #         name=name,
-    #         uuid=uuid,
-    #         config=config,
-    #     )
-
-    # def get_stack_components(
-    #     self, component_type: StackComponentType
-    # ) -> List[ComponentModel]:
-    #     """Fetches all registered stack components of the given type.
-
-    #     Args:
-    #         component_type: StackComponentType to list members of
-
-    #     Returns:
-    #         A list of StackComponentConfiguration instances.
-    #     """
-    #     return [
-    #         self.get_stack_component(component_type=component_type, name=name)
-    #         for name in self._get_stack_component_names(component_type)
-    #     ]
-
-    # def deregister_stack_component(
-    #     self, component_type: StackComponentType, name: str
-    # ) -> None:
-    #     """Deregisters a stack component.
-
-    #     Args:
-    #         component_type: The type of the component to deregister.
-    #         name: The name of the component to deregister.
-
-    #     Raises:
-    #         ValueError: if trying to deregister a component that's part
-    #             of a stack.
-    #     """
-    #     for stack_name, stack_config in self.stack_configurations.items():
-    #         if stack_config.get(component_type) == name:
-    #             raise ValueError(
-    #                 f"Unable to deregister stack component (type: "
-    #                 f"{component_type}, name: {name}) that is part of a "
-    #                 f"registered stack (stack name: '{stack_name}')."
-    #             )
-    #     self._delete_stack_component(component_type, name=name)
-
-    # def register_default_stack(self) -> None:
-    #     """Populates the store with the default Stack.
-
-    #     The default stack contains a local orchestrator and a local artifact
-    #     store.
-    #     """
-    #     stack = Stack.default_local_stack()
-    #     sw = StackModel.from_stack(stack)
-    #     self._register_stack(sw)
-    #     metadata = {c.type.value: c.flavor for c in sw.components}
-    #     metadata["store_type"] = self.type.value
-    #     self._track_event(
-    #         AnalyticsEvent.REGISTERED_DEFAULT_STACK, metadata=metadata
-    #     )
-
-    # def create_default_user(self) -> None:
-    #     """Creates a default user."""
-    #     try:
-    #         self.get_user(user_name=DEFAULT_USERNAME)
-    #     except KeyError:
-    #         # Use private interface and send custom tracking event
-    #         self._track_event(AnalyticsEvent.CREATED_DEFAULT_USER)
-    #         self._create_user(user_name=DEFAULT_USERNAME)
-
-    # def create_default_project(self) -> None:
-    #     """Creates a default project."""
-    #     try:
-    #         self.get_project(project_name=DEFAULT_PROJECT_NAME)
-    #     except KeyError:
-    #         # Use private interface and send custom tracking event
-    #         self._track_event(AnalyticsEvent.CREATED_DEFAULT_PROJECT)
-    #         self._create_project(project_name=DEFAULT_PROJECT_NAME)
-
-    # # Common code (internal implementations, private):
-
-    # def _track_event(
-    #     self,
-    #     event: Union[str, AnalyticsEvent],
-    #     metadata: Optional[Dict[str, Any]] = None,
-    # ) -> bool:
-    #     """Track an analytics event.
-
-    #     Args:
-    #         event: The event to track.
-    #         metadata: Additional metadata to track with the event.
-
-    #     Returns:
-    #         True if the event was successfully tracked, False otherwise.
-    #     """
-    #     if self._track_analytics:
-    #         return track_event(event, metadata)
-    #     return False
-
-    # def _stack_from_dict(
-    #     self, name: str, stack_configuration: Dict[StackComponentType, str]
-    # ) -> StackModel:
-    #     """Build a StackWrapper from stored configurations.
-
-    #     Args:
-    #         name: The name of the stack.
-    #         stack_configuration: The configuration of the stack.
-
-    #     Returns:
-    #         A StackWrapper instance.
-    #     """
-    #     stack_components = [
-    #         self.get_stack_component(
-    #             component_type=component_type, name=component_name
-    #         )
-    #         for component_type, component_name in stack_configuration.items()
-    #     ]
-    #     return StackModel(name=name, components=stack_components)
-
-    # # Public facing APIs
-    # # TODO [ENG-894]: Refactor these with the proxy pattern, as noted in
-    # #  the [review comment](https://github.com/zenml-io/zenml/pull/589#discussion_r875003334)
-
-    # def update_stack_component(
-    #     self,
-    #     name: str,
-    #     component_type: StackComponentType,
-    #     component: ComponentModel,
-    # ) -> Dict[str, str]:
-    #     """Update a stack component.
-
-    #     Args:
-    #         name: The original name of the stack component.
-    #         component_type: The type of the stack component to update.
-    #         component: The new component to update with.
-
-    #     Returns:
-    #         The updated stack configuration.
-    #     """
-    #     analytics_metadata = {
-    #         "type": component.type.value,
-    #         "flavor": component.flavor,
-    #     }
-    #     self._track_event(
-    #         AnalyticsEvent.UPDATED_STACK_COMPONENT,
-    #         metadata=analytics_metadata,
-    #     )
-    #     return self._update_stack_component(name, component_type, component)
-
-    # def deregister_stack(self, name: str) -> None:
-    #     """Delete a stack from storage.
-
-    #     Args:
-    #         name: The name of the stack to be deleted.
-
-    #     Returns:
-    #         None.
-    #     """
-    #     # No tracking events, here for consistency
-    #     return self._deregister_stack(name)
-
-    # def create_team(self, team_name: str) -> Team:
-    #     """Creates a new team.
-
-    #     Args:
-    #         team_name: Unique team name.
-
-    #     Returns:
-    #         The newly created team.
-    #     """
-    #     self._track_event(AnalyticsEvent.CREATED_TEAM)
-    #     return self._create_team(team_name)
-
-    # def get_team(self, team_name: str) -> Team:
-    #     """Gets a specific team.
-
-    #     Args:
-    #         team_name: Name of the team to get.
-
-    #     Returns:
-    #         The requested team.
-    #     """
-    #     # No tracking events, here for consistency
-    #     return self._get_team(team_name)
-
-    # def delete_team(self, team_name: str) -> None:
-    #     """Deletes a team.
-
-    #     Args:
-    #         team_name: Name of the team to delete.
-
-    #     Returns:
-    #         None
-    #     """
-    #     self._track_event(AnalyticsEvent.DELETED_TEAM)
-    #     return self._delete_team(team_name)
-
-    # def get_role(self, role_name: str) -> Role:
-    #     """Gets a specific role.
-
-    #     Args:
-    #         role_name: Name of the role to get.
-
-    #     Returns:
-    #         The requested role.
-    #     """
-    #     # No tracking events, here for consistency
-    #     return self._get_role(role_name)
-
-    # def create_role(self, role_name: str) -> Role:
-    #     """Creates a new role.
-
-    #     Args:
-    #         role_name: Unique role name.
-
-    #     Returns:
-    #         The newly created role.
-    #     """
-    #     self._track_event(AnalyticsEvent.CREATED_ROLE)
-    #     return self._create_role(role_name)
-
-    # def create_flavor(
-    #     self,
-    #     source: str,
-    #     name: str,
-    #     stack_component_type: StackComponentType,
-    # ) -> FlavorModel:
-    #     """Creates a new flavor.
-
-    #     Args:
-    #         source: the source path to the implemented flavor.
-    #         name: the name of the flavor.
-    #         stack_component_type: the corresponding StackComponentType.
-
-    #     Returns:
-    #         The newly created flavor.
-    #     """
-    #     analytics_metadata = {
-    #         "type": stack_component_type.value,
-    #     }
-    #     track_event(
-    #         AnalyticsEvent.CREATED_FLAVOR,
-    #         metadata=analytics_metadata,
-    #     )
-    #     return self._create_flavor(source, name, stack_component_type)
-
-    # def register_stack(self, stack: StackModel) -> None:
-    #     """Register a stack and its components.
-
-    #     If any of the stack's components aren't registered in the zen store
-    #     yet, this method will try to register them as well.
-
-    #     Args:
-    #         stack: The stack to register.
-
-    #     Returns:
-    #         None
-    #     """
-    #     metadata = {c.type.value: c.flavor for c in stack.components}
-    #     metadata["store_type"] = self.type.value
-    #     track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
-    #     return self._register_stack(stack)
-
-    # def update_stack(self, name: str, stack: StackModel) -> None:
-    #     """Update a stack and its components.
-
-    #     If any of the stack's components aren't registered in the stack store
-    #     yet, this method will try to register them as well.
-
-    #     Args:
-    #         name: The original name of the stack.
-    #         stack: The new stack to use in the update.
-
-    #     Returns:
-    #         None.
-    #     """
-    #     metadata = {c.type.value: c.flavor for c in stack.components}
-    #     metadata["store_type"] = self.type.value
-    #     track_event(AnalyticsEvent.UPDATED_STACK, metadata=metadata)
-    #     return self._update_stack(name, stack)
-
-    ## PRIVATE PAIRED METHODS
+    #  .-----.
+    # | RUNS |
+    # '------'
+
+    # TODO: [ALEX] add filtering param(s)
+    def list_runs(
+        self,
+        project_name: Optional[str] = None,
+        stack_id: Optional[str] = None,
+        pipeline_id: Optional[str] = None,
+        trigger_id: Optional[str] = None,
+    ) -> List[PipelineRunModel]:
+        """Gets all pipeline runs in a project.
+
+        Args:
+            project_name: Name of the project to get.
+            stack_id: ID of the stack to get.
+            pipeline_id: ID of the pipeline to get.
+            trigger_id: ID of the trigger to get.
+
+        Returns:
+            A list of all pipeline runs in the project.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
+        return self._list_pipeline_runs(
+            project_name=project_name,
+            stack_id=stack_id,
+            pipeline_id=pipeline_id,
+            trigger_id=trigger_id,
+        )
+
+    def get_run(self, run_id: str) -> PipelineRunModel:
+        """Gets a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            The pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        return self._get_run(run_id)
+
+    def update_run(
+        self, run_id: str, run: PipelineRunModel
+    ) -> PipelineRunModel:
+        """Updates a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to update.
+            run: The pipeline run to use for the update.
+
+        Returns:
+            The updated pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        return self._update_run(run_id, run)
+
+    def delete_run(self, run_id: str) -> None:
+        """Deletes a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to delete.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        return self._delete_run(run_id)
+
+    # TODO: figure out args and output for this
+    def get_run_dag(self, run_id: str) -> str:
+        """Gets the DAG for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            The DAG for the pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        return self._get_run_dag(run_id)
+
+    # TODO: [ALEX] add filtering param(s)
+    def list_run_steps(self, run_id: str) -> List[StepModel]:
+        """Gets all steps in a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            A list of all steps in the pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        return self._list_run_steps(run_id)
+
+    def get_run_runtime_configuration(self, run_id: str) -> Dict:
+        """Gets the runtime configuration for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            The runtime configuration for the pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        return self._get_run_runtime_configuration(run_id)
+
+    # TODO: Figure out what exactly gets returned from this
+    def get_run_component_side_effects(
+        self,
+        run_id: str,
+        component_id: Optional[str] = None,
+        component_type: Optional[StackComponentType] = None,
+    ) -> Dict:
+        """Gets the side effects for a component in a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+            component_id: The ID of the component to get.
+
+        Returns:
+            The side effects for the component in the pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        return self._get_run_component_side_effects(
+            run_id, component_id=component_id, component_type=component_type
+        )
+
+    #  .------------------------.
+    # | PRIVATE IMPLEMENTATIONS |
+    # '-------------------------'
 
     @abstractmethod
     def _create_user(self, user: User) -> User:
@@ -2450,7 +1758,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def get_pipeline_configuration(self, pipeline_id: str) -> Dict[Any, Any]:
+    def _get_pipeline_configuration(self, pipeline_id: str) -> Dict[Any, Any]:
         """Gets the pipeline configuration.
 
         Args:
@@ -2461,6 +1769,136 @@ class BaseZenStore(ABC):
 
         Raises:
             KeyError: if the pipeline doesn't exist.
+        """
+
+    # TODO: [ALEX] add filtering param(s)
+    @abstractmethod
+    def _list_pipeline_runs(
+        self,
+        project_name: Optional[str] = None,
+        stack_id: Optional[str] = None,
+        pipeline_id: Optional[str] = None,
+        trigger_id: Optional[str] = None,
+    ) -> List[PipelineRunModel]:
+        """Gets all pipeline runs in a project.
+
+        Args:
+            project_name: Name of the project to get.
+            stack_id: ID of the stack to get.
+            pipeline_id: ID of the pipeline to get.
+            trigger_id: ID of the trigger to get.
+
+        Returns:
+            A list of all pipeline runs in the project.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
+
+    @abstractmethod
+    def _get_run(self, run_id: str) -> PipelineRunModel:
+        """Gets a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            The pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
+    @abstractmethod
+    def _update_run(
+        self, run_id: str, run: PipelineRunModel
+    ) -> PipelineRunModel:
+        """Updates a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to update.
+            run: The pipeline run to use for the update.
+
+        Returns:
+            The updated pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
+    @abstractmethod
+    def _delete_run(self, run_id: str) -> None:
+        """Deletes a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to delete.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
+    # TODO: figure out args and output for this
+    @abstractmethod
+    def _get_run_dag(self, run_id: str) -> str:
+        """Gets the DAG for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            The DAG for the pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
+    # TODO: [ALEX] add filtering param(s)
+    @abstractmethod
+    def _list_run_steps(self, run_id: str) -> List[StepModel]:
+        """Gets all steps in a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            A list of all steps in the pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
+    @abstractmethod
+    def _get_run_runtime_configuration(self, run_id: str) -> Dict:
+        """Gets the runtime configuration for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            The runtime configuration for the pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
+    @abstractmethod
+    def _get_run_component_side_effects(
+        self,
+        run_id: str,
+        component_id: Optional[str] = None,
+        component_type: Optional[StackComponentType] = None,
+    ) -> Dict:
+        """Gets the side effects for a component in a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+            component_id: The ID of the component to get.
+
+        Returns:
+            The side effects for the component in the pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
         """
 
     # PROPERTIES
@@ -2492,7 +1930,759 @@ class BaseZenStore(ABC):
             A list of all registered projects.
         """
 
+    # # Public facing APIs
+    # # TODO [ENG-894]: Refactor these with the proxy pattern, as noted in
+    # #  the [review comment](https://github.com/zenml-io/zenml/pull/589#discussion_r875003334)
 
-# Generalised TODOs
-# - fix the exceptions
-# - be consistent about which raise KeyErrors
+    def create_team(self, team_name: str) -> Team:
+        """Creates a new team.
+
+        Args:
+            team_name: Unique team name.
+
+        Returns:
+            The newly created team.
+        """
+        self._track_event(AnalyticsEvent.CREATED_TEAM)
+        return self._create_team(team_name)
+
+    # TODO: consider using team_id instead
+    def get_team(self, team_name: str) -> Team:
+        """Gets a specific team.
+
+        Args:
+            team_name: Name of the team to get.
+
+        Returns:
+            The requested team.
+        """
+        # No tracking events, here for consistency
+        return self._get_team(team_name)
+
+    # TODO: consider using team_id instead
+    def delete_team(self, team_name: str) -> None:
+        """Deletes a team.
+
+        Args:
+            team_name: Name of the team to delete.
+
+        Returns:
+            None
+        """
+        self._track_event(AnalyticsEvent.DELETED_TEAM)
+        return self._delete_team(team_name)
+
+    # TODO: consider using team_id instead
+    def get_role(self, role_name: str) -> Role:
+        """Gets a specific role.
+
+        Args:
+            role_name: Name of the role to get.
+
+        Returns:
+            The requested role.
+        """
+        # No tracking events, here for consistency
+        return self._get_role(role_name)
+
+    # TODO: consider using team_id instead
+    def create_role(self, role_name: str) -> Role:
+        """Creates a new role.
+
+        Args:
+            role_name: Unique role name.
+
+        Returns:
+            The newly created role.
+        """
+        self._track_event(AnalyticsEvent.CREATED_ROLE)
+        return self._create_role(role_name)
+
+    def create_flavor(
+        self,
+        source: str,
+        name: str,
+        stack_component_type: StackComponentType,
+    ) -> FlavorModel:
+        """Creates a new flavor.
+
+        Args:
+            source: the source path to the implemented flavor.
+            name: the name of the flavor.
+            stack_component_type: the corresponding StackComponentType.
+
+        Returns:
+            The newly created flavor.
+        """
+        analytics_metadata = {
+            "type": stack_component_type.value,
+        }
+        self._track_event(
+            AnalyticsEvent.CREATED_FLAVOR,
+            metadata=analytics_metadata,
+        )
+        return self._create_flavor(source, name, stack_component_type)
+
+    # LEGACY CODE FROM THE PREVIOUS VERSION OF BASEZENSTORE
+
+    @abstractmethod
+    def get_stack_configuration(
+        self, name: str
+    ) -> Dict[StackComponentType, str]:
+        """Fetches a stack configuration by name.
+
+        Args:
+            name: The name of the stack to fetch.
+
+        Returns:
+            Dict[StackComponentType, str] for the requested stack name.
+
+        Raises:
+            KeyError: If no stack exists for the given name.
+        """
+
+    @property
+    @abstractmethod
+    def stack_configurations(self) -> Dict[str, Dict[StackComponentType, str]]:
+        """Configurations for all stacks registered in this zen store.
+
+        Returns:
+            Dictionary mapping stack names to Dict[StackComponentType, str]'s
+        """
+
+    # Private interface (must be implemented, not to be called by user):
+
+    @abstractmethod
+    def _save_stack(
+        self,
+        name: str,
+        stack_configuration: Dict[StackComponentType, str],
+    ) -> None:
+        """Add a stack to storage.
+
+        Args:
+            name: The name to save the stack as.
+            stack_configuration: Dict[StackComponentType, str] to persist.
+        """
+
+    @abstractmethod
+    def _get_component_flavor_and_config(
+        self, component_type: StackComponentType, name: str
+    ) -> Tuple[str, bytes]:
+        """Fetch the flavor and configuration for a stack component.
+
+        Args:
+            component_type: The type of the component to fetch.
+            name: The name of the component to fetch.
+
+        Returns:
+            Pair of (flavor, configuration) for stack component, as string and
+            base64-encoded yaml document, respectively
+
+        Raises:
+            KeyError: If no stack component exists for the given type and name.
+        """
+
+    @abstractmethod
+    def _get_stack_component_names(
+        self, component_type: StackComponentType
+    ) -> List[str]:
+        """Get names of all registered stack components of a given type.
+
+        Args:
+            component_type: The type of the component to list names for.
+
+        Returns:
+            A list of names as strings.
+        """
+
+    @abstractmethod
+    def _delete_stack_component(
+        self, component_type: StackComponentType, name: str
+    ) -> None:
+        """Remove a StackComponent from storage.
+
+        Args:
+            component_type: The type of component to delete.
+            name: Then name of the component to delete.
+
+        Raises:
+            KeyError: If no component exists for given type and name.
+        """
+
+    # User, project and role management
+
+    @property
+    @abstractmethod
+    def teams(self) -> List[Team]:
+        """All registered teams.
+
+        Returns:
+            A list of all registered teams.
+        """
+
+    @abstractmethod
+    def _create_team(self, team_name: str) -> Team:
+        """Creates a new team.
+
+        Args:
+            team_name: Unique team name.
+
+        Returns:
+            The newly created team.
+
+        Raises:
+            EntityExistsError: If a team with the given name already exists.
+        """
+
+    @abstractmethod
+    def _get_team(self, team_name: str) -> Team:
+        """Gets a specific team.
+
+        Args:
+            team_name: Name of the team to get.
+
+        Returns:
+            The requested team.
+
+        Raises:
+            KeyError: If no team with the given name exists.
+        """
+
+    @abstractmethod
+    def _delete_team(self, team_name: str) -> None:
+        """Deletes a team.
+
+        Args:
+            team_name: Name of the team to delete.
+
+        Raises:
+            KeyError: If no team with the given name exists.
+        """
+
+    @abstractmethod
+    def add_user_to_team(self, team_name: str, user_name: str) -> None:
+        """Adds a user to a team.
+
+        Args:
+            team_name: Name of the team.
+            user_name: Name of the user.
+
+        Raises:
+            KeyError: If no user and team with the given names exists.
+        """
+
+    @abstractmethod
+    def remove_user_from_team(self, team_name: str, user_name: str) -> None:
+        """Removes a user from a team.
+
+        Args:
+            team_name: Name of the team.
+            user_name: Name of the user.
+
+        Raises:
+            KeyError: If no user and team with the given names exists.
+        """
+
+    @property
+    @abstractmethod
+    def role_assignments(self) -> List[RoleAssignment]:
+        """All registered role assignments.
+
+        Returns:
+            A list of all registered role assignments.
+        """
+
+    @abstractmethod
+    def _get_role(self, role_name: str) -> Role:
+        """Gets a specific role.
+
+        Args:
+            role_name: Name of the role to get.
+
+        Returns:
+            The requested role.
+
+        Raises:
+            KeyError: If no role with the given name exists.
+        """
+
+    @abstractmethod
+    def _create_role(self, role_name: str) -> Role:
+        """Creates a new role.
+
+        Args:
+            role_name: Unique role name.
+
+        Returns:
+            The newly created role.
+
+        Raises:
+            EntityExistsError: If a role with the given name already exists.
+        """
+
+    @abstractmethod
+    def revoke_role(
+        self,
+        role_name: str,
+        entity_name: str,
+        project_name: Optional[str] = None,
+        is_user: bool = True,
+    ) -> None:
+        """Revokes a role from a user or team.
+
+        Args:
+            role_name: Name of the role to revoke.
+            entity_name: User or team name.
+            project_name: Optional project name.
+            is_user: Boolean indicating whether the given `entity_name` refers
+                to a user.
+
+        Raises:
+            KeyError: If no role, entity or project with the given names exists.
+        """
+
+    @abstractmethod
+    def get_users_for_team(self, team_name: str) -> List[User]:
+        """Fetches all users of a team.
+
+        Args:
+            team_name: Name of the team.
+
+        Returns:
+            List of users that are part of the team.
+
+        Raises:
+            KeyError: If no team with the given name exists.
+        """
+
+    @abstractmethod
+    def get_teams_for_user(self, user_name: str) -> List[Team]:
+        """Fetches all teams for a user.
+
+        Args:
+            user_name: Name of the user.
+
+        Returns:
+            List of teams that the user is part of.
+
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
+
+    @abstractmethod
+    def get_role_assignments_for_team(
+        self,
+        team_name: str,
+        project_name: Optional[str] = None,
+    ) -> List[RoleAssignment]:
+        """Fetches all role assignments for a team.
+
+        Args:
+            team_name: Name of the user.
+            project_name: Optional filter to only return roles assigned for
+                this project.
+
+        Returns:
+            List of role assignments for this team.
+
+        Raises:
+            KeyError: If no team or project with the given names exists.
+        """
+
+    # Pipelines and pipeline runs
+
+    @abstractmethod
+    def get_pipeline_run(
+        self, pipeline: PipelineView, run_name: str
+    ) -> Optional[PipelineRunView]:
+        """Gets a specific run for the given pipeline.
+
+        Args:
+            pipeline: The pipeline for which to get the run.
+            run_name: The name of the run to get.
+
+        Returns:
+            The pipeline run with the given name.
+        """
+
+    @abstractmethod
+    def get_pipeline_runs(
+        self, pipeline: PipelineView
+    ) -> Dict[str, PipelineRunView]:
+        """Gets all runs for the given pipeline.
+
+        Args:
+            pipeline: a Pipeline object for which you want the runs.
+
+        Returns:
+            A dictionary of pipeline run names to PipelineRunView.
+        """
+
+    @abstractmethod
+    def get_pipeline_run_wrapper(
+        self,
+        pipeline_name: str,
+        run_name: str,
+        project_name: Optional[str] = None,
+    ) -> PipelineRunModel:
+        """Gets a pipeline run.
+
+        Args:
+            pipeline_name: Name of the pipeline for which to get the run.
+            run_name: Name of the pipeline run to get.
+            project_name: Optional name of the project from which to get the
+                pipeline run.
+
+        Raises:
+            KeyError: If no pipeline run (or project) with the given name
+                exists.
+        """
+
+    @abstractmethod
+    def get_pipeline_run_wrappers(
+        self, pipeline_name: str, project_name: Optional[str] = None
+    ) -> List[PipelineRunModel]:
+        """Gets pipeline runs.
+
+        Args:
+            pipeline_name: Name of the pipeline for which to get runs.
+            project_name: Optional name of the project from which to get the
+                pipeline runs.
+        """
+
+    @abstractmethod
+    def get_pipeline_run_steps(
+        self, pipeline_run: PipelineRunView
+    ) -> Dict[str, StepView]:
+        """Gets all steps for the given pipeline run.
+
+        Args:
+            pipeline_run: The pipeline run to get the steps for.
+
+        Returns:
+            A dictionary of step names to step views.
+        """
+
+    @abstractmethod
+    def get_step_status(self, step: StepView) -> ExecutionStatus:
+        """Gets the execution status of a single step.
+
+        Args:
+            step (StepView): The step to get the status for.
+
+        Returns:
+            ExecutionStatus: The status of the step.
+        """
+
+    @abstractmethod
+    def get_producer_step_from_artifact(self, artifact_id: int) -> StepView:
+        """Returns original StepView from an ArtifactView.
+
+        Args:
+            artifact_id: ID of the ArtifactView to be queried.
+
+        Returns:
+            Original StepView that produced the artifact.
+        """
+
+    @abstractmethod
+    def register_pipeline_run(
+        self,
+        pipeline_run: PipelineRunModel,
+    ) -> None:
+        """Registers a pipeline run.
+
+        Args:
+            pipeline_run: The pipeline run to register.
+
+        Raises:
+            EntityExistsError: If a pipeline run with the same name already
+                exists.
+        """
+
+    # Stack component flavors
+
+    @property
+    @abstractmethod
+    def flavors(self) -> List[FlavorModel]:
+        """All registered flavors.
+
+        Returns:
+            A list of all registered flavors.
+        """
+
+    @abstractmethod
+    def _create_flavor(
+        self,
+        source: str,
+        name: str,
+        stack_component_type: StackComponentType,
+    ) -> FlavorModel:
+        """Creates a new flavor.
+
+        Args:
+            source: the source path to the implemented flavor.
+            name: the name of the flavor.
+            stack_component_type: the corresponding StackComponentType.
+
+        Returns:
+            The newly created flavor.
+
+        Raises:
+            EntityExistsError: If a flavor with the given name and type
+                already exists.
+        """
+
+    @abstractmethod
+    def get_flavors_by_type(
+        self, component_type: StackComponentType
+    ) -> List[FlavorModel]:
+        """Fetch all flavor defined for a specific stack component type.
+
+        Args:
+            component_type: The type of the stack component.
+
+        Returns:
+            List of all the flavors for the given stack component type.
+        """
+
+    @abstractmethod
+    def get_flavor_by_name_and_type(
+        self,
+        flavor_name: str,
+        component_type: StackComponentType,
+    ) -> FlavorModel:
+        """Fetch a flavor by a given name and type.
+
+        Args:
+            flavor_name: The name of the flavor.
+            component_type: Optional, the type of the component.
+
+        Returns:
+            Flavor instance if it exists
+
+        Raises:
+            KeyError: If no flavor exists with the given name and type
+                or there are more than one instances
+        """
+
+    # Common code (user facing):
+
+    @property
+    def stacks(self) -> List[StackModel]:
+        """All stacks registered in this zen store.
+
+        Returns:
+            A list of all stacks registered in this zen store.
+        """
+        return [
+            self._stack_from_dict(name, conf)
+            for name, conf in self.stack_configurations.items()
+        ]
+
+    def get_stack(self, name: str) -> StackModel:
+        """Fetch a stack by name.
+
+        Args:
+            name: The name of the stack to retrieve.
+
+        Returns:
+            StackWrapper instance if the stack exists.
+        """
+        return self._stack_from_dict(name, self.get_stack_configuration(name))
+
+    def _update_stack(self, name: str, stack: StackModel) -> None:
+        """Update a stack and its components.
+
+        If any of the stack's components aren't registered in the stack store
+        yet, this method will try to register them as well.
+
+        Args:
+            name: The original name of the stack.
+            stack: The new stack to use in the update.
+
+        Raises:
+            KeyError: If no stack exists with the given name.
+            StackExistsError: If a stack with the same name already exists.
+        """
+        try:
+            self.get_stack(name)
+        except KeyError:
+            raise KeyError(
+                f"Unable to update stack with name '{stack.name}': No existing "
+                f"stack found with this name."
+            )
+
+        try:
+            renamed_stack = self.get_stack(stack.name)
+            if (name != stack.name) and renamed_stack:
+                raise StackExistsError(
+                    f"Unable to update stack with name '{stack.name}': Found "
+                    f"existing stack with this name."
+                )
+        except KeyError:
+            pass
+
+        def __check_component(
+            component: ComponentModel,
+        ) -> Tuple[StackComponentType, str]:
+            """Try to register a stack component, if it doesn't exist.
+
+            Args:
+                component: StackComponentWrapper to register.
+
+            Returns:
+                The type and name of the component.
+            """
+            try:
+                _ = self.get_stack_component(
+                    component_type=component.type, name=component.name
+                )
+            except KeyError:
+                self._register_stack_component(component)
+            return component.type, component.name
+
+        stack_configuration = {
+            typ: name for typ, name in map(__check_component, stack.components)
+        }
+        self._save_stack(stack.name, stack_configuration)
+
+        logger.info("Updated stack with name '%s'.", name)
+        if name != stack.name:
+            self.deregister_stack(name)
+
+    def get_stack_component(
+        self, component_type: StackComponentType, name: str
+    ) -> ComponentModel:
+        """Get a registered stack component.
+
+        Args:
+            component_type: The type of the component.
+            name: The name of the component.
+
+        Returns:
+            The component.
+        """
+        flavor, config = self._get_component_flavor_and_config(
+            component_type, name=name
+        )
+        uuid = yaml.safe_load(base64.b64decode(config).decode())["uuid"]
+        return ComponentModel(
+            type=component_type,
+            flavor=flavor,
+            name=name,
+            uuid=uuid,
+            config=config,
+        )
+
+    def get_stack_components(
+        self, component_type: StackComponentType
+    ) -> List[ComponentModel]:
+        """Fetches all registered stack components of the given type.
+
+        Args:
+            component_type: StackComponentType to list members of
+
+        Returns:
+            A list of StackComponentConfiguration instances.
+        """
+        return [
+            self.get_stack_component(component_type=component_type, name=name)
+            for name in self._get_stack_component_names(component_type)
+        ]
+
+    def deregister_stack_component(
+        self, component_type: StackComponentType, name: str
+    ) -> None:
+        """Deregisters a stack component.
+
+        Args:
+            component_type: The type of the component to deregister.
+            name: The name of the component to deregister.
+
+        Raises:
+            ValueError: if trying to deregister a component that's part
+                of a stack.
+        """
+        for stack_name, stack_config in self.stack_configurations.items():
+            if stack_config.get(component_type) == name:
+                raise ValueError(
+                    f"Unable to deregister stack component (type: "
+                    f"{component_type}, name: {name}) that is part of a "
+                    f"registered stack (stack name: '{stack_name}')."
+                )
+        self._delete_stack_component(component_type, name=name)
+
+    def register_default_stack(self) -> None:
+        """Populates the store with the default Stack.
+
+        The default stack contains a local orchestrator and a local artifact
+        store.
+        """
+        stack = Stack.default_local_stack()
+        sw = StackModel.from_stack(stack)
+        self._register_stack(sw)
+        metadata = {c.type.value: c.flavor for c in sw.components}
+        metadata["store_type"] = self.type.value
+        self._track_event(
+            AnalyticsEvent.REGISTERED_DEFAULT_STACK, metadata=metadata
+        )
+
+    def create_default_user(self) -> None:
+        """Creates a default user."""
+        try:
+            self.get_user(user_name=DEFAULT_USERNAME)
+        except KeyError:
+            # Use private interface and send custom tracking event
+            self._track_event(AnalyticsEvent.CREATED_DEFAULT_USER)
+            self._create_user(user_name=DEFAULT_USERNAME)
+
+    def create_default_project(self) -> None:
+        """Creates a default project."""
+        try:
+            self.get_project(project_name=DEFAULT_PROJECT_NAME)
+        except KeyError:
+            # Use private interface and send custom tracking event
+            self._track_event(AnalyticsEvent.CREATED_DEFAULT_PROJECT)
+            self._create_project(project_name=DEFAULT_PROJECT_NAME)
+
+    # Common code (internal implementations, private):
+
+    def _track_event(
+        self,
+        event: Union[str, AnalyticsEvent],
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> bool:
+        """Track an analytics event.
+
+        Args:
+            event: The event to track.
+            metadata: Additional metadata to track with the event.
+
+        Returns:
+            True if the event was successfully tracked, False otherwise.
+        """
+        if self._track_analytics:
+            return track_event(event, metadata)
+        return False
+
+    def _stack_from_dict(
+        self, name: str, stack_configuration: Dict[StackComponentType, str]
+    ) -> StackModel:
+        """Build a StackWrapper from stored configurations.
+
+        Args:
+            name: The name of the stack.
+            stack_configuration: The configuration of the stack.
+
+        Returns:
+            A StackWrapper instance.
+        """
+        stack_components = [
+            self.get_stack_component(
+                component_type=component_type, name=component_name
+            )
+            for component_type, component_name in stack_configuration.items()
+        ]
+        return StackModel(name=name, components=stack_components)

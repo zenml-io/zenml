@@ -302,7 +302,7 @@ async def create_pipeline_run(
 
 @router.get(
     PIPELINES + "/{pipeline_id}" + PIPELINE_CONFIGURATION,
-    response_model=Dict,
+    response_model=Dict[Any, Any],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def get_pipeline_configuration(pipeline_id: str) -> Dict[Any, Any]:

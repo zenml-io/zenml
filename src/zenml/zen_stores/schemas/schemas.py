@@ -17,7 +17,7 @@ from datetime import datetime
 from typing import List
 from uuid import UUID, uuid4
 
-from sqlmodel import Field, SQLModel, Relationship
+from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.enums import StackComponentType
 from zenml.models.pipeline_models import PipelineRunModel
@@ -158,7 +158,8 @@ class StackSchema(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.now)
 
     components: List["StackComponentSchema"] = Relationship(
-        back_populates="stack", link_model=StackCompositionSchema)
+        back_populates="stack", link_model=StackCompositionSchema
+    )
 
 
 class StackComponentSchema(SQLModel, table=True):
@@ -173,9 +174,7 @@ class StackComponentSchema(SQLModel, table=True):
     flavor_id: UUID = Field(
         foreign_key="flavorschema.id", nullable=True
     )  # TODO: Prefill flavors
-    owner: UUID = Field(
-        foreign_key="userschema.id", nullable=True
-    )
+    owner: UUID = Field(foreign_key="userschema.id", nullable=True)
 
     # type - redundant since flavor has this
     configuration: str
@@ -183,8 +182,8 @@ class StackComponentSchema(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.now)
 
     stacks: List["StackSchema"] = Relationship(
-        back_populates="components", link_model=StackCompositionSchema)
-
+        back_populates="components", link_model=StackCompositionSchema
+    )
 
 
 class PipelineSchema(SQLModel, table=True):

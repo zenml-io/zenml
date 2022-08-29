@@ -2168,7 +2168,7 @@ components:
             User that created the trigger.
           example:
             {name: htahir, id: w813dw}
-        creation_date:
+        created_at:
           title: Created at
           type: string
           format: date-time
@@ -2319,7 +2319,7 @@ components:
           title: Project Name
           type: string
           example: demo_prj
-        creation_date:
+        created_at:
           title: Run started at 
           type: string
           format: date-time
@@ -2375,7 +2375,7 @@ components:
             User that created the trigger.
           example:
             {name: htahir, id: w813dw}
-        creation_date:
+        created_at:
           title: Created by
           type: string
           format: date-time
@@ -2444,7 +2444,7 @@ components:
           title: Name
           type: string
           example: Hamza Tahir
-        creation_date:
+        created_at:
           title: Name
           type: string
           example: "2022-08-12T07:12:45.931Z"
@@ -2589,7 +2589,7 @@ components:
           type: string
           format: uuid
           readOnly: True
-        creation_date:
+        created_at:
           title: Creation Date
           type: string
           format: date-time
@@ -2643,7 +2643,7 @@ components:
           title: Name
           type: string
           example: htahir
-        creation_date:
+        created_at:
           title: Creation Date
           type: string
           format: date-time
@@ -2661,7 +2661,7 @@ components:
           type: string
           format: uuid
           readOnly: True
-        creation_date:
+        created_at:
           title: Creation Date
           type: string
           format: date-time
