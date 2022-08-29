@@ -47,6 +47,7 @@ def create_tfx_pipeline(
     Raises:
         KeyError: If a step contains an upstream step which is not part of
             the pipeline.
+        PipelineInterfaceError: If the pipeline contains a cycle.
     """
     # Connect the inputs/outputs of all steps in the pipeline
     zenml_pipeline.connect(**zenml_pipeline.steps)
