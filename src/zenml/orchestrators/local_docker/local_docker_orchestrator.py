@@ -14,6 +14,7 @@
 """Implementation of the ZenML local Docker orchestrator."""
 
 import os
+import sys
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List
 
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
@@ -151,13 +152,15 @@ class LocalDockerOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 )
             )
             volumes = self._get_volumes(stack=stack)
-
+            user = None
+            if sys.platform != "win32":
+                user = os.getuid()
             logger.info("Running step `%s` in Docker:", step.name)
             logs = docker_client.containers.run(
                 image=image_name,
                 entrypoint=entrypoint,
                 command=arguments,
-                user=os.getuid(),
+                user=user,
                 volumes=volumes,
                 stream=True,
             )
