@@ -1,10 +1,10 @@
-name: Spellcheck
+name: Docstring Check
 
 on: workflow_call
 
 jobs:
   spellcheck:
-    name: spellcheck
+    name: docstringcheck
     runs-on: ubuntu-latest
     env:
       ZENML_DEBUG: 1
@@ -17,11 +17,9 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.7
-      - name: Install dependencies
+      - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip setuptools
-          python -m pip install pyspelling
-      - name: Install Aspell
-        run: sudo apt-get install aspell aspell-en
-      - name: Spell check
-        run: bash scripts/check-spelling.sh
+          python -m pip install interrogate darglint pydocstyle
+      - name: Docstring Check
+        run: bash scripts/docstring.sh

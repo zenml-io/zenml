@@ -2,9 +2,6 @@
 set -e
 set -x
 
-# separate env variable while incrementally completing the docstring task.
-# add modules to this list as/when they are completed.
-# When we're done we can remove this and just use `SRC_NO_TESTS`.
 DOCSTRING_SRC=${1:-"src/zenml"}
 
 export ZENML_DEBUG=1
