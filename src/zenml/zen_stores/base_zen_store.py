@@ -23,13 +23,10 @@ from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.logger import get_logger
 from zenml.models import ComponentModel, FlavorModel, StackModel
-from zenml.models.code_models import CodeRepositoryModel
-from zenml.models.pipeline_models import (
-    PipelineModel,
-    PipelineRunModel,
-    StepModel,
-)
+from zenml.models.pipeline_models import StepModel, PipelineModel
 from zenml.models.user_management_models import Project, Role, User
+from zenml.post_execution import ArtifactView
+from zenml.stack import Stack
 from zenml.utils.analytics_utils import AnalyticsEvent
 
 logger = get_logger(__name__)
@@ -289,7 +286,7 @@ class BaseZenStore(ABC):
 
     def get_stack_component_side_effects(
         self, component_id: str, run_id: str, pipeline_id: str, stack_id: str
-    ) -> Dict[Any]:
+    ) -> Dict[Any, Any]:
         """Get the side effects of a stack component.
 
         Args:

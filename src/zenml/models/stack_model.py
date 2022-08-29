@@ -35,7 +35,7 @@ class StackModel(BaseModel):
     id is set when the database entry is created
     """
 
-    id: UUID
+    id: Optional[UUID]
     name: str
     description: Union[str, None] = Field(
         default=None, title="The description of the stack", max_length=300

@@ -14,9 +14,10 @@
 """SQL Model Implementations."""
 
 from datetime import datetime
+from typing import List
 from uuid import UUID, uuid4
 
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, SQLModel, Relationship
 
 from zenml.enums import StackComponentType
 from zenml.models.pipeline_models import PipelineRunModel
@@ -128,45 +129,6 @@ class FlavorSchema(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.now)
 
 
-class StackComponentSchema(SQLModel, table=True):
-    """SQL Model for stack components."""
-
-    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
-
-    name: str
-
-    # project_id - redundant since repository of flavor has this
-    type: StackComponentType
-    flavor_id: UUID = Field(
-        foreign_key="flavorschema.id", nullable=True
-    )  # TODO: Prefill flavors
-    created_by: UUID = Field(
-        foreign_key="userschema.id", nullable=True
-    )  # TODO: Automatically parse current user
-
-    # type - redundant since flavor has this
-    configuration: str
-
-    created_at: datetime = Field(default_factory=datetime.now)
-
-
-class StackSchema(SQLModel, table=True):
-    """SQL Model for stacks."""
-
-    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
-
-    name: str
-
-    project_id: UUID = Field(
-        foreign_key="projectschema.id", nullable=True
-    )  # TODO: Unnullableify this
-    created_by: UUID = Field(
-        foreign_key="userschema.id", nullable=True
-    )  # TODO: Unnullableify this
-
-    created_at: datetime = Field(default_factory=datetime.now)
-
-
 class StackCompositionSchema(SQLModel, table=True):
     """SQL Model for stack definitions.
 
@@ -179,7 +141,50 @@ class StackCompositionSchema(SQLModel, table=True):
     )
 
 
-# Pipelines, Runs, Steps
+class StackSchema(SQLModel, table=True):
+    """SQL Model for stacks."""
+
+    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+
+    name: str
+
+    project_id: UUID = Field(
+        foreign_key="projectschema.id", nullable=True
+    )  # TODO: Unnullableify this
+    owner: UUID = Field(
+        foreign_key="userschema.id", nullable=True
+    )  # TODO: Unnullableify this
+
+    created_at: datetime = Field(default_factory=datetime.now)
+
+    components: List["StackComponentSchema"] = Relationship(
+        back_populates="stack", link_model=StackCompositionSchema)
+
+
+class StackComponentSchema(SQLModel, table=True):
+    """SQL Model for stack components."""
+
+    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+
+    name: str
+
+    # project_id - redundant since repository of flavor has this
+    type: StackComponentType
+    flavor_id: UUID = Field(
+        foreign_key="flavorschema.id", nullable=True
+    )  # TODO: Prefill flavors
+    owner: UUID = Field(
+        foreign_key="userschema.id", nullable=True
+    )
+
+    # type - redundant since flavor has this
+    configuration: str
+
+    created_at: datetime = Field(default_factory=datetime.now)
+
+    stacks: List["StackSchema"] = Relationship(
+        back_populates="components", link_model=StackCompositionSchema)
+
 
 
 class PipelineSchema(SQLModel, table=True):
