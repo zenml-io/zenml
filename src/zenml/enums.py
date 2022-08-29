@@ -114,3 +114,9 @@ class SecretValidationLevel(StrEnum):
     SECRET_AND_KEY_EXISTS = "SECRET_AND_KEY_EXISTS"
     SECRET_EXISTS = "SECRET_EXISTS"
     NONE = "NONE"
+
+
+class IdentifySource(StrEnum):
+    """Analytics identify sources."""
+
+    ZENML_GO = "zenml go"
