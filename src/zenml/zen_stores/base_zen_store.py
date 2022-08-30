@@ -19,7 +19,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 from ml_metadata.proto import metadata_store_pb2
 
-from zenml.enums import StackComponentType, StoreType
+from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.logger import get_logger
 from zenml.models import ComponentModel, FlavorModel, StackModel
 from zenml.models.code_models import CodeRepositoryModel
@@ -30,6 +30,7 @@ from zenml.models.pipeline_models import (
 )
 from zenml.models.user_management_models import Project, Role, Team, User
 from zenml.post_execution import ArtifactView
+from zenml.stack import Stack
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 logger = get_logger(__name__)
@@ -432,7 +433,7 @@ class BaseZenStore(ABC):
     @abstractmethod
     def _get_stack_component_side_effects(
         self, component_id: str, run_id: str, pipeline_id: str, stack_id: str
-    ) -> Dict[Any]:
+    ) -> Dict[Any, Any]:
         """Get the side effects of a stack component.
 
         Args:
@@ -1995,7 +1996,7 @@ class BaseZenStore(ABC):
 
     @property
     @abstractmethod
-    def role_assignments(self) -> List[RoleAssignment]:
+    def role_assignments(self) -> List[Role]:
         """All registered role assignments.
 
         Returns:
@@ -2084,7 +2085,7 @@ class BaseZenStore(ABC):
         self,
         team_name: str,
         project_name: Optional[str] = None,
-    ) -> List[RoleAssignment]:
+    ) -> List[Role]:
         """Fetches all role assignments for a team.
 
         Args:
@@ -2103,8 +2104,8 @@ class BaseZenStore(ABC):
 
     @abstractmethod
     def get_pipeline_run(
-        self, pipeline: PipelineView, run_name: str
-    ) -> Optional[PipelineRunView]:
+        self, pipeline: PipelineModel, run_name: str
+    ) -> Optional[PipelineRunModel]:
         """Gets a specific run for the given pipeline.
 
         Args:
@@ -2117,8 +2118,8 @@ class BaseZenStore(ABC):
 
     @abstractmethod
     def get_pipeline_runs(
-        self, pipeline: PipelineView
-    ) -> Dict[str, PipelineRunView]:
+        self, pipeline: PipelineModel
+    ) -> Dict[str, PipelineRunModel]:
         """Gets all runs for the given pipeline.
 
         Args:
@@ -2162,8 +2163,8 @@ class BaseZenStore(ABC):
 
     @abstractmethod
     def get_pipeline_run_steps(
-        self, pipeline_run: PipelineRunView
-    ) -> Dict[str, StepView]:
+        self, pipeline_run: PipelineRunModel
+    ) -> Dict[str, StepModel]:
         """Gets all steps for the given pipeline run.
 
         Args:
@@ -2174,7 +2175,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def get_step_status(self, step: StepView) -> ExecutionStatus:
+    def get_step_status(self, step: StepModel) -> ExecutionStatus:
         """Gets the execution status of a single step.
 
         Args:
@@ -2185,7 +2186,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def get_producer_step_from_artifact(self, artifact_id: int) -> StepView:
+    def get_producer_step_from_artifact(self, artifact_id: int) -> StepModel:
         """Returns original StepView from an ArtifactView.
 
         Args:
