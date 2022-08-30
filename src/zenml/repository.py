@@ -43,7 +43,7 @@ from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
     from zenml.config.profile_config import ProfileConfiguration
-    from zenml.models import Project, User, ZenStoreModel
+    from zenml.models import ProjectModel, UserModel, ZenStoreModel
     from zenml.pipelines import BasePipeline
     from zenml.post_execution import PipelineView
     from zenml.zen_stores import BaseZenStore
@@ -741,7 +741,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         return self.active_profile.name
 
     @property
-    def active_user(self) -> "User":
+    def active_user(self) -> "UserModel":
         """The active user.
 
         Returns:
@@ -1006,7 +1006,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             )
 
     @property
-    def active_project(self) -> Optional["Project"]:
+    def active_project(self) -> Optional["ProjectModel"]:
         """Get the currently active project of the local repository.
 
         Returns:

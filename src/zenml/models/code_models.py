@@ -27,7 +27,7 @@ class CodeRepositoryModel(BaseModel):
         name: Step name
     """
 
-    id: Optional[UUID]
+    id: Optional[UUID] = None
     name: str
-    project_id: Optional[UUID]
-    created_at: datetime
+    project_id: Optional[UUID] = None
+    created_at: Optional[datetime] = None

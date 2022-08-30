@@ -23,11 +23,11 @@ from zenml.models.pipeline_models import (
 )
 from zenml.models.stack_model import StackModel
 from zenml.models.user_management_models import (
-    Project,
-    Role,
-    RoleAssignment,
-    Team,
-    User,
+    ProjectModel,
+    RoleModel,
+    RoleAssignmentModel,
+    TeamModel,
+    UserModel,
 )
 
 __all__ = [
@@ -37,8 +37,8 @@ __all__ = [
     "PipelineModel",
     "PipelineRunModel",
     "StepModel",
-    "User",
-    "Project",
-    "Role",
-    "Team",
+    "UserModel",
+    "ProjectModel",
+    "RoleModel",
+    "TeamModel",
 ]

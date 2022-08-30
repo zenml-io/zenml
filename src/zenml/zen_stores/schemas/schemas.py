@@ -22,7 +22,9 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.models import ComponentModel, StackModel
+from zenml.models.code_models import CodeRepositoryModel
 from zenml.models.pipeline_models import PipelineModel, PipelineRunModel, StepModel, StepRunModel
+from zenml.models.user_management_models import ProjectModel, RoleModel, UserModel
 
 
 def _sqlmodel_uuid() -> UUID:
@@ -47,8 +49,15 @@ class ProjectSchema(SQLModel, table=True):
 
     id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
     name: str
+    description: str = Field(nullable=True)
     created_at: datetime = Field(default_factory=datetime.now)
 
+    @classmethod
+    def from_model(cls, model: ProjectModel) -> "ProjectSchema":
+        return cls(name=model.name, description=model.description)
+
+    def to_model(self) -> ProjectModel:
+        return ProjectModel(**self.dict())
 
 class CodeRepositorySchema(SQLModel, table=True):
     """SQL Model for code repositories."""
@@ -58,6 +67,14 @@ class CodeRepositorySchema(SQLModel, table=True):
     project_id: UUID = Field(foreign_key="projectschema.id")
     created_at: datetime = Field(default_factory=datetime.now)
 
+    @classmethod
+    def from_model(
+        cls, model: CodeRepositoryModel, project_id: str
+    ) -> "CodeRepositorySchema":
+        return cls(name=model.name, project_id=project_id)
+
+    def to_model(self) -> CodeRepositoryModel:
+        return CodeRepositoryModel(**self.dict())
 
 # Users, Teams, Roles
 
@@ -68,6 +85,13 @@ class UserSchema(SQLModel, table=True):
     id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
     name: str
     created_at: datetime = Field(default_factory=datetime.now)
+
+    @classmethod
+    def from_model(cls, model: UserModel) -> "UserSchema":
+        return cls(name=model.name)
+
+    def to_model(self) -> UserModel:
+        return UserModel(**self.dict())
 
 
 class TeamSchema(SQLModel, table=True):
@@ -92,6 +116,12 @@ class RoleSchema(SQLModel, table=True):
     name: str
     created_at: datetime = Field(default_factory=datetime.now)
 
+    @classmethod
+    def from_model(cls, model: RoleModel) -> "RoleSchema":
+        return cls(name=model.name)
+
+    def to_model(self) -> RoleModel:
+        return RoleModel(**self.dict())
 
 class UserRoleAssignmentSchema(SQLModel, table=True):
     """SQL Model for assigning roles to users for a given project."""

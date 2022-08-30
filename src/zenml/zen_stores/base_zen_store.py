@@ -28,7 +28,7 @@ from zenml.models.pipeline_models import (
     PipelineRunModel,
     StepModel,
 )
-from zenml.models.user_management_models import Project, Role, Team, User
+from zenml.models.user_management_models import ProjectModel, RoleModel, TeamModel, UserModel
 from zenml.post_execution import ArtifactView
 from zenml.stack import Stack
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
@@ -162,10 +162,6 @@ class BaseZenStore(ABC):
             True if the store is empty, False otherwise.
         """
 
-    #  .--------.
-    # | STACKS |
-    # '--------'
-
     # TODO: [ALEX] add filtering param(s)
     def list_stacks(self,
                     project_id: str,
@@ -234,7 +230,7 @@ class BaseZenStore(ABC):
         """
 
     def register_stack(
-        self, user: User, project: Project, stack: StackModel
+        self, user: UserModel, project: ProjectModel, stack: StackModel
     ) -> StackModel:
         """Register a new stack.
 
@@ -257,7 +253,7 @@ class BaseZenStore(ABC):
 
     @abstractmethod
     def _register_stack(
-        self, user: User, project: Project, stack: StackModel
+        self, user: UserModel, project: ProjectModel, stack: StackModel
     ) -> StackModel:
         """Register a new stack.
 
@@ -275,7 +271,7 @@ class BaseZenStore(ABC):
         """
 
     def update_stack(
-        self, stack_id: str, user: User, project: Project, stack: StackModel
+        self, stack_id: str, user: UserModel, project: ProjectModel, stack: StackModel
     ) -> StackModel:
         """Update an existing stack.
 
@@ -295,7 +291,7 @@ class BaseZenStore(ABC):
 
     @abstractmethod
     def _update_stack(
-        self, stack_id: str, user: User, project: Project, stack: StackModel
+        self, stack_id: str, user: UserModel, project: ProjectModel, stack: StackModel
     ) -> StackModel:
         """Update a stack.
 
@@ -595,7 +591,7 @@ class BaseZenStore(ABC):
 
     # TODO: make the invite_token optional
     # TODO: [ALEX] add filtering param(s)
-    def list_users(self, invite_token: str = None) -> List[User]:
+    def list_users(self, invite_token: str = None) -> List[UserModel]:
         """List all users.
 
         Args:
@@ -607,7 +603,7 @@ class BaseZenStore(ABC):
         return self._list_users(invite_token=invite_token)
 
     @abstractmethod
-    def _list_users(self, invite_token: str = None) -> List[User]:
+    def _list_users(self, invite_token: str = None) -> List[UserModel]:
         """List all users.
 
         Args:
@@ -617,7 +613,7 @@ class BaseZenStore(ABC):
             A list of all users.
         """
 
-    def create_user(self, user: User) -> User:
+    def create_user(self, user: UserModel) -> UserModel:
         """Creates a new user.
 
         Args:
@@ -633,7 +629,7 @@ class BaseZenStore(ABC):
         return self._create_user(user)
 
     @abstractmethod
-    def _create_user(self, user: User) -> User:
+    def _create_user(self, user: UserModel) -> UserModel:
         """Creates a new user.
 
         Args:
@@ -646,7 +642,7 @@ class BaseZenStore(ABC):
             EntityExistsError: If a user with the given name already exists.
         """
 
-    def get_user(self, user_id: str, invite_token: str = None) -> User:
+    def get_user(self, user_id: str, invite_token: str = None) -> UserModel:
         """Gets a specific user.
 
         Args:
@@ -663,7 +659,7 @@ class BaseZenStore(ABC):
         return self._get_user(user_id, invite_token=invite_token)
 
     @abstractmethod
-    def _get_user(self, user_id: str, invite_token: str = None) -> User:
+    def _get_user(self, user_id: str, invite_token: str = None) -> UserModel:
         """Gets a specific user.
 
         Args:
@@ -677,7 +673,7 @@ class BaseZenStore(ABC):
             KeyError: If no user with the given name exists.
         """
 
-    def update_user(self, user_id: str, user: User) -> User:
+    def update_user(self, user_id: str, user: UserModel) -> UserModel:
         """Updates an existing user.
 
         Args:
@@ -694,7 +690,7 @@ class BaseZenStore(ABC):
         return self._update_user(user_id, user)
 
     @abstractmethod
-    def _update_user(self, user_id: str, user: User) -> User:
+    def _update_user(self, user_id: str, user: UserModel) -> UserModel:
         """Update the user.
 
         Args:
@@ -736,7 +732,7 @@ class BaseZenStore(ABC):
         user_id: str,
         # include_team_roles: bool = True, # TODO: Remove these from the
         # SQLStore implementation
-    ) -> List[Role]:
+    ) -> List[RoleModel]:
         """Fetches all role assignments for a user.
 
         Args:
@@ -751,7 +747,7 @@ class BaseZenStore(ABC):
         return self._get_role_assignments_for_user(user_id)
 
     @abstractmethod
-    def _get_role_assignments_for_user(self, user_id: str) -> List[Role]:
+    def _get_role_assignments_for_user(self, user_id: str) -> List[RoleModel]:
         """Fetches all role assignments for a user.
 
         Args:
@@ -779,7 +775,7 @@ class BaseZenStore(ABC):
         return self._assign_role(user_id, role_id, project_id)
 
     @abstractmethod
-    def _assign_role(self, user_id: str, role: Role) -> None:
+    def _assign_role(self, user_id: str, role: RoleModel) -> None:
         """Assigns a role to a user or team, scoped to a specific project.
 
         Args:
@@ -855,7 +851,7 @@ class BaseZenStore(ABC):
 
     # TODO: [ALEX] add filtering param(s)
     @abstractmethod
-    def list_roles(self) -> List[Role]:
+    def list_roles(self) -> List[RoleModel]:
         """List all roles.
 
         Returns:
@@ -885,14 +881,14 @@ class BaseZenStore(ABC):
 
     # TODO: [ALEX] add filtering param(s)
     @abstractmethod
-    def list_projects(self) -> List[Project]:
+    def list_projects(self) -> List[ProjectModel]:
         """List all projects.
 
         Returns:
             A list of all projects.
         """
 
-    def create_project(self, project: Project) -> Project:
+    def create_project(self, project: ProjectModel) -> ProjectModel:
         """Creates a new project.
 
         Args:
@@ -908,7 +904,7 @@ class BaseZenStore(ABC):
         return self._create_project(project)
 
     @abstractmethod
-    def _create_project(self, project: Project) -> Project:
+    def _create_project(self, project: ProjectModel) -> ProjectModel:
         """Creates a new project.
 
         Args:
@@ -921,7 +917,7 @@ class BaseZenStore(ABC):
             EntityExistsError: If a project with the given name already exists.
         """
 
-    def get_project(self, project_name: str) -> Project:
+    def get_project(self, project_name: str) -> ProjectModel:
         """Gets a specific project.
 
         Args:
@@ -937,7 +933,7 @@ class BaseZenStore(ABC):
         return self._get_project(project_name)
 
     @abstractmethod
-    def _get_project(self, project_name: str) -> Project:
+    def _get_project(self, project_name: str) -> ProjectModel:
         """Get an existing project by name.
 
         Args:
@@ -950,7 +946,7 @@ class BaseZenStore(ABC):
             KeyError: If there is no such project.
         """
 
-    def update_project(self, project_name: str, project: Project) -> Project:
+    def update_project(self, project_name: str, project: ProjectModel) -> ProjectModel:
         """Updates an existing project.
 
         Args:
@@ -967,7 +963,7 @@ class BaseZenStore(ABC):
         return self._update_project(project_name, project)
 
     @abstractmethod
-    def _update_project(self, project_name: str, project: Project) -> Project:
+    def _update_project(self, project_name: str, project: ProjectModel) -> ProjectModel:
         """Update an existing project.
 
         Args:
@@ -1058,6 +1054,12 @@ class BaseZenStore(ABC):
             KeyError: if the project or stack doesn't exist.
         """
 
+    #  .-------------.
+    # | REPOSITORIES |
+    # '--------------'
+
+    # TODO: create repository?
+
     # TODO: [ALEX] add filtering param(s)
     def list_project_repositories(
         self, project_name: str
@@ -1125,12 +1127,6 @@ class BaseZenStore(ABC):
         Raises:
             KeyError: if the project or repository doesn't exist.
         """
-
-    #  .-------------.
-    # | REPOSITORIES |
-    # '--------------'
-
-    # TODO: create repository?
 
     def get_repository(self, repository_id: str) -> CodeRepositoryModel:
         """Gets a repository.
@@ -1848,7 +1844,7 @@ class BaseZenStore(ABC):
 
     @property
     @abstractmethod
-    def users(self) -> List[User]:
+    def users(self) -> List[UserModel]:
         """All registered users.
 
         Returns:
@@ -1857,7 +1853,7 @@ class BaseZenStore(ABC):
 
     @property
     @abstractmethod
-    def roles(self) -> List[Role]:
+    def roles(self) -> List[RoleModel]:
         """All registered roles.
 
         Returns:
@@ -1866,7 +1862,7 @@ class BaseZenStore(ABC):
 
     @property
     @abstractmethod
-    def projects(self) -> List[Project]:
+    def projects(self) -> List[ProjectModel]:
         """All registered projects.
 
         Returns:
@@ -1877,7 +1873,7 @@ class BaseZenStore(ABC):
     # # TODO [ENG-894]: Refactor these with the proxy pattern, as noted in
     # #  the [review comment](https://github.com/zenml-io/zenml/pull/589#discussion_r875003334)
 
-    def create_team(self, team_name: str) -> Team:
+    def create_team(self, team_name: str) -> TeamModel:
         """Creates a new team.
 
         Args:
@@ -1890,7 +1886,7 @@ class BaseZenStore(ABC):
         return self._create_team(team_name)
 
     # TODO: consider using team_id instead
-    def get_team(self, team_name: str) -> Team:
+    def get_team(self, team_name: str) -> TeamModel:
         """Gets a specific team.
 
         Args:
@@ -1916,7 +1912,7 @@ class BaseZenStore(ABC):
         return self._delete_team(team_name)
 
     # TODO: consider using team_id instead
-    def get_role(self, role_name: str) -> Role:
+    def get_role(self, role_name: str) -> RoleModel:
         """Gets a specific role.
 
         Args:
@@ -1929,7 +1925,7 @@ class BaseZenStore(ABC):
         return self._get_role(role_name)
 
     # TODO: consider using team_id instead
-    def create_role(self, role_name: str) -> Role:
+    def create_role(self, role_name: str) -> RoleModel:
         """Creates a new role.
 
         Args:
@@ -2028,7 +2024,7 @@ class BaseZenStore(ABC):
 
     @property
     @abstractmethod
-    def teams(self) -> List[Team]:
+    def teams(self) -> List[TeamModel]:
         """All registered teams.
 
         Returns:
@@ -2036,7 +2032,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def _create_team(self, team_name: str) -> Team:
+    def _create_team(self, team_name: str) -> TeamModel:
         """Creates a new team.
 
         Args:
@@ -2050,7 +2046,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def _get_team(self, team_name: str) -> Team:
+    def _get_team(self, team_name: str) -> TeamModel:
         """Gets a specific team.
 
         Args:
@@ -2100,7 +2096,7 @@ class BaseZenStore(ABC):
 
     @property
     @abstractmethod
-    def role_assignments(self) -> List[Role]:
+    def role_assignments(self) -> List[RoleModel]:
         """All registered role assignments.
 
         Returns:
@@ -2108,7 +2104,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def _get_role(self, role_name: str) -> Role:
+    def _get_role(self, role_name: str) -> RoleModel:
         """Gets a specific role.
 
         Args:
@@ -2122,7 +2118,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def _create_role(self, role_name: str) -> Role:
+    def _create_role(self, role_name: str) -> RoleModel:
         """Creates a new role.
 
         Args:
@@ -2157,7 +2153,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def get_users_for_team(self, team_name: str) -> List[User]:
+    def get_users_for_team(self, team_name: str) -> List[UserModel]:
         """Fetches all users of a team.
 
         Args:
@@ -2171,7 +2167,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def get_teams_for_user(self, user_name: str) -> List[Team]:
+    def get_teams_for_user(self, user_name: str) -> List[TeamModel]:
         """Fetches all teams for a user.
 
         Args:
@@ -2189,7 +2185,7 @@ class BaseZenStore(ABC):
         self,
         team_name: str,
         project_name: Optional[str] = None,
-    ) -> List[Role]:
+    ) -> List[RoleModel]:
         """Fetches all role assignments for a team.
 
         Args:

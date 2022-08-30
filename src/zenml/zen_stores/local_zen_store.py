@@ -39,11 +39,11 @@ from zenml.models import (
     ComponentModel,
     FlavorModel,
     PipelineRunModel,
-    Project,
-    Role,
-    RoleAssignment,
-    Team,
-    User,
+    ProjectModel,
+    RoleModel,
+    RoleAssignmentModel,
+    TeamModel,
+    UserModel,
 )
 from zenml.utils import io_utils
 from zenml.zen_stores import BaseZenStore
@@ -52,7 +52,7 @@ logger = get_logger(__name__)
 
 E = TypeVar(
     "E",
-    bound=Union[User, Team, Project, Role, FlavorModel, PipelineRunModel],
+    bound=Union[UserModel, TeamModel, ProjectModel, RoleModel, FlavorModel, PipelineRunModel],
 )
 
 
@@ -457,7 +457,7 @@ class LocalZenStore(BaseZenStore):
     # User, project and role management
 
     @property
-    def users(self) -> List[User]:
+    def users(self) -> List[UserModel]:
         """All registered users.
 
         Returns:
@@ -465,7 +465,7 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.users
 
-    def _get_user(self, user_name: str) -> User:
+    def _get_user(self, user_name: str) -> UserModel:
         """Get a specific user by name.
 
         Args:
@@ -476,7 +476,7 @@ class LocalZenStore(BaseZenStore):
         """
         return _get_unique_entity(user_name, collection=self.__store.users)
 
-    def _create_user(self, user_name: str) -> User:
+    def _create_user(self, user_name: str) -> UserModel:
         """Creates a new user.
 
         Args:
@@ -495,7 +495,7 @@ class LocalZenStore(BaseZenStore):
                 f"User with name '{user_name}' already exists."
             )
 
-        user = User(name=user_name)
+        user = UserModel(name=user_name)
         self.__store.users.append(user)
         self.__store.write_config()
         return user
@@ -520,7 +520,7 @@ class LocalZenStore(BaseZenStore):
         logger.info("Deleted user %s.", user)
 
     @property
-    def teams(self) -> List[Team]:
+    def teams(self) -> List[TeamModel]:
         """All registered teams.
 
         Returns:
@@ -528,7 +528,7 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.teams
 
-    def _get_team(self, team_name: str) -> Team:
+    def _get_team(self, team_name: str) -> TeamModel:
         """Gets a specific team.
 
         Args:
@@ -539,7 +539,7 @@ class LocalZenStore(BaseZenStore):
         """
         return _get_unique_entity(team_name, collection=self.__store.teams)
 
-    def _create_team(self, team_name: str) -> Team:
+    def _create_team(self, team_name: str) -> TeamModel:
         """Creates a new team.
 
         Args:
@@ -558,7 +558,7 @@ class LocalZenStore(BaseZenStore):
                 f"Team with name '{team_name}' already exists."
             )
 
-        team = Team(name=team_name)
+        team = TeamModel(name=team_name)
         self.__store.teams.append(team)
         self.__store.write_config()
         return team
@@ -605,7 +605,7 @@ class LocalZenStore(BaseZenStore):
         self.__store.write_config()
 
     @property
-    def projects(self) -> List[Project]:
+    def projects(self) -> List[ProjectModel]:
         """All registered projects.
 
         Returns:
@@ -613,7 +613,7 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.projects
 
-    def _get_project(self, project_name: str) -> Project:
+    def _get_project(self, project_name: str) -> ProjectModel:
         """Get an existing project by name.
 
         Args:
@@ -628,7 +628,7 @@ class LocalZenStore(BaseZenStore):
 
     def _create_project(
         self, project_name: str, description: Optional[str] = None
-    ) -> Project:
+    ) -> ProjectModel:
         """Creates a new project.
 
         Args:
@@ -648,7 +648,7 @@ class LocalZenStore(BaseZenStore):
                 f"Project with name '{project_name}' already exists."
             )
 
-        project = Project(name=project_name, description=description)
+        project = ProjectModel(name=project_name, description=description)
         self.__store.projects.append(project)
         self.__store.write_config()
         return project
@@ -673,7 +673,7 @@ class LocalZenStore(BaseZenStore):
         logger.info("Deleted project %s.", project)
 
     @property
-    def roles(self) -> List[Role]:
+    def roles(self) -> List[RoleModel]:
         """All registered roles.
 
         Returns:
@@ -682,7 +682,7 @@ class LocalZenStore(BaseZenStore):
         return self.__store.roles
 
     @property
-    def role_assignments(self) -> List[RoleAssignment]:
+    def role_assignments(self) -> List[RoleAssignmentModel]:
         """All registered role assignments.
 
         Returns:
@@ -690,7 +690,7 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.role_assignments
 
-    def _get_role(self, role_name: str) -> Role:
+    def _get_role(self, role_name: str) -> RoleModel:
         """Gets a specific role.
 
         Args:
@@ -701,7 +701,7 @@ class LocalZenStore(BaseZenStore):
         """
         return _get_unique_entity(role_name, collection=self.__store.roles)
 
-    def _create_role(self, role_name: str) -> Role:
+    def _create_role(self, role_name: str) -> RoleModel:
         """Creates a new role.
 
         Args:
@@ -720,7 +720,7 @@ class LocalZenStore(BaseZenStore):
                 f"Role with name '{role_name}' already exists."
             )
 
-        role = Role(name=role_name)
+        role = RoleModel(name=role_name)
         self.__store.roles.append(role)
         self.__store.write_config()
         return role
@@ -767,12 +767,12 @@ class LocalZenStore(BaseZenStore):
 
         if is_user:
             user = _get_unique_entity(entity_name, self.__store.users)
-            assignment = RoleAssignment(
+            assignment = RoleAssignmentModel(
                 role_id=role.id, project_id=project_id, user_id=user.id
             )
         else:
             team = _get_unique_entity(entity_name, self.__store.teams)
-            assignment = RoleAssignment(
+            assignment = RoleAssignmentModel(
                 role_id=role.id, project_id=project_id, team_id=team.id
             )
 
@@ -823,7 +823,7 @@ class LocalZenStore(BaseZenStore):
             )  # there should only be one
             self.__store.write_config()
 
-    def get_users_for_team(self, team_name: str) -> List[User]:
+    def get_users_for_team(self, team_name: str) -> List[UserModel]:
         """Fetches all users of a team.
 
         Args:
@@ -836,7 +836,7 @@ class LocalZenStore(BaseZenStore):
         user_names = self.__store.team_assignments[team.name]
         return [user for user in self.users if user.name in user_names]
 
-    def get_teams_for_user(self, user_name: str) -> List[Team]:
+    def get_teams_for_user(self, user_name: str) -> List[TeamModel]:
         """Fetches all teams for a user.
 
         Args:
@@ -858,7 +858,7 @@ class LocalZenStore(BaseZenStore):
         user_name: str,
         project_name: Optional[str] = None,
         include_team_roles: bool = True,
-    ) -> List[RoleAssignment]:
+    ) -> List[RoleAssignmentModel]:
         """Fetches all role assignments for a user.
 
         Args:
@@ -894,7 +894,7 @@ class LocalZenStore(BaseZenStore):
         self,
         team_name: str,
         project_name: Optional[str] = None,
-    ) -> List[RoleAssignment]:
+    ) -> List[RoleAssignmentModel]:
         """Fetches all role assignments for a team.
 
         Args:
@@ -1140,7 +1140,7 @@ class LocalZenStore(BaseZenStore):
         project_id: Optional[UUID] = None,
         user_id: Optional[UUID] = None,
         team_id: Optional[UUID] = None,
-    ) -> List[RoleAssignment]:
+    ) -> List[RoleAssignmentModel]:
         """Gets all role assignments that match the criteria.
 
         Args:

@@ -46,12 +46,12 @@ from zenml.models import (
     ComponentModel,
     FlavorModel,
     PipelineRunModel,
-    Project,
-    Role,
-    RoleAssignment,
+    ProjectModel,
+    RoleModel,
+    RoleAssignmentModel,
     StackModel,
-    Team,
-    User,
+    TeamModel,
+    UserModel,
 )
 from zenml.post_execution.artifact import ArtifactView
 from zenml.post_execution.pipeline import PipelineView
@@ -418,7 +418,7 @@ class RestZenStore(BaseZenStore):
     # User, project and role management
 
     @property
-    def users(self) -> List[User]:
+    def users(self) -> List[UserModel]:
         """All registered users.
 
         Returns:
@@ -432,9 +432,9 @@ class RestZenStore(BaseZenStore):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
             )
-        return [User.parse_obj(user_dict) for user_dict in body]
+        return [UserModel.parse_obj(user_dict) for user_dict in body]
 
-    def _get_user(self, user_name: str) -> User:
+    def _get_user(self, user_name: str) -> UserModel:
         """Get a specific user by name.
 
         Args:
@@ -443,9 +443,9 @@ class RestZenStore(BaseZenStore):
         Returns:
             The requested user, if it was found.
         """
-        return User.parse_obj(self.get(f"{USERS}/{user_name}"))
+        return UserModel.parse_obj(self.get(f"{USERS}/{user_name}"))
 
-    def _create_user(self, user_name: str) -> User:
+    def _create_user(self, user_name: str) -> UserModel:
         """Creates a new user.
 
         Args:
@@ -454,8 +454,8 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created user.
         """
-        user = User(name=user_name)
-        return User.parse_obj(self.post(USERS, body=user))
+        user = UserModel(name=user_name)
+        return UserModel.parse_obj(self.post(USERS, body=user))
 
     def _delete_user(self, user_name: str) -> None:
         """Deletes a user.
@@ -466,7 +466,7 @@ class RestZenStore(BaseZenStore):
         self.delete(f"{USERS}/{user_name}")
 
     @property
-    def teams(self) -> List[Team]:
+    def teams(self) -> List[TeamModel]:
         """All registered teams.
 
         Returns:
@@ -480,9 +480,9 @@ class RestZenStore(BaseZenStore):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
             )
-        return [Team.parse_obj(team_dict) for team_dict in body]
+        return [TeamModel.parse_obj(team_dict) for team_dict in body]
 
-    def _get_team(self, team_name: str) -> Team:
+    def _get_team(self, team_name: str) -> TeamModel:
         """Gets a specific team.
 
         Args:
@@ -491,9 +491,9 @@ class RestZenStore(BaseZenStore):
         Returns:
             The requested team.
         """
-        return Team.parse_obj(self.get(f"{TEAMS}/{team_name}"))
+        return TeamModel.parse_obj(self.get(f"{TEAMS}/{team_name}"))
 
-    def _create_team(self, team_name: str) -> Team:
+    def _create_team(self, team_name: str) -> TeamModel:
         """Creates a new team.
 
         Args:
@@ -502,8 +502,8 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created team.
         """
-        team = Team(name=team_name)
-        return Team.parse_obj(self.post(TEAMS, body=team))
+        team = TeamModel(name=team_name)
+        return TeamModel.parse_obj(self.post(TEAMS, body=team))
 
     def _delete_team(self, team_name: str) -> None:
         """Deletes a team.
@@ -520,7 +520,7 @@ class RestZenStore(BaseZenStore):
             team_name: Name of the team.
             user_name: Name of the user.
         """
-        user = User(name=user_name)
+        user = UserModel(name=user_name)
         self.post(f"{TEAMS}/{team_name}/users", user)
 
     def remove_user_from_team(self, team_name: str, user_name: str) -> None:
@@ -533,7 +533,7 @@ class RestZenStore(BaseZenStore):
         self.delete(f"{TEAMS}/{team_name}/users/{user_name}")
 
     @property
-    def projects(self) -> List[Project]:
+    def projects(self) -> List[ProjectModel]:
         """All registered projects.
 
         Returns:
@@ -547,9 +547,9 @@ class RestZenStore(BaseZenStore):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
             )
-        return [Project.parse_obj(project_dict) for project_dict in body]
+        return [ProjectModel.parse_obj(project_dict) for project_dict in body]
 
-    def _get_project(self, project_name: str) -> Project:
+    def _get_project(self, project_name: str) -> ProjectModel:
         """Get an existing project by name.
 
         Args:
@@ -558,11 +558,11 @@ class RestZenStore(BaseZenStore):
         Returns:
             The requested project if one was found.
         """
-        return Project.parse_obj(self.get(f"{PROJECTS}/{project_name}"))
+        return ProjectModel.parse_obj(self.get(f"{PROJECTS}/{project_name}"))
 
     def _create_project(
         self, project_name: str, description: Optional[str] = None
-    ) -> Project:
+    ) -> ProjectModel:
         """Creates a new project.
 
         Args:
@@ -572,8 +572,8 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created project.
         """
-        project = Project(name=project_name, description=description)
-        return Project.parse_obj(self.post(PROJECTS, body=project))
+        project = ProjectModel(name=project_name, description=description)
+        return ProjectModel.parse_obj(self.post(PROJECTS, body=project))
 
     def _delete_project(self, project_name: str) -> None:
         """Deletes a project.
@@ -584,7 +584,7 @@ class RestZenStore(BaseZenStore):
         self.delete(f"{PROJECTS}/{project_name}")
 
     @property
-    def roles(self) -> List[Role]:
+    def roles(self) -> List[RoleModel]:
         """All registered roles.
 
         Returns:
@@ -598,10 +598,10 @@ class RestZenStore(BaseZenStore):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
             )
-        return [Role.parse_obj(role_dict) for role_dict in body]
+        return [RoleModel.parse_obj(role_dict) for role_dict in body]
 
     @property
-    def role_assignments(self) -> List[RoleAssignment]:
+    def role_assignments(self) -> List[RoleAssignmentModel]:
         """All registered role assignments.
 
         Returns:
@@ -616,11 +616,11 @@ class RestZenStore(BaseZenStore):
                 f"Bad API Response. Expected list, got {type(body)}"
             )
         return [
-            RoleAssignment.parse_obj(assignment_dict)
+            RoleAssignmentModel.parse_obj(assignment_dict)
             for assignment_dict in body
         ]
 
-    def _get_role(self, role_name: str) -> Role:
+    def _get_role(self, role_name: str) -> RoleModel:
         """Gets a specific role.
 
         Args:
@@ -629,9 +629,9 @@ class RestZenStore(BaseZenStore):
         Returns:
             The requested role.
         """
-        return Role.parse_obj(self.get(f"{ROLES}/{role_name}"))
+        return RoleModel.parse_obj(self.get(f"{ROLES}/{role_name}"))
 
-    def _create_role(self, role_name: str) -> Role:
+    def _create_role(self, role_name: str) -> RoleModel:
         """Creates a new role.
 
         Args:
@@ -640,8 +640,8 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created role.
         """
-        role = Role(name=role_name)
-        return Role.parse_obj(self.post(ROLES, body=role))
+        role = RoleModel(name=role_name)
+        return RoleModel.parse_obj(self.post(ROLES, body=role))
 
     def _delete_role(self, role_name: str) -> None:
         """Deletes a role.
@@ -711,7 +711,7 @@ class RestZenStore(BaseZenStore):
             )
         )
 
-    def get_users_for_team(self, team_name: str) -> List[User]:
+    def get_users_for_team(self, team_name: str) -> List[UserModel]:
         """Fetches all users of a team.
 
         Args:
@@ -728,9 +728,9 @@ class RestZenStore(BaseZenStore):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
             )
-        return [User.parse_obj(user_dict) for user_dict in body]
+        return [UserModel.parse_obj(user_dict) for user_dict in body]
 
-    def get_teams_for_user(self, user_name: str) -> List[Team]:
+    def get_teams_for_user(self, user_name: str) -> List[TeamModel]:
         """Fetches all teams for a user.
 
         Args:
@@ -747,14 +747,14 @@ class RestZenStore(BaseZenStore):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
             )
-        return [Team.parse_obj(team_dict) for team_dict in body]
+        return [TeamModel.parse_obj(team_dict) for team_dict in body]
 
     def get_role_assignments_for_user(
         self,
         user_name: str,
         project_name: Optional[str] = None,
         include_team_roles: bool = True,
-    ) -> List[RoleAssignment]:
+    ) -> List[RoleAssignmentModel]:
         """Fetches all role assignments for a user.
 
         Args:
@@ -780,7 +780,7 @@ class RestZenStore(BaseZenStore):
                 f"Bad API Response. Expected list, got {type(body)}"
             )
         assignments = [
-            RoleAssignment.parse_obj(assignment_dict)
+            RoleAssignmentModel.parse_obj(assignment_dict)
             for assignment_dict in body
         ]
         if include_team_roles:
@@ -794,7 +794,7 @@ class RestZenStore(BaseZenStore):
         self,
         team_name: str,
         project_name: Optional[str] = None,
-    ) -> List[RoleAssignment]:
+    ) -> List[RoleAssignmentModel]:
         """Fetches all role assignments for a team.
 
         Args:
@@ -818,7 +818,7 @@ class RestZenStore(BaseZenStore):
                 f"Bad API Response. Expected list, got {type(body)}"
             )
         return [
-            RoleAssignment.parse_obj(assignment_dict)
+            RoleAssignmentModel.parse_obj(assignment_dict)
             for assignment_dict in body
         ]
 

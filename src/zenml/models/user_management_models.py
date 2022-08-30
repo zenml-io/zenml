@@ -15,7 +15,7 @@
 
 from datetime import datetime
 from typing import Any, Dict, Optional
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from pydantic import BaseModel, Field, root_validator
 
@@ -24,7 +24,7 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-class Role(BaseModel):
+class RoleModel(BaseModel):
     """Pydantic object representing a role.
 
     Attributes:
@@ -34,12 +34,12 @@ class Role(BaseModel):
         permissions: Set of permissions allowed by this role.
     """
 
-    id: UUID = Field(default_factory=uuid4)
-    created_at: datetime = Field(default_factory=datetime.now)
+    id: Optional[UUID] = None
+    created_at: Optional[datetime] = None
     name: str
+    
 
-
-class User(BaseModel):
+class UserModel(BaseModel):
     """Pydantic object representing a user.
 
     Attributes:
@@ -48,14 +48,14 @@ class User(BaseModel):
         name: Name of the user.
     """
 
-    id: UUID = Field(default_factory=uuid4)
-    created_at: datetime = Field(default_factory=datetime.now)
+    id: Optional[UUID] = None
+    created_at: Optional[datetime] = None
     name: str
     # email: str
     # password: str
 
 
-class Team(BaseModel):
+class TeamModel(BaseModel):
     """Pydantic object representing a team.
 
     Attributes:
@@ -64,12 +64,12 @@ class Team(BaseModel):
         name: Name of the team.
     """
 
-    id: UUID = Field(default_factory=uuid4)
-    created_at: datetime = Field(default_factory=datetime.now)
+    id: Optional[UUID] = None
+    created_at: Optional[datetime] = None
     name: str
 
 
-class Project(BaseModel):
+class ProjectModel(BaseModel):
     """Pydantic object representing a project.
 
     Attributes:
@@ -79,13 +79,13 @@ class Project(BaseModel):
         description: Optional project description.
     """
 
-    id: UUID = Field(default_factory=uuid4)
-    created_at: datetime = Field(default_factory=datetime.now)
+    id: Optional[UUID] = None
+    created_at: Optional[datetime] = None
     name: str
     description: Optional[str] = None
 
 
-class RoleAssignment(BaseModel):
+class RoleAssignmentModel(BaseModel):
     """Pydantic object representing a role assignment.
 
     Attributes:
@@ -97,8 +97,8 @@ class RoleAssignment(BaseModel):
         user_id: Id of a user to which the role is assigned.
     """
 
-    id: UUID = Field(default_factory=uuid4)
-    created_at: datetime = Field(default_factory=datetime.now)
+    id: Optional[UUID] = None
+    created_at: Optional[datetime] = None
     role_id: UUID
     project_id: Optional[UUID] = None
     team_id: Optional[UUID] = None

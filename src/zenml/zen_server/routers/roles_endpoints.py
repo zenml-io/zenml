@@ -16,7 +16,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 
 from zenml.constants import ROLES, VERSION_1
-from zenml.models import Role
+from zenml.models import RoleModel
 from zenml.zen_server.utils import (
     authorize,
     error_detail,
@@ -34,10 +34,10 @@ router = APIRouter(
 
 @router.get(
     ROLES,
-    response_model=List[Role],
+    response_model=List[RoleModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_roles() -> List[Role]:
+async def get_roles() -> List[RoleModel]:
     """Returns a list of all roles.
 
     Returns:

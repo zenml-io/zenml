@@ -33,7 +33,7 @@ from zenml.models import (
     CodeRepositoryModel,
     ComponentModel,
     PipelineModel,
-    Project,
+    ProjectModel,
     StackModel,
 )
 from zenml.zen_server.utils import (
@@ -55,10 +55,10 @@ router = APIRouter(
 
 @router.get(
     "/",
-    response_model=List[Project],
+    response_model=List[ProjectModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_projects() -> List[Project]:
+async def get_projects() -> List[ProjectModel]:
     """Lists all projects in the organization.
 
     Returns:
@@ -81,10 +81,10 @@ async def get_projects() -> List[Project]:
 
 @router.post(
     "/",
-    response_model=Project,
+    response_model=ProjectModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-async def create_project(project: Project) -> Project:
+async def create_project(project: ProjectModel) -> ProjectModel:
     """Creates a project based on the requestBody.
 
     # noqa: DAR401
@@ -115,10 +115,10 @@ async def create_project(project: Project) -> Project:
 
 @router.get(
     "/{project_name}",
-    response_model=Project,
+    response_model=ProjectModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_project(project_name: str) -> Project:
+async def get_project(project_name: str) -> ProjectModel:
     """Get a project for given name.
 
     # noqa: DAR401
@@ -149,10 +149,10 @@ async def get_project(project_name: str) -> Project:
 
 @router.put(
     "/{project_name}",
-    response_model=Project,
+    response_model=ProjectModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def update_project(project_name: str, project: Project) -> Project:
+async def update_project(project_name: str, project: ProjectModel) -> ProjectModel:
     """Get a project for given name.
 
     # noqa: DAR401

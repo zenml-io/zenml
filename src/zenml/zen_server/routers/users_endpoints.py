@@ -18,7 +18,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from zenml.constants import INVITE_TOKEN, ROLES, USERS, VERSION_1
 from zenml.exceptions import EntityExistsError
-from zenml.models import Role, User
+from zenml.models import RoleModel, UserModel
 from zenml.zen_server.utils import (
     authorize,
     conflict,
@@ -38,10 +38,10 @@ router = APIRouter(
 
 @router.get(
     "/",
-    response_model=List[User],
+    response_model=List[UserModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def list_users(invite_token: str) -> List[User]:
+async def list_users(invite_token: str) -> List[UserModel]:
     """Returns a list of all users.
 
     Args:
@@ -67,10 +67,10 @@ async def list_users(invite_token: str) -> List[User]:
 
 @router.post(
     "/",
-    response_model=User,
+    response_model=UserModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-async def create_user(user: User) -> User:
+async def create_user(user: UserModel) -> UserModel:
     """Creates a user.
 
     # noqa: DAR401
@@ -100,10 +100,10 @@ async def create_user(user: User) -> User:
 
 @router.get(
     "/{user_id}",
-    response_model=User,
+    response_model=UserModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_user(user_id: str, invite_token: str) -> User:
+async def get_user(user_id: str, invite_token: str) -> UserModel:
     """Returns a specific user.
 
     Args:
@@ -132,10 +132,10 @@ async def get_user(user_id: str, invite_token: str) -> User:
 
 @router.put(
     "/{user_id}",
-    response_model=User,
+    response_model=UserModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def update_user(user_id: str, user: User) -> User:
+async def update_user(user_id: str, user: UserModel) -> UserModel:
     """Updates a specific user.
 
     Args:
@@ -194,10 +194,10 @@ async def delete_user(user_id: str) -> None:
 
 @router.get(
     "/{user_id}}" + ROLES,
-    response_model=List[Role],
+    response_model=List[RoleModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_role_assignments_for_user(user_id: str) -> List[Role]:
+async def get_role_assignments_for_user(user_id: str) -> List[RoleModel]:
     """Returns a list of all roles that are assigned to a user.
 
     Args:
