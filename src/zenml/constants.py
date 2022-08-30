@@ -181,6 +181,7 @@ COMPONENT_SIDE_EFFECTS = "/component-side-effects"
 METADATA_CONFIG = "/metadata-config"
 REPOSITORIES = "/repositories"
 INVITE_TOKEN = "/invite-token"
+VERSION_1 = "/v1"
 
 # mandatory stack component attributes
 MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]

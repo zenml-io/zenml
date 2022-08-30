@@ -20,6 +20,7 @@ from zenml.constants import (
     FLAVORS,
     STACK_COMPONENTS,
     TYPES,
+    VERSION_1,
 )
 from zenml.enums import StackComponentType
 from zenml.models import ComponentModel, FlavorModel
@@ -31,7 +32,7 @@ from zenml.zen_server.utils import (
 )
 
 router = APIRouter(
-    prefix=STACK_COMPONENTS,
+    prefix=VERSION_1 + STACK_COMPONENTS,
     tags=["stack_components"],
     dependencies=[Depends(authorize)],
     responses={401: error_response},

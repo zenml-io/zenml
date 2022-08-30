@@ -24,7 +24,7 @@
 # )
 
 # router = APIRouter(
-#     prefix=TRIGGERS,
+#     prefix=VERSION_1 + TRIGGERS,
 #     tags=["triggers"],
 #     dependencies=[Depends(authorize)],
 #     responses={401: error_response},

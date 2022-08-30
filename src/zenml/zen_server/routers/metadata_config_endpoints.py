@@ -16,7 +16,7 @@ from typing import Union
 from fastapi import APIRouter, Depends, HTTPException
 from ml_metadata.proto import metadata_store_pb2
 
-from zenml.constants import METADATA_CONFIG
+from zenml.constants import METADATA_CONFIG, VERSION_1
 from zenml.zen_server.utils import (
     authorize,
     error_detail,
@@ -25,7 +25,7 @@ from zenml.zen_server.utils import (
 )
 
 router = APIRouter(
-    prefix=METADATA_CONFIG,
+    prefix=VERSION_1 + METADATA_CONFIG,
     tags=["metadata_config"],
     dependencies=[Depends(authorize)],
     responses={401: error_response},

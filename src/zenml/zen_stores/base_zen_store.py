@@ -20,16 +20,15 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from ml_metadata.proto import metadata_store_pb2
 
 from zenml.enums import StackComponentType, StoreType
-from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.logger import get_logger
 from zenml.models import ComponentModel, FlavorModel, StackModel
+from zenml.models.code_models import CodeRepositoryModel
 from zenml.models.pipeline_models import (
     PipelineModel,
     PipelineRunModel,
     StepModel,
 )
 from zenml.models.user_management_models import Project, Role, Team, User
-from zenml.models.code_models import CodeRepositoryModel
 from zenml.post_execution import ArtifactView
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
@@ -211,10 +210,9 @@ class BaseZenStore(ABC):
             KeyError: if the stack doesn't exist.
         """
 
-    def register_stack(self,
-                       user: User,
-                       project: Project,
-                       stack: StackModel) -> StackModel:
+    def register_stack(
+        self, user: User, project: Project, stack: StackModel
+    ) -> StackModel:
         """Register a new stack.
 
         Args:
@@ -235,10 +233,9 @@ class BaseZenStore(ABC):
         return self._register_stack(stack=stack, user=user, project=project)
 
     @abstractmethod
-    def _register_stack(self,
-                        user: User,
-                        project: Project,
-                        stack: StackModel) -> StackModel:
+    def _register_stack(
+        self, user: User, project: Project, stack: StackModel
+    ) -> StackModel:
         """Register a new stack.
 
         Args:
@@ -254,11 +251,9 @@ class BaseZenStore(ABC):
                               by this user on this project.
         """
 
-    def update_stack(self,
-                     stack_id: str,
-                     user: User,
-                     project: Project,
-                     stack: StackModel) -> StackModel:
+    def update_stack(
+        self, stack_id: str, user: User, project: Project, stack: StackModel
+    ) -> StackModel:
         """Update an existing stack.
 
         Args:
@@ -271,17 +266,14 @@ class BaseZenStore(ABC):
         metadata = {c.type.value: c.flavor for c in stack.components}
         metadata["store_type"] = self.type.value
         track_event(AnalyticsEvent.UPDATED_STACK, metadata=metadata)
-        return self._update_stack(stack_id=stack_id,
-                                  user=user,
-                                  project=project,
-                                  stack=stack)
+        return self._update_stack(
+            stack_id=stack_id, user=user, project=project, stack=stack
+        )
 
     @abstractmethod
-    def _update_stack(self,
-                      stack_id: str,
-                      user: User,
-                      project: Project,
-                      stack: StackModel) -> StackModel:
+    def _update_stack(
+        self, stack_id: str, user: User, project: Project, stack: StackModel
+    ) -> StackModel:
         """Update a stack.
 
         Args:
@@ -449,6 +441,7 @@ class BaseZenStore(ABC):
             pipeline_id: The ID of the pipeline to get side effects for.
             stack_id: The ID of the stack to get side effects for.
         """
+
     def list_stack_component_types(self) -> List[StackComponentType]:
         """List all stack component types.
 

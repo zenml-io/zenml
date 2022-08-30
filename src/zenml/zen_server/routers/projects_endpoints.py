@@ -22,6 +22,7 @@ from zenml.constants import (
     REPOSITORIES,
     STACK_COMPONENTS,
     STACKS,
+    VERSION_1,
 )
 from zenml.exceptions import (
     EntityExistsError,
@@ -45,7 +46,7 @@ from zenml.zen_server.utils import (
 )
 
 router = APIRouter(
-    prefix=PROJECTS,
+    prefix=VERSION_1 + PROJECTS,
     tags=["projects"],
     dependencies=[Depends(authorize)],
     responses={401: error_response},

@@ -59,6 +59,7 @@ from zenml.zen_stores.base_zen_store import (
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
 from zenml.zen_stores.schemas.schemas import (
+    CodeRepositorySchema,
     FlavorSchema,
     PipelineRunSchema,
     ProjectSchema,
@@ -71,7 +72,6 @@ from zenml.zen_stores.schemas.schemas import (
     TeamSchema,
     UserRoleAssignmentSchema,
     UserSchema,
-    CodeRepositorySchema,
 )
 
 SelectOfScalar.inherit_cache = True  # type: ignore
@@ -269,10 +269,9 @@ class SqlZenStore(BaseZenStore):
             # TODO: construct StackModel from Stack and corresponding Components
             return None
 
-    def _register_stack(self,
-                        user: User,
-                        project: Project,
-                        stack: StackModel) -> StackModel:
+    def _register_stack(
+        self, user: User, project: Project, stack: StackModel
+    ) -> StackModel:
         """Register a new stack.
 
         Args:
@@ -328,11 +327,9 @@ class SqlZenStore(BaseZenStore):
             # TODO: construct StackModel
             return None
 
-    def _update_stack(self,
-                      stack_id: str,
-                      user: User,
-                      project: Project,
-                      stack: StackModel) -> StackModel:
+    def _update_stack(
+        self, stack_id: str, user: User, project: Project, stack: StackModel
+    ) -> StackModel:
         """Update an existing stack.
 
         Args:
@@ -348,8 +345,7 @@ class SqlZenStore(BaseZenStore):
             # Check if stack with the domain key (name, prj, owner) already
             #  exists
             existing_stack = session.exec(
-                select(StackSchema)
-                .where(StackSchema.id == stack_id)
+                select(StackSchema).where(StackSchema.id == stack_id)
             ).first()
             # TODO: verify if is_shared status needs to be checked here
             if existing_stack is None:
@@ -449,8 +445,9 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             try:
                 stack_component = session.exec(
-                    select(StackComponentSchema)
-                    .where(StackComponentSchema.id == component_id)
+                    select(StackComponentSchema).where(
+                        StackComponentSchema.id == component_id
+                    )
                 ).one()
                 session.delete(stack_component)
             except NoResultFound as error:
@@ -470,6 +467,7 @@ class SqlZenStore(BaseZenStore):
             stack_id: The id of the stack to get side effects for.
         """
         # TODO: implement this
+
     def _list_stack_component_types(self) -> List[str]:
         """List all stack component types.
 
@@ -500,9 +498,7 @@ class SqlZenStore(BaseZenStore):
             ).values()
         ]
 
-        custom_flavors = self.get_flavors_by_type(
-            component_type=component_type
-        )
+        custom_flavors = self.get_flavors_by_type(component_type=component_type)
 
         return zenml_flavors + custom_flavors
 
@@ -590,7 +586,7 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated user.
-        
+
         Raises:
             KeyError: If no user with the given name exists.
         """
@@ -601,7 +597,7 @@ class SqlZenStore(BaseZenStore):
                 ).one()
             except NoResultFound as error:
                 raise KeyError from error
-            
+
             existing_user.name = user.name
             existing_user.created_at = user.created_at
             session.add(existing_user)
@@ -654,7 +650,7 @@ class SqlZenStore(BaseZenStore):
         Args:
             user_id: ID of the user.
             role_id: ID of the role to assign to the user.
-            project_id: ID of the project in which to assign the role to the 
+            project_id: ID of the project in which to assign the role to the
                 user.
 
         Raises:
@@ -666,16 +662,20 @@ class SqlZenStore(BaseZenStore):
                 select(UserSchema).where(UserSchema.id == user_id)
             ).first()
             if existing_user is None:
-                raise KeyError(f"Unable to assign role to user with id "
-                               f"'{user_id}': No user with this id found.")
+                raise KeyError(
+                    f"Unable to assign role to user with id "
+                    f"'{user_id}': No user with this id found."
+                )
 
             # Check if role with the given name already exists
             existing_role = session.exec(
                 select(RoleSchema).where(RoleSchema.id == role_id)
             ).first()
             if existing_role is None:
-                raise KeyError(f"Unable to assign role to user with id "
-                               f"'{role_id}': No role with this id found.")
+                raise KeyError(
+                    f"Unable to assign role to user with id "
+                    f"'{role_id}': No role with this id found."
+                )
 
             # Check if project with the given name already exists
             existing_project = session.exec(
@@ -689,24 +689,24 @@ class SqlZenStore(BaseZenStore):
 
             # Create the user role assignment
             user_role_assignment = UserRoleAssignmentSchema(
-                user_id=user_id,
-                role_id=role_id,
-                project_id=project_id
+                user_id=user_id, role_id=role_id, project_id=project_id
             )
             session.add(user_role_assignment)
             session.commit()
 
-    def _unassign_role(self, user_id: str, role_id: str, project_id: str) -> None:
+    def _unassign_role(
+        self, user_id: str, role_id: str, project_id: str
+    ) -> None:
         """Unassigns a role from a user or team for a given project.
 
         Args:
             user_id: ID of the user.
             role_id: ID of the role to unassign.
-            project_id: ID of the project in which to unassign the role from the 
+            project_id: ID of the project in which to unassign the role from the
                 user.
 
         Raises:
-            KeyError: If the role was not assigned to the user in the given 
+            KeyError: If the role was not assigned to the user in the given
                 project.
         """
         with Session(self.engine) as session:
@@ -718,7 +718,9 @@ class SqlZenStore(BaseZenStore):
                 .where(UserRoleAssignmentSchema.project_id == project_id)
             ).first()
             if existing_role is None:
-                raise KeyError(f"Unable to unassign role {role_id} from user {user_id} in project {project_id}: The role is currently not assigned to the user.")
+                raise KeyError(
+                    f"Unable to unassign role {role_id} from user {user_id} in project {project_id}: The role is currently not assigned to the user."
+                )
 
             session.delete(existing_role)
             session.commit()
@@ -807,14 +809,16 @@ class SqlZenStore(BaseZenStore):
                 select(ProjectSchema).where(ProjectSchema.name == project.name)
             ).first()
             if existing_project is not None:
-                raise EntityExistsError(f"Unable to create project {project.name}: A project with this name already exists.")
+                raise EntityExistsError(
+                    f"Unable to create project {project.name}: A project with this name already exists."
+                )
 
             # Create the project
             session.add(ProjectSchema(**project.dict()))
             session.commit()
 
             # TODO: return?
-    
+
     def _get_project(self, project_name: str) -> Project:
         """Get an existing project by name.
 
@@ -833,10 +837,12 @@ class SqlZenStore(BaseZenStore):
                 select(ProjectSchema).where(ProjectSchema.name == project_name)
             ).first()
             if existing_project is None:
-                raise KeyError(f"Unable to get project {project_name}: No project with this name found.")
+                raise KeyError(
+                    f"Unable to get project {project_name}: No project with this name found."
+                )
 
             return Project(**existing_project.dict())
-    
+
     def _update_project(self, project_name: str, project: Project) -> Project:
         """Update an existing project.
 
@@ -856,7 +862,9 @@ class SqlZenStore(BaseZenStore):
                 select(ProjectSchema).where(ProjectSchema.name == project_name)
             ).first()
             if existing_project is None:
-                raise KeyError(f"Unable to update project {project_name}: No project with this name found.")
+                raise KeyError(
+                    f"Unable to update project {project_name}: No project with this name found."
+                )
 
             # Update the project
             existing_project.name = project.name
@@ -865,7 +873,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
             # TODO: return?
-    
+
     def _delete_project(self, project_name: str) -> None:
         """Deletes a project.
 
@@ -881,7 +889,9 @@ class SqlZenStore(BaseZenStore):
                 select(ProjectSchema).where(ProjectSchema.name == project_name)
             ).first()
             if existing_project is None:
-                raise KeyError(f"Unable to delete project {project_name}: No project with this name found.")
+                raise KeyError(
+                    f"Unable to delete project {project_name}: No project with this name found."
+                )
 
             session.delete(existing_project)
             session.commit()
@@ -906,15 +916,21 @@ class SqlZenStore(BaseZenStore):
                 select(ProjectSchema).where(ProjectSchema.name == project_name)
             ).first()
             if existing_project is None:
-                raise KeyError(f"Unable to list repositories in project {project_name}: No project with this name found.")
+                raise KeyError(
+                    f"Unable to list repositories in project {project_name}: No project with this name found."
+                )
 
             # Get all repositories in the project
             repositories = session.exec(
-                select(CodeRepositorySchema)
-                .where(CodeRepositorySchema.project_id == existing_project.id)
+                select(CodeRepositorySchema).where(
+                    CodeRepositorySchema.project_id == existing_project.id
+                )
             ).all()
 
-        return [CodeRepositoryModel(**repository.dict()) for repository in repositories]
+        return [
+            CodeRepositoryModel(**repository.dict())
+            for repository in repositories
+        ]
 
     def _connect_project_repository(
         self, project_name: str, repository: CodeRepositoryModel
@@ -937,14 +953,20 @@ class SqlZenStore(BaseZenStore):
                 select(ProjectSchema).where(ProjectSchema.name == project_name)
             ).first()
             if existing_project is None:
-                raise KeyError(f"Unable to connect repository with ID {repository.id} to project {project_name}: No project with this name found.")
+                raise KeyError(
+                    f"Unable to connect repository with ID {repository.id} to project {project_name}: No project with this name found."
+                )
 
             # Check if repository with the given name already exists
             existing_repository = session.exec(
-                select(CodeRepositorySchema).where(CodeRepositorySchema.id == repository.id)
+                select(CodeRepositorySchema).where(
+                    CodeRepositorySchema.id == repository.id
+                )
             ).first()
             if existing_repository is None:
-                raise KeyError(f"Unable to connect repository with ID {repository.id} to project {project_name}: No repository with this ID found.")
+                raise KeyError(
+                    f"Unable to connect repository with ID {repository.id} to project {project_name}: No repository with this ID found."
+                )
 
             # Connect the repository to the project
             existing_repository.project_id = existing_project.id
@@ -972,10 +994,14 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if repository with the given ID exists
             existing_repository = session.exec(
-                select(CodeRepositorySchema).where(CodeRepositorySchema.id == repository_id)
+                select(CodeRepositorySchema).where(
+                    CodeRepositorySchema.id == repository_id
+                )
             ).first()
             if existing_repository is None:
-                raise KeyError(f"Unable to get repository with ID {repository_id}: No repository with this ID found.")
+                raise KeyError(
+                    f"Unable to get repository with ID {repository_id}: No repository with this ID found."
+                )
 
             return CodeRepositoryModel(**existing_repository.dict())
 
@@ -997,10 +1023,14 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if repository with the given ID exists
             existing_repository = session.exec(
-                select(CodeRepositorySchema).where(CodeRepositorySchema.id == repository_id)
+                select(CodeRepositorySchema).where(
+                    CodeRepositorySchema.id == repository_id
+                )
             ).first()
             if existing_repository is None:
-                raise KeyError(f"Unable to update repository with ID {repository_id}: No repository with this ID found.")
+                raise KeyError(
+                    f"Unable to update repository with ID {repository_id}: No repository with this ID found."
+                )
 
             # Update the repository
             existing_repository.name = repository.name
@@ -1008,7 +1038,7 @@ class SqlZenStore(BaseZenStore):
             # project_id is updated in `_connect_project_repository`
             session.add(existing_repository)
             session.commit()
-        
+
         # TODO: return?
 
     def _delete_repository(self, repository_id: str) -> None:
@@ -1023,14 +1053,17 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if repository with the given ID exists
             existing_repository = session.exec(
-                select(CodeRepositorySchema).where(CodeRepositorySchema.id == repository_id)
+                select(CodeRepositorySchema).where(
+                    CodeRepositorySchema.id == repository_id
+                )
             ).first()
             if existing_repository is None:
-                raise KeyError(f"Unable to delete repository with ID {repository_id}: No repository with this ID found.")
+                raise KeyError(
+                    f"Unable to delete repository with ID {repository_id}: No repository with this ID found."
+                )
 
             session.delete(existing_repository)
             session.commit()
-
 
     # LEGACY CODE FROM THE PREVIOUS VERSION OF BASEZENSTORE
 
@@ -2256,6 +2289,7 @@ class SqlZenStore(BaseZenStore):
                 )
             except NoResultFound as error:
                 raise KeyError from error
+
     # TODO: [ALEXEJ] This should be list_flavors with a filter
 
     # Implementation-specific internal methods:

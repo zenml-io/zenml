@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 from fastapi import APIRouter, Depends, HTTPException
 
-from zenml.constants import REPOSITORIES
+from zenml.constants import REPOSITORIES, VERSION_1
 from zenml.models import CodeRepositoryModel
 from zenml.zen_server.utils import (
     authorize,
@@ -24,7 +24,7 @@ from zenml.zen_server.utils import (
 )
 
 router = APIRouter(
-    prefix=REPOSITORIES,
+    prefix=VERSION_1 + REPOSITORIES,
     tags=["repositories"],
     dependencies=[Depends(authorize)],
     responses={401: error_response},
