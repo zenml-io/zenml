@@ -116,7 +116,7 @@ class SecretValidationLevel(StrEnum):
     NONE = "NONE"
 
 
-class IdentifySource(StrEnum):
+class AnalyticsEventSource(StrEnum):
     """Analytics identify sources."""
 
     ZENML_GO = "zenml go"
