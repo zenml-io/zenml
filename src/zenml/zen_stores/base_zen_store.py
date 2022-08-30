@@ -171,6 +171,14 @@ class BaseZenStore(ABC):
         """
         return self._list_stacks()
 
+    @abstractmethod
+    def _list_stacks(self) -> List[StackModel]:
+        """List all stacks.
+
+        Returns:
+            A list of all stacks.
+        """
+
     def register_stack(self, stack: StackModel) -> StackModel:
         """Register a new stack.
 
@@ -181,6 +189,17 @@ class BaseZenStore(ABC):
             The registered stack.
         """
         return self._register_stack(stack)
+
+    @abstractmethod
+    def _register_stack(self, stack: StackModel) -> StackModel:
+        """Register a new stack.
+
+        Args:
+            stack: The stack to register.
+
+        Returns:
+            The registered stack.
+        """
 
     def get_stack(self, stack_id: str) -> StackModel:
         """Get a stack by id.
@@ -195,6 +214,20 @@ class BaseZenStore(ABC):
             KeyError: if the stack doesn't exist.
         """
         return self._get_stack(stack_id)
+
+    @abstractmethod
+    def _get_stack(self, stack_id: str) -> StackModel:
+        """Get a stack by ID.
+
+        Args:
+            stack_id: The ID of the stack to get.
+
+        Returns:
+            The stack.
+
+        Raises:
+            KeyError: if the stack doesn't exist.
+        """
 
     def update_stack(self, stack_id: str, stack: StackModel) -> StackModel:
         """Update an existing stack.
@@ -211,6 +244,21 @@ class BaseZenStore(ABC):
         track_event(AnalyticsEvent.UPDATED_STACK, metadata=metadata)
         return self._update_stack(stack_id, stack)
 
+    @abstractmethod
+    def _update_stack(self, stack_id: str, stack: StackModel) -> StackModel:
+        """Update a stack.
+
+        Args:
+            stack_id: The ID of the stack to update.
+            stack: The stack to use for the update.
+
+        Returns:
+            The updated stack.
+
+        Raises:
+            KeyError: if the stack doesn't exist.
+        """
+
     def delete_stack(self, stack_id: str) -> None:
         """Delete a stack.
 
@@ -219,6 +267,17 @@ class BaseZenStore(ABC):
         """
         # No tracking events, here for consistency
         self._delete_stack(stack_id)
+
+    @abstractmethod
+    def _delete_stack(self, stack_id: str) -> None:
+        """Delete a stack.
+
+        Args:
+            stack_id: The ID of the stack to delete.
+
+        Raises:
+            KeyError: if the stack doesn't exist.
+        """
 
     #  .-----------------.
     # | STACK COMPONENTS |
@@ -232,6 +291,14 @@ class BaseZenStore(ABC):
             A list of all stack component types.
         """
         return self._list_stack_component_types()
+
+    @abstractmethod
+    def _list_stack_component_types(self) -> List[StackComponentType]:
+        """List all stack component types.
+
+        Returns:
+            A list of all stack component types.
+        """
 
     def list_stack_component_flavors_by_type(
         self,
@@ -247,6 +314,19 @@ class BaseZenStore(ABC):
         """
         return self._list_stack_component_flavors_by_type(component_type)
 
+    @abstractmethod
+    def _list_stack_component_flavors_by_type(
+        self, component_type: StackComponentType
+    ) -> List[FlavorModel]:
+        """List all stack component flavors by type.
+
+        Args:
+            component_type: The stack component for which to get flavors.
+
+        Returns:
+            List of stack component flavors.
+        """
+
     # TODO: [ALEX] add filtering param(s)
     def list_stack_components(self) -> List[ComponentModel]:
         """List all stack components.
@@ -255,6 +335,14 @@ class BaseZenStore(ABC):
             All stack components currently registered.
         """
         return self._list_stack_components()
+
+    @abstractmethod
+    def _list_stack_components(self) -> List[ComponentModel]:
+        """List all stack components.
+
+        Returns:
+            A list of all stack components.
+        """
 
     def get_stack_component(self, component_id: str) -> ComponentModel:
         """Get a stack component by id.
@@ -266,6 +354,20 @@ class BaseZenStore(ABC):
             The stack component with the given id.
         """
         return self._get_stack_component(component_id)
+
+    @abstractmethod
+    def _get_stack_component(self, component_id: str) -> ComponentModel:
+        """Get a stack component by ID.
+
+        Args:
+            component_id: The ID of the stack component to get.
+
+        Returns:
+            The stack component.
+
+        Raises:
+            KeyError: if the stack component doesn't exist.
+        """
 
     def update_stack_component(
         self, component_id: str, component: ComponentModel
@@ -289,6 +391,23 @@ class BaseZenStore(ABC):
         )
         return self._update_stack_component(component_id, component)
 
+    @abstractmethod
+    def _update_stack_component(
+        self, component_id: str, component: ComponentModel
+    ):
+        """Update a stack component.
+
+        Args:
+            component_id: The ID of the stack component to update.
+            component: The stack component to use for the update.
+
+        Returns:
+            The updated stack component.
+
+        Raises:
+            KeyError: if the stack component doesn't exist.
+        """
+
     def delete_stack_component(self, component_id: str) -> None:
         """Delete a stack component.
 
@@ -299,6 +418,17 @@ class BaseZenStore(ABC):
             KeyError: if the stack component doesn't exist.
         """
         self._delete_stack_component(component_id)
+
+    @abstractmethod
+    def _delete_stack_component(self, component_id: str) -> None:
+        """Delete a stack component.
+
+        Args:
+            component_id: The ID of the stack component to delete.
+
+        Raises:
+            KeyError: if the stack component doesn't exist.
+        """
 
     def get_stack_component_side_effects(
         self, component_id: str, run_id: str, pipeline_id: str, stack_id: str
@@ -314,6 +444,248 @@ class BaseZenStore(ABC):
         return self._get_stack_component_side_effects(
             component_id, run_id, pipeline_id, stack_id
         )
+
+    @abstractmethod
+    def _get_stack_component_side_effects(
+        self, component_id: str, run_id: str, pipeline_id: str, stack_id: str
+    ) -> Dict[Any]:
+        """Get the side effects of a stack component.
+
+        Args:
+            component_id: The ID of the stack component to get side effects for.
+            run_id: The ID of the run to get side effects for.
+            pipeline_id: The ID of the pipeline to get side effects for.
+            stack_id: The ID of the stack to get side effects for.
+        """
+
+    #  .----------------------------------.
+    # | PROJECT STACKS / STACK COMPONENTS |  # TODO: move to stacks / components sections
+    # '-----------------------------------.
+
+    def get_project_stacks(self, project_name: str) -> List[StackModel]:
+        """Gets all stacks in a project.
+
+        Args:
+            project_name: Name of the project to get.
+
+        Returns:
+            A list of all stacks in the project.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
+        return self._get_project_stacks(project_name)
+
+    @abstractmethod
+    def _get_project_stacks(self, project_name: str) -> List[StackModel]:
+        """Get all stacks in the project.
+
+        Args:
+            project_name: the name of the project.
+
+        Returns:
+            A list of all stacks in the project.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
+
+    def create_stack(self, project_name: str, stack: StackModel) -> StackModel:
+        """Creates a new stack in a project.
+
+        Args:
+            project_name: Name of the project to create the stack in.
+            stack: The stack to create.
+
+        Returns:
+            The newly created stack.
+
+        Raises:
+            EntityExistsError: If an identical stack already exists.
+        """
+        metadata = {c.type.value: c.flavor for c in stack.components}
+        metadata["store_type"] = self.type.value
+        self._track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
+        return self._create_stack(project_name, stack)
+
+    # TODO: rework to use the project_name
+    def _create_stack(self, project_name: str, stack: StackModel) -> None:
+        """Create a stack and its components for a particular project.
+
+        If any of the stack's components aren't registered in the ZenStore
+        yet, this method will try to register them as well.
+
+        Args:
+            project_name: Name of the project.
+            stack: The stack to create.
+
+        Raises:
+            StackExistsError: If a stack with the same name already exists.
+        """
+        try:
+            self.get_stack(stack.name)
+        except KeyError:
+            pass
+        else:
+            raise StackExistsError(
+                f"Unable to create stack with name '{stack.name}': Found "
+                f"existing stack with this name."
+            )
+
+        def __check_component(
+            component: ComponentModel,
+        ) -> Tuple[StackComponentType, str]:
+            """Try to register a stack component, if it doesn't exist.
+
+            Args:
+                component: StackComponentWrapper to register.
+
+            Returns:
+                The type and name of the component.
+
+            Raises:
+                StackComponentExistsError: If a component with same name exists.
+            """
+            try:
+                existing_component = self.get_stack_component(
+                    component_type=component.type, name=component.name
+                )
+                if existing_component.id != component.id:
+                    raise StackComponentExistsError(
+                        f"Unable to register one of the stacks components: "
+                        f"A component of type '{component.type}' and name "
+                        f"'{component.name}' already exists."
+                    )
+            except KeyError:
+                self._register_stack_component(component)
+            return component.type, component.name
+
+        stack_configuration = {
+            typ: name for typ, name in map(__check_component, stack.components)
+        }
+        self._save_stack(stack.name, stack_configuration)
+        logger.info("Created stack with name '%s'.", stack.name)
+
+    # TODO: [ALEX] add filtering param(s)
+    def list_project_stack_components(
+        self, project_name: str
+    ) -> List[ComponentModel]:
+        """Gets all components in a project.
+
+        Args:
+            project_name: Name of the project for which to get the components.
+
+        Returns:
+            A list of all components in the project.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
+        return self._list_project_stack_components(project_name)
+
+    @abstractmethod
+    def _list_project_stack_components(
+        self, project_name: str
+    ) -> List[ComponentModel]:
+        """List all stack components in the project.
+
+        Args:
+            project_name: Name of the project.
+
+        Returns:
+            A list of stack components.
+
+        Raises:
+            KeyError: if the project does not exist.
+        """
+
+    def get_project_stack_components_by_type(
+        self, project_name: str, component_type: ComponentModel
+    ) -> List[ComponentModel]:
+        """Gets all components in a project of a specific type.
+
+        Args:
+            project_name: Name of the project for which to get the components.
+            component_type: Type of the components to get.
+
+        Returns:
+            A list of all components in the project of the specified type.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
+        return self._get_project_stack_components_by_type(
+            project_name, component_type
+        )
+
+    @abstractmethod
+    def _get_project_stack_components_by_type(
+        self, project_name: str, component_type: ComponentModel
+    ) -> List[ComponentModel]:
+        """Gets all components in a project of a specific type.
+
+        Args:
+            project_name: Name of the project for which to get the components.
+            component_type: Type of the components to get.
+
+        Returns:
+            A list of all components in the project of the specified type.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
+
+    def create_stack_component(
+        self,
+        project_name: str,
+        component_type: ComponentModel,
+        component: ComponentModel,
+    ) -> ComponentModel:
+        """Creates a new component in a project.
+
+        Args:
+            project_name: Name of the project to create the component in.
+            component_type: The component to create.
+            component: The component to create.
+
+        Returns:
+            The newly created component.
+
+        Raises:
+            StackComponentExistsError: If an identical component already exists.
+        """
+        analytics_metadata = {
+            "type": component.type.value,
+            "flavor": component.flavor,
+        }
+        self._track_event(
+            AnalyticsEvent.REGISTERED_STACK_COMPONENT,
+            metadata=analytics_metadata,
+        )
+        return self._create_stack_component(
+            project_name, component_type, component
+        )
+
+    @abstractmethod
+    def _create_stack_component(
+        self,
+        project_name: str,
+        component_type: ComponentModel,
+        component: ComponentModel,
+    ) -> ComponentModel:
+        """Creates a new component in a project.
+
+        Args:
+            project_name: Name of the project to create the component in.
+            component_type: The component to create.
+            component: The component to create.
+
+        Returns:
+            The newly created component.
+
+        Raises:
+            StackComponentExistsError: If an identical component already exists.
+        """
 
     #  .------.
     # | USERS |
@@ -730,105 +1102,6 @@ class BaseZenStore(ABC):
             KeyError: If no project with the given name exists.
         """
 
-    def get_project_stacks(self, project_name: str) -> List[StackModel]:
-        """Gets all stacks in a project.
-
-        Args:
-            project_name: Name of the project to get.
-
-        Returns:
-            A list of all stacks in the project.
-
-        Raises:
-            KeyError: if the project doesn't exist.
-        """
-        return self._get_project_stacks(project_name)
-
-    def create_stack(self, project_name: str, stack: StackModel) -> StackModel:
-        """Creates a new stack in a project.
-
-        Args:
-            project_name: Name of the project to create the stack in.
-            stack: The stack to create.
-
-        Returns:
-            The newly created stack.
-
-        Raises:
-            EntityExistsError: If an identical stack already exists.
-        """
-        metadata = {c.type.value: c.flavor for c in stack.components}
-        metadata["store_type"] = self.type.value
-        self._track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
-        return self._create_stack(project_name, stack)
-
-    # TODO: [ALEX] add filtering param(s)
-    def list_project_stack_components(
-        self, project_name: str
-    ) -> List[ComponentModel]:
-        """Gets all components in a project.
-
-        Args:
-            project_name: Name of the project for which to get the components.
-
-        Returns:
-            A list of all components in the project.
-
-        Raises:
-            KeyError: if the project doesn't exist.
-        """
-        return self._list_project_stack_components(project_name)
-
-    def get_project_stack_components_by_type(
-        self, project_name: str, component_type: ComponentModel
-    ) -> List[ComponentModel]:
-        """Gets all components in a project of a specific type.
-
-        Args:
-            project_name: Name of the project for which to get the components.
-            component_type: Type of the components to get.
-
-        Returns:
-            A list of all components in the project of the specified type.
-
-        Raises:
-            KeyError: if the project doesn't exist.
-        """
-        return self._get_project_stack_components_by_type(
-            project_name, component_type
-        )
-
-    def create_stack_component(
-        self,
-        project_name: str,
-        component_type: ComponentModel,
-        component: ComponentModel,
-    ) -> ComponentModel:
-        """Creates a new component in a project.
-
-        Args:
-            project_name: Name of the project to create the component in.
-            component_type: The component to create.
-            component: The component to create.
-
-        Returns:
-            The newly created component.
-
-        Raises:
-            StackComponentExistsError: If an identical component already exists.
-        """
-        analytics_metadata = {
-            "type": component.type.value,
-            "flavor": component.flavor,
-        }
-        self._track_event(
-            AnalyticsEvent.REGISTERED_STACK_COMPONENT,
-            metadata=analytics_metadata,
-        )
-        return self._create_stack_component(
-            project_name, component_type, component
-        )
-
     def get_default_stack(self, project_name: str) -> StackModel:
         """Gets the default stack in a project.
 
@@ -1052,11 +1325,17 @@ class BaseZenStore(ABC):
         """Logs in to the server."""
         self._track_event(AnalyticsEvent.LOGIN)
         self._login()
+    
+    def _login(self) -> None:
+        """Logs in to the server."""
 
     def logout(self) -> None:
         """Logs out of the server."""
         self._track_event(AnalyticsEvent.LOGOUT)
         self._logout()
+
+    def _logout(self) -> None:
+        """Logs out of the server."""
 
     #  .----------.
     # | PIPELINES |
@@ -1661,247 +1940,6 @@ class BaseZenStore(ABC):
         Returns:
             A list of all steps.
         """
-
-    #  .------------------------.
-    # | PRIVATE IMPLEMENTATIONS |
-    # '-------------------------'
-
-    @abstractmethod
-    def _get_project_stacks(self, project_name: str) -> List[StackModel]:
-        """Get all stacks in the project.
-
-        Args:
-            project_name: the name of the project.
-
-        Returns:
-            A list of all stacks in the project.
-
-        Raises:
-            KeyError: if the project doesn't exist.
-        """
-
-    # TODO: rework to use the project_name
-    def _create_stack(self, project_name: str, stack: StackModel) -> None:
-        """Create a stack and its components for a particular project.
-
-        If any of the stack's components aren't registered in the ZenStore
-        yet, this method will try to register them as well.
-
-        Args:
-            project_name: Name of the project.
-            stack: The stack to create.
-
-        Raises:
-            StackExistsError: If a stack with the same name already exists.
-        """
-        try:
-            self.get_stack(stack.name)
-        except KeyError:
-            pass
-        else:
-            raise StackExistsError(
-                f"Unable to create stack with name '{stack.name}': Found "
-                f"existing stack with this name."
-            )
-
-        def __check_component(
-            component: ComponentModel,
-        ) -> Tuple[StackComponentType, str]:
-            """Try to register a stack component, if it doesn't exist.
-
-            Args:
-                component: StackComponentWrapper to register.
-
-            Returns:
-                The type and name of the component.
-
-            Raises:
-                StackComponentExistsError: If a component with same name exists.
-            """
-            try:
-                existing_component = self.get_stack_component(
-                    component_type=component.type, name=component.name
-                )
-                if existing_component.id != component.id:
-                    raise StackComponentExistsError(
-                        f"Unable to register one of the stacks components: "
-                        f"A component of type '{component.type}' and name "
-                        f"'{component.name}' already exists."
-                    )
-            except KeyError:
-                self._register_stack_component(component)
-            return component.type, component.name
-
-        stack_configuration = {
-            typ: name for typ, name in map(__check_component, stack.components)
-        }
-        self._save_stack(stack.name, stack_configuration)
-        logger.info("Created stack with name '%s'.", stack.name)
-
-    @abstractmethod
-    def _list_project_stack_components(
-        self, project_name: str
-    ) -> List[ComponentModel]:
-        """List all stack components in the project.
-
-        Args:
-            project_name: Name of the project.
-
-        Returns:
-            A list of stack components.
-
-        Raises:
-            KeyError: if the project does not exist.
-        """
-
-    @abstractmethod
-    def _list_stacks(self) -> List[StackModel]:
-        """List all stacks.
-
-        Returns:
-            A list of all stacks.
-        """
-
-    @abstractmethod
-    def _register_stack(self, stack: StackModel) -> StackModel:
-        """Register a new stack.
-
-        Args:
-            stack: The stack to register.
-
-        Returns:
-            The registered stack.
-        """
-
-    @abstractmethod
-    def _get_stack(self, stack_id: str) -> StackModel:
-        """Get a stack by ID.
-
-        Args:
-            stack_id: The ID of the stack to get.
-
-        Returns:
-            The stack.
-
-        Raises:
-            KeyError: if the stack doesn't exist.
-        """
-
-    @abstractmethod
-    def _update_stack(self, stack_id: str, stack: StackModel) -> StackModel:
-        """Update a stack.
-
-        Args:
-            stack_id: The ID of the stack to update.
-            stack: The stack to use for the update.
-
-        Returns:
-            The updated stack.
-
-        Raises:
-            KeyError: if the stack doesn't exist.
-        """
-
-    @abstractmethod
-    def _delete_stack(self, stack_id: str) -> None:
-        """Delete a stack.
-
-        Args:
-            stack_id: The ID of the stack to delete.
-
-        Raises:
-            KeyError: if the stack doesn't exist.
-        """
-
-    @abstractmethod
-    def _list_stack_component_types(self) -> List[StackComponentType]:
-        """List all stack component types.
-
-        Returns:
-            A list of all stack component types.
-        """
-
-    @abstractmethod
-    def _list_stack_component_flavors_by_type(
-        self, component_type: StackComponentType
-    ) -> List[FlavorModel]:
-        """List all stack component flavors by type.
-
-        Args:
-            component_type: The stack component for which to get flavors.
-
-        Returns:
-            List of stack component flavors.
-        """
-
-    @abstractmethod
-    def _list_stack_components(self) -> List[ComponentModel]:
-        """List all stack components.
-
-        Returns:
-            A list of all stack components.
-        """
-
-    @abstractmethod
-    def _get_stack_component(self, component_id: str) -> ComponentModel:
-        """Get a stack component by ID.
-
-        Args:
-            component_id: The ID of the stack component to get.
-
-        Returns:
-            The stack component.
-
-        Raises:
-            KeyError: if the stack component doesn't exist.
-        """
-
-    @abstractmethod
-    def _update_stack_component(
-        self, component_id: str, component: ComponentModel
-    ):
-        """Update a stack component.
-
-        Args:
-            component_id: The ID of the stack component to update.
-            component: The stack component to use for the update.
-
-        Returns:
-            The updated stack component.
-
-        Raises:
-            KeyError: if the stack component doesn't exist.
-        """
-
-    @abstractmethod
-    def _delete_stack_component(self, component_id: str) -> None:
-        """Delete a stack component.
-
-        Args:
-            component_id: The ID of the stack component to delete.
-
-        Raises:
-            KeyError: if the stack component doesn't exist.
-        """
-
-    @abstractmethod
-    def _get_stack_component_side_effects(
-        self, component_id: str, run_id: str, pipeline_id: str, stack_id: str
-    ) -> Dict[Any]:
-        """Get the side effects of a stack component.
-
-        Args:
-            component_id: The ID of the stack component to get side effects for.
-            run_id: The ID of the run to get side effects for.
-            pipeline_id: The ID of the pipeline to get side effects for.
-            stack_id: The ID of the stack to get side effects for.
-        """
-
-    def _login(self) -> None:
-        """Logs in to the server."""
-
-    def _logout(self) -> None:
-        """Logs out of the server."""
 
     # PROPERTIES
 
