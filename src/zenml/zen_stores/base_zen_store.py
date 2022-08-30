@@ -316,64 +316,6 @@ class BaseZenStore(ABC):
         )
 
     #  .------.
-    # | STEPS |
-    # '-------'
-
-    # TODO: change into an abstract method
-    def get_step(self, step_id: str) -> StepModel:
-        """Get a step by id.
-
-        Args:
-            step_id: The id of the step to get.
-
-        Returns:
-            The step with the given id.
-        """
-        return self._get_step(step_id)
-
-    # TODO: change into an abstract method
-    # TODO: use the correct return value + also amend the endpoint as well
-    def get_step_outputs(self, step_id: str) -> Dict[str, ArtifactView]:
-        """Get a list of outputs for a specific step.
-
-        Args:
-            step_id: The id of the step to get outputs for.
-
-        Returns:
-            A list of Dicts mapping artifact names to the output artifacts for the step.
-        """
-        return self._get_step_outputs(step_id)
-
-    # TODO: change into an abstract method
-    # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
-    def get_step_inputs(self, step_id: str) -> Dict[str, ArtifactView]:
-        """Get a list of inputs for a specific step.
-
-        Args:
-            step_id: The id of the step to get inputs for.
-
-        Returns:
-            A list of Dicts mapping artifact names to the input artifacts for the step.
-        """
-        return self._get_step_inputs(step_id)
-
-    # TODO: change into an abstract method
-    # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
-    # TODO: Discuss whether we even need this, given that the endpoint is on
-    # pipeline RUNs
-    # TODO: [ALEX] add filtering param(s)
-    def list_steps(self, pipeline_id: str) -> List[StepModel]:
-        """List all steps for a specific pipeline.
-
-        Args:
-            pipeline_id: The id of the pipeline to get steps for.
-
-        Returns:
-            A list of all steps for the pipeline.
-        """
-        return self._list_steps(pipeline_id)
-
-    #  .------.
     # | USERS |
     # '-------'
 
@@ -1135,6 +1077,20 @@ class BaseZenStore(ABC):
         """
         return self._list_pipelines(project_name)
 
+    @abstractmethod
+    def _list_pipelines(self, project_name: str) -> List[PipelineModel]:
+        """List all pipelines in the project.
+
+        Args:
+            project_name: Name of the project.
+
+        Returns:
+            A list of pipelines.
+
+        Raises:
+            KeyError: if the project does not exist.
+        """
+
     def create_pipeline(
         self, project_name: str, pipeline: PipelineModel
     ) -> PipelineModel:
@@ -1152,6 +1108,23 @@ class BaseZenStore(ABC):
         """
         self._track_event(AnalyticsEvent.CREATE_PIPELINE)
         return self._create_pipeline(project_name, pipeline)
+
+    @abstractmethod
+    def _create_pipeline(
+        self, project_name: str, pipeline: PipelineModel
+    ) -> PipelineModel:
+        """Creates a new pipeline in a project.
+
+        Args:
+            project_name: Name of the project to create the pipeline in.
+            pipeline: The pipeline to create.
+
+        Returns:
+            The newly created pipeline.
+
+        Raises:
+            PipelineExistsError: If an identical pipeline already exists.
+        """
 
     @abstractmethod
     def get_pipeline(self, pipeline_id: str) -> Optional[PipelineModel]:
@@ -1182,6 +1155,23 @@ class BaseZenStore(ABC):
         self._track_event(AnalyticsEvent.UPDATE_PIPELINE)
         return self._update_pipeline(pipeline_id, pipeline)
 
+    @abstractmethod
+    def _update_pipeline(
+        self, pipeline_id: str, pipeline: PipelineModel
+    ) -> PipelineModel:
+        """Updates a pipeline.
+
+        Args:
+            pipeline_id: The ID of the pipeline to update.
+            pipeline: The pipeline to use for the update.
+
+        Returns:
+            The updated pipeline.
+
+        Raises:
+            KeyError: if the pipeline doesn't exist.
+        """
+
     def delete_pipeline(self, pipeline_id: str) -> None:
         """Deletes a pipeline.
 
@@ -1193,6 +1183,17 @@ class BaseZenStore(ABC):
         """
         self._track_event(AnalyticsEvent.DELETE_PIPELINE)
         return self._delete_pipeline(pipeline_id)
+
+    @abstractmethod
+    def _delete_pipeline(self, pipeline_id: str) -> None:
+        """Deletes a pipeline.
+
+        Args:
+            pipeline_id: The ID of the pipeline to delete.
+
+        Raises:
+            KeyError: if the pipeline doesn't exist.
+        """
 
     def get_pipeline_runs(self, pipeline_id: str) -> List[PipelineRunModel]:
         """Gets all pipeline runs in a pipeline.
@@ -1207,6 +1208,20 @@ class BaseZenStore(ABC):
             KeyError: if the pipeline doesn't exist.
         """
         return self._get_pipeline_runs(pipeline_id)
+
+    @abstractmethod
+    def _get_pipeline_runs(self, pipeline_id: str) -> List[PipelineRunModel]:
+        """Gets all pipeline runs in a pipeline.
+
+        Args:
+            pipeline_id: The ID of the pipeline to get.
+
+        Returns:
+            A list of all pipeline runs in the pipeline.
+
+        Raises:
+            KeyError: if the pipeline doesn't exist.
+        """
 
     def create_pipeline_run(
         self, pipeline_id: str, pipeline_run: PipelineRunModel
@@ -1225,6 +1240,23 @@ class BaseZenStore(ABC):
         """
         return self._create_pipeline_run(pipeline_id, pipeline_run)
 
+    @abstractmethod
+    def _create_pipeline_run(
+        self, pipeline_id: str, pipeline_run: PipelineRunModel
+    ) -> PipelineRunModel:
+        """Creates a pipeline run.
+
+        Args:
+            pipeline_id: The ID of the pipeline to create the run in.
+            pipeline_run: The pipeline run to create.
+
+        Returns:
+            The created pipeline run.
+
+        Raises:
+            KeyError: if the pipeline doesn't exist.
+        """
+
     def get_pipeline_configuration(self, pipeline_id: str) -> Dict[Any, Any]:
         """Gets the pipeline configuration.
 
@@ -1238,6 +1270,20 @@ class BaseZenStore(ABC):
             KeyError: if the pipeline doesn't exist.
         """
         return self._get_pipeline_configuration(pipeline_id)
+
+    @abstractmethod
+    def _get_pipeline_configuration(self, pipeline_id: str) -> Dict[Any, Any]:
+        """Gets the pipeline configuration.
+
+        Args:
+            pipeline_id: The ID of the pipeline to get.
+
+        Returns:
+            The pipeline configuration.
+
+        Raises:
+            KeyError: if the pipeline doesn't exist.
+        """
 
     #  .-----.
     # | RUNS |
@@ -1271,6 +1317,30 @@ class BaseZenStore(ABC):
             pipeline_id=pipeline_id,
             trigger_id=trigger_id,
         )
+    
+    # TODO: [ALEX] add filtering param(s)
+    @abstractmethod
+    def _list_pipeline_runs(
+        self,
+        project_name: Optional[str] = None,
+        stack_id: Optional[str] = None,
+        pipeline_id: Optional[str] = None,
+        trigger_id: Optional[str] = None,
+    ) -> List[PipelineRunModel]:
+        """Gets all pipeline runs in a project.
+
+        Args:
+            project_name: Name of the project to get.
+            stack_id: ID of the stack to get.
+            pipeline_id: ID of the pipeline to get.
+            trigger_id: ID of the trigger to get.
+
+        Returns:
+            A list of all pipeline runs in the project.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
 
     def get_run(self, run_id: str) -> PipelineRunModel:
         """Gets a pipeline run.
@@ -1285,6 +1355,20 @@ class BaseZenStore(ABC):
             KeyError: if the pipeline run doesn't exist.
         """
         return self._get_run(run_id)
+
+    @abstractmethod
+    def _get_run(self, run_id: str) -> PipelineRunModel:
+        """Gets a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            The pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
 
     def update_run(
         self, run_id: str, run: PipelineRunModel
@@ -1303,6 +1387,23 @@ class BaseZenStore(ABC):
         """
         return self._update_run(run_id, run)
 
+    @abstractmethod
+    def _update_run(
+        self, run_id: str, run: PipelineRunModel
+    ) -> PipelineRunModel:
+        """Updates a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to update.
+            run: The pipeline run to use for the update.
+
+        Returns:
+            The updated pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
     def delete_run(self, run_id: str) -> None:
         """Deletes a pipeline run.
 
@@ -1313,6 +1414,17 @@ class BaseZenStore(ABC):
             KeyError: if the pipeline run doesn't exist.
         """
         return self._delete_run(run_id)
+
+    @abstractmethod
+    def _delete_run(self, run_id: str) -> None:
+        """Deletes a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to delete.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
 
     # TODO: figure out args and output for this
     def get_run_dag(self, run_id: str) -> str:
@@ -1329,6 +1441,21 @@ class BaseZenStore(ABC):
         """
         return self._get_run_dag(run_id)
 
+    # TODO: figure out args and output for this
+    @abstractmethod
+    def _get_run_dag(self, run_id: str) -> str:
+        """Gets the DAG for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            The DAG for the pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
     # TODO: [ALEX] add filtering param(s)
     def list_run_steps(self, run_id: str) -> List[StepModel]:
         """Gets all steps in a pipeline run.
@@ -1344,6 +1471,21 @@ class BaseZenStore(ABC):
         """
         return self._list_run_steps(run_id)
 
+    # TODO: [ALEX] add filtering param(s)
+    @abstractmethod
+    def _list_run_steps(self, run_id: str) -> List[StepModel]:
+        """Gets all steps in a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            A list of all steps in the pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
     def get_run_runtime_configuration(self, run_id: str) -> Dict:
         """Gets the runtime configuration for a pipeline run.
 
@@ -1357,6 +1499,20 @@ class BaseZenStore(ABC):
             KeyError: if the pipeline run doesn't exist.
         """
         return self._get_run_runtime_configuration(run_id)
+
+    @abstractmethod
+    def _get_run_runtime_configuration(self, run_id: str) -> Dict:
+        """Gets the runtime configuration for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            The runtime configuration for the pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
 
     # TODO: Figure out what exactly gets returned from this
     def get_run_component_side_effects(
@@ -1380,6 +1536,131 @@ class BaseZenStore(ABC):
         return self._get_run_component_side_effects(
             run_id, component_id=component_id, component_type=component_type
         )
+
+    @abstractmethod
+    def _get_run_component_side_effects(
+        self,
+        run_id: str,
+        component_id: Optional[str] = None,
+        component_type: Optional[StackComponentType] = None,
+    ) -> Dict:
+        """Gets the side effects for a component in a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+            component_id: The ID of the component to get.
+
+        Returns:
+            The side effects for the component in the pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
+    #  .------.
+    # | STEPS |
+    # '-------'
+
+    # TODO: change into an abstract method
+    def get_step(self, step_id: str) -> StepModel:
+        """Get a step by id.
+
+        Args:
+            step_id: The id of the step to get.
+
+        Returns:
+            The step with the given id.
+        """
+        return self._get_step(step_id)
+
+    @abstractmethod
+    def _get_step(self, step_id: str) -> StepModel:
+        """Get a step by ID.
+
+        Args:
+            step_id: The ID of the step to get.
+
+        Returns:
+            The step.
+
+        Raises:
+            KeyError: if the step doesn't exist.
+        """
+
+    # TODO: change into an abstract method
+    # TODO: use the correct return value + also amend the endpoint as well
+    def get_step_outputs(self, step_id: str) -> Dict[str, ArtifactView]:
+        """Get a list of outputs for a specific step.
+
+        Args:
+            step_id: The id of the step to get outputs for.
+
+        Returns:
+            A list of Dicts mapping artifact names to the output artifacts for the step.
+        """
+        return self._get_step_outputs(step_id)
+
+    @abstractmethod
+    def _get_step_outputs(self, step_id: str) -> Dict[str, ArtifactView]:
+        """Get the outputs of a step.
+
+        Args:
+            step_id: The ID of the step to get outputs for.
+
+        Returns:
+            The outputs of the step.
+        """
+
+    # TODO: change into an abstract method
+    # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
+    def get_step_inputs(self, step_id: str) -> Dict[str, ArtifactView]:
+        """Get a list of inputs for a specific step.
+
+        Args:
+            step_id: The id of the step to get inputs for.
+
+        Returns:
+            A list of Dicts mapping artifact names to the input artifacts for the step.
+        """
+        return self._get_step_inputs(step_id)
+
+    @abstractmethod
+    def _get_step_inputs(self, step_id: str) -> Dict[str, ArtifactView]:
+        """Get the inputs of a step.
+
+        Args:
+            step_id: The ID of the step to get inputs for.
+
+        Returns:
+            The inputs of the step.
+        """
+
+    # TODO: change into an abstract method
+    # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
+    # TODO: Discuss whether we even need this, given that the endpoint is on
+    # pipeline RUNs
+    # TODO: [ALEX] add filtering param(s)
+    def list_steps(self, pipeline_id: str) -> List[StepModel]:
+        """List all steps for a specific pipeline.
+
+        Args:
+            pipeline_id: The id of the pipeline to get steps for.
+
+        Returns:
+            A list of all steps for the pipeline.
+        """
+        return self._list_steps(pipeline_id)
+
+    @abstractmethod
+    def _list_steps(self, pipeline_id: str) -> List[StepModel]:
+        """List all steps.
+
+        Args:
+            pipeline_id: The ID of the pipeline to list steps for.
+
+        Returns:
+            A list of all steps.
+        """
 
     #  .------------------------.
     # | PRIVATE IMPLEMENTATIONS |
@@ -1471,37 +1752,6 @@ class BaseZenStore(ABC):
 
         Raises:
             KeyError: if the project does not exist.
-        """
-
-    @abstractmethod
-    def _list_pipelines(self, project_name: str) -> List[PipelineModel]:
-        """List all pipelines in the project.
-
-        Args:
-            project_name: Name of the project.
-
-        Returns:
-            A list of pipelines.
-
-        Raises:
-            KeyError: if the project does not exist.
-        """
-
-    @abstractmethod
-    def _create_pipeline(
-        self, project_name: str, pipeline: PipelineModel
-    ) -> PipelineModel:
-        """Creates a new pipeline in a project.
-
-        Args:
-            project_name: Name of the project to create the pipeline in.
-            pipeline: The pipeline to create.
-
-        Returns:
-            The newly created pipeline.
-
-        Raises:
-            PipelineExistsError: If an identical pipeline already exists.
         """
 
     @abstractmethod
@@ -1647,275 +1897,11 @@ class BaseZenStore(ABC):
             stack_id: The ID of the stack to get side effects for.
         """
 
-    @abstractmethod
-    def _get_step(self, step_id: str) -> StepModel:
-        """Get a step by ID.
-
-        Args:
-            step_id: The ID of the step to get.
-
-        Returns:
-            The step.
-
-        Raises:
-            KeyError: if the step doesn't exist.
-        """
-
-    @abstractmethod
-    def _get_step_outputs(self, step_id: str) -> Dict[str, ArtifactView]:
-        """Get the outputs of a step.
-
-        Args:
-            step_id: The ID of the step to get outputs for.
-
-        Returns:
-            The outputs of the step.
-        """
-
-    @abstractmethod
-    def _get_step_inputs(self, step_id: str) -> Dict[str, ArtifactView]:
-        """Get the inputs of a step.
-
-        Args:
-            step_id: The ID of the step to get inputs for.
-
-        Returns:
-            The inputs of the step.
-        """
-
-    @abstractmethod
-    def _list_steps(self, pipeline_id: str) -> List[StepModel]:
-        """List all steps.
-
-        Args:
-            pipeline_id: The ID of the pipeline to list steps for.
-
-        Returns:
-            A list of all steps.
-        """
-
     def _login(self) -> None:
         """Logs in to the server."""
 
     def _logout(self) -> None:
         """Logs out of the server."""
-
-    @abstractmethod
-    def _list_pipelines(self, project_name: str) -> List[PipelineModel]:
-        """Gets all pipelines in a project.
-
-        Args:
-            project_name: Name of the project to get.
-
-        Returns:
-            A list of all pipelines in the project.
-
-        Raises:
-            KeyError: if the project doesn't exist.
-        """
-
-    @abstractmethod
-    def _update_pipeline(
-        self, pipeline_id: str, pipeline: PipelineModel
-    ) -> PipelineModel:
-        """Updates a pipeline.
-
-        Args:
-            pipeline_id: The ID of the pipeline to update.
-            pipeline: The pipeline to use for the update.
-
-        Returns:
-            The updated pipeline.
-
-        Raises:
-            KeyError: if the pipeline doesn't exist.
-        """
-
-    @abstractmethod
-    def _delete_pipeline(self, pipeline_id: str) -> None:
-        """Deletes a pipeline.
-
-        Args:
-            pipeline_id: The ID of the pipeline to delete.
-
-        Raises:
-            KeyError: if the pipeline doesn't exist.
-        """
-
-    @abstractmethod
-    def _get_pipeline_runs(self, pipeline_id: str) -> List[PipelineRunModel]:
-        """Gets all pipeline runs in a pipeline.
-
-        Args:
-            pipeline_id: The ID of the pipeline to get.
-
-        Returns:
-            A list of all pipeline runs in the pipeline.
-
-        Raises:
-            KeyError: if the pipeline doesn't exist.
-        """
-
-    @abstractmethod
-    def _create_pipeline_run(
-        self, pipeline_id: str, pipeline_run: PipelineRunModel
-    ) -> PipelineRunModel:
-        """Creates a pipeline run.
-
-        Args:
-            pipeline_id: The ID of the pipeline to create the run in.
-            pipeline_run: The pipeline run to create.
-
-        Returns:
-            The created pipeline run.
-
-        Raises:
-            KeyError: if the pipeline doesn't exist.
-        """
-
-    @abstractmethod
-    def _get_pipeline_configuration(self, pipeline_id: str) -> Dict[Any, Any]:
-        """Gets the pipeline configuration.
-
-        Args:
-            pipeline_id: The ID of the pipeline to get.
-
-        Returns:
-            The pipeline configuration.
-
-        Raises:
-            KeyError: if the pipeline doesn't exist.
-        """
-
-    # TODO: [ALEX] add filtering param(s)
-    @abstractmethod
-    def _list_pipeline_runs(
-        self,
-        project_name: Optional[str] = None,
-        stack_id: Optional[str] = None,
-        pipeline_id: Optional[str] = None,
-        trigger_id: Optional[str] = None,
-    ) -> List[PipelineRunModel]:
-        """Gets all pipeline runs in a project.
-
-        Args:
-            project_name: Name of the project to get.
-            stack_id: ID of the stack to get.
-            pipeline_id: ID of the pipeline to get.
-            trigger_id: ID of the trigger to get.
-
-        Returns:
-            A list of all pipeline runs in the project.
-
-        Raises:
-            KeyError: if the project doesn't exist.
-        """
-
-    @abstractmethod
-    def _get_run(self, run_id: str) -> PipelineRunModel:
-        """Gets a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get.
-
-        Returns:
-            The pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-
-    @abstractmethod
-    def _update_run(
-        self, run_id: str, run: PipelineRunModel
-    ) -> PipelineRunModel:
-        """Updates a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to update.
-            run: The pipeline run to use for the update.
-
-        Returns:
-            The updated pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-
-    @abstractmethod
-    def _delete_run(self, run_id: str) -> None:
-        """Deletes a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to delete.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-
-    # TODO: figure out args and output for this
-    @abstractmethod
-    def _get_run_dag(self, run_id: str) -> str:
-        """Gets the DAG for a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get.
-
-        Returns:
-            The DAG for the pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-
-    # TODO: [ALEX] add filtering param(s)
-    @abstractmethod
-    def _list_run_steps(self, run_id: str) -> List[StepModel]:
-        """Gets all steps in a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get.
-
-        Returns:
-            A list of all steps in the pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-
-    @abstractmethod
-    def _get_run_runtime_configuration(self, run_id: str) -> Dict:
-        """Gets the runtime configuration for a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get.
-
-        Returns:
-            The runtime configuration for the pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-
-    @abstractmethod
-    def _get_run_component_side_effects(
-        self,
-        run_id: str,
-        component_id: Optional[str] = None,
-        component_type: Optional[StackComponentType] = None,
-    ) -> Dict:
-        """Gets the side effects for a component in a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get.
-            component_id: The ID of the component to get.
-
-        Returns:
-            The side effects for the component in the pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
 
     # PROPERTIES
 
