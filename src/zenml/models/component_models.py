@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
+from zenml.zen_stores.schemas.schemas import StackComponentSchema
 
 if TYPE_CHECKING:
     from zenml.stack import StackComponent
@@ -50,18 +51,20 @@ class ComponentModel(BaseModel):
     type: StackComponentType = Field(
         title="The type of the Stack Component.",
     )
-    flavor: str = Field(
+    flavor_id: str = Field(
         title="The flavor of the Stack Component.",
     )
-    config: bytes = Field(  # b64 encoded yaml config
+    configuration: bytes = Field(  # b64 encoded yaml config
         title="The id of the Stack Component.",
     )
     owner: str = Field(
         title="The id of the user, that owns this component.",
     )
-    created_by: str = Field(
-        title="The id of the user, that created this component.",
+    is_shared: bool = Field(
+        default=False,
+        title="Flag describing if this component is shared.",
     )
+    project: str = Field(title="The project that contains this component.")
     created_at: str = Field(
         title="The time at which the component was registered.",
     )

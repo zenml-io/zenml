@@ -224,26 +224,49 @@ class SqlZenStore(BaseZenStore):
     # | STACKS |
     # '--------'
 
-    def _list_stacks(self) -> List[StackModel]:
-        """List all stacks.
+    def _list_stacks(self,
+                     project_id: str,
+                     owner: Optional[str],
+                     name: Optional[str],
+                     is_shared: Optional[bool]
+                     ) -> List[StackModel]:
+        """List all stacks within the filter.
 
+        Args:
+            project_id: Id of the Project containing the stack components
+            owner: Optionally filter stack components by the owner
+            name: Optionally filter stack component by name
+            is_shared: Optionally filter out stack component by the `is_shared`
+                       flag
         Returns:
             A list of all stacks.
         """
-        # TODO: apply filters
         with Session(self.engine) as session:
-            list_of_stacks_and_components = session.exec(
+            query = (
                 select(StackSchema, StackComponentSchema)
                 .where(StackSchema.id == StackCompositionSchema.stack_id)
-                .where(
-                    StackComponentSchema.id
-                    == StackCompositionSchema.component_id
-                )
-            ).all()
+                .where(StackComponentSchema.id ==
+                       StackCompositionSchema.component_id))
 
+            # TODO: [ALEXEJ] prettify this
+            if owner:
+                 query = query.where(StackComponentSchema.owner == owner)
+            if name:
+                 query = query.where(StackComponentSchema.name == name)
+            if is_shared is not None:
+                query = query.where(StackComponentSchema.is_shared == is_shared)
+
+            list_of_stacks_and_components = session.exec(query).all()
+
+        # TODO: [ALEXE] revisit this once the exact output format for
+        #  the list_of_stacks_and_components, maybe split into two queries
+        filtered_stack_models = list()
         for stack, components in list_of_stacks_and_components:
-            # TODO: construct StackModel
-            return None
+            components: List[StackComponentSchema] = components
+            components_in_model = {c.type: c.id for c in components}
+            filtered_stack_models.append(stack.to_model(components_in_model))
+
+        return filtered_stack_models
 
     def _get_stack(self, stack_id: str) -> StackModel:
         """Get a stack by id.
@@ -255,7 +278,7 @@ class SqlZenStore(BaseZenStore):
             The stack with the given id.
         """
         with Session(self.engine) as session:
-            list_of_stacks_and_components = session.exec(
+            stack_and_components = session.exec(
                 select(StackSchema, StackComponentSchema)
                 .where(StackSchema.id == stack_id)
                 .where(StackSchema.id == StackCompositionSchema.stack_id)
@@ -265,20 +288,24 @@ class SqlZenStore(BaseZenStore):
                 )
             ).all()
 
-        for stack, components in list_of_stacks_and_components:
-            # TODO: construct StackModel from Stack and corresponding Components
-            return None
+        # TODO: [ALEXEJ] Figure out why this is List[Tuple[s,c]]
+        #  instead of Tuple[s, List[c]], maybe split into two queries
+        stack = stack_and_components[0]
+        components: List[StackComponentSchema] = stack_and_components[1]
+        components_in_model = {c.type: c.id for c in components}
+
+        return stack.to_model(components_in_model)
 
     def _register_stack(self,
-                        user: User,
-                        project: Project,
+                        user_id: str,
+                        project_id: str,
                         stack: StackModel) -> StackModel:
         """Register a new stack.
 
         Args:
             stack: The stack to register.
-            user: The user that is registering this stack
-            project: The project within which that stack is registered
+            user_id: The user that is registering this stack
+            project_id: The project within which that stack is registered
 
         Returns:
             The registered stack.
@@ -293,8 +320,8 @@ class SqlZenStore(BaseZenStore):
             existing_stack = session.exec(
                 select(StackSchema)
                 .where(StackSchema.name == stack.name)
-                .where(StackSchema.project_id == project.id)
-                .where(StackSchema.owner == user.id)
+                .where(StackSchema.project_id == project_id)
+                .where(StackSchema.owner == user_id)
             ).first()
             # TODO: verify if is_shared status needs to be checked here
             if existing_stack is not None:
@@ -305,40 +332,40 @@ class SqlZenStore(BaseZenStore):
                     f"this user."
                 )
 
-            # TODO: validate the the composition of components is a valid stack
-            # Get the Schemas of all components mentioned
+            # Get the Schemas of all components mentioned in the stack model
             defined_components = session.exec(
                 select(StackComponentSchema).where(
                     StackComponentSchema.id in stack.components.values()
-                )
-            ).all
+                )).all
+            # TODO: [ALEXE] verify this returns List["StackComponentSchema"]
 
             # Create the stack
-            stack_in_db = StackSchema(
-                name=stack.name,
-                project_id=stack.project,
-                owner=user.id,
-                components=defined_components,
+            stack_in_db = StackSchema.from_create_model(
+                project_id=project_id,
+                user_id=user_id,
+                defined_components=defined_components,
+                stack=stack
             )
             session.add(stack_in_db)
             session.commit()
 
-            # After committing the model, sqlmodel takes care of updating the
-            #  object with id, created_at, etc ...
-            # TODO: construct StackModel
-            return None
+            components_in_model = {c.type: c.id for c in defined_components}
+
+            # TODO: [ALEXEJ] verify that the stack_in_db instance is actually
+            #  updated automatically after the session commit
+            return stack_in_db.to_model(components_in_model)
 
     def _update_stack(self,
                       stack_id: str,
-                      user: User,
-                      project: Project,
+                      user_id: str,
+                      project_id: str,
                       stack: StackModel) -> StackModel:
         """Update an existing stack.
 
         Args:
             stack_id: The id of the stack to update.
-            user: The user that created the stack
-            project: The project the user created this stack within
+            user_id: The user that created the stack
+            project_id: The project the user created this stack within
             stack: The stack to update.
 
         Returns:
@@ -369,18 +396,20 @@ class SqlZenStore(BaseZenStore):
 
             # Create the stack
             stack_in_db = StackSchema(
+                id=stack_id,
                 name=stack.name,
-                project_id=stack.project,
-                owner=user.id,
+                project_id=project_id,
+                owner=user_id,
                 components=defined_components,
             )
             session.add(stack_in_db)
             session.commit()
 
-            # After committing the model, sqlmodel takes care of updating the
-            #  object with id, created_at, etc ...
-            # TODO: construct StackModel
-            return None
+            components_in_model = {c.type: c.id for c in defined_components}
+
+            # TODO: [ALEXEJ] verify that the stack_in_db instance is actually
+            #  updated automatically after the session commit
+            return stack_in_db.to_model(components_in_model)
 
     def _delete_stack(self, stack_id: str) -> None:
         """Delete a stack.
@@ -403,14 +432,48 @@ class SqlZenStore(BaseZenStore):
     # | STACK COMPONENTS |
     # '------------------'
 
-    # TODO: [ALEX] add filtering param(s)
-    def _list_stack_components(self) -> List[ComponentModel]:
-        """List all stack components.
+    def _list_stack_components(self,
+                               project_id: str,
+                               type: Optional[str],
+                               flavor_id: Optional[str],
+                               owner: Optional[str],
+                               name: Optional[str],
+                               is_shared: Optional[bool]
+                               ) -> List[ComponentModel]:
+        """List all stack components within the filter.
+
+        Args:
+            project_id: Id of the Project containing the stack components
+            type: Optionally filter by type of stack component
+            flavor_id: Optionally filter by flavor
+            owner: Optionally filter stack components by the owner
+            name: Optionally filter stack component by name
+            is_shared: Optionally filter out stack component by the `is_shared`
+                       flag
 
         Returns:
             All stack components currently registered.
         """
-        # TODO: implement this
+        with Session(self.engine) as session:
+
+            query = (select(StackComponentSchema)
+                     .where(StackComponentSchema.project_id == project_id))
+
+            # TODO: [ALEXEJ] prettify this
+            if type:
+                 query = query.where(StackComponentSchema.type == type)
+            if flavor_id:
+                 query = query.where(StackComponentSchema.flavor_id == flavor_id)
+            if owner:
+                 query = query.where(StackComponentSchema.owner == owner)
+            if name:
+                 query = query.where(StackComponentSchema.name == name)
+            if is_shared is not None:
+                query = query.where(StackComponentSchema.is_shared == is_shared)
+
+            list_of_stack_components_in_db = session.exec(query).all()
+
+        return [comp.to_model() for comp in list_of_stack_components_in_db]
 
     def _get_stack_component(self, component_id: str) -> ComponentModel:
         """Get a stack component by id.
@@ -421,14 +484,71 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The stack component with the given id.
         """
-        # TODO: implement this
+        with Session(self.engine) as session:
+            stack_component = session.exec(
+                select(StackComponentSchema)
+                .where(StackComponentSchema.id == component_id)
+            ).first()
+
+        return stack_component.to_model()
+
+    def _register_stack_component(
+        self,
+        user_id: str,
+        project_id: str,
+        component: ComponentModel
+    ) -> ComponentModel:
+        """Create a stack component.
+
+        Args:
+            user_id: The user that created the stack component.
+            project_id: The project the stack component is created in.
+            component: The stack component to create.
+
+        Returns:
+            The created stack component.
+        """
+        with Session(self.engine) as session:
+            # Check if component with the domain key (name, prj, owner) already
+            #  exists
+            existing_component = session.exec(
+                select(StackComponentSchema)
+                .where(StackComponentSchema.name == component.name)
+                .where(StackComponentSchema.project_id == project_id)
+                .where(StackComponentSchema.owner == user_id)
+            ).first()
+            # TODO: verify if is_shared status needs to be checked here
+            if existing_component is not None:
+                raise StackComponentExistsError(
+                    f"Unable to register component with name "
+                    f"'{component.name}': Found "
+                    f"existing component with this name. in the project for"
+                    f"this user."
+                )
+
+            # Create the component
+            component_in_db = StackComponentSchema.from_create_model(
+                user_id=user_id, project_id=project_id, component=component)
+
+            session.add(component_in_db)
+            session.commit()
+
+            # TODO: [ALEXEJ] verify that the component_in_db instance is actually
+            #  updated automatically after the session commit
+            return component_in_db.to_model()
 
     def _update_stack_component(
-        self, component_id: str, component: ComponentModel
+        self,
+        user_id: str,
+        project_id: str,
+        component_id: str,
+        component: ComponentModel
     ) -> ComponentModel:
         """Update an existing stack component.
 
         Args:
+            user_id: The user that created the stack component.
+            project_id: The project the stack component is created in.
             component_id: The id of the stack component to update.
             component: The stack component to use for the update.
 

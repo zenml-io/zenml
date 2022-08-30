@@ -46,7 +46,7 @@ class StackModel(BaseModel):
     )
     is_shared: bool = Field(
         default=False,
-        title="The id of the user, that owns this stack.",
+        title="Flag describing if this stack is shared.",
     )
     project: str = Field(title="The project that contains this stack. ")
     owner: str = Field(

@@ -12,14 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQL Model Implementations."""
-
+import base64
 from datetime import datetime
-from typing import List
+from typing import List, Dict
 from uuid import UUID, uuid4
 
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.enums import StackComponentType
+from zenml.models import ComponentModel, StackModel
 from zenml.models.pipeline_models import PipelineRunModel
 
 
@@ -145,9 +146,10 @@ class StackSchema(SQLModel, table=True):
     """SQL Model for stacks."""
 
     id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    created_at: datetime = Field(default_factory=datetime.now)
 
     name: str
-
+    is_shared: bool
     project_id: UUID = Field(
         foreign_key="projectschema.id", nullable=True
     )  # TODO: Unnullableify this
@@ -155,11 +157,43 @@ class StackSchema(SQLModel, table=True):
         foreign_key="userschema.id", nullable=True
     )  # TODO: Unnullableify this
 
-    created_at: datetime = Field(default_factory=datetime.now)
-
     components: List["StackComponentSchema"] = Relationship(
         back_populates="stack", link_model=StackCompositionSchema
     )
+
+    @classmethod
+    def from_create_model(cls,
+                          user_id: str,
+                          project_id: str,
+                          defined_components: List["StackComponentSchema"],
+                          stack: StackModel) -> "StackSchema":
+        """Create an incomplete StackSchema with `id` and `created_at` missing.
+
+        Returns:
+            A StackComponentSchema
+        """
+
+        return cls(
+            name=stack.name,
+            project_id=project_id,
+            owner=user_id,
+            components=defined_components,
+            )
+
+    def to_model(self, components: Dict[str, str]) -> "StackModel":
+        """Creates a ComponentModel from an instance of a StackSchema.
+
+        Returns:
+            a ComponentModel
+        """
+        return StackModel(
+            id=self.id,
+            name=self.name,
+            owner=self.owner,
+            project_id=self.project_id,
+            is_shared=self.is_shared,
+            components=components
+        )
 
 
 class StackComponentSchema(SQLModel, table=True):
@@ -168,6 +202,7 @@ class StackComponentSchema(SQLModel, table=True):
     id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
 
     name: str
+    is_shared: bool
 
     # project_id - redundant since repository of flavor has this
     type: StackComponentType
@@ -175,15 +210,56 @@ class StackComponentSchema(SQLModel, table=True):
         foreign_key="flavorschema.id", nullable=True
     )  # TODO: Prefill flavors
     owner: UUID = Field(foreign_key="userschema.id", nullable=True)
+    project_id: UUID = Field(
+        foreign_key="projectschema.id", nullable=True
+    )  # TODO: Unnullableify this
 
-    # type - redundant since flavor has this
-    configuration: str
+    configuration: bytes
 
     created_at: datetime = Field(default_factory=datetime.now)
 
     stacks: List["StackSchema"] = Relationship(
         back_populates="components", link_model=StackCompositionSchema
     )
+
+    @classmethod
+    def from_create_model(cls,
+                          user_id: str,
+                          project_id: str,
+                          component: ComponentModel) -> "StackComponentSchema":
+        """Create a StackComponentSchema with `id` and `created_at` missing.
+
+
+        Returns:
+            A StackComponentSchema
+        """
+
+        return cls(
+            name=component.name,
+            project_id=project_id,
+            owner=user_id,
+            is_shared=component.is_shared,
+            type=component.type,
+            flavor_id=component.flavor_id,
+            configuration=component.configuration
+        )
+
+    def to_model(self) -> "ComponentModel":
+        """Creates a ComponentModel from an instance of a StackSchema.
+
+        Returns:
+            A ComponentModel
+        """
+        return ComponentModel(
+            id=self.id,
+            name=self.name,
+            type=self.type,
+            flavor_id=self.flavor_id,
+            owner=self.owner,
+            project_id=self.project_id,
+            is_shared=self.is_shared,
+            configuration=self.configuration
+        )
 
 
 class PipelineSchema(SQLModel, table=True):

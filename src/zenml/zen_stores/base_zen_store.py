@@ -167,18 +167,40 @@ class BaseZenStore(ABC):
     # '--------'
 
     # TODO: [ALEX] add filtering param(s)
-    def list_stacks(self) -> List[StackModel]:
-        """List all stacks.
+    def list_stacks(self,
+                    project_id: str,
+                    owner: Optional[str],
+                    name: Optional[str],
+                    is_shared: Optional[bool]
+                    ) -> List[StackModel]:
+        """List all stacks within the filter.
 
+        Args:
+            project_id: Id of the Project containing the stack components
+            owner: Optionally filter stack components by the owner
+            name: Optionally filter stack component by name
+            is_shared: Optionally filter out stack component by the `is_shared`
+                       flag
         Returns:
             A list of all stacks.
         """
         return self._list_stacks()
 
     @abstractmethod
-    def _list_stacks(self) -> List[StackModel]:
-        """List all stacks.
+    def _list_stacks(self,
+                     project_id: str,
+                     owner: Optional[str],
+                     name: Optional[str],
+                     is_shared: Optional[bool]
+                     ) -> List[StackModel]:
+        """List all stacks within the filter.
 
+        Args:
+            project_id: Id of the Project containing the stack components
+            owner: Optionally filter stack components by the owner
+            name: Optionally filter stack component by name
+            is_shared: Optionally filter out stack component by the `is_shared`
+                       flag
         Returns:
             A list of all stacks.
         """
@@ -320,8 +342,24 @@ class BaseZenStore(ABC):
     # '------------------'
 
     # TODO: [ALEX] add filtering param(s)
-    def list_stack_components(self) -> List[ComponentModel]:
-        """List all stack components.
+    def list_stack_components(self,
+                              project_id: str,
+                              type: Optional[str],
+                              flavor_id: Optional[str],
+                              owner: Optional[str],
+                              name: Optional[str],
+                              is_shared: Optional[bool]
+                              ) -> List[ComponentModel]:
+        """List all stack components within the filter.
+
+        Args:
+            project_id: Id of the Project containing the stack components
+            type: Optionally filter by type of stack component
+            flavor_id: Optionally filter by flavor
+            owner: Optionally filter stack components by the owner
+            name: Optionally filter stack component by name
+            is_shared: Optionally filter out stack component by the `is_shared`
+                       flag
 
         Returns:
             All stack components currently registered.
@@ -329,8 +367,24 @@ class BaseZenStore(ABC):
         return self._list_stack_components()
 
     @abstractmethod
-    def _list_stack_components(self) -> List[ComponentModel]:
-        """List all stack components.
+    def _list_stack_components(self,
+                               project_id: str,
+                               type: Optional[str],
+                               flavor_id: Optional[str],
+                               owner: Optional[str],
+                               name: Optional[str],
+                               is_shared: Optional[bool]
+                               ) -> List[ComponentModel]:
+        """List all stack components within the filter.
+
+        Args:
+            project_id: Id of the Project containing the stack components
+            type: Optionally filter by type of stack component
+            flavor_id: Optionally filter by flavor
+            owner: Optionally filter stack components by the owner
+            name: Optionally filter stack component by name
+            is_shared: Optionally filter out stack component by the `is_shared`
+                       flag
 
         Returns:
             A list of all stack components.
@@ -361,12 +415,54 @@ class BaseZenStore(ABC):
             KeyError: if the stack component doesn't exist.
         """
 
+    def register_stack_component(
+        self,
+        user_id: str,
+        project_id: str,
+        component: ComponentModel
+    ) -> ComponentModel:
+        """Create a stack component.
+
+        Args:
+            user_id: The user that created the stack component.
+            project_id: The project the stack component is created in.
+            component: The stack component to create.
+
+        Returns:
+            The created stack component.
+        """
+        return self._register_stack_component(user_id, project_id, component)
+
+    @abstractmethod
+    def _register_stack_component(
+        self,
+        user_id: str,
+        project_id: str,
+        component: ComponentModel
+    ) -> ComponentModel:
+        """Create a stack component.
+
+        Args:
+            user_id: The user that created the stack component.
+            project_id: The project the stack component is created in.
+            component: The stack component to create.
+
+        Returns:
+            The created stack component.
+        """
+
     def update_stack_component(
-        self, component_id: str, component: ComponentModel
+        self,
+        user_id: str,
+        project_id: str,
+        component_id: str,
+        component: ComponentModel
     ) -> ComponentModel:
         """Update an existing stack component.
 
         Args:
+            user_id: The user that created the stack component.
+            project_id: The project the stack component is created in.
             component_id: The id of the stack component to update.
             component: The stack component to use for the update.
 
@@ -381,16 +477,23 @@ class BaseZenStore(ABC):
             AnalyticsEvent.UPDATED_STACK_COMPONENT,
             metadata=analytics_metadata,
         )
-        return self._update_stack_component(component_id, component)
+        return self._update_stack_component(user_id, project_id,
+                                            component_id, component)
 
     @abstractmethod
     def _update_stack_component(
-        self, component_id: str, component: ComponentModel
-    ):
-        """Update a stack component.
+        self,
+        user_id: str,
+        project_id: str,
+        component_id: str,
+        component: ComponentModel
+    ) -> ComponentModel:
+        """Update an existing stack component.
 
         Args:
-            component_id: The ID of the stack component to update.
+            user_id: The user that created the stack component.
+            project_id: The project the stack component is created in.
+            component_id: The id of the stack component to update.
             component: The stack component to use for the update.
 
         Returns:
