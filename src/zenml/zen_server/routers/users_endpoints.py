@@ -16,7 +16,7 @@ from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from zenml.constants import INVITE_TOKEN, ROLES, USERS
+from zenml.constants import INVITE_TOKEN, ROLES, USERS, VERSION_1
 from zenml.exceptions import EntityExistsError
 from zenml.models import Role, User
 from zenml.zen_server.utils import (
@@ -29,7 +29,7 @@ from zenml.zen_server.utils import (
 )
 
 router = APIRouter(
-    prefix=USERS,
+    prefix=VERSION_1 + USERS,
     tags=["users"],
     dependencies=[Depends(authorize)],
     responses={401: error_response},

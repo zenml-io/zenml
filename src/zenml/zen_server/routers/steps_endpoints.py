@@ -15,7 +15,7 @@ from typing import Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from zenml.constants import OUTPUTS, STEPS
+from zenml.constants import OUTPUTS, STEPS, VERSION_1
 from zenml.models.pipeline_models import StepModel
 from zenml.zen_server.utils import (
     authorize,
@@ -26,7 +26,7 @@ from zenml.zen_server.utils import (
 )
 
 router = APIRouter(
-    prefix=STEPS,
+    prefix=VERSION_1 + STEPS,
     tags=["steps"],
     dependencies=[Depends(authorize)],
     responses={401: error_response},

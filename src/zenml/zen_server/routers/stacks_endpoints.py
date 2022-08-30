@@ -15,7 +15,7 @@ from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from zenml.constants import STACK_COMPONENTS, STACKS
+from zenml.constants import STACK_COMPONENTS, STACKS, VERSION_1
 from zenml.enums import StackComponentType
 from zenml.models import StackModel
 from zenml.zen_server.utils import (
@@ -26,7 +26,7 @@ from zenml.zen_server.utils import (
 )
 
 router = APIRouter(
-    prefix=STACKS,
+    prefix=VERSION_1 + STACKS,
     tags=["stacks"],
     dependencies=[Depends(authorize)],
     responses={401: error_response},

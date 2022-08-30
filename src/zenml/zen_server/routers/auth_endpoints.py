@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 from fastapi import APIRouter, Depends, HTTPException
 
-from zenml.constants import LOGIN, LOGOUT
+from zenml.constants import LOGIN, LOGOUT, VERSION_1
 from zenml.zen_server.utils import (
     authorize,
     conflict,
@@ -24,6 +24,7 @@ from zenml.zen_server.utils import (
 )
 
 router = APIRouter(
+    prefix=VERSION_1,
     tags=["auth"],
     dependencies=[Depends(authorize)],
     responses={401: error_response},

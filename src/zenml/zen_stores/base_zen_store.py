@@ -19,18 +19,18 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 from ml_metadata.proto import metadata_store_pb2
 
-from zenml.enums import StackComponentType, StoreType
-from zenml.exceptions import StackComponentExistsError, StackExistsError
+from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.logger import get_logger
 from zenml.models import ComponentModel, FlavorModel, StackModel
+from zenml.models.code_models import CodeRepositoryModel
 from zenml.models.pipeline_models import (
     PipelineModel,
     PipelineRunModel,
     StepModel,
 )
 from zenml.models.user_management_models import Project, Role, Team, User
-from zenml.models.code_models import CodeRepositoryModel
 from zenml.post_execution import ArtifactView
+from zenml.stack import Stack
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 logger = get_logger(__name__)
@@ -233,10 +233,9 @@ class BaseZenStore(ABC):
             KeyError: if the stack doesn't exist.
         """
 
-    def register_stack(self,
-                       user: User,
-                       project: Project,
-                       stack: StackModel) -> StackModel:
+    def register_stack(
+        self, user: User, project: Project, stack: StackModel
+    ) -> StackModel:
         """Register a new stack.
 
         Args:
@@ -257,10 +256,9 @@ class BaseZenStore(ABC):
         return self._register_stack(stack=stack, user=user, project=project)
 
     @abstractmethod
-    def _register_stack(self,
-                        user: User,
-                        project: Project,
-                        stack: StackModel) -> StackModel:
+    def _register_stack(
+        self, user: User, project: Project, stack: StackModel
+    ) -> StackModel:
         """Register a new stack.
 
         Args:
@@ -276,11 +274,9 @@ class BaseZenStore(ABC):
                               by this user on this project.
         """
 
-    def update_stack(self,
-                     stack_id: str,
-                     user: User,
-                     project: Project,
-                     stack: StackModel) -> StackModel:
+    def update_stack(
+        self, stack_id: str, user: User, project: Project, stack: StackModel
+    ) -> StackModel:
         """Update an existing stack.
 
         Args:
@@ -293,17 +289,14 @@ class BaseZenStore(ABC):
         metadata = {c.type.value: c.flavor for c in stack.components}
         metadata["store_type"] = self.type.value
         track_event(AnalyticsEvent.UPDATED_STACK, metadata=metadata)
-        return self._update_stack(stack_id=stack_id,
-                                  user=user,
-                                  project=project,
-                                  stack=stack)
+        return self._update_stack(
+            stack_id=stack_id, user=user, project=project, stack=stack
+        )
 
     @abstractmethod
-    def _update_stack(self,
-                      stack_id: str,
-                      user: User,
-                      project: Project,
-                      stack: StackModel) -> StackModel:
+    def _update_stack(
+        self, stack_id: str, user: User, project: Project, stack: StackModel
+    ) -> StackModel:
         """Update a stack.
 
         Args:
@@ -543,7 +536,7 @@ class BaseZenStore(ABC):
     @abstractmethod
     def _get_stack_component_side_effects(
         self, component_id: str, run_id: str, pipeline_id: str, stack_id: str
-    ) -> Dict[Any]:
+    ) -> Dict[Any, Any]:
         """Get the side effects of a stack component.
 
         Args:
@@ -552,6 +545,7 @@ class BaseZenStore(ABC):
             pipeline_id: The ID of the pipeline to get side effects for.
             stack_id: The ID of the stack to get side effects for.
         """
+
     def list_stack_component_types(self) -> List[StackComponentType]:
         """List all stack component types.
 
@@ -2105,7 +2099,7 @@ class BaseZenStore(ABC):
 
     @property
     @abstractmethod
-    def role_assignments(self) -> List[RoleAssignment]:
+    def role_assignments(self) -> List[Role]:
         """All registered role assignments.
 
         Returns:
@@ -2194,7 +2188,7 @@ class BaseZenStore(ABC):
         self,
         team_name: str,
         project_name: Optional[str] = None,
-    ) -> List[RoleAssignment]:
+    ) -> List[Role]:
         """Fetches all role assignments for a team.
 
         Args:
@@ -2213,8 +2207,8 @@ class BaseZenStore(ABC):
 
     @abstractmethod
     def get_pipeline_run(
-        self, pipeline: PipelineView, run_name: str
-    ) -> Optional[PipelineRunView]:
+        self, pipeline: PipelineModel, run_name: str
+    ) -> Optional[PipelineRunModel]:
         """Gets a specific run for the given pipeline.
 
         Args:
@@ -2225,10 +2219,12 @@ class BaseZenStore(ABC):
             The pipeline run with the given name.
         """
 
+    # TODO: [ALEX] add filtering param(s)
+    # TODO: Consider changing to list_runs...
     @abstractmethod
     def get_pipeline_runs(
-        self, pipeline: PipelineView
-    ) -> Dict[str, PipelineRunView]:
+        self, pipeline: PipelineModel
+    ) -> Dict[str, PipelineRunModel]:
         """Gets all runs for the given pipeline.
 
         Args:
@@ -2272,8 +2268,8 @@ class BaseZenStore(ABC):
 
     @abstractmethod
     def get_pipeline_run_steps(
-        self, pipeline_run: PipelineRunView
-    ) -> Dict[str, StepView]:
+        self, pipeline_run: PipelineRunModel
+    ) -> Dict[str, StepModel]:
         """Gets all steps for the given pipeline run.
 
         Args:
@@ -2284,7 +2280,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def get_step_status(self, step: StepView) -> ExecutionStatus:
+    def get_step_status(self, step: StepModel) -> ExecutionStatus:
         """Gets the execution status of a single step.
 
         Args:
@@ -2295,7 +2291,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def get_producer_step_from_artifact(self, artifact_id: int) -> StepView:
+    def get_producer_step_from_artifact(self, artifact_id: int) -> StepModel:
         """Returns original StepView from an ArtifactView.
 
         Args:
@@ -2418,7 +2414,7 @@ class BaseZenStore(ABC):
     def create_default_user(self) -> None:
         """Creates a default user."""
         try:
-            self.get_user(user_name=DEFAULT_USERNAME)
+            self.get_user(DEFAULT_USERNAME)
         except KeyError:
             # Use private interface and send custom tracking event
             self._track_event(AnalyticsEvent.CREATED_DEFAULT_USER)
