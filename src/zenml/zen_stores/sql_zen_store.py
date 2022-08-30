@@ -63,11 +63,13 @@ from zenml.zen_stores.schemas.schemas import (
     CodeRepositorySchema,
     FlavorSchema,
     PipelineRunSchema,
+    PipelineSchema,
     ProjectSchema,
     RoleSchema,
     StackComponentSchema,
     StackCompositionSchema,
     StackSchema,
+    StepSchema,
     TeamAssignmentSchema,
     TeamRoleAssignmentSchema,
     TeamSchema,
@@ -1189,6 +1191,514 @@ class SqlZenStore(BaseZenStore):
             session.delete(existing_repository)
             session.commit()
 
+    #  .----------.
+    # | PIPELINES |
+    # '-----------'
+
+    def _list_pipelines(self, project_name: str) -> List[PipelineModel]:
+        """List all pipelines in the project.
+
+        Args:
+            project_name: Name of the project.
+
+        Returns:
+            A list of pipelines.
+
+        Raises:
+            KeyError: if the project does not exist.
+        """
+        with Session(self.engine) as session:
+            # Check if project with the given name exists
+            existing_project = session.exec(
+                select(ProjectSchema).where(ProjectSchema.name == project_name)
+            ).first()
+            if existing_project is None:
+                raise KeyError(f"Unable to list pipelines in project {project_name}: No project with this name found.")
+
+            # Get all pipelines in the project
+            pipelines = session.exec(
+                select(PipelineSchema)
+                .where(PipelineSchema.project_id == existing_project.id)
+            ).all()
+
+        return [pipeline.to_model() for pipeline in pipelines]
+
+    def _create_pipeline(
+        self, project_name: str, pipeline: PipelineModel
+    ) -> PipelineModel:
+        """Creates a new pipeline in a project.
+
+        Args:
+            project_name: Name of the project to create the pipeline in.
+            pipeline: The pipeline to create.
+
+        Returns:
+            The newly created pipeline.
+
+        Raises:
+            KeyError: if the project does not exist.
+            EntityExistsError: If an identical pipeline already exists.
+        """
+        with Session(self.engine) as session:
+            # Check if project with the given name exists
+            existing_project = session.exec(
+                select(ProjectSchema).where(ProjectSchema.name == project_name)
+            ).first()
+            if existing_project is None:
+                raise KeyError(f"Unable to create pipeline in project {project_name}: No project with this name found.")
+
+            # Check if pipeline with the given name already exists
+            existing_pipeline = session.exec(
+                select(PipelineSchema).where(
+                    PipelineSchema.name == pipeline.name
+                )
+            ).first()
+            if existing_pipeline is not None:
+                raise EntityExistsError(
+                    f"Unable to create pipeline in project {project_name}: A pipeline with this name already exists."
+                )
+
+            # Create the pipeline
+            new_pipeline = PipelineSchema.from_model(pipeline)
+            session.add(new_pipeline)
+            session.commit()
+
+            new_pipeline = session.exec(
+                select(PipelineSchema).where(
+                    PipelineSchema.name == pipeline.name
+                )
+            ).first()
+            return new_pipeline.to_model()
+
+    def get_pipeline(self, pipeline_id: str) -> Optional[PipelineModel]:
+        """Returns a pipeline for the given name.
+
+        Args:
+            pipeline_id: ID of the pipeline.
+
+        Returns:
+            PipelineModel if found, None otherwise.
+        """
+        with Session(self.engine) as session:
+            # Check if pipeline with the given ID exists
+            existing_pipeline = session.exec(
+                select(PipelineSchema).where(
+                    PipelineSchema.id == pipeline_id
+                )
+            ).first()
+            if existing_pipeline is None:
+                return None
+
+            return existing_pipeline.to_model()
+
+    def _update_pipeline(
+        self, pipeline_id: str, pipeline: PipelineModel
+    ) -> PipelineModel:
+        """Updates a pipeline.
+
+        Args:
+            pipeline_id: The ID of the pipeline to update.
+            pipeline: The pipeline to use for the update.
+
+        Returns:
+            The updated pipeline.
+
+        Raises:
+            KeyError: if the pipeline doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if pipeline with the given ID exists
+            existing_pipeline = session.exec(
+                select(PipelineSchema).where(
+                    PipelineSchema.id == pipeline_id
+                )
+            ).first()
+            if existing_pipeline is None:
+                raise KeyError(
+                    f"Unable to update pipeline with ID {pipeline_id}: No pipeline with this ID found."
+                )
+
+            # Update the pipeline
+            existing_pipeline.name = pipeline.name
+            existing_pipeline.docstring = pipeline.docstring
+            existing_pipeline.configuration = pipeline.configuration
+            existing_pipeline.git_sha = pipeline.git_sha
+            
+            session.add(existing_pipeline)
+            session.commit()
+
+    def _delete_pipeline(self, pipeline_id: str) -> None:
+        """Deletes a pipeline.
+
+        Args:
+            pipeline_id: The ID of the pipeline to delete.
+
+        Raises:
+            KeyError: if the pipeline doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if pipeline with the given ID exists
+            existing_pipeline = session.exec(
+                select(PipelineSchema).where(
+                    PipelineSchema.id == pipeline_id
+                )
+            ).first()
+            if existing_pipeline is None:
+                raise KeyError(
+                    f"Unable to delete pipeline with ID {pipeline_id}: No pipeline with this ID found."
+                )
+
+            session.delete(existing_pipeline)  # TODO: cascade? what about runs?
+            session.commit()
+
+    def _get_pipeline_configuration(self, pipeline_id: str) -> Dict[Any, Any]:
+        """Gets the pipeline configuration.
+
+        Args:
+            pipeline_id: The ID of the pipeline to get.
+
+        Returns:
+            The pipeline configuration.
+
+        Raises:
+            KeyError: if the pipeline doesn't exist.
+        """
+        pass  # TODO 
+
+    def _list_steps(self, pipeline_id: str) -> List[StepModel]:
+        """List all steps.
+
+        Args:
+            pipeline_id: The ID of the pipeline to list steps for.
+
+        Returns:
+            A list of all steps.
+        """
+        pass  # TODO
+
+    #  .-----.
+    # | RUNS |
+    # '------'
+
+    def _get_pipeline_runs(self, pipeline_id: str) -> List[PipelineRunModel]:
+        """Gets all pipeline runs in a pipeline.
+
+        Args:
+            pipeline_id: The ID of the pipeline to get.
+
+        Returns:
+            A list of all pipeline runs in the pipeline.
+
+        Raises:
+            KeyError: if the pipeline doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if pipeline with the given ID exists
+            existing_pipeline = session.exec(
+                select(PipelineSchema).where(
+                    PipelineSchema.id == pipeline_id
+                )
+            ).first()
+            if existing_pipeline is None:
+                raise KeyError(
+                    f"Unable to get pipeline runs in pipeline with ID {pipeline_id}: No pipeline with this ID found."
+                )
+
+            # Get all pipeline runs in the pipeline
+            pipeline_runs = session.exec(
+                select(PipelineRunSchema)
+                .where(PipelineRunSchema.pipeline_id == existing_pipeline.id)
+            ).all()
+
+        return [pipeline_run.to_model() for pipeline_run in pipeline_runs]
+
+    def _create_pipeline_run(
+        self, pipeline_id: str, pipeline_run: PipelineRunModel
+    ) -> PipelineRunModel:
+        """Creates a pipeline run.
+
+        Args:
+            pipeline_id: The ID of the pipeline to create the run in.
+            pipeline_run: The pipeline run to create.
+
+        Returns:
+            The created pipeline run.
+
+        Raises:
+            KeyError: if the pipeline doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if pipeline with the given ID exists
+            existing_pipeline = session.exec(
+                select(PipelineSchema).where(
+                    PipelineSchema.id == pipeline_id
+                )
+            ).first()
+            if existing_pipeline is None:
+                raise KeyError(
+                    f"Unable to create pipeline run in pipeline with ID {pipeline_id}: No pipeline with this ID found."
+                )
+
+            # Create the pipeline run
+            new_pipeline_run = PipelineRunSchema.from_model(pipeline_run)
+            session.add(new_pipeline_run)
+            session.commit()
+
+            new_pipeline_run = session.exec(
+                select(PipelineRunSchema).where(
+                    PipelineRunSchema.name == pipeline_run.name
+                )
+            ).first()
+            return new_pipeline_run.to_model()
+
+    def _list_pipeline_runs(
+        self,
+        project_name: Optional[str] = None,
+        stack_id: Optional[str] = None,
+        pipeline_id: Optional[str] = None,
+        trigger_id: Optional[str] = None,
+    ) -> List[PipelineRunModel]:
+        """Gets all pipeline runs in a project.
+
+        Args:
+            project_name: Name of the project to get.
+            stack_id: ID of the stack to get.
+            pipeline_id: ID of the pipeline to get.
+            trigger_id: ID of the trigger to get.
+
+        Returns:
+            A list of all pipeline runs in the project.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
+        # TODO: remove? Seems redundant with get_pipeline_runs()
+
+    def _get_run(self, run_id: str) -> PipelineRunModel:
+        """Gets a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            The pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if pipeline run with the given ID exists
+            existing_pipeline_run = session.exec(
+                select(PipelineRunSchema).where(
+                    PipelineRunSchema.id == run_id
+                )
+            ).first()
+            if existing_pipeline_run is None:
+                raise KeyError(
+                    f"Unable to get pipeline run with ID {run_id}: No pipeline run with this ID found."
+                )
+
+            # Get the pipeline run
+            pipeline_run = existing_pipeline_run.to_model()
+
+        return pipeline_run
+
+    def _update_run(
+        self, run_id: str, run: PipelineRunModel
+    ) -> PipelineRunModel:
+        """Updates a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to update.
+            run: The pipeline run to use for the update.
+
+        Returns:
+            The updated pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if pipeline run with the given ID exists
+            existing_pipeline_run = session.exec(
+                select(PipelineRunSchema).where(
+                    PipelineRunSchema.id == run_id
+                )
+            ).first()
+            if existing_pipeline_run is None:
+                raise KeyError(
+                    f"Unable to update pipeline run with ID {run_id}: No pipeline run with this ID found."
+                )
+
+            # Update the pipeline run
+            existing_pipeline_run.name = run.name
+            existing_pipeline_run.runtime_configuration = run.runtime_configuration
+            existing_pipeline_run.git_sha = run.git_sha
+            existing_pipeline_run.zenml_version = run.zenml_version
+
+            session.add(existing_pipeline_run)
+            session.commit()
+        
+        return existing_pipeline_run.to_model()
+
+    def _delete_run(self, run_id: str) -> None:
+        """Deletes a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to delete.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if pipeline run with the given ID exists
+            existing_pipeline_run = session.exec(
+                select(PipelineRunSchema).where(
+                    PipelineRunSchema.id == run_id
+                )
+            ).first()
+            if existing_pipeline_run is None:
+                raise KeyError(
+                    f"Unable to delete pipeline run with ID {run_id}: No pipeline run with this ID found."
+                )
+
+            # Delete the pipeline run
+            session.delete(existing_pipeline_run)
+            session.commit()
+
+    def _get_run_dag(self, run_id: str) -> str:
+        """Gets the DAG for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            The DAG for the pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        pass  # TODO
+
+    def _get_run_runtime_configuration(self, run_id: str) -> Dict:
+        """Gets the runtime configuration for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            The runtime configuration for the pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        run = self._get_run(run_id)
+        return run.runtime_configuration
+
+    def _get_run_component_side_effects(
+        self,
+        run_id: str,
+        component_id: Optional[str] = None,
+        component_type: Optional[StackComponentType] = None,
+    ) -> Dict:
+        """Gets the side effects for a component in a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+            component_id: The ID of the component to get.
+
+        Returns:
+            The side effects for the component in the pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        pass  # TODO
+
+    #  .------.
+    # | STEPS |
+    # '-------'
+
+    def _list_run_steps(self, run_id: str) -> List[StepModel]:
+        """Gets all steps in a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            A list of all steps in the pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if pipeline run with the given ID exists
+            existing_pipeline_run = session.exec(
+                select(PipelineRunSchema).where(
+                    PipelineRunSchema.id == run_id
+                )
+            ).first()
+            if existing_pipeline_run is None:
+                raise KeyError(
+                    f"Unable to get steps for pipeline run with ID {run_id}: No pipeline run with this ID found."
+                )
+
+            # Get the steps
+            steps = session.exec(
+                select(StepSchema).where(
+                    StepSchema.pipeline_run_id == run_id
+                )
+            )
+            return [step.to_model() for step in steps]
+
+    def _get_run_step(self, step_id: str) -> StepModel:
+        """Get a step by ID.
+
+        Args:
+            step_id: The ID of the step to get.
+
+        Returns:
+            The step.
+
+        Raises:
+            KeyError: if the step doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if step with the given ID exists
+            existing_step = session.exec(
+                select(StepSchema).where(
+                    StepSchema.id == step_id
+                )
+            ).first()
+            if existing_step is None:
+                raise KeyError(
+                    f"Unable to get step with ID {step_id}: No step with this ID found."
+                )
+            return existing_step.to_model()
+
+    def _get_run_step_outputs(self, step_id: str) -> Dict[str, ArtifactView]:
+        """Get the outputs of a step.
+
+        Args:
+            step_id: The ID of the step to get outputs for.
+
+        Returns:
+            The outputs of the step.
+        """
+        pass # TODO: currently not saved in DB
+
+    def _get_run_step_inputs(self, step_id: str) -> Dict[str, ArtifactView]:
+        """Get the inputs of a step.
+
+        Args:
+            step_id: The ID of the step to get inputs for.
+
+        Returns:
+            The inputs of the step.
+        """
+        pass  # TODO: currently not saved in DB
+
+
     # LEGACY CODE FROM THE PREVIOUS VERSION OF BASEZENSTORE
 
     @property
@@ -2168,7 +2678,7 @@ class SqlZenStore(BaseZenStore):
                     )
 
                 run = session.exec(statement).one()
-                return run.to_pipeline_run_wrapper()
+                return run.to_model()
             except NoResultFound as error:
                 raise KeyError from error
 
@@ -2199,7 +2709,7 @@ class SqlZenStore(BaseZenStore):
                         PipelineRunSchema.project_name == project_name
                     )
                 return [
-                    run.to_pipeline_run_wrapper()
+                    run.to_model()
                     for run in session.exec(statement).all()
                 ]
             except NoResultFound as error:
@@ -2292,7 +2802,7 @@ class SqlZenStore(BaseZenStore):
                     "unique."
                 )
 
-            sql_run = PipelineRunSchema.from_pipeline_run_wrapper(pipeline_run)
+            sql_run = PipelineRunSchema.from_model(pipeline_run)
             session.add(sql_run)
             session.commit()
 
@@ -2440,100 +2950,12 @@ class SqlZenStore(BaseZenStore):
 
     # STUB METHODS
 
-    def _create_pipeline(self, project_name: str, pipeline: PipelineModel):
-        pass
-
-    def _create_pipeline_run(
-        self, pipeline_id: str, pipeline_run: PipelineRunModel
-    ):
-        pass
-
-    def _delete_pipeline(self, pipeline_id: str):
-        pass
-
-    def _delete_run(self, run_id: str):
-        pass
-
     def _get_default_stack(self, project_name: str) -> StackModel:
-        pass
-
-    def _get_pipeline_configuration(self, pipeline_id: str) -> Dict[Any, Any]:
-        pass
-
-    def get_pipeline_runs(self, pipeline_id: str) -> List[PipelineRunModel]:
-        pass
-
-    def _get_pipeline_runs(self, pipeline_id: str) -> List[PipelineRunModel]:
-        pass
-
-    def get_run(self, run_id: str) -> PipelineRunModel:
-        pass
-
-    def _get_run(self, run_id: str) -> PipelineRunModel:
-        pass
-
-    def _get_run_component_side_effects(
-        self,
-        run_id: str,
-        component_id: Optional[str] = None,
-        component_type: Optional[StackComponentType] = None,
-    ) -> Dict:
-        pass
-
-    def _get_run_dag(self, run_id: str) -> str:
-        pass
-
-    def _get_run_runtime_configuration(self, run_id: str) -> Dict:
-        pass
-
-    def _get_step(self, step_id: str) -> StepModel:
-        pass
-
-    def _get_step_inputs(self, step_id: str) -> Dict[str, ArtifactView]:
-        pass
-
-    def _get_step_outputs(self, step_id: str) -> Dict[str, ArtifactView]:
-        pass
-
-    def _list_pipeline_runs(
-        self,
-        project_name: Optional[str] = None,
-        stack_id: Optional[str] = None,
-        pipeline_id: Optional[str] = None,
-        trigger_id: Optional[str] = None,
-    ) -> List[PipelineRunModel]:
-        pass
-
-    def _list_pipelines(self, project_name: str) -> List[PipelineModel]:
-        pass
-
-    def list_run_steps(self, run_id: str) -> List[StepModel]:
-        pass
-
-    def _list_run_steps(self, run_id: str) -> List[StepModel]:
-        pass
-
-    def _list_steps(self, pipeline_id: str) -> List[StepModel]:
         pass
 
     def _set_default_stack(
         self, project_name: str, stack_id: str
     ) -> StackModel:
-        pass
-
-    def _update_pipeline(
-        self, pipeline_id: str, pipeline: PipelineModel
-    ) -> PipelineModel:
-        pass
-
-    def _update_run(
-        self, run_id: str, run: PipelineRunModel
-    ) -> PipelineRunModel:
-        pass
-
-    def connect_project_repository(
-        self, project_name: str, repository: CodeRepositoryModel
-    ) -> CodeRepositoryModel:
         pass
 
     def stacks_empty(self) -> bool:

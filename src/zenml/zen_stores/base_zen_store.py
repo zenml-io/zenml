@@ -1091,7 +1091,6 @@ class BaseZenStore(ABC):
             KeyError: if the project doesn't exist.
         """
 
-    @abstractmethod
     def connect_project_repository(
         self, project_name: str, repository: CodeRepositoryModel
     ) -> CodeRepositoryModel:
@@ -1285,7 +1284,8 @@ class BaseZenStore(ABC):
             The newly created pipeline.
 
         Raises:
-            PipelineExistsError: If an identical pipeline already exists.
+            KeyError: if the project does not exist.
+            EntityExistsError: If an identical pipeline already exists.
         """
         self._track_event(AnalyticsEvent.CREATE_PIPELINE)
         return self._create_pipeline(project_name, pipeline)
@@ -1304,7 +1304,8 @@ class BaseZenStore(ABC):
             The newly created pipeline.
 
         Raises:
-            PipelineExistsError: If an identical pipeline already exists.
+            KeyError: if the project does not exist.
+            EntityExistsError: If an identical pipeline already exists.
         """
 
     @abstractmethod
@@ -1376,6 +1377,65 @@ class BaseZenStore(ABC):
             KeyError: if the pipeline doesn't exist.
         """
 
+    def get_pipeline_configuration(self, pipeline_id: str) -> Dict[Any, Any]:
+        """Gets the pipeline configuration.
+
+        Args:
+            pipeline_id: The ID of the pipeline to get.
+
+        Returns:
+            The pipeline configuration.
+
+        Raises:
+            KeyError: if the pipeline doesn't exist.
+        """
+        return self._get_pipeline_configuration(pipeline_id)
+
+    @abstractmethod
+    def _get_pipeline_configuration(self, pipeline_id: str) -> Dict[Any, Any]:
+        """Gets the pipeline configuration.
+
+        Args:
+            pipeline_id: The ID of the pipeline to get.
+
+        Returns:
+            The pipeline configuration.
+
+        Raises:
+            KeyError: if the pipeline doesn't exist.
+        """
+
+    # TODO: change into an abstract method
+    # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
+    # TODO: Discuss whether we even need this, given that the endpoint is on
+    # pipeline RUNs
+    # TODO: [ALEX] add filtering param(s)
+    def list_steps(self, pipeline_id: str) -> List[StepModel]:
+        """List all steps for a specific pipeline.
+
+        Args:
+            pipeline_id: The id of the pipeline to get steps for.
+
+        Returns:
+            A list of all steps for the pipeline.
+        """
+        return self._list_steps(pipeline_id)
+
+    @abstractmethod
+    def _list_steps(self, pipeline_id: str) -> List[StepModel]:
+        """List all steps.
+
+        Args:
+            pipeline_id: The ID of the pipeline to list steps for.
+
+        Returns:
+            A list of all steps.
+        """
+
+    #  .-----.
+    # | RUNS |
+    # '------'
+
     def get_pipeline_runs(self, pipeline_id: str) -> List[PipelineRunModel]:
         """Gets all pipeline runs in a pipeline.
 
@@ -1437,38 +1497,6 @@ class BaseZenStore(ABC):
         Raises:
             KeyError: if the pipeline doesn't exist.
         """
-
-    def get_pipeline_configuration(self, pipeline_id: str) -> Dict[Any, Any]:
-        """Gets the pipeline configuration.
-
-        Args:
-            pipeline_id: The ID of the pipeline to get.
-
-        Returns:
-            The pipeline configuration.
-
-        Raises:
-            KeyError: if the pipeline doesn't exist.
-        """
-        return self._get_pipeline_configuration(pipeline_id)
-
-    @abstractmethod
-    def _get_pipeline_configuration(self, pipeline_id: str) -> Dict[Any, Any]:
-        """Gets the pipeline configuration.
-
-        Args:
-            pipeline_id: The ID of the pipeline to get.
-
-        Returns:
-            The pipeline configuration.
-
-        Raises:
-            KeyError: if the pipeline doesn't exist.
-        """
-
-    #  .-----.
-    # | RUNS |
-    # '------'
 
     # TODO: [ALEX] add filtering param(s)
     def list_runs(
@@ -1637,36 +1665,6 @@ class BaseZenStore(ABC):
             KeyError: if the pipeline run doesn't exist.
         """
 
-    # TODO: [ALEX] add filtering param(s)
-    def list_run_steps(self, run_id: str) -> List[StepModel]:
-        """Gets all steps in a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get.
-
-        Returns:
-            A list of all steps in the pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-        return self._list_run_steps(run_id)
-
-    # TODO: [ALEX] add filtering param(s)
-    @abstractmethod
-    def _list_run_steps(self, run_id: str) -> List[StepModel]:
-        """Gets all steps in a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get.
-
-        Returns:
-            A list of all steps in the pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-
     def get_run_runtime_configuration(self, run_id: str) -> Dict:
         """Gets the runtime configuration for a pipeline run.
 
@@ -1742,8 +1740,38 @@ class BaseZenStore(ABC):
     # | STEPS |
     # '-------'
 
+    # TODO: [ALEX] add filtering param(s)
+    def list_run_steps(self, run_id: str) -> List[StepModel]:
+        """Gets all steps in a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            A list of all steps in the pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+        return self._list_run_steps(run_id)
+
+    # TODO: [ALEX] add filtering param(s)
+    @abstractmethod
+    def _list_run_steps(self, run_id: str) -> List[StepModel]:
+        """Gets all steps in a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to get.
+
+        Returns:
+            A list of all steps in the pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
     # TODO: change into an abstract method
-    def get_step(self, step_id: str) -> StepModel:
+    def get_run_step(self, step_id: str) -> StepModel:
         """Get a step by id.
 
         Args:
@@ -1752,10 +1780,10 @@ class BaseZenStore(ABC):
         Returns:
             The step with the given id.
         """
-        return self._get_step(step_id)
+        return self._get_run_step(step_id)
 
     @abstractmethod
-    def _get_step(self, step_id: str) -> StepModel:
+    def _get_run_step(self, step_id: str) -> StepModel:
         """Get a step by ID.
 
         Args:
@@ -1770,7 +1798,7 @@ class BaseZenStore(ABC):
 
     # TODO: change into an abstract method
     # TODO: use the correct return value + also amend the endpoint as well
-    def get_step_outputs(self, step_id: str) -> Dict[str, ArtifactView]:
+    def get_run_step_outputs(self, step_id: str) -> Dict[str, ArtifactView]:
         """Get a list of outputs for a specific step.
 
         Args:
@@ -1779,10 +1807,10 @@ class BaseZenStore(ABC):
         Returns:
             A list of Dicts mapping artifact names to the output artifacts for the step.
         """
-        return self._get_step_outputs(step_id)
+        return self._get_run_step_outputs(step_id)
 
     @abstractmethod
-    def _get_step_outputs(self, step_id: str) -> Dict[str, ArtifactView]:
+    def _get_run_step_outputs(self, step_id: str) -> Dict[str, ArtifactView]:
         """Get the outputs of a step.
 
         Args:
@@ -1794,7 +1822,7 @@ class BaseZenStore(ABC):
 
     # TODO: change into an abstract method
     # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
-    def get_step_inputs(self, step_id: str) -> Dict[str, ArtifactView]:
+    def get_run_step_inputs(self, step_id: str) -> Dict[str, ArtifactView]:
         """Get a list of inputs for a specific step.
 
         Args:
@@ -1803,10 +1831,10 @@ class BaseZenStore(ABC):
         Returns:
             A list of Dicts mapping artifact names to the input artifacts for the step.
         """
-        return self._get_step_inputs(step_id)
+        return self._get_run_step_inputs(step_id)
 
     @abstractmethod
-    def _get_step_inputs(self, step_id: str) -> Dict[str, ArtifactView]:
+    def _get_run_step_inputs(self, step_id: str) -> Dict[str, ArtifactView]:
         """Get the inputs of a step.
 
         Args:
@@ -1814,33 +1842,6 @@ class BaseZenStore(ABC):
 
         Returns:
             The inputs of the step.
-        """
-
-    # TODO: change into an abstract method
-    # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
-    # TODO: Discuss whether we even need this, given that the endpoint is on
-    # pipeline RUNs
-    # TODO: [ALEX] add filtering param(s)
-    def list_steps(self, pipeline_id: str) -> List[StepModel]:
-        """List all steps for a specific pipeline.
-
-        Args:
-            pipeline_id: The id of the pipeline to get steps for.
-
-        Returns:
-            A list of all steps for the pipeline.
-        """
-        return self._list_steps(pipeline_id)
-
-    @abstractmethod
-    def _list_steps(self, pipeline_id: str) -> List[StepModel]:
-        """List all steps.
-
-        Args:
-            pipeline_id: The ID of the pipeline to list steps for.
-
-        Returns:
-            A list of all steps.
         """
 
     # PROPERTIES

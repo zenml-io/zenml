@@ -61,6 +61,13 @@ def get_git_sha(clean: bool = True) -> Optional[str]:
 
 
 class StepModel(BaseModel):
+    """Step of a pipeline (abstract)."""
+    id: Optional[UUID]
+    name: str
+    source: str
+
+
+class StepRunModel(BaseModel):
     """The representation of an actualized, step that is part of a pipeline run.
 
     Attributes:
@@ -70,9 +77,9 @@ class StepModel(BaseModel):
         status: Status of the step within its run
     """
 
+    id: Optional[UUID]
     name: str
     docstring: Optional[str]
-    source: str
     status: ExecutionStatus
 
     @classmethod
@@ -100,6 +107,7 @@ class PipelineModel(BaseModel):
         steps: List of steps in this pipeline
     """
 
+    id: Optional[UUID]
     name: str
     docstring: Optional[str]
     steps: List[StepModel]
@@ -140,6 +148,7 @@ class PipelineRunModel(BaseModel):
         project_name: Name of the project that this pipeline was run in.
     """
 
+    id: Optional[UUID]
     name: str
     zenml_version: str = zenml.__version__
     git_sha: Optional[str] = Field(default_factory=get_git_sha)

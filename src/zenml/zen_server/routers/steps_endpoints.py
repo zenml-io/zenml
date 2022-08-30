@@ -54,7 +54,7 @@ async def get_step(step_id: str) -> StepModel:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.get_step(step_id)
+        return zen_store.get_run_step(step_id)
     except KeyError as e:
         raise not_found(error_detail(e)) from e
     except NotAuthorizedError as error:
@@ -85,7 +85,7 @@ async def get_step_outputs(step_id: str) -> List[Dict]:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.get_step_outputs(step_id)
+        return zen_store.get_run_step_outputs(step_id)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:

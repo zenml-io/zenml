@@ -17,11 +17,12 @@ from datetime import datetime
 from typing import List, Dict
 from uuid import UUID, uuid4
 
+from sqlmodel import Session, select
 from sqlmodel import Field, Relationship, SQLModel
 
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.models import ComponentModel, StackModel
-from zenml.models.pipeline_models import PipelineRunModel
+from zenml.models.pipeline_models import PipelineModel, PipelineRunModel, StepModel, StepRunModel
 
 
 def _sqlmodel_uuid() -> UUID:
@@ -273,10 +274,49 @@ class PipelineSchema(SQLModel, table=True):
     repository_id: UUID = Field(foreign_key="repositoryschema.id")
     created_by: UUID = Field(foreign_key="userschema.id")
 
+    docstring: str  # TODO: how to get this?
     configuration: str
     git_sha: str
 
     created_at: datetime = Field(default_factory=datetime.now)
+
+    @classmethod
+    def from_model(cls, model: PipelineModel) -> "PipelineSchema":
+        pass  # TODO
+
+    def to_model(self) -> "PipelineModel":
+        with Session(self.engine) as session:
+            steps = session.exec(
+                select(StepSchema)
+                .where(StepSchema.pipeline_id == self.id)
+            ).all()
+
+        return PipelineModel(
+            id=self.id,
+            name=self.name,
+            docstring=self.docstring,
+            steps=[step.to_model() for step in steps],
+        )
+
+
+class StepSchema(SQLModel, table=True):
+    """SQL Model for steps of a pipeline."""
+
+    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    name: str
+    pipeline_id: UUID = Field(foreign_key="pipelineschema.id")
+    source: str  # TODO: how to get this?
+
+    @classmethod
+    def from_model(cls, model: StepModel) -> "StepSchema":
+        pass  # TODO
+
+    def to_model(self) -> "StepModel":
+        return StepModel(
+            id=self.id,
+            name=self.name,
+            source=self.source,
+        )
 
 
 class PipelineRunSchema(SQLModel, table=True):
@@ -299,25 +339,10 @@ class PipelineRunSchema(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.now)
 
     @classmethod
-    def from_pipeline_run_wrapper(
-        cls, wrapper: PipelineRunModel
-    ) -> "PipelineRunSchema":
-        """Creates a PipelineRunTable from a PipelineRunModel.
-
-        Args:
-            wrapper: The PipelineRunModel to create the PipelineRunTable from.
-
-        Returns:
-            A PipelineRunTable.
-        """
+    def from_model(cls, model: PipelineRunModel) -> "PipelineRunSchema":
         pass  # TODO
 
-    def to_pipeline_run_wrapper(self) -> PipelineRunModel:
-        """Creates a PipelineRunModel from a PipelineRunTable.
-
-        Returns:
-            A PipelineRunModel.
-        """
+    def to_model(self) -> PipelineRunModel:
         pass  # TODO
 
 
@@ -331,9 +356,18 @@ class PipelineRunStepSchema(SQLModel, table=True):
     pipeline_run_id: UUID = Field(foreign_key="pipelinerunschema.id")
     # created_by - redundant since run has this
 
+    status: ExecutionStatus
+    docstring: str
     runtime_configuration: str
 
     # created_at - redundant since run has this
+
+    @classmethod
+    def from_model(cls, model: StepRunModel) -> "PipelineRunStepSchema":
+        pass  # TODO
+
+    def to_model(self) -> "StepRunModel":
+        pass  # TODO
 
 
 # MLMD
