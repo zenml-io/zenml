@@ -2116,6 +2116,8 @@ class BaseZenStore(ABC):
             The pipeline run with the given name.
         """
 
+    # TODO: [ALEX] add filtering param(s)
+    # TODO: Consider changing to list_runs...
     @abstractmethod
     def get_pipeline_runs(
         self, pipeline: PipelineModel
@@ -2309,7 +2311,7 @@ class BaseZenStore(ABC):
     def create_default_user(self) -> None:
         """Creates a default user."""
         try:
-            self.get_user(user_name=DEFAULT_USERNAME)
+            self.get_user(DEFAULT_USERNAME)
         except KeyError:
             # Use private interface and send custom tracking event
             self._track_event(AnalyticsEvent.CREATED_DEFAULT_USER)

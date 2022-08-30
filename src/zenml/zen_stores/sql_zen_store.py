@@ -44,6 +44,7 @@ from zenml.models import (
     User,
 )
 from zenml.models.code_models import CodeRepositoryModel
+from zenml.models.pipeline_models import PipelineModel, StepModel
 from zenml.post_execution.artifact import ArtifactView
 from zenml.post_execution.pipeline import PipelineView
 from zenml.post_execution.pipeline_run import PipelineRunView
@@ -2314,3 +2315,104 @@ class SqlZenStore(BaseZenStore):
             for result in session.exec(query).all():
                 session.delete(result)
             session.commit()
+
+    # STUB METHODS
+
+    def _create_pipeline(self, project_name: str, pipeline: PipelineModel):
+        pass
+
+    def _create_pipeline_run(
+        self, pipeline_id: str, pipeline_run: PipelineRunModel
+    ):
+        pass
+
+    def _delete_pipeline(self, pipeline_id: str):
+        pass
+
+    def _delete_run(self, run_id: str):
+        pass
+
+    def _get_default_stack(self, project_name: str) -> StackModel:
+        pass
+
+    def _get_pipeline_configuration(self, pipeline_id: str) -> Dict[Any, Any]:
+        pass
+
+    def get_pipeline_runs(self, pipeline_id: str) -> List[PipelineRunModel]:
+        pass
+
+    def _get_pipeline_runs(self, pipeline_id: str) -> List[PipelineRunModel]:
+        pass
+
+    def get_run(self, run_id: str) -> PipelineRunModel:
+        pass
+
+    def _get_run(self, run_id: str) -> PipelineRunModel:
+        pass
+
+    def _get_run_component_side_effects(
+        self,
+        run_id: str,
+        component_id: Optional[str] = None,
+        component_type: Optional[StackComponentType] = None,
+    ) -> Dict:
+        pass
+
+    def _get_run_dag(self, run_id: str) -> str:
+        pass
+
+    def _get_run_runtime_configuration(self, run_id: str) -> Dict:
+        pass
+
+    def _get_step(self, step_id: str) -> StepModel:
+        pass
+
+    def _get_step_inputs(self, step_id: str) -> Dict[str, ArtifactView]:
+        pass
+
+    def _get_step_outputs(self, step_id: str) -> Dict[str, ArtifactView]:
+        pass
+
+    def _list_pipeline_runs(
+        self,
+        project_name: Optional[str] = None,
+        stack_id: Optional[str] = None,
+        pipeline_id: Optional[str] = None,
+        trigger_id: Optional[str] = None,
+    ) -> List[PipelineRunModel]:
+        pass
+
+    def _list_pipelines(self, project_name: str) -> List[PipelineModel]:
+        pass
+
+    def list_run_steps(self, run_id: str) -> List[StepModel]:
+        pass
+
+    def _list_run_steps(self, run_id: str) -> List[StepModel]:
+        pass
+
+    def _list_steps(self, pipeline_id: str) -> List[StepModel]:
+        pass
+
+    def _set_default_stack(
+        self, project_name: str, stack_id: str
+    ) -> StackModel:
+        pass
+
+    def _update_pipeline(
+        self, pipeline_id: str, pipeline: PipelineModel
+    ) -> PipelineModel:
+        pass
+
+    def _update_run(
+        self, run_id: str, run: PipelineRunModel
+    ) -> PipelineRunModel:
+        pass
+
+    def connect_project_repository(
+        self, project_name: str, repository: CodeRepositoryModel
+    ) -> CodeRepositoryModel:
+        pass
+
+    def stacks_empty(self) -> bool:
+        pass
