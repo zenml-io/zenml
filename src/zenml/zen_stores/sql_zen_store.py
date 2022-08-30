@@ -48,6 +48,7 @@ from zenml.post_execution.artifact import ArtifactView
 from zenml.post_execution.pipeline import PipelineView
 from zenml.post_execution.pipeline_run import PipelineRunView
 from zenml.post_execution.step import StepView
+from zenml.stack.flavor_registry import flavor_registry
 from zenml.utils import io_utils
 from zenml.zen_stores.base_zen_store import (
     DEFAULT_PROJECT_NAME,
@@ -219,7 +220,7 @@ class SqlZenStore(BaseZenStore):
 
         return True
 
-    #  .--------.
+    # .--------.
     # | STACKS |
     # '--------'
 
@@ -269,17 +270,22 @@ class SqlZenStore(BaseZenStore):
             return None
 
     def _register_stack(self,
-                      stack_id: str,
-                      user: User,
-                      project: Project,
-                      stack: StackModel) -> StackModel:
+                        user: User,
+                        project: Project,
+                        stack: StackModel) -> StackModel:
         """Register a new stack.
 
         Args:
             stack: The stack to register.
+            user: The user that is registering this stack
+            project: The project within which that stack is registered
 
         Returns:
             The registered stack.
+
+        Raises:
+            StackExistsError: In case a stack with that name is already owned
+                              by this user on this project.
         """
         with Session(self.engine) as session:
             # Check if stack with the domain key (name, prj, owner) already
@@ -337,26 +343,20 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated stack.
-
-        Raises:
-            StackExistsError: If a stack of that domain key already exists
         """
         with Session(self.engine) as session:
             # Check if stack with the domain key (name, prj, owner) already
             #  exists
             existing_stack = session.exec(
                 select(StackSchema)
-                .where(StackSchema.name == stack.name)
-                .where(StackSchema.project_id == project.id)
-                .where(StackSchema.owner == user.id)
+                .where(StackSchema.id == stack_id)
             ).first()
             # TODO: verify if is_shared status needs to be checked here
-            if existing_stack is not None:
-                raise StackExistsError(
-                    f"Unable to register stack with name "
-                    f"'{stack.name}': Found "
-                    f"existing stack with this name. in the project for"
-                    f"this user."
+            if existing_stack is None:
+                raise KeyError(
+                    f"Unable to update stack with id "
+                    f"'{stack_id}': Found no"
+                    f"existing stack with this id."
                 )
 
             # TODO: validate the the composition of components is a valid stack
@@ -404,28 +404,6 @@ class SqlZenStore(BaseZenStore):
     # '------------------'
 
     # TODO: [ALEX] add filtering param(s)
-    def _list_stack_component_types(self) -> List[str]:
-        """List all stack component types.
-
-        Returns:
-            A list of all stack component types.
-        """
-        return StackComponentType.values()
-
-    def _list_stack_component_flavors_by_type(
-        self,
-        component_type: StackComponentType,
-    ) -> List[FlavorModel]:
-        """List all stack component flavors by type.
-
-        Args:
-            component_type: The stack component for which to get flavors.
-
-        Returns:
-            List of stack component flavors.
-        """
-        # TODO: implement this
-
     def _list_stack_components(self) -> List[ComponentModel]:
         """List all stack components.
 
@@ -492,6 +470,41 @@ class SqlZenStore(BaseZenStore):
             stack_id: The id of the stack to get side effects for.
         """
         # TODO: implement this
+    def _list_stack_component_types(self) -> List[str]:
+        """List all stack component types.
+
+        Returns:
+            A list of all stack component types.
+        """
+        # TODO: This does not belong in the Zen Store
+        return StackComponentType.values()
+
+    def _list_stack_component_flavors_by_type(
+        self,
+        component_type: StackComponentType,
+    ) -> List[FlavorModel]:
+        """List all stack component flavors by type.
+
+        Args:
+            component_type: The stack component for which to get flavors.
+
+        Returns:
+            List of stack component flavors.
+        """
+
+        # List all the flavors of the component type
+        zenml_flavors = [
+            f
+            for f in flavor_registry.get_flavors_by_type(
+                component_type=component_type
+            ).values()
+        ]
+
+        custom_flavors = self.get_flavors_by_type(
+            component_type=component_type
+        )
+
+        return zenml_flavors + custom_flavors
 
     #  .------.
     # | USERS |
@@ -1018,59 +1031,8 @@ class SqlZenStore(BaseZenStore):
             session.delete(existing_repository)
             session.commit()
 
-# OLD STUFF BELOW HERE #############################################################################################################################
 
-    @property
-    def stacks_empty(self) -> bool:
-        """Check if the zen store is empty.
-
-        Returns:
-            True if the zen store is empty, False otherwise.
-        """
-        with Session(self.engine) as session:
-            return session.exec(select(StackSchema)).first() is None
-
-    def get_stack_configuration(
-        self, name: str
-    ) -> Dict[StackComponentType, str]:
-        """Fetches a stack configuration by name.
-
-        Args:
-            name: The name of the stack to fetch.
-
-        Returns:
-            Dict[StackComponentType, str] for the requested stack name.
-
-        Raises:
-            KeyError: If no stack exists for the given name.
-        """
-        logger.debug("Fetching stack with name '%s'.", name)
-        # first check that the stack exists
-        with Session(self.engine) as session:
-            maybe_stack = session.exec(
-                select(StackSchema).where(StackSchema.name == name)
-            ).first()
-        if maybe_stack is None:
-            raise KeyError(
-                f"Unable to find stack with name '{name}'. Available names: "
-                f"{set(self.stack_names)}."
-            )
-        # then get all components assigned to that stack
-        with Session(self.engine) as session:
-            definitions_and_components = session.exec(
-                select(StackCompositionSchema, StackComponentSchema)
-                .where(
-                    StackCompositionSchema.component_id
-                    == StackComponentSchema.id
-                )
-                .where(StackCompositionSchema.stack_id == StackSchema.id)
-                .where(StackSchema.name == name)
-            )
-            params = {
-                component.type: component.name
-                for _, component in definitions_and_components
-            }
-        return {StackComponentType(typ): name for typ, name in params.items()}
+    # LEGACY CODE FROM THE PREVIOUS VERSION OF BASEZENSTORE
 
     @property
     def stack_configurations(self) -> Dict[str, Dict[StackComponentType, str]]:
@@ -1088,6 +1050,7 @@ class SqlZenStore(BaseZenStore):
             List of available stack component types.
         """
         # TODO: leave this to later in the process
+        # TODO: [ALEXEJ] should this live in the zenstore?
         return NotImplementedError
 
     @property
@@ -1101,6 +1064,7 @@ class SqlZenStore(BaseZenStore):
         # get the component for each type
         # return them as a list
         # TODO: leave this to later in the process
+        # TODO: [ALEXEJ] should this live in the zenstore? Is this a duplicate?
         return NotImplementedError
 
     def _register_stack_component(
@@ -1198,92 +1162,7 @@ class SqlZenStore(BaseZenStore):
         )
         return {component.type.value: component.flavor}
 
-    def _deregister_stack(self, name: str) -> None:
-        """Delete a stack from storage.
-
-        Args:
-            name: The name of the stack to be deleted.
-
-        Raises:
-            KeyError: If no stack exists for the given name.
-        """
-        with Session(self.engine) as session:
-            try:
-                stack = session.exec(
-                    select(StackSchema).where(StackSchema.name == name)
-                ).one()
-                session.delete(stack)
-            except NoResultFound as error:
-                raise KeyError from error
-            definitions = session.exec(
-                select(StackCompositionSchema)
-                .where(StackCompositionSchema.stack_id == StackSchema.id)
-                .where(StackSchema.name == name)
-            ).all()
-            for definition in definitions:
-                session.delete(definition)
-            session.commit()
-
     # Private interface implementations:
-
-    def _save_stack(
-        self,
-        name: str,
-        stack_configuration: Dict[StackComponentType, str],
-    ) -> None:
-        """Save a stack.
-
-        Args:
-            name: The name to save the stack as.
-            stack_configuration: Dict[StackComponentType, str] to persist.
-        """
-        with Session(self.engine) as session:
-            stack = session.exec(
-                select(StackSchema).where(StackSchema.name == name)
-            ).first()
-            if stack is None:
-                stack = StackSchema(name=name, created_by=1)
-                session.add(stack)
-            else:
-                # clear the existing stack definitions for a stack
-                # that is about to be updated
-                query = select(StackCompositionSchema).where(
-                    StackCompositionSchema.stack_id == stack.id
-                )
-                for result in session.exec(query).all():
-                    session.delete(result)
-
-            for ctype, cname in stack_configuration.items():
-                # get all stack composition schemas for a stack and check if
-                # a stack component with the given type already exists connected
-                # to the stack
-                statement = (
-                    select(StackCompositionSchema)
-                    .where(StackCompositionSchema.stack_id == stack.id)
-                    .where(
-                        StackCompositionSchema.component_id
-                        == StackComponentSchema.id
-                    )
-                    .where(StackComponentSchema.type == ctype)
-                )
-                results = session.exec(statement)
-                composition = results.one_or_none()
-
-                component = session.exec(
-                    select(StackComponentSchema)
-                    .where(StackComponentSchema.name == cname)
-                    .where(StackComponentSchema.type == ctype)
-                ).first()
-                if composition is None:
-                    session.add(
-                        StackCompositionSchema(
-                            stack_id=stack.id, component_id=component.id
-                        )
-                    )
-                else:
-                    composition.component_id = component.id
-                    session.add(composition)
-            session.commit()
 
     def _get_component_flavor_and_config(
         self, component_type: StackComponentType, name: str
@@ -2328,6 +2207,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             List of all the flavors for the given stack component type.
         """
+        # TODO: [ALEXEJ] This should be list_flavors with a filter
         with Session(self.engine) as session:
             flavors = session.exec(
                 select(FlavorSchema).where(FlavorSchema.type == component_type)
@@ -2376,6 +2256,7 @@ class SqlZenStore(BaseZenStore):
                 )
             except NoResultFound as error:
                 raise KeyError from error
+    # TODO: [ALEXEJ] This should be list_flavors with a filter
 
     # Implementation-specific internal methods:
 
