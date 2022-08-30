@@ -43,6 +43,7 @@ from zenml.models import (
     Team,
     User,
 )
+from zenml.models.code_models import CodeRepositoryModel
 from zenml.post_execution.artifact import ArtifactView
 from zenml.post_execution.pipeline import PipelineView
 from zenml.post_execution.pipeline_run import PipelineRunView
@@ -69,6 +70,7 @@ from zenml.zen_stores.schemas.schemas import (
     TeamSchema,
     UserRoleAssignmentSchema,
     UserSchema,
+    CodeRepositorySchema,
 )
 
 SelectOfScalar.inherit_cache = True  # type: ignore
@@ -541,6 +543,8 @@ class SqlZenStore(BaseZenStore):
             # After committing the model, sqlmodel takes care of updating the
             #  object with id, created_at, etc ...
 
+            # TODO: return?
+
     def _get_user(self, user_id: str, invite_token: str = None) -> User:
         """Gets a specific user.
 
@@ -767,6 +771,252 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all projects.
         """
+        with Session(self.engine) as session:
+            projects = session.exec(select(ProjectSchema)).all()
+
+        return [Project(**project.dict()) for project in projects]
+
+    def _create_project(self, project: Project) -> Project:
+        """Creates a new project.
+
+        Args:
+            project: The project to create.
+
+        Returns:
+            The newly created project.
+
+        Raises:
+            EntityExistsError: If a project with the given name already exists.
+        """
+        with Session(self.engine) as session:
+            # Check if project with the given name already exists
+            existing_project = session.exec(
+                select(ProjectSchema).where(ProjectSchema.name == project.name)
+            ).first()
+            if existing_project is not None:
+                raise EntityExistsError(f"Unable to create project {project.name}: A project with this name already exists.")
+
+            # Create the project
+            session.add(ProjectSchema(**project.dict()))
+            session.commit()
+
+            # TODO: return?
+    
+    def _get_project(self, project_name: str) -> Project:
+        """Get an existing project by name.
+
+        Args:
+            project_name: Name of the project to get.
+
+        Returns:
+            The requested project if one was found.
+
+        Raises:
+            KeyError: If there is no such project.
+        """
+        with Session(self.engine) as session:
+            # Check if project with the given name already exists
+            existing_project = session.exec(
+                select(ProjectSchema).where(ProjectSchema.name == project_name)
+            ).first()
+            if existing_project is None:
+                raise KeyError(f"Unable to get project {project_name}: No project with this name found.")
+
+            return Project(**existing_project.dict())
+    
+    def _update_project(self, project_name: str, project: Project) -> Project:
+        """Update an existing project.
+
+        Args:
+            project_name: Name of the project to update.
+            project: The project to use for the update.
+
+        Returns:
+            The updated project.
+
+        Raises:
+            KeyError: if the project does not exist.
+        """
+        with Session(self.engine) as session:
+            # Check if project with the given name already exists
+            existing_project = session.exec(
+                select(ProjectSchema).where(ProjectSchema.name == project_name)
+            ).first()
+            if existing_project is None:
+                raise KeyError(f"Unable to update project {project_name}: No project with this name found.")
+
+            # Update the project
+            existing_project.name = project.name
+            existing_project.created_at = project.created_at
+            session.add(existing_project)
+            session.commit()
+
+            # TODO: return?
+    
+    def _delete_project(self, project_name: str) -> None:
+        """Deletes a project.
+
+        Args:
+            project_name: Name of the project to delete.
+
+        Raises:
+            KeyError: If no project with the given name exists.
+        """
+        with Session(self.engine) as session:
+            # Check if project with the given name already exists
+            existing_project = session.exec(
+                select(ProjectSchema).where(ProjectSchema.name == project_name)
+            ).first()
+            if existing_project is None:
+                raise KeyError(f"Unable to delete project {project_name}: No project with this name found.")
+
+            session.delete(existing_project)
+            session.commit()
+
+    def _list_project_repositories(
+        self, project_name: str
+    ) -> List[CodeRepositoryModel]:
+        """Get all repositories in the project.
+
+        Args:
+            project_name: The name of the project.
+
+        Returns:
+            A list of all repositories in the project.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if project with the given name already exists
+            existing_project = session.exec(
+                select(ProjectSchema).where(ProjectSchema.name == project_name)
+            ).first()
+            if existing_project is None:
+                raise KeyError(f"Unable to list repositories in project {project_name}: No project with this name found.")
+
+            # Get all repositories in the project
+            repositories = session.exec(
+                select(CodeRepositorySchema)
+                .where(CodeRepositorySchema.project_id == existing_project.id)
+            ).all()
+
+        return [CodeRepositoryModel(**repository.dict()) for repository in repositories]
+
+    def _connect_project_repository(
+        self, project_name: str, repository: CodeRepositoryModel
+    ) -> CodeRepositoryModel:
+        """Connects a repository to a project.
+
+        Args:
+            project_name: Name of the project to connect the repository to.
+            repository: The repository to connect.
+
+        Returns:
+            The connected repository.
+
+        Raises:
+            KeyError: if the project or repository doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if project with the given name already exists
+            existing_project = session.exec(
+                select(ProjectSchema).where(ProjectSchema.name == project_name)
+            ).first()
+            if existing_project is None:
+                raise KeyError(f"Unable to connect repository with ID {repository.id} to project {project_name}: No project with this name found.")
+
+            # Check if repository with the given name already exists
+            existing_repository = session.exec(
+                select(CodeRepositorySchema).where(CodeRepositorySchema.id == repository.id)
+            ).first()
+            if existing_repository is None:
+                raise KeyError(f"Unable to connect repository with ID {repository.id} to project {project_name}: No repository with this ID found.")
+
+            # Connect the repository to the project
+            existing_repository.project_id = existing_project.id
+            session.add(existing_repository)
+            session.commit()
+
+        # TODO: return?
+
+    #  .-------------.
+    # | REPOSITORIES |
+    # '--------------'
+
+    def _get_repository(self, repository_id: str) -> CodeRepositoryModel:
+        """Get a repository by ID.
+
+        Args:
+            repository_id: The ID of the repository to get.
+
+        Returns:
+            The repository.
+
+        Raises:
+            KeyError: if the repository doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if repository with the given ID exists
+            existing_repository = session.exec(
+                select(CodeRepositorySchema).where(CodeRepositorySchema.id == repository_id)
+            ).first()
+            if existing_repository is None:
+                raise KeyError(f"Unable to get repository with ID {repository_id}: No repository with this ID found.")
+
+            return CodeRepositoryModel(**existing_repository.dict())
+
+    def _update_repository(
+        self, repository_id: str, repository: CodeRepositoryModel
+    ) -> CodeRepositoryModel:
+        """Update a repository.
+
+        Args:
+            repository_id: The ID of the repository to update.
+            repository: The repository to use for the update.
+
+        Returns:
+            The updated repository.
+
+        Raises:
+            KeyError: if the repository doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if repository with the given ID exists
+            existing_repository = session.exec(
+                select(CodeRepositorySchema).where(CodeRepositorySchema.id == repository_id)
+            ).first()
+            if existing_repository is None:
+                raise KeyError(f"Unable to update repository with ID {repository_id}: No repository with this ID found.")
+
+            # Update the repository
+            existing_repository.name = repository.name
+            existing_repository.created_at = repository.created_at
+            # project_id is updated in `_connect_project_repository`
+            session.add(existing_repository)
+            session.commit()
+        
+        # TODO: return?
+
+    def _delete_repository(self, repository_id: str) -> None:
+        """Delete a repository.
+
+        Args:
+            repository_id: The ID of the repository to delete.
+
+        Raises:
+            KeyError: if the repository doesn't exist.
+        """
+        with Session(self.engine) as session:
+            # Check if repository with the given ID exists
+            existing_repository = session.exec(
+                select(CodeRepositorySchema).where(CodeRepositorySchema.id == repository_id)
+            ).first()
+            if existing_repository is None:
+                raise KeyError(f"Unable to delete repository with ID {repository_id}: No repository with this ID found.")
+
+            session.delete(existing_repository)
+            session.commit()
 
 # OLD STUFF BELOW HERE #############################################################################################################################
 

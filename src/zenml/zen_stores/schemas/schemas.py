@@ -48,8 +48,8 @@ class ProjectSchema(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.now)
 
 
-class RepositorySchema(SQLModel, table=True):
-    """SQL Model for repositories."""
+class CodeRepositorySchema(SQLModel, table=True):
+    """SQL Model for code repositories."""
 
     id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
     name: str

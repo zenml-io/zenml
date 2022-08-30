@@ -13,6 +13,9 @@
 #  permissions and limitations under the License.
 """Code repository models implementation."""
 
+from datetime import datetime
+from typing import Optional
+from uuid import UUID
 from pydantic import BaseModel
 
 
@@ -22,5 +25,7 @@ class CodeRepositoryModel(BaseModel):
     Attributes:
         name: Step name
     """
-
+    id: Optional[UUID]
     name: str
+    project_id: Optional[UUID]
+    created_at: datetime

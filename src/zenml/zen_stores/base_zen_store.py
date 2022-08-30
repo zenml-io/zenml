@@ -29,6 +29,7 @@ from zenml.models.pipeline_models import (
     StepModel,
 )
 from zenml.models.user_management_models import Project, Role, Team, User
+from zenml.models.code_models import CodeRepositoryModel
 from zenml.post_execution import ArtifactView
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
@@ -590,8 +591,9 @@ class BaseZenStore(ABC):
             KeyError: If the role was not assigned to the user in the given 
                 project.
         """
+        self._track_event(AnalyticsEvent.DELETED_ROLE)
         return self._unassign_role(user_id, role_id, project_id)
-    
+
     @abstractmethod
     def _unassign_role(
         self, user_id: str, role_id: str, project_id: str
@@ -632,6 +634,8 @@ class BaseZenStore(ABC):
     #  .------.
     # | ROLES |
     # '-------'
+
+    # TODO: create & delete roles?
 
     # TODO: [ALEX] add filtering param(s)
     @abstractmethod
@@ -682,10 +686,24 @@ class BaseZenStore(ABC):
             The newly created project.
 
         Raises:
-            EntityExistsError: If an identical project already exists.
+            EntityExistsError: If a project with the given name already exists.
         """
         self._track_event(AnalyticsEvent.CREATED_PROJECT)
         return self._create_project(project)
+
+    @abstractmethod
+    def _create_project(self, project: Project) -> Project:
+        """Creates a new project.
+
+        Args:
+            project: The project to create.
+
+        Returns:
+            The newly created project.
+
+        Raises:
+            EntityExistsError: If a project with the given name already exists.
+        """
 
     def get_project(self, project_name: str) -> Project:
         """Gets a specific project.
@@ -701,6 +719,20 @@ class BaseZenStore(ABC):
         """
         # No tracking events, here for consistency
         return self._get_project(project_name)
+
+    @abstractmethod
+    def _get_project(self, project_name: str) -> Project:
+        """Get an existing project by name.
+
+        Args:
+            project_name: Name of the project to get.
+
+        Returns:
+            The requested project if one was found.
+
+        Raises:
+            KeyError: If there is no such project.
+        """
 
     def update_project(self, project_name: str, project: Project) -> Project:
         """Updates an existing project.
@@ -718,6 +750,21 @@ class BaseZenStore(ABC):
         # No tracking events, here for consistency
         return self._update_project(project_name, project)
 
+    @abstractmethod
+    def _update_project(self, project_name: str, project: Project) -> Project:
+        """Update an existing project.
+
+        Args:
+            project_name: Name of the project to update.
+            project: The project to use for the update.
+
+        Returns:
+            The updated project.
+
+        Raises:
+            KeyError: if the project does not exist.
+        """
+
     def delete_project(self, project_name: str) -> None:
         """Deletes a project.
 
@@ -729,6 +776,17 @@ class BaseZenStore(ABC):
         """
         self._track_event(AnalyticsEvent.DELETED_PROJECT)
         return self._delete_project(project_name)
+
+    @abstractmethod
+    def _delete_project(self, project_name: str) -> None:
+        """Deletes a project.
+
+        Args:
+            project_name: Name of the project to delete.
+
+        Raises:
+            KeyError: If no project with the given name exists.
+        """
 
     def get_project_stacks(self, project_name: str) -> List[StackModel]:
         """Gets all stacks in a project.
@@ -829,42 +887,6 @@ class BaseZenStore(ABC):
             project_name, component_type, component
         )
 
-    # TODO: [ALEX] add filtering param(s)
-    @abstractmethod
-    def list_pipelines(self, project_name: str) -> List[PipelineModel]:
-        """Gets all pipelines in a project.
-
-        Args:
-            project_name: Name of the project to get.
-
-        Returns:
-            A list of all pipelines in the project.
-
-        Raises:
-            KeyError: if the project doesn't exist.
-        """
-        return self._list_pipelines(project_name)
-
-    @abstractmethod
-    def create_pipeline(
-        self, project_name: str, pipeline: PipelineModel
-    ) -> PipelineModel:
-        """Creates a new pipeline in a project.
-
-        Args:
-            project_name: Name of the project to create the pipeline in.
-            pipeline: The pipeline to create.
-
-        Returns:
-            The newly created pipeline.
-
-        Raises:
-            PipelineExistsError: If an identical pipeline already exists.
-        """
-        self._track_event(AnalyticsEvent.CREATE_PIPELINE)
-        return self._create_pipeline(project_name, pipeline)
-
-    @abstractmethod
     def get_default_stack(self, project_name: str) -> StackModel:
         """Gets the default stack in a project.
 
@@ -880,6 +902,19 @@ class BaseZenStore(ABC):
         return self._get_default_stack(project_name)
 
     @abstractmethod
+    def _get_default_stack(self, project_name: str) -> StackModel:
+        """Gets the default stack in a project.
+
+        Args:
+            project_name: Name of the project to get.
+
+        Returns:
+            The default stack in the project.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
+
     def set_default_stack(self, project_name: str, stack_id: str) -> StackModel:
         """Sets the default stack in a project.
 
@@ -892,15 +927,28 @@ class BaseZenStore(ABC):
         """
         return self._set_default_stack(project_name, stack_id)
 
-    # TODO: [ALEX] add filtering param(s)
     @abstractmethod
+    def _set_default_stack(
+        self, project_name: str, stack_id: str
+    ) -> StackModel:
+        """Sets the default stack in a project.
+
+        Args:
+            project_name: Name of the project to set.
+            stack_id: The ID of the stack to set as the default.
+
+        Raises:
+            KeyError: if the project or stack doesn't exist.
+        """
+
+    # TODO: [ALEX] add filtering param(s)
     def list_project_repositories(
         self, project_name: str
     ) -> List[CodeRepositoryModel]:
         """Gets all repositories in a project.
 
         Args:
-            project_name: Name of the project to get.
+            project_name: The name of the project.
 
         Returns:
             A list of all repositories in the project.
@@ -909,6 +957,22 @@ class BaseZenStore(ABC):
             KeyError: if the project doesn't exist.
         """
         return self._list_project_repositories(project_name)
+
+    @abstractmethod
+    def _list_project_repositories(
+        self, project_name: str
+    ) -> List[CodeRepositoryModel]:
+        """Get all repositories in the project.
+
+        Args:
+            project_name: The name of the project.
+
+        Returns:
+            A list of all repositories in the project.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
 
     @abstractmethod
     def connect_project_repository(
@@ -929,11 +993,29 @@ class BaseZenStore(ABC):
         self._track_event(AnalyticsEvent.CONNECT_REPOSITORY)
         return self._connect_project_repository(project_name, repository)
 
+    @abstractmethod
+    def _connect_project_repository(
+        self, project_name: str, repository: CodeRepositoryModel
+    ) -> CodeRepositoryModel:
+        """Connects a repository to a project.
+
+        Args:
+            project_name: Name of the project to connect the repository to.
+            repository: The repository to connect.
+
+        Returns:
+            The connected repository.
+
+        Raises:
+            KeyError: if the project or repository doesn't exist.
+        """
+
     #  .-------------.
     # | REPOSITORIES |
     # '--------------'
 
-    @abstractmethod
+    # TODO: create repository?
+
     def get_repository(self, repository_id: str) -> CodeRepositoryModel:
         """Gets a repository.
 
@@ -949,6 +1031,19 @@ class BaseZenStore(ABC):
         return self._get_repository(repository_id)
 
     @abstractmethod
+    def _get_repository(self, repository_id: str) -> CodeRepositoryModel:
+        """Get a repository by ID.
+
+        Args:
+            repository_id: The ID of the repository to get.
+
+        Returns:
+            The repository.
+
+        Raises:
+            KeyError: if the repository doesn't exist.
+        """
+
     def update_repository(
         self, repository_id: str, repository: CodeRepositoryModel
     ):
@@ -968,6 +1063,22 @@ class BaseZenStore(ABC):
         return self._update_repository(repository_id, repository)
 
     @abstractmethod
+    def _update_repository(
+        self, repository_id: str, repository: CodeRepositoryModel
+    ) -> CodeRepositoryModel:
+        """Update a repository.
+
+        Args:
+            repository_id: The ID of the repository to update.
+            repository: The repository to use for the update.
+
+        Returns:
+            The updated repository.
+
+        Raises:
+            KeyError: if the repository doesn't exist.
+        """
+
     def delete_repository(self, repository_id: str):
         """Deletes a repository.
 
@@ -979,6 +1090,17 @@ class BaseZenStore(ABC):
         """
         self._track_event(AnalyticsEvent.DELETE_REPOSITORY)
         return self._delete_repository(repository_id)
+
+    @abstractmethod
+    def _delete_repository(self, repository_id: str) -> None:
+        """Delete a repository.
+
+        Args:
+            repository_id: The ID of the repository to delete.
+
+        Raises:
+            KeyError: if the repository doesn't exist.
+        """
 
     #  .-----.
     # | AUTH |
@@ -1013,6 +1135,24 @@ class BaseZenStore(ABC):
         """
         return self._list_pipelines(project_name)
 
+    def create_pipeline(
+        self, project_name: str, pipeline: PipelineModel
+    ) -> PipelineModel:
+        """Creates a new pipeline in a project.
+
+        Args:
+            project_name: Name of the project to create the pipeline in.
+            pipeline: The pipeline to create.
+
+        Returns:
+            The newly created pipeline.
+
+        Raises:
+            PipelineExistsError: If an identical pipeline already exists.
+        """
+        self._track_event(AnalyticsEvent.CREATE_PIPELINE)
+        return self._create_pipeline(project_name, pipeline)
+
     @abstractmethod
     def get_pipeline(self, pipeline_id: str) -> Optional[PipelineModel]:
         """Returns a pipeline for the given name.
@@ -1024,7 +1164,6 @@ class BaseZenStore(ABC):
             PipelineModel if found, None otherwise.
         """
 
-    @abstractmethod
     def update_pipeline(
         self, pipeline_id: str, pipeline: PipelineModel
     ) -> PipelineModel:
@@ -1043,7 +1182,6 @@ class BaseZenStore(ABC):
         self._track_event(AnalyticsEvent.UPDATE_PIPELINE)
         return self._update_pipeline(pipeline_id, pipeline)
 
-    @abstractmethod
     def delete_pipeline(self, pipeline_id: str) -> None:
         """Deletes a pipeline.
 
@@ -1248,71 +1386,6 @@ class BaseZenStore(ABC):
     # '-------------------------'
 
     @abstractmethod
-    def _delete_role(self, role_name: str) -> None:
-        """Deletes a role.
-
-        Args:
-            role_name: Name of the role to delete.
-
-        Raises:
-            KeyError: If no role with the given name exists.
-        """
-
-    @abstractmethod
-    def _create_project(self, project: Project) -> Project:
-        """Creates a new project.
-
-        Args:
-            project: The project to create.
-
-        Returns:
-            The newly created project.
-
-        Raises:
-            EntityExistsError: If a project with the given name already exists.
-        """
-
-    @abstractmethod
-    def _get_project(self, project_name: str) -> Project:
-        """Get an existing project by name.
-
-        Args:
-            project_name: Name of the project to get.
-
-        Returns:
-            The requested project if one was found.
-
-        Raises:
-            KeyError: If there is no such project.
-        """
-
-    @abstractmethod
-    def _update_project(self, project_name: str, project: Project) -> Project:
-        """Update an existing project.
-
-        Args:
-            project_name: Name of the project to update.
-            project: The project to use for the update.
-
-        Returns:
-            The updated project.
-
-        Raises:
-            KeyError: if the project does not exist.
-        """
-
-    @abstractmethod
-    def _delete_project(self, project_name: str) -> None:
-        """Deletes a project.
-
-        Args:
-            project_name: Name of the project to delete.
-
-        Raises:
-            KeyError: If no project with the given name exists.
-        """
-
-    @abstractmethod
     def _get_project_stacks(self, project_name: str) -> List[StackModel]:
         """Get all stacks in the project.
 
@@ -1429,109 +1502,6 @@ class BaseZenStore(ABC):
 
         Raises:
             PipelineExistsError: If an identical pipeline already exists.
-        """
-
-    @abstractmethod
-    def _get_default_stack(self, project_name: str) -> StackModel:
-        """Gets the default stack in a project.
-
-        Args:
-            project_name: Name of the project to get.
-
-        Returns:
-            The default stack in the project.
-
-        Raises:
-            KeyError: if the project doesn't exist.
-        """
-
-    @abstractmethod
-    def _set_default_stack(
-        self, project_name: str, stack_id: str
-    ) -> StackModel:
-        """Sets the default stack in a project.
-
-        Args:
-            project_name: Name of the project to set.
-            stack_id: The ID of the stack to set as the default.
-
-        Raises:
-            KeyError: if the project or stack doesn't exist.
-        """
-
-    @abstractmethod
-    def _list_project_repositories(
-        self, project_name: str
-    ) -> List[CodeRepositoryModel]:
-        """Get all repositories in the project.
-
-        Args:
-            project_name: the name of the project.
-
-        Returns:
-            A list of all repositories in the project.
-
-        Raises:
-            KeyError: if the project doesn't exist.
-        """
-
-    @abstractmethod
-    def _connect_project_repository(
-        self, project_name: str, repository: CodeRepositoryModel
-    ) -> CodeRepositoryModel:
-        """Connect a repository to a project.
-
-        Args:
-            project_name: the name of the project.
-            repository: the repository to connect.
-
-        Returns:
-            The connected repository.
-
-        Raises:
-            KeyError: if the project or repository doesn't exist.
-        """
-
-    @abstractmethod
-    def _get_repository(self, repository_id: str) -> CodeRepositoryModel:
-        """Get a repository by ID.
-
-        Args:
-            repository_id: The ID of the repository to get.
-
-        Returns:
-            The repository.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
-
-    @abstractmethod
-    def _update_repository(
-        self, repository_id: str, repository: CodeRepositoryModel
-    ) -> CodeRepositoryModel:
-        """Update a repository.
-
-        Args:
-            repository_id: The ID of the repository to update.
-            repository: The repository to use for the update.
-
-        Returns:
-            The updated repository.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
-
-    @abstractmethod
-    def _delete_repository(self, repository_id: str) -> None:
-        """Delete a repository.
-
-        Args:
-            repository_id: The ID of the repository to delete.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
         """
 
     @abstractmethod
