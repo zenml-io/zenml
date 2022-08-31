@@ -20,7 +20,6 @@ from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
 from zenml.models.component_models import ComponentModel
-from zenml.repository import Repository
 from zenml.stack import Stack
 
 
@@ -123,6 +122,8 @@ class StackModel(BaseModel):
         Returns:
             the component of the given type or None if not found
         """
+        from zenml.repository import Repository
+
         if component_type in self.components.keys():
             repo = Repository()
             component_model = repo.zen_store.get_stack_component(

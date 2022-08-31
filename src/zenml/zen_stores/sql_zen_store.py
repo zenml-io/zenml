@@ -21,7 +21,7 @@ import datetime as dt
 import json
 from datetime import datetime
 from pathlib import Path, PurePath
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
 from uuid import UUID, uuid4
 
 from sqlalchemy.engine import Engine
@@ -52,12 +52,12 @@ from zenml.models import (
 from zenml.config.store_config import StoreConfiguration
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.post_execution.artifact import ArtifactView
 from zenml.utils import io_utils
 from zenml.zen_stores import BaseZenStore
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 from zenml.models.code_models import CodeRepositoryModel
 from zenml.models.pipeline_models import PipelineModel, StepModel
-from zenml.post_execution.artifact import ArtifactView
 from zenml.post_execution.pipeline import PipelineView
 from zenml.post_execution.pipeline_run import PipelineRunView
 from zenml.post_execution.step import StepView
@@ -2609,7 +2609,7 @@ class SqlZenStore(BaseZenStore):
         """
         return self.metadata_store.get_step_artifacts(step)
 
-    def get_producer_step_from_artifact(self, artifact_id: int) -> StepView:
+    def get_producer_step_from_artifact(self, artifact_id: int) -> StepModel:
         """Returns original StepView from an ArtifactView.
 
         Args:

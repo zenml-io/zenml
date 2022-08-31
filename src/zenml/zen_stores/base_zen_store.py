@@ -2101,6 +2101,8 @@ class BaseZenStore(BaseModel):
 
     # TODO: change into an abstract method
     # TODO: use the correct return value + also amend the endpoint as well
+    # TODO: use an ArtifactModel for this instead of ArtifactView, to break the
+    #       dependency on Repository
     def get_run_step_outputs(self, step_id: str) -> Dict[str, ArtifactView]:
         """Get a list of outputs for a specific step.
 

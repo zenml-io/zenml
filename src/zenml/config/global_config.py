@@ -370,37 +370,56 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         """Sanitize and save the global configuration.
 
         This method is called to ensure that the global configuration
-        doesn't contain outdated information, such as an active stack that no
-        longer exists.
+        doesn't contain outdated information, such as an active stack or project
+        that no longer exists.
         """
-        # As a backup for the active stack, use the default stack or the first
-        # stack in the store
-        backup_stack_name: Optional[str] = None
-        stacks = self.zen_store.stack_configurations
+        from zenml.zen_stores.base_zen_store import DEFAULT_PROJECT_NAME
 
-        if "default" in stacks:
-            backup_stack_name = "default"
-        elif stacks:
-            backup_stack_name = next(iter(stacks.keys()))
+        # Ensure that the current repository active project is still valid
+        if self.active_project_name:
+            try:
+                self.zen_store.get_project(self.active_project_name)
+            except KeyError:
+                logger.warning(
+                    "Project '%s' not found. Resetting the global active "
+                    "project to the default.",
+                    self.active_project_name,
+                )
+                self.active_project_name = DEFAULT_PROJECT_NAME
+        else:
+            logger.warning(
+                "Global active project not set. Resetting it to the default."
+            )
+            self.active_project_name = DEFAULT_PROJECT_NAME
 
         # Sanitize the repository active stack
         if not self.active_stack_name:
             logger.warning(
                 "The global active stack is not set. Switching the global "
-                "active stack to '%s'",
-                backup_stack_name,
+                "active stack to 'default'"
             )
-            self.active_stack_name = backup_stack_name
+            self.active_stack_name = "default"
 
         # Ensure that the current repository active stack is still valid
-        elif self.active_stack_name not in stacks:
-            logger.warning(
-                "Stack '%s' not found. Switching the global active stack "
-                "to '%s'",
-                self.active_stack_name,
-                backup_stack_name,
-            )
-            self.active_stack_name = backup_stack_name
+        else:
+            # Ensure that the repository active stack is still valid
+            try:
+                self.zen_store.list_stacks(
+                    name=self.active_stack_name,
+                    project_id=self.active_project_name,
+                    user_id=self.zen_store.default_user_id,
+                )
+                # TODO: this will return a list that is hopefully length 1 -
+                #  this would have to be validated, additionally this does not
+                #  gurantee that the stack is actually active
+
+            except KeyError:
+                logger.warning(
+                    "Stack '%s' not found. Switching the global active stack "
+                    "to 'default'",
+                    self.active_stack_name,
+                )
+            self.active_stack_name = "default"
 
     @staticmethod
     def default_config_directory() -> str:

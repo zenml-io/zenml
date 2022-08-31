@@ -38,8 +38,7 @@ from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.utils import yaml_utils
 from zenml.utils.io_utils import get_global_config_directory
-from zenml.zen_stores.models.component_wrapper import ComponentWrapper
-from zenml.zen_stores.models.stack_wrapper import StackWrapper
+from zenml.models import ComponentModel, StackModel
 
 logger = get_logger(__name__)
 
@@ -51,7 +50,7 @@ class FlavorWrapper(BaseModel):
     """
 
     name: str
-    type: StackComponentType
+    type: str
     source: str
     integration: Optional[str]
 
@@ -68,10 +67,10 @@ class LocalStore(BaseModel):
             stack component type
     """
 
-    stacks: Dict[str, Dict[StackComponentType, str]] = Field(
+    stacks: Dict[str, Dict[str, str]] = Field(
         default_factory=dict
     )
-    stack_components: DefaultDict[StackComponentType, Dict[str, str]] = Field(
+    stack_components: DefaultDict[str, Dict[str, str]] = Field(
         default=defaultdict(dict)
     )
     stack_component_flavors: List[FlavorWrapper] = Field(default_factory=list)
@@ -80,8 +79,8 @@ class LocalStore(BaseModel):
 
     @validator("stack_components")
     def _construct_stack_components_defaultdict(
-        cls, stack_components: Dict[StackComponentType, Dict[str, str]]
-    ) -> DefaultDict[StackComponentType, Dict[str, str]]:
+        cls, stack_components: Dict[str, Dict[str, str]]
+    ) -> DefaultDict[str, Dict[str, str]]:
         """Ensures that `stack_components` is a defaultdict.
 
         This is so stack components of a new component type can be added without
@@ -126,7 +125,7 @@ class LocalStore(BaseModel):
 
     def get_component(
         self, component_type: StackComponentType, name: str, prefix: str = ""
-    ) -> ComponentWrapper:
+    ) -> ComponentModel:
         """Fetch the flavor and configuration for a stack component.
 
         Args:
@@ -155,15 +154,15 @@ class LocalStore(BaseModel):
         config_dict = yaml_utils.read_yaml(component_config_path)
         component_name = (prefix + name) if name != "default" else name
         config_dict["name"] = component_name
-        return ComponentWrapper(
+        return ComponentModel(
             type=component_type,
             name=component_name,
-            flavor=flavor,
-            uuid=UUID(config_dict["uuid"]),
-            config=base64.b64encode(yaml.dump(config_dict).encode()),
+            flavor_id=flavor,
+            id=UUID(config_dict["uuid"]),
+            configuration=base64.b64encode(yaml.dump(config_dict).encode()),
         )
 
-    def get_components(self, prefix: str = "") -> List[ComponentWrapper]:
+    def get_components(self, prefix: str = "") -> List[ComponentModel]:
         """Fetch all stack components.
 
         The default components are expressly excluded from this list.
@@ -174,13 +173,14 @@ class LocalStore(BaseModel):
         Returns:
             A list of component models for all stack components.
         """
-        components: List[ComponentWrapper] = []
+        components: List[ComponentModel] = []
         for component_type in self.stack_components:
+            if component_type == "metadata-store":
+                continue
             for name in self.stack_components[component_type]:
                 if name == "default" and component_type in [
                     StackComponentType.ARTIFACT_STORE,
                     StackComponentType.ORCHESTRATOR,
-                    StackComponentType.METADATA_STORE,
                 ]:
                     continue
                 components.append(
@@ -188,7 +188,7 @@ class LocalStore(BaseModel):
                 )
         return components
 
-    def get_stack(self, name: str, prefix: str = "") -> StackWrapper:
+    def get_stack(self, name: str, prefix: str = "") -> StackModel:
         """Fetch the configuration for a stack.
 
         For default stack components, the default component in the current
@@ -212,15 +212,16 @@ class LocalStore(BaseModel):
                 f"{set(self.stacks)}."
             )
 
-        components: List[ComponentWrapper] = []
+        components: List[ComponentModel] = []
         for component_type, component_name in stack.items():
-            component: ComponentWrapper = self.get_component(
+            if component_type == "metadata-store":
+                continue
+            component: ComponentModel = self.get_component(
                 component_type, component_name, prefix
             )
             if component_name == "default" and component_type in [
                 StackComponentType.ARTIFACT_STORE,
                 StackComponentType.ORCHESTRATOR,
-                StackComponentType.METADATA_STORE,
             ]:
                 try:
                     # use the component in the active store, if it exists
@@ -232,12 +233,12 @@ class LocalStore(BaseModel):
                     pass
             components.append(component)
 
-        return StackWrapper(
+        return StackModel(
             name=prefix + name,
             components=components,
         )
 
-    def get_stacks(self, prefix: str = "") -> List[StackWrapper]:
+    def get_stacks(self, prefix: str = "") -> List[StackModel]:
         """Fetch all stacks.
 
         The default stack is expressly excluded from this list.

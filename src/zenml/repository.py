@@ -35,11 +35,8 @@ from zenml.stack import Stack, StackComponent
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
-from zenml.zen_stores import BaseZenStore
-from zenml.zen_stores.base_zen_store import DEFAULT_PROJECT_NAME
 
 if TYPE_CHECKING:
-    from zenml.config.profile_config import ProfileConfiguration
     from zenml.models import ProjectModel, UserModel, ZenStoreModel
     from zenml.pipelines import BasePipeline
     from zenml.post_execution import PipelineView
@@ -258,6 +255,8 @@ class Repository(metaclass=RepositoryMetaClass):
         doesn't contain outdated information, such as an active stack or
         project that no longer exists.
         """
+        from zenml.zen_stores.base_zen_store import DEFAULT_PROJECT_NAME
+
         if not self._config:
             return
 
@@ -365,7 +364,7 @@ class Repository(metaclass=RepositoryMetaClass):
         return self._config is not None
 
     @property
-    def zen_store(self) -> BaseZenStore:
+    def zen_store(self) -> "BaseZenStore":
         """Shortcut to return the global zen store.
 
         Returns:
