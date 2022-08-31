@@ -189,6 +189,15 @@ class BaseZenStore(ABC):
             AnalyticsEvent.REGISTERED_DEFAULT_STACK,
         )
 
+    @property
+    def stacks(self) -> List[StackModel]:
+        """All stacks registered in this zen store.
+
+        Returns:
+            A list of all stacks registered in this zen store.
+        """
+        return self.list_stacks(project_id=self.default_project_id)
+
     # Static methods:
 
     @staticmethod
@@ -2564,20 +2573,6 @@ class BaseZenStore(ABC):
             KeyError: If no flavor exists with the given name and type
                 or there are more than one instances
         """
-
-    # Common code (user facing):
-
-    @property
-    def stacks(self) -> List[StackModel]:
-        """All stacks registered in this zen store.
-
-        Returns:
-            A list of all stacks registered in this zen store.
-        """
-        return [
-            self._stack_from_dict(name, conf)
-            for name, conf in self.stack_configurations.items()
-        ]
 
     # Common code (internal implementations, private):
 
