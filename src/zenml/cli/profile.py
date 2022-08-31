@@ -35,6 +35,7 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.models.user_management_models import ProjectModel, UserModel
 from zenml.repository import Repository
 from zenml.utils import yaml_utils
 from zenml.utils.io_utils import get_global_config_directory
@@ -67,9 +68,7 @@ class LocalStore(BaseModel):
             stack component type
     """
 
-    stacks: Dict[str, Dict[str, str]] = Field(
-        default_factory=dict
-    )
+    stacks: Dict[str, Dict[str, str]] = Field(default_factory=dict)
     stack_components: DefaultDict[str, Dict[str, str]] = Field(
         default=defaultdict(dict)
     )
@@ -109,7 +108,7 @@ class LocalStore(BaseModel):
         super().__init__(**config_dict)
 
     def _get_stack_component_config_path(
-        self, component_type: StackComponentType, name: str
+        self, component_type: str, name: str
     ) -> str:
         """Path to the configuration file of a stack component.
 
@@ -120,11 +119,15 @@ class LocalStore(BaseModel):
         Returns:
             The path to the configuration file of the stack component.
         """
-        path = self.root / component_type.plural / f"{name}.yaml"
+        subpath = f"{component_type}s"
+        if component_type == StackComponentType.CONTAINER_REGISTRY:
+            subpath = "container_registries"
+
+        path = self.root / subpath / f"{name}.yaml"
         return str(path)
 
     def get_component(
-        self, component_type: StackComponentType, name: str, prefix: str = ""
+        self, component_type: str, name: str, prefix: str = ""
     ) -> ComponentModel:
         """Fetch the flavor and configuration for a stack component.
 
@@ -175,7 +178,7 @@ class LocalStore(BaseModel):
         """
         components: List[ComponentModel] = []
         for component_type in self.stack_components:
-            if component_type == "metadata-store":
+            if component_type == "metadata_store":
                 continue
             for name in self.stack_components[component_type]:
                 if name == "default" and component_type in [
@@ -188,7 +191,9 @@ class LocalStore(BaseModel):
                 )
         return components
 
-    def get_stack(self, name: str, prefix: str = "") -> StackModel:
+    def get_stack(
+        self, name: str, prefix: str = "", project: Optional[str] = None
+    ) -> StackModel:
         """Fetch the configuration for a stack.
 
         For default stack components, the default component in the current
@@ -198,6 +203,8 @@ class LocalStore(BaseModel):
             name: The name of the stack to fetch.
             prefix: Optional name prefix to use for the returned stack and its
                 components (unless default).
+            project: Optional project name to use to fetch the default stack to
+                replace the default components in the stack.
 
         Returns:
             A stack model for the stack.
@@ -212,33 +219,37 @@ class LocalStore(BaseModel):
                 f"{set(self.stacks)}."
             )
 
-        components: List[ComponentModel] = []
+        components: Dict[StackComponentType, ComponentModel] = {}
         for component_type, component_name in stack.items():
-            if component_type == "metadata-store":
+            if component_type == "metadata_store":
                 continue
             component: ComponentModel = self.get_component(
                 component_type, component_name, prefix
             )
-            if component_name == "default" and component_type in [
-                StackComponentType.ARTIFACT_STORE,
-                StackComponentType.ORCHESTRATOR,
-            ]:
-                try:
-                    # use the component in the active store, if it exists
-                    component = Repository().zen_store.get_stack_component(
-                        component_type=component_type, name="default"
-                    )
-                except KeyError:
-                    # otherwise, use the default component
-                    pass
-            components.append(component)
+            if (
+                component_name == "default"
+                and project
+                and component_type
+                in [
+                    StackComponentType.ARTIFACT_STORE,
+                    StackComponentType.ORCHESTRATOR,
+                ]
+            ):
+                # use the component in the active store
+                component = Repository().zen_store.get_default_stack(project)[
+                    StackComponentType(component_type)
+                ]
+            components[StackComponentType(component_type)] = component
 
         return StackModel(
             name=prefix + name,
             components=components,
+            project=project,
         )
 
-    def get_stacks(self, prefix: str = "") -> List[StackModel]:
+    def get_stacks(
+        self, prefix: str = "", project: Optional[str] = None
+    ) -> List[StackModel]:
         """Fetch all stacks.
 
         The default stack is expressly excluded from this list.
@@ -246,12 +257,14 @@ class LocalStore(BaseModel):
         Args:
             prefix: Optional name prefix to use for the returned stack and
                 stack components.
+            project: Optional project name to use to fetch the default stack to
+                replace the default components in the stack.
 
         Returns:
             A list of stack configurations.
         """
         return [
-            self.get_stack(name, prefix)
+            self.get_stack(name, prefix, project)
             for name in self.stacks
             if name != "default"
         ]
@@ -436,6 +449,16 @@ def list_profiles(
         "flavors."
     ),
 )
+@click.option(
+    "--project",
+    "project_name",
+    type=str,
+    default=None,
+    help=(
+        "Migrate the stacks, components and flavors to a custom project. If the "
+        "project does not exist, it will be created."
+    ),
+)
 @click.argument("profile_path", type=click.STRING)
 def migrate_profiles(
     stacks: bool,
@@ -444,6 +467,7 @@ def migrate_profiles(
     ignore_errors: bool,
     prefix: str,
     profile_path: str,
+    project_name: Optional[str],
 ) -> None:
     """Migrate stacks, stack components and flavors from a legacy profile.
 
@@ -454,7 +478,9 @@ def migrate_profiles(
         ignore_errors: Continue the import process if an error is encountered.
         prefix: Use a prefix for the names of imported stacks, stack components and
             flavors.
-        profile_path: path where the profile files are located.
+        profile_path: Path where the profile files are located.
+        project_name: Migrate the stacks, components and flavors to a custom
+            project.
     """
     # flake8: noqa: C901
     stores = list(find_profiles(profile_path))
@@ -468,7 +494,31 @@ def migrate_profiles(
     if not stacks and not flavors:
         stacks = flavors = True
     store = stores[0]
+
     repo = Repository()
+    project: Optional[ProjectModel] = None
+    if project_name:
+        try:
+            project = repo.zen_store.get_project(project)
+        except KeyError:
+            cli_utils.declare(f"Creating project {project_name}")
+            project = repo.zen_store.create_project(
+                ProjectModel(
+                    name=project_name,
+                    description=(
+                        f"Legacy profile migration for profile "
+                        f"{os.path.basename(profile_path)}"
+                    ),
+                )
+            )
+    else:
+        project = repo.active_project()
+
+    if not project:
+        cli_utils.error("No active project found.")
+
+    user: UserModel = repo.zen_store.active_user()
+
     if flavors:
         if not store.stack_component_flavors:
             cli_utils.declare(
@@ -484,7 +534,7 @@ def migrate_profiles(
                     repo.zen_store.create_flavor(
                         source=flavor.source,
                         name=name,
-                        stack_component_type=flavor.type,
+                        stack_component_type=StackComponentType(flavor.type),
                     )
                     cli_utils.declare(f"Migrated component flavor '{name}'.")
                 except EntityExistsError:
@@ -506,23 +556,31 @@ def migrate_profiles(
             cli_utils.declare(
                 f"Migrating stack components from {store.config_file}..."
             )
-            for component in store.get_components(prefix=prefix):
+            for component in store.get_components(
+                prefix=prefix,
+                project=project.name,
+            ):
                 try:
-                    repo.zen_store.register_stack_component(component)
+                    repo.zen_store.register_stack_component(
+                        user_id=user.id,
+                        project_id=project.name,
+                        component=component,
+                    )
                     cli_utils.declare(
                         f"Migrated {component.type} '{component.name}' with "
-                        f"flavor '{component.flavor}'."
+                        f"flavor '{component.flavor_id}'."
                     )
                 except StackComponentExistsError:
                     if overwrite:
                         repo.zen_store.update_stack_component(
-                            name=component.name,
-                            component_type=component.type,
+                            user_id=user.id,
+                            project_id=project.name,
+                            component_id=component.name, # TODO: check if this correct
                             component=component,
                         )
                         cli_utils.declare(
                             f"Updated {component.type} '{component.name}' with "
-                            f"flavor '{component.flavor}'."
+                            f"flavor '{component.flavor_id}'."
                         )
                     else:
                         msg = (
@@ -540,14 +598,16 @@ def migrate_profiles(
             )
         else:
             cli_utils.declare(f"Migrating stacks from {store.config_file}...")
-            for stack in store.get_stacks(prefix=prefix):
+            for stack in store.get_stacks(prefix=prefix, project=project.name):
                 try:
-                    repo.zen_store.register_stack(stack)
+                    repo.zen_store.register_stack(user.id, project.name, stack)
                     cli_utils.declare(f"Migrated stack '{stack.name}'.")
                 except StackExistsError:
                     if overwrite:
                         repo.zen_store.update_stack(
-                            name=stack.name,
+                            stack_id=stack.name, # TODO: check if this correct
+                            user=user,
+                            project=project,
                             stack=stack,
                         )
                         cli_utils.declare(f"Updated stack '{stack.name}'.")
