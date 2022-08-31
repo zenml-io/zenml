@@ -91,7 +91,7 @@ class StackModel(BaseModel):
         return cls(
             name=stack.name,
             components={
-                type_: ComponentModel.from_component(component).id 
+                type_: ComponentModel.from_component(component)
                 for type_, component in stack.components.items()
             },
         )

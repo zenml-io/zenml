@@ -254,32 +254,34 @@ class SqlZenStore(BaseZenStore):
             A list of all stacks.
         """
         with Session(self.engine) as session:
-            query = (
-                select(StackSchema, StackComponentSchema)
-                .where(StackSchema.id == StackCompositionSchema.stack_id)
-                .where(StackComponentSchema.id ==
-                       StackCompositionSchema.component_id))
 
-            # TODO: [ALEXEJ] prettify this
+            # Get a list of all stacks
+            query = select(StackSchema)
+            # TODO: Merge into one query and prettify
             if owner:
                  query = query.where(StackComponentSchema.owner == owner)
             if name:
                  query = query.where(StackComponentSchema.name == name)
             if is_shared is not None:
                 query = query.where(StackComponentSchema.is_shared == is_shared)
+            stacks = session.exec(query).all()
 
-            list_of_stacks_and_components = session.exec(query).all()
+            # For each stack, get all stack components and create a stack model
+            stack_models = []
+            for stack in stacks:
+                stack_components = session.exec(
+                    select(StackComponentSchema)
+                    .where(StackSchema.id == StackCompositionSchema.stack_id)
+                    .where(StackComponentSchema.id == StackCompositionSchema.component_id)
+                ).all()
+                component_dict = {
+                    component.type: component
+                    for component in stack_components
+                }
+                stack_model = stack.to_model()
+                stack_models.append(stack_model)
 
-        breakpoint()
-        # TODO: [ALEXE] revisit this once the exact output format for
-        #  the list_of_stacks_and_components, maybe split into two queries
-        filtered_stack_models = list()
-        for stack, components in list_of_stacks_and_components:
-            components: List[StackComponentSchema] = components
-            components_in_model = {c.type: c.id for c in components}
-            filtered_stack_models.append(stack.to_model(components_in_model))
-
-        return filtered_stack_models
+            return stack_models
 
     def _get_stack(self, stack_id: str) -> StackModel:
         """Get a stack by id.
@@ -340,7 +342,7 @@ class SqlZenStore(BaseZenStore):
                 .where(StackCompositionSchema.component_id == StackComponentSchema.id)
             ).all()
             components_in_model = {c.type: c.id for c in components}
-            return stack.to_model(components_in_model)
+            return stack.to_model()
 
     def _register_stack(
         self,
@@ -387,7 +389,7 @@ class SqlZenStore(BaseZenStore):
                     StackComponentSchema.id == component_ids[0],
                     StackComponentSchema.id == component_ids[1]
                 ))).all()
-            # TODO: Make this work for arbitrary amountds of components
+            # TODO: Make this work for arbitrary amounts of components
             # Create the stack
             stack_in_db = StackSchema.from_create_model(
                 project_id=project_id,
@@ -399,8 +401,6 @@ class SqlZenStore(BaseZenStore):
             session.add(stack_in_db)
             session.commit()
 
-            # TODO: [ALEXEJ] verify that the stack_in_db instance is actually
-            #  updated automatically after the session commit
             return stack_in_db.to_model()
 
     def _update_stack(self,
