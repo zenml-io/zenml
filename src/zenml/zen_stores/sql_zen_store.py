@@ -257,7 +257,7 @@ class SqlZenStore(BaseZenStore):
 
             # Get a list of all stacks
             query = select(StackSchema)
-            # TODO: Merge into one query and prettify
+            # TODO: prettify
             if owner:
                  query = query.where(StackComponentSchema.owner == owner)
             if name:
@@ -266,22 +266,7 @@ class SqlZenStore(BaseZenStore):
                 query = query.where(StackComponentSchema.is_shared == is_shared)
             stacks = session.exec(query).all()
 
-            # For each stack, get all stack components and create a stack model
-            stack_models = []
-            for stack in stacks:
-                stack_components = session.exec(
-                    select(StackComponentSchema)
-                    .where(StackSchema.id == StackCompositionSchema.stack_id)
-                    .where(StackComponentSchema.id == StackCompositionSchema.component_id)
-                ).all()
-                component_dict = {
-                    component.type: component
-                    for component in stack_components
-                }
-                stack_model = stack.to_model()
-                stack_models.append(stack_model)
-
-            return stack_models
+            return [stack.to_model() for stack in stacks]
 
     def _get_stack(self, stack_id: str) -> StackModel:
         """Get a stack by id.
@@ -397,7 +382,6 @@ class SqlZenStore(BaseZenStore):
                 defined_components=defined_components,
                 stack=stack
             )
-
             session.add(stack_in_db)
             session.commit()
 
