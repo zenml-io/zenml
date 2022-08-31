@@ -12,13 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base Zen Store implementation."""
-
+import os
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
+from uuid import UUID
 
 from ml_metadata.proto import metadata_store_pb2
 
+from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.logger import get_logger
 from zenml.models import ComponentModel, FlavorModel, StackModel
@@ -31,6 +33,7 @@ from zenml.models.pipeline_models import (
 from zenml.models.user_management_models import ProjectModel, RoleModel, TeamModel, UserModel
 from zenml.post_execution import ArtifactView
 from zenml.stack import Stack
+from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 logger = get_logger(__name__)
@@ -230,14 +233,14 @@ class BaseZenStore(ABC):
         """
 
     def register_stack(
-        self, user: UserModel, project: ProjectModel, stack: StackModel
+        self, user_id: str, project_id: str, stack: StackModel
     ) -> StackModel:
         """Register a new stack.
 
         Args:
             stack: The stack to register.
-            user: The user that is registering this stack
-            project: The project within which that stack is registered
+            user_id: The user that is registering this stack
+            project_id: The project within which that stack is registered
 
         Returns:
             The registered stack.
@@ -249,18 +252,20 @@ class BaseZenStore(ABC):
         metadata = {c.type.value: c.flavor for c in stack.components}
         metadata["store_type"] = self.type.value
         self._track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
-        return self._register_stack(stack=stack, user=user, project=project)
+        return self._register_stack(stack=stack,
+                                    user_id=user_id,
+                                    project_id=project_id)
 
     @abstractmethod
     def _register_stack(
-        self, user: UserModel, project: ProjectModel, stack: StackModel
+        self, user_id: str, project_id: str, stack: StackModel
     ) -> StackModel:
         """Register a new stack.
 
         Args:
             stack: The stack to register.
-            user: The user that is registering this stack
-            project: The project within which that stack is registered
+            user_id: The user that is registering this stack
+            project_id: The project within which that stack is registered
 
         Returns:
             The registered stack.
@@ -406,8 +411,8 @@ class BaseZenStore(ABC):
 
     def register_stack_component(
         self,
-        user_id: str,
-        project_id: str,
+        user_id: UUID,
+        project_id: UUID,
         component: ComponentModel
     ) -> ComponentModel:
         """Create a stack component.
@@ -425,8 +430,8 @@ class BaseZenStore(ABC):
     @abstractmethod
     def _register_stack_component(
         self,
-        user_id: str,
-        project_id: str,
+        user_id: UUID,
+        project_id: UUID,
         component: ComponentModel
     ) -> ComponentModel:
         """Create a stack component.
@@ -2399,10 +2404,40 @@ class BaseZenStore(ABC):
         The default stack contains a local orchestrator and a local artifact
         store.
         """
-        stack = Stack.default_local_stack()
-        sw = StackModel.from_stack(stack)
-        self._register_stack(sw)
-        metadata = {c.type.value: c.flavor for c in sw.components}
+        default_user = self.get_user(DEFAULT_USERNAME)
+        default_project = self.get_project(project_name=DEFAULT_PROJECT_NAME)
+        # Register the default orchestrator
+        orchestrator = self.register_stack_component(
+            user_id=default_user.id,
+            project_id=default_project.name,
+            component=ComponentModel(name="default",
+                                     type=StackComponentType.ORCHESTRATOR,
+                                     flavor_id="default")
+        )
+
+        # Register the default artifact store
+        artifact_store_path = os.path.join(
+            GlobalConfiguration().config_directory,
+            "local_stores",
+            "default_local_store"
+        )
+        io_utils.create_dir_recursive_if_not_exists(artifact_store_path)
+        artifact_store = self.register_stack_component(
+            user_id=default_user.id,
+            project_id=default_project.name,
+            component=ComponentModel(name="default",
+                                     type=StackComponentType.ORCHESTRATOR,
+                                     flavor_id="default",
+                                     config={"path": artifact_store_path})
+        )
+        stack = StackModel(
+            user_id=default_user.id,
+            project_id=default_project.name,
+            name="default",
+            components=[orchestrator, artifact_store]
+        )
+        self._register_stack(stack)
+        metadata = {c.type.value: c.flavor for c in stack.components}
         metadata["store_type"] = self.type.value
         self._track_event(
             AnalyticsEvent.REGISTERED_DEFAULT_STACK, metadata=metadata

@@ -15,7 +15,7 @@
 
 import base64
 import json
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
 import yaml
@@ -23,7 +23,6 @@ from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
-from zenml.zen_stores.schemas.schemas import StackComponentSchema
 
 if TYPE_CHECKING:
     from zenml.stack import StackComponent

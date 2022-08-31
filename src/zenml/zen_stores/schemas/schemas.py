@@ -23,9 +23,12 @@ from sqlmodel import Field, Relationship, SQLModel
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.models import ComponentModel, StackModel
 from zenml.models.code_models import CodeRepositoryModel
-from zenml.models.pipeline_models import PipelineModel, PipelineRunModel, StepModel, StepRunModel
-from zenml.models.user_management_models import ProjectModel, RoleModel, UserModel
-
+from zenml.models.pipeline_models import (
+    PipelineModel, PipelineRunModel, StepModel, StepRunModel
+)
+from zenml.models.user_management_models import (
+    ProjectModel, RoleModel, UserModel
+)
 
 def _sqlmodel_uuid() -> UUID:
     """Generates a UUID whose hex string does not start with a '0'.
@@ -150,7 +153,7 @@ class FlavorSchema(SQLModel, table=True):
     name: str
 
     # project_id - redundant since repository has this
-    repository_id: UUID = Field(foreign_key="repositoryschema.id")
+    repository_id: UUID = Field(foreign_key="coderepositoryschema.id")
     created_by: UUID = Field(foreign_key="userschema.id")
 
     type: StackComponentType
@@ -301,7 +304,7 @@ class PipelineSchema(SQLModel, table=True):
     name: str
 
     # project_id - redundant since repository has this
-    repository_id: UUID = Field(foreign_key="repositoryschema.id")
+    repository_id: UUID = Field(foreign_key="coderepositoryschema.id")
     created_by: UUID = Field(foreign_key="userschema.id")
 
     docstring: str  # TODO: how to get this?
