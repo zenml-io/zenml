@@ -20,6 +20,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from ml_metadata.proto import metadata_store_pb2
 
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
+from zenml.exceptions import StackComponentExistsError
 from zenml.logger import get_logger
 from zenml.models import ComponentModel, FlavorModel, StackModel
 from zenml.models.code_models import CodeRepositoryModel
@@ -69,11 +70,11 @@ class BaseZenStore(ABC):
         """
         self._track_analytics = track_analytics
         if not skip_default_registrations:
+            self.create_default_user()
+            self.create_default_project()
             if self.stacks_empty:
                 logger.info("Registering default stack...")
                 self.register_default_stack()
-            self.create_default_user()
-            self.create_default_project()
 
         if not skip_migration:
             self._migrate_store()
@@ -86,6 +87,55 @@ class BaseZenStore(ABC):
         # store, so we create the default user if it doesn't exists
         self.create_default_user()
         self.create_default_project()
+
+    @property
+    def default_user_id(self) -> str:  # TODO: can this be done cleaner?
+        """Get the ID of the default user, or None if it doesn't exist."""
+        users = self._list_users()
+        for user in users:
+            if user.name == DEFAULT_USERNAME:
+                return user.id
+        return None
+
+    @property
+    def default_project_id(self) -> str:  # TODO: can this be done cleaner?
+        """Get the ID of the default project, or None if it doesn't exist."""
+        projects = self._list_projects()
+        for project in projects:
+            if project.name == DEFAULT_PROJECT_NAME:
+                return project.id
+        return None
+
+    def create_default_user(self) -> None:
+        """Creates a default user."""
+        if not self.default_user_id:
+            self._track_event(AnalyticsEvent.CREATED_DEFAULT_USER)
+            self._create_user(UserModel(name=DEFAULT_USERNAME))
+
+    def create_default_project(self) -> None:
+        """Creates a default project."""
+        if not self.default_project_id:
+            self._track_event(AnalyticsEvent.CREATED_DEFAULT_PROJECT)
+            self._create_project(ProjectModel(name=DEFAULT_PROJECT_NAME))
+
+    def register_default_stack(self) -> None:
+        """Populates the store with the default Stack.
+
+        The default stack contains a local orchestrator and a local artifact
+        store.
+        """
+        stack = Stack.default_local_stack()
+        stack_model = StackModel.from_stack(stack)
+        self._register_stack_and_stack_components(
+            stack=stack_model, 
+            user_id=self.default_user_id, 
+            project_id=self.default_project_id
+        )
+        metadata = {c.type.value: c.flavor for c in stack_model.components}
+        metadata["store_type"] = self.type.value
+        self._track_event(
+            AnalyticsEvent.REGISTERED_DEFAULT_STACK, metadata=metadata
+        )
 
     # Static methods:
 
@@ -266,45 +316,88 @@ class BaseZenStore(ABC):
         """
 
     def register_stack(
-        self, user: UserModel, project: ProjectModel, stack: StackModel
+        self,
+        user_id: str,
+        project_id: str,
+        stack: StackModel
     ) -> StackModel:
         """Register a new stack.
 
         Args:
             stack: The stack to register.
-            user: The user that is registering this stack
-            project: The project within which that stack is registered
+            user_id: The user that is registering this stack
+            project_id: The project within which that stack is registered
 
         Returns:
             The registered stack.
 
         Raises:
             StackExistsError: In case a stack with that name is already owned
-                              by this user on this project.
+                by this user on this project.
         """
         metadata = {c.type.value: c.flavor for c in stack.components}
         metadata["store_type"] = self.type.value
         self._track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
-        return self._register_stack(stack=stack, user=user, project=project)
+        return self._register_stack(
+            stack=stack, user_id=user_id, project_id=project_id
+        )
 
     @abstractmethod
     def _register_stack(
-        self, user: UserModel, project: ProjectModel, stack: StackModel
+        self,
+        user_id: str,
+        project_id: str,
+        stack: StackModel
     ) -> StackModel:
         """Register a new stack.
 
         Args:
             stack: The stack to register.
-            user: The user that is registering this stack
-            project: The project within which that stack is registered
+            user_id: The user that is registering this stack
+            project_id: The project within which that stack is registered
 
         Returns:
             The registered stack.
 
         Raises:
             StackExistsError: In case a stack with that name is already owned
-                              by this user on this project.
+                by this user on this project.
         """
+
+    def _register_stack_and_stack_components(
+        self,
+        user_id: str,
+        project_id: str,
+        stack: StackModel
+    ) -> StackModel:
+        """Register a new stack and all of its components.
+
+        Args:
+            stack: The stack to register.
+            user_id: The user that is registering this stack
+            project_id: The project within which that stack is registered
+        
+        Returns:
+            The registered stack.
+        
+        Raises:
+            StackExistsError: In case a stack with that name is already owned
+                by this user on this project.
+        """
+        for component in stack.components:
+            try:
+                self._register_stack_component(
+                    user_id=user_id, 
+                    project_id=project_id, 
+                    component=component
+                )
+            except StackComponentExistsError:
+                pass
+        return self._register_stack(
+            user_id=user_id, 
+            project_id=project_id, 
+            stack=stack
+        )
 
     def update_stack(
         self, stack_id: str, user: UserModel, project: ProjectModel, stack: StackModel
@@ -918,8 +1011,15 @@ class BaseZenStore(ABC):
     # '----------'
 
     # TODO: [ALEX] add filtering param(s)
-    @abstractmethod
     def list_projects(self) -> List[ProjectModel]:
+        """List all projects.
+
+        Returns:
+            A list of all projects.
+        """
+
+    @abstractmethod
+    def _list_projects(self) -> List[ProjectModel]:
         """List all projects.
 
         Returns:
@@ -2430,45 +2530,6 @@ class BaseZenStore(ABC):
             self._stack_from_dict(name, conf)
             for name, conf in self.stack_configurations.items()
         ]
-
-    def register_default_stack(self) -> None:
-        """Populates the store with the default Stack.
-
-        The default stack contains a local orchestrator and a local artifact
-        store.
-        """
-        stack = Stack.default_local_stack()
-        sw = StackModel.from_stack(stack)
-        self._register_stack(sw)
-        metadata = {c.type.value: c.flavor for c in sw.components}
-        metadata["store_type"] = self.type.value
-        self._track_event(
-            AnalyticsEvent.REGISTERED_DEFAULT_STACK, metadata=metadata
-        )
-
-    def create_default_user(self) -> None:
-        """Creates a default user."""
-        # Check if the default user already exists.
-        users = self._list_users()
-        for user in users:
-            if user.name == DEFAULT_USERNAME:
-                return
-        
-        # Use private interface and send custom tracking event
-        self._track_event(AnalyticsEvent.CREATED_DEFAULT_USER)
-        self._create_user(UserModel(name=DEFAULT_USERNAME))
-
-    def create_default_project(self) -> None:
-        """Creates a default project."""
-        # Check if the default project already exists.
-        projects = self.list_projects()
-        for project in projects:
-            if project.name == DEFAULT_PROJECT_NAME:
-                return
-
-        # Use private interface and send custom tracking event
-        self._track_event(AnalyticsEvent.CREATED_DEFAULT_PROJECT)
-        self._create_project(ProjectModel(name=DEFAULT_PROJECT_NAME))
 
     # Common code (internal implementations, private):
 

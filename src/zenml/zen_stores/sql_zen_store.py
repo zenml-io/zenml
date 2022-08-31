@@ -128,12 +128,6 @@ class SqlZenStore(BaseZenStore):
         sql_kwargs.pop("skip_migration", False)
         self.engine = create_engine(url, *args, **sql_kwargs)
         SQLModel.metadata.create_all(self.engine)
-        with Session(self.engine) as session:
-            if not session.exec(select(UserSchema)).first():
-                session.add(UserSchema(name=DEFAULT_USERNAME))
-                session.add(ProjectSchema(name=DEFAULT_PROJECT_NAME))
-            session.commit()
-
         super().initialize(url, *args, **kwargs)
         return self
 
@@ -346,10 +340,12 @@ class SqlZenStore(BaseZenStore):
             components_in_model = {c.type: c.id for c in components}
             return stack.to_model(components_in_model)
 
-    def _register_stack(self,
-                        user_id: str,
-                        project_id: str,
-                        stack: StackModel) -> StackModel:
+    def _register_stack(
+        self,
+        user_id: str,
+        project_id: str,
+        stack: StackModel
+    ) -> StackModel:
         """Register a new stack.
 
         Args:
@@ -362,7 +358,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             StackExistsError: In case a stack with that name is already owned
-                              by this user on this project.
+                by this user on this project.
         """
         with Session(self.engine) as session:
             # Check if stack with the domain key (name, prj, owner) already
@@ -386,7 +382,8 @@ class SqlZenStore(BaseZenStore):
             defined_components = session.exec(
                 select(StackComponentSchema).where(
                     StackComponentSchema.id in stack.components.values()
-                )).all
+                )
+            ).all()
             # TODO: [ALEXE] verify this returns List["StackComponentSchema"]
 
             # Create the stack
@@ -584,7 +581,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
             # TODO: [ALEXEJ] verify that the component_in_db instance is actually
-            #  updated automatically after the session commit
+            # updated automatically after the session commit
             return component_in_db.to_model()
 
     def _update_stack_component(
@@ -964,7 +961,7 @@ class SqlZenStore(BaseZenStore):
     # | PROJECTS |
     # '----------'
 
-    def list_projects(self) -> List[ProjectModel]:
+    def _list_projects(self) -> List[ProjectModel]:
         """List all projects.
 
         Returns:
