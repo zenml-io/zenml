@@ -277,7 +277,7 @@ class BaseZenStore(ABC):
     def list_stacks(
         self,
         project_id: str,
-        owner: Optional[str] = None,
+        user_id: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
     ) -> List[StackModel]:
@@ -285,20 +285,20 @@ class BaseZenStore(ABC):
 
         Args:
             project_id: Id of the Project containing the stack components
-            owner: Optionally filter stack components by the owner
+            user_id: Optionally filter stack components by the owner
             name: Optionally filter stack component by name
             is_shared: Optionally filter out stack component by the `is_shared`
                        flag
         Returns:
             A list of all stacks.
         """
-        return self._list_stacks(project_id, owner, name, is_shared)
+        return self._list_stacks(project_id, user_id, name, is_shared)
 
     @abstractmethod
     def _list_stacks(
         self,
         project_id: str,
-        owner: Optional[str] = None,
+        owner: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
     ) -> List[StackModel]:
@@ -306,7 +306,7 @@ class BaseZenStore(ABC):
 
         Args:
             project_id: Id of the Project containing the stack components
-            owner: Optionally filter stack components by the owner
+            user_id: Optionally filter stack components by the owner
             name: Optionally filter stack component by name
             is_shared: Optionally filter out stack component by the `is_shared`
                        flag
@@ -340,40 +340,6 @@ class BaseZenStore(ABC):
 
         Raises:
             KeyError: if the stack doesn't exist.
-        """
-
-    def get_stack_in_project(self, stack_name: str, project_name: str) -> StackModel:
-        """Get a stack by name in a project.
-
-        This is mainly useful to resolve the active stack of the repository.
-
-        Args:
-            stack_name: The name of the stack to get.
-            project_name: The name of the project the stack is in.
-
-        Returns:
-            The stack.
-
-        Raises:
-            KeyError: if the stack or project doesn't exist.
-        """
-        return self._get_stack_in_project(stack_name, project_name)
-
-    @abstractmethod
-    def _get_stack_in_project(self, stack_name: str, project_name: str) -> StackModel:
-        """Get a stack by name in a project.
-
-        This is mainly useful to resolve the active stack of the repository.
-
-        Args:
-            stack_name: The name of the stack to get.
-            project_name: The name of the project the stack is in.
-
-        Returns:
-            The stack.
-
-        Raises:
-            KeyError: if the stack or project doesn't exist.
         """
 
     def register_stack(

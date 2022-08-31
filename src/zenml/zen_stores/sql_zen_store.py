@@ -238,7 +238,7 @@ class SqlZenStore(BaseZenStore):
     def _list_stacks(
         self,
         project_id: str,
-        owner: Optional[str] = None,
+        user_id: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
     ) -> List[StackModel]:
@@ -246,7 +246,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             project_id: Id of the Project containing the stack components
-            owner: Optionally filter stack components by the owner
+            user_id: Optionally filter stack components by the owner
             name: Optionally filter stack component by name
             is_shared: Optionally filter out stack component by the `is_shared`
                        flag
@@ -258,8 +258,8 @@ class SqlZenStore(BaseZenStore):
             # Get a list of all stacks
             query = select(StackSchema)
             # TODO: prettify
-            if owner:
-                 query = query.where(StackComponentSchema.owner == owner)
+            if user_id:
+                 query = query.where(StackComponentSchema.owner == user_id)
             if name:
                  query = query.where(StackComponentSchema.name == name)
             if is_shared is not None:
@@ -285,49 +285,7 @@ class SqlZenStore(BaseZenStore):
 
             if stack is None:
                 raise KeyError(f"Stack with ID {stack_id} not found.")
-
-            components = session.exec(
-                select(StackComponentSchema)
-                .where(StackCompositionSchema.stack_id == stack.id)
-                .where(StackCompositionSchema.component_id == StackComponentSchema.id)
-            ).all()
-
-        components_in_model = {c.type: c.id for c in components}
-        return stack.to_model(components_in_model)
-
-    def _get_stack_in_project(self, stack_name: str, project_name: str) -> StackModel:
-        """Get a stack by name in a project.
-
-        This is mainly useful to resolve the active stack of the active project.
-
-        Args:
-            stack_name: The name of the stack to get.
-            project_name: The name of the project the stack is in.
-
-        Returns:
-            The stack.
-
-        Raises:
-            KeyError: if no project with the given name exists in the project.
-        """
-        project = self._get_project(project_name)
-        with Session(self.engine) as session: 
-            stack = session.exec(
-                select(StackSchema)
-                .where(StackSchema.name == stack_name)
-                .where(StackSchema.project_id == project.id)
-            ).first()
-            if stack is None:
-                raise KeyError(
-                    f"Stack {stack_name} not found in project {project_name}."
-                )
-            components = session.exec(
-                select(StackComponentSchema)
-                .where(StackCompositionSchema.stack_id == stack.id)
-                .where(StackCompositionSchema.component_id == StackComponentSchema.id)
-            ).all()
-            components_in_model = {c.type: c.id for c in components}
-            return stack.to_model()
+        return stack.to_model()
 
     def _register_stack(
         self,

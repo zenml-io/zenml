@@ -420,10 +420,14 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
         # Ensure that the repository active stack is still valid
         try:
-            self.zen_store.get_stack_in_project(
-                stack_name=self.__config.active_stack_name,
-                project_name=self.active_profile.active_project,
+            self.zen_store.list_stacks(
+                name=self.__config.active_stack_name,
+                project_id=self.active_profile.active_project,
+                user_id=self.zen_store.default_user_id
             )
+            # TODO: this will return a list that is hopefully length 1 -
+            #  this would have to be validated, additionally this does not
+            #  gurantee that the stack is actually active
         except KeyError:
             logger.warning(
                 "Stack `%s` not found. Switching the repository active stack "
