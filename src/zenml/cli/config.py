@@ -25,7 +25,6 @@ from zenml.console import console
 from zenml.enums import CliCategories, LoggingLevels
 from zenml.repository import Repository
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
-from zenml.zen_stores.rest_zen_store import RestZenStoreConfiguration
 
 if TYPE_CHECKING:
     pass
@@ -180,6 +179,8 @@ def config_set_command(
         project: The active project that is used to connect to the ZenML
             server.
     """
+    from zenml.zen_stores.rest_zen_store import RestZenStoreConfiguration
+
     if local_store:
         if url or username or password or project:
             cli_utils.error(

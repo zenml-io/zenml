@@ -40,7 +40,7 @@ if TYPE_CHECKING:
     from zenml.models import ProjectModel, UserModel, ZenStoreModel
     from zenml.pipelines import BasePipeline
     from zenml.post_execution import PipelineView
-    from zenml.zen_stores import BaseZenStore
+    from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
 

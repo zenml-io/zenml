@@ -20,7 +20,7 @@ from zenml.constants import STACK_CONFIGURATIONS, STACKS, USERS
 from zenml.services import ServiceState
 from zenml.utils.networking_utils import scan_for_available_port
 from zenml.zen_server.zen_server import ZenServer, ZenServerConfig
-from zenml.zen_stores import SqlZenStore
+from zenml.zen_stores.sql_zen_store import SqlZenStore
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 
 

@@ -31,7 +31,7 @@ from zenml.utils import io_utils, yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 if TYPE_CHECKING:
-    from zenml.zen_stores import BaseZenStore
+    from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
 

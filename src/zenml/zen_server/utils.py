@@ -10,7 +10,7 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ENV_ZENML_PROFILE_NAME
 from zenml.enums import StoreType
 from zenml.repository import Repository
-from zenml.zen_stores import BaseZenStore
+from zenml.zen_stores.base_zen_store import BaseZenStore
 
 profile_name = os.environ.get(ENV_ZENML_PROFILE_NAME)
 

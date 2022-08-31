@@ -27,7 +27,6 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.logger import get_logger
@@ -110,7 +109,8 @@ class BaseZenStore(BaseModel):
         Raises:
             TypeError: If the store type is unsupported.
         """
-        from zenml.zen_stores import SqlZenStore # RestZenStore, SqlZenStore
+        from zenml.zen_stores.sql_zen_store import SqlZenStore
+        # from zenml.zen_stores.rest_zen_store import RestZenStore
 
         store_class = {
             StoreType.SQL: SqlZenStore,
@@ -217,6 +217,7 @@ class BaseZenStore(BaseModel):
         The default stack contains a local orchestrator and a local artifact
         store.
         """
+        from zenml.config.global_config import GlobalConfiguration
 
         orchestrator_config = {}
         encoded_orchestrator_config = base64.urlsafe_b64encode(

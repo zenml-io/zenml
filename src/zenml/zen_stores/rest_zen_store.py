@@ -59,7 +59,7 @@ from zenml.post_execution.artifact import ArtifactView
 from zenml.post_execution.pipeline import PipelineView
 from zenml.post_execution.pipeline_run import PipelineRunView
 from zenml.post_execution.step import StepView
-from zenml.zen_stores import BaseZenStore
+from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
 

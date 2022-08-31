@@ -54,8 +54,7 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.post_execution.artifact import ArtifactView
 from zenml.utils import io_utils
-from zenml.zen_stores import BaseZenStore
-from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
+from zenml.zen_stores.base_zen_store import BaseZenStore, DEFAULT_USERNAME
 from zenml.models.code_models import CodeRepositoryModel
 from zenml.models.pipeline_models import PipelineModel, StepModel
 from zenml.post_execution.pipeline import PipelineView
