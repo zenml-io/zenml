@@ -15,6 +15,7 @@
 
 import base64
 import json
+from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
@@ -41,7 +42,8 @@ class ComponentModel(BaseModel):
     id is set when the database entry is created
     """
 
-    id: UUID = Field(
+    id: Optional[UUID] = Field(
+        default=None,
         title="The id of the Stack Component.",
     )
     name: str = Field(
@@ -56,15 +58,20 @@ class ComponentModel(BaseModel):
     configuration: bytes = Field(  # b64 encoded yaml config
         title="The id of the Stack Component.",
     )
-    owner: str = Field(
+    owner: Optional[UUID] = Field(
+        default=None,
         title="The id of the user, that owns this component.",
     )
     is_shared: bool = Field(
         default=False,
         title="Flag describing if this component is shared.",
     )
-    project: str = Field(title="The project that contains this component.")
-    created_at: str = Field(
+    project: Optional[str] = Field(
+        default=None,
+        title="The project that contains this component."
+    )
+    created_at: Optional[datetime] = Field(
+        default=None,
         title="The time at which the component was registered.",
     )
 

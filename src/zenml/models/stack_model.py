@@ -12,8 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Stack wrapper implementation."""
-import os
-from typing import Dict, Optional, Union
+from datetime import datetime
+from typing import Dict, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -37,7 +37,7 @@ class StackModel(BaseModel):
 
     id: Optional[UUID]
     name: str
-    description: Union[str, None] = Field(
+    description: Optional[str] = Field(
         default=None, title="The description of the stack", max_length=300
     )
     components: Dict[StackComponentType, str] = Field(
@@ -48,11 +48,16 @@ class StackModel(BaseModel):
         default=False,
         title="Flag describing if this stack is shared.",
     )
-    project: str = Field(title="The project that contains this stack. ")
-    owner: str = Field(
+    project: Optional[str] = Field(
+        default=None,
+        title="The project that contains this stack."
+    )
+    owner: Optional[UUID] = Field(
+        default=None,
         title="The id of the user, that created this stack.",
     )
-    created_at: str = Field(
+    created_at: Optional[datetime] = Field(
+        default=None,
         title="The time at which the stack was registered.",
     )
 
@@ -75,24 +80,24 @@ class StackModel(BaseModel):
 
     @classmethod
     def from_stack(cls, stack: Stack) -> "StackModel":
-        """Creates a StackWrapper from an actual Stack instance.
+        """Creates a StackModel from an actual Stack instance.
 
         Args:
             stack: the instance of a Stack
 
         Returns:
-            a StackWrapper
+            a StackModel
         """
         return cls(
             name=stack.name,
-            components=[
-                ComponentModel.from_component(component)
-                for t, component in stack.components.items()
-            ],
+            components={
+                type_: ComponentModel.from_component(component).id 
+                for type_, component in stack.components.items()
+            },
         )
 
     def to_stack(self) -> Stack:
-        """Creates the corresponding Stack instance from the wrapper.
+        """Creates the corresponding Stack instance from the StackModel.
 
         Returns:
             the corresponding Stack instance
