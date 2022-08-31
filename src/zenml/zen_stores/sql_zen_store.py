@@ -723,7 +723,7 @@ class SqlZenStore(BaseZenStore):
 
             # After committing the model, sqlmodel takes care of updating the
             # object with id, created_at, etc ...
-
+            
             return new_user.to_model()
 
     def _get_user(self, user_id: str, invite_token: str = None) -> UserModel:

@@ -81,7 +81,12 @@ class CodeRepositorySchema(SQLModel, table=True):
         return cls(name=model.name, project_id=project_id)
 
     def to_model(self) -> CodeRepositoryModel:
-        return CodeRepositoryModel(**self.dict())
+        return CodeRepositoryModel(
+            id=self.id,
+            name=self.name,
+            project_id=self.project_id,
+            created_at=self.created_at,
+        )
 
 # Users, Teams, Roles
 
@@ -128,7 +133,11 @@ class RoleSchema(SQLModel, table=True):
         return cls(name=model.name)
 
     def to_model(self) -> RoleModel:
-        return RoleModel(**self.dict())
+        return RoleModel(
+            id=self.id,
+            name=self.name,
+            created_at=self.created_at,
+        )
 
 class UserRoleAssignmentSchema(SQLModel, table=True):
     """SQL Model for assigning roles to users for a given project."""
@@ -188,12 +197,8 @@ class StackSchema(SQLModel, table=True):
 
     name: str
     is_shared: bool
-    project_id: UUID = Field(
-        foreign_key="projectschema.id", nullable=True
-    )  # TODO: Unnullableify this
-    owner: UUID = Field(
-        foreign_key="userschema.id", nullable=True
-    )  # TODO: Unnullableify this
+    project_id: UUID = Field(foreign_key="projectschema.id")
+    owner: UUID = Field(foreign_key="userschema.id", nullable=True)
 
     components: List["StackComponentSchema"] = Relationship(
         back_populates="stack", link_model=StackCompositionSchema
@@ -249,9 +254,7 @@ class StackComponentSchema(SQLModel, table=True):
         foreign_key="flavorschema.id", nullable=True
     )  # TODO: Prefill flavors
     owner: UUID = Field(foreign_key="userschema.id", nullable=True)
-    project_id: UUID = Field(
-        foreign_key="projectschema.id", nullable=True
-    )  # TODO: Unnullableify this
+    project_id: UUID = Field(foreign_key="projectschema.id", nullable=True)
 
     configuration: bytes
 
