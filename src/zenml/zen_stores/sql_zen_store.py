@@ -253,12 +253,9 @@ class SqlZenStore(BaseZenStore):
             A list of all stacks.
         """
         with Session(self.engine) as session:
-            query = (
-                select(StackSchema, StackComponentSchema)
-                .where(StackSchema.id == StackCompositionSchema.stack_id)
-                .where(StackComponentSchema.id ==
-                       StackCompositionSchema.component_id))
-
+            
+            # Get a list of all stacks
+            query = select(StackSchema)
             # TODO: [ALEXEJ] prettify this
             if owner:
                  query = query.where(StackComponentSchema.owner == owner)
@@ -266,18 +263,24 @@ class SqlZenStore(BaseZenStore):
                  query = query.where(StackComponentSchema.name == name)
             if is_shared is not None:
                 query = query.where(StackComponentSchema.is_shared == is_shared)
+            stacks = session.exec(query).all()
 
-            list_of_stacks_and_components = session.exec(query).all()
+            # For each stack, get all stack components and create a stack model
+            stack_models = []
+            for stack in stacks:
+                stack_components = session.exec(
+                    select(StackComponentSchema)
+                    .where(StackSchema.id == StackCompositionSchema.stack_id)
+                    .where(StackComponentSchema.id == StackCompositionSchema.component_id)
+                ).all()
+                component_dict = {
+                    component.type: component
+                    for component in stack_components
+                }
+                stack_model = stack.to_model(components=component_dict)
+                stack_models.append(stack_model)
 
-        # TODO: [ALEXE] revisit this once the exact output format for
-        #  the list_of_stacks_and_components, maybe split into two queries
-        filtered_stack_models = list()
-        for stack, components in list_of_stacks_and_components:
-            components: List[StackComponentSchema] = components
-            components_in_model = {c.type: c.id for c in components}
-            filtered_stack_models.append(stack.to_model(components_in_model))
-
-        return filtered_stack_models
+            return stack_models
 
     def _get_stack(self, stack_id: str) -> StackModel:
         """Get a stack by id.
@@ -379,28 +382,33 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Get the Schemas of all components mentioned in the stack model
-            defined_components = session.exec(
-                select(StackComponentSchema).where(
-                    StackComponentSchema.id in stack.components.values()
+            # and link them to the stack
+            component_ids = {c.id for c in stack.components.values()}
+            defined_components = []
+            for component_id in component_ids:
+                component = session.exec(
+                    select(StackComponentSchema)
+                    .where(StackComponentSchema.id == component_id)
+                ).first()
+                if component is None:
+                    raise KeyError(f"Component with id {component_id} not found.")
+                # Link component to stack
+                session.add(
+                    StackCompositionSchema(
+                        stack_id=stack.id, 
+                        component_id=component_id
+                    )
                 )
-            ).all()
-            # TODO: [ALEXE] verify this returns List["StackComponentSchema"]
 
             # Create the stack
             stack_in_db = StackSchema.from_create_model(
                 project_id=project_id,
                 user_id=user_id,
-                defined_components=defined_components,
                 stack=stack
             )
             session.add(stack_in_db)
             session.commit()
-
-            components_in_model = {c.type: c.id for c in defined_components}
-
-            # TODO: [ALEXEJ] verify that the stack_in_db instance is actually
-            #  updated automatically after the session commit
-            return stack_in_db.to_model(components_in_model)
+            return stack_in_db.to_model(stack.components)
 
     def _update_stack(self,
                       stack_id: str,

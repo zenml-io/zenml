@@ -200,15 +200,10 @@ class StackSchema(SQLModel, table=True):
     project_id: UUID = Field(foreign_key="projectschema.id")
     owner: UUID = Field(foreign_key="userschema.id", nullable=True)
 
-    components: List["StackComponentSchema"] = Relationship(
-        back_populates="stack", link_model=StackCompositionSchema
-    )
-
     @classmethod
     def from_create_model(cls,
                           user_id: UUID,
                           project_id: str,
-                          defined_components: List["StackComponentSchema"],
                           stack: StackModel) -> "StackSchema":
         """Create an incomplete StackSchema with `id` and `created_at` missing.
 
@@ -221,8 +216,7 @@ class StackSchema(SQLModel, table=True):
             project_id=project_id,
             owner=user_id,
             is_shared=stack.is_shared,
-            components=defined_components,
-            )
+        )
 
     def to_model(self, components: Dict[str, str]) -> "StackModel":
         """Creates a ComponentModel from an instance of a StackSchema.
@@ -259,10 +253,6 @@ class StackComponentSchema(SQLModel, table=True):
     configuration: bytes
 
     created_at: datetime = Field(default_factory=datetime.now)
-
-    stacks: List["StackSchema"] = Relationship(
-        back_populates="components", link_model=StackCompositionSchema
-    )
 
     @classmethod
     def from_create_model(cls,
