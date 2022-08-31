@@ -67,8 +67,8 @@ app.include_router(users_endpoints.router)
 # ## FLAVORS
 #
 #
-# @authed.get(FLAVORS, response_model=List[FlavorWrapper])
-# async def flavors() -> List[FlavorWrapper]:
+# @authed.get(FLAVORS, response_model=List[FlavorModel])
+# async def flavors() -> List[FlavorModel]:
 #     """Get all flavors.
 #
 #     Returns:
@@ -79,10 +79,10 @@ app.include_router(users_endpoints.router)
 #
 # @authed.post(
 #     FLAVORS,
-#     response_model=FlavorWrapper,
+#     response_model=FlavorModel,
 #     responses={409: error_response},
 # )
-# async def create_flavor(flavor: FlavorWrapper) -> FlavorWrapper:
+# async def create_flavor(flavor: FlavorModel) -> FlavorModel:
 #     """Creates a flavor.
 #
 #     # noqa: DAR401
@@ -108,7 +108,7 @@ app.include_router(users_endpoints.router)
 # )
 # async def get_flavor_by_type_and_name(
 #     component_type: StackComponentType, name: str
-# ) -> FlavorWrapper:
+# ) -> FlavorModel:
 #     """Returns a flavor of a given type and name.
 #
 #     Args:

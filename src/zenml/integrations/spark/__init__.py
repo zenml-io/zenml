@@ -19,7 +19,7 @@ from typing import List
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import SPARK
 from zenml.integrations.integration import Integration
-from zenml.zen_stores.models import FlavorWrapper
+from zenml.models import FlavorModel
 
 SPARK_KUBERNETES_STEP_OPERATOR = "spark-kubernetes"
 
@@ -36,14 +36,14 @@ class SparkIntegration(Integration):
         from zenml.integrations.spark import materializers  # noqa
 
     @classmethod
-    def flavors(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorModel]:
         """Declare the stack component flavors for the Spark integration.
 
         Returns:
             The flavor wrapper for the step operator flavor
         """
         return [
-            FlavorWrapper(
+            FlavorModel(
                 name=SPARK_KUBERNETES_STEP_OPERATOR,
                 source="zenml.integrations.spark.step_operators.KubernetesSparkStepOperator",
                 type=StackComponentType.STEP_OPERATOR,

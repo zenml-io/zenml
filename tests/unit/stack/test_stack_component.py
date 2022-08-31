@@ -21,7 +21,7 @@ from pydantic import ValidationError, validator
 from zenml.enums import StackComponentType
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.repository import Repository
-from zenml.stack.flavor_registry import FlavorWrapper, flavor_registry
+from zenml.stack.flavor_registry import FlavorModel, flavor_registry
 
 
 def test_stack_component_default_method_implementations(stub_component):
@@ -96,9 +96,9 @@ class StubOrchestrator(BaseOrchestrator):
 
 
 @pytest.fixture
-def register_stub_orchestrator_flavor() -> Iterator[FlavorWrapper]:
+def register_stub_orchestrator_flavor() -> Iterator[FlavorModel]:
     """Create the stub orchestrator flavor temporarily."""
-    flavor = FlavorWrapper(
+    flavor = FlavorModel(
         name=StubOrchestrator.FLAVOR,
         type=StubOrchestrator.TYPE,
         source=f"{StubOrchestrator.__module__}.{StubOrchestrator.__name__}",
