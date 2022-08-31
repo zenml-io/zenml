@@ -245,37 +245,6 @@ class Stack:
             data_validator=data_validator,
         )
 
-    @classmethod
-    def default_local_stack(cls) -> "Stack":
-        """Creates a stack instance which is configured to run locally.
-
-        Returns:
-            A stack instance configured to run locally.
-        """
-        from zenml.artifact_stores import LocalArtifactStore
-        from zenml.orchestrators import LocalOrchestrator
-
-        orchestrator = LocalOrchestrator(name="default")
-
-        artifact_store_uuid = uuid.uuid4()
-        artifact_store_path = os.path.join(
-            GlobalConfiguration().config_directory,
-            "local_stores",
-            str(artifact_store_uuid),
-        )
-        io_utils.create_dir_recursive_if_not_exists(artifact_store_path)
-        artifact_store = LocalArtifactStore(
-            name="default",
-            uuid=artifact_store_uuid,
-            path=artifact_store_path,
-        )
-
-        return cls(
-            name="default",
-            orchestrator=orchestrator,
-            artifact_store=artifact_store,
-        )
-
     @property
     def components(self) -> Dict[StackComponentType, "StackComponent"]:
         """All components of the stack.

@@ -24,9 +24,12 @@ from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.models.component_models import ComponentModel
 from zenml.models.stack_model import StackModel
 from zenml.models.code_models import CodeRepositoryModel
-from zenml.models.pipeline_models import PipelineModel, PipelineRunModel, StepModel, StepRunModel
-from zenml.models.user_management_models import ProjectModel, RoleModel, UserModel
-
+from zenml.models.pipeline_models import (
+    PipelineModel, PipelineRunModel, StepModel, StepRunModel
+)
+from zenml.models.user_management_models import (
+    ProjectModel, RoleModel, UserModel
+)
 
 def _sqlmodel_uuid() -> UUID:
     """Generates a UUID whose hex string does not start with a '0'.

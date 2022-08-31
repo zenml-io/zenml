@@ -15,7 +15,7 @@
 
 import base64
 import json
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
 import yaml
