@@ -174,7 +174,7 @@ class BaseZenStore(ABC):
         #     logger.warning("Default Artifact Store exists already, "
         #                    "skipping creation ...")
 
-        components = {c.type: c.id for c in [orchestrator, artifact_store]}
+        components = {c.type: c for c in [orchestrator, artifact_store]}
         # Register the default stack
         stack = StackModel(
             name="default",

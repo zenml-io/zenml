@@ -40,7 +40,7 @@ class StackModel(BaseModel):
     description: Optional[str] = Field(
         default=None, title="The description of the stack", max_length=300
     )
-    components: Dict[StackComponentType, UUID] = Field(
+    components: Dict[StackComponentType, ComponentModel] = Field(
         title="A mapping of stack component types to the id's of"
         "instances of components of this type."
     )

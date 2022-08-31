@@ -196,7 +196,7 @@ class StackSchema(SQLModel, table=True):
     )  # TODO: Unnullableify this
 
     components: List["StackComponentSchema"] = Relationship(
-        back_populates="stack", link_model=StackCompositionSchema
+        back_populates="stacks", link_model=StackCompositionSchema
     )
 
     @classmethod
@@ -219,19 +219,20 @@ class StackSchema(SQLModel, table=True):
             components=defined_components,
             )
 
-    def to_model(self, components: Dict[str, str]) -> "StackModel":
+    def to_model(self) -> "StackModel":
         """Creates a ComponentModel from an instance of a StackSchema.
 
         Returns:
             a ComponentModel
         """
+
         return StackModel(
             id=self.id,
             name=self.name,
             owner=self.owner,
             project_id=self.project_id,
             is_shared=self.is_shared,
-            components=components
+            components={c.type: c.to_model() for c in self.components}
         )
 
 

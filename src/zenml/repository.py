@@ -713,7 +713,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             A dictionary containing the configuration of all stacks registered
             in this repository.
         """
-        return self.zen_store.stack_configurations
+        stack = self.zen_store.list_stacks(self.zen_store.default_project_id)
+        return {}
 
     @property
     def active_stack(self) -> Stack:
