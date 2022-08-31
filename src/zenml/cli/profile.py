@@ -369,13 +369,26 @@ def list_profiles(
         path: Custom path where to look for profiles. The current global
             configuration path is used if not set.
     """
+    Repository()
+    cli_utils.warning(
+        "ZenML profiles have been deprecated and removed in this version of "
+        "ZenML. All stacks, stack components, flavors etc. are now stored "
+        "and managed globally, either in a local database or on a remote ZenML "
+        "server (see the `zenml config` command). As alternatives, you can use "
+        "different global configuration paths by setting the `ZENML_CONFIG_PATH` "
+        "environment variable to point to a different location, or use projects "
+        "as a scoping mechanism for stack and stack components.\n\n"
+        "The information stored in legacy profiles is not automatically "
+        "migrated. You can do so manually by using the `zenml profile list` and "
+        "`zenml profile migrate` commands."
+    )
     profiles_found = False
     for store in find_profiles(path):
         console.print(
             f"Found profile with {len(store.stacks)} stacks, "
             f"{len(store.stack_components)} components and "
             f"{len(store.stack_component_flavors)} flavors at: "
-            f"{os.path.dirname(store.config_file)}."
+            f"{os.path.dirname(store.config_file)}"
         )
         profiles_found = True
     if not profiles_found:
@@ -383,19 +396,19 @@ def list_profiles(
 
 
 @profile.command(
-    "import",
-    help="Import stacks, stack components and flavors from a legacy profile.",
+    "migrate",
+    help="Migrate stacks, components and flavors from a legacy profile.",
 )
 @click.option(
     "--stacks",
     is_flag=True,
-    help="Import stacks and stack components from the profile.",
+    help="Migrate stacks and stack components from the profile.",
     type=click.BOOL,
 )
 @click.option(
     "--flavors",
     is_flag=True,
-    help="Import flavors from the profile.",
+    help="Migrate flavors from the profile.",
     type=click.BOOL,
 )
 @click.option(
@@ -408,7 +421,7 @@ def list_profiles(
     "--ignore-errors",
     is_flag=True,
     help=(
-        "Continue the import process if an error is encountered for a "
+        "Continue the migration process if an error is encountered for a "
         "particular entry."
     ),
     type=click.BOOL,
@@ -418,12 +431,12 @@ def list_profiles(
     type=str,
     default="",
     help=(
-        "Use a prefix for the names of imported stacks, stack components and "
+        "Use a prefix for the names of migrated stacks, stack components and "
         "flavors."
     ),
 )
 @click.argument("profile_path", type=click.STRING)
-def import_profiles(
+def migrate_profiles(
     stacks: bool,
     flavors: bool,
     overwrite: bool,
@@ -431,11 +444,11 @@ def import_profiles(
     prefix: str,
     profile_path: str,
 ) -> None:
-    """Import stacks, stack components and flavors from a legacy profile.
+    """Migrate stacks, stack components and flavors from a legacy profile.
 
     Args:
-        stacks: Import stacks and stack components from the profile.
-        flavors: Import flavors from the profile.
+        stacks: Migrate stacks and stack components from the profile.
+        flavors: Migrate flavors from the profile.
         overwrite: Overwrite the existing stacks, stack components and flavors.
         ignore_errors: Continue the import process if an error is encountered.
         prefix: Use a prefix for the names of imported stacks, stack components and
@@ -452,19 +465,17 @@ def import_profiles(
             "Please specify a single profile."
         )
     if not stacks and not flavors:
-        cli_utils.error(
-            "Please specify at least one of '--stacks' and '--flavors'."
-        )
+        stacks = flavors = True
     store = stores[0]
     repo = Repository()
     if flavors:
         if not store.stack_component_flavors:
             cli_utils.declare(
-                f"No component flavors to import from {store.config_file}..."
+                f"No component flavors to migrate from {store.config_file}..."
             )
         else:
             cli_utils.declare(
-                f"Importing component flavors from {store.config_file}..."
+                f"Migrating component flavors from {store.config_file}..."
             )
             for flavor in store.stack_component_flavors:
                 name = f"{prefix}{flavor.name}"
@@ -474,10 +485,10 @@ def import_profiles(
                         name=name,
                         stack_component_type=flavor.type,
                     )
-                    cli_utils.declare(f"Imported component flavor '{name}'.")
+                    cli_utils.declare(f"Migrated component flavor '{name}'.")
                 except EntityExistsError:
                     msg = (
-                        f"Cannot import component flavor '{name}. It already "
+                        f"Cannot migrate component flavor '{name}. It already "
                         f"exists."
                     )
                     if ignore_errors:
@@ -488,17 +499,17 @@ def import_profiles(
     if stacks:
         if not store.contains_stack_components():
             cli_utils.declare(
-                f"No stack components to import from {store.config_file}..."
+                f"No stack components to migrate from {store.config_file}..."
             )
         else:
             cli_utils.declare(
-                f"Importing stack components from {store.config_file}..."
+                f"Migrating stack components from {store.config_file}..."
             )
             for component in store.get_components(prefix=prefix):
                 try:
                     repo.zen_store.register_stack_component(component)
                     cli_utils.declare(
-                        f"Imported {component.type} '{component.name}' with "
+                        f"Migrated {component.type} '{component.name}' with "
                         f"flavor '{component.flavor}'."
                     )
                 except StackComponentExistsError:
@@ -514,7 +525,7 @@ def import_profiles(
                         )
                     else:
                         msg = (
-                            f"Cannot import {component.type} "
+                            f"Cannot migrate {component.type} "
                             f"'{component.name}'. It already exists."
                         )
                         if ignore_errors:
@@ -524,14 +535,14 @@ def import_profiles(
 
         if not store.contains_stacks():
             cli_utils.declare(
-                f"No stacks to import from {store.config_file}..."
+                f"No stacks to migrate from {store.config_file}..."
             )
         else:
-            cli_utils.declare(f"Importing stacks from {store.config_file}...")
+            cli_utils.declare(f"Migrating stacks from {store.config_file}...")
             for stack in store.get_stacks(prefix=prefix):
                 try:
                     repo.zen_store.register_stack(stack)
-                    cli_utils.declare(f"Imported stack '{stack.name}'.")
+                    cli_utils.declare(f"Migrated stack '{stack.name}'.")
                 except StackExistsError:
                     if overwrite:
                         repo.zen_store.update_stack(
@@ -541,7 +552,7 @@ def import_profiles(
                         cli_utils.declare(f"Updated stack '{stack.name}'.")
                     else:
                         msg = (
-                            f"Cannot import stack '{stack.name}'. It already "
+                            f"Cannot migrate stack '{stack.name}'. It already "
                             f"exists."
                         )
                         if ignore_errors:
