@@ -240,12 +240,13 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             return not session.exec(select(StackSchema)).first()
 
-    def _list_stacks(self,
-                     project_id: str,
-                     owner: Optional[str],
-                     name: Optional[str],
-                     is_shared: Optional[bool]
-                     ) -> List[StackModel]:
+    def _list_stacks(
+        self,
+        project_id: str,
+        owner: Optional[str] = None,
+        name: Optional[str] = None,
+        is_shared: Optional[bool] = None,
+    ) -> List[StackModel]:
         """List all stacks within the filter.
 
         Args:
@@ -294,23 +295,56 @@ class SqlZenStore(BaseZenStore):
             The stack with the given id.
         """
         with Session(self.engine) as session:
-            stack_and_components = session.exec(
-                select(StackSchema, StackComponentSchema)
+            stack = session.exec(
+                select(StackSchema)
                 .where(StackSchema.id == stack_id)
-                .where(StackSchema.id == StackCompositionSchema.stack_id)
-                .where(
-                    StackComponentSchema.id
-                    == StackCompositionSchema.component_id
-                )
+            ).first()
+
+            if stack is None:
+                raise KeyError(f"Stack with ID {stack_id} not found.")
+
+            components = session.exec(
+                select(StackComponentSchema)
+                .where(StackCompositionSchema.stack_id == stack.id)
+                .where(StackCompositionSchema.component_id == StackComponentSchema.id)
             ).all()
 
-        # TODO: [ALEXEJ] Figure out why this is List[Tuple[s,c]]
-        #  instead of Tuple[s, List[c]], maybe split into two queries
-        stack = stack_and_components[0]
-        components: List[StackComponentSchema] = stack_and_components[1]
         components_in_model = {c.type: c.id for c in components}
-
         return stack.to_model(components_in_model)
+
+    def _get_stack_in_project(self, stack_name: str, project_name: str) -> StackModel:
+        """Get a stack by name in a project.
+
+        This is mainly useful to resolve the active stack of the active project.
+
+        Args:
+            stack_name: The name of the stack to get.
+            project_name: The name of the project the stack is in.
+
+        Returns:
+            The stack.
+
+        Raises:
+            KeyError: if no project with the given name exists in the project.
+        """
+        project = self._get_project(project_name)
+        with Session(self.engine) as session: 
+            stack = session.exec(
+                select(StackSchema)
+                .where(StackSchema.name == stack_name)
+                .where(StackSchema.project_id == project.id)
+            ).first()
+            if stack is None:
+                raise KeyError(
+                    f"Stack {stack_name} not found in project {project_name}."
+                )
+            components = session.exec(
+                select(StackComponentSchema)
+                .where(StackCompositionSchema.stack_id == stack.id)
+                .where(StackCompositionSchema.component_id == StackComponentSchema.id)
+            ).all()
+            components_in_model = {c.type: c.id for c in components}
+            return stack.to_model(components_in_model)
 
     def _register_stack(self,
                         user_id: str,
@@ -447,14 +481,15 @@ class SqlZenStore(BaseZenStore):
     # | STACK COMPONENTS |
     # '------------------'
 
-    def _list_stack_components(self,
-                               project_id: str,
-                               type: Optional[str],
-                               flavor_id: Optional[str],
-                               owner: Optional[str],
-                               name: Optional[str],
-                               is_shared: Optional[bool]
-                               ) -> List[ComponentModel]:
+    def _list_stack_components(
+        self,
+        project_id: str,
+        type: Optional[str] = None,
+        flavor_id: Optional[str] = None,
+        owner: Optional[str] = None,
+        name: Optional[str] = None,
+        is_shared: Optional[bool] = None
+    ) -> List[ComponentModel]:
         """List all stack components within the filter.
 
         Args:
@@ -1993,62 +2028,6 @@ class SqlZenStore(BaseZenStore):
                 for user in session.exec(select(UserSchema)).all()
             ]
 
-    def _create_user(self, user_name: str) -> UserModel:
-        """Creates a new user.
-
-        Args:
-            user_name: Unique username.
-
-        Returns:
-            The newly created user.
-
-        Raises:
-            EntityExistsError: If a user with the given name already exists.
-        """
-        with Session(self.engine) as session:
-            existing_user = session.exec(
-                select(UserSchema).where(UserSchema.name == user_name)
-            ).first()
-            if existing_user:
-                raise EntityExistsError(
-                    f"User with name '{user_name}' already exists."
-                )
-            sql_user = UserSchema(name=user_name)
-            user = UserModel(**sql_user.dict())
-            session.add(sql_user)
-            session.commit()
-        return user
-
-    def _delete_user(self, user_name: str) -> None:
-        """Deletes a user.
-
-        Args:
-            user_name: Name of the user to delete.
-
-        Raises:
-            KeyError: If no user with the given name exists.
-        """
-        with Session(self.engine) as session:
-            try:
-                user = session.exec(
-                    select(UserSchema).where(UserSchema.name == user_name)
-                ).one()
-            except NoResultFound as error:
-                raise KeyError from error
-
-            session.delete(user)
-            session.commit()
-            self._delete_query_results(
-                select(UserRoleAssignmentSchema).where(
-                    UserRoleAssignmentSchema.user_id == user.id
-                )
-            )
-            self._delete_query_results(
-                select(TeamAssignmentSchema).where(
-                    TeamAssignmentSchema.user_id == user.id
-                )
-            )
-
     @property
     def teams(self) -> List[TeamModel]:
         """All registered teams.
@@ -2202,91 +2181,6 @@ class SqlZenStore(BaseZenStore):
                 ProjectModel(**project.dict())
                 for project in session.exec(select(ProjectSchema)).all()
             ]
-
-    def _get_project(self, project_name: str) -> ProjectModel:
-        """Get an existing project by name.
-
-        Args:
-            project_name: Name of the project to get.
-
-        Returns:
-            The requested project if one was found.
-
-        Raises:
-            KeyError: If there is no such project.
-        """
-        with Session(self.engine) as session:
-            try:
-                project = session.exec(
-                    select(ProjectSchema).where(
-                        ProjectSchema.name == project_name
-                    )
-                ).one()
-            except NoResultFound as error:
-                raise KeyError from error
-
-            return ProjectModel(**project.dict())
-
-    def _create_project(
-        self, project_name: str, description: Optional[str] = None
-    ) -> ProjectModel:
-        """Creates a new project.
-
-        Args:
-            project_name: Unique project name.
-            description: Optional project description.
-
-        Returns:
-            The newly created project.
-
-        Raises:
-            EntityExistsError: If a project with the given name already exists.
-        """
-        with Session(self.engine) as session:
-            existing_project = session.exec(
-                select(ProjectSchema).where(ProjectSchema.name == project_name)
-            ).first()
-            if existing_project:
-                raise EntityExistsError(
-                    f"Project with name '{project_name}' already exists."
-                )
-            sql_project = ProjectSchema(name=project_name)
-            project = ProjectModel(**sql_project.dict())
-            session.add(sql_project)
-            session.commit()
-        return project
-
-    def _delete_project(self, project_name: str) -> None:
-        """Deletes a project.
-
-        Args:
-            project_name: Name of the project to delete.
-
-        Raises:
-            KeyError: If no project with the given name exists.
-        """
-        with Session(self.engine) as session:
-            try:
-                project = session.exec(
-                    select(ProjectSchema).where(
-                        ProjectSchema.name == project_name
-                    )
-                ).one()
-            except NoResultFound as error:
-                raise KeyError from error
-
-            session.delete(project)
-            session.commit()
-            self._delete_query_results(
-                select(UserRoleAssignmentSchema).where(
-                    UserRoleAssignmentSchema.project_id == project.id
-                )
-            )
-            self._delete_query_results(
-                select(TeamRoleAssignmentSchema).where(
-                    TeamRoleAssignmentSchema.project_id == project.id
-                )
-            )
 
     @property
     def roles(self) -> List[RoleModel]:

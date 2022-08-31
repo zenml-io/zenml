@@ -21,7 +21,8 @@ from sqlmodel import Session, select
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.enums import ExecutionStatus, StackComponentType
-from zenml.models import ComponentModel, StackModel
+from zenml.models.component_models import ComponentModel
+from zenml.models.stack_model import StackModel
 from zenml.models.code_models import CodeRepositoryModel
 from zenml.models.pipeline_models import (
     PipelineModel, PipelineRunModel, StepModel, StepRunModel

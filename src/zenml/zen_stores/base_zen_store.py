@@ -166,12 +166,13 @@ class BaseZenStore(ABC):
         """
 
     # TODO: [ALEX] add filtering param(s)
-    def list_stacks(self,
-                    project_id: str,
-                    owner: Optional[str],
-                    name: Optional[str],
-                    is_shared: Optional[bool]
-                    ) -> List[StackModel]:
+    def list_stacks(
+        self,
+        project_id: str,
+        owner: Optional[str] = None,
+        name: Optional[str] = None,
+        is_shared: Optional[bool] = None,
+    ) -> List[StackModel]:
         """List all stacks within the filter.
 
         Args:
@@ -183,15 +184,16 @@ class BaseZenStore(ABC):
         Returns:
             A list of all stacks.
         """
-        return self._list_stacks()
+        return self._list_stacks(project_id, owner, name, is_shared)
 
     @abstractmethod
-    def _list_stacks(self,
-                     project_id: str,
-                     owner: Optional[str],
-                     name: Optional[str],
-                     is_shared: Optional[bool]
-                     ) -> List[StackModel]:
+    def _list_stacks(
+        self,
+        project_id: str,
+        owner: Optional[str] = None,
+        name: Optional[str] = None,
+        is_shared: Optional[bool] = None,
+    ) -> List[StackModel]:
         """List all stacks within the filter.
 
         Args:
@@ -230,6 +232,40 @@ class BaseZenStore(ABC):
 
         Raises:
             KeyError: if the stack doesn't exist.
+        """
+
+    def get_stack_in_project(self, stack_name: str, project_name: str) -> StackModel:
+        """Get a stack by name in a project.
+
+        This is mainly useful to resolve the active stack of the repository.
+
+        Args:
+            stack_name: The name of the stack to get.
+            project_name: The name of the project the stack is in.
+
+        Returns:
+            The stack.
+
+        Raises:
+            KeyError: if the stack or project doesn't exist.
+        """
+        return self._get_stack_in_project(stack_name, project_name)
+
+    @abstractmethod
+    def _get_stack_in_project(self, stack_name: str, project_name: str) -> StackModel:
+        """Get a stack by name in a project.
+
+        This is mainly useful to resolve the active stack of the repository.
+
+        Args:
+            stack_name: The name of the stack to get.
+            project_name: The name of the project the stack is in.
+
+        Returns:
+            The stack.
+
+        Raises:
+            KeyError: if the stack or project doesn't exist.
         """
 
     def register_stack(
@@ -336,14 +372,15 @@ class BaseZenStore(ABC):
     # '------------------'
 
     # TODO: [ALEX] add filtering param(s)
-    def list_stack_components(self,
-                              project_id: str,
-                              type: Optional[str],
-                              flavor_id: Optional[str],
-                              owner: Optional[str],
-                              name: Optional[str],
-                              is_shared: Optional[bool]
-                              ) -> List[ComponentModel]:
+    def list_stack_components(
+        self,
+        project_id: str,
+        type: Optional[str] = None,
+        flavor_id: Optional[str] = None,
+        owner: Optional[str] = None,
+        name: Optional[str] = None,
+        is_shared: Optional[bool] = None
+    ) -> List[ComponentModel]:
         """List all stack components within the filter.
 
         Args:
@@ -361,14 +398,15 @@ class BaseZenStore(ABC):
         return self._list_stack_components()
 
     @abstractmethod
-    def _list_stack_components(self,
-                               project_id: str,
-                               type: Optional[str],
-                               flavor_id: Optional[str],
-                               owner: Optional[str],
-                               name: Optional[str],
-                               is_shared: Optional[bool]
-                               ) -> List[ComponentModel]:
+    def _list_stack_components(
+        self,
+        project_id: str,
+        type: Optional[str] = None,
+        flavor_id: Optional[str] = None,
+        owner: Optional[str] = None,
+        name: Optional[str] = None,
+        is_shared: Optional[bool] = None
+    ) -> List[ComponentModel]:
         """List all stack components within the filter.
 
         Args:
@@ -716,7 +754,7 @@ class BaseZenStore(ABC):
             user_id: The ID of the user to delete.
 
         Raises:
-            KeyError: If no user with the given name exists.
+            KeyError: If no user with the given ID exists.
         """
         self._track_event(AnalyticsEvent.DELETED_USER)
         return self._delete_user(user_id)
@@ -729,7 +767,7 @@ class BaseZenStore(ABC):
             user_id: The ID of the user to delete.
 
         Raises:
-            KeyError: If no user with the given name exists.
+            KeyError: If no user with the given ID exists.
         """
 
     def get_role_assignments_for_user(
@@ -2445,21 +2483,27 @@ class BaseZenStore(ABC):
 
     def create_default_user(self) -> None:
         """Creates a default user."""
-        try:
-            self.get_user(DEFAULT_USERNAME)
-        except KeyError:
-            # Use private interface and send custom tracking event
-            self._track_event(AnalyticsEvent.CREATED_DEFAULT_USER)
-            self._create_user(user_name=DEFAULT_USERNAME)
+        # Check if the default user already exists.
+        users = self._list_users()
+        for user in users:
+            if user.name == DEFAULT_USERNAME:
+                return
+        
+        # Use private interface and send custom tracking event
+        self._track_event(AnalyticsEvent.CREATED_DEFAULT_USER)
+        self._create_user(UserModel(name=DEFAULT_USERNAME))
 
     def create_default_project(self) -> None:
         """Creates a default project."""
-        try:
-            self.get_project(project_name=DEFAULT_PROJECT_NAME)
-        except KeyError:
-            # Use private interface and send custom tracking event
-            self._track_event(AnalyticsEvent.CREATED_DEFAULT_PROJECT)
-            self._create_project(project_name=DEFAULT_PROJECT_NAME)
+        # Check if the default project already exists.
+        projects = self.list_projects()
+        for project in projects:
+            if project.name == DEFAULT_PROJECT_NAME:
+                return
+
+        # Use private interface and send custom tracking event
+        self._track_event(AnalyticsEvent.CREATED_DEFAULT_PROJECT)
+        self._create_project(ProjectModel(name=DEFAULT_PROJECT_NAME))
 
     # Common code (internal implementations, private):
 
