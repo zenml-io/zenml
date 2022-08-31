@@ -52,7 +52,7 @@ class ComponentModel(BaseModel):
     type: StackComponentType = Field(
         title="The type of the Stack Component.",
     )
-    flavor_id: str = Field(
+    flavor_id: Optional[str] = Field(
         title="The flavor of the Stack Component.",
     )
     configuration: bytes = Field(  # b64 encoded yaml config

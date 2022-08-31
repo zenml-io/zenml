@@ -342,7 +342,7 @@ class SqlZenStore(BaseZenStore):
 
     def _register_stack(
         self,
-        user_id: str,
+        user_id: UUID,
         project_id: str,
         stack: StackModel
     ) -> StackModel:
@@ -374,7 +374,7 @@ class SqlZenStore(BaseZenStore):
                 raise StackExistsError(
                     f"Unable to register stack with name "
                     f"'{stack.name}': Found "
-                    f"existing stack with this name. in the project for"
+                    f"existing stack with this name. in the project for "
                     f"this user."
                 )
 
@@ -563,13 +563,14 @@ class SqlZenStore(BaseZenStore):
                 .where(StackComponentSchema.name == component.name)
                 .where(StackComponentSchema.project_id == project_id)
                 .where(StackComponentSchema.owner == user_id)
+                .where(StackComponentSchema.type == component.type)
             ).first()
             # TODO: verify if is_shared status needs to be checked here
             if existing_component is not None:
                 raise StackComponentExistsError(
                     f"Unable to register component with name "
                     f"'{component.name}': Found "
-                    f"existing component with this name. in the project for"
+                    f"existing component with this name. in the project for "
                     f"this user."
                 )
 
@@ -1834,101 +1835,6 @@ class SqlZenStore(BaseZenStore):
         # TODO: leave this to later in the process
         # TODO: [ALEXEJ] should this live in the zenstore? Is this a duplicate?
         return NotImplementedError
-
-    def _register_stack_component(
-        self,
-        component: ComponentModel,
-    ) -> None:
-        """Register a stack component.
-
-        Args:
-            component: The component to register.
-
-        Raises:
-            StackComponentExistsError: If a stack component with the same type
-                and name already exists.
-        """
-        with Session(self.engine) as session:
-            existing_component = session.exec(
-                select(StackComponentSchema)
-                .where(StackComponentSchema.name == component.name)
-                .where(StackComponentSchema.type == component.type)
-            ).first()
-            if existing_component is not None:
-                raise StackComponentExistsError(
-                    f"Unable to register stack component (type: "
-                    f"{component.type}) with name '{component.name}': Found "
-                    f"existing stack component with this name."
-                )
-            new_component = StackComponentSchema(
-                type=component.type,
-                name=component.name,
-                flavor=component.flavor,
-                configuration=component.config,
-            )  # TODO: update
-            session.add(new_component)
-            session.commit()
-
-    def _update_stack_component(
-        self,
-        name: str,
-        component_type: StackComponentType,
-        component: ComponentModel,
-    ) -> Dict[str, str]:
-        """Update a stack component.
-
-        Args:
-            name: The original name of the stack component.
-            component_type: The type of the stack component to update.
-            component: The new component to update with.
-
-        Returns:
-            The updated stack component.
-
-        Raises:
-            KeyError: If no stack component exists with the given name.
-            StackComponentExistsError: If a stack component with the same type
-                and name already exists.
-        """
-        with Session(self.engine) as session:
-            updated_component = session.exec(
-                select(StackComponentSchema)
-                .where(StackComponentSchema.type == component_type)
-                .where(StackComponentSchema.name == name)
-            ).first()
-
-            if not updated_component:
-                raise KeyError(
-                    f"Unable to update stack component (type: "
-                    f"{component.type}) with name '{component.name}': No "
-                    f"existing stack component found with this name."
-                )
-
-            new_name_component = session.exec(
-                select(StackComponentSchema)
-                .where(StackComponentSchema.type == component_type)
-                .where(StackComponentSchema.name == component.name)
-            ).first()
-            if (name != component.name) and new_name_component is not None:
-                raise StackComponentExistsError(
-                    f"Unable to update stack component (type: "
-                    f"{component.type}) with name '{component.name}': Found "
-                    f"existing stack component with this name."
-                )
-
-            updated_component.configuration = component.config
-
-            # handle any potential renamed component
-            updated_component.name = component.name
-
-            session.add(updated_component)
-            session.commit()
-        logger.info(
-            "Updated stack component with type '%s' and name '%s'.",
-            component_type,
-            component.name,
-        )
-        return {component.type.value: component.flavor}
 
     # Private interface implementations:
 

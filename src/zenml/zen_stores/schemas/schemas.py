@@ -61,7 +61,10 @@ class ProjectSchema(SQLModel, table=True):
         return cls(name=model.name, description=model.description)
 
     def to_model(self) -> ProjectModel:
-        return ProjectModel(**self.dict())
+        return ProjectModel(id=self.id,
+                            name=self.name,
+                            description=self.description,
+                            created_at=self.created_at)
 
 class CodeRepositorySchema(SQLModel, table=True):
     """SQL Model for code repositories."""
@@ -95,7 +98,7 @@ class UserSchema(SQLModel, table=True):
         return cls(name=model.name)
 
     def to_model(self) -> UserModel:
-        return UserModel(**self.dict())
+        return UserModel(id=self.id, name=self.name, created_at=self.created_at)
 
 
 class TeamSchema(SQLModel, table=True):
@@ -198,7 +201,7 @@ class StackSchema(SQLModel, table=True):
 
     @classmethod
     def from_create_model(cls,
-                          user_id: str,
+                          user_id: UUID,
                           project_id: str,
                           defined_components: List["StackComponentSchema"],
                           stack: StackModel) -> "StackSchema":
@@ -212,6 +215,7 @@ class StackSchema(SQLModel, table=True):
             name=stack.name,
             project_id=project_id,
             owner=user_id,
+            is_shared=stack.is_shared,
             components=defined_components,
             )
 

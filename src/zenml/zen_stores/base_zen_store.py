@@ -12,6 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base Zen Store implementation."""
+import base64
+import json
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -92,7 +94,7 @@ class BaseZenStore(ABC):
         self.create_default_project()
 
     @property
-    def default_user_id(self) -> str:  # TODO: can this be done cleaner?
+    def default_user_id(self) -> UUID:  # TODO: can this be done cleaner?
         """Get the ID of the default user, or None if it doesn't exist."""
         users = self._list_users()
         for user in users:
@@ -128,16 +130,24 @@ class BaseZenStore(ABC):
         store.
         """
 
+        orchestrator_config = {}
+        encoded_orchestrator_config = base64.urlsafe_b64encode(
+            json.dumps(orchestrator_config).encode())
         # Register the default orchestrator
+        # try:
         orchestrator = self.register_stack_component(
             user_id=self.default_user_id,
             project_id=self.default_project_id,
             component=ComponentModel(
                 name="default",
                 type=StackComponentType.ORCHESTRATOR,
-                flavor_id="default"
+                flavor_id="default",
+                configuration=encoded_orchestrator_config
             )
         )
+        # except StackComponentExistsError:
+        #     logger.warning("Default Orchestrator exists already, "
+        #                    "skipping creation ...")
 
         # Register the default artifact store
         artifact_store_path = os.path.join(
@@ -146,29 +156,37 @@ class BaseZenStore(ABC):
             "default_local_store"
         )
         io_utils.create_dir_recursive_if_not_exists(artifact_store_path)
+        artifact_store_config = {"path": artifact_store_path}
+        encoded_artifact_store_config = base64.urlsafe_b64encode(
+            json.dumps(artifact_store_config).encode())
+        # try:
         artifact_store = self.register_stack_component(
             user_id=self.default_user_id,
             project_id=self.default_project_id,
             component=ComponentModel(
                 name="default",
-                type=StackComponentType.ORCHESTRATOR,
+                type=StackComponentType.ARTIFACT_STORE,
                 flavor_id="default",
-                config={"path": artifact_store_path}
+                configuration=encoded_artifact_store_config
             )
         )
+        # except StackComponentExistsError:
+        #     logger.warning("Default Artifact Store exists already, "
+        #                    "skipping creation ...")
 
+        components = {c.type: c.id for c in [orchestrator, artifact_store]}
         # Register the default stack
         stack = StackModel(
+            name="default",
+            components=components,
+            is_shared=True
+        )
+        self._register_stack(
             user_id=self.default_user_id,
             project_id=self.default_project_id,
-            name="default",
-            components=[orchestrator, artifact_store]
-        )
-        self._register_stack(stack)
-        metadata = {c.type.value: c.flavor for c in stack.components}
-        metadata["store_type"] = self.type.value
+            stack=stack)
         self._track_event(
-            AnalyticsEvent.REGISTERED_DEFAULT_STACK, metadata=metadata
+            AnalyticsEvent.REGISTERED_DEFAULT_STACK,
         )
 
     # Static methods:
@@ -350,7 +368,7 @@ class BaseZenStore(ABC):
         """
 
     def register_stack(
-        self, user_id: str, project_id: str, stack: StackModel
+        self, user_id: UUID, project_id: str, stack: StackModel
     ) -> StackModel:
         """Register a new stack.
 
@@ -375,7 +393,7 @@ class BaseZenStore(ABC):
 
     @abstractmethod
     def _register_stack(
-        self, user_id: str, project_id: str, stack: StackModel
+        self, user_id: UUID, project_id: str, stack: StackModel
     ) -> StackModel:
         """Register a new stack.
 
@@ -566,7 +584,7 @@ class BaseZenStore(ABC):
     def register_stack_component(
         self,
         user_id: UUID,
-        project_id: UUID,
+        project_id: str,
         component: ComponentModel
     ) -> ComponentModel:
         """Create a stack component.
@@ -579,13 +597,15 @@ class BaseZenStore(ABC):
         Returns:
             The created stack component.
         """
-        return self._register_stack_component(user_id, project_id, component)
+        return self._register_stack_component(user_id=user_id,
+                                              project_id=project_id,
+                                              component=component)
 
     @abstractmethod
     def _register_stack_component(
         self,
         user_id: UUID,
-        project_id: UUID,
+        project_id: str,
         component: ComponentModel
     ) -> ComponentModel:
         """Create a stack component.
