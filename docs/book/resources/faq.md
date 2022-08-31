@@ -95,7 +95,7 @@ using ZenML in the early stages of your project, you get the following benefits:
 
 #### How can I be sure you'll stick around as a tool?
 
-The [team behind ZenML](https://zenml.io/team) have a shared vision of making
+The [team behind ZenML](https://zenml.io/company#CompanyTeam) have a shared vision of making
 MLOps simple and accessible to accelerate problem solving in the world. We
 recently raised our [seed
 round](https://venturebeat.com/2021/12/14/open-source-mlops-framework-zenml-raises-2-7m/)

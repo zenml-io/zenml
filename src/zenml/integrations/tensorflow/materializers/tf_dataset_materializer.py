@@ -14,12 +14,15 @@
 """Implementation of the TensorFlow dataset materializer."""
 
 import os
+import tempfile
 from typing import Any, Type
 
 import tensorflow as tf
 
 from zenml.artifacts import DataArtifact
+from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.utils import io_utils
 
 DEFAULT_FILENAME = "saved_data"
 
@@ -40,8 +43,13 @@ class TensorflowDatasetMaterializer(BaseMaterializer):
             A tf.data.Dataset object.
         """
         super().handle_input(data_type)
-        path = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
-        return tf.data.experimental.load(path)
+        temp_dir = tempfile.mkdtemp()
+        io_utils.copy_dir(self.artifact.uri, temp_dir)
+        path = os.path.join(temp_dir, DEFAULT_FILENAME)
+        dataset = tf.data.experimental.load(path)
+        # Don't delete the temporary directory here as the dataset is lazily
+        # loaded and needs to read it when the object gets used
+        return dataset
 
     def handle_return(self, dataset: tf.data.Dataset) -> None:
         """Persists a tf.data.Dataset object.
@@ -50,7 +58,12 @@ class TensorflowDatasetMaterializer(BaseMaterializer):
             dataset: The dataset to persist.
         """
         super().handle_return(dataset)
-        path = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
-        tf.data.experimental.save(
-            dataset, path, compression=None, shard_func=None
-        )
+        temp_dir = tempfile.TemporaryDirectory()
+        path = os.path.join(temp_dir.name, DEFAULT_FILENAME)
+        try:
+            tf.data.experimental.save(
+                dataset, path, compression=None, shard_func=None
+            )
+            io_utils.copy_dir(temp_dir.name, self.artifact.uri)
+        finally:
+            fileio.rmtree(temp_dir.name)

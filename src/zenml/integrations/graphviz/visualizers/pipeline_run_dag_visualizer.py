@@ -21,7 +21,7 @@ import graphviz
 
 from zenml.logger import get_logger
 from zenml.post_execution import PipelineRunView
-from zenml.visualizers import BasePipelineRunVisualizer
+from zenml.visualizers import BaseVisualizer
 
 logger = get_logger(__name__)
 
@@ -29,7 +29,7 @@ logger = get_logger(__name__)
 #  should use graphviz to show the pipeline perhaps (not the run).
 
 
-class PipelineRunDagVisualizer(BasePipelineRunVisualizer):
+class PipelineRunDagVisualizer(BaseVisualizer):
     """Visualize the lineage of runs in a pipeline."""
 
     ARTIFACT_DEFAULT_COLOR = "blue"

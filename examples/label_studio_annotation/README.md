@@ -74,13 +74,13 @@ zenml secrets-manager register <YOUR_SECRETS_MANAGER> --key_vault_name=<YOUR_KEY
 
 zenml stack update <ANNOTATION_STACK_NAME> -x <YOUR_SECRETS_MANAGER>
 
-zenml secret register <YOUR_AZURE_AUTH_SECRET_NAME> --schema=azure --account_name="<YOUR_AZURE_ACCOUNT_NAME>" --account_key="<YOUR_AZURE_ACCOUNT_KEY>"
+zenml secrets-manager secret register <YOUR_AZURE_AUTH_SECRET_NAME> --schema=azure --account_name="<YOUR_AZURE_ACCOUNT_NAME>" --account_key="<YOUR_AZURE_ACCOUNT_KEY>"
 
 zenml artifact-store register azure_artifact_store -f=azure --path="az://<NAME_OF_ARTIFACT_STORE_OR_BLOB_IN_AZURE>" --authentication_secret="<YOUR_AZURE_AUTH_SECRET_NAME>"
 
 zenml stack update <ANNOTATION_STACK_NAME> -a <YOUR_CLOUD_ARTIFACT_STORE>
 
-zenml secret register <LABEL_STUDIO_SECRET_NAME> --api_key="<YOUR_API_KEY>"
+zenml secrets-manager secret register <LABEL_STUDIO_SECRET_NAME> --api_key="<YOUR_API_KEY>"
 
 zenml annotator register <YOUR_LABEL_STUDIO_ANNOTATOR> --flavor label_studio --authentication_secret="<LABEL_STUDIO_SECRET_NAME>"
 
@@ -132,13 +132,13 @@ zenml secrets-manager register <YOUR_SECRETS_MANAGER> -f gcp_secrets_manager --p
 
 zenml stack update <YOUR_ANNOTATION_STACK_NAME> -x <YOUR_SECRETS_MANAGER>
 
-zenml secret register <YOUR_GCP_AUTH_SECRETS_NAME> --schema=gcp --token="@PATH/TO/JSON/FILE/CREATED/ABOVE"
+zenml secrets-manager secret register <YOUR_GCP_AUTH_SECRETS_NAME> --schema=gcp --token="@PATH/TO/JSON/FILE/CREATED/ABOVE"
 
 zenml artifact-store register gcp_artifact_store -f=gcp --path="gs://<YOUR_BUCKET_NAME>" --authentication_secret="<YOUR_GCP_AUTH_SECRETS_NAME>"
 
 zenml stack update <YOUR_ANNOTATION_STACK_NAME> -a <YOUR_CLOUD_ARTIFACT_STORE>
 
-zenml secret register <LABEL_STUDIO_SECRET_NAME> --api_key="<YOUR_API_KEY>"
+zenml secrets-manager secret register <LABEL_STUDIO_SECRET_NAME> --api_key="<YOUR_API_KEY>"
 
 zenml annotator register <YOUR_LABEL_STUDIO_ANNOTATOR> --flavor label_studio --authentication_secret="<LABEL_STUDIO_SECRET_NAME>"
 
@@ -238,16 +238,16 @@ Use the credentials output from the command to get your
 
 ```shell
 # this secret must be named 'aws_label_studio'
-zenml secret register aws_label_studio --schema=aws_label_studio --aws_access_key_id="<LABEL_STUDIO_ACCESS_KEY_ID>" --aws_secret_access_key="<LABEL_STUDIO_SECRET_ACCESS_KEY>" --aws_session_token="<LABEL_STUDIO_AWS_SESSION_TOKEN>"
+zenml secrets-manager secret register aws_label_studio --schema=aws_label_studio --aws_access_key_id="<LABEL_STUDIO_ACCESS_KEY_ID>" --aws_secret_access_key="<LABEL_STUDIO_SECRET_ACCESS_KEY>" --aws_session_token="<LABEL_STUDIO_AWS_SESSION_TOKEN>"
 
 # use your standard access key id and secret access key from ~/.aws/credentials here
-zenml secret register <YOUR_AWS_SECRET_NAME> --schema=aws_label_studio--aws_access_key_id="<YOUR_ACCESS_KEY_ID>" --aws_secret_access_key="<YOUR_SECRET_ACCESS_KEY>"
+zenml secrets-manager secret register <YOUR_AWS_SECRET_NAME> --schema=aws_label_studio--aws_access_key_id="<YOUR_ACCESS_KEY_ID>" --aws_secret_access_key="<YOUR_SECRET_ACCESS_KEY>"
 
 zenml artifact-store register <YOUR_CLOUD_ARTIFACT_STORE> --flavor=s3 --path=s3://<YOUR_S3_BUCKET_NAME> --authentication_secret="<YOUR_AWS_SECRET_NAME>"
 
 zenml stack update <YOUR_AWS_ZENML_STACK_NAME> -a <YOUR_CLOUD_ARTIFACT_STORE>
 
-zenml secret register <LABEL_STUDIO_SECRET_NAME> --api_key="<YOUR_API_KEY>"
+zenml secrets-manager secret register <LABEL_STUDIO_SECRET_NAME> --api_key="<YOUR_API_KEY>"
 
 zenml annotator register <YOUR_LABEL_STUDIO_ANNOTATOR> --flavor label_studio --authentication_secret="<LABEL_STUDIO_SECRET_NAME>"
 

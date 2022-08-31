@@ -41,11 +41,30 @@ def create_tfx_pipeline(
 
     Returns:
         The tfx pipeline.
+
+    Raises:
+        KeyError: If a step contains an upstream step which is not part of
+            the pipeline.
     """
     # Connect the inputs/outputs of all steps in the pipeline
     zenml_pipeline.connect(**zenml_pipeline.steps)
 
-    tfx_components = [step.component for step in zenml_pipeline.steps.values()]
+    tfx_components = {
+        step.name: step.component for step in zenml_pipeline.steps.values()
+    }
+
+    # Add potential task dependencies that users specified
+    for step in zenml_pipeline.steps.values():
+        for upstream_step in step.upstream_steps:
+            try:
+                upstream_node = tfx_components[upstream_step]
+            except KeyError:
+                raise KeyError(
+                    f"Unable to find upstream step `{upstream_step}` for step "
+                    f"`{step.name}`. Available steps: {set(tfx_components)}."
+                )
+
+            step.component.add_upstream_node(upstream_node)
 
     artifact_store = stack.artifact_store
 
@@ -54,7 +73,7 @@ def create_tfx_pipeline(
     # step is executed (see `BaseOrchestrator.run_step(...)`)
     return tfx_pipeline.Pipeline(
         pipeline_name=zenml_pipeline.name,
-        components=tfx_components,  # type: ignore[arg-type]
+        components=list(tfx_components.values()),
         pipeline_root=artifact_store.path,
         enable_cache=zenml_pipeline.enable_cache,
     )

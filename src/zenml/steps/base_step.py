@@ -25,6 +25,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Set,
     Tuple,
     Type,
     TypeVar,
@@ -289,6 +290,7 @@ class BaseStep(metaclass=BaseStepMeta):
         self._explicit_materializers: Dict[str, Type[BaseMaterializer]] = {}
         self._component: Optional[_ZenMLSimpleComponent] = None
         self._has_been_called = False
+        self._upstream_steps: Set[str] = set()
 
         self._verify_init_arguments(*args, **kwargs)
         self._verify_output_spec()
@@ -365,6 +367,51 @@ class BaseStep(metaclass=BaseStepMeta):
                     )
 
         return materializers
+
+    @property
+    def upstream_steps(self) -> Set[str]:
+        """Names of the upstream steps of this step.
+
+        This property will only contain the full set of upstream steps once
+        it's parent pipeline `connect(...)` method was called.
+
+        Returns:
+            Set of upstream step names.
+        """
+        return self._upstream_steps
+
+    def after(self, step: "BaseStep") -> None:
+        """Adds an upstream step to the this step.
+
+        Calling this method makes sure this step only starts running once the
+        given step has successfully finished executing.
+
+        **Note**: This can only be called inside the pipeline connect function
+        which is decorated with the `@pipeline` decorator. Any calls outside
+        this function will be ignored.
+
+        Example:
+        The following pipeline will run its steps sequentially in the following
+        order: step_2 -> step_1 -> step_3
+
+        ```python
+        @pipeline
+        def example_pipeline(step_1, step_2, step_3):
+            step_1.after(step_2)
+            step_3(step_1(), step_2())
+        ```
+
+        Args:
+            step: A step which should finish executing before this step is
+                started.
+        """
+        self._upstream_steps.add(step.name)
+
+    def _reset(self) -> None:
+        """Resets internal values that get set during a pipeline run."""
+        self._component = None
+        self._has_been_called = False
+        self._upstream_steps.clear()
 
     @property
     def _internal_execution_parameters(self) -> Dict[str, Any]:
@@ -648,6 +695,8 @@ class BaseStep(metaclass=BaseStepMeta):
         input_artifacts = self._prepare_input_artifacts(
             *artifacts, **kw_artifacts
         )
+        for channel in input_artifacts.values():
+            self._upstream_steps.add(channel.producer_component_id)
 
         self.INPUT_SPEC = {
             arg_name: artifact_type.type

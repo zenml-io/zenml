@@ -173,7 +173,7 @@ zenml secrets-manager register secrets_manager \
 zenml stack register custom_stack -a az_store -x secrets_manager ... --set
 
 # Create the secret referenced in the artifact store
-zenml secret register az_secret -s azure \
+zenml secrets-manager secret register az_secret -s azure \
     --connection_sting='your-Azure-connection-string'
 ```
 

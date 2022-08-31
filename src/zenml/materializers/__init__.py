@@ -19,13 +19,19 @@ extended by building on the `BaseMaterializer` class.
 """
 
 
-from zenml.materializers.built_in_materializer import BuiltInMaterializer
+from zenml.materializers.built_in_materializer import (
+    BuiltInContainerMaterializer,
+    BuiltInMaterializer,
+    BytesMaterializer,
+)
 from zenml.materializers.numpy_materializer import NumpyMaterializer
 from zenml.materializers.pandas_materializer import PandasMaterializer
 from zenml.materializers.service_materializer import ServiceMaterializer
 
 __all__ = [
+    "BuiltInContainerMaterializer",
     "BuiltInMaterializer",
+    "BytesMaterializer",
     "NumpyMaterializer",
     "PandasMaterializer",
     "ServiceMaterializer",

@@ -58,6 +58,9 @@ class AnalyticsEvent(str, Enum):
     IMPORT_STACK = "Stack imported"
     EXPORT_STACK = "Stack exported"
 
+    # Model Deployment
+    MODEL_DEPLOYED = "Model deployed"
+
     # Analytics opt in and out
     OPT_IN_ANALYTICS = "Analytics opt-in"
     OPT_OUT_ANALYTICS = "Analytics opt-out"
@@ -97,6 +100,11 @@ class AnalyticsEvent(str, Enum):
     # Login events
     LOGIN = "Login"
     LOGOUT = "Logout"
+
+    # Stack recipes
+    PULL_STACK_RECIPE = "Stack recipes pulled"
+    RUN_STACK_RECIPE = "Stack recipe created"
+    DESTROY_STACK_RECIPE = "Stack recipe destroyed"
 
 
 def get_segment_key() -> str:

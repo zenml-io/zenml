@@ -64,24 +64,9 @@ The inference pipeline simulates loading data from a dynamic external source,
 then uses that data to perform online predictions using the running Seldon
 Core prediction server.
 
-# 🖥 Run it locally
+# 🖥 Run it on Kubernetes
 
 ### 📄 Prerequisites 
-
-For the ZenML Seldon Core deployer to work, three basic things are required:
-
-1. access to a Kubernetes cluster. The example accepts a `--kubernetes-context`
-command line argument. This Kubernetes context needs to point to the Kubernetes
-cluster where Seldon Core model servers will be deployed. If the context is not
-explicitly supplied to the example, it defaults to using the locally active
-context.
-
-2. Seldon Core needs to be preinstalled and running in the target Kubernetes
-cluster (read below for a brief explanation of how to do that).
-
-3. models deployed with Seldon Core need to be stored in some form of
-persistent shared storage that is accessible from the Kubernetes cluster where
-Seldon Core is installed (e.g. AWS S3, GCS, Azure Blob Storage, etc.).
 
 In order to run this example, you need to install and initialize ZenML:
 
@@ -99,6 +84,74 @@ cd zenml_examples/seldon_deployment
 # initialize a local ZenML Repository
 zenml init
 ```
+
+For the ZenML Seldon Core deployer to work, three basic things are required:
+
+1. access to a Kubernetes cluster. The example accepts a `--kubernetes-context`
+command line argument. This Kubernetes context needs to point to the Kubernetes
+cluster where Seldon Core model servers will be deployed. If the context is not
+explicitly supplied to the example, it defaults to using the locally active
+context.
+
+2. Seldon Core needs to be preinstalled and running in the target Kubernetes
+cluster (read below for a brief explanation of how to do that).
+
+3. models deployed with Seldon Core need to be stored in some form of
+persistent shared storage that is accessible from the Kubernetes cluster where
+Seldon Core is installed (e.g. AWS S3, GCS, Azure Blob Storage, etc.).
+
+### 🚅 That seems like a lot of infrastructure work. Is there a Zen 🧘 way to run this example?
+
+Yes! With [ZenML Stack Recipes](../../docs/book/cloud-guide/stack-recipes.md), you can now provision all the infrastructure you need to run your ZenML pipelines with just a few simple commands.
+
+The flow to get started for this example can be the following:
+
+1. Pull the `aws_minimal` recipe to your local system. Learn more about what this recipe does from its README.
+
+    ```shell
+    zenml stack recipe pull aws_minimal
+    ```
+2. (Optional) 🎨 Customize your deployment by editing the default values in the `locals.tf` file.
+
+3. 🚀 Deploy the recipe with this simple command.
+
+    ```shell
+    zenml stack recipe deploy aws_minimal
+    ```
+    > **Note**
+    > This command can also automatically import the resources created as a ZenML stack for you. Just run it with the `--import` flag and optionally provide a `--stack-name` and you're set! Keep in mind, in that case, you'll need all integrations for this example installed before you run this command.
+
+    > **Note**
+    > You should also have [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) and [docker](https://docs.docker.com/engine/install/) installed on your local system with the local [docker client authorized](https://cloud.google.com/sdk/gcloud/reference/auth/configure-docker) to push to your cloud registry.
+    
+4. You'll notice that a ZenML stack configuration file gets created 🤯! You can run the following command to import the resources as a ZenML stack, manually. You either need to have the `aws`, `mlflow` and `seldon` integrations installed before importing the stack or you can go into the YAML file and delete the sections on the `experiment_tracker` and `model_deployer` to not have them importer at all.
+
+    ```shell
+    zenml stack import <STACK-NAME> <PATH-TO-THE-CREATED-STACK-CONFIG-YAML>
+
+    # set the imported stack as the active stack
+    zenml stack set <STACK-NAME>
+    ```
+
+5. You should now create a secret for the RDS MySQL instance that will allow ZenML to connect to it. Use the following command:
+
+    ```bash
+    zenml secret register aws_rds_secret \
+        --schema=mysql \
+        --user=<user> \
+        --password=<password>
+    ```
+
+    The values for the username and password can be obtained by running the following commands inside your recipe directory.
+
+    ```bash
+    terraform output metadata-db-username
+
+    terraform output metadata-db-password
+    ```
+
+You can now skip directly to the [part of this guide where you define ZenML secrets](#aws-authentication-with-implicit-iam-access) for Seldon! 
+
 
 #### Installing Seldon Core (e.g. in an EKS cluster)
 
@@ -357,7 +410,7 @@ save any explicit AWS credentials in the ZenML secret. You just have to set the
 as is:
 
 ```bash
-$ zenml secret register -s seldon_s3 s3-store --rclone_config_s3_env_auth=True
+$ zenml secrets-manager secret register -s aws_seldon_secret s3-store --rclone_config_s3_env_auth=True
 The following secret will be registered.
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
 ┃        SECRET_KEY         │ SECRET_VALUE ┃
@@ -367,7 +420,7 @@ The following secret will be registered.
 ┃ rclone_config_s3_env_auth │ ***          ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
 
-$ zenml secret get s3-store
+$ zenml secrets-manager secret get s3-store
 INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
 ┃        SECRET_KEY         │ SECRET_VALUE ┃
@@ -385,7 +438,7 @@ configure it, you will need to set up credentials explicitly in the ZenML secret
 e.g.:
 
 ```bash
-$ zenml secret register -s seldon_s3 s3-store \
+$ zenml secrets-manager secret register -s seldon_s3 s3-store \
     --rclone_config_s3_env_auth=False \
     --rclone_config_s3_access_key_id='ASAK2NSJVO4HDQC7Z25F' \ --rclone_config_s3_secret_access_key='AhkFSfhjj23fSDFfjklsdfj34hkls32SDfscsaf+' \
     --rclone_config_s3_session_token=@./aws_session_token.txt \
@@ -405,7 +458,7 @@ The following secret will be registered.
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
 INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
 
-$ zenml secret get s3-store
+$ zenml secrets-manager secret get s3-store
 INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             SECRET_KEY             │ SECRET_VALUE                           ┃
@@ -534,10 +587,10 @@ command line argument can be used:
 python run.py --model-flavor sklearn --penalty=l2
 ```
 
-The `zenml served-models list` CLI command can be run to list the active model servers:
+The `zenml model-deployer models list` CLI command can be run to list the active model servers:
 
 ```shell
-$ zenml served-models list
+$ zenml model-deployer models list
 ┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ STATUS │ UUID                                 │ PIPELINE_NAME                  │ PIPELINE_STEP_NAME         ┃
 ┠────────┼──────────────────────────────────────┼────────────────────────────────┼────────────────────────────┨
@@ -546,10 +599,10 @@ $ zenml served-models list
 ```
 
 To get more information about a specific model server, such as the prediction URL,
-the `zenml served-models describe <uuid>` CLI command can be run:
+the `zenml model-deployer models describe <uuid>` CLI command can be run:
 
 ```shell
-$ zenml served-models describe 8cbe671b-9fce-4394-a051-68e001f92765
+$ zenml model-deployer models describe 8cbe671b-9fce-4394-a051-68e001f92765
                           Properties of Served Model 8cbe671b-9fce-4394-a051-68e001f92765                          
 ┏━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ MODEL SERVICE PROPERTY │ VALUE                                                                                  ┃
@@ -580,17 +633,17 @@ The prediction URL can sometimes be more difficult to make out in the detailed
 output, so there is a separate CLI command available to retrieve it:
 
 ```shell
-$ zenml served-models get-url 8cbe671b-9fce-4394-a051-68e001f92765
+$ zenml model-deployer models get-url 8cbe671b-9fce-4394-a051-68e001f92765
   Prediction URL of Served Model 8cbe671b-9fce-4394-a051-68e001f92765 is:
   http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com/seldon/zenml-workloads/zenml-8cbe67
 1b-9fce-4394-a051-68e001f92765/api/v0.1/predictions
 ```
 
-Finally, a model server can be deleted with the `zenml served-models delete <uuid>`
+Finally, a model server can be deleted with the `zenml model-deployer models delete <uuid>`
 CLI command:
 
 ```shell
-$ zenml served-models delete 8cbe671b-9fce-4394-a051-68e001f92765
+$ zenml model-deployer models delete 8cbe671b-9fce-4394-a051-68e001f92765
 ```
 
 ### 🧽 Clean up
@@ -599,7 +652,7 @@ To stop any prediction servers running in the background, use the `zenml model-s
 and `zenml model-server delete <uuid>` CLI commands.:
 
 ```shell
-zenml served-models delete 8cbe671b-9fce-4394-a051-68e001f92765
+zenml model-deployer models delete 8cbe671b-9fce-4394-a051-68e001f92765
 ```
 
 Then delete the remaining ZenML references.

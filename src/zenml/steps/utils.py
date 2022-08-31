@@ -58,11 +58,12 @@ from tfx.types import component_spec
 from tfx.types.channel import Channel
 from tfx.utils import json_utils
 
-import zenml
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.config.docker_configuration import DockerConfiguration
 from zenml.config.resource_configuration import ResourceConfiguration
 from zenml.constants import (
-    MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME,
+    MLMD_CONTEXT_DOCKER_CONFIGURATION_PROPERTY_NAME,
+    MLMD_CONTEXT_RUNTIME_CONFIG_PROPERTY_NAME,
     MLMD_CONTEXT_STEP_RESOURCES_PROPERTY_NAME,
     ZENML_MLMD_CONTEXT_TYPE,
 )
@@ -70,7 +71,7 @@ from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.repository import Repository
+from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_context import StepContext
 from zenml.steps.step_environment import StepEnvironment
@@ -78,7 +79,6 @@ from zenml.steps.step_output import Output
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
-    from zenml.stack import Stack
     from zenml.steps.base_step import BaseStep
 
 logger = get_logger(__name__)
@@ -474,7 +474,6 @@ class _FunctionExecutor(BaseExecutor):
             StepInterfaceError: if the step interface is not implemented.
         """
         step_name = getattr(self, PARAM_STEP_NAME)
-        stack = Repository().active_stack
 
         # remove all ZenML internal execution properties
         exec_properties = {
@@ -532,6 +531,15 @@ class _FunctionExecutor(BaseExecutor):
                 "No TFX context is set for the currently running pipeline. "
                 "Cannot retrieve pipeline runtime information."
             )
+
+        docker_config = collect_docker_configuration(
+            pipeline_node=self._context.pipeline_node
+        )
+
+        runtime_config = collect_runtime_config(
+            pipeline_node=self._context.pipeline_node
+        )
+
         # Wrap the execution of the step function in a step environment
         # that the step function code can access to retrieve information about
         # the pipeline runtime, such as the current step name and the current
@@ -541,9 +549,8 @@ class _FunctionExecutor(BaseExecutor):
             pipeline_run_id=self._context.pipeline_run_id,
             step_name=step_name,
             cache_enabled=getattr(self, PARAM_ENABLE_CACHE),
-            pipeline_requirements=collect_requirements(
-                stack=stack, pipeline_node=self._context.pipeline_node
-            ),
+            docker_configuration=docker_config,
+            runtime_configuration=runtime_config,
         ):
             return_values = self._FUNCTION(**function_params)
 
@@ -670,38 +677,6 @@ def clone_step(step: Type["BaseStep"], step_name: str) -> Type["BaseStep"]:
     return step_clone
 
 
-def collect_requirements(
-    stack: "Stack",
-    pipeline_node: pipeline_pb2.PipelineNode,
-) -> List[str]:
-    """Collects all requirements necessary to run a step.
-
-    Args:
-        stack: Stack on which the step is being executed.
-        pipeline_node: Pipeline node info for a step.
-
-    Returns:
-        Alphabetically sorted list of pip requirements.
-    """
-    requirements = stack.requirements()
-
-    # Add pipeline requirements from the corresponding node context
-    for context in pipeline_node.contexts.contexts:
-        if context.type.name == ZENML_MLMD_CONTEXT_TYPE:
-            pipeline_requirements = context.properties[
-                MLMD_CONTEXT_PIPELINE_REQUIREMENTS_PROPERTY_NAME
-            ].field_value.string_value.split(" ")
-            requirements.update(pipeline_requirements)
-            break
-
-    # TODO [ENG-696]: Find a nice way to set this if the running version of
-    #  ZenML is not an official release (e.g. on a development branch)
-    # Add the current ZenML version as a requirement
-    requirements.add(f"zenml=={zenml.__version__}")
-
-    return sorted(requirements)
-
-
 def collect_step_resources(
     pipeline_node: pipeline_pb2.PipelineNode,
 ) -> ResourceConfiguration:
@@ -722,5 +697,55 @@ def collect_step_resources(
                 MLMD_CONTEXT_STEP_RESOURCES_PROPERTY_NAME
             ].field_value.string_value
             return ResourceConfiguration.parse_raw(config_json)
+    else:
+        raise RuntimeError("Unable to find resource configuration.")
+
+
+def collect_docker_configuration(
+    pipeline_node: pipeline_pb2.PipelineNode,
+) -> DockerConfiguration:
+    """Collects the Docker config of a step.
+
+    Args:
+        pipeline_node: Pipeline node info for a step.
+
+    Returns:
+        The Docker configuration for that step.
+
+    Raises:
+        RuntimeError: If no Docker configuration was found.
+    """
+    for context in pipeline_node.contexts.contexts:
+        if context.type.name == ZENML_MLMD_CONTEXT_TYPE:
+            config_json = context.properties[
+                MLMD_CONTEXT_DOCKER_CONFIGURATION_PROPERTY_NAME
+            ].field_value.string_value
+
+            return DockerConfiguration.parse_raw(config_json)
+    else:
+        raise RuntimeError("Unable to find Docker configuration.")
+
+
+def collect_runtime_config(
+    pipeline_node: pipeline_pb2.PipelineNode,
+) -> RuntimeConfiguration:
+    """Collects the Runtime config of a step.
+
+    Args:
+        pipeline_node: Pipeline node info for a step.
+
+    Returns:
+        The Runtime configuration for that step.
+
+    Raises:
+        RuntimeError: If no runtime configuration was found.
+    """
+    for context in pipeline_node.contexts.contexts:
+        if context.type.name == ZENML_MLMD_CONTEXT_TYPE:
+            config_json = context.properties[
+                MLMD_CONTEXT_RUNTIME_CONFIG_PROPERTY_NAME
+            ].field_value.string_value
+            parsed = json.loads(config_json)
+            return RuntimeConfiguration(**parsed)
     else:
         raise RuntimeError("Unable to find resource configuration.")

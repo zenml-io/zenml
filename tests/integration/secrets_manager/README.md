@@ -16,6 +16,11 @@ integration testing.
 environment variable to point to the downloaded key JSON file.
 * run with `pytest tests/integration/secrets_manager --secrets-manager-flavor gcp`.
 
+## For Azure
+
+* set up local Azure client and credentials.
+* run with `pytest tests/integration/secrets_manager --secrets-manager-flavor azure`.
+
 ## For HashiCorp Vault
 
 * install vault on your system.

@@ -394,14 +394,14 @@ To register a secret, use the `register` command and pass the key-value pairs
 as command line arguments:
 
 ```bash
-zenml secret register SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
+zenml secrets-manager secret register SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
 ```
 
 Note that the keys and values will be preserved in your `bash_history` file, so
 you may prefer to use the interactive `register` command instead:
 
 ```shell
-zenml secret register SECRET_NAME -i
+zenml secrets-manager secret register SECRET_NAME -i
 ```
 
 As an alternative to the interactive mode, also useful for values that
@@ -409,7 +409,7 @@ are long or contain newline or special characters, you can also use the special
 `@` syntax to indicate to ZenML that the value needs to be read from a file:
 
 ```bash
-zenml secret register SECRET_NAME --schema=aws \
+zenml secrets-manager secret register SECRET_NAME --schema=aws \
    --aws_access_key_id=1234567890 \
    --aws_secret_access_key=abcdefghij \
    --aws_session_token=@/path/to/token.txt
@@ -419,32 +419,32 @@ zenml secret register SECRET_NAME --schema=aws \
 To list all the secrets available, use the `list` command:
 
 ```bash
-zenml secret list
+zenml secrets-manager secret list
 ```
 
 To get the key-value pairs for a particular secret, use the `get` command:
 
 ```bash
-zenml secret get SECRET_NAME
+zenml secrets-manager secret get SECRET_NAME
 ```
 
 To update a secret, use the `update` command:
 
 ```bash
-zenml secret update SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
+zenml secrets-manager secret update SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
 ```
 
 Note that the keys and values will be preserved in your `bash_history` file, so
 you may prefer to use the interactive `update` command instead:
 
 ```shell
-zenml secret update SECRET_NAME -i
+zenml secrets-manager secret update SECRET_NAME -i
 ```
 
 Finally, to delete a secret, use the `delete` command:
 
 ```bash
-zenml secret delete SECRET_NAME
+zenml secrets-manager secret delete SECRET_NAME
 ```
 
 Add a Feature Store to your Stack
@@ -468,7 +468,7 @@ If you want to simply see what models have been deployed within your stack, run
 the following command:
 
 ```bash
-zenml served-models list
+zenml model-deployer models list
 ```
 
 This should give you a list of served models containing their uuid, the name
@@ -480,29 +480,29 @@ If you want further information about a specific model, simply copy the
 UUID and the following command.
 
 ```bash
-zenml served-models describe <UUID>
+zenml model-deployer models describe <UUID>
 ```
 
 If you are only interested in the prediction-url of the specific model you can
 also run:
 
 ```bash
-zenml served-models get-url <UUID>
+zenml model-deployer models get-url <UUID>
 ```
 
 Finally, you will also be able to start/stop the services using the following
  two commands:
 
 ```bash
-zenml served-models start <UUID>
-zenml served-models stop <UUID>
+zenml model-deployer models start <UUID>
+zenml model-deployer models stop <UUID>
 ```
 
 If you want to completely remove a served model you can also irreversibly delete
  it using:
 
 ```bash
-zenml served-models delete <UUID>
+zenml model-deployer models delete <UUID>
 ```
 
 Administering the Stack
@@ -659,6 +659,13 @@ zenml STACK_COMPONENT remove-attribute STACK_COMPONENT_NAME --ATTRIBUTE_NAME [--
 
 Note that you can only remove optional attributes.
 
+If you want to register secrets for all secret references in a stack, use the
+following command:
+
+```shell
+zenml stack register-secrets [<STACK_NAME>]
+```
+
 Managing users, teams, projects and roles
 -----------------------------------------
 
@@ -776,18 +783,86 @@ of the model deployer into the CLI with the following command:
 zenml model-deployer logs MODEL_DEPLOYER_NAME
 ```
 
+Deploying cloud resources using Stack Recipes
+-----------------------------------------------
+
+Stack Recipes allow you to quickly deploy fully-fledged MLOps stacks with just a few
+commands. Each recipe uses Terraform modules under the hood and once executed can set up
+a ZenML stack, ready to run your pipelines!
+
+A number of stack recipes are already available at [the `mlops-stacks` repository](https://github.com/zenml-io/mlops-stacks/). List them
+using the following command:
+
+```bash
+zenml stack recipes list
+```
+
+If you want to pull any specific recipe to your local system, use the `pull` command:
+```bash
+zenml stack recipe pull <stack-recipe-name>
+```
+If you don't specify a name, `zenml stack recipe pull` will pull all the recipes.
+
+If you notice any inconsistency with the locally-pulled version and the GitHub repository,
+run the `pull` command with the `-y` flag to download any recent changes.
+```bash
+zenml stack recipe pull <stack-recipe-name> -y
+```
+
+Optionally, you can specify the relative path at which you want to install the
+stack recipe(s). Use the `-p` or `--path` flag.
+```bash
+zenml stack recipe pull <stack-recipe-name> --path=<PATH>
+```
+By default, all recipes get downloaded under a directory called `zenml_stack_recipes`.
+
+To deploy a recipe, use the `deploy` command. Before running deploy, review the 
+`zenml_stack_recipes/<stack-recipe-name>/locals.tf` file for configuring non-sensitive 
+variables and the `zenml_stack_recipes/<stack-recipe-name>/values.tfvars` file to 
+add sensitive information like access keys and passwords.
+```bash
+zenml stack recipe deploy <stack-recipe-name>
+```
+
+Running deploy without any options will create a new ZenML stack with the same name as
+the stack recipe name. Use the `--stack-name` option to specify your own name.
+```bash
+zenml stack recipe deploy <stack-recipe-name> --stack-name=my_stack
+```
+
+If you wish to review the stack information from the newly-generated resources before
+importing, you can run `deploy` with the `--no-import` flag.
+```bash
+zenml stack recipe deploy <stack-recipe-name> --no-import
+```
+This will still create a stack YAML configuration file but will not auto-import it. You can
+make any changes you want to the configuration and then run `zenml stack import` manually.
+
+To remove all resources created as part of the recipe, run the `destroy` command.
+```bash
+zenml stack recipe destroy <stack-recipe-name>
+```
+
+To delete all the recipe files from your system, you can use the `clean` command.
+```bash
+zenml stack recipe clean
+```
+This deletes all the recipes from the default path where they were downloaded.
+
 """
 
+from zenml.cli.annotator import *  # noqa
 from zenml.cli.base import *  # noqa
 from zenml.cli.config import *  # noqa
 from zenml.cli.example import *  # noqa
 from zenml.cli.feature import *  # noqa
 from zenml.cli.integration import *  # noqa
+from zenml.cli.model import *  # noqa
 from zenml.cli.pipeline import *  # noqa
 from zenml.cli.secret import *  # noqa
-from zenml.cli.served_models import *  # noqa
 from zenml.cli.server import *  # noqa
 from zenml.cli.stack import *  # noqa
 from zenml.cli.stack_components import *  # noqa
+from zenml.cli.stack_recipes import *  # noqa
 from zenml.cli.user_management import *  # noqa
 from zenml.cli.version import *  # noqa

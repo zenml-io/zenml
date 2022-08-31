@@ -70,6 +70,26 @@ You can get a graphical visualization of which steps were cached using
 [ZenML's Pipeline Run Visualization Tool](./pipeline-visualization.md).
 {% endhint %}
 
+You can disable caching for individual steps via the `config.yaml` file and
+specifying parameters for a specific step (as described [in the section on YAML
+config
+files](https://docs.zenml.io/developer-guide/steps-and-pipelines/runtime-configuration#configuring-with-yaml-config-files).)
+In this case, you would specify `True` or `False` in the place of the
+`<ENABLE_CACHE_VALUE>` below.
+
+```yaml
+steps:
+  <STEP_NAME_IN_PIPELINE>:
+    parameters:
+      enable_cache: <ENABLE_CACHE_VALUE>
+      ...
+    ...
+```
+
+You can see an example of this in action in our [PyTorch
+Example](https://github.com/zenml-io/zenml/blob/develop/examples/pytorch/config.yaml),
+where caching is disabled for the `trainer` step.
+
 ### Dynamically disabling caching for a pipeline run
 
 Sometimes you want to have control over caching at runtime instead of defaulting to the backed in configurations of 
@@ -94,19 +114,24 @@ under the hood, checkout
 ```python
 import numpy as np
 from sklearn.base import ClassifierMixin
+from sklearn.datasets import load_digits
+from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 
-from zenml.integrations.sklearn.helpers.digits import get_digits
 from zenml.steps import BaseStepConfig, Output, step
 from zenml.pipelines import pipeline
 
 
 @step
-def load_digits() -> Output(
+def digits_data_loader() -> Output(
     X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
 ):
-    """Loads the digits dataset as normal numpy arrays."""
-    X_train, X_test, y_train, y_test = get_digits()
+    """Loads the digits dataset as a tuple of flattened numpy arrays."""
+    digits = load_digits()
+    data = digits.images.reshape((len(digits.images), -1))
+    X_train, X_test, y_train, y_test = train_test_split(
+        data, digits.target, test_size=0.2, shuffle=False
+    )
     return X_train, X_test, y_train, y_test
 
 
@@ -134,7 +159,7 @@ def first_pipeline(step_1, step_2):
 
 
 first_pipeline_instance = first_pipeline(
-    step_1=load_digits(),
+    step_1=digits_data_loader(),
     step_2=svc_trainer()
 )
 
@@ -156,8 +181,8 @@ first_pipeline_instance.run(enable_cache=False)
 Creating run for pipeline: first_pipeline
 Cache enabled for pipeline first_pipeline
 Using stack default to run pipeline first_pipeline...
-Step load_digits has started.
-Step load_digits has finished in 0.135s.
+Step digits_data_loader has started.
+Step digits_data_loader has finished in 0.135s.
 Step svc_trainer has started.
 Step svc_trainer has finished in 0.109s.
 Pipeline run first_pipeline-07_Jul_22-12_05_54_573248 has finished in 0.417s.
@@ -169,9 +194,9 @@ Pipeline run first_pipeline-07_Jul_22-12_05_54_573248 has finished in 0.417s.
 Creating run for pipeline: first_pipeline
 Cache enabled for pipeline first_pipeline
 Using stack default to run pipeline first_pipeline...
-Step load_digits has started.
-Using cached version of load_digits.
-Step load_digits has finished in 0.014s.
+Step digits_data_loader has started.
+Using cached version of digits_data_loader.
+Step digits_data_loader has finished in 0.014s.
 Step svc_trainer has started.
 Step svc_trainer has finished in 0.051s.
 Pipeline run first_pipeline-07_Jul_22-12_05_55_813554 has finished in 0.161s.
@@ -184,8 +209,8 @@ Creating run for pipeline: first_pipeline
 Cache enabled for pipeline first_pipeline
 Using stack default to run pipeline first_pipeline...
 Runtime configuration overwriting the pipeline cache settings to enable_cache=False for this pipeline run. The default caching strategy is retained for future pipeline runs.
-Step load_digits has started.
-Step load_digits has finished in 0.078s.
+Step digits_data_loader has started.
+Step digits_data_loader has finished in 0.078s.
 Step svc_trainer has started.
 Step svc_trainer has finished in 0.048s.
 Pipeline run first_pipeline-07_Jul_22-12_05_56_718489 has finished in 0.219s.

@@ -48,5 +48,6 @@ def tf_predict_preprocessor(
     res = requests.get(config.img_url)
     img_arr = np.array(Image.open(BytesIO(res.content)))
     img_array = img_arr.reshape((-1, 28, 28))
-    request = img_array.tolist()
-    return json.dumps([request])
+    instances = img_array.tolist()
+    request = [instances]
+    return json.dumps(request)

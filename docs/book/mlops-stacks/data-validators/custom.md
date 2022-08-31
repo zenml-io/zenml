@@ -48,5 +48,5 @@ to implement your own custom Data Validator:
 |------------------|-----------------|
 | [Deepchecks](./deepchecks.md) | [DeepchecksDataValidator](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/deepchecks/data_validators/deepchecks_data_validator.py) |
 | [Evidently](./evidently.md) | [EvidentlyDataValidator](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/evidently/data_validators/evidently_data_validator.py) |
-| [Great Expectations](./great_expectations.md) | [GreatExpectationsDataValidator](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/great_expectations/data_validators/ge_data_validator.py) |
+| [Great Expectations](./great-expectations.md) | [GreatExpectationsDataValidator](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/great_expectations/data_validators/ge_data_validator.py) |
 | [Whylogs/WhyLabs](./whylogs.md) | [WhylogsDataValidator](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/whylogs/data_validators/whylogs_data_validator.py) |

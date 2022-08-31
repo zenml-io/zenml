@@ -14,6 +14,7 @@
 
 import inspect
 import os
+import pathlib
 import sys
 from collections import OrderedDict
 from contextlib import ExitStack as does_not_raise
@@ -21,13 +22,18 @@ from pathlib import Path
 from typing import Callable
 
 import pytest
+from pytest_mock import MockerFixture
 
 from zenml.repository import Repository
 from zenml.utils import source_utils
 
 
-def test_is_third_party_module():
+def test_is_third_party_module(module_mocker: MockerFixture):
     """Tests that third party modules get detected correctly."""
+    module_mocker.patch(
+        "zenml.utils.source_utils.get_source_root_path",
+        return_value=str(pathlib.Path(__file__).absolute().parents[3]),
+    )
     third_party_file = inspect.getfile(pytest.Cache)
     assert source_utils.is_third_party_module(third_party_file)
 
@@ -42,11 +48,17 @@ class EmptyClass:
     pass
 
 
-def test_resolve_class():
+def test_resolve_class(module_mocker: MockerFixture):
     """Tests that class resolving works as expected."""
     os.getcwd()
     parent_directory = os.path.dirname(os.path.dirname(__file__))
     os.chdir(parent_directory)
+
+    module_mocker.patch(
+        "zenml.utils.source_utils.get_source_root_path",
+        return_value=str(pathlib.Path(__file__).absolute().parents[1]),
+    )
+
     try:
         assert (
             source_utils.resolve_class(EmptyClass)

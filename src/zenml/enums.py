@@ -105,3 +105,11 @@ class AnnotationTasks(StrEnum):
 
     IMAGE_CLASSIFICATION = "image_classification"
     OBJECT_DETECTION_BOUNDING_BOXES = "object_detection_bounding_boxes"
+
+
+class SecretValidationLevel(StrEnum):
+    """Secret validation levels."""
+
+    SECRET_AND_KEY_EXISTS = "SECRET_AND_KEY_EXISTS"
+    SECRET_EXISTS = "SECRET_EXISTS"
+    NONE = "NONE"

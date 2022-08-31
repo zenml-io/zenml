@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML AzureML Step Operator."""
 
+import itertools
 import os
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, ClassVar, List, Optional
@@ -30,23 +31,30 @@ from azureml.core.authentication import (
 )
 from azureml.core.conda_dependencies import CondaDependencies
 
-from zenml.config.global_config import GlobalConfiguration
+import zenml
 from zenml.constants import ENV_ZENML_CONFIG_PATH
 from zenml.environment import Environment as ZenMLEnvironment
 from zenml.integrations.azure import AZUREML_STEP_OPERATOR_FLAVOR
-from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.repository import Repository
 from zenml.step_operators import BaseStepOperator
-from zenml.utils.docker_utils import CONTAINER_ZENML_CONFIG_DIR
+from zenml.utils import deprecation_utils
+from zenml.utils.pipeline_docker_image_builder import (
+    DOCKER_IMAGE_ZENML_CONFIG_DIR,
+    PipelineDockerImageBuilder,
+    _include_active_profile,
+)
+from zenml.utils.secret_utils import SecretField
 from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
-    from zenml.steps import ResourceConfiguration
+    from zenml.config.docker_configuration import DockerConfiguration
+    from zenml.config.resource_configuration import ResourceConfiguration
 
 logger = get_logger(__name__)
 
 
-class AzureMLStepOperator(BaseStepOperator):
+class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
     """Step operator to run a step on AzureML.
 
     This class defines code that can set up an AzureML environment and run the
@@ -81,12 +89,16 @@ class AzureMLStepOperator(BaseStepOperator):
 
     # Service principal authentication
     # https://docs.microsoft.com/en-us/azure/machine-learning/how-to-setup-authentication#configure-a-service-principal
-    tenant_id: Optional[str] = None
-    service_principal_id: Optional[str] = None
-    service_principal_password: Optional[str] = None
+    tenant_id: Optional[str] = SecretField()
+    service_principal_id: Optional[str] = SecretField()
+    service_principal_password: Optional[str] = SecretField()
 
     # Class Configuration
     FLAVOR: ClassVar[str] = AZUREML_STEP_OPERATOR_FLAVOR
+
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
+        ("docker_base_image", "docker_parent_image")
+    )
 
     def _get_authentication(self) -> Optional[AbstractAuthentication]:
         """Returns the authentication object for the AzureML environment.
@@ -107,7 +119,10 @@ class AzureMLStepOperator(BaseStepOperator):
         return None
 
     def _prepare_environment(
-        self, workspace: Workspace, requirements: List[str], run_name: str
+        self,
+        workspace: Workspace,
+        docker_configuration: "DockerConfiguration",
+        run_name: str,
     ) -> Environment:
         """Prepares the environment in which Azure will run all jobs.
 
@@ -115,14 +130,27 @@ class AzureMLStepOperator(BaseStepOperator):
             workspace: The AzureML Workspace that has configuration
                 for a storage account, container registry among other
                 things.
-            requirements: The list of requirements to be installed
-                in the environment.
+            docker_configuration: The Docker configuration for this step.
             run_name: The name of the pipeline run that can be used
                 for naming environments and runs.
 
         Returns:
             The AzureML Environment object.
         """
+        requirements_files = self._gather_requirements_files(
+            docker_configuration=docker_configuration,
+            stack=Repository().active_stack,
+        )
+        requirements = list(
+            itertools.chain.from_iterable(
+                r[1].split("\n") for r in requirements_files
+            )
+        )
+        requirements.append(f"zenml=={zenml.__version__}")
+        logger.info(
+            "Using requirements for AzureML step operator environment: %s",
+            requirements,
+        )
         if self.environment_name:
             environment = Environment.get(
                 workspace=workspace, name=self.environment_name
@@ -145,9 +173,13 @@ class AzureMLStepOperator(BaseStepOperator):
                 python_version=ZenMLEnvironment.python_version(),
             )
 
-            if self.docker_base_image:
+            parent_image = (
+                docker_configuration.parent_image or self.docker_parent_image
+            )
+
+            if parent_image:
                 # replace the default azure base image
-                environment.docker.base_image = self.docker_base_image
+                environment.docker.base_image = parent_image
 
         environment_variables = {
             "ENV_ZENML_PREVENT_PIPELINE_EXECUTION": "True",
@@ -165,7 +197,8 @@ class AzureMLStepOperator(BaseStepOperator):
 
         environment_variables[
             ENV_ZENML_CONFIG_PATH
-        ] = f"./{CONTAINER_ZENML_CONFIG_DIR}"
+        ] = f"./{DOCKER_IMAGE_ZENML_CONFIG_DIR}"
+        environment_variables.update(docker_configuration.environment)
 
         environment.environment_variables = environment_variables
         return environment
@@ -174,7 +207,7 @@ class AzureMLStepOperator(BaseStepOperator):
         self,
         pipeline_name: str,
         run_name: str,
-        requirements: List[str],
+        docker_configuration: "DockerConfiguration",
         entrypoint_command: List[str],
         resource_configuration: "ResourceConfiguration",
     ) -> None:
@@ -185,9 +218,8 @@ class AzureMLStepOperator(BaseStepOperator):
                 is part of.
             run_name: Name of the pipeline run which the step to be executed
                 is part of.
+            docker_configuration: The Docker configuration for this step.
             entrypoint_command: Command that executes the step.
-            requirements: List of pip requirements that must be installed
-                inside the step operator environment.
             resource_configuration: The resource configuration for this step.
         """
         if not resource_configuration.empty:
@@ -202,6 +234,29 @@ class AzureMLStepOperator(BaseStepOperator):
                 self.name,
             )
 
+        unused_docker_fields = [
+            "dockerfile",
+            "build_context_root",
+            "build_options",
+            "docker_target_repository",
+            "dockerignore",
+            "copy_files",
+            "copy_profile",
+        ]
+        ignored_docker_fields = (
+            docker_configuration.__fields_set__.intersection(
+                unused_docker_fields
+            )
+        )
+
+        if ignored_docker_fields:
+            logger.warning(
+                "The AzureML step operator currently does not support all "
+                "options defined in your Docker configuration. Ignoring all "
+                "values set for the attributes: %s",
+                ignored_docker_fields,
+            )
+
         workspace = Workspace.get(
             subscription_id=self.subscription_id,
             resource_group=self.resource_group,
@@ -210,22 +265,15 @@ class AzureMLStepOperator(BaseStepOperator):
         )
 
         source_directory = get_source_root_path()
-        config_path = os.path.join(source_directory, CONTAINER_ZENML_CONFIG_DIR)
-        try:
-
-            # Save a copy of the current global configuration with the
-            # active profile contents into the build context, to have
-            # the configured stacks accessible from within the Azure ML
-            # environment.
-            load_config_path = PurePosixPath(f"./{CONTAINER_ZENML_CONFIG_DIR}")
-            GlobalConfiguration().copy_active_configuration(
-                config_path,
-                load_config_path=load_config_path,
-            )
-
+        with _include_active_profile(
+            build_context_root=source_directory,
+            load_config_path=PurePosixPath(
+                f"./{DOCKER_IMAGE_ZENML_CONFIG_DIR}"
+            ),
+        ):
             environment = self._prepare_environment(
                 workspace=workspace,
-                requirements=requirements,
+                docker_configuration=docker_configuration,
                 run_name=run_name,
             )
             compute_target = ComputeTarget(
@@ -241,10 +289,6 @@ class AzureMLStepOperator(BaseStepOperator):
 
             experiment = Experiment(workspace=workspace, name=pipeline_name)
             run = experiment.submit(config=run_config)
-
-        finally:
-            # Clean up the temporary build files
-            fileio.rmtree(config_path)
 
         run.display_name = run_name
         run.wait_for_completion(show_output=True)
