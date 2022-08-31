@@ -2125,15 +2125,6 @@ class BaseZenStore(ABC):
 
     # LEGACY CODE FROM THE PREVIOUS VERSION OF BASEZENSTORE
 
-    @property
-    @abstractmethod
-    def stack_configurations(self) -> Dict[str, Dict[StackComponentType, str]]:
-        """Configurations for all stacks registered in this zen store.
-
-        Returns:
-            Dictionary mapping stack names to Dict[StackComponentType, str]'s
-        """
-
     # Private interface (must be implemented, not to be called by user):
 
     @abstractmethod

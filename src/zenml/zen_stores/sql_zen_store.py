@@ -235,6 +235,16 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             return not session.exec(select(StackSchema)).first()
 
+    @property
+    def stack_names(self) -> List[str]:
+        """Names of all stacks registered in this ZenStore.
+
+        Returns:
+            List of all stack names.
+        """
+        with Session(self.engine) as session:
+            return [s.name for s in session.exec(select(StackSchema))]
+
     def _list_stacks(
         self,
         project_id: str,
@@ -1746,39 +1756,6 @@ class SqlZenStore(BaseZenStore):
 
     # LEGACY CODE FROM THE PREVIOUS VERSION OF BASEZENSTORE
 
-    @property
-    def stack_configurations(self) -> Dict[str, Dict[StackComponentType, str]]:
-        """Configuration for all stacks registered in this zen store.
-
-        Returns:
-            Dictionary mapping stack names to Dict[StackComponentType, str]
-        """
-        return {n: self.get_stack_configuration(n) for n in self.stack_names}
-
-    def get_stack_component_type(self, name: str) -> List[str]:
-        """Fetches all available stack component types.
-
-        Returns:
-            List of available stack component types.
-        """
-        # TODO: leave this to later in the process
-        # TODO: [ALEXEJ] should this live in the zenstore?
-        return NotImplementedError
-
-    @property
-    def stack_component_types(self) -> List[StackComponentType]:
-        """List of stack component types.
-
-        Returns:
-            List of stack component types.
-        """
-        # get all stack components
-        # get the component for each type
-        # return them as a list
-        # TODO: leave this to later in the process
-        # TODO: [ALEXEJ] should this live in the zenstore? Is this a duplicate?
-        return NotImplementedError
-
     # Private interface implementations:
 
     def _get_component_flavor_and_config(
@@ -1830,34 +1807,6 @@ class SqlZenStore(BaseZenStore):
                 StackComponentSchema.type == component_type
             )
             return [component.name for component in session.exec(statement)]
-
-    def _delete_stack_component(
-        self, component_type: StackComponentType, name: str
-    ) -> None:
-        """Remove a StackComponent from storage.
-
-        Args:
-            component_type: The type of component to delete.
-            name: Then name of the component to delete.
-
-        Raises:
-            KeyError: If no component exists for given type and name.
-        """
-        with Session(self.engine) as session:
-            component = session.exec(
-                select(StackComponentSchema)
-                .where(StackComponentSchema.type == component_type)
-                .where(StackComponentSchema.name == name)
-            ).first()
-            if component is not None:
-                session.delete(component)
-                session.commit()
-            else:
-                raise KeyError(
-                    "Unable to deregister stack component (type: "
-                    f"{component_type.value}) with name '{name}': No stack "
-                    "component exists with this name."
-                )
 
     # User, project and role management
 
@@ -2735,16 +2684,6 @@ class SqlZenStore(BaseZenStore):
     # TODO: [ALEXEJ] This should be list_flavors with a filter
 
     # Implementation-specific internal methods:
-
-    @property
-    def stack_names(self) -> List[str]:
-        """Names of all stacks registered in this ZenStore.
-
-        Returns:
-            List of all stack names.
-        """
-        with Session(self.engine) as session:
-            return [s.name for s in session.exec(select(StackSchema))]
 
     def _delete_query_results(self, query: Any) -> None:
         """Deletes all rows returned by the input query.
