@@ -430,77 +430,6 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             )
             self.__config.active_stack_name = backup_stack_name
 
-    @staticmethod
-    def _migrate_legacy_repository(
-        config_file: str,
-    ) -> Optional["ProfileConfiguration"]:
-        """Migrate a legacy repo config to the new format and create a new Profile out of it.
-
-        Args:
-            config_file: Path to the legacy repository configuration file.
-
-        Returns:
-            The new Profile instance created for the legacy repository or None
-            if a legacy repository configuration was not found at the supplied
-            path.
-        """
-        from zenml.console import console
-
-        if not fileio.exists(config_file):
-            return None
-
-        config_dict = yaml_utils.read_yaml(config_file)
-
-        try:
-            legacy_config = LegacyRepositoryConfig.parse_obj(config_dict)
-        except ValidationError:
-            # legacy configuration not detected
-            return None
-
-        config_path = str(Path(config_file).parent)
-        profile_name = f"legacy-repository-{random.getrandbits(32):08x}"
-
-        # a legacy repository configuration was detected
-        console.print(
-            f"A legacy ZenML repository with locally configured stacks was "
-            f"found at '{config_path}'.\n"
-            f"Beginning with ZenML 0.7.0, stacks are no longer stored inside "
-            f"the ZenML repository root, they are stored globally using the "
-            f"newly introduced concept of Profiles.\n\n"
-            f"The stacks configured in this repository will be automatically "
-            f"migrated to a newly created profile: '{profile_name}'.\n\n"
-            f"If you no longer need to use the stacks configured in this "
-            f"repository, please delete the profile using the following "
-            f"command:\n\n"
-            f"'zenml profile delete {profile_name}'\n\n"
-            f"More information about Profiles can be found at "
-            f"https://docs.zenml.io.\n"
-            f"This warning will not be shown again for this Repository."
-        )
-
-        stack_data = legacy_config.get_stack_data(config_file=config_file)
-
-        from zenml.config.profile_config import ProfileConfiguration
-        from zenml.zen_stores import LocalZenStore
-
-        store = LocalZenStore()
-        store.initialize(url=config_path, store_data=stack_data)
-        profile = ProfileConfiguration(
-            name=profile_name,
-            store_url=store.url,
-            active_stack=legacy_config.active_stack_name,
-        )
-
-        # Calling this will dump the new configuration to disk
-        RepositoryConfiguration(
-            config_file=config_file,
-            active_profile_name=profile.name,
-            active_stack_name=legacy_config.active_stack_name,
-        )
-        GlobalConfiguration().add_or_update_profile(profile)
-
-        return profile
-
     def _load_config(self) -> Optional[RepositoryConfiguration]:
         """Loads the repository configuration from disk.
 
@@ -530,10 +459,6 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             logger.debug(
                 f"Loading repository configuration from {config_path}."
             )
-
-            # detect an old style repository configuration and migrate it to
-            # the new format and create a profile out of it if necessary
-            self._migrate_legacy_repository(config_path)
         else:
             logger.debug(
                 "No repository configuration file found, creating default "
@@ -552,12 +477,12 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         Returns:
             The class of the given store type or None if the type is unknown.
         """
-        from zenml.zen_stores import LocalZenStore, RestZenStore, SqlZenStore
+        # from zenml.zen_stores import RestZenStore, SqlZenStore  # TODO
+        from zenml.zen_stores import SqlZenStore 
 
         return {
-            StoreType.LOCAL: LocalZenStore,
             StoreType.SQL: SqlZenStore,
-            StoreType.REST: RestZenStore,
+            # StoreType.REST: RestZenStore,  # TODO
         }.get(type)
 
     @staticmethod
