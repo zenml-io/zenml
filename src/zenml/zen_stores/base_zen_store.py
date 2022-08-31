@@ -595,7 +595,7 @@ class BaseZenStore(BaseModel):
             KeyError: if the stack doesn't exist.
         """
 
-    def delete_stack(self, stack_id: str) -> None:
+    def delete_stack(self, stack_id: UUID) -> None:
         """Delete a stack.
 
         Args:
@@ -605,7 +605,7 @@ class BaseZenStore(BaseModel):
         self._delete_stack(stack_id)
 
     @abstractmethod
-    def _delete_stack(self, stack_id: str) -> None:
+    def _delete_stack(self, stack_id: UUID) -> None:
         """Delete a stack.
 
         Args:
@@ -643,7 +643,12 @@ class BaseZenStore(BaseModel):
         Returns:
             All stack components currently registered.
         """
-        return self._list_stack_components()
+        return self._list_stack_components(project_id=project_id,
+                                           type=type,
+                                           flavor_id=flavor_id,
+                                           owner=owner,
+                                           name=name,
+                                           is_shared=is_shared)
 
     @abstractmethod
     def _list_stack_components(

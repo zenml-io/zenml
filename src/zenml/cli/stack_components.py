@@ -147,7 +147,9 @@ def _get_stack_component_wrapper(
 
     repo = Repository()
 
-    components = repo.zen_store.get_stack_components(component_type)
+    components = repo.zen_store.list_stack_components(
+        project_id=repo.zen_store.default_project_id,  # TODO: [server] finalize access to the default_project
+        type=component_type)
     if len(components) == 0:
         cli_utils.warning(f"No {plural_display_name} registered.")
         return None, False
@@ -270,12 +272,15 @@ def generate_stack_component_list_command(
 
         repo = Repository()
 
-        components = repo.zen_store.get_stack_components(component_type)
+        components = repo.zen_store.list_stack_components(
+            project_id=repo.zen_store.default_project_id,
+            # TODO: [server] finalize access to the default_project
+            type=component_type)
         display_name = _component_display_name(component_type, plural=True)
         if len(components) == 0:
             cli_utils.warning(f"No {display_name} registered.")
             return
-        active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
+        active_stack = repo.zen_store.list_stacks(name=repo.active_stack_name)
         active_component_name = None
         active_component = active_stack.get_component_wrapper(component_type)
         if active_component:

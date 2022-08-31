@@ -345,11 +345,11 @@ class SqlZenStore(BaseZenStore):
             query = select(StackSchema)
             # TODO: prettify
             if user_id:
-                 query = query.where(StackComponentSchema.owner == user_id)
+                 query = query.where(StackSchema.owner == user_id)
             if name:
-                 query = query.where(StackComponentSchema.name == name)
+                 query = query.where(StackSchema.name == name)
             if is_shared is not None:
-                query = query.where(StackComponentSchema.is_shared == is_shared)
+                query = query.where(StackSchema.is_shared == is_shared)
             stacks = session.exec(query).all()
 
             return [stack.to_model() for stack in stacks]
@@ -371,7 +371,7 @@ class SqlZenStore(BaseZenStore):
 
             if stack is None:
                 raise KeyError(f"Stack with ID {stack_id} not found.")
-        return stack.to_model()
+            return stack.to_model()
 
     def _register_stack(
         self,

@@ -839,23 +839,32 @@ def set_active_stack_command(stack_name: str) -> None:
     Args:
         stack_name: Name of the stack to set as active.
     """
-    set_active_stack(stack_name)
-
-
-def set_active_stack(stack_name: str) -> None:
-    """Sets a stack as active.
-
-    Args:
-        stack_name: Unique name of the stack
-    """
     cli_utils.print_active_config()
     scope = " repository" if Repository().root else " global"
     repo = Repository()
+    stacks = repo.zen_store.list_stacks(
+        project_id=repo.zen_store.default_project_id,
+        name=stack_name)
+
+    # TODO: [server] This could be handled a bit more elegantly and user
+    #  friendly
+    if not stacks:
+        cli_utils.error("No stack with this name exists.")
+        return
+    elif len(stacks) > 1:
+        cli_utils.error("Multiple stacks have been found for this name. "
+                        "Please specify if you want to use the shared stack by "
+                        "this name or the private one.")
+        return
+    else:
+        stack_to_set_active = stacks[0]
+
     with console.status(
         f"Setting the{scope} active stack to '{stack_name}'..."
     ):
-        repo.activate_stack(stack_name)
-        cli_utils.declare(f"Active{scope} stack set to: '{stack_name}'")
+        repo.activate_stack(stack_to_set_active)
+        cli_utils.declare(f"Active{scope} stack set to: "
+                          f"'{stack_to_set_active.name}'")
 
 
 @stack.command("get")

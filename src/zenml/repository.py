@@ -17,6 +17,7 @@ import os
 from abc import ABCMeta
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
+from uuid import UUID
 
 import zenml
 from zenml.config.global_config import GlobalConfiguration
@@ -35,9 +36,9 @@ from zenml.stack import Stack, StackComponent
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
+from zenml.models import StackModel
 
 if TYPE_CHECKING:
-    from zenml.models import ProjectModel, UserModel, ZenStoreModel
     from zenml.pipelines import BasePipeline
     from zenml.post_execution import PipelineView
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -49,11 +50,11 @@ class RepositoryConfiguration(FileSyncModel):
     """Pydantic object used for serializing repository configuration options.
 
     Attributes:
-        active_stack_name: Optional name of the active stack.
+        active_stack_id: Optional name of the active stack.
         active_project_name: Optional name of the active project.
     """
 
-    active_stack_name: Optional[str]
+    active_stack_id: Optional[UUID]
     active_project_name: Optional[str]
 
     class Config:
@@ -273,30 +274,36 @@ class Repository(metaclass=RepositoryMetaClass):
                 self._config.active_project_name = DEFAULT_PROJECT_NAME
 
         # Auto-select the repository active stack
-        if not self._config.active_stack_name:
+        if not self._config.active_stack_id:
             logger.warning(
                 "The repository active stack is not set. Switching the "
                 "repository active stack to 'default'"
             )
-            self._config.active_stack_name = "default"
+            default_stack = self.zen_store.list_stacks(
+                    name="default",
+                    project_id=self._config.active_project_name,
+                    user_id=self.zen_store.default_user_id,
+                )[0] # TODO: [server] its not guaranteed that this stack exists
+            self._config.active_stack_id = default_stack.id
         else:
             # Ensure that the repository active stack is still valid
             try:
-                self.zen_store.list_stacks(
-                    name=self._config.active_stack_name,
-                    project_id=self._config.active_project_name,
-                    user_id=self.zen_store.default_user_id,
-                )
+                self.zen_store.get_stack(stack_id=self._config.active_stack_id)
                 # TODO: this will return a list that is hopefully length 1 -
                 #  this would have to be validated, additionally this does not
                 #  gurantee that the stack is actually active
             except KeyError:
                 logger.warning(
-                    "Stack '%s' not found. Switching the repository active stack "
+                    "Stack with id:'%s' not found. Switching the repository active stack "
                     "to 'default'",
-                    self._config.active_stack_name,
+                    self._config.active_stack_id,
                 )
-                self._config.active_stack_name = "default"
+                default_stack = self.zen_store.list_stacks(
+                        name="default",
+                        project_id=self._config.active_project_name,
+                        user_id=self.zen_store.default_user_id,
+                    )[0] # TODO: [server] its not guaranteed that this stack exists
+                self._config.active_stack_id = default_stack.id
 
     def _load_config(self) -> Optional[RepositoryConfiguration]:
         """Loads the repository configuration from disk.
@@ -520,7 +527,7 @@ class Repository(metaclass=RepositoryMetaClass):
         return dict_of_stacks
 
     @property
-    def active_stack(self) -> Stack:
+    def active_stack(self) -> StackModel:
         """The active stack for this repository.
 
         If no active stack is configured locally for the repository, the active
@@ -529,36 +536,20 @@ class Repository(metaclass=RepositoryMetaClass):
         Returns:
             The active stack for this repository.
         """
-        return self.get_stack(name=self.active_stack_name)
-
-    @property
-    def active_stack_name(self) -> str:
-        """The name of the active stack for this repository.
-
-        If no active stack is configured locally for the repository, the active
-        stack in the global configuration is used instead.
-
-        Returns:
-            The name of the active stack.
-
-        Raises:
-            RuntimeError: If no active stack name is set neither in the
-                repository configuration nor in the global configuration.
-        """
-        stack_name = None
+        stack_id = None
         if self._config:
-            stack_name = self._config.active_stack_name
+            stack_id = self._config.active_stack_id
 
-        if not stack_name:
-            stack_name = GlobalConfiguration().active_stack_name
+        if not stack_id:
+            stack_id = GlobalConfiguration().active_stack_id
 
-        if not stack_name:
+        if not stack_id:
             raise RuntimeError(
                 "No active stack is configured. Run "
                 "`zenml stack set STACK_NAME` to set the active stack."
             )
 
-        return stack_name
+        return self.zen_store.get_stack(stack_id=stack_id)
 
     @property
     def uses_local_active_stack(self) -> bool:
@@ -570,24 +561,23 @@ class Repository(metaclass=RepositoryMetaClass):
         """
         return (
             self._config is not None
-            and self._config.active_stack_name is not None
+            and self._config.active_stack_id is not None
         )
 
     @track(event=AnalyticsEvent.SET_STACK)
-    def activate_stack(self, name: str) -> None:
+    def activate_stack(self, stack: StackModel) -> None:
         """Activates the stack for the given name.
 
         Args:
-            name: Name of the stack to activate.
+            stack: Model of the stack to activate.
         """
-        self.zen_store.get_stack(name)  # raises KeyError
         if self._config:
-            self._config.active_stack_name = name
+            self._config.active_stack_id = stack.id
 
         else:
             # set the active stack globally only if the repository doesn't use
             # a local configuration
-            GlobalConfiguration().active_stack_name = name
+            GlobalConfiguration().active_stack_id = stack.id
 
     def get_stack(self, name: str) -> Stack:
         """Fetches a stack.
@@ -614,21 +604,19 @@ class Repository(metaclass=RepositoryMetaClass):
         stack.validate()
         self.zen_store.register_stack(StackWrapper.from_stack(stack))
 
-    def update_stack(self, name: str, stack: Stack) -> None:
+    def update_stack(self, name: str, stack: StackModel) -> None:
         """Updates a stack and its components.
 
         Args:
             name: The original name of the stack.
             stack: The new stack to use as the updated version.
         """
-        from zenml.models import StackWrapper
-
         stack.validate()
-        self.zen_store.update_stack(name, StackWrapper.from_stack(stack))
-        if self.active_stack_name == name:
+        self.zen_store.update_stack(name, stack)
+        if self.active_stack_id == stack.id:
             self.activate_stack(stack.name)
 
-    def deregister_stack(self, name: str) -> None:
+    def deregister_stack(self, stack: StackModel) -> None:
         """Deregisters a stack.
 
         Args:
@@ -638,17 +626,18 @@ class Repository(metaclass=RepositoryMetaClass):
             ValueError: If the stack is the currently active stack for this
                 repository.
         """
-        if name == self.active_stack_name:
-            raise ValueError(f"Unable to deregister active stack '{name}'.")
+        if stack.id == self._config.active_stack_id:
+            raise ValueError(f"Unable to deregister active stack "
+                             f"'{stack.name}'.")
 
         try:
-            self.zen_store.deregister_stack(name)
-            logger.info("Deregistered stack with name '%s'.", name)
+            self.zen_store.delete_stack(stack_id=stack.id)
+            logger.info("Deregistered stack with name '%s'.", stack.name)
         except KeyError:
             logger.warning(
                 "Unable to deregister stack with name '%s': No stack  "
                 "with this name could be found.",
-                name,
+                stack.name,
             )
 
     def update_stack_component(
@@ -768,13 +757,15 @@ class Repository(metaclass=RepositoryMetaClass):
             RuntimeError: If no stack name is specified and no active stack name
                 is configured.
         """
-        stack_name = stack_name or self.active_stack_name
+        # TODO: [server] handle the active stack correctly
+        stack_name = stack_name or self._config.active_stack_id
         if not stack_name:
             raise RuntimeError(
                 "No active stack is configured for the repository. Run "
                 "`zenml stack set STACK_NAME` to update the active stack."
             )
         return self.zen_store.get_pipelines()
+        # TODO: [server] find correct method in zen_store
 
     @track(event=AnalyticsEvent.GET_PIPELINE)
     def get_pipeline(
@@ -852,6 +843,7 @@ class Repository(metaclass=RepositoryMetaClass):
                 ),
             )
 
+        # TODO: [server]
         stack_name = stack_name or self.active_stack_name
         if not stack_name:
             raise RuntimeError(
