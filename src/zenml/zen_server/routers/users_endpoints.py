@@ -212,7 +212,7 @@ async def get_role_assignments_for_user(user_id: str) -> List[RoleModel]:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.get_role_assignments_for_user(user_id)
+        return zen_store.list_role_assignments(user_id=user_id)
     except KeyError as error:
         raise not_found(error) from error
     except NotAuthorizedError as error:
@@ -249,12 +249,10 @@ async def assign_role(user_id: str, role_id: str, project_id: str) -> None:
 
     try:
         zen_store.assign_role(
-            # role_name=role_name,
-            # entity_name=entity_name,
-            # project_name=project_name,
-            # is_user=is_user,
-            user_id=user_id,
-            role=role,
+            role_id=role_id,
+            user_or_team_id=user_id,
+            is_user=True,
+            project_id=project_id,
         )
     except KeyError as error:
         raise not_found(error) from error
@@ -339,8 +337,11 @@ async def unassign_role(user_id: str, role_id: str, project_id: str) -> None:
         422 error: when unable to validate input
     """
     try:
-        zen_store._unassign_role(
-            user_id=user_id, role_id=role_id, project_id=project_id
+        zen_store._revoke_role(
+            role_id=role_id,
+            user_or_team_id=user_id,
+            is_user=True,
+            project_id=project_id,
         )
     except KeyError as error:
         raise not_found(error) from error

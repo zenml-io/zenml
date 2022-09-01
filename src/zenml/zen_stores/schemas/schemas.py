@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations."""
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 from uuid import UUID, uuid4
 
 from sqlmodel import Field, Relationship, Session, SQLModel, select
@@ -30,6 +30,7 @@ from zenml.models.pipeline_models import (
 from zenml.models.stack_model import StackModel
 from zenml.models.user_management_models import (
     ProjectModel,
+    RoleAssignmentModel,
     RoleModel,
     TeamModel,
     UserModel,
@@ -43,8 +44,15 @@ class ProjectSchema(SQLModel, table=True):
 
     id: UUID = Field(primary_key=True, default_factory=uuid4)
     name: str
-    description: str = Field(nullable=True)
+    description: Optional[str] = Field(nullable=True)
     created_at: datetime = Field(default_factory=datetime.now)
+
+    user_role_assignments: List["UserRoleAssignmentSchema"] = Relationship(
+        back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
+    )
+    team_role_assignments: List["TeamRoleAssignmentSchema"] = Relationship(
+        back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
+    )
 
     @classmethod
     def from_model(cls, model: ProjectModel) -> "ProjectSchema":
@@ -98,8 +106,12 @@ class UserSchema(SQLModel, table=True):
     id: UUID = Field(primary_key=True, default_factory=uuid4)
     name: str
     created_at: datetime = Field(default_factory=datetime.now)
+
     teams: List["TeamSchema"] = Relationship(
         back_populates="users", link_model=TeamAssignmentSchema
+    )
+    assigned_roles: List["UserRoleAssignmentSchema"] = Relationship(
+        back_populates="user", sa_relationship_kwargs={"cascade": "delete"}
     )
 
     @classmethod
@@ -116,8 +128,12 @@ class TeamSchema(SQLModel, table=True):
     id: UUID = Field(primary_key=True, default_factory=uuid4)
     name: str
     created_at: datetime = Field(default_factory=datetime.now)
+
     users: List["UserSchema"] = Relationship(
         back_populates="teams", link_model=TeamAssignmentSchema
+    )
+    assigned_roles: List["TeamRoleAssignmentSchema"] = Relationship(
+        back_populates="team", sa_relationship_kwargs={"cascade": "delete"}
     )
 
     @classmethod
@@ -135,32 +151,93 @@ class RoleSchema(SQLModel, table=True):
     name: str
     created_at: datetime = Field(default_factory=datetime.now)
 
+    user_role_assignments: List["UserRoleAssignmentSchema"] = Relationship(
+        back_populates="role", sa_relationship_kwargs={"cascade": "delete"}
+    )
+    team_role_assignments: List["TeamRoleAssignmentSchema"] = Relationship(
+        back_populates="role", sa_relationship_kwargs={"cascade": "delete"}
+    )
+
     @classmethod
     def from_model(cls, model: RoleModel) -> "RoleSchema":
         return cls(name=model.name)
 
     def to_model(self) -> RoleModel:
-        return RoleModel(
-            id=self.id,
-            name=self.name,
-            created_at=self.created_at,
-        )
+        return RoleModel(id=self.id, name=self.name, created_at=self.created_at)
 
 
 class UserRoleAssignmentSchema(SQLModel, table=True):
     """SQL Model for assigning roles to users for a given project."""
 
-    role_id: UUID = Field(primary_key=True, foreign_key="roleschema.id")
-    user_id: UUID = Field(primary_key=True, foreign_key="userschema.id")
-    project_id: UUID = Field(primary_key=True, foreign_key="projectschema.id")
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    role_id: UUID = Field(foreign_key="roleschema.id")
+    user_id: UUID = Field(foreign_key="userschema.id")
+    project_id: Optional[UUID] = Field(
+        foreign_key="projectschema.id", nullable=True
+    )
+    created_at: datetime = Field(default_factory=datetime.now)
+
+    role: RoleSchema = Relationship(back_populates="user_role_assignments")
+    user: UserSchema = Relationship(back_populates="assigned_roles")
+    project: Optional[ProjectSchema] = Relationship(
+        back_populates="user_role_assignments"
+    )
+
+    @classmethod
+    def from_model(
+        cls, model: RoleAssignmentModel
+    ) -> "UserRoleAssignmentSchema":
+        return cls(
+            role_id=model.role_id,
+            user_id=model.user_id,
+            project_id=model.project_id,
+        )
+
+    def to_model(self) -> RoleAssignmentModel:
+        return RoleAssignmentModel(
+            id=self.id,
+            role_id=self.role_id,
+            user_id=self.user_id,
+            project_id=self.project_id,
+            created_at=self.created_at,
+        )
 
 
 class TeamRoleAssignmentSchema(SQLModel, table=True):
     """SQL Model for assigning roles to teams for a given project."""
 
-    role_id: UUID = Field(primary_key=True, foreign_key="roleschema.id")
-    team_id: UUID = Field(primary_key=True, foreign_key="teamschema.id")
-    project_id: UUID = Field(primary_key=True, foreign_key="projectschema.id")
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    role_id: UUID = Field(foreign_key="roleschema.id")
+    team_id: UUID = Field(foreign_key="teamschema.id")
+    project_id: Optional[UUID] = Field(
+        foreign_key="projectschema.id", nullable=True
+    )
+    created_at: datetime = Field(default_factory=datetime.now)
+
+    role: RoleSchema = Relationship(back_populates="team_role_assignments")
+    team: TeamSchema = Relationship(back_populates="assigned_roles")
+    project: Optional[ProjectSchema] = Relationship(
+        back_populates="team_role_assignments"
+    )
+
+    @classmethod
+    def from_model(
+        cls, model: RoleAssignmentModel
+    ) -> "TeamRoleAssignmentSchema":
+        return cls(
+            role_id=model.role_id,
+            team_id=model.team_id,
+            project_id=model.project_id,
+        )
+
+    def to_model(self) -> RoleAssignmentModel:
+        return RoleAssignmentModel(
+            id=self.id,
+            role_id=self.role_id,
+            team_id=self.team_id,
+            project_id=self.project_id,
+            created_at=self.created_at,
+        )
 
 
 # Stacks, Stack Components, Flavors
