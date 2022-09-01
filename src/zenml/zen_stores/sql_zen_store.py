@@ -704,6 +704,15 @@ class SqlZenStore(BaseZenStore):
     # | USERS |
     # '-------'
 
+    @property
+    def active_user_name(self) -> str:
+        """Gets the active username.
+
+        Returns:
+            The active username.
+        """
+        return DEFAULT_USERNAME
+
     def _list_users(self, invite_token: str = None) -> List[UserModel]:
         """List all users.
 
@@ -1007,8 +1016,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             projects = session.exec(select(ProjectSchema)).all()
-
-        return [project.to_model() for project in projects]
+            return [project.to_model() for project in projects]
 
     def _create_project(self, project: ProjectModel) -> ProjectModel:
         """Creates a new project.
@@ -1044,11 +1052,11 @@ class SqlZenStore(BaseZenStore):
 
             return new_project.to_model()
 
-    def _get_project(self, project_name: str) -> ProjectModel:
-        """Get an existing project by name.
+    def _get_project(self, project_name_or_id: str) -> ProjectModel:
+        """Get an existing project by name or ID.
 
         Args:
-            project_name: Name of the project to get.
+            project_name_or_id: Name or ID of the project to get.
 
         Returns:
             The requested project if one was found.
@@ -1056,18 +1064,26 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: If there is no such project.
         """
+        is_uuid = uuid_utils.is_valid_uuid(project_name_or_id)
+
+        query = select(ProjectSchema)
+        if is_uuid:
+            query = query.where(ProjectSchema.id == project_name_or_id)
+        else:
+            query = query.where(ProjectSchema.name == project_name_or_id)
+
         with Session(self.engine) as session:
-            # Check if project with the given name already exists
-            project = session.exec(
-                select(ProjectSchema)
-                .where(ProjectSchema.name == project_name)
-            ).first()
+            project = session.exec(query).first()
+            if project is None and is_uuid:
+                raise KeyError(
+                    f"No project with ID '{project_name_or_id}' found."
+                )
             if project is None:
                 raise KeyError(
-                    f"Unable to get project {project_name}: "
-                    "No project with this name found."
+                    f"The given project name or ID '{project_name_or_id}' is "
+                    "not a valid ID and no project with this name exists "
+                    "either."
                 )
-
             return project.to_model()
 
     def _update_project(self, project_name: str, project: ProjectModel) -> ProjectModel:
@@ -1895,28 +1911,6 @@ class SqlZenStore(BaseZenStore):
     # User, project and role management
 
     @property
-    def active_user_name(self) -> str:
-        """Gets the active username.
-
-        Returns:
-            The active username.
-        """
-        return DEFAULT_USERNAME
-
-    @property
-    def users(self) -> List[UserModel]:
-        """All registered users.
-
-        Returns:
-            A list of all registered users.
-        """
-        with Session(self.engine) as session:
-            return [
-                UserModel(**user.dict())
-                for user in session.exec(select(UserSchema)).all()
-            ]
-
-    @property
     def teams(self) -> List[TeamModel]:
         """All registered teams.
 
@@ -2056,32 +2050,6 @@ class SqlZenStore(BaseZenStore):
 
             session.delete(assignment)
             session.commit()
-
-    @property
-    def projects(self) -> List[ProjectModel]:
-        """All registered projects.
-
-        Returns:
-            A list of all registered projects.
-        """
-        with Session(self.engine) as session:
-            return [
-                ProjectModel(**project.dict())
-                for project in session.exec(select(ProjectSchema)).all()
-            ]
-
-    @property
-    def roles(self) -> List[RoleModel]:
-        """All registered roles.
-
-        Returns:
-            A list of all registered roles.
-        """
-        with Session(self.engine) as session:
-            return [
-                RoleModel(**role.dict())
-                for role in session.exec(select(RoleSchema)).all()
-            ]
 
     @property
     def role_assignments(self) -> List[RoleAssignmentModel]:

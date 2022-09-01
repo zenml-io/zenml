@@ -21,7 +21,7 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.enums import CliCategories
 from zenml.exceptions import EntityExistsError
-from zenml.models.user_management_models import UserModel
+from zenml.models.user_management_models import ProjectModel, UserModel
 from zenml.repository import Repository
 
 
@@ -66,6 +66,7 @@ def create_user(user_name: str) -> None:
     """
     cli_utils.print_active_config()
     Repository().zen_store.create_user(UserModel(name=user_name))
+    cli_utils.declare(f"Created user '{user_name}'.")
 
 
 @user.command("delete")
@@ -78,7 +79,13 @@ def delete_user(user_name_or_id: str) -> None:
     """
     cli_utils.print_active_config()
     user = Repository().zen_store.get_user(user_name_or_id)
+    if Repository().zen_store.active_user_name == user.name:
+        cli_utils.error(
+            "You cannot delete yourself. If you wish to delete your current "
+            "user account, please contact your ZenML administrator."
+        )
     Repository().zen_store.delete_user(user_id=user.id)
+    cli_utils.declare(f"Deleted user '{user_name_or_id}'.")
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
@@ -232,8 +239,9 @@ def create_project(
     cli_utils.print_active_config()
     try:
         Repository().zen_store.create_project(
-            project_name=project_name, description=description
+            ProjectModel(name=project_name, description=description)
         )
+        cli_utils.declare(f"Created project '{project_name}'.")
     except EntityExistsError:
         cli_utils.error(
             f"Cannot create project `{project_name}`. A project with this "
@@ -260,60 +268,48 @@ def get_project() -> None:
 
 
 @project.command("set", help="Set the active project.")
-@click.argument("project_name", type=str, required=True)
-def set_project(project_name: str) -> None:
+@click.argument("project_name_or_id", type=str, required=True)
+def set_project(project_name_or_id: str) -> None:
     """Set the active project.
 
     Args:
-        project_name: The name of the project to set as active.
+        project_name_or_id: The name or ID of the project to set as active.
     """
     cli_utils.print_active_config()
     try:
-        Repository().zen_store.get_project(project_name)
-        Repository().set_active_project(project=project_name)
-        cli_utils.declare(f"Set active project '{project_name}'.")
+        project = Repository().zen_store.get_project(project_name_or_id)
+        Repository().set_active_project(project_name=project.name)
+        cli_utils.declare(f"Set active project '{project_name_or_id}'.")
     except KeyError:
         cli_utils.error(
-            f'Cannot set project "`{project_name}`" as active. No such '
+            f"Cannot set project '{project_name_or_id}' as active. No such "
             "project was found. If you want to create it, run:"
-            f"`zenml project create {project_name}`."
+            f"`zenml project create {project_name_or_id}`."
         )
 
 
-@project.command("unset")
-def unset_project() -> None:
-    """Unset the active project."""
-    cli_utils.print_active_config()
-    Repository().set_active_project(None)
-    cli_utils.declare("Unset active project.")
-
-
 @project.command("delete", help="Delete a project.")
-@click.argument(
-    "project_name",
-    type=str,
-    required=True,
-)
-def delete_project(project_name: str) -> None:
+@click.argument("project_name_or_id", type=str, required=True)
+def delete_project(project_name_or_id: str) -> None:
     """Delete a project.
 
-    If the name isn't specified, delete the current project.
-
     Args:
-        project_name (str): Name of project to delete.
+        project_name_or_id: Name or ID of project to delete.
     """
     cli_utils.print_active_config()
-    active_project = Repository().active_project
-
+    project = Repository().zen_store.get_project(project_name_or_id)
+    if Repository().active_project_name == project.name:
+        cli_utils.error(
+            f"Project '{project_name_or_id}' cannot be deleted since it is "
+            "currently active. Please set another project as active first."
+        )
     cli_utils.confirmation(
-        f"Are you sure you want to delete project `{project_name}`?"
+        f"Are you sure you want to delete project `{project_name_or_id}`? "
+        "This will permanently delete all associated stacks, stack components, "
+        "pipelines, runs, artifacts and metadata."
     )
-
-    if active_project and active_project.name == project_name:
-        unset_project()
-
-    Repository().zen_store.delete_project(project_name=project_name)
-    cli_utils.declare(f"Deleted project '{project_name}'.")
+    Repository().zen_store.delete_project(project_name=project.name)
+    cli_utils.declare(f"Deleted project '{project_name_or_id}'.")
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)

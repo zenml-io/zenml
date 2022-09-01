@@ -883,6 +883,15 @@ class BaseZenStore(BaseModel):
     # '-------'
 
     @property
+    def active_user(self) -> UserModel:
+        """The active user.
+
+        Returns:
+            The active user.
+        """
+        return self.get_user(self.active_user_name)
+
+    @property
     @abstractmethod
     def active_user_name(self) -> str:
         """Gets the active username.
@@ -890,6 +899,15 @@ class BaseZenStore(BaseModel):
         Returns:
             The active username.
         """
+
+    @property
+    def users(self) -> List[UserModel]:
+        """All registered users.
+
+        Returns:
+            A list of all registered users.
+        """
+        return self.list_users()
 
     # TODO: make the invite_token optional
     # TODO: [ALEX] add filtering param(s)
@@ -1062,6 +1080,15 @@ class BaseZenStore(BaseModel):
 
     # TODO: create & delete roles?
 
+    @property
+    def roles(self) -> List[RoleModel]:
+        """All registered roles.
+
+        Returns:
+            A list of all registered roles.
+        """
+        return self.list_roles()
+
     # TODO: [ALEX] add filtering param(s)
     @abstractmethod
     def list_roles(self) -> List[RoleModel]:
@@ -1188,6 +1215,15 @@ class BaseZenStore(BaseModel):
     # | PROJECTS |
     # '----------'
 
+    @property
+    def projects(self) -> List[ProjectModel]:
+        """All registered projects.
+
+        Returns:
+            A list of all registered projects.
+        """
+        return self.list_projects()
+
     # TODO: [ALEX] add filtering param(s)
     def list_projects(self) -> List[ProjectModel]:
         """List all projects.
@@ -1195,6 +1231,7 @@ class BaseZenStore(BaseModel):
         Returns:
             A list of all projects.
         """
+        return self._list_projects()
 
     @abstractmethod
     def _list_projects(self) -> List[ProjectModel]:
@@ -1233,27 +1270,27 @@ class BaseZenStore(BaseModel):
             EntityExistsError: If a project with the given name already exists.
         """
 
-    def get_project(self, project_name: str) -> ProjectModel:
-        """Gets a specific project.
+    def get_project(self, project_name_or_id: str) -> ProjectModel:
+        """Get an existing project by name or ID.
 
         Args:
-            project_name: Name of the project to get.
+            project_name_or_id: Name or ID of the project to get.
 
         Returns:
-            The requested project.
+            The requested project if one was found.
 
         Raises:
             KeyError: If there is no such project.
         """
         # No tracking events, here for consistency
-        return self._get_project(project_name)
+        return self._get_project(project_name_or_id)
 
     @abstractmethod
-    def _get_project(self, project_name: str) -> ProjectModel:
-        """Get an existing project by name.
+    def _get_project(self, project_name_or_id: str) -> ProjectModel:
+        """Get an existing project by name or ID.
 
         Args:
-            project_name: Name of the project to get.
+            project_name_or_id: Name or ID of the project to get.
 
         Returns:
             The requested project if one was found.
@@ -2160,44 +2197,6 @@ class BaseZenStore(BaseModel):
 
         Returns:
             The inputs of the step.
-        """
-
-    # PROPERTIES
-
-    @property
-    def active_user(self) -> UserModel:
-        """The active user.
-
-        Returns:
-            The active user.
-        """
-        return self.get_user(self.active_user_name)
-
-    @property
-    @abstractmethod
-    def users(self) -> List[UserModel]:
-        """All registered users.
-
-        Returns:
-            A list of all registered users.
-        """
-
-    @property
-    @abstractmethod
-    def roles(self) -> List[RoleModel]:
-        """All registered roles.
-
-        Returns:
-            A list of all registered roles.
-        """
-
-    @property
-    @abstractmethod
-    def projects(self) -> List[ProjectModel]:
-        """All registered projects.
-
-        Returns:
-            A list of all registered projects.
         """
 
     # # Public facing APIs

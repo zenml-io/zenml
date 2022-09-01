@@ -426,7 +426,7 @@ class Repository(metaclass=RepositoryMetaClass):
             and self._config.active_project_name is not None
         )
 
-    def set_active_project(self, project: Optional[str] = None) -> None:
+    def set_active_project(self, project_name: Optional[str] = None) -> None:
         """Set the project for the local repository.
 
         If no object is passed, this will unset the active project.
@@ -434,14 +434,14 @@ class Repository(metaclass=RepositoryMetaClass):
         Args:
             project: The project name to set as active.
         """
-        if project:
-            self.zen_store.get_project(project_name=project)  # raises KeyError
+        if project_name:
+            self.zen_store.get_project(project_name_or_id=project_name)  # raises KeyError
         if self._config:
-            self._config.active_project_name = project
+            self._config.active_project_name = project_name
         else:
             # set the active project globally only if the repository doesn't use
             # a local configuration
-            GlobalConfiguration().active_project_name = project
+            GlobalConfiguration().active_project_name = project_name
 
     @property
     def active_project_name(self) -> Optional[str]:
