@@ -149,7 +149,8 @@ def _get_stack_component_wrapper(
 
     components = repo.zen_store.list_stack_components(
         project_id=repo.zen_store.default_project_id,  # TODO: [server] finalize access to the default_project
-        type=component_type)
+        type=component_type,
+    )
     if len(components) == 0:
         cli_utils.warning(f"No {plural_display_name} registered.")
         return None, False

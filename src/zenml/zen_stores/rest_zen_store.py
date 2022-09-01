@@ -16,7 +16,6 @@
 import re
 from pathlib import Path, PurePath
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union, cast
-from uuid import UUID
 
 import requests
 from ml_metadata.proto import metadata_store_pb2
@@ -49,8 +48,8 @@ from zenml.models import (
     FlavorModel,
     PipelineRunModel,
     ProjectModel,
-    RoleModel,
     RoleAssignmentModel,
+    RoleModel,
     StackModel,
     TeamModel,
     UserModel,

@@ -17,7 +17,7 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, root_validator
+from pydantic import BaseModel, root_validator
 
 from zenml.logger import get_logger
 
@@ -35,9 +35,9 @@ class RoleModel(BaseModel):
     """
 
     id: Optional[UUID] = None
-    created_at: Optional[datetime] = None
     name: str
-    
+    created_at: Optional[datetime] = None
+
 
 class UserModel(BaseModel):
     """Pydantic object representing a user.
@@ -49,8 +49,8 @@ class UserModel(BaseModel):
     """
 
     id: Optional[UUID] = None
-    created_at: Optional[datetime] = None
     name: str
+    created_at: Optional[datetime] = None
     # email: str
     # password: str
 
@@ -65,8 +65,8 @@ class TeamModel(BaseModel):
     """
 
     id: Optional[UUID] = None
-    created_at: Optional[datetime] = None
     name: str
+    created_at: Optional[datetime] = None
 
 
 class ProjectModel(BaseModel):
@@ -80,9 +80,9 @@ class ProjectModel(BaseModel):
     """
 
     id: Optional[UUID] = None
-    created_at: Optional[datetime] = None
     name: str
     description: Optional[str] = None
+    created_at: Optional[datetime] = None
 
 
 class RoleAssignmentModel(BaseModel):

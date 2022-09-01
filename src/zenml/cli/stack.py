@@ -840,19 +840,22 @@ def set_active_stack_command(stack_name: str) -> None:
         stack_to_set_active = repo.get_stack_by_name(stack_name)
     except KeyError as e:
         cli_utils.error(str(e))
-    except RuntimeError as e:
+    except RuntimeError:
         # TODO: Here the returned list of stacks should be used to show the user
         #  which stacks have been found and give an avenue to use the id
-        cli_utils.error("Multiple stacks have been found for this name. "
-                        "Please specify if you want to use the shared stack by "
-                        "this name or the private one.")
+        cli_utils.error(
+            "Multiple stacks have been found for this name. "
+            "Please specify if you want to use the shared stack by "
+            "this name or the private one."
+        )
     else:
         with console.status(
             f"Setting the{scope} active stack to '{stack_name}'..."
         ):
             repo.activate_stack(stack_to_set_active)
-            cli_utils.declare(f"Active{scope} stack set to: "
-                              f"'{stack_to_set_active.name}'")
+            cli_utils.declare(
+                f"Active{scope} stack set to: " f"'{stack_to_set_active.name}'"
+            )
 
 
 @stack.command("get")

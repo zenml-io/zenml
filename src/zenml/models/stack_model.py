@@ -48,8 +48,7 @@ class StackModel(BaseModel):
         title="Flag describing if this stack is shared.",
     )
     project: Optional[str] = Field(
-        default=None,
-        title="The project that contains this stack."
+        default=None, title="The project that contains this stack."
     )
     owner: Optional[UUID] = Field(
         default=None,

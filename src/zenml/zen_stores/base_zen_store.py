@@ -16,15 +16,11 @@ import base64
 import json
 import os
 from abc import abstractmethod
-from typing import Any, Dict, List, Optional, Tuple, Union
-from uuid import UUID
-
-from ml_metadata.proto import metadata_store_pb2
-
 from pathlib import Path, PurePath
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
 from uuid import UUID
 
+from ml_metadata.proto import metadata_store_pb2
 from pydantic import BaseModel
 
 from zenml.config.store_config import StoreConfiguration
@@ -111,6 +107,7 @@ class BaseZenStore(BaseModel):
             TypeError: If the store type is unsupported.
         """
         from zenml.zen_stores.sql_zen_store import SqlZenStore
+
         # from zenml.zen_stores.rest_zen_store import RestZenStore
 
         store_class = {
@@ -183,22 +180,20 @@ class BaseZenStore(BaseModel):
             self.register_default_stack()
 
     @property
-    def default_user_id(self) -> UUID:  # TODO: can this be done cleaner?
+    def default_user_id(self) -> UUID:
         """Get the ID of the default user, or None if it doesn't exist."""
-        users = self._list_users()
-        for user in users:
-            if user.name == DEFAULT_USERNAME:
-                return user.id
-        return None
+        try:
+            return self.get_user(DEFAULT_USERNAME).id
+        except KeyError:
+            return None
 
     @property
-    def default_project_id(self) -> UUID:  # TODO: can this be done cleaner?
+    def default_project_id(self) -> str:
         """Get the ID of the default project, or None if it doesn't exist."""
-        projects = self._list_projects()
-        for project in projects:
-            if project.name == DEFAULT_PROJECT_NAME:
-                return project.id
-        return None
+        try:
+            return self.get_project(DEFAULT_PROJECT_NAME).id
+        except KeyError:
+            return None
 
     def create_default_user(self) -> None:
         """Creates a default user."""
@@ -884,6 +879,15 @@ class BaseZenStore(BaseModel):
     # '-------'
 
     @property
+    def active_user(self) -> UserModel:
+        """The active user.
+
+        Returns:
+            The active user.
+        """
+        return self.get_user(self.active_user_name)
+
+    @property
     @abstractmethod
     def active_user_name(self) -> str:
         """Gets the active username.
@@ -891,6 +895,15 @@ class BaseZenStore(BaseModel):
         Returns:
             The active username.
         """
+
+    @property
+    def users(self) -> List[UserModel]:
+        """All registered users.
+
+        Returns:
+            A list of all registered users.
+        """
+        return self.list_users()
 
     # TODO: make the invite_token optional
     # TODO: [ALEX] add filtering param(s)
@@ -920,7 +933,7 @@ class BaseZenStore(BaseModel):
         """Creates a new user.
 
         Args:
-            user: User to be created.
+            user: The user model to create.
 
         Returns:
             The newly created user.
@@ -936,7 +949,7 @@ class BaseZenStore(BaseModel):
         """Creates a new user.
 
         Args:
-            user: User to be created.
+            user: The user model to create.
 
         Returns:
             The newly created user.
@@ -945,35 +958,41 @@ class BaseZenStore(BaseModel):
             EntityExistsError: If a user with the given name already exists.
         """
 
-    def get_user(self, user_id: str, invite_token: str = None) -> UserModel:
+    def get_user(
+        self, user_name_or_id: str, invite_token: str = None
+    ) -> UserModel:
         """Gets a specific user.
 
         Args:
-            user_id: The ID of the user to get.
+            user_name_or_id: The name or ID of the user to get.
             invite_token: Token to use for the invitation.
 
         Returns:
             The requested user, if it was found.
 
         Raises:
-            KeyError: If no user with the given name exists.
+            KeyError: If no user with the given name or ID exists.
         """
         # No tracking events, here for consistency
-        return self._get_user(user_id, invite_token=invite_token)
+        return self._get_user(
+            user_name_or_id=user_name_or_id, invite_token=invite_token
+        )
 
     @abstractmethod
-    def _get_user(self, user_id: str, invite_token: str = None) -> UserModel:
+    def _get_user(
+        self, user_name_or_id: str, invite_token: str = None
+    ) -> UserModel:
         """Gets a specific user.
 
         Args:
-            user_id: The ID of the user to get.
+            user_name_or_id: The name or ID of the user to get.
             invite_token: Token to use for the invitation.
 
         Returns:
             The requested user, if it was found.
 
         Raises:
-            KeyError: If no user with the given name exists.
+            KeyError: If no user with the given name or ID exists.
         """
 
     def update_user(self, user_id: str, user: UserModel) -> UserModel:
@@ -981,7 +1000,7 @@ class BaseZenStore(BaseModel):
 
         Args:
             user_id: The ID of the user to update.
-            user: The User model to use for the update.
+            user: The user model to use for the update.
 
         Returns:
             The updated user.
@@ -998,7 +1017,7 @@ class BaseZenStore(BaseModel):
 
         Args:
             user_id: The ID of the user to update.
-            user: The User model to use for the update.
+            user: The user model to use for the update.
 
         Returns:
             The updated user.
@@ -1028,6 +1047,201 @@ class BaseZenStore(BaseModel):
 
         Raises:
             KeyError: If no user with the given ID exists.
+        """
+
+    # TODO: Check whether this needs to be an abstract method or not (probably?)
+    @abstractmethod
+    def get_invite_token(self, user_id: str) -> str:
+        """Gets an invite token for a user.
+
+        Args:
+            user_id: ID of the user.
+
+        Returns:
+            The invite token for the specific user.
+        """
+
+    @abstractmethod
+    def invalidate_invite_token(self, user_id: str) -> None:
+        """Invalidates an invite token for a user.
+
+        Args:
+            user_id: ID of the user.
+        """
+
+    #  .------.
+    # | TEAMS |
+    # '-------'
+
+    @property
+    def teams(self) -> List[TeamModel]:
+        """List all teams.
+
+        Returns:
+            A list of all teams.
+        """
+        return self._list_teams()
+
+    @abstractmethod
+    def _list_teams(self) -> List[TeamModel]:
+        """List all teams.
+
+        Returns:
+            A list of all teams.
+        """
+
+    def create_team(self, team: TeamModel) -> TeamModel:
+        """Creates a new team.
+
+        Args:
+            team: The team model to create.
+
+        Returns:
+            The newly created team.
+        """
+        self._track_event(AnalyticsEvent.CREATED_TEAM)
+        return self._create_team(team)
+
+    @abstractmethod
+    def _create_team(self, team: TeamModel) -> TeamModel:
+        """Creates a new team.
+
+        Args:
+            team: The team model to create.
+
+        Returns:
+            The newly created team.
+
+        Raises:
+            EntityExistsError: If a team with the given name already exists.
+        """
+
+    def get_team(self, team_name_or_id: str) -> TeamModel:
+        """Gets a specific team.
+
+        Args:
+            team_name_or_id: Name or ID of the team to get.
+
+        Returns:
+            The requested team.
+
+        Raises:
+            KeyError: If no team with the given name or ID exists.
+        """
+        # No tracking events, here for consistency
+        return self._get_team(team_name_or_id)
+
+    @abstractmethod
+    def _get_team(self, team_name_or_id: str) -> TeamModel:
+        """Gets a specific team.
+
+        Args:
+            team_name_or_id: Name or ID of the team to get.
+
+        Returns:
+            The requested team.
+
+        Raises:
+            KeyError: If no team with the given name or ID exists.
+        """
+
+    def delete_team(self, team_id: str) -> None:
+        """Deletes a team.
+
+        Args:
+            team_id: ID of the team to delete.
+
+        Raises:
+            KeyError: If no team with the given ID exists.
+        """
+        self._track_event(AnalyticsEvent.DELETED_TEAM)
+        return self._delete_team(team_id)
+
+    @abstractmethod
+    def _delete_team(self, team_id: str) -> None:
+        """Deletes a team.
+
+        Args:
+            team_id: ID of the team to delete.
+
+        Raises:
+            KeyError: If no team with the given ID exists.
+        """
+
+    @abstractmethod
+    def add_user_to_team(self, user_id: str, team_id: str) -> None:
+        """Adds a user to a team.
+
+        Args:
+            user_id: ID of the user to add to the team.
+            team_id: ID of the team to which to add the user to.
+
+        Raises:
+            KeyError: If the team or user does not exist.
+        """
+
+    @abstractmethod
+    def remove_user_from_team(self, user_id: str, team_id: str) -> None:
+        """Removes a user from a team.
+
+        Args:
+            user_id: ID of the user to remove from the team.
+            team_id: ID of the team from which to remove the user.
+
+        Raises:
+            KeyError: If the team or user does not exist.
+        """
+
+    @abstractmethod
+    def get_users_for_team(self, team_id: str) -> List[UserModel]:
+        """Fetches all users of a team.
+
+        Args:
+            team_id: The ID of the team for which to get users.
+
+        Returns:
+            A list of all users that are part of the team.
+
+        Raises:
+            KeyError: If no team with the given ID exists.
+        """
+
+    @abstractmethod
+    def get_teams_for_user(self, user_id: str) -> List[TeamModel]:
+        """Fetches all teams for a user.
+
+        Args:
+            user_id: The ID of the user for which to get all teams.
+
+        Returns:
+            A list of all teams that the user is part of.
+
+        Raises:
+            KeyError: If no user with the given ID exists.
+        """
+
+    #  .------.
+    # | ROLES |
+    # '-------'
+
+    # TODO: create & delete roles?
+
+    @property
+    def roles(self) -> List[RoleModel]:
+        """All registered roles.
+
+        Returns:
+            A list of all registered roles.
+        """
+        return self.list_roles()
+
+    # TODO: [ALEX] add filtering param(s)
+    @abstractmethod
+    def list_roles(self) -> List[RoleModel]:
+        """List all roles.
+
+        Returns:
+            A list of all roles.
         """
 
     def get_role_assignments_for_user(
@@ -1126,41 +1340,6 @@ class BaseZenStore(BaseModel):
                 project.
         """
 
-    # TODO: Check whether this needs to be an abstract method or not (probably?)
-    @abstractmethod
-    def get_invite_token(self, user_id: str) -> str:
-        """Gets an invite token for a user.
-
-        Args:
-            user_id: ID of the user.
-
-        Returns:
-            The invite token for the specific user.
-        """
-
-    @abstractmethod
-    def invalidate_invite_token(self, user_id: str) -> None:
-        """Invalidates an invite token for a user.
-
-        Args:
-            user_id: ID of the user.
-        """
-
-    #  .------.
-    # | ROLES |
-    # '-------'
-
-    # TODO: create & delete roles?
-
-    # TODO: [ALEX] add filtering param(s)
-    @abstractmethod
-    def list_roles(self) -> List[RoleModel]:
-        """List all roles.
-
-        Returns:
-            A list of all roles.
-        """
-
     #  .----------------.
     # | METADATA_CONFIG |
     # '-----------------'
@@ -1182,6 +1361,15 @@ class BaseZenStore(BaseModel):
     # | PROJECTS |
     # '----------'
 
+    @property
+    def projects(self) -> List[ProjectModel]:
+        """All registered projects.
+
+        Returns:
+            A list of all registered projects.
+        """
+        return self.list_projects()
+
     # TODO: [ALEX] add filtering param(s)
     def list_projects(self) -> List[ProjectModel]:
         """List all projects.
@@ -1189,6 +1377,7 @@ class BaseZenStore(BaseModel):
         Returns:
             A list of all projects.
         """
+        return self._list_projects()
 
     @abstractmethod
     def _list_projects(self) -> List[ProjectModel]:
@@ -1227,27 +1416,27 @@ class BaseZenStore(BaseModel):
             EntityExistsError: If a project with the given name already exists.
         """
 
-    def get_project(self, project_name: str) -> ProjectModel:
-        """Gets a specific project.
+    def get_project(self, project_name_or_id: str) -> ProjectModel:
+        """Get an existing project by name or ID.
 
         Args:
-            project_name: Name of the project to get.
+            project_name_or_id: Name or ID of the project to get.
 
         Returns:
-            The requested project.
+            The requested project if one was found.
 
         Raises:
             KeyError: If there is no such project.
         """
         # No tracking events, here for consistency
-        return self._get_project(project_name)
+        return self._get_project(project_name_or_id)
 
     @abstractmethod
-    def _get_project(self, project_name: str) -> ProjectModel:
-        """Get an existing project by name.
+    def _get_project(self, project_name_or_id: str) -> ProjectModel:
+        """Get an existing project by name or ID.
 
         Args:
-            project_name: Name of the project to get.
+            project_name_or_id: Name or ID of the project to get.
 
         Returns:
             The requested project if one was found.
@@ -2156,85 +2345,9 @@ class BaseZenStore(BaseModel):
             The inputs of the step.
         """
 
-    # PROPERTIES
-
-    @property
-    def active_user(self) -> UserModel:
-        """The active user.
-
-        Returns:
-            The active user.
-        """
-        return self.get_user(self.active_user_name)
-
-    @property
-    @abstractmethod
-    def users(self) -> List[UserModel]:
-        """All registered users.
-
-        Returns:
-            A list of all registered users.
-        """
-
-    @property
-    @abstractmethod
-    def roles(self) -> List[RoleModel]:
-        """All registered roles.
-
-        Returns:
-            A list of all registered roles.
-        """
-
-    @property
-    @abstractmethod
-    def projects(self) -> List[ProjectModel]:
-        """All registered projects.
-
-        Returns:
-            A list of all registered projects.
-        """
-
     # # Public facing APIs
     # # TODO [ENG-894]: Refactor these with the proxy pattern, as noted in
     # #  the [review comment](https://github.com/zenml-io/zenml/pull/589#discussion_r875003334)
-
-    def create_team(self, team_name: str) -> TeamModel:
-        """Creates a new team.
-
-        Args:
-            team_name: Unique team name.
-
-        Returns:
-            The newly created team.
-        """
-        self._track_event(AnalyticsEvent.CREATED_TEAM)
-        return self._create_team(team_name)
-
-    # TODO: consider using team_id instead
-    def get_team(self, team_name: str) -> TeamModel:
-        """Gets a specific team.
-
-        Args:
-            team_name: Name of the team to get.
-
-        Returns:
-            The requested team.
-        """
-        # No tracking events, here for consistency
-        return self._get_team(team_name)
-
-    # TODO: consider using team_id instead
-    def delete_team(self, team_name: str) -> None:
-        """Deletes a team.
-
-        Args:
-            team_name: Name of the team to delete.
-
-        Returns:
-            None
-        """
-        self._track_event(AnalyticsEvent.DELETED_TEAM)
-        return self._delete_team(team_name)
 
     # TODO: consider using team_id instead
     def get_role(self, role_name: str) -> RoleModel:
@@ -2321,78 +2434,6 @@ class BaseZenStore(BaseModel):
 
     @property
     @abstractmethod
-    def teams(self) -> List[TeamModel]:
-        """All registered teams.
-
-        Returns:
-            A list of all registered teams.
-        """
-
-    @abstractmethod
-    def _create_team(self, team_name: str) -> TeamModel:
-        """Creates a new team.
-
-        Args:
-            team_name: Unique team name.
-
-        Returns:
-            The newly created team.
-
-        Raises:
-            EntityExistsError: If a team with the given name already exists.
-        """
-
-    @abstractmethod
-    def _get_team(self, team_name: str) -> TeamModel:
-        """Gets a specific team.
-
-        Args:
-            team_name: Name of the team to get.
-
-        Returns:
-            The requested team.
-
-        Raises:
-            KeyError: If no team with the given name exists.
-        """
-
-    @abstractmethod
-    def _delete_team(self, team_name: str) -> None:
-        """Deletes a team.
-
-        Args:
-            team_name: Name of the team to delete.
-
-        Raises:
-            KeyError: If no team with the given name exists.
-        """
-
-    @abstractmethod
-    def add_user_to_team(self, team_name: str, user_name: str) -> None:
-        """Adds a user to a team.
-
-        Args:
-            team_name: Name of the team.
-            user_name: Name of the user.
-
-        Raises:
-            KeyError: If no user and team with the given names exists.
-        """
-
-    @abstractmethod
-    def remove_user_from_team(self, team_name: str, user_name: str) -> None:
-        """Removes a user from a team.
-
-        Args:
-            team_name: Name of the team.
-            user_name: Name of the user.
-
-        Raises:
-            KeyError: If no user and team with the given names exists.
-        """
-
-    @property
-    @abstractmethod
     def role_assignments(self) -> List[RoleModel]:
         """All registered role assignments.
 
@@ -2447,34 +2488,6 @@ class BaseZenStore(BaseModel):
 
         Raises:
             KeyError: If no role, entity or project with the given names exists.
-        """
-
-    @abstractmethod
-    def get_users_for_team(self, team_name: str) -> List[UserModel]:
-        """Fetches all users of a team.
-
-        Args:
-            team_name: Name of the team.
-
-        Returns:
-            List of users that are part of the team.
-
-        Raises:
-            KeyError: If no team with the given name exists.
-        """
-
-    @abstractmethod
-    def get_teams_for_user(self, user_name: str) -> List[TeamModel]:
-        """Fetches all teams for a user.
-
-        Args:
-            user_name: Name of the user.
-
-        Returns:
-            List of teams that the user is part of.
-
-        Raises:
-            KeyError: If no user with the given name exists.
         """
 
     @abstractmethod

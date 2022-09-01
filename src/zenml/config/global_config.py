@@ -402,10 +402,12 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 "active stack to 'default'"
             )
             default_stack = self.zen_store.list_stacks(
-                    name=DEFAULT_STACK_NAME,
-                    project_id=self.active_project_name,
-                    user_id=self.zen_store.default_user_id,
-                )[0] # TODO: [server] its not guaranteed that this stack exists
+                name=DEFAULT_STACK_NAME,
+                project_id=self.active_project_name,
+                user_id=self.zen_store.default_user_id,
+            )[
+                0
+            ]  # TODO: [server] its not guaranteed that this stack exists
             self.active_stack_id = default_stack.id
 
         # Ensure that the current repository active stack is still valid
@@ -422,10 +424,12 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                     self.active_stack_id,
                 )
             default_stack = self.zen_store.list_stacks(
-                    name=DEFAULT_STACK_NAME,
-                    project_id=self.active_project_name,
-                    user_id=self.zen_store.default_user_id,
-                )[0] # TODO: [server] its not guaranteed that this stack exists
+                name=DEFAULT_STACK_NAME,
+                project_id=self.active_project_name,
+                user_id=self.zen_store.default_user_id,
+            )[
+                0
+            ]  # TODO: [server] its not guaranteed that this stack exists
             self.active_stack_id = default_stack.id
 
     @staticmethod
