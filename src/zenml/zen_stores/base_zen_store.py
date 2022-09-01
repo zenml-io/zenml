@@ -17,7 +17,7 @@ import json
 import os
 from abc import abstractmethod
 from pathlib import Path, PurePath
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union
 from uuid import UUID
 
 from ml_metadata.proto import metadata_store_pb2

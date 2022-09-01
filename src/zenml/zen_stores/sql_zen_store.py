@@ -361,10 +361,7 @@ class SqlZenStore(BaseZenStore):
             return stack.to_model()
 
     def _register_stack(
-        self,
-        user_id: UUID,
-        project_id: UUID,
-        stack: StackModel
+        self, user_id: UUID, project_id: UUID, stack: StackModel
     ) -> StackModel:
         """Register a new stack.
 
@@ -421,11 +418,9 @@ class SqlZenStore(BaseZenStore):
 
             return stack_in_db.to_model()
 
-    def _update_stack(self,
-                      stack_id: str,
-                      user_id: str,
-                      project_id: UUID,
-                      stack: StackModel) -> StackModel:
+    def _update_stack(
+        self, stack_id: str, user_id: str, project_id: UUID, stack: StackModel
+    ) -> StackModel:
         """Update an existing stack.
 
         Args:
@@ -528,7 +523,7 @@ class SqlZenStore(BaseZenStore):
 
             # TODO: [ALEXEJ] prettify this
             if type:
-                 query = query.where(StackComponentSchema.type == type)
+                query = query.where(StackComponentSchema.type == type)
             if flavor_name:
                  query = query.where(StackComponentSchema.flavor_name == flavor_name)
             if user_id:
@@ -561,10 +556,7 @@ class SqlZenStore(BaseZenStore):
         return stack_component.to_model()
 
     def _register_stack_component(
-        self,
-        user_id: str,
-        project_id: UUID,
-        component: ComponentModel
+        self, user_id: str, project_id: UUID, component: ComponentModel
     ) -> ComponentModel:
         """Create a stack component.
 

@@ -15,6 +15,7 @@ import logging
 import os
 import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -29,6 +30,8 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.pipelines import pipeline
 from zenml.repository import Repository
 from zenml.steps import StepContext, step
+from zenml.zen_stores.base_zen_store import BaseZenStore
+from zenml.zen_stores.sql_zen_store import SqlZenStore, SqlZenStoreConfiguration
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -177,6 +180,17 @@ def clean_repo(
     Repository._reset_instance(original_repository)
 
 
+@pytest.fixture()
+def fresh_sql_zen_store() -> BaseZenStore:
+    with tempfile.TemporaryDirectory(suffix="_zenml_sql_test") as temp_dir:
+        yield SqlZenStore(
+            config=SqlZenStoreConfiguration(
+                url=f"sqlite:///{Path(temp_dir) / 'store.db'}"
+            ),
+            track_analytics=False,
+        )
+
+
 @pytest.fixture
 def files_dir(request: pytest.FixtureRequest, tmp_path: Path) -> Path:
     """Fixture that will search for a folder with the same name as the test
@@ -310,7 +324,10 @@ def step_context_with_single_output():
 
 @pytest.fixture
 def step_context_with_two_outputs():
-    materializers = {"output_1": BaseMaterializer, "output_2": BaseMaterializer}
+    materializers = {
+        "output_1": BaseMaterializer,
+        "output_2": BaseMaterializer,
+    }
     artifacts = {"output_1": BaseArtifact(), "output_2": BaseArtifact()}
 
     return StepContext(
