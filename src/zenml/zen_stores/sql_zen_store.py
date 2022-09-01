@@ -525,7 +525,9 @@ class SqlZenStore(BaseZenStore):
             if type:
                 query = query.where(StackComponentSchema.type == type)
             if flavor_name:
-                 query = query.where(StackComponentSchema.flavor_name == flavor_name)
+                query = query.where(
+                    StackComponentSchema.flavor_name == flavor_name
+                )
             if user_id:
                 query = query.where(StackComponentSchema.owner == user_id)
             if name:
@@ -799,7 +801,7 @@ class SqlZenStore(BaseZenStore):
             existing_user = session.exec(
                 select(UserSchema).where(UserSchema.id == user_id)
             ).first()
-            if user is None:
+            if existing_user is None:
                 raise KeyError(
                     f"Unable to update user with id '{user_id}': "
                     "No user found with this id."
@@ -1083,7 +1085,7 @@ class SqlZenStore(BaseZenStore):
     # | ROLES |
     # '-------'
 
-    def list_roles(self) -> List[RoleModel]:
+    def _list_roles(self) -> List[RoleModel]:
         """List all roles.
 
         Returns:
@@ -1094,50 +1096,152 @@ class SqlZenStore(BaseZenStore):
 
         return [role.to_model() for role in roles]
 
-    def _get_role_assignments_for_user(self, user_id: str) -> List[RoleModel]:
-        """Fetches all role assignments for a user.
+    def _create_role(self, role: RoleModel) -> RoleModel:
+        """Creates a new role.
 
         Args:
-            user_id: ID of the user.
+            role: The role model to create.
 
         Returns:
-            List of role assignments for this user.
+            The newly created role.
 
         Raises:
-            KeyError: If no user or project with the given names exists.
+            EntityExistsError: If a role with the given name already exists.
         """
         with Session(self.engine) as session:
-            roles = session.exec(
-                select(RoleSchema)
-                .where(UserRoleAssignmentSchema.role_id == RoleSchema.id)
-                .where(UserRoleAssignmentSchema.user_id == user_id)
-            ).all()
+            # Check if role with the given name already exists
+            existing_role = session.exec(
+                select(RoleSchema).where(RoleSchema.name == role.name)
+            ).first()
+            if existing_role is not None:
+                raise EntityExistsError(
+                    f"Unable to create role '{role.name}': Role already exists."
+                )
 
-        return [role.to_model() for role in roles]
+            # Create role
+            role_schema = RoleSchema.from_model(role)
+            session.add(role_schema)
+            session.commit()
+            return role_schema.to_model()
 
-    def _assign_role(self, user_id: str, role_id: str, project_id: str) -> None:
+    def _get_role(self, role_name_or_id: str) -> RoleModel:
+        """Gets a specific role.
+
+        Args:
+            role_name_or_id: Name or ID of the role to get.
+
+        Returns:
+            The requested role.
+
+        Raises:
+            KeyError: If no role with the given name exists.
+        """
+        is_uuid = uuid_utils.is_valid_uuid(role_name_or_id)
+
+        query = select(RoleSchema)
+        if is_uuid:
+            query = query.where(RoleSchema.id == role_name_or_id)
+        else:
+            query = query.where(RoleSchema.name == role_name_or_id)
+
+        with Session(self.engine) as session:
+            role = session.exec(query).first()
+            if role is None and is_uuid:
+                raise KeyError(f"No role with ID '{role_name_or_id}' found.")
+            if role is None:
+                raise KeyError(
+                    f"The given role name or ID '{role_name_or_id}' is not a "
+                    "valid ID and no role with this name exists either."
+                )
+            return role.to_model()
+
+    def _delete_role(self, role_id: str) -> None:
+        """Deletes a role.
+
+        Args:
+            role_id: ID of the role to delete.
+
+        Raises:
+            KeyError: If no role with the given ID exists.
+        """
+        with Session(self.engine) as session:
+            # Check if role with the given ID exists
+            role = session.exec(
+                select(RoleSchema).where(RoleSchema.id == role_id)
+            ).first()
+            if role is None:
+                raise KeyError(
+                    f"Unable to delete role with id '{role_id}': No role found "
+                    "with this id."
+                )
+
+            # Delete role
+            session.delete(role)
+            session.commit()
+
+    def list_role_assignments(
+        self,
+        project_id: Optional[str] = None,
+        team_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+    ) -> List[RoleAssignmentModel]:
+        """List all role assignments.
+
+        Args:
+            project_id: If provided, only list assignments for the given project
+            team_id: If provided, only list assignments for the given team
+            user_id: If provided, only list assignments for the given user
+
+        Returns:
+            A list of all role assignments.
+        """
+        with Session(self.engine) as session:
+
+            # Get user role assignments
+            query = select(UserRoleAssignmentSchema)
+            if project_id is not None:
+                query = query.where(
+                    UserRoleAssignmentSchema.project_id == project_id
+                )
+            if user_id is not None:
+                query = query.where(UserRoleAssignmentSchema.user_id == user_id)
+            user_role_assignments = session.exec(query).all()
+
+            # Get team role assignments
+            query = select(TeamRoleAssignmentSchema)
+            if project_id is not None:
+                query = query.where(
+                    TeamRoleAssignmentSchema.project_id == project_id
+                )
+            if team_id is not None:
+                query = query.where(TeamRoleAssignmentSchema.team_id == team_id)
+            team_role_assignments = session.exec(query).all()
+
+        return [
+            role_assignment.to_model()
+            for role_assignment in user_role_assignments + team_role_assignments
+        ]
+
+    def _assign_role(
+        self,
+        role_id: str,
+        user_or_team_id: str,
+        is_user: bool = True,
+        project_id: Optional[str] = None,
+    ) -> None:
         """Assigns a role to a user or team, scoped to a specific project.
 
         Args:
-            user_id: ID of the user.
-            role_id: ID of the role to assign to the user.
-            project_id: ID of the project in which to assign the role to the
-                user.
+            role_id: ID of the role to assign.
+            user_or_team_id: ID of the user or team to which to assign the role.
+            is_user: Whether `user_or_team_id` refers to a user or a team.
+            project_id: Optional ID of a project in which to assign the role.
+                If this is not provided, the role will be assigned globally.
 
         Raises:
-            KeyError: If no user, role, or project with the given IDs exists.
+            EntityExistsError: If the role assignment already exists.
         """
         with Session(self.engine) as session:
-            # Check if user with the given name already exists
-            user = session.exec(
-                select(UserSchema).where(UserSchema.id == user_id)
-            ).first()
-            if user is None:
-                raise KeyError(
-                    f"Unable to assign role to user with id '{user_id}': "
-                    "No user with this id found."
-                )
-
             # Check if role with the given name already exists
             role = session.exec(
                 select(RoleSchema).where(RoleSchema.id == role_id)
@@ -1149,50 +1253,102 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Check if project with the given name already exists
-            project = session.exec(
-                select(ProjectSchema).where(ProjectSchema.id == project_id)
-            ).first()
-            if project is None:
-                raise KeyError(
-                    f"Unable to assign role in project with id "
-                    f"'{project_id}': No project with this id found."
+            if project_id:
+                project = session.exec(
+                    select(ProjectSchema).where(ProjectSchema.id == project_id)
+                ).first()
+                if project is None:
+                    raise KeyError(
+                        f"Unable to assign role in project with id "
+                        f"'{project_id}': No project with this id found."
+                    )
+            else:
+                project = None
+
+            # Assign role to user
+            if is_user:
+                user = session.exec(
+                    select(UserSchema).where(UserSchema.id == user_or_team_id)
+                ).first()
+                if user is None:
+                    raise KeyError(
+                        "Unable to assign role to user with id "
+                        f"'{user_or_team_id}': No user with this id found."
+                    )
+                role_assignment = UserRoleAssignmentSchema(
+                    role_id=role_id,
+                    user_id=user_or_team_id,
+                    project_id=project_id,
+                    role=role,
+                    user=user,
+                    project=project,
                 )
 
-            # Create the user role assignment
-            user_role_assignment = UserRoleAssignmentSchema(
-                user_id=user_id, role_id=role_id, project_id=project_id
-            )
-            session.add(user_role_assignment)
+            # Assign role to team
+            else:
+                team = session.exec(
+                    select(TeamSchema).where(TeamSchema.id == user_or_team_id)
+                ).first()
+                if team is None:
+                    raise KeyError(
+                        "Unable to assign role to team with id "
+                        f"'{user_or_team_id}': No team with this id found."
+                    )
+                role_assignment = TeamRoleAssignmentSchema(
+                    role_id=role_id,
+                    team_id=user_or_team_id,
+                    project_id=project_id,
+                    role=role,
+                    team=team,
+                    project=project,
+                )
+
+            session.add(role_assignment)
             session.commit()
 
-    def _unassign_role(
-        self, user_id: str, role_id: str, project_id: str
+    def _revoke_role(
+        self,
+        role_id: str,
+        user_or_team_id: str,
+        is_user: bool = True,
+        project_id: Optional[str] = None,
     ) -> None:
-        """Unassigns a role from a user or team for a given project.
+        """Revokes a role from a user or team for a given project.
 
         Args:
-            user_id: ID of the user.
-            role_id: ID of the role to unassign.
-            project_id: ID of the project in which to unassign the role from the
-                user.
+            role_id: ID of the role to revoke.
+            user_or_team_id: ID of the user or team from which to revoke the
+                role.
+            is_user: Whether `user_or_team_id` refers to a user or a team.
+            project_id: Optional ID of a project in which to revoke the role.
+                If this is not provided, the role will be revoked globally.
 
         Raises:
-            KeyError: If the role was not assigned to the user in the given
-                project.
+            KeyError: If the role, user, team, or project does not exists.
         """
         with Session(self.engine) as session:
-            # Check if role with the given name already exists
-            role = session.exec(
-                select(UserRoleAssignmentSchema)
-                .where(UserRoleAssignmentSchema.user_id == user_id)
-                .where(UserRoleAssignmentSchema.role_id == role_id)
-                .where(UserRoleAssignmentSchema.project_id == project_id)
-            ).first()
+            if is_user:
+                role = session.exec(
+                    select(UserRoleAssignmentSchema)
+                    .where(UserRoleAssignmentSchema.user_id == user_or_team_id)
+                    .where(UserRoleAssignmentSchema.role_id == role_id)
+                    .where(UserRoleAssignmentSchema.project_id == project_id)
+                ).first()
+            else:
+                role = session.exec(
+                    select(TeamRoleAssignmentSchema)
+                    .where(TeamRoleAssignmentSchema.team_id == user_or_team_id)
+                    .where(TeamRoleAssignmentSchema.role_id == role_id)
+                    .where(TeamRoleAssignmentSchema.project_id == project_id)
+                ).first()
+
             if role is None:
+                assignee = "user" if is_user else "team"
+                scope = f" in project {project_id}" if project_id else ""
                 raise KeyError(
-                    f"Unable to unassign role {role_id} from user {user_id} in "
-                    f"project {project_id}: The role is currently not assigned "
-                    "to the user."
+                    f"Unable to unassign role {role_id} from {assignee} "
+                    f"{user_or_team_id}{scope}: The role is currently not "
+                    f"assigned to the {assignee}."
                 )
 
             session.delete(role)
@@ -2092,300 +2248,6 @@ class SqlZenStore(BaseZenStore):
             return [
                 RoleAssignmentModel(**assignment.dict())
                 for assignment in [*user_roles, *team_roles]
-            ]
-
-    def _get_role(self, role_name: str) -> RoleModel:
-        """Gets a specific role.
-
-        Args:
-            role_name: Name of the role to get.
-
-        Returns:
-            The requested role.
-
-        Raises:
-            KeyError: If no role with the given name exists.
-        """
-        with Session(self.engine) as session:
-            try:
-                role = session.exec(
-                    select(RoleSchema).where(RoleSchema.name == role_name)
-                ).one()
-            except NoResultFound as error:
-                raise KeyError from error
-
-            return RoleModel(**role.dict())
-
-    def _create_role(self, role_name: str) -> RoleModel:
-        """Creates a new role.
-
-        Args:
-            role_name: Unique role name.
-
-        Returns:
-            The newly created role.
-
-        Raises:
-            EntityExistsError: If a role with the given name already exists.
-        """
-        with Session(self.engine) as session:
-            existing_role = session.exec(
-                select(RoleSchema).where(RoleSchema.name == role_name)
-            ).first()
-            if existing_role:
-                raise EntityExistsError(
-                    f"Role with name '{role_name}' already exists."
-                )
-            sql_role = RoleSchema(name=role_name)
-            role = RoleModel(**sql_role.dict())
-            session.add(sql_role)
-            session.commit()
-        return role
-
-    def _delete_role(self, role_name: str) -> None:
-        """Deletes a role.
-
-        Args:
-            role_name: Name of the role to delete.
-
-        Raises:
-            KeyError: If no role with the given name exists.
-        """
-        with Session(self.engine) as session:
-            try:
-                role = session.exec(
-                    select(RoleSchema).where(RoleSchema.name == role_name)
-                ).one()
-            except NoResultFound as error:
-                raise KeyError from error
-
-            session.delete(role)
-            session.commit()
-            self._delete_query_results(
-                select(UserRoleAssignmentSchema).where(
-                    UserRoleAssignmentSchema.role_id == role.id
-                )
-            )
-            self._delete_query_results(
-                select(TeamRoleAssignmentSchema).where(
-                    TeamRoleAssignmentSchema.role_id == role.id
-                )
-            )
-
-    def assign_role(
-        self,
-        role_name: str,
-        entity_name: str,
-        project_name: Optional[str] = None,
-        is_user: bool = True,
-    ) -> None:
-        """Assigns a role to a user or team.
-
-        Args:
-            role_name: Name of the role to assign.
-            entity_name: User or team name.
-            project_name: Optional project name.
-            is_user: Boolean indicating whether the given `entity_name` refers
-                to a user.
-
-        Raises:
-            KeyError: If no role, entity or project with the given names exists.
-        """
-        with Session(self.engine) as session:
-            user_id: Optional[UUID] = None
-            team_id: Optional[UUID] = None
-            project_id: Optional[UUID] = None
-
-            try:
-                role_id = session.exec(
-                    select(RoleSchema.id).where(RoleSchema.name == role_name)
-                ).one()
-
-                if project_name:
-                    project_id = session.exec(
-                        select(ProjectSchema.id).where(
-                            ProjectSchema.name == project_name
-                        )
-                    ).one()
-
-                if is_user:
-                    user_id = session.exec(
-                        select(UserSchema.id).where(
-                            UserSchema.name == entity_name
-                        )
-                    ).one()
-                    assignment = UserRoleAssignmentSchema(
-                        role_id=role_id,
-                        project_id=project_id,
-                        user_id=user_id,
-                    )
-                    session.add(assignment)
-                    session.commit()
-                else:
-                    team_id = session.exec(
-                        select(TeamSchema.id).where(
-                            TeamSchema.name == entity_name
-                        )
-                    ).one()
-                    assignment = TeamRoleAssignmentSchema(
-                        role_id=role_id,
-                        project_id=project_id,
-                        team_id=team_id,
-                    )
-                    session.add(assignment)
-                    session.commit()
-            except NoResultFound as error:
-                raise KeyError from error
-
-    def revoke_role(
-        self,
-        role_name: str,
-        entity_name: str,
-        project_name: Optional[str] = None,
-        is_user: bool = True,
-    ) -> None:
-        """Revokes a role from a user or team.
-
-        Args:
-            role_name: Name of the role to revoke.
-            entity_name: User or team name.
-            project_name: Optional project name.
-            is_user: Boolean indicating whether the given `entity_name` refers
-                to a user.
-
-        Raises:
-            KeyError: If no role, entity or project with the given names exists.
-        """
-        with Session(self.engine) as session:
-
-            if is_user:
-                statement = (
-                    select(UserRoleAssignmentSchema)
-                    .where(UserRoleAssignmentSchema.role_id == RoleSchema.id)
-                    .where(RoleSchema.name == role_name)
-                    .where(UserRoleAssignmentSchema.user_id == UserSchema.id)
-                    .where(UserSchema.name == entity_name)
-                )
-                if project_name:
-                    statement = statement.where(
-                        UserRoleAssignmentSchema.project_id == ProjectSchema.id
-                    ).where(ProjectSchema.name == project_name)
-            else:
-                statement = (
-                    select(TeamRoleAssignmentSchema)
-                    .where(TeamRoleAssignmentSchema.role_id == RoleSchema.id)
-                    .where(RoleSchema.name == role_name)
-                    .where(TeamRoleAssignmentSchema.team_id == TeamSchema.id)
-                    .where(TeamSchema.name == entity_name)
-                )
-                if project_name:
-                    statement = statement.where(
-                        TeamRoleAssignmentSchema.project_id == ProjectSchema.id
-                    ).where(ProjectSchema.name == project_name)
-
-            try:
-                assignment = session.exec(statement).one()
-            except NoResultFound as error:
-                raise KeyError from error
-
-            session.delete(assignment)
-            session.commit()
-
-    def get_role_assignments_for_user(
-        self,
-        user_name: str,
-        project_name: Optional[str] = None,
-        include_team_roles: bool = True,
-    ) -> List[RoleAssignmentModel]:
-        """Fetches all role assignments for a user.
-
-        Args:
-            user_name: Name of the user.
-            project_name: Optional filter to only return roles assigned for
-                this project.
-            include_team_roles: If `True`, includes roles for all teams that
-                the user is part of.
-
-        Returns:
-            List of role assignments for this user.
-
-        Raises:
-            KeyError: If no user or project with the given names exists.
-        """
-        with Session(self.engine) as session:
-            try:
-                user_id = session.exec(
-                    select(UserSchema.id).where(UserSchema.name == user_name)
-                ).one()
-                statement = select(UserRoleAssignmentSchema).where(
-                    UserRoleAssignmentSchema.user_id == user_id
-                )
-                if project_name:
-                    project_id = session.exec(
-                        select(ProjectSchema.id).where(
-                            ProjectSchema.name == project_name
-                        )
-                    ).one()
-                    statement = statement.where(
-                        UserRoleAssignmentSchema.project_id == project_id
-                    )
-            except NoResultFound as error:
-                raise KeyError from error
-
-            assignments = [
-                RoleAssignmentModel(**assignment.dict())
-                for assignment in session.exec(statement).all()
-            ]
-            if include_team_roles:
-                for team in self.get_teams_for_user(user_name):
-                    assignments += self.get_role_assignments_for_team(
-                        team.name, project_name=project_name
-                    )
-
-            return assignments
-
-    def get_role_assignments_for_team(
-        self,
-        team_name: str,
-        project_name: Optional[str] = None,
-    ) -> List[RoleAssignmentModel]:
-        """Fetches all role assignments for a team.
-
-        Args:
-            team_name: Name of the user.
-            project_name: Optional filter to only return roles assigned for
-                this project.
-
-        Returns:
-            List of role assignments for this team.
-
-        Raises:
-            KeyError: If no team or project with the given names exists.
-        """
-        with Session(self.engine) as session:
-            try:
-                team_id = session.exec(
-                    select(TeamSchema.id).where(TeamSchema.name == team_name)
-                ).one()
-
-                statement = select(TeamRoleAssignmentSchema).where(
-                    TeamRoleAssignmentSchema.team_id == team_id
-                )
-                if project_name:
-                    project_id = session.exec(
-                        select(ProjectSchema.id).where(
-                            ProjectSchema.name == project_name
-                        )
-                    ).one()
-                    statement = statement.where(
-                        TeamRoleAssignmentSchema.project_id == project_id
-                    )
-            except NoResultFound as error:
-                raise KeyError from error
-
-            return [
-                RoleAssignmentModel(**assignment.dict())
-                for assignment in session.exec(statement).all()
             ]
 
     # Pipelines and pipeline runs

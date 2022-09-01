@@ -734,7 +734,7 @@ class Repository(metaclass=RepositoryMetaClass):
                 project_id=self.active_project.id,
                 name=name,
                 type=type,
-                user_id=self.zen_store.default_user_id, # GlobalConfiguration().user_id,
+                user_id=self.zen_store.default_user_id,  # GlobalConfiguration().user_id,
             )
 
         # TODO: [server] this error handling could be improved
@@ -747,9 +747,7 @@ class Repository(metaclass=RepositoryMetaClass):
 
         return components[0]
 
-    def get_stack_component(
-        self, component_id: UUID
-    ) -> StackComponent:
+    def get_stack_component(self, component_id: UUID) -> StackComponent:
         """Fetches a registered stack component.
 
         Args:
@@ -763,7 +761,8 @@ class Repository(metaclass=RepositoryMetaClass):
             id,
         )
         return self.zen_store.get_stack_component(
-            component_id=component_id).to_component()
+            component_id=component_id
+        ).to_component()
 
     def register_stack_component(
         self,

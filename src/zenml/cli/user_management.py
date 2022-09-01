@@ -23,6 +23,7 @@ from zenml.enums import CliCategories
 from zenml.exceptions import EntityExistsError
 from zenml.models.user_management_models import (
     ProjectModel,
+    RoleModel,
     TeamModel,
     UserModel,
 )
@@ -361,7 +362,6 @@ def list_roles() -> None:
     if not roles:
         cli_utils.declare("No roles registered.")
         return
-
     cli_utils.print_pydantic_models(roles)
 
 
@@ -374,132 +374,176 @@ def create_role(role_name: str) -> None:
         role_name: Name of the role to create.
     """
     cli_utils.print_active_config()
-    Repository().zen_store.create_role(role_name=role_name)
+    Repository().zen_store.create_role(role=RoleModel(name=role_name))
+    cli_utils.declare(f"Created role '{role_name}'.")
 
 
 @role.command("delete", help="Delete a role.")
-@click.argument("role_name", type=str, required=True)
-def delete_role(role_name: str) -> None:
+@click.argument("role_name_or_id", type=str, required=True)
+def delete_role(role_name_or_id: str) -> None:
     """Delete a role.
 
     Args:
-        role_name (str): Name of the role to delete.
+        role_name_or_id: Name or ID of the role to delete.
     """
     cli_utils.print_active_config()
     try:
-        Repository().zen_store.delete_role(role_name=role_name)
-    except KeyError:
-        cli_utils.warning(f"No role found for name '{role_name}'.")
+        role = Repository().zen_store.get_role(role_name_or_id)
+        Repository().zen_store.delete_role(role.id)
+    except KeyError as err:
+        cli_utils.error(str(err))
+    cli_utils.declare(f"Deleted role '{role_name_or_id}'.")
 
 
 @role.command("assign", help="Assign a role.")
-@click.argument("role_name", type=str, required=True)
-@click.option("--user", "user_names", type=str, required=False, multiple=True)
-@click.option("--team", "team_names", type=str, required=False, multiple=True)
-@click.option("--project", "project_name", type=str, required=False)
+@click.argument("role_name_or_id", type=str, required=True)
+@click.option("--project", "project_name_or_id", type=str, required=False)
+@click.option(
+    "--user", "user_names_or_ids", type=str, required=False, multiple=True
+)
+@click.option(
+    "--team", "team_names_or_ids", type=str, required=False, multiple=True
+)
 def assign_role(
-    role_name: str,
-    user_names: Tuple[str],
-    team_names: Tuple[str],
-    project_name: Optional[str] = None,
+    role_name_or_id: str,
+    user_names_or_ids: Tuple[str],
+    team_names_or_ids: Tuple[str],
+    project_name_or_id: Optional[str] = None,
 ) -> None:
     """Assign a role.
 
     Args:
-        role_name (str): Name of the role to assign.
-        user_names (Tuple[str]): Names of users to assign the role to.
-        team_names (Tuple[str]): Names of teams to assign the role to.
-        project_name (Optional[str]): Name of the project to assign the role to.
+        role_name_or_id: Name or IDs of the role to assign.
+        user_names_or_ids : Names or IDs of users to assign the role to.
+        team_names_or_ids: Names or IDs of teams to assign the role to.
+        project_name_or_id: Name or IDs of a project in which to assign the
+            role. If this is not provided, the role will be assigned globally.
     """
     cli_utils.print_active_config()
-    for user_name in user_names:
-        cli_utils.declare(
-            f"Assigning role '{role_name}' to user '{user_name}'."
-        )
+
+    # Get role and project
+    try:
+        role = Repository().zen_store.get_role(role_name_or_id)
+        if project_name_or_id:
+            project = Repository().zen_store.get_project(project_name_or_id)
+            project_id = project.id
+        else:
+            project_id = None
+    except KeyError as err:
+        cli_utils.error(str(err))
+
+    # Assign the role to users
+    for user_name_or_id in user_names_or_ids:
+        try:
+            user = Repository().zen_store.get_user(user_name_or_id)
+        except KeyError as err:
+            cli_utils.error(str(err))
         try:
             Repository().zen_store.assign_role(
-                role_name=role_name,
-                project_name=project_name,
-                entity_name=user_name,
+                role_id=role.id,
+                user_or_team_id=user.id,
                 is_user=True,
+                project_id=project_id,
             )
-        except KeyError:
-            cli_utils.warning(
-                "Failed to assign role. Either the role, user or project "
-                "doesn't exist."
+        except EntityExistsError as err:
+            cli_utils.warning(str(err))
+        else:
+            cli_utils.declare(
+                f"Assigned role '{role_name_or_id}' to user '{user_name_or_id}'."
             )
 
-    for team_name in team_names:
-        cli_utils.declare(
-            f"Assigning role '{role_name}' to team '{team_name}'."
-        )
+    # Assign the role to teams
+    for team_name_or_id in team_names_or_ids:
+        try:
+            team = Repository().zen_store.get_team(team_name_or_id)
+        except KeyError as err:
+            cli_utils.error(str(err))
         try:
             Repository().zen_store.assign_role(
-                role_name=role_name,
-                project_name=project_name,
-                entity_name=team_name,
+                role_id=role.id,
+                user_or_team_id=team.id,
                 is_user=False,
+                project_id=project_id,
             )
-        except KeyError:
-            cli_utils.warning(
-                "Failed to assign role. Either the role, team or project "
-                "doesn't exist."
+        except EntityExistsError as err:
+            cli_utils.warning(str(err))
+        else:
+            cli_utils.declare(
+                f"Assigned role '{role_name_or_id}' to team '{team_name_or_id}'."
             )
 
 
 @role.command("revoke", help="Revoke a role.")
-@click.argument("role_name", type=str, required=True)
-@click.option("--user", "user_names", type=str, required=False, multiple=True)
-@click.option("--team", "team_names", type=str, required=False, multiple=True)
-@click.option("--project", "project_name", type=str, required=False)
+@click.argument("role_name_or_id", type=str, required=True)
+@click.option("--project", "project_name_or_id", type=str, required=False)
+@click.option(
+    "--user", "user_names_or_ids", type=str, required=False, multiple=True
+)
+@click.option(
+    "--team", "team_names_or_ids", type=str, required=False, multiple=True
+)
 def revoke_role(
-    role_name: str,
-    user_names: Tuple[str],
-    team_names: Tuple[str],
-    project_name: Optional[str] = None,
+    role_name_or_id: str,
+    user_names_or_ids: Tuple[str],
+    team_names_or_ids: Tuple[str],
+    project_name_or_id: Optional[str] = None,
 ) -> None:
     """Revoke a role.
 
     Args:
-        role_name: Name of the role to revoke.
-        user_names: Names of the users to revoke the role from.
-        team_names: Names of the teams to revoke the role from.
-        project_name: Name of the project to revoke the role from.
+        role_name_or_id: Name or IDs of the role to revoke.
+        user_names_or_ids: Names or IDs of users from which to revoke the role.
+        team_names_or_ids: Names or IDs of teams from which to revoke the role.
+        project_name_or_id: Name or IDs of a project in which to revoke the
+            role. If this is not provided, the role will be revoked globally.
     """
     cli_utils.print_active_config()
-    for user_name in user_names:
-        cli_utils.declare(
-            f"Revoking role '{role_name}' from user '{user_name}'."
-        )
+
+    # Get role and project
+    try:
+        role = Repository().zen_store.get_role(role_name_or_id)
+        if project_name_or_id:
+            project = Repository().zen_store.get_project(project_name_or_id)
+            project_id = project.id
+        else:
+            project_id = None
+    except KeyError as err:
+        cli_utils.error(str(err))
+
+    # Revoke the role from users
+    for user_name_or_id in user_names_or_ids:
         try:
+            user = Repository().zen_store.get_user(user_name_or_id)
             Repository().zen_store.revoke_role(
-                role_name=role_name,
-                project_name=project_name,
-                entity_name=user_name,
+                role_id=role.id,
+                user_or_team_id=user.id,
                 is_user=True,
+                project_id=project_id,
             )
-        except KeyError:
-            cli_utils.warning(
-                "Failed to revoke role. Either the role, user or project "
-                "doesn't exist."
+        except KeyError as err:
+            cli_utils.warning(str(err))
+        else:
+            cli_utils.declare(
+                f"Revoked role '{role_name_or_id}' from user "
+                f"'{user_name_or_id}'."
             )
 
-    for team_name in team_names:
-        cli_utils.declare(
-            f"Revoking role '{role_name}' from team '{team_name}'."
-        )
-
+    # Revoke the role from teams
+    for team_name_or_id in team_names_or_ids:
         try:
+            team = Repository().zen_store.get_team(team_name_or_id)
             Repository().zen_store.revoke_role(
-                role_name=role_name,
-                project_name=project_name,
-                entity_name=team_name,
+                role_id=role.id,
+                user_or_team_id=team.id,
                 is_user=False,
+                project_id=project_id,
             )
-        except KeyError:
-            cli_utils.warning(
-                "Failed to revoke role. Either the role, team or project "
-                "doesn't exist."
+        except KeyError as err:
+            cli_utils.warning(str(err))
+        else:
+            cli_utils.declare(
+                f"Revoked role '{role_name_or_id}' from team "
+                f"'{team_name_or_id}'."
             )
 
 
@@ -516,5 +560,4 @@ def list_role_assignments() -> None:
     if not role_assignments:
         cli_utils.declare("No roles assigned.")
         return
-
     cli_utils.print_pydantic_models(role_assignments)

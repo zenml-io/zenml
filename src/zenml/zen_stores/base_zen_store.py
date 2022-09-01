@@ -35,6 +35,7 @@ from zenml.models.pipeline_models import (
 )
 from zenml.models.user_management_models import (
     ProjectModel,
+    RoleAssignmentModel,
     RoleModel,
     TeamModel,
     UserModel,
@@ -639,12 +640,14 @@ class BaseZenStore(BaseModel):
         Returns:
             All stack components currently registered.
         """
-        return self._list_stack_components(project_id=project_id,
-                                           type=type,
-                                           flavor_name=flavor_name,
-                                           user_id=user_id,
-                                           name=name,
-                                           is_shared=is_shared)
+        return self._list_stack_components(
+            project_id=project_id,
+            type=type,
+            flavor_name=flavor_name,
+            user_id=user_id,
+            name=name,
+            is_shared=is_shared,
+        )
 
     @abstractmethod
     def _list_stack_components(
@@ -1233,111 +1236,222 @@ class BaseZenStore(BaseModel):
         Returns:
             A list of all registered roles.
         """
-        return self.list_roles()
+        return self._list_roles()
 
     # TODO: [ALEX] add filtering param(s)
     @abstractmethod
-    def list_roles(self) -> List[RoleModel]:
+    def _list_roles(self) -> List[RoleModel]:
         """List all roles.
 
         Returns:
             A list of all roles.
         """
 
-    def get_role_assignments_for_user(
-        self,
-        user_id: str,
-        # include_team_roles: bool = True, # TODO: Remove these from the
-        # SQLStore implementation
-    ) -> List[RoleModel]:
-        """Fetches all role assignments for a user.
+    # TODO: consider using team_id instead
+    def create_role(self, role: RoleModel) -> RoleModel:
+        """Creates a new role.
 
         Args:
-            user_id: ID of the user.
+            role: The role model to create.
 
         Returns:
-            List of role assignments for this user.
+            The newly created role.
 
         Raises:
-            KeyError: If no user or project with the given names exists.
+            EntityExistsError: If a role with the given name already exists.
         """
-        return self._get_role_assignments_for_user(user_id)
+        self._track_event(AnalyticsEvent.CREATED_ROLE)
+        return self._create_role(role)
 
     @abstractmethod
-    def _get_role_assignments_for_user(self, user_id: str) -> List[RoleModel]:
-        """Fetches all role assignments for a user.
+    def _create_role(self, role: RoleModel) -> RoleModel:
+        """Creates a new role.
 
         Args:
-            user_id: ID of the user.
+            role: The role model to create.
 
         Returns:
-            List of role assignments for this user.
+            The newly created role.
 
         Raises:
-            KeyError: If no user or project with the given names exists.
+            EntityExistsError: If a role with the given name already exists.
         """
 
-    def assign_role(self, user_id: str, role_id: str, project_id: str) -> None:
-        """Assigns a role to a user or team, scoped to a specific project.
+    # TODO: consider using team_id instead
+    def get_role(self, role_name_or_id: str) -> RoleModel:
+        """Gets a specific role.
 
         Args:
-            user_id: ID of the user.
-            role_id: ID of the role to assign to the user.
-            project_id: ID of the project in which to assign the role to the
-                user.
+            role_name_or_id: Name or ID of the role to get.
+
+        Returns:
+            The requested role.
 
         Raises:
-            KeyError: If no user, role, or project with the given IDs exists.
+            KeyError: If no role with the given name exists.
         """
-        return self._assign_role(user_id, role_id, project_id)
+        # No tracking events, here for consistency
+        return self._get_role(role_name_or_id)
 
     @abstractmethod
-    def _assign_role(self, user_id: str, role: RoleModel) -> None:
-        """Assigns a role to a user or team, scoped to a specific project.
+    def _get_role(self, role_name_or_id: str) -> RoleModel:
+        """Gets a specific role.
 
         Args:
-            user_id: ID of the user.
-            role_id: ID of the role to assign to the user.
-            project_id: ID of the project in which to assign the role to the
-                user.
+            role_name_or_id: Name or ID of the role to get.
+
+        Returns:
+            The requested role.
 
         Raises:
-            KeyError: If no user, role, or project with the given IDs exists.
+            KeyError: If no role with the given name exists.
         """
 
-    def unassign_role(
-        self, user_id: str, role_id: str, project_id: str
-    ) -> None:
-        """Unassigns a role from a user or team for a given project.
+    def delete_role(self, role_id: str) -> None:
+        """Deletes a role.
 
         Args:
-            user_id: ID of the user.
-            role_id: ID of the role to unassign.
-            project_id: ID of the project in which to unassign the role from the
-                user.
+            role_id: ID of the role to delete.
 
         Raises:
-            KeyError: If the role was not assigned to the user in the given
-                project.
+            KeyError: If no role with the given ID exists.
         """
         self._track_event(AnalyticsEvent.DELETED_ROLE)
-        return self._unassign_role(user_id, role_id, project_id)
+        return self._delete_role(role_id)
 
     @abstractmethod
-    def _unassign_role(
-        self, user_id: str, role_id: str, project_id: str
-    ) -> None:
-        """Unassigns a role from a user or team for a given project.
+    def _delete_role(self, role_id: str) -> None:
+        """Deletes a role.
 
         Args:
-            user_id: ID of the user.
-            role_id: ID of the role to unassign.
-            project_id: ID of the project in which to unassign the role from the
-                user.
+            role_id: ID of the role to delete.
 
         Raises:
-            KeyError: If the role was not assigned to the user in the given
-                project.
+            KeyError: If no role with the given ID exists.
+        """
+
+    @property
+    def role_assignments(self) -> List[RoleAssignmentModel]:
+        """All role assignments.
+
+        Returns:
+            A list of all role assignments.
+        """
+        return self.list_role_assignments()
+
+    @abstractmethod
+    def list_role_assignments(
+        self,
+        project_id: Optional[str] = None,
+        team_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+    ) -> List[RoleAssignmentModel]:
+        """List all role assignments.
+
+        Args:
+            project_id: If provided, only list assignments for the given project
+            team_id: If provided, only list assignments for the given team
+            user_id: If provided, only list assignments for the given user
+
+        Returns:
+            A list of all role assignments.
+        """
+
+    def assign_role(
+        self,
+        role_id: str,
+        user_or_team_id: str,
+        is_user: bool = True,
+        project_id: Optional[str] = None,
+    ) -> None:
+        """Assigns a role to a user or team, scoped to a specific project.
+
+        Args:
+            role_id: ID of the role to assign to the user.
+            user_or_team_id: ID of the user or team to which to assign the role.
+            is_user: Whether `user_or_team_id` refers to a user or a team.
+            project_id: Optional ID of a project in which to assign the role.
+                If this is not provided, the role will be assigned globally.
+
+        Raises:
+            EntityExistsError: If the role assignment already exists.
+        """
+        return self._assign_role(
+            role_id=role_id,
+            user_or_team_id=user_or_team_id,
+            is_user=is_user,
+            project_id=project_id,
+        )
+
+    @abstractmethod
+    def _assign_role(
+        self,
+        role_id: str,
+        user_or_team_id: str,
+        is_user: bool = True,
+        project_id: Optional[str] = None,
+    ) -> None:
+        """Assigns a role to a user or team, scoped to a specific project.
+
+        Args:
+            role_id: ID of the role to assign.
+            user_or_team_id: ID of the user or team to which to assign the role.
+            is_user: Whether `user_or_team_id` refers to a user or a team.
+            project_id: Optional ID of a project in which to assign the role.
+                If this is not provided, the role will be assigned globally.
+
+        Raises:
+            EntityExistsError: If the role assignment already exists.
+        """
+
+    def revoke_role(
+        self,
+        role_id: str,
+        user_or_team_id: str,
+        is_user: bool = True,
+        project_id: Optional[str] = None,
+    ) -> None:
+        """Revokes a role from a user or team for a given project.
+
+        Args:
+            role_id: ID of the role to revoke.
+            user_or_team_id: ID of the user or team from which to revoke the
+                role.
+            is_user: Whether `user_or_team_id` refers to a user or a team.
+            project_id: Optional ID of a project in which to revoke the role.
+                If this is not provided, the role will be revoked globally.
+
+        Raises:
+            KeyError: If the role, user, team, or project does not exists.
+        """
+        self._track_event(AnalyticsEvent.DELETED_ROLE)
+        return self._revoke_role(
+            role_id=role_id,
+            user_or_team_id=user_or_team_id,
+            is_user=is_user,
+            project_id=project_id,
+        )
+
+    @abstractmethod
+    def _revoke_role(
+        self,
+        role_id: str,
+        user_or_team_id: str,
+        is_user: bool = True,
+        project_id: Optional[str] = None,
+    ) -> None:
+        """Revokes a role from a user or team for a given project.
+
+        Args:
+            role_id: ID of the role to revoke.
+            user_or_team_id: ID of the user or team from which to revoke the
+                role.
+            is_user: Whether `user_or_team_id` refers to a user or a team.
+            project_id: Optional ID of a project in which to revoke the role.
+                If this is not provided, the role will be revoked globally.
+
+        Raises:
+            KeyError: If the role, user, team, or project does not exists.
         """
 
     #  .----------------.
@@ -2349,32 +2463,6 @@ class BaseZenStore(BaseModel):
     # # TODO [ENG-894]: Refactor these with the proxy pattern, as noted in
     # #  the [review comment](https://github.com/zenml-io/zenml/pull/589#discussion_r875003334)
 
-    # TODO: consider using team_id instead
-    def get_role(self, role_name: str) -> RoleModel:
-        """Gets a specific role.
-
-        Args:
-            role_name: Name of the role to get.
-
-        Returns:
-            The requested role.
-        """
-        # No tracking events, here for consistency
-        return self._get_role(role_name)
-
-    # TODO: consider using team_id instead
-    def create_role(self, role_name: str) -> RoleModel:
-        """Creates a new role.
-
-        Args:
-            role_name: Unique role name.
-
-        Returns:
-            The newly created role.
-        """
-        self._track_event(AnalyticsEvent.CREATED_ROLE)
-        return self._create_role(role_name)
-
     def create_flavor(
         self,
         source: str,
@@ -2428,86 +2516,6 @@ class BaseZenStore(BaseModel):
 
         Raises:
             KeyError: If no component exists for given type and name.
-        """
-
-    # User, project and role management
-
-    @property
-    @abstractmethod
-    def role_assignments(self) -> List[RoleModel]:
-        """All registered role assignments.
-
-        Returns:
-            A list of all registered role assignments.
-        """
-
-    @abstractmethod
-    def _get_role(self, role_name: str) -> RoleModel:
-        """Gets a specific role.
-
-        Args:
-            role_name: Name of the role to get.
-
-        Returns:
-            The requested role.
-
-        Raises:
-            KeyError: If no role with the given name exists.
-        """
-
-    @abstractmethod
-    def _create_role(self, role_name: str) -> RoleModel:
-        """Creates a new role.
-
-        Args:
-            role_name: Unique role name.
-
-        Returns:
-            The newly created role.
-
-        Raises:
-            EntityExistsError: If a role with the given name already exists.
-        """
-
-    @abstractmethod
-    def revoke_role(
-        self,
-        role_name: str,
-        entity_name: str,
-        project_name: Optional[str] = None,
-        is_user: bool = True,
-    ) -> None:
-        """Revokes a role from a user or team.
-
-        Args:
-            role_name: Name of the role to revoke.
-            entity_name: User or team name.
-            project_name: Optional project name.
-            is_user: Boolean indicating whether the given `entity_name` refers
-                to a user.
-
-        Raises:
-            KeyError: If no role, entity or project with the given names exists.
-        """
-
-    @abstractmethod
-    def get_role_assignments_for_team(
-        self,
-        team_name: str,
-        project_name: Optional[str] = None,
-    ) -> List[RoleModel]:
-        """Fetches all role assignments for a team.
-
-        Args:
-            team_name: Name of the user.
-            project_name: Optional filter to only return roles assigned for
-                this project.
-
-        Returns:
-            List of role assignments for this team.
-
-        Raises:
-            KeyError: If no team or project with the given names exists.
         """
 
     # Pipelines and pipeline runs

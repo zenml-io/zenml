@@ -90,19 +90,19 @@ class RoleAssignmentModel(BaseModel):
 
     Attributes:
         id: Id of the role assignment.
-        created_at: Date when the role was assigned.
         role_id: Id of the role.
         project_id: Optional ID of a project that the role is limited to.
         team_id: Id of a team to which the role is assigned.
         user_id: Id of a user to which the role is assigned.
+        created_at: Date when the role was assigned.
     """
 
     id: Optional[UUID] = None
-    created_at: Optional[datetime] = None
     role_id: UUID
     project_id: Optional[UUID] = None
     team_id: Optional[UUID] = None
     user_id: Optional[UUID] = None
+    created_at: Optional[datetime] = None
 
     @root_validator
     def ensure_single_entity(cls, values: Dict[str, Any]) -> Dict[str, Any]:
