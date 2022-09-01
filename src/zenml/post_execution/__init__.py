@@ -20,8 +20,29 @@ and the post-run pipeline object.
 """
 
 from zenml.post_execution.artifact import ArtifactView
+from zenml.post_execution.lineage import (
+    ArtifactNode,
+    ArtifactNodeDetails,
+    BaseNode,
+    Edge,
+    LineageGraph,
+    StepNode,
+    StepNodeDetails,
+)
 from zenml.post_execution.pipeline import PipelineView
 from zenml.post_execution.pipeline_run import PipelineRunView
 from zenml.post_execution.step import StepView
 
-__all__ = ["PipelineView", "PipelineRunView", "StepView", "ArtifactView"]
+__all__ = [
+    "PipelineView",
+    "PipelineRunView",
+    "StepView",
+    "ArtifactView",
+    "BaseNode",
+    "ArtifactNode",
+    "StepNode",
+    "Edge",
+    "LineageGraph",
+    "StepNodeDetails",
+    "ArtifactNodeDetails",
+]
