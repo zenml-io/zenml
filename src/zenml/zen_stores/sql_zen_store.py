@@ -502,7 +502,7 @@ class SqlZenStore(BaseZenStore):
         project_id: UUID,
         type: Optional[str] = None,
         flavor_name: Optional[str] = None,
-        owner: Optional[str] = None,
+        user_id: Optional[str] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
     ) -> List[ComponentModel]:
@@ -512,7 +512,7 @@ class SqlZenStore(BaseZenStore):
             project_id: Id of the Project containing the stack components
             type: Optionally filter by type of stack component
             flavor_name: Optionally filter by flavor
-            owner: Optionally filter stack components by the owner
+            user_id: Optionally filter stack components by the owner
             name: Optionally filter stack component by name
             is_shared: Optionally filter out stack component by the `is_shared`
                        flag
@@ -531,8 +531,8 @@ class SqlZenStore(BaseZenStore):
                  query = query.where(StackComponentSchema.type == type)
             if flavor_name:
                  query = query.where(StackComponentSchema.flavor_name == flavor_name)
-            if owner:
-                query = query.where(StackComponentSchema.owner == owner)
+            if user_id:
+                query = query.where(StackComponentSchema.owner == user_id)
             if name:
                 query = query.where(StackComponentSchema.name == name)
             if is_shared is not None:
@@ -542,7 +542,7 @@ class SqlZenStore(BaseZenStore):
 
         return [comp.to_model() for comp in list_of_stack_components_in_db]
 
-    def _get_stack_component(self, component_id: str) -> ComponentModel:
+    def _get_stack_component(self, component_id: UUID) -> ComponentModel:
         """Get a stack component by id.
 
         Args:

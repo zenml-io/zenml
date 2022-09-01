@@ -398,9 +398,9 @@ def print_stack_component_configuration(
     rich_table.add_column("VALUE", overflow="fold")
 
     component_dict = component.dict()
-    component_dict.pop("config")
+    component_dict.pop("configuration")
     component_dict.update(
-        yaml.safe_load(base64.b64decode(component.config).decode())
+        yaml.safe_load(base64.b64decode(component.configuration).decode())
     )
     items = component_dict.items()
     for item in items:
