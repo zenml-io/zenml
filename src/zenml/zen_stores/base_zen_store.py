@@ -621,7 +621,7 @@ class BaseZenStore(BaseModel):
         project_id: UUID,
         type: Optional[str] = None,
         flavor_name: Optional[str] = None,
-        owner: Optional[str] = None,
+        user_id: Optional[str] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
     ) -> List[ComponentModel]:
@@ -631,7 +631,7 @@ class BaseZenStore(BaseModel):
             project_id: Id of the Project containing the stack components
             type: Optionally filter by type of stack component
             flavor_name: Optionally filter by flavor
-            owner: Optionally filter stack components by the owner
+            user_id: Optionally filter stack components by the owner
             name: Optionally filter stack component by name
             is_shared: Optionally filter out stack component by the `is_shared`
                        flag
@@ -639,14 +639,12 @@ class BaseZenStore(BaseModel):
         Returns:
             All stack components currently registered.
         """
-        return self._list_stack_components(
-            project_id=project_id,
-            type=type,
-            flavor_name=flavor_name,
-            owner=owner,
-            name=name,
-            is_shared=is_shared,
-        )
+        return self._list_stack_components(project_id=project_id,
+                                           type=type,
+                                           flavor_name=flavor_name,
+                                           user_id=user_id,
+                                           name=name,
+                                           is_shared=is_shared)
 
     @abstractmethod
     def _list_stack_components(
@@ -654,7 +652,7 @@ class BaseZenStore(BaseModel):
         project_id: UUID,
         type: Optional[str] = None,
         flavor_name: Optional[str] = None,
-        owner: Optional[str] = None,
+        user_id: Optional[str] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
     ) -> List[ComponentModel]:
@@ -673,7 +671,7 @@ class BaseZenStore(BaseModel):
             A list of all stack components.
         """
 
-    def get_stack_component(self, component_id: str) -> ComponentModel:
+    def get_stack_component(self, component_id: UUID) -> ComponentModel:
         """Get a stack component by id.
 
         Args:
@@ -685,7 +683,7 @@ class BaseZenStore(BaseModel):
         return self._get_stack_component(component_id)
 
     @abstractmethod
-    def _get_stack_component(self, component_id: str) -> ComponentModel:
+    def _get_stack_component(self, component_id: UUID) -> ComponentModel:
         """Get a stack component by ID.
 
         Args:
