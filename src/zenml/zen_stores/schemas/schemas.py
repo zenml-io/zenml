@@ -217,11 +217,13 @@ class StackSchema(SQLModel, table=True):
     )
 
     @classmethod
-    def from_create_model(cls,
-                          user_id: UUID,
-                          project_id: UUID,
-                          defined_components: List["StackComponentSchema"],
-                          stack: StackModel) -> "StackSchema":
+    def from_create_model(
+        cls,
+        user_id: UUID,
+        project_id: UUID,
+        defined_components: List["StackComponentSchema"],
+        stack: StackModel,
+    ) -> "StackSchema":
         """Create an incomplete StackSchema with `id` and `created_at` missing.
 
         Returns:
@@ -275,10 +277,9 @@ class StackComponentSchema(SQLModel, table=True):
     )
 
     @classmethod
-    def from_create_model(cls,
-                          user_id: str,
-                          project_id: UUID,
-                          component: ComponentModel) -> "StackComponentSchema":
+    def from_create_model(
+        cls, user_id: str, project_id: UUID, component: ComponentModel
+    ) -> "StackComponentSchema":
         """Create a StackComponentSchema with `id` and `created_at` missing.
 
 
@@ -293,7 +294,7 @@ class StackComponentSchema(SQLModel, table=True):
             is_shared=component.is_shared,
             type=component.type,
             flavor_name=component.flavor_name,
-            configuration=component.configuration
+            configuration=component.configuration,
         )
 
     def to_model(self) -> "ComponentModel":

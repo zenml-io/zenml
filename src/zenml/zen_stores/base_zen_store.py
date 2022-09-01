@@ -17,7 +17,7 @@ import json
 import os
 from abc import abstractmethod
 from pathlib import Path, PurePath
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union
 from uuid import UUID
 
 from ml_metadata.proto import metadata_store_pb2
@@ -639,12 +639,14 @@ class BaseZenStore(BaseModel):
         Returns:
             All stack components currently registered.
         """
-        return self._list_stack_components(project_id=project_id,
-                                           type=type,
-                                           flavor_name=flavor_name,
-                                           owner=owner,
-                                           name=name,
-                                           is_shared=is_shared)
+        return self._list_stack_components(
+            project_id=project_id,
+            type=type,
+            flavor_name=flavor_name,
+            owner=owner,
+            name=name,
+            is_shared=is_shared,
+        )
 
     @abstractmethod
     def _list_stack_components(

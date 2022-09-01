@@ -32,12 +32,11 @@ from zenml.environment import Environment
 from zenml.exceptions import InitializationException
 from zenml.io import fileio
 from zenml.logger import get_apidocs_link, get_logger
-from zenml.models import StackModel
+from zenml.models import ComponentModel, StackModel
 from zenml.stack import StackComponent
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
-from zenml.models import StackModel, ComponentModel
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
@@ -608,7 +607,7 @@ class Repository(metaclass=RepositoryMetaClass):
             # TODO: [server] access the user id in a more elegant way
             stacks = self.zen_store.list_stacks(
                 project_id=self.active_project.id,
-                user_id=self.zen_store.default_user_id, # GlobalConfiguration().user_id,
+                user_id=self.zen_store.default_user_id,  # GlobalConfiguration().user_id,
                 name=name,
             )
 
@@ -706,8 +705,8 @@ class Repository(metaclass=RepositoryMetaClass):
             A list of all registered stack components of the given type.
         """
         return self.zen_store.list_stack_components(
-                project_id=self.active_project.id,
-                type=component_type)
+            project_id=self.active_project.id, type=component_type
+        )
 
     def get_stack_component(
         self, component_type: StackComponentType, name: str
