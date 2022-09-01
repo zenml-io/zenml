@@ -21,6 +21,7 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.enums import CliCategories
 from zenml.exceptions import EntityExistsError
+from zenml.models.user_management_models import UserModel
 from zenml.repository import Repository
 
 
@@ -64,22 +65,20 @@ def create_user(user_name: str) -> None:
         user_name: The name of the user to create.
     """
     cli_utils.print_active_config()
-    Repository().zen_store.create_user(user_name=user_name)
+    Repository().zen_store.create_user(UserModel(name=user_name))
 
 
 @user.command("delete")
-@click.argument("user_name", type=str, required=True)
-def delete_user(user_name: str) -> None:
+@click.argument("user_name_or_id", type=str, required=True)
+def delete_user(user_name_or_id: str) -> None:
     """Delete a user.
 
     Args:
-        user_name: The name of the user to delete.
+        user_name_or_id: The name or ID of the user to delete.
     """
     cli_utils.print_active_config()
-    try:
-        Repository().zen_store.delete_user(user_name=user_name)
-    except KeyError:
-        cli_utils.warning(f"No user found for name '{user_name}'.")
+    user = Repository().zen_store.get_user(user_name_or_id)
+    Repository().zen_store.delete_user(user_id=user.id)
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)

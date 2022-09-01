@@ -944,35 +944,42 @@ class BaseZenStore(BaseModel):
             EntityExistsError: If a user with the given name already exists.
         """
 
-    def get_user(self, user_id: str, invite_token: str = None) -> UserModel:
+    def get_user(
+        self, user_name_or_id: str, invite_token: str = None
+    ) -> UserModel:
         """Gets a specific user.
 
         Args:
-            user_id: The ID of the user to get.
+            user_name_or_id: The name or ID of the user to get.
             invite_token: Token to use for the invitation.
 
         Returns:
             The requested user, if it was found.
 
         Raises:
-            KeyError: If no user with the given name exists.
+            KeyError: If no user with the given name or ID exists.
         """
         # No tracking events, here for consistency
-        return self._get_user(user_id, invite_token=invite_token)
+        return self._get_user(
+            user_name_or_id=user_name_or_id,
+            invite_token=invite_token
+        )
 
     @abstractmethod
-    def _get_user(self, user_id: str, invite_token: str = None) -> UserModel:
+    def _get_user(
+        self, user_name_or_id: str, invite_token: str = None
+    ) -> UserModel:
         """Gets a specific user.
 
         Args:
-            user_id: The ID of the user to get.
+            user_name_or_id: The name or ID of the user to get.
             invite_token: Token to use for the invitation.
 
         Returns:
             The requested user, if it was found.
 
         Raises:
-            KeyError: If no user with the given name exists.
+            KeyError: If no user with the given name or ID exists.
         """
 
     def update_user(self, user_id: str, user: UserModel) -> UserModel:
@@ -1027,6 +1034,41 @@ class BaseZenStore(BaseModel):
 
         Raises:
             KeyError: If no user with the given ID exists.
+        """
+
+    # TODO: Check whether this needs to be an abstract method or not (probably?)
+    @abstractmethod
+    def get_invite_token(self, user_id: str) -> str:
+        """Gets an invite token for a user.
+
+        Args:
+            user_id: ID of the user.
+
+        Returns:
+            The invite token for the specific user.
+        """
+
+    @abstractmethod
+    def invalidate_invite_token(self, user_id: str) -> None:
+        """Invalidates an invite token for a user.
+
+        Args:
+            user_id: ID of the user.
+        """
+
+    #  .------.
+    # | ROLES |
+    # '-------'
+
+    # TODO: create & delete roles?
+
+    # TODO: [ALEX] add filtering param(s)
+    @abstractmethod
+    def list_roles(self) -> List[RoleModel]:
+        """List all roles.
+
+        Returns:
+            A list of all roles.
         """
 
     def get_role_assignments_for_user(
@@ -1123,41 +1165,6 @@ class BaseZenStore(BaseModel):
         Raises:
             KeyError: If the role was not assigned to the user in the given
                 project.
-        """
-
-    # TODO: Check whether this needs to be an abstract method or not (probably?)
-    @abstractmethod
-    def get_invite_token(self, user_id: str) -> str:
-        """Gets an invite token for a user.
-
-        Args:
-            user_id: ID of the user.
-
-        Returns:
-            The invite token for the specific user.
-        """
-
-    @abstractmethod
-    def invalidate_invite_token(self, user_id: str) -> None:
-        """Invalidates an invite token for a user.
-
-        Args:
-            user_id: ID of the user.
-        """
-
-    #  .------.
-    # | ROLES |
-    # '-------'
-
-    # TODO: create & delete roles?
-
-    # TODO: [ALEX] add filtering param(s)
-    @abstractmethod
-    def list_roles(self) -> List[RoleModel]:
-        """List all roles.
-
-        Returns:
-            A list of all roles.
         """
 
     #  .----------------.

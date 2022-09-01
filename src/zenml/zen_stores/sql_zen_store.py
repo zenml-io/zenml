@@ -17,12 +17,9 @@ import os
 
 from ml_metadata.proto import metadata_store_pb2
 from sqlalchemy import or_
-import datetime as dt
-import json
-from datetime import datetime
 from pathlib import Path, PurePath
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import make_url
@@ -61,7 +58,7 @@ from zenml.post_execution.pipeline import PipelineView
 from zenml.post_execution.pipeline_run import PipelineRunView
 from zenml.post_execution.step import StepView
 from zenml.stack.flavor_registry import flavor_registry
-from zenml.utils import io_utils
+from zenml.utils import io_utils, uuid_utils
 from zenml.zen_stores.base_zen_store import (
     DEFAULT_PROJECT_NAME,
     DEFAULT_USERNAME,
@@ -755,27 +752,38 @@ class SqlZenStore(BaseZenStore):
 
             return new_user.to_model()
 
-    def _get_user(self, user_id: str, invite_token: str = None) -> UserModel:
+    def _get_user(
+        self, user_name_or_id: str, invite_token: str = None
+    ) -> UserModel:
         """Gets a specific user.
 
         Args:
-            user_id: The ID of the user to get.
+            user_name_or_id: The name or ID of the user to get.
             invite_token: Token to use for the invitation.
 
         Returns:
             The requested user, if it was found.
 
         Raises:
-            KeyError: If no user with the given name exists.
+            KeyError: If no user with the given name or ID exists.
         """
-        with Session(self.engine) as session:
-            user = session.exec(
-                select(UserSchema)
-                .where(UserSchema.id == user_id)
-            ).first()
-            if user is None:
-                raise KeyError(f"No user with id '{user_id}' found.")
+        is_uuid = uuid_utils.is_valid_uuid(user_name_or_id)
 
+        query = select(UserSchema)
+        if is_uuid:
+            query = query.where(UserSchema.id == user_name_or_id)
+        else:
+            query = query.where(UserSchema.name == user_name_or_id)
+
+        with Session(self.engine) as session:
+            user = session.exec(query).first()
+            if user is None and is_uuid:
+                raise KeyError(f"No user with ID '{user_name_or_id}' found.")
+            if user is None:
+                raise KeyError(
+                    f"The given user name or ID '{user_name_or_id}' is not a "
+                    "valid ID and no user with this name exists either."
+                )
             return user.to_model()
 
     def _update_user(self, user_id: str, user: UserModel) -> UserModel:
@@ -828,6 +836,40 @@ class SqlZenStore(BaseZenStore):
 
             session.delete(user)
             session.commit()
+
+    def get_invite_token(self, user_id: str) -> str:
+        """Gets an invite token for a user.
+
+        Args:
+            user_id: ID of the user.
+
+        Returns:
+            The invite token for the specific user.
+        """
+        raise NotImplementedError()  # TODO
+
+    def invalidate_invite_token(self, user_id: str) -> None:
+        """Invalidates an invite token for a user.
+
+        Args:
+            user_id: ID of the user.
+        """
+        raise NotImplementedError()  # TODO
+
+    #  .------.
+    # | ROLES |
+    # '-------'
+
+    def list_roles(self) -> List[RoleModel]:
+        """List all roles.
+
+        Returns:
+            A list of all roles.
+        """
+        with Session(self.engine) as session:
+            roles = session.exec(select(RoleSchema)).all()
+
+        return [role.to_model() for role in roles]
 
     def _get_role_assignments_for_user(self, user_id: str) -> List[RoleModel]:
         """Fetches all role assignments for a user.
@@ -935,40 +977,6 @@ class SqlZenStore(BaseZenStore):
 
             session.delete(role)
             session.commit()
-
-    def get_invite_token(self, user_id: str) -> str:
-        """Gets an invite token for a user.
-
-        Args:
-            user_id: ID of the user.
-
-        Returns:
-            The invite token for the specific user.
-        """
-        raise NotImplementedError()  # TODO
-
-    def invalidate_invite_token(self, user_id: str) -> None:
-        """Invalidates an invite token for a user.
-
-        Args:
-            user_id: ID of the user.
-        """
-        raise NotImplementedError()  # TODO
-
-    #  .------.
-    # | ROLES |
-    # '-------'
-
-    def list_roles(self) -> List[RoleModel]:
-        """List all roles.
-
-        Returns:
-            A list of all roles.
-        """
-        with Session(self.engine) as session:
-            roles = session.exec(select(RoleSchema)).all()
-
-        return [role.to_model() for role in roles]
 
     #  .----------------.
     # | METADATA_CONFIG |

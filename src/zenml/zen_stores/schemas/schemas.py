@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQL Model Implementations."""
-import base64
 from datetime import datetime
 from typing import List, Dict
 from uuid import UUID, uuid4
@@ -31,19 +30,6 @@ from zenml.models.user_management_models import (
     ProjectModel, RoleModel, UserModel
 )
 
-def _sqlmodel_uuid() -> UUID:
-    """Generates a UUID whose hex string does not start with a '0'.
-
-    Returns:
-        A UUID whose hex string does not start with a '0'.
-    """
-    # SQLModel crashes when a UUID hex string starts with '0'
-    # (see: https://github.com/tiangolo/sqlmodel/issues/25)
-    uuid = uuid4()
-    while uuid.hex[0] == "0":
-        uuid = uuid4()
-    return uuid
-
 
 # Projects, Repositories
 
@@ -51,7 +37,7 @@ def _sqlmodel_uuid() -> UUID:
 class ProjectSchema(SQLModel, table=True):
     """SQL Model for projects."""
 
-    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
     name: str
     description: str = Field(nullable=True)
     created_at: datetime = Field(default_factory=datetime.now)
@@ -69,7 +55,7 @@ class ProjectSchema(SQLModel, table=True):
 class CodeRepositorySchema(SQLModel, table=True):
     """SQL Model for code repositories."""
 
-    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
     name: str
     project_id: UUID = Field(foreign_key="projectschema.id")
     created_at: datetime = Field(default_factory=datetime.now)
@@ -94,7 +80,7 @@ class CodeRepositorySchema(SQLModel, table=True):
 class UserSchema(SQLModel, table=True):
     """SQL Model for users."""
 
-    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
     name: str
     created_at: datetime = Field(default_factory=datetime.now)
 
@@ -109,7 +95,7 @@ class UserSchema(SQLModel, table=True):
 class TeamSchema(SQLModel, table=True):
     """SQL Model for teams."""
 
-    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
     name: str
     created_at: datetime = Field(default_factory=datetime.now)
 
@@ -124,7 +110,7 @@ class TeamAssignmentSchema(SQLModel, table=True):
 class RoleSchema(SQLModel, table=True):
     """SQL Model for roles."""
 
-    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
     name: str
     created_at: datetime = Field(default_factory=datetime.now)
 
@@ -161,7 +147,7 @@ class TeamRoleAssignmentSchema(SQLModel, table=True):
 class FlavorSchema(SQLModel, table=True):
     """SQL Model for flavors."""
 
-    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
 
     name: str
 
@@ -192,7 +178,7 @@ class StackCompositionSchema(SQLModel, table=True):
 class StackSchema(SQLModel, table=True):
     """SQL Model for stacks."""
 
-    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
     created_at: datetime = Field(default_factory=datetime.now)
 
     name: str
@@ -247,7 +233,7 @@ class StackSchema(SQLModel, table=True):
 class StackComponentSchema(SQLModel, table=True):
     """SQL Model for stack components."""
 
-    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
 
     name: str
     is_shared: bool
@@ -311,7 +297,7 @@ class StackComponentSchema(SQLModel, table=True):
 class PipelineSchema(SQLModel, table=True):
     """SQL Model for pipelines."""
 
-    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
 
     name: str
 
@@ -347,7 +333,7 @@ class PipelineSchema(SQLModel, table=True):
 class StepSchema(SQLModel, table=True):
     """SQL Model for steps of a pipeline."""
 
-    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
     name: str
     pipeline_id: UUID = Field(foreign_key="pipelineschema.id")
     source: str  # TODO: how to get this?
@@ -367,7 +353,7 @@ class StepSchema(SQLModel, table=True):
 class PipelineRunSchema(SQLModel, table=True):
     """SQL Model for pipeline runs."""
 
-    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
 
     name: str
 
@@ -394,7 +380,7 @@ class PipelineRunSchema(SQLModel, table=True):
 class PipelineRunStepSchema(SQLModel, table=True):
     """SQL Model for pipeline run steps."""
 
-    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
 
     name: str
 
@@ -421,7 +407,7 @@ class PipelineRunStepSchema(SQLModel, table=True):
 class MLMDSchema(SQLModel, table=True):
     """SQL Model for MLMD."""
 
-    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
     project_id: UUID = Field(foreign_key="projectschema.id")
     type: str
 
@@ -429,7 +415,7 @@ class MLMDSchema(SQLModel, table=True):
 class MLMDPropertySchema(SQLModel, table=True):
     """SQL Model for MLMD Properties."""
 
-    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
     name: str
     mlmd_id: UUID = Field(foreign_key="mlmdschema.id")
     value: str
