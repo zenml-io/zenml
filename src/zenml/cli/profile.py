@@ -35,11 +35,11 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.models import ComponentModel, StackModel
 from zenml.models.user_management_models import ProjectModel, UserModel
 from zenml.repository import Repository
 from zenml.utils import yaml_utils
 from zenml.utils.io_utils import get_global_config_directory
-from zenml.models import ComponentModel, StackModel
 
 logger = get_logger(__name__)
 
@@ -575,7 +575,7 @@ def migrate_profiles(
                         repo.zen_store.update_stack_component(
                             user_id=user.id,
                             project_id=project.name,
-                            component_id=component.name, # TODO: check if this correct
+                            component_id=component.name,  # TODO: check if this correct
                             component=component,
                         )
                         cli_utils.declare(
@@ -605,7 +605,7 @@ def migrate_profiles(
                 except StackExistsError:
                     if overwrite:
                         repo.zen_store.update_stack(
-                            stack_id=stack.name, # TODO: check if this correct
+                            stack_id=stack.name,  # TODO: check if this correct
                             user=user,
                             project=project,
                             stack=stack,

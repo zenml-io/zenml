@@ -15,7 +15,6 @@
 
 import os
 import time
-import uuid
 from datetime import datetime
 from typing import (
     TYPE_CHECKING,
@@ -27,21 +26,16 @@ from typing import (
     Set,
     Type,
 )
-from uuid import uuid4
 
-from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import (
-    ENV_ZENML_SECRET_VALIDATION_LEVEL,
-)
+from zenml.constants import ENV_ZENML_SECRET_VALIDATION_LEVEL
 from zenml.enums import SecretValidationLevel, StackComponentType
-from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.logger import get_logger
 from zenml.runtime_configuration import (
     RUN_NAME_OPTION_KEY,
     RuntimeConfiguration,
 )
-from zenml.utils import io_utils, string_utils
+from zenml.utils import string_utils
 
 if TYPE_CHECKING:
     from zenml.alerter import BaseAlerter
@@ -60,7 +54,6 @@ if TYPE_CHECKING:
     from zenml.stack import StackComponent
     from zenml.step_operators import BaseStepOperator
     from zenml.utils import secret_utils
-
 
 
 logger = get_logger(__name__)
@@ -572,7 +565,6 @@ class Stack:
                 component.validator.validate(stack=self)
 
         self._validate_secrets(raise_exception=fail_if_secrets_missing)
-
 
     def _register_pipeline_run(
         self,

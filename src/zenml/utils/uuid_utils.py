@@ -18,11 +18,11 @@ from uuid import UUID
 
 def is_valid_uuid(value: str, version: int = 4) -> bool:
     """Checks if a string is a valid UUID.
-    
+
     Args:
         value: String to check.
         version: Version of UUID to check for.
-    
+
     Returns:
         True if string is a valid UUID, False otherwise.
     """

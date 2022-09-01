@@ -62,6 +62,7 @@ def get_git_sha(clean: bool = True) -> Optional[str]:
 
 class StepModel(BaseModel):
     """Step of a pipeline (abstract)."""
+
     id: Optional[UUID]
     name: str
     source: str

@@ -87,7 +87,8 @@ def test_updating_non_active_stack_succeeds(clean_repo) -> None:
     )
     assert result.exit_code == 0
     assert (
-            clean_repo.get_stack_by_name("arias_new_stack").orchestrator == new_orchestrator
+        clean_repo.get_stack_by_name("arias_new_stack").orchestrator
+        == new_orchestrator
     )
 
 
@@ -105,7 +106,8 @@ def test_adding_to_stack_succeeds(clean_repo) -> None:
     assert result.exit_code == 0
     assert clean_repo.get_stack_by_name("default").secrets_manager is not None
     assert (
-            clean_repo.get_stack_by_name("default").secrets_manager == local_secrets_manager
+        clean_repo.get_stack_by_name("default").secrets_manager
+        == local_secrets_manager
     )
 
 
@@ -199,7 +201,9 @@ def test_remove_non_core_component_from_stack_succeeds(clean_repo) -> None:
     )
     assert clean_repo.active_stack.secrets_manager is not None
     assert (
-        clean_repo.get_stack_by_name(clean_repo.active_stack.name).secrets_manager
+        clean_repo.get_stack_by_name(
+            clean_repo.active_stack.name
+        ).secrets_manager
         == local_secrets_manager
     )
     result = runner.invoke(
@@ -271,5 +275,3 @@ def test_stack_export_delete_import(clean_repo) -> None:
     result = runner.invoke(import_stack, export_import_args)
     assert result.exit_code == 0
     assert clean_repo.get_stack_by_name("arias_new_stack") is not None
-
-

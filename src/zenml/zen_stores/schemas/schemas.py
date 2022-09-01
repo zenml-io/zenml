@@ -13,23 +13,26 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations."""
 from datetime import datetime
-from typing import List, Dict
+from typing import List
 from uuid import UUID, uuid4
 
-from sqlmodel import Session, select
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship, Session, SQLModel, select
 
 from zenml.enums import ExecutionStatus, StackComponentType
-from zenml.models.component_models import ComponentModel
-from zenml.models.stack_model import StackModel
 from zenml.models.code_models import CodeRepositoryModel
+from zenml.models.component_models import ComponentModel
 from zenml.models.pipeline_models import (
-    PipelineModel, PipelineRunModel, StepModel, StepRunModel
+    PipelineModel,
+    PipelineRunModel,
+    StepModel,
+    StepRunModel,
 )
+from zenml.models.stack_model import StackModel
 from zenml.models.user_management_models import (
-    ProjectModel, RoleModel, UserModel
+    ProjectModel,
+    RoleModel,
+    UserModel,
 )
-
 
 # Projects, Repositories
 
@@ -47,10 +50,13 @@ class ProjectSchema(SQLModel, table=True):
         return cls(name=model.name, description=model.description)
 
     def to_model(self) -> ProjectModel:
-        return ProjectModel(id=self.id,
-                            name=self.name,
-                            description=self.description,
-                            created_at=self.created_at)
+        return ProjectModel(
+            id=self.id,
+            name=self.name,
+            description=self.description,
+            created_at=self.created_at,
+        )
+
 
 class CodeRepositorySchema(SQLModel, table=True):
     """SQL Model for code repositories."""
@@ -73,6 +79,7 @@ class CodeRepositorySchema(SQLModel, table=True):
             project_id=self.project_id,
             created_at=self.created_at,
         )
+
 
 # Users, Teams, Roles
 
@@ -124,6 +131,7 @@ class RoleSchema(SQLModel, table=True):
             name=self.name,
             created_at=self.created_at,
         )
+
 
 class UserRoleAssignmentSchema(SQLModel, table=True):
     """SQL Model for assigning roles to users for a given project."""
@@ -195,11 +203,13 @@ class StackSchema(SQLModel, table=True):
     )
 
     @classmethod
-    def from_create_model(cls,
-                          user_id: UUID,
-                          project_id: str,
-                          defined_components: List["StackComponentSchema"],
-                          stack: StackModel) -> "StackSchema":
+    def from_create_model(
+        cls,
+        user_id: UUID,
+        project_id: str,
+        defined_components: List["StackComponentSchema"],
+        stack: StackModel,
+    ) -> "StackSchema":
         """Create an incomplete StackSchema with `id` and `created_at` missing.
 
         Returns:
@@ -212,7 +222,7 @@ class StackSchema(SQLModel, table=True):
             owner=user_id,
             is_shared=stack.is_shared,
             components=defined_components,
-            )
+        )
 
     def to_model(self) -> "StackModel":
         """Creates a ComponentModel from an instance of a StackSchema.
@@ -226,7 +236,7 @@ class StackSchema(SQLModel, table=True):
             owner=self.owner,
             project_id=self.project_id,
             is_shared=self.is_shared,
-            components={c.type: c.to_model() for c in self.components}
+            components={c.type: c.to_model() for c in self.components},
         )
 
 
@@ -255,10 +265,9 @@ class StackComponentSchema(SQLModel, table=True):
     )
 
     @classmethod
-    def from_create_model(cls,
-                          user_id: str,
-                          project_id: str,
-                          component: ComponentModel) -> "StackComponentSchema":
+    def from_create_model(
+        cls, user_id: str, project_id: str, component: ComponentModel
+    ) -> "StackComponentSchema":
         """Create a StackComponentSchema with `id` and `created_at` missing.
 
 
@@ -273,7 +282,7 @@ class StackComponentSchema(SQLModel, table=True):
             is_shared=component.is_shared,
             type=component.type,
             flavor_id=component.flavor_id,
-            configuration=component.configuration
+            configuration=component.configuration,
         )
 
     def to_model(self) -> "ComponentModel":
@@ -290,7 +299,7 @@ class StackComponentSchema(SQLModel, table=True):
             owner=self.owner,
             project_id=self.project_id,
             is_shared=self.is_shared,
-            configuration=self.configuration
+            configuration=self.configuration,
         )
 
 
@@ -318,8 +327,7 @@ class PipelineSchema(SQLModel, table=True):
     def to_model(self) -> "PipelineModel":
         with Session(self.engine) as session:
             steps = session.exec(
-                select(StepSchema)
-                .where(StepSchema.pipeline_id == self.id)
+                select(StepSchema).where(StepSchema.pipeline_id == self.id)
             ).all()
 
         return PipelineModel(

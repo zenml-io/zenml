@@ -13,13 +13,10 @@
 #  permissions and limitations under the License.
 """Zen Server API."""
 
-from typing import Any, Dict, List, Optional
-from uuid import UUID
 
 from fastapi import FastAPI
 
 import zenml
-from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StoreType
 from zenml.repository import Repository
 from zenml.zen_server.routers import (

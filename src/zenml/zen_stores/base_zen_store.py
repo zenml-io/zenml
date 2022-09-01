@@ -16,15 +16,11 @@ import base64
 import json
 import os
 from abc import abstractmethod
-from typing import Any, Dict, List, Optional, Tuple, Union
-from uuid import UUID
-
-from ml_metadata.proto import metadata_store_pb2
-
 from pathlib import Path, PurePath
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
 from uuid import UUID
 
+from ml_metadata.proto import metadata_store_pb2
 from pydantic import BaseModel
 
 from zenml.config.store_config import StoreConfiguration
@@ -111,6 +107,7 @@ class BaseZenStore(BaseModel):
             TypeError: If the store type is unsupported.
         """
         from zenml.zen_stores.sql_zen_store import SqlZenStore
+
         # from zenml.zen_stores.rest_zen_store import RestZenStore
 
         store_class = {
@@ -642,12 +639,14 @@ class BaseZenStore(BaseModel):
         Returns:
             All stack components currently registered.
         """
-        return self._list_stack_components(project_id=project_id,
-                                           type=type,
-                                           flavor_id=flavor_id,
-                                           owner=owner,
-                                           name=name,
-                                           is_shared=is_shared)
+        return self._list_stack_components(
+            project_id=project_id,
+            type=type,
+            flavor_id=flavor_id,
+            owner=owner,
+            name=name,
+            is_shared=is_shared,
+        )
 
     @abstractmethod
     def _list_stack_components(
@@ -978,8 +977,7 @@ class BaseZenStore(BaseModel):
         """
         # No tracking events, here for consistency
         return self._get_user(
-            user_name_or_id=user_name_or_id,
-            invite_token=invite_token
+            user_name_or_id=user_name_or_id, invite_token=invite_token
         )
 
     @abstractmethod
