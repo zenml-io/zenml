@@ -777,7 +777,9 @@ class Repository(metaclass=RepositoryMetaClass):
         from zenml.models import ComponentModel
 
         self.zen_store.register_stack_component(
-            ComponentModel.from_component(component)
+            project_id=self.active_project.id,
+            user_id=self.zen_store.default_user_id,  # TODO: Do this right
+            component=ComponentModel.from_component(component),
         )
         if component.post_registration_message:
             logger.info(component.post_registration_message)

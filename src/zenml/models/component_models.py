@@ -100,10 +100,10 @@ class ComponentModel(BaseModel):
         """
         return cls(
             type=component.TYPE,
-            flavor=component.FLAVOR,
+            flavor_name=component.FLAVOR,
             name=component.name,
             uuid=component.uuid,
-            config=base64.b64encode(
+            configuration=base64.b64encode(
                 yaml.dump(json.loads(component.json())).encode()
             ),
         )

@@ -227,7 +227,7 @@ class BaseZenStore(BaseModel):
             component=ComponentModel(
                 name="default",
                 type=StackComponentType.ORCHESTRATOR,
-                flavor_name="default",
+                flavor_name="local",
                 configuration=encoded_orchestrator_config,
             ),
         )
@@ -253,7 +253,7 @@ class BaseZenStore(BaseModel):
             component=ComponentModel(
                 name="default",
                 type=StackComponentType.ARTIFACT_STORE,
-                flavor_name="default",
+                flavor_name="local",
                 configuration=encoded_artifact_store_config,
             ),
         )

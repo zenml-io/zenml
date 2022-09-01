@@ -241,14 +241,14 @@ def generate_stack_component_describe_command(
         cli_utils.print_active_stack()
 
         singular_display_name = _component_display_name(component_type)
-        component_wrapper, is_active = _get_stack_component_model(
+        component_model, is_active = _get_stack_component_model(
             component_type, component_name=name
         )
-        if component_wrapper is None:
+        if component_model is None:
             return
 
         cli_utils.print_stack_component_configuration(
-            component_wrapper, singular_display_name, is_active
+            component_model, singular_display_name, is_active
         )
 
     return describe_stack_component_command
@@ -401,13 +401,13 @@ def generate_stack_component_register_command(
             return
 
         try:
-            with console.status(f"Registering {display_name} '{name}'...\n"):
-                _register_stack_component(
-                    component_type=component_type,
-                    component_name=name,
-                    component_flavor=flavor,
-                    **parsed_args,
-                )
+            # with console.status(f"Registering {display_name} '{name}'...\n"):
+            _register_stack_component(
+                component_type=component_type,
+                component_name=name,
+                component_flavor=flavor,
+                **parsed_args,
+            )
         except ValidationError as e:
             if not interactive:
                 cli_utils.error(
@@ -612,13 +612,13 @@ def generate_stack_component_update_command(
             kwargs.append(name)
             name = None
 
-        component_wrapper, _ = _get_stack_component_model(
+        component_model, _ = _get_stack_component_model(
             component_type, component_name=name
         )
-        if component_wrapper is None:
+        if component_model is None:
             return
 
-        name = component_wrapper.name
+        name = component_model.name
         with console.status(f"Updating {display_name} '{name}'...\n"):
             repo = Repository()
 
@@ -633,11 +633,11 @@ def generate_stack_component_update_command(
                 if prop in parsed_args:
                     cli_utils.error(
                         f"Cannot update mandatory property '{prop}' of "
-                        f"'{name}' {component_wrapper.type}. "
+                        f"'{name}' {component_model.type}. "
                     )
 
             component_class = repo.get_flavor(
-                name=component_wrapper.flavor,
+                name=component_model.flavor_name,
                 component_type=component_type,
             )
 
@@ -648,14 +648,14 @@ def generate_stack_component_update_command(
                 ):
                     cli_utils.error(
                         f"You cannot update the {display_name} "
-                        f"`{component_wrapper.name}` with property "
+                        f"`{component_model.name}` with property "
                         f"'{prop}'. You can only update the following "
                         f"properties: {available_properties}."
                     )
                 elif prop not in available_properties:
                     cli_utils.error(
                         f"You cannot update the {display_name} "
-                        f"`{component_wrapper.name}` with property "
+                        f"`{component_model.name}` with property "
                         f"'{prop}' as this {display_name} has no optional "
                         f"properties that can be configured."
                     )
@@ -665,7 +665,7 @@ def generate_stack_component_update_command(
             # Initialize a new component object to make sure pydantic validation
             # is used
             new_attributes = {
-                **component_wrapper.to_component().dict(),
+                **component_model.to_component().dict(),
                 **parsed_args,
             }
             updated_component = component_class(**new_attributes)
