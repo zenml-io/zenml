@@ -27,6 +27,7 @@ from zenml.cli.utils import confirmation, declare, error, warning
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.constants import REPOSITORY_DIRECTORY_NAME
+from zenml.enums import AnalyticsEventSource
 from zenml.exceptions import GitNotFoundError, InitializationException
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -284,6 +285,9 @@ def _prompt_email(gc: GlobalConfiguration) -> bool:
             console.print(zenml_go_thank_you_message, width=80)
 
             gc.user_metadata = {"email": email}
-            identify_user({"email": email})
+            # For now, hard-code to ZENML GO as the source
+            identify_user(
+                {"email": email, "source": AnalyticsEventSource.ZENML_GO}
+            )
             return True
     return False
