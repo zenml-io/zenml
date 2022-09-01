@@ -182,22 +182,20 @@ class BaseZenStore(BaseModel):
             self.register_default_stack()
 
     @property
-    def default_user_id(self) -> UUID:  # TODO: can this be done cleaner?
+    def default_user_id(self) -> UUID:
         """Get the ID of the default user, or None if it doesn't exist."""
-        users = self._list_users()
-        for user in users:
-            if user.name == DEFAULT_USERNAME:
-                return user.id
-        return None
+        try:
+            return self.get_user(DEFAULT_USERNAME).id
+        except KeyError:
+            return None
 
     @property
-    def default_project_id(self) -> str:  # TODO: can this be done cleaner?
+    def default_project_id(self) -> str:
         """Get the ID of the default project, or None if it doesn't exist."""
-        projects = self._list_projects()
-        for project in projects:
-            if project.name == DEFAULT_PROJECT_NAME:
-                return project.id
-        return None
+        try:
+            return self.get_project(DEFAULT_PROJECT_NAME).id
+        except KeyError:
+            return None
 
     def create_default_user(self) -> None:
         """Creates a default user."""
