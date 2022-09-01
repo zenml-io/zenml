@@ -936,7 +936,7 @@ class BaseZenStore(BaseModel):
         """Creates a new user.
 
         Args:
-            user: User to be created.
+            user: The user model to create.
 
         Returns:
             The newly created user.
@@ -952,7 +952,7 @@ class BaseZenStore(BaseModel):
         """Creates a new user.
 
         Args:
-            user: User to be created.
+            user: The user model to create.
 
         Returns:
             The newly created user.
@@ -1004,7 +1004,7 @@ class BaseZenStore(BaseModel):
 
         Args:
             user_id: The ID of the user to update.
-            user: The User model to use for the update.
+            user: The user model to use for the update.
 
         Returns:
             The updated user.
@@ -1021,7 +1021,7 @@ class BaseZenStore(BaseModel):
 
         Args:
             user_id: The ID of the user to update.
-            user: The User model to use for the update.
+            user: The user model to use for the update.
 
         Returns:
             The updated user.
@@ -1071,6 +1071,157 @@ class BaseZenStore(BaseModel):
 
         Args:
             user_id: ID of the user.
+        """
+
+    #  .------.
+    # | TEAMS |
+    # '-------'
+
+    @property
+    def teams(self) -> List[TeamModel]:
+        """List all teams.
+
+        Returns:
+            A list of all teams.
+        """
+        return self._list_teams()
+
+    @abstractmethod
+    def _list_teams(self) -> List[TeamModel]:
+        """List all teams.
+
+        Returns:
+            A list of all teams.
+        """
+
+    def create_team(self, team: TeamModel) -> TeamModel:
+        """Creates a new team.
+
+        Args:
+            team: The team model to create.
+
+        Returns:
+            The newly created team.
+        """
+        self._track_event(AnalyticsEvent.CREATED_TEAM)
+        return self._create_team(team)
+
+    @abstractmethod
+    def _create_team(self, team: TeamModel) -> TeamModel:
+        """Creates a new team.
+
+        Args:
+            team: The team model to create.
+
+        Returns:
+            The newly created team.
+
+        Raises:
+            EntityExistsError: If a team with the given name already exists.
+        """
+
+    def get_team(self, team_name_or_id: str) -> TeamModel:
+        """Gets a specific team.
+
+        Args:
+            team_name_or_id: Name or ID of the team to get.
+
+        Returns:
+            The requested team.
+
+        Raises:
+            KeyError: If no team with the given name or ID exists.
+        """
+        # No tracking events, here for consistency
+        return self._get_team(team_name_or_id)
+
+    @abstractmethod
+    def _get_team(self, team_name_or_id: str) -> TeamModel:
+        """Gets a specific team.
+
+        Args:
+            team_name_or_id: Name or ID of the team to get.
+
+        Returns:
+            The requested team.
+
+        Raises:
+            KeyError: If no team with the given name or ID exists.
+        """
+
+    def delete_team(self, team_id: str) -> None:
+        """Deletes a team.
+
+        Args:
+            team_id: ID of the team to delete.
+        
+        Raises:
+            KeyError: If no team with the given ID exists.
+        """
+        self._track_event(AnalyticsEvent.DELETED_TEAM)
+        return self._delete_team(team_id)
+
+    @abstractmethod
+    def _delete_team(self, team_id: str) -> None:
+        """Deletes a team.
+
+        Args:
+            team_id: ID of the team to delete.
+        
+        Raises:
+            KeyError: If no team with the given ID exists.
+        """
+
+    @abstractmethod
+    def add_user_to_team(self, user_id: str, team_id: str) -> None:
+        """Adds a user to a team.
+
+        Args:
+            user_id: ID of the user to add to the team.
+            team_id: ID of the team to which to add the user to.
+
+        Raises:
+            KeyError: If the team or user does not exist.
+        """
+
+    @abstractmethod
+    def remove_user_from_team(self, user_id: str, team_id: str) -> None:
+        """Removes a user from a team.
+
+        Args:
+            user_id: ID of the user to remove from the team.
+            team_id: ID of the team from which to remove the user.
+
+        Raises:
+            KeyError: If the team or user does not exist.
+        """
+
+    @abstractmethod
+    def get_users_for_team(self, team_id: str) -> List[UserModel]:
+        """Fetches all users of a team.
+
+        Args:
+            team_id: The ID of the team for which to get users.
+
+        Returns:
+            A list of all users that are part of the team.
+
+        Raises:
+            KeyError: If no team with the given ID exists.
+        """
+
+    @abstractmethod
+    def get_teams_for_user(self, user_id: str) -> List[TeamModel]:
+        """Fetches all teams for a user.
+
+        Args:
+            user_id: The ID of the user for which to get all teams.
+
+        Returns:
+            A list of all teams that the user is part of.
+
+        Raises:
+            KeyError: If no user with the given ID exists.
         """
 
     #  .------.
@@ -2202,44 +2353,6 @@ class BaseZenStore(BaseModel):
     # # TODO [ENG-894]: Refactor these with the proxy pattern, as noted in
     # #  the [review comment](https://github.com/zenml-io/zenml/pull/589#discussion_r875003334)
 
-    def create_team(self, team_name: str) -> TeamModel:
-        """Creates a new team.
-
-        Args:
-            team_name: Unique team name.
-
-        Returns:
-            The newly created team.
-        """
-        self._track_event(AnalyticsEvent.CREATED_TEAM)
-        return self._create_team(team_name)
-
-    # TODO: consider using team_id instead
-    def get_team(self, team_name: str) -> TeamModel:
-        """Gets a specific team.
-
-        Args:
-            team_name: Name of the team to get.
-
-        Returns:
-            The requested team.
-        """
-        # No tracking events, here for consistency
-        return self._get_team(team_name)
-
-    # TODO: consider using team_id instead
-    def delete_team(self, team_name: str) -> None:
-        """Deletes a team.
-
-        Args:
-            team_name: Name of the team to delete.
-
-        Returns:
-            None
-        """
-        self._track_event(AnalyticsEvent.DELETED_TEAM)
-        return self._delete_team(team_name)
-
     # TODO: consider using team_id instead
     def get_role(self, role_name: str) -> RoleModel:
         """Gets a specific role.
@@ -2342,77 +2455,6 @@ class BaseZenStore(BaseModel):
 
     # User, project and role management
 
-    @property
-    @abstractmethod
-    def teams(self) -> List[TeamModel]:
-        """All registered teams.
-
-        Returns:
-            A list of all registered teams.
-        """
-
-    @abstractmethod
-    def _create_team(self, team_name: str) -> TeamModel:
-        """Creates a new team.
-
-        Args:
-            team_name: Unique team name.
-
-        Returns:
-            The newly created team.
-
-        Raises:
-            EntityExistsError: If a team with the given name already exists.
-        """
-
-    @abstractmethod
-    def _get_team(self, team_name: str) -> TeamModel:
-        """Gets a specific team.
-
-        Args:
-            team_name: Name of the team to get.
-
-        Returns:
-            The requested team.
-
-        Raises:
-            KeyError: If no team with the given name exists.
-        """
-
-    @abstractmethod
-    def _delete_team(self, team_name: str) -> None:
-        """Deletes a team.
-
-        Args:
-            team_name: Name of the team to delete.
-
-        Raises:
-            KeyError: If no team with the given name exists.
-        """
-
-    @abstractmethod
-    def add_user_to_team(self, team_name: str, user_name: str) -> None:
-        """Adds a user to a team.
-
-        Args:
-            team_name: Name of the team.
-            user_name: Name of the user.
-
-        Raises:
-            KeyError: If no user and team with the given names exists.
-        """
-
-    @abstractmethod
-    def remove_user_from_team(self, team_name: str, user_name: str) -> None:
-        """Removes a user from a team.
-
-        Args:
-            team_name: Name of the team.
-            user_name: Name of the user.
-
-        Raises:
-            KeyError: If no user and team with the given names exists.
-        """
 
     @property
     @abstractmethod
@@ -2470,34 +2512,6 @@ class BaseZenStore(BaseModel):
 
         Raises:
             KeyError: If no role, entity or project with the given names exists.
-        """
-
-    @abstractmethod
-    def get_users_for_team(self, team_name: str) -> List[UserModel]:
-        """Fetches all users of a team.
-
-        Args:
-            team_name: Name of the team.
-
-        Returns:
-            List of users that are part of the team.
-
-        Raises:
-            KeyError: If no team with the given name exists.
-        """
-
-    @abstractmethod
-    def get_teams_for_user(self, user_name: str) -> List[TeamModel]:
-        """Fetches all teams for a user.
-
-        Args:
-            user_name: Name of the user.
-
-        Returns:
-            List of teams that the user is part of.
-
-        Raises:
-            KeyError: If no user with the given name exists.
         """
 
     @abstractmethod

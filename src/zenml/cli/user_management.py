@@ -21,7 +21,7 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.enums import CliCategories
 from zenml.exceptions import EntityExistsError
-from zenml.models.user_management_models import ProjectModel, UserModel
+from zenml.models.user_management_models import ProjectModel, TeamModel, UserModel
 from zenml.repository import Repository
 
 
@@ -65,7 +65,10 @@ def create_user(user_name: str) -> None:
         user_name: The name of the user to create.
     """
     cli_utils.print_active_config()
-    Repository().zen_store.create_user(UserModel(name=user_name))
+    try:
+        Repository().zen_store.create_user(UserModel(name=user_name))
+    except EntityExistsError as err:
+        cli_utils.error(str(err))
     cli_utils.declare(f"Created user '{user_name}'.")
 
 
@@ -78,7 +81,10 @@ def delete_user(user_name_or_id: str) -> None:
         user_name_or_id: The name or ID of the user to delete.
     """
     cli_utils.print_active_config()
-    user = Repository().zen_store.get_user(user_name_or_id)
+    try:
+        user = Repository().zen_store.get_user(user_name_or_id)
+    except KeyError as err:
+        cli_utils.error(str(err))
     if Repository().zen_store.active_user_name == user.name:
         cli_utils.error(
             "You cannot delete yourself. If you wish to delete your current "
@@ -105,23 +111,27 @@ def list_teams() -> None:
     cli_utils.print_pydantic_models(teams)
 
 
-@team.command("describe", help="Print details of a team.")
-@click.argument("team_name", type=str, required=True)
-def describe_team(team_name: str) -> None:
-    """Print details of a team.
+@team.command("describe", help="List all users in a team.")
+@click.argument("team_name_or_id", type=str, required=True)
+def describe_team(team_name_or_id: str) -> None:
+    """List all users in a team.
 
     Args:
-        team_name: The name of the team to describe.
+        team_name_or_id: The name or ID of the team to describe.
     """
     cli_utils.print_active_config()
     try:
-        users = Repository().zen_store.get_users_for_team(team_name=team_name)
-    except KeyError:
-        cli_utils.warning(f"No team found for name '{team_name}'.")
-    else:
-        cli_utils.declare(
-            f"TEAM: {team_name}, USERS: {set(user_.name for user_ in users)}"
-        )
+        team = Repository().zen_store.get_team(team_name_or_id)
+        users = Repository().zen_store.get_users_for_team(team_id=team.id)
+    except KeyError as err:
+        cli_utils.error(str(err))
+    if not users:
+        cli_utils.declare(f"Team '{team_name_or_id}' has no users.")
+        return
+    user_names = set([user.name for user in users])
+    cli_utils.declare(
+        f"Team '{team_name_or_id}' has the following users: {user_names}"
+    )
 
 
 @team.command("create", help="Create a new team.")
@@ -133,72 +143,98 @@ def create_team(team_name: str) -> None:
         team_name: Name of the team to create.
     """
     cli_utils.print_active_config()
-    Repository().zen_store.create_team(team_name=team_name)
+    try:
+        Repository().zen_store.create_team(TeamModel(name=team_name))
+    except EntityExistsError as err:
+        cli_utils.error(str(err))
+    cli_utils.declare(f"Created team '{team_name}'.")
 
 
 @team.command("delete", help="Delete a team.")
-@click.argument("team_name", type=str, required=True)
-def delete_team(team_name: str) -> None:
+@click.argument("team_name_or_id", type=str, required=True)
+def delete_team(team_name_or_id: str) -> None:
     """Delete a team.
 
     Args:
-        team_name (str): The name of the team to delete.
+        team_name_or_id: The name or ID of the team to delete.
     """
     cli_utils.print_active_config()
     try:
-        Repository().zen_store.delete_team(team_name=team_name)
-    except KeyError:
-        cli_utils.warning(f"No team found for name '{team_name}'.")
+        team = Repository().zen_store.get_team(team_name_or_id)
+        Repository().zen_store.delete_team(team.id)
+    except KeyError as err:
+        cli_utils.error(str(err))
+    cli_utils.declare(f"Deleted team '{team_name_or_id}'.")
 
 
 @team.command("add", help="Add users to a team.")
-@click.argument("team_name", type=str, required=True)
-@click.option("--user", "user_names", type=str, required=True, multiple=True)
-def add_users(team_name: str, user_names: Tuple[str]) -> None:
+@click.argument("team_name_or_id", type=str, required=True)
+@click.option(
+    "--user", "user_names_or_ids", type=str, required=True, multiple=True
+)
+def add_users(team_name_or_id: str, user_names_or_ids: Tuple[str]) -> None:
     """Add users to a team.
 
     Args:
-        team_name: Name of the team.
-        user_names: Names of the users to add to the team.
+        team_name_or_id: Name or ID of the team.
+        user_names_or_ids: The names or IDs of the users to add to the team.
     """
     cli_utils.print_active_config()
-    for user_name in user_names:
-        cli_utils.declare(f"Adding user '{user_name}' to team '{team_name}'.")
+
+    try:
+        team = Repository().zen_store.get_team(team_name_or_id)
+    except KeyError as err:
+        cli_utils.error(str(err))
+
+    for user_name_or_id in user_names_or_ids:
+        try:
+            user = Repository().zen_store.get_user(user_name_or_id)
+        except KeyError as err:
+            cli_utils.error(str(err))
         try:
             Repository().zen_store.add_user_to_team(
-                team_name=team_name, user_name=user_name
+                user_id=user.id, team_id=team.id
             )
-        except KeyError:
-            cli_utils.warning(
-                "Failed to add user. Either the user or the team doesn't exist."
-            )
+        except EntityExistsError as err:
+            cli_utils.error(str(err))
+        cli_utils.declare(
+            f"Added user '{user_name_or_id}' to team '{team_name_or_id}'."
+        )
 
 
 @team.command("remove", help="Remove users from a team.")
-@click.argument("team_name", type=str, required=True)
-@click.option("--user", "user_names", type=str, required=True, multiple=True)
-def remove_users(team_name: str, user_names: Tuple[str]) -> None:
+@click.argument("team_name_or_id", type=str, required=True)
+@click.option(
+    "--user", "user_names_or_ids", type=str, required=True, multiple=True
+)
+def remove_users(team_name_or_id: str, user_names_or_ids: Tuple[str]) -> None:
     """Remove users from a team.
 
     Args:
-        team_name: Name of the team.
-        user_names: Names of the users.
+        team_name_or_id: Name or ID of the team.
+        user_names_or_ids: Names or IDS of the users.
     """
     cli_utils.print_active_config()
-    for user_name in user_names:
-        cli_utils.declare(
-            f"Removing user '{user_name}' from team '{team_name}'."
-        )
+
+    try:
+        team = Repository().zen_store.get_team(team_name_or_id)
+    except KeyError as err:
+        cli_utils.error(str(err))
+
+    for user_name_or_id in user_names_or_ids:
+        try:
+            user = Repository().zen_store.get_user(user_name_or_id)
+        except KeyError as err:
+            cli_utils.error(str(err))
         try:
             Repository().zen_store.remove_user_from_team(
-                team_name=team_name, user_name=user_name
+                user_id=user.id, team_id=team.id
             )
-        except KeyError:
-            cli_utils.warning(
-                "Failed to remove user. Either the user or the team doesn't "
-                "exist."
-            )
-
+        except KeyError as err:
+            cli_utils.error(str(err))
+        cli_utils.declare(
+            f"Removed user '{user_name_or_id}' from team '{team_name_or_id}'."
+        )
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def project() -> None:
@@ -214,7 +250,6 @@ def list_projects() -> None:
     if projects:
         active_project = Repository().active_project
         active_project_id = active_project.id if active_project else None
-
         cli_utils.print_pydantic_models(
             projects,
             columns=("name", "description", "created_at"),
@@ -241,12 +276,9 @@ def create_project(
         Repository().zen_store.create_project(
             ProjectModel(name=project_name, description=description)
         )
-        cli_utils.declare(f"Created project '{project_name}'.")
-    except EntityExistsError:
-        cli_utils.error(
-            f"Cannot create project `{project_name}`. A project with this "
-            "name already exists."
-        )
+    except EntityExistsError as err:
+        cli_utils.error(str(err))
+    cli_utils.declare(f"Created project '{project_name}'.")
 
 
 @project.command("get")
@@ -279,13 +311,9 @@ def set_project(project_name_or_id: str) -> None:
     try:
         project = Repository().zen_store.get_project(project_name_or_id)
         Repository().set_active_project(project_name=project.name)
-        cli_utils.declare(f"Set active project '{project_name_or_id}'.")
-    except KeyError:
-        cli_utils.error(
-            f"Cannot set project '{project_name_or_id}' as active. No such "
-            "project was found. If you want to create it, run:"
-            f"`zenml project create {project_name_or_id}`."
-        )
+    except KeyError as err:
+        cli_utils.error(str(err))
+    cli_utils.declare(f"Set active project '{project_name_or_id}'.")
 
 
 @project.command("delete", help="Delete a project.")
@@ -297,7 +325,10 @@ def delete_project(project_name_or_id: str) -> None:
         project_name_or_id: Name or ID of project to delete.
     """
     cli_utils.print_active_config()
-    project = Repository().zen_store.get_project(project_name_or_id)
+    try:
+        project = Repository().zen_store.get_project(project_name_or_id)
+    except KeyError as err:
+        cli_utils.error(str(err))
     if Repository().active_project_name == project.name:
         cli_utils.error(
             f"Project '{project_name_or_id}' cannot be deleted since it is "

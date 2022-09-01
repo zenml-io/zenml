@@ -842,7 +842,6 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to delete user with id '{user_id}': "
                     "No user found with this id."
                 )
-
             session.delete(user)
             session.commit()
 
@@ -864,6 +863,245 @@ class SqlZenStore(BaseZenStore):
             user_id: ID of the user.
         """
         raise NotImplementedError()  # TODO
+
+    #  .------.
+    # | TEAMS |
+    # '-------'
+
+    def _list_teams(self) -> List[TeamModel]:
+        """List all teams.
+
+        Returns:
+            A list of all teams.
+        """
+        with Session(self.engine) as session:
+            teams = session.exec(select(TeamSchema)).all()
+            return [team.to_model() for team in teams]
+
+    def _create_team(self, team: TeamModel) -> TeamModel:
+        """Creates a new team.
+
+        Args:
+            team: The team model to create.
+
+        Returns:
+            The newly created team.
+
+        Raises:
+            EntityExistsError: If a team with the given name already exists.
+        """
+        with Session(self.engine) as session:
+            # Check if team with the given name already exists
+            existing_team = session.exec(
+                select(TeamSchema)
+                .where(TeamSchema.name == team.name)
+            ).first()
+            if existing_team is not None:
+                raise EntityExistsError(
+                    f"Unable to create team with name '{team.name}': "
+                    f"Found existing team with this name."
+                )
+
+            # Create the team
+            new_team = TeamSchema.from_model(team)
+            session.add(new_team)
+            session.commit()
+
+            # After committing the model, sqlmodel takes care of updating the
+            # object with id, created_at, etc ...
+
+            return new_team.to_model()
+
+    def _get_team(self, team_name_or_id: str) -> TeamModel:
+        """Gets a specific team.
+
+        Args:
+            team_name_or_id: Name or ID of the team to get.
+
+        Returns:
+            The requested team.
+
+        Raises:
+            KeyError: If no team with the given name or ID exists.
+        """
+        is_uuid = uuid_utils.is_valid_uuid(team_name_or_id)
+
+        query = select(TeamSchema)
+        if is_uuid:
+            query = query.where(TeamSchema.id == team_name_or_id)
+        else:
+            query = query.where(TeamSchema.name == team_name_or_id)
+
+        with Session(self.engine) as session:
+            team = session.exec(query).first()
+            if team is None and is_uuid:
+                raise KeyError(f"No team with ID '{team_name_or_id}' found.")
+            if team is None:
+                raise KeyError(
+                    f"The given team name or ID '{team_name_or_id}' is not a "
+                    "valid ID and no team with this name exists either."
+                )
+            return team.to_model()
+
+    def _delete_team(self, team_id: str) -> None:
+        """Deletes a team.
+
+        Args:
+            team_id: ID of the team to delete.
+        
+        Raises:
+            KeyError: If no team with the given ID exists.
+        """
+        with Session(self.engine) as session:
+            team = session.exec(
+                select(TeamSchema)
+                .where(TeamSchema.id == team_id)
+            ).first()
+            if team is None:
+                raise KeyError(
+                    f"Unable to delete team with id '{team_id}': "
+                    "No team found with this id."
+                )
+            session.delete(team)
+            session.commit()
+
+    def add_user_to_team(self, user_id: str, team_id: str) -> None:
+        """Adds a user to a team.
+
+        Args:
+            user_id: ID of the user to add to the team.
+            team_id: ID of the team to which to add the user to.
+
+        Raises:
+            KeyError: If the team or user does not exist.
+            EntityExistsError: If the user is already a member of the team.
+        """
+        with Session(self.engine) as session:
+            # Check if team with the given ID exists
+            team = session.exec(
+                select(TeamSchema)
+                .where(TeamSchema.id == team_id)
+            ).first()
+            if team is None:
+                raise KeyError(
+                    f"Unable to add user with id '{user_id}' to team with id "
+                    f"'{team_id}': No team found with this id."
+                )
+
+            # Check if user with the given ID exists
+            user = session.exec(
+                select(UserSchema)
+                .where(UserSchema.id == user_id)
+            ).first()
+            if user is None:
+                raise KeyError(
+                    f"Unable to add user with id '{user_id}' to team with id "
+                    f"'{team_id}': No user found with this id."
+                )
+
+            # Check if user is already in the team
+            existing_user_in_team = session.exec(
+                select(TeamAssignmentSchema)
+                .where(TeamAssignmentSchema.user_id == user_id)
+                .where(TeamAssignmentSchema.team_id == team_id)
+            ).first()
+            if existing_user_in_team is not None:
+                raise EntityExistsError(
+                    f"Unable to add user with id '{user_id}' to team with id "
+                    f"'{team_id}': User is already in the team."
+                )
+
+            # Add user to team
+            team.users = team.users + [user]
+            session.add(team)
+            session.commit()
+
+
+    def remove_user_from_team(self, user_id: str, team_id: str) -> None:
+        """Removes a user from a team.
+
+        Args:
+            user_id: ID of the user to remove from the team.
+            team_id: ID of the team from which to remove the user.
+
+        Raises:
+            KeyError: If the team or user does not exist.
+        """
+        with Session(self.engine) as session:
+            # Check if team with the given ID exists
+            team = session.exec(
+                select(TeamSchema)
+                .where(TeamSchema.id == team_id)
+            ).first()
+            if team is None:
+                raise KeyError(
+                    f"Unable to remove user with id '{user_id}' from team with "
+                    f"id '{team_id}': No team found with this id."
+                )
+
+            # Check if user with the given ID exists
+            user = session.exec(
+                select(UserSchema)
+                .where(UserSchema.id == user_id)
+            ).first()
+            if user is None:
+                raise KeyError(
+                    f"Unable to remove user with id '{user_id}' from team with "
+                    f"id '{team_id}': No user found with this id."
+                )
+
+            # Remove user from team
+            team.users = [user_ for user_ in team.users if user_.id != user_id]
+            session.add(team)
+            session.commit()
+
+    def get_users_for_team(self, team_id: str) -> List[UserModel]:
+        """Fetches all users of a team.
+
+        Args:
+            team_id: The ID of the team for which to get users.
+
+        Returns:
+            A list of all users that are part of the team.
+
+        Raises:
+            KeyError: If no team with the given ID exists.
+        """
+        with Session(self.engine) as session:
+            team = session.exec(
+                select(TeamSchema)
+                .where(TeamSchema.id == team_id)
+            ).first()
+            if team is None:
+                raise KeyError(
+                    f"Unable to get users for team with id '{team_id}': "
+                    "No team found with this id."
+                )
+            return [user.to_model() for user in team.users]
+
+    def get_teams_for_user(self, user_id: str) -> List[TeamModel]:
+        """Fetches all teams for a user.
+
+        Args:
+            user_id: The ID of the user for which to get all teams.
+
+        Returns:
+            A list of all teams that the user is part of.
+
+        Raises:
+            KeyError: If no user with the given ID exists.
+        """
+        with Session(self.engine) as session:
+            user = session.exec(
+                select(UserSchema)
+                .where(UserSchema.id == user_id)
+            ).first()
+            if user is None:
+                raise KeyError(
+                    f"Unable to get teams for user with id '{user_id}': "
+                    "No user found with this id."
+                )
+            return [team.to_model() for team in user.teams]
 
     #  .------.
     # | ROLES |
@@ -1911,147 +2149,6 @@ class SqlZenStore(BaseZenStore):
     # User, project and role management
 
     @property
-    def teams(self) -> List[TeamModel]:
-        """All registered teams.
-
-        Returns:
-            A list of all registered teams.
-        """
-        with Session(self.engine) as session:
-            return [
-                TeamModel(**team.dict())
-                for team in session.exec(select(TeamSchema)).all()
-            ]
-
-    def _get_team(self, team_name: str) -> TeamModel:
-        """Gets a specific team.
-
-        Args:
-            team_name: Name of the team to get.
-
-        Returns:
-            The requested team.
-
-        Raises:
-            KeyError: If no team with the given name exists.
-        """
-        with Session(self.engine) as session:
-            try:
-                team = session.exec(
-                    select(TeamSchema).where(TeamSchema.name == team_name)
-                ).one()
-            except NoResultFound as error:
-                raise KeyError from error
-
-            return TeamModel(**team.dict())
-
-    def _create_team(self, team_name: str) -> TeamModel:
-        """Creates a new team.
-
-        Args:
-            team_name: Unique team name.
-
-        Returns:
-            The newly created team.
-
-        Raises:
-            EntityExistsError: If a team with the given name already exists.
-        """
-        with Session(self.engine) as session:
-            existing_team = session.exec(
-                select(TeamSchema).where(TeamSchema.name == team_name)
-            ).first()
-            if existing_team:
-                raise EntityExistsError(
-                    f"Team with name '{team_name}' already exists."
-                )
-            sql_team = TeamSchema(name=team_name)
-            team = TeamModel(**sql_team.dict())
-            session.add(sql_team)
-            session.commit()
-        return team
-
-    def _delete_team(self, team_name: str) -> None:
-        """Deletes a team.
-
-        Args:
-            team_name: Name of the team to delete.
-
-        Raises:
-            KeyError: If no team with the given name exists.
-        """
-        with Session(self.engine) as session:
-            try:
-                team = session.exec(
-                    select(TeamSchema).where(TeamSchema.name == team_name)
-                ).one()
-            except NoResultFound as error:
-                raise KeyError from error
-
-            session.delete(team)
-            session.commit()
-            self._delete_query_results(
-                select(TeamRoleAssignmentSchema).where(
-                    TeamRoleAssignmentSchema.team_id == team.id
-                )
-            )
-            self._delete_query_results(
-                select(TeamAssignmentSchema).where(
-                    TeamAssignmentSchema.team_id == team.id
-                )
-            )
-
-    def add_user_to_team(self, team_name: str, user_name: str) -> None:
-        """Adds a user to a team.
-
-        Args:
-            team_name: Name of the team.
-            user_name: Name of the user.
-
-        Raises:
-            KeyError: If no user and team with the given names exists.
-        """
-        with Session(self.engine) as session:
-            try:
-                team = session.exec(
-                    select(TeamSchema).where(TeamSchema.name == team_name)
-                ).one()
-                user = session.exec(
-                    select(UserSchema).where(UserSchema.name == user_name)
-                ).one()
-            except NoResultFound as error:
-                raise KeyError from error
-
-            assignment = TeamAssignmentSchema(user_id=user.id, team_id=team.id)
-            session.add(assignment)
-            session.commit()
-
-    def remove_user_from_team(self, team_name: str, user_name: str) -> None:
-        """Removes a user from a team.
-
-        Args:
-            team_name: Name of the team.
-            user_name: Name of the user.
-
-        Raises:
-            KeyError: If no user and team with the given names exists.
-        """
-        with Session(self.engine) as session:
-            try:
-                assignment = session.exec(
-                    select(TeamAssignmentSchema)
-                    .where(TeamAssignmentSchema.team_id == TeamSchema.id)
-                    .where(TeamAssignmentSchema.user_id == UserSchema.id)
-                    .where(UserSchema.name == user_name)
-                    .where(TeamSchema.name == team_name)
-                ).one()
-            except NoResultFound as error:
-                raise KeyError from error
-
-            session.delete(assignment)
-            session.commit()
-
-    @property
     def role_assignments(self) -> List[RoleAssignmentModel]:
         """All registered role assignments.
 
@@ -2262,60 +2359,6 @@ class SqlZenStore(BaseZenStore):
 
             session.delete(assignment)
             session.commit()
-
-    def get_users_for_team(self, team_name: str) -> List[UserModel]:
-        """Fetches all users of a team.
-
-        Args:
-            team_name: Name of the team.
-
-        Returns:
-            List of users that are part of the team.
-
-        Raises:
-            KeyError: If no team with the given name exists.
-        """
-        with Session(self.engine) as session:
-            try:
-                team_id = session.exec(
-                    select(TeamSchema.id).where(TeamSchema.name == team_name)
-                ).one()
-            except NoResultFound as error:
-                raise KeyError from error
-
-            users = session.exec(
-                select(UserSchema)
-                .where(UserSchema.id == TeamAssignmentSchema.user_id)
-                .where(TeamAssignmentSchema.team_id == team_id)
-            ).all()
-            return [UserModel(**user.dict()) for user in users]
-
-    def get_teams_for_user(self, user_name: str) -> List[TeamModel]:
-        """Fetches all teams for a user.
-
-        Args:
-            user_name: Name of the user.
-
-        Returns:
-            List of teams that the user is part of.
-
-        Raises:
-            KeyError: If no user with the given name exists.
-        """
-        with Session(self.engine) as session:
-            try:
-                user_id = session.exec(
-                    select(UserSchema.id).where(UserSchema.name == user_name)
-                ).one()
-            except NoResultFound as error:
-                raise KeyError from error
-
-            teams = session.exec(
-                select(TeamSchema)
-                .where(TeamSchema.id == TeamAssignmentSchema.team_id)
-                .where(TeamAssignmentSchema.user_id == user_id)
-            ).all()
-            return [TeamModel(**team.dict()) for team in teams]
 
     def get_role_assignments_for_user(
         self,

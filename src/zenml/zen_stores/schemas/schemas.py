@@ -27,7 +27,7 @@ from zenml.models.pipeline_models import (
     PipelineModel, PipelineRunModel, StepModel, StepRunModel
 )
 from zenml.models.user_management_models import (
-    ProjectModel, RoleModel, UserModel
+    ProjectModel, RoleModel, TeamModel, UserModel
 )
 
 
@@ -47,10 +47,12 @@ class ProjectSchema(SQLModel, table=True):
         return cls(name=model.name, description=model.description)
 
     def to_model(self) -> ProjectModel:
-        return ProjectModel(id=self.id,
-                            name=self.name,
-                            description=self.description,
-                            created_at=self.created_at)
+        return ProjectModel(
+            id=self.id,
+            name=self.name,
+            description=self.description,
+            created_at=self.created_at
+        )
 
 class CodeRepositorySchema(SQLModel, table=True):
     """SQL Model for code repositories."""
@@ -74,7 +76,15 @@ class CodeRepositorySchema(SQLModel, table=True):
             created_at=self.created_at,
         )
 
+
 # Users, Teams, Roles
+
+
+class TeamAssignmentSchema(SQLModel, table=True):
+    """SQL Model for team assignments."""
+
+    user_id: UUID = Field(primary_key=True, foreign_key="userschema.id")
+    team_id: UUID = Field(primary_key=True, foreign_key="teamschema.id")
 
 
 class UserSchema(SQLModel, table=True):
@@ -83,9 +93,14 @@ class UserSchema(SQLModel, table=True):
     id: UUID = Field(primary_key=True, default_factory=uuid4)
     name: str
     created_at: datetime = Field(default_factory=datetime.now)
+    teams: List["TeamSchema"] = Relationship(
+        back_populates="users", link_model=TeamAssignmentSchema
+    )
 
     @classmethod
-    def from_model(cls, model: UserModel) -> "UserSchema":
+    def from_model(
+        cls, model: UserModel
+    ) -> "UserSchema":
         return cls(name=model.name)
 
     def to_model(self) -> UserModel:
@@ -98,13 +113,16 @@ class TeamSchema(SQLModel, table=True):
     id: UUID = Field(primary_key=True, default_factory=uuid4)
     name: str
     created_at: datetime = Field(default_factory=datetime.now)
+    users: List["UserSchema"] = Relationship(
+        back_populates="teams", link_model=TeamAssignmentSchema
+    )
 
+    @classmethod
+    def from_model(cls, model: TeamModel) -> "TeamSchema":
+        return cls(name=model.name)
 
-class TeamAssignmentSchema(SQLModel, table=True):
-    """SQL Model for team assignments."""
-
-    user_id: UUID = Field(primary_key=True, foreign_key="userschema.id")
-    team_id: UUID = Field(primary_key=True, foreign_key="teamschema.id")
+    def to_model(self) -> TeamModel:
+        return TeamModel(id=self.id, name=self.name, created_at=self.created_at)
 
 
 class RoleSchema(SQLModel, table=True):
