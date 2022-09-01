@@ -323,7 +323,7 @@ class SqlZenStore(BaseZenStore):
 
     def _list_stacks(
         self,
-        project_id: str,
+        project_id: UUID,
         user_id: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
@@ -376,7 +376,7 @@ class SqlZenStore(BaseZenStore):
     def _register_stack(
         self,
         user_id: UUID,
-        project_id: str,
+        project_id: UUID,
         stack: StackModel
     ) -> StackModel:
         """Register a new stack.
@@ -434,7 +434,7 @@ class SqlZenStore(BaseZenStore):
     def _update_stack(self,
                       stack_id: str,
                       user_id: str,
-                      project_id: str,
+                      project_id: UUID,
                       stack: StackModel) -> StackModel:
         """Update an existing stack.
 
@@ -509,9 +509,9 @@ class SqlZenStore(BaseZenStore):
 
     def _list_stack_components(
         self,
-        project_id: str,
+        project_id: UUID,
         type: Optional[str] = None,
-        flavor_id: Optional[str] = None,
+        flavor_name: Optional[str] = None,
         owner: Optional[str] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None
@@ -521,7 +521,7 @@ class SqlZenStore(BaseZenStore):
         Args:
             project_id: Id of the Project containing the stack components
             type: Optionally filter by type of stack component
-            flavor_id: Optionally filter by flavor
+            flavor_name: Optionally filter by flavor
             owner: Optionally filter stack components by the owner
             name: Optionally filter stack component by name
             is_shared: Optionally filter out stack component by the `is_shared`
@@ -538,8 +538,8 @@ class SqlZenStore(BaseZenStore):
             # TODO: [ALEXEJ] prettify this
             if type:
                  query = query.where(StackComponentSchema.type == type)
-            if flavor_id:
-                 query = query.where(StackComponentSchema.flavor_id == flavor_id)
+            if flavor_name:
+                 query = query.where(StackComponentSchema.flavor_name == flavor_name)
             if owner:
                  query = query.where(StackComponentSchema.owner == owner)
             if name:
@@ -571,7 +571,7 @@ class SqlZenStore(BaseZenStore):
     def _register_stack_component(
         self,
         user_id: str,
-        project_id: str,
+        project_id: UUID,
         component: ComponentModel
     ) -> ComponentModel:
         """Create a stack component.
@@ -617,7 +617,7 @@ class SqlZenStore(BaseZenStore):
     def _update_stack_component(
         self,
         user_id: str,
-        project_id: str,
+        project_id: UUID,
         component_id: str,
         component: ComponentModel
     ) -> ComponentModel:
@@ -1833,39 +1833,6 @@ class SqlZenStore(BaseZenStore):
     # LEGACY CODE FROM THE PREVIOUS VERSION OF BASEZENSTORE
 
     # Private interface implementations:
-
-    def _get_component_flavor_and_config(
-        self, component_type: StackComponentType, name: str
-    ) -> Tuple[str, str]:
-        """Fetch the flavor and configuration for a stack component.
-
-        Args:
-            component_type: The type of the component to fetch.
-            name: The name of the component to fetch.
-
-        Returns:
-            Pair of (flavor, configuration) for stack component, as string and
-            base64-encoded yaml document, respectively
-
-        Raises:
-            KeyError: If no stack component exists for the given type and name.
-        """
-        with Session(self.engine) as session:
-            component_and_flavor = session.exec(
-                select(StackComponentSchema, FlavorSchema)
-                .where(StackComponentSchema.type == component_type)
-                .where(StackComponentSchema.name == name)
-                .where(StackComponentSchema.flavor_id == FlavorSchema.id)
-            ).one_or_none()
-            if component_and_flavor is None:
-                raise KeyError(
-                    f"Unable to find stack component (type: {component_type}) "
-                    f"with name '{name}'."
-                )
-        return (
-            component_and_flavor[1].name,
-            component_and_flavor[0].configuration,
-        )
 
     def _get_stack_component_names(
         self, component_type: StackComponentType

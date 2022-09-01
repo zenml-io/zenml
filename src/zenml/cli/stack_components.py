@@ -272,17 +272,14 @@ def generate_stack_component_list_command(
 
         repo = Repository()
 
-        components = repo.zen_store.list_stack_components(
-            project_id=repo.zen_store.default_project_id,
-            # TODO: [server] finalize access to the default_project
-            type=component_type)
+        components = repo.list_stack_components(component_type=component_type)
         display_name = _component_display_name(component_type, plural=True)
         if len(components) == 0:
             cli_utils.warning(f"No {display_name} registered.")
             return
-        active_stack = repo.zen_store.list_stacks(name=repo.active_stack_name)
+        active_stack = repo.active_stack
         active_component_name = None
-        active_component = active_stack.get_component_wrapper(component_type)
+        active_component = active_stack.components[component_type]
         if active_component:
             active_component_name = active_component.name
 
@@ -801,7 +798,7 @@ def generate_stack_component_rename_command(
 
             registered_components = {
                 component.name
-                for component in repo.get_stack_components(component_type)
+                for component in repo.list_stack_components(component_type)
             }
             if new_name in registered_components:
                 cli_utils.error(

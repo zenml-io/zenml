@@ -192,7 +192,7 @@ class BaseZenStore(BaseModel):
         return None
 
     @property
-    def default_project_id(self) -> str:  # TODO: can this be done cleaner?
+    def default_project_id(self) -> UUID:  # TODO: can this be done cleaner?
         """Get the ID of the default project, or None if it doesn't exist."""
         projects = self._list_projects()
         for project in projects:
@@ -232,7 +232,7 @@ class BaseZenStore(BaseModel):
             component=ComponentModel(
                 name="default",
                 type=StackComponentType.ORCHESTRATOR,
-                flavor_id="default",
+                flavor_name="default",
                 configuration=encoded_orchestrator_config,
             ),
         )
@@ -258,7 +258,7 @@ class BaseZenStore(BaseModel):
             component=ComponentModel(
                 name="default",
                 type=StackComponentType.ARTIFACT_STORE,
-                flavor_id="default",
+                flavor_name="default",
                 configuration=encoded_artifact_store_config,
             ),
         )
@@ -623,9 +623,9 @@ class BaseZenStore(BaseModel):
     # TODO: [ALEX] add filtering param(s)
     def list_stack_components(
         self,
-        project_id: str,
+        project_id: UUID,
         type: Optional[str] = None,
-        flavor_id: Optional[str] = None,
+        flavor_name: Optional[str] = None,
         owner: Optional[str] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
@@ -635,7 +635,7 @@ class BaseZenStore(BaseModel):
         Args:
             project_id: Id of the Project containing the stack components
             type: Optionally filter by type of stack component
-            flavor_id: Optionally filter by flavor
+            flavor_name: Optionally filter by flavor
             owner: Optionally filter stack components by the owner
             name: Optionally filter stack component by name
             is_shared: Optionally filter out stack component by the `is_shared`
@@ -646,7 +646,7 @@ class BaseZenStore(BaseModel):
         """
         return self._list_stack_components(project_id=project_id,
                                            type=type,
-                                           flavor_id=flavor_id,
+                                           flavor_name=flavor_name,
                                            owner=owner,
                                            name=name,
                                            is_shared=is_shared)
@@ -654,9 +654,9 @@ class BaseZenStore(BaseModel):
     @abstractmethod
     def _list_stack_components(
         self,
-        project_id: str,
+        project_id: UUID,
         type: Optional[str] = None,
-        flavor_id: Optional[str] = None,
+        flavor_name: Optional[str] = None,
         owner: Optional[str] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
@@ -666,7 +666,7 @@ class BaseZenStore(BaseModel):
         Args:
             project_id: Id of the Project containing the stack components
             type: Optionally filter by type of stack component
-            flavor_id: Optionally filter by flavor
+            flavor_name: Optionally filter by flavor
             owner: Optionally filter stack components by the owner
             name: Optionally filter stack component by name
             is_shared: Optionally filter out stack component by the `is_shared`
@@ -2290,25 +2290,6 @@ class BaseZenStore(BaseModel):
     # LEGACY CODE FROM THE PREVIOUS VERSION OF BASEZENSTORE
 
     # Private interface (must be implemented, not to be called by user):
-
-    @abstractmethod
-    def _get_component_flavor_and_config(
-        self, component_type: StackComponentType, name: str
-    ) -> Tuple[str, bytes]:
-        """Fetch the flavor and configuration for a stack component.
-
-        Args:
-            component_type: The type of the component to fetch.
-            name: The name of the component to fetch.
-
-        Returns:
-            Pair of (flavor, configuration) for stack component, as string and
-            base64-encoded yaml document, respectively
-
-        Raises:
-            KeyError: If no stack component exists for the given type and name.
-        """
-
     @abstractmethod
     def _get_stack_component_names(
         self, component_type: StackComponentType

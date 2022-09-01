@@ -274,12 +274,12 @@ def print_stack_component_list(
         component_config = {
             "ACTIVE": ":point_right:" if is_active else "",
             "NAME": component.name,
-            "FLAVOR": component.flavor,
+            "FLAVOR": component.flavor_name,
             "UUID": component.id,
             **{
                 key.upper(): str(value)
                 for key, value in yaml.safe_load(
-                    base64.b64decode(component.config).decode()
+                    base64.b64decode(component.configuration).decode()
                 ).items()
             },
         }
@@ -442,7 +442,7 @@ def print_active_stack() -> None:
 
     repo = Repository()
     scope = "repository" if repo.uses_local_active_stack else "global"
-    declare(f"Running with active stack: '{repo.active_stack_name}' ({scope})")
+    declare(f"Running with active stack: '{repo.active_stack.name}' ({scope})")
 
 
 def format_date(

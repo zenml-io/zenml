@@ -36,7 +36,7 @@ from zenml.stack import Stack, StackComponent
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
-from zenml.models import StackModel
+from zenml.models import StackModel, ComponentModel
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
@@ -600,10 +600,11 @@ class Repository(metaclass=RepositoryMetaClass):
         else:
             # TODO: [server] access the user id in a more elegant way
             stacks = self.zen_store.list_stacks(
-                project_id=self.active_project_name,
-                user_id=GlobalConfiguration().user_id,
+                project_id=self.active_project.id,
+                user_id=self.zen_store.default_user_id, # GlobalConfiguration().user_id,
                 name=name,
             )
+
         # TODO: [server] this error handling could be improved
         if not stacks:
             raise KeyError("No stack with this name exists.")
@@ -684,9 +685,9 @@ class Repository(metaclass=RepositoryMetaClass):
             ComponentModel.from_component(component),
         )
 
-    def get_stack_components(
+    def list_stack_components(
         self, component_type: StackComponentType
-    ) -> List[StackComponent]:
+    ) -> List[ComponentModel]:
         """Fetches all registered stack components of the given type.
 
         Args:
@@ -695,10 +696,9 @@ class Repository(metaclass=RepositoryMetaClass):
         Returns:
             A list of all registered stack components of the given type.
         """
-        return [
-            c.to_component()
-            for c in self.zen_store.get_stack_components(component_type)
-        ]
+        return self.zen_store.list_stack_components(
+                project_id=self.active_project.id,
+                type=component_type)
 
     def get_stack_component(
         self, component_type: StackComponentType, name: str
