@@ -16,7 +16,12 @@ import uuid
 
 import pytest
 
-from zenml.models.user_management_models import ProjectModel, TeamModel
+from zenml.exceptions import EntityExistsError
+from zenml.models.user_management_models import (
+    ProjectModel,
+    TeamModel,
+    UserModel,
+)
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 #  .---------.
@@ -233,3 +238,97 @@ def test_getting_team_for_user(fresh_sql_zen_store: BaseZenStore):
     teams_for_user = fresh_sql_zen_store.get_teams_for_user(current_user_id)
     assert len(teams_for_user) == 1
     assert teams_for_user[0].id == new_team_id
+
+
+#  .------.
+# | USERS |
+# '-------'
+
+
+def test_active_user_property(fresh_sql_zen_store: BaseZenStore):
+    """Tests the active user property."""
+    active_user = fresh_sql_zen_store.active_user
+    assert active_user is not None
+
+
+def test_active_user_name_property(fresh_sql_zen_store: BaseZenStore):
+    """Tests the active user name property."""
+    active_user_name = fresh_sql_zen_store.active_user_name
+    assert active_user_name is not None
+    assert active_user_name == fresh_sql_zen_store.active_user.name
+    assert active_user_name == "default"
+
+
+def test_users_property(fresh_sql_zen_store: BaseZenStore):
+    """Tests the users property."""
+    assert len(fresh_sql_zen_store.users) == 1
+    assert fresh_sql_zen_store.users[0].name == "default"
+    assert fresh_sql_zen_store.users[0] == fresh_sql_zen_store.active_user
+
+
+def test_creating_user_succeeds(fresh_sql_zen_store: BaseZenStore):
+    """Tests creating a user."""
+    assert len(fresh_sql_zen_store.users) == 1
+    new_user = UserModel(name="aria")
+    fresh_sql_zen_store.create_user(new_user)
+    assert len(fresh_sql_zen_store.users) == 2
+    assert fresh_sql_zen_store.get_user("aria") is not None
+
+
+def test_creating_user_with_existing_name_fails(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests creating a user with an existing name fails."""
+    new_user = UserModel(name="aria")
+    fresh_sql_zen_store.create_user(new_user)
+    with pytest.raises(EntityExistsError):
+        fresh_sql_zen_store.create_user(new_user)
+
+
+def test_getting_nonexistent_user_fails(fresh_sql_zen_store: BaseZenStore):
+    """Tests getting a nonexistent user fails."""
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.get_user("aria")
+
+
+def test_getting_user_by_name_and_id_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting a user by name and id."""
+    new_user = UserModel(name="aria")
+    fresh_sql_zen_store.create_user(new_user)
+    users = fresh_sql_zen_store.users
+    new_user_id = str(users[1].id)
+    user_by_name = fresh_sql_zen_store.get_user("aria")
+    user_by_id = fresh_sql_zen_store.get_user(new_user_id)
+    assert user_by_id == user_by_name
+    assert len(users) == 2
+
+
+def test_updating_user_succeeds(fresh_sql_zen_store: BaseZenStore):
+    """Tests updating a user."""
+    new_user_model = UserModel(name="aria")
+    fresh_sql_zen_store.create_user(new_user_model)
+    new_user = fresh_sql_zen_store.get_user("aria")
+    new_user.name = "blupus"
+    fresh_sql_zen_store.update_user(new_user.id, new_user)
+    assert fresh_sql_zen_store.get_user("blupus") is not None
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.get_user("aria")
+
+
+def test_updating_nonexistent_user_fails(fresh_sql_zen_store: BaseZenStore):
+    """Tests updating a nonexistent user fails."""
+    new_user = UserModel(name="demonic_aria")
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.update_user(uuid.uuid4(), new_user)
+
+
+def test_deleting_user_succeeds(fresh_sql_zen_store: BaseZenStore):
+    """Tests deleting a user."""
+    new_user = UserModel(name="aria")
+    fresh_sql_zen_store.create_user(new_user)
+    new_user_id = fresh_sql_zen_store.get_user("aria").id
+    assert len(fresh_sql_zen_store.users) == 2
+    fresh_sql_zen_store.delete_user(new_user_id)
+    assert len(fresh_sql_zen_store.users) == 1

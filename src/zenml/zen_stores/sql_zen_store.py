@@ -525,7 +525,9 @@ class SqlZenStore(BaseZenStore):
             if type:
                 query = query.where(StackComponentSchema.type == type)
             if flavor_name:
-                 query = query.where(StackComponentSchema.flavor_name == flavor_name)
+                query = query.where(
+                    StackComponentSchema.flavor_name == flavor_name
+                )
             if user_id:
                 query = query.where(StackComponentSchema.owner == user_id)
             if name:
@@ -799,7 +801,7 @@ class SqlZenStore(BaseZenStore):
             existing_user = session.exec(
                 select(UserSchema).where(UserSchema.id == user_id)
             ).first()
-            if user is None:
+            if existing_user is None:
                 raise KeyError(
                     f"Unable to update user with id '{user_id}': "
                     "No user found with this id."

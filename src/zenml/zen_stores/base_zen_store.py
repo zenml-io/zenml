@@ -639,12 +639,14 @@ class BaseZenStore(BaseModel):
         Returns:
             All stack components currently registered.
         """
-        return self._list_stack_components(project_id=project_id,
-                                           type=type,
-                                           flavor_name=flavor_name,
-                                           user_id=user_id,
-                                           name=name,
-                                           is_shared=is_shared)
+        return self._list_stack_components(
+            project_id=project_id,
+            type=type,
+            flavor_name=flavor_name,
+            user_id=user_id,
+            name=name,
+            is_shared=is_shared,
+        )
 
     @abstractmethod
     def _list_stack_components(
