@@ -267,11 +267,12 @@ def register_stack(
         stack_ = Stack.from_components(
             name=stack_name, components=stack_components
         )
-        repo.register_stack(stack_)
+        # TODO: [server] make sure stack is a StackModel here
+        created_stack = repo.register_stack(stack_)
         cli_utils.declare(f"Stack '{stack_name}' successfully registered!")
 
     if set_stack:
-        set_active_stack(stack_name=stack_name)
+        repo.activate_stack(stack=created_stack)
 
 
 @stack.command(
@@ -410,7 +411,7 @@ def update_stack(
     with console.status(f"Updating stack `{stack_name}`...\n"):
         repo = Repository()
         try:
-            current_stack = repo.get_stack(stack_name)
+            current_stack = repo.get_stack_by_name(stack_name)
         except KeyError:
             cli_utils.error(
                 f"Stack `{stack_name}` cannot be updated as it does not exist.",
@@ -625,7 +626,7 @@ def remove_stack_component(
     with console.status(f"Updating stack `{stack_name}`...\n"):
         repo = Repository()
         try:
-            current_stack = repo.get_stack(stack_name)
+            current_stack = repo.get_stack_by_name(stack_name)
         except KeyError:
             cli_utils.error(
                 f"Stack `{stack_name}` cannot be updated as it does not exist.",
@@ -682,7 +683,7 @@ def rename_stack(
     with console.status(f"Renaming stack `{current_stack_name}`...\n"):
         repo = Repository()
         try:
-            current_stack = repo.get_stack(current_stack_name)
+            current_stack = repo.get_stack_by_name(current_stack_name)
         except KeyError:
             cli_utils.error(
                 f"Stack `{current_stack_name}` cannot be renamed as it does "
@@ -691,7 +692,7 @@ def rename_stack(
         stack_components = current_stack.components
 
         try:
-            repo.zen_store.get_stack(new_stack_name)
+            repo.get_stack_by_name(new_stack_name)
             cli_utils.error(
                 f"Stack `{new_stack_name}` already exists. Please choose a "
                 f"different name.",
@@ -715,14 +716,12 @@ def list_stacks() -> None:
 
     repo = Repository()
 
-    if len(repo.stack_configurations) == 0:
+    if len(repo.stacks) == 0:
         cli_utils.error("No stacks registered!")
-
-    active_stack_name = repo.active_stack_name
 
     stack_dicts = []
     for stack_name, stack_configuration in repo.stack_configurations.items():
-        is_active = stack_name == active_stack_name
+        is_active = stack_name == repo.active_stack.name
         stack_config = {
             "ACTIVE": ":point_right:" if is_active else "",
             "STACK NAME": stack_name,
@@ -759,17 +758,8 @@ def describe_stack(stack_name: Optional[str]) -> None:
     if len(stack_configurations) == 0:
         cli_utils.error("No stacks registered.")
 
-    active_stack_name = repo.active_stack_name
-    stack_name = stack_name or active_stack_name
-    if not stack_name:
-        cli_utils.error(
-            "Argument 'stack_name' was not provided and no stack is set as active."
-        )
-
-    try:
-        stack_configuration = stack_configurations[stack_name]
-    except KeyError:
-        cli_utils.error(f"Stack '{stack_name}' does not exist.")
+    active_stack_name = repo.active_stack.name
+    stack_configuration = stack_configurations[repo.active_stack.name]
 
     cli_utils.print_stack_configuration(
         stack_configuration,
@@ -842,29 +832,24 @@ def set_active_stack_command(stack_name: str) -> None:
     cli_utils.print_active_config()
     scope = " repository" if Repository().root else " global"
     repo = Repository()
-    stacks = repo.zen_store.list_stacks(
-        project_id=repo.zen_store.default_project_id,
-        name=stack_name)
 
-    # TODO: [server] This could be handled a bit more elegantly and user
-    #  friendly
-    if not stacks:
-        cli_utils.error("No stack with this name exists.")
-        return
-    elif len(stacks) > 1:
+    try:
+        stack_to_set_active = repo.get_stack_by_name(stack_name)
+    except KeyError as e:
+        cli_utils.error(str(e))
+    except RuntimeError as e:
+        # TODO: Here the returned list of stacks should be used to show the user
+        #  which stacks have been found and give an avenue to use the id
         cli_utils.error("Multiple stacks have been found for this name. "
                         "Please specify if you want to use the shared stack by "
                         "this name or the private one.")
-        return
     else:
-        stack_to_set_active = stacks[0]
-
-    with console.status(
-        f"Setting the{scope} active stack to '{stack_name}'..."
-    ):
-        repo.activate_stack(stack_to_set_active)
-        cli_utils.declare(f"Active{scope} stack set to: "
-                          f"'{stack_to_set_active.name}'")
+        with console.status(
+            f"Setting the{scope} active stack to '{stack_name}'..."
+        ):
+            repo.activate_stack(stack_to_set_active)
+            cli_utils.declare(f"Active{scope} stack set to: "
+                              f"'{stack_to_set_active.name}'")
 
 
 @stack.command("get")
@@ -1188,7 +1173,7 @@ def copy_stack(
 
     with console.status(f"Copying stack `{source_stack}`...\n"):
         try:
-            stack_wrapper = repo.zen_store.get_stack(source_stack)
+            stack_model = repo.get_stack_by_name(name=source_stack)
         except KeyError:
             cli_utils.error(
                 f"Stack `{source_stack}` cannot be copied as it does not exist."
@@ -1199,8 +1184,8 @@ def copy_stack(
                 f"Can't copy stack as a stack with the name '{target_stack}' "
                 "already exists."
             )
-        stack_wrapper.name = target_stack
-        repo.zen_store.register_stack(stack_wrapper)
+        stack_model.name = target_stack
+        repo.register_stack(stack_model)
 
 
 @stack.command(
@@ -1232,7 +1217,7 @@ def register_secrets(
 
     if stack_name:
         try:
-            stack_ = Repository().get_stack(stack_name)
+            stack_ = Repository().get_stack_by_name(stack_name)
         except KeyError:
             cli_utils.error(f"No stack found for name `{stack_name}`.")
     else:

@@ -41,7 +41,7 @@ from zenml.models import StackModel
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
     from zenml.post_execution import PipelineView
-    from zenml.zen_stores.base_zen_store import BaseZenStore
+    from zenml.zen_stores.base_zen_store import BaseZenStore, DEFAULT_STACK_NAME
 
 logger = get_logger(__name__)
 
@@ -280,7 +280,7 @@ class Repository(metaclass=RepositoryMetaClass):
                 "repository active stack to 'default'"
             )
             default_stack = self.zen_store.list_stacks(
-                    name="default",
+                    name=DEFAULT_STACK_NAME,
                     project_id=self._config.active_project_name,
                     user_id=self.zen_store.default_user_id,
                 )[0] # TODO: [server] its not guaranteed that this stack exists
@@ -291,7 +291,7 @@ class Repository(metaclass=RepositoryMetaClass):
                 self.zen_store.get_stack(stack_id=self._config.active_stack_id)
                 # TODO: this will return a list that is hopefully length 1 -
                 #  this would have to be validated, additionally this does not
-                #  gurantee that the stack is actually active
+                #  guarantee that the stack is actually active
             except KeyError:
                 logger.warning(
                     "Stack with id:'%s' not found. Switching the repository active stack "
@@ -490,13 +490,13 @@ class Repository(metaclass=RepositoryMetaClass):
         return self.zen_store.get_project(project_name)
 
     @property
-    def stacks(self) -> List[Stack]:
+    def stacks(self) -> List[StackModel]:
         """All stacks registered in this repository.
 
         Returns:
             A list of all stacks registered in this repository.
         """
-        return [s.to_stack() for s in self.zen_store.stacks]
+        return self.zen_store.stacks
 
     @property
     def stack_configurations(self) -> Dict[str, Dict[StackComponentType, str]]:
@@ -579,18 +579,41 @@ class Repository(metaclass=RepositoryMetaClass):
             # a local configuration
             GlobalConfiguration().active_stack_id = stack.id
 
-    def get_stack(self, name: str) -> Stack:
-        """Fetches a stack.
+    def get_stack_by_name(self,
+                          name: str,
+                          is_shared: bool = False) -> StackModel:
+        """Fetches a stack by name within the active stack
 
         Args:
             name: The name of the stack to fetch.
+            is_shared: Boolean whether to get a shared stack or a private stack
 
         Returns:
             The stack with the given name.
         """
-        return self.zen_store.get_stack(name).to_stack()
+        if is_shared:
+            stacks = self.zen_store.list_stacks(
+                project_id=self.zen_store.default_project_id,
+                name=name,
+                is_shared=True
+            )
+        else:
+            # TODO: [server] access the user id in a more elegant way
+            stacks = self.zen_store.list_stacks(
+                project_id=self.active_project_name,
+                user_id=GlobalConfiguration().user_id,
+                name=name,
+            )
+        # TODO: [server] this error handling could be improved
+        if not stacks:
+            raise KeyError("No stack with this name exists.")
+        elif len(stacks) > 1:
+            raise RuntimeError("Multiple stacks have been found for this name.",
+                               stacks)
 
-    def register_stack(self, stack: Stack) -> None:
+        return stacks[0]
+
+    def register_stack(self, stack: StackModel) -> StackModel:
         """Registers a stack and its components.
 
         If any of the stack's components aren't registered in the repository
@@ -599,10 +622,10 @@ class Repository(metaclass=RepositoryMetaClass):
         Args:
             stack: The stack to register.
         """
-        from zenml.models import StackWrapper
-
+        # TODO: [server] make sure the stack can be validated here
         stack.validate()
-        self.zen_store.register_stack(StackWrapper.from_stack(stack))
+        created_stack = self.zen_store.register_stack(stack)
+        return created_stack
 
     def update_stack(self, name: str, stack: StackModel) -> None:
         """Updates a stack and its components.
@@ -613,7 +636,7 @@ class Repository(metaclass=RepositoryMetaClass):
         """
         stack.validate()
         self.zen_store.update_stack(name, stack)
-        if self.active_stack_id == stack.id:
+        if self._config.active_stack_id == stack.id:
             self.activate_stack(stack.name)
 
     def deregister_stack(self, stack: StackModel) -> None:

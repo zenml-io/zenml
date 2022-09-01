@@ -38,6 +38,9 @@ logger = get_logger(__name__)
 
 LEGACY_CONFIG_FILE_NAME = ".zenglobal.json"
 CONFIG_ENV_VAR_PREFIX = "ZENML_"
+DEFAULT_STACK_NAME = "default"
+# TODO: [server] this is defined in the BaseZenStore already, unsure if that
+#  should be imported here
 
 
 class GlobalConfigMetaClass(ModelMetaclass):
@@ -116,7 +119,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     analytics_opt_in: bool = True
     version: Optional[str]
     store: Optional[StoreConfiguration]
-    active_stack_name: Optional[str]
+    active_stack_id: Optional[uuid.UUID]
     active_project_name: Optional[str]
 
     _config_path: str
@@ -393,33 +396,37 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             self.active_project_name = DEFAULT_PROJECT_NAME
 
         # Sanitize the repository active stack
-        if not self.active_stack_name:
+        if not self.active_stack_id:
             logger.warning(
                 "The global active stack is not set. Switching the global "
                 "active stack to 'default'"
             )
-            self.active_stack_name = "default"
+            default_stack = self.zen_store.list_stacks(
+                    name=DEFAULT_STACK_NAME,
+                    project_id=self.active_project_name,
+                    user_id=self.zen_store.default_user_id,
+                )[0] # TODO: [server] its not guaranteed that this stack exists
+            self.active_stack_id = default_stack.id
 
         # Ensure that the current repository active stack is still valid
         else:
             # Ensure that the repository active stack is still valid
             try:
-                self.zen_store.list_stacks(
-                    name=self.active_stack_name,
-                    project_id=self.active_project_name,
-                    user_id=self.zen_store.default_user_id,
-                )
-                # TODO: this will return a list that is hopefully length 1 -
-                #  this would have to be validated, additionally this does not
-                #  gurantee that the stack is actually active
+                self.zen_store.get_stack(stack_id=self.active_stack_id)
+                # TODO: this does not gurantee that the stack is actually active
 
             except KeyError:
                 logger.warning(
-                    "Stack '%s' not found. Switching the global active stack "
-                    "to 'default'",
-                    self.active_stack_name,
+                    "Stack with id: '%s' not found. Switching the global active"
+                    " stack to 'default'",
+                    self.active_stack_id,
                 )
-            self.active_stack_name = "default"
+            default_stack = self.zen_store.list_stacks(
+                    name=DEFAULT_STACK_NAME,
+                    project_id=self.active_project_name,
+                    user_id=self.zen_store.default_user_id,
+                )[0] # TODO: [server] its not guaranteed that this stack exists
+            self.active_stack_id = default_stack.id
 
     @staticmethod
     def default_config_directory() -> str:

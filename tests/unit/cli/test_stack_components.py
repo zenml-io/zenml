@@ -465,5 +465,5 @@ def test_renaming_core_component_succeeds(clean_repo) -> None:
         == new_component_name
     )
     assert (
-        clean_repo.get_stack("default").orchestrator.name == new_component_name
+            clean_repo.get_stack_by_name("default").orchestrator.name == new_component_name
     )

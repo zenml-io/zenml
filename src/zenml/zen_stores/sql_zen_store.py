@@ -351,7 +351,7 @@ class SqlZenStore(BaseZenStore):
 
             return [stack.to_model() for stack in stacks]
 
-    def _get_stack(self, stack_id: str) -> StackModel:
+    def _get_stack(self, stack_id: UUID) -> StackModel:
         """Get a stack by id.
 
         Args:
