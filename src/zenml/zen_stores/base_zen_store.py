@@ -51,6 +51,7 @@ logger = get_logger(__name__)
 
 DEFAULT_USERNAME = "default"
 DEFAULT_PROJECT_NAME = "default"
+DEFAULT_STACK_NAME = "default"
 
 
 class BaseZenStore(BaseModel):
@@ -445,7 +446,7 @@ class BaseZenStore(BaseModel):
         be used to set up the backend (database, connection etc.).
         """
 
-    def get_stack(self, stack_id: str) -> StackModel:
+    def get_stack(self, stack_id: UUID) -> StackModel:
         """Get a stack by id.
 
         Args:
@@ -460,7 +461,7 @@ class BaseZenStore(BaseModel):
         return self._get_stack(stack_id)
 
     @abstractmethod
-    def _get_stack(self, stack_id: str) -> StackModel:
+    def _get_stack(self, stack_id: UUID) -> StackModel:
         """Get a stack by ID.
 
         Args:
