@@ -126,7 +126,7 @@ def _component_display_name(
     return name.replace("_", " ")
 
 
-def _get_stack_component_wrapper(
+def _get_stack_component_model(
     component_type: StackComponentType,
     component_name: Optional[str] = None,
 ) -> Tuple[Optional[ComponentModel], bool]:
@@ -148,17 +148,23 @@ def _get_stack_component_wrapper(
     repo = Repository()
 
     components = repo.zen_store.list_stack_components(
-        project_id=repo.zen_store.default_project_id,  # TODO: [server] finalize access to the default_project
+        project_id=repo.active_project.id,
         type=component_type,
     )
     if len(components) == 0:
         cli_utils.warning(f"No {plural_display_name} registered.")
         return None, False
 
-    active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
-    active_component = active_stack.get_component_wrapper(component_type)
+    active_stack = repo.active_stack
+    active_component = active_stack.components[component_type]
 
-    if component_name:
+    if active_component:
+        cli_utils.declare(
+            f"No component name given; using `{active_component.name}` "
+            f"from active stack."
+        )
+        return active_component, True
+    elif component_name:
         try:
             return (
                 repo.zen_store.get_stack_component(
@@ -173,12 +179,6 @@ def _get_stack_component_wrapper(
             cli_utils.error(
                 f"No {singular_display_name} found for name '{component_name}'."
             )
-    elif active_component:
-        cli_utils.declare(
-            f"No component name given; using `{active_component.name}` "
-            f"from active stack."
-        )
-        return active_component, True
     else:
         cli_utils.error(f"No {singular_display_name} in active stack.")
 
@@ -241,7 +241,7 @@ def generate_stack_component_describe_command(
         cli_utils.print_active_stack()
 
         singular_display_name = _component_display_name(component_type)
-        component_wrapper, is_active = _get_stack_component_wrapper(
+        component_wrapper, is_active = _get_stack_component_model(
             component_type, component_name=name
         )
         if component_wrapper is None:
@@ -273,18 +273,14 @@ def generate_stack_component_list_command(
 
         repo = Repository()
 
-        components = repo.zen_store.list_stack_components(
-            project_id=repo.zen_store.default_project_id,
-            # TODO: [server] finalize access to the default_project
-            type=component_type,
-        )
+        components = repo.list_stack_components(component_type=component_type)
         display_name = _component_display_name(component_type, plural=True)
         if len(components) == 0:
             cli_utils.warning(f"No {display_name} registered.")
             return
-        active_stack = repo.zen_store.list_stacks(name=repo.active_stack_name)
+        active_stack = repo.active_stack
         active_component_name = None
-        active_component = active_stack.get_component_wrapper(component_type)
+        active_component = active_stack.components[component_type]
         if active_component:
             active_component_name = active_component.name
 
@@ -616,7 +612,7 @@ def generate_stack_component_update_command(
             kwargs.append(name)
             name = None
 
-        component_wrapper, _ = _get_stack_component_wrapper(
+        component_wrapper, _ = _get_stack_component_model(
             component_type, component_name=name
         )
         if component_wrapper is None:
@@ -803,7 +799,7 @@ def generate_stack_component_rename_command(
 
             registered_components = {
                 component.name
-                for component in repo.get_stack_components(component_type)
+                for component in repo.list_stack_components(component_type)
             }
             if new_name in registered_components:
                 cli_utils.error(
@@ -948,7 +944,7 @@ def generate_stack_component_up_command(
         cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
-        component_wrapper, _ = _get_stack_component_wrapper(
+        component_wrapper, _ = _get_stack_component_model(
             component_type, component_name=name
         )
         if component_wrapper is None:
@@ -1037,7 +1033,7 @@ def generate_stack_component_down_command(
         cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
-        component_wrapper, _ = _get_stack_component_wrapper(
+        component_wrapper, _ = _get_stack_component_model(
             component_type, component_name=name
         )
         if component_wrapper is None:
@@ -1114,7 +1110,7 @@ def generate_stack_component_logs_command(
         cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
-        component_wrapper, _ = _get_stack_component_wrapper(
+        component_wrapper, _ = _get_stack_component_model(
             component_type, component_name=name
         )
         if component_wrapper is None:

@@ -235,10 +235,10 @@ def test_registering_a_new_stack_with_already_registered_components(
     stack = clean_repo.active_stack
     stack._name = "some_new_stack_name"
 
-    registered_orchestrators = clean_repo.get_stack_components(
+    registered_orchestrators = clean_repo.list_stack_components(
         StackComponentType.ORCHESTRATOR
     )
-    registered_artifact_stores = clean_repo.get_stack_components(
+    registered_artifact_stores = clean_repo.list_stack_components(
         StackComponentType.ARTIFACT_STORE
     )
 
@@ -247,10 +247,10 @@ def test_registering_a_new_stack_with_already_registered_components(
 
     # the same exact components were already registered in the repo, so no
     # new component should have been registered
-    assert registered_orchestrators == clean_repo.get_stack_components(
+    assert registered_orchestrators == clean_repo.list_stack_components(
         StackComponentType.ORCHESTRATOR
     )
-    assert registered_artifact_stores == clean_repo.get_stack_components(
+    assert registered_artifact_stores == clean_repo.list_stack_components(
         StackComponentType.ARTIFACT_STORE
     )
 

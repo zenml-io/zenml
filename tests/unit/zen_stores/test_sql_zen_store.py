@@ -1,0 +1,334 @@
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+
+import uuid
+
+import pytest
+
+from zenml.exceptions import EntityExistsError
+from zenml.models.user_management_models import (
+    ProjectModel,
+    TeamModel,
+    UserModel,
+)
+from zenml.zen_stores.base_zen_store import BaseZenStore
+
+#  .---------.
+# | PROJECTS |
+# '----------'
+
+
+def test_only_one_default_project(fresh_sql_zen_store: BaseZenStore):
+    """Tests that only one default project can be created."""
+    assert fresh_sql_zen_store.projects == fresh_sql_zen_store.list_projects()
+    assert len(fresh_sql_zen_store.projects) == 1
+    assert len(fresh_sql_zen_store.list_projects()) == 1
+
+
+def test_project_creation(fresh_sql_zen_store: BaseZenStore):
+    """Tests project creation."""
+    new_project = ProjectModel(name="arias_project")
+    fresh_sql_zen_store.create_project(new_project)
+    projects_list = fresh_sql_zen_store.list_projects()
+    assert len(projects_list) == 2
+    assert projects_list[1].name == "arias_project"
+
+
+def test_getting_project(fresh_sql_zen_store: BaseZenStore):
+    """Tests getting a project."""
+    default_project = fresh_sql_zen_store.get_project("default")
+    assert default_project.name == "default"
+    assert type(default_project.id) == uuid.UUID
+
+
+def test_getting_nonexistent_project_raises_error(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting a nonexistent project raises an error."""
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.get_project("blupus_project")
+
+
+def test_updating_project(fresh_sql_zen_store: BaseZenStore):
+    """Tests updating a project."""
+    default_project = fresh_sql_zen_store.get_project("default")
+    assert default_project.name == "default"
+    default_project.name = "aria"
+    fresh_sql_zen_store.update_project("default", default_project)
+    assert fresh_sql_zen_store.list_projects()[0].name == "aria"
+
+
+def test_updating_nonexisting_project_raises_error(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests updating a nonexistent project raises an error."""
+    new_project = ProjectModel(name="arias_project")
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.update_project("blupus_project", new_project)
+
+
+def test_deleting_project(fresh_sql_zen_store: BaseZenStore):
+    """Tests deleting a project."""
+    fresh_sql_zen_store.delete_project("default")
+    assert len(fresh_sql_zen_store.list_projects()) == 0
+
+
+def test_deleting_nonexistent_project_raises_error(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests deleting a nonexistent project raises an error."""
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.delete_project("blupus_project")
+
+
+#  .------.
+# | TEAMS |
+# '-------'
+
+
+def test_list_teams(fresh_sql_zen_store: BaseZenStore):
+    """Tests listing teams."""
+    assert len(fresh_sql_zen_store.teams) == 0
+
+
+def test_create_team(fresh_sql_zen_store: BaseZenStore):
+    """Tests creating a team."""
+    assert len(fresh_sql_zen_store.teams) == 0
+    new_team = TeamModel(name="arias_team")
+    fresh_sql_zen_store.create_team(new_team)
+    assert len(fresh_sql_zen_store.teams) == 1
+    assert fresh_sql_zen_store.teams[0].name == "arias_team"
+
+
+def test_get_team(fresh_sql_zen_store: BaseZenStore):
+    """Tests getting a team."""
+    assert len(fresh_sql_zen_store.teams) == 0
+    new_team = TeamModel(name="arias_team")
+    fresh_sql_zen_store.create_team(new_team)
+    assert fresh_sql_zen_store.get_team("arias_team").name == "arias_team"
+
+
+def test_get_nonexistent_team_raises_error(fresh_sql_zen_store: BaseZenStore):
+    """Tests getting a nonexistent team raises an error."""
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.get_team("blupus_team")
+
+
+def test_delete_team_works(fresh_sql_zen_store: BaseZenStore):
+    """Tests deleting a team."""
+    assert len(fresh_sql_zen_store.teams) == 0
+    new_team = TeamModel(name="arias_team")
+    fresh_sql_zen_store.create_team(new_team)
+    assert len(fresh_sql_zen_store.teams) == 1
+    new_team_id = fresh_sql_zen_store.get_team("arias_team").id
+    fresh_sql_zen_store.delete_team(new_team_id)
+    assert len(fresh_sql_zen_store.teams) == 0
+
+
+def test_nonexistent_team_raises_error(fresh_sql_zen_store: BaseZenStore):
+    """Tests deleting a nonexistent team raises an error."""
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.delete_team(uuid.uuid4())
+
+
+def test_adding_user_to_team(fresh_sql_zen_store: BaseZenStore):
+    """Tests adding a user to a team."""
+    assert len(fresh_sql_zen_store.teams) == 0
+    new_team = TeamModel(name="arias_team")
+    fresh_sql_zen_store.create_team(new_team)
+    current_user_id = fresh_sql_zen_store.active_user.id
+    new_team_id = fresh_sql_zen_store.get_team("arias_team").id
+    fresh_sql_zen_store.add_user_to_team(current_user_id, new_team_id)
+    assert (
+        fresh_sql_zen_store.get_users_for_team(new_team_id)[0].id
+        == current_user_id
+    )
+
+
+def test_adding_nonexistent_user_to_nonexistent_team_raises_error(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests adding a nonexistent user to a team raises an error."""
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.add_user_to_team(uuid.uuid4(), uuid.uuid4())
+
+
+def test_adding_nonexistent_user_to_real_team_raises_error(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests adding a nonexistent user to a team raises an error."""
+    new_team = TeamModel(name="arias_team")
+    fresh_sql_zen_store.create_team(new_team)
+    new_team_id = fresh_sql_zen_store.get_team("arias_team").id
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.add_user_to_team(uuid.uuid4(), new_team_id)
+
+
+def test_adding_real_user_to_nonexistent_team_raises_error(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests adding a nonexistent user to a team raises an error."""
+    current_user_id = fresh_sql_zen_store.active_user.id
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.add_user_to_team(current_user_id, uuid.uuid4())
+
+
+def test_removing_user_from_team_succeeds(fresh_sql_zen_store: BaseZenStore):
+    """Tests removing a user from a team."""
+    assert len(fresh_sql_zen_store.teams) == 0
+    new_team = TeamModel(name="arias_team")
+    fresh_sql_zen_store.create_team(new_team)
+    current_user_id = fresh_sql_zen_store.active_user.id
+    new_team_id = fresh_sql_zen_store.get_team("arias_team").id
+    fresh_sql_zen_store.add_user_to_team(current_user_id, new_team_id)
+    assert len(fresh_sql_zen_store.get_users_for_team(new_team_id)) == 1
+    fresh_sql_zen_store.remove_user_from_team(current_user_id, new_team_id)
+    assert len(fresh_sql_zen_store.get_users_for_team(new_team_id)) == 0
+
+
+def test_removing_nonexistent_user_from_team_fails(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests removing a nonexistent user from a team raises an error."""
+    new_team = TeamModel(name="arias_team")
+    fresh_sql_zen_store.create_team(new_team)
+    new_team_id = fresh_sql_zen_store.get_team("arias_team").id
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.remove_user_from_team(uuid.uuid4(), new_team_id)
+
+
+def test_getting_user_from_nonexistent_team_fails(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting a user from a nonexistent team raises an error."""
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.get_users_for_team(uuid.uuid4())
+
+
+def test_getting_user_for_team(fresh_sql_zen_store: BaseZenStore):
+    """Tests getting a user from a team."""
+    new_team = TeamModel(name="arias_team")
+    fresh_sql_zen_store.create_team(new_team)
+    current_user_id = fresh_sql_zen_store.active_user.id
+    new_team_id = fresh_sql_zen_store.get_team("arias_team").id
+    fresh_sql_zen_store.add_user_to_team(current_user_id, new_team_id)
+    users_for_team = fresh_sql_zen_store.get_users_for_team(new_team_id)
+    assert len(users_for_team) == 1
+    assert users_for_team[0].id == current_user_id
+
+
+def test_getting_team_for_user(fresh_sql_zen_store: BaseZenStore):
+    """Tests getting a team for a user."""
+    new_team = TeamModel(name="arias_team")
+    fresh_sql_zen_store.create_team(new_team)
+    current_user_id = fresh_sql_zen_store.active_user.id
+    new_team_id = fresh_sql_zen_store.get_team("arias_team").id
+    fresh_sql_zen_store.add_user_to_team(current_user_id, new_team_id)
+    teams_for_user = fresh_sql_zen_store.get_teams_for_user(current_user_id)
+    assert len(teams_for_user) == 1
+    assert teams_for_user[0].id == new_team_id
+
+
+#  .------.
+# | USERS |
+# '-------'
+
+
+def test_active_user_property(fresh_sql_zen_store: BaseZenStore):
+    """Tests the active user property."""
+    active_user = fresh_sql_zen_store.active_user
+    assert active_user is not None
+
+
+def test_active_user_name_property(fresh_sql_zen_store: BaseZenStore):
+    """Tests the active user name property."""
+    active_user_name = fresh_sql_zen_store.active_user_name
+    assert active_user_name is not None
+    assert active_user_name == fresh_sql_zen_store.active_user.name
+    assert active_user_name == "default"
+
+
+def test_users_property(fresh_sql_zen_store: BaseZenStore):
+    """Tests the users property."""
+    assert len(fresh_sql_zen_store.users) == 1
+    assert fresh_sql_zen_store.users[0].name == "default"
+    assert fresh_sql_zen_store.users[0] == fresh_sql_zen_store.active_user
+
+
+def test_creating_user_succeeds(fresh_sql_zen_store: BaseZenStore):
+    """Tests creating a user."""
+    assert len(fresh_sql_zen_store.users) == 1
+    new_user = UserModel(name="aria")
+    fresh_sql_zen_store.create_user(new_user)
+    assert len(fresh_sql_zen_store.users) == 2
+    assert fresh_sql_zen_store.get_user("aria") is not None
+
+
+def test_creating_user_with_existing_name_fails(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests creating a user with an existing name fails."""
+    new_user = UserModel(name="aria")
+    fresh_sql_zen_store.create_user(new_user)
+    with pytest.raises(EntityExistsError):
+        fresh_sql_zen_store.create_user(new_user)
+
+
+def test_getting_nonexistent_user_fails(fresh_sql_zen_store: BaseZenStore):
+    """Tests getting a nonexistent user fails."""
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.get_user("aria")
+
+
+def test_getting_user_by_name_and_id_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting a user by name and id."""
+    new_user = UserModel(name="aria")
+    fresh_sql_zen_store.create_user(new_user)
+    users = fresh_sql_zen_store.users
+    new_user_id = str(users[1].id)
+    user_by_name = fresh_sql_zen_store.get_user("aria")
+    user_by_id = fresh_sql_zen_store.get_user(new_user_id)
+    assert user_by_id == user_by_name
+    assert len(users) == 2
+
+
+def test_updating_user_succeeds(fresh_sql_zen_store: BaseZenStore):
+    """Tests updating a user."""
+    new_user_model = UserModel(name="aria")
+    fresh_sql_zen_store.create_user(new_user_model)
+    new_user = fresh_sql_zen_store.get_user("aria")
+    new_user.name = "blupus"
+    fresh_sql_zen_store.update_user(new_user.id, new_user)
+    assert fresh_sql_zen_store.get_user("blupus") is not None
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.get_user("aria")
+
+
+def test_updating_nonexistent_user_fails(fresh_sql_zen_store: BaseZenStore):
+    """Tests updating a nonexistent user fails."""
+    new_user = UserModel(name="demonic_aria")
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.update_user(uuid.uuid4(), new_user)
+
+
+def test_deleting_user_succeeds(fresh_sql_zen_store: BaseZenStore):
+    """Tests deleting a user."""
+    new_user = UserModel(name="aria")
+    fresh_sql_zen_store.create_user(new_user)
+    new_user_id = fresh_sql_zen_store.get_user("aria").id
+    assert len(fresh_sql_zen_store.users) == 2
+    fresh_sql_zen_store.delete_user(new_user_id)
+    assert len(fresh_sql_zen_store.users) == 1

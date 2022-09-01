@@ -810,14 +810,17 @@ def delete_stack(
                 f"by running 'zenml stack set --global STACK'."
             )
 
-        if repo.active_stack_name == stack_name:
+        if repo.active_stack.name == stack_name:
             cli_utils.error(
                 f"Stack {stack_name} cannot be deleted while it is "
                 f"active. Please choose a different active stack first by "
                 f"running 'zenml stack set STACK'."
             )
 
-    Repository().deregister_stack(stack_name)
+    repo = Repository()
+    stack_to_delete = repo.get_stack_by_name(stack_name)
+
+    Repository().deregister_stack(stack_to_delete)
     cli_utils.declare(f"Deleted stack '{stack_name}'.")
 
 
@@ -865,7 +868,7 @@ def get_active_stack() -> None:
     with console.status("Getting the active stack..."):
         repo = Repository()
         cli_utils.declare(
-            f"The{scope} active stack is: '{repo.active_stack_name}'"
+            f"The{scope} active stack is: '{repo.active_stack.name}'"
         )
 
 

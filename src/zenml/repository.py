@@ -32,7 +32,7 @@ from zenml.environment import Environment
 from zenml.exceptions import InitializationException
 from zenml.io import fileio
 from zenml.logger import get_apidocs_link, get_logger
-from zenml.models import StackModel
+from zenml.models import ComponentModel, StackModel
 from zenml.stack import StackComponent
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -606,10 +606,11 @@ class Repository(metaclass=RepositoryMetaClass):
         else:
             # TODO: [server] access the user id in a more elegant way
             stacks = self.zen_store.list_stacks(
-                project_id=self.active_project_name,
-                user_id=GlobalConfiguration().user_id,
+                project_id=self.active_project.id,
+                user_id=self.zen_store.default_user_id,  # GlobalConfiguration().user_id,
                 name=name,
             )
+
         # TODO: [server] this error handling could be improved
         if not stacks:
             raise KeyError("No stack with this name exists.")
@@ -692,9 +693,9 @@ class Repository(metaclass=RepositoryMetaClass):
             ComponentModel.from_component(component),
         )
 
-    def get_stack_components(
+    def list_stack_components(
         self, component_type: StackComponentType
-    ) -> List[StackComponent]:
+    ) -> List[ComponentModel]:
         """Fetches all registered stack components of the given type.
 
         Args:
@@ -703,31 +704,64 @@ class Repository(metaclass=RepositoryMetaClass):
         Returns:
             A list of all registered stack components of the given type.
         """
-        return [
-            c.to_component()
-            for c in self.zen_store.get_stack_components(component_type)
-        ]
+        return self.zen_store.list_stack_components(
+            project_id=self.active_project.id, type=component_type
+        )
 
-    def get_stack_component(
-        self, component_type: StackComponentType, name: str
-    ) -> StackComponent:
+    def get_stack_component_by_name_and_type(
+        self, type: StackComponentType, name: str, is_shared: bool = False
+    ) -> ComponentModel:
+        """Fetches a stack by name within the active stack
+
+        Args:
+            type: The type of the stack component
+            name: The name of the stack to fetch.
+            is_shared: Boolean whether to get a shared stack or a private stack
+
+        Returns:
+            The stack with the given name.
+        """
+        if is_shared:
+            components = self.zen_store.list_stack_components(
+                project_id=self.active_project.id,
+                name=name,
+                type=type,
+                is_shared=True,
+            )
+        else:
+            # TODO: [server] access the user id in a more elegant way
+            components = self.zen_store.list_stack_components(
+                project_id=self.active_project.id,
+                name=name,
+                type=type,
+                user_id=self.zen_store.default_user_id,  # GlobalConfiguration().user_id,
+            )
+
+        # TODO: [server] this error handling could be improved
+        if not components:
+            raise KeyError("No stack with this name exists.")
+        elif len(components) > 1:
+            raise RuntimeError(
+                "Multiple components have been found for this name.", components
+            )
+
+        return components[0]
+
+    def get_stack_component(self, component_id: UUID) -> StackComponent:
         """Fetches a registered stack component.
 
         Args:
-            component_type: The type of the component to fetch.
-            name: The name of the component to fetch.
+            id: The id of the component to fetch.
 
         Returns:
             The registered stack component.
         """
         logger.debug(
-            "Fetching stack component of type '%s' with name '%s'.",
-            component_type.value,
-            name,
+            "Fetching stack component with id '%s'.",
+            id,
         )
         return self.zen_store.get_stack_component(
-            name=name,
-            component_type=component_type,
+            component_id=component_id
         ).to_component()
 
     def register_stack_component(

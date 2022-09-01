@@ -77,7 +77,7 @@ class CodeRepositorySchema(SQLModel, table=True):
 
     @classmethod
     def from_model(
-        cls, model: CodeRepositoryModel, project_id: str
+        cls, model: CodeRepositoryModel, project_id: UUID
     ) -> "CodeRepositorySchema":
         return cls(name=model.name, project_id=project_id)
 
@@ -297,7 +297,7 @@ class StackSchema(SQLModel, table=True):
     def from_create_model(
         cls,
         user_id: UUID,
-        project_id: str,
+        project_id: UUID,
         defined_components: List["StackComponentSchema"],
         stack: StackModel,
     ) -> "StackSchema":
@@ -339,11 +339,9 @@ class StackComponentSchema(SQLModel, table=True):
     name: str
     is_shared: bool
 
-    # project_id - redundant since repository of flavor has this
     type: StackComponentType
-    flavor_id: UUID = Field(
-        foreign_key="flavorschema.id", nullable=True
-    )  # TODO: Prefill flavors
+    flavor_name: str
+    # flavor_id: UUID = Field(foreign_key="flavorschema.id", nullable=True)  # TODO: Prefill flavors
     owner: UUID = Field(foreign_key="userschema.id")
     project_id: UUID = Field(foreign_key="projectschema.id")
 
@@ -357,7 +355,7 @@ class StackComponentSchema(SQLModel, table=True):
 
     @classmethod
     def from_create_model(
-        cls, user_id: str, project_id: str, component: ComponentModel
+        cls, user_id: str, project_id: UUID, component: ComponentModel
     ) -> "StackComponentSchema":
         """Create a StackComponentSchema with `id` and `created_at` missing.
 
@@ -372,7 +370,7 @@ class StackComponentSchema(SQLModel, table=True):
             owner=user_id,
             is_shared=component.is_shared,
             type=component.type,
-            flavor_id=component.flavor_id,
+            flavor_name=component.flavor_name,
             configuration=component.configuration,
         )
 
@@ -386,7 +384,7 @@ class StackComponentSchema(SQLModel, table=True):
             id=self.id,
             name=self.name,
             type=self.type,
-            flavor_id=self.flavor_id,
+            flavor_name=self.flavor_name,
             owner=self.owner,
             project_id=self.project_id,
             is_shared=self.is_shared,

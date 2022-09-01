@@ -311,7 +311,7 @@ class SqlZenStore(BaseZenStore):
 
     def _list_stacks(
         self,
-        project_id: str,
+        project_id: UUID,
         user_id: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
@@ -361,7 +361,7 @@ class SqlZenStore(BaseZenStore):
             return stack.to_model()
 
     def _register_stack(
-        self, user_id: UUID, project_id: str, stack: StackModel
+        self, user_id: UUID, project_id: UUID, stack: StackModel
     ) -> StackModel:
         """Register a new stack.
 
@@ -419,7 +419,7 @@ class SqlZenStore(BaseZenStore):
             return stack_in_db.to_model()
 
     def _update_stack(
-        self, stack_id: str, user_id: str, project_id: str, stack: StackModel
+        self, stack_id: str, user_id: str, project_id: UUID, stack: StackModel
     ) -> StackModel:
         """Update an existing stack.
 
@@ -494,10 +494,10 @@ class SqlZenStore(BaseZenStore):
 
     def _list_stack_components(
         self,
-        project_id: str,
+        project_id: UUID,
         type: Optional[str] = None,
-        flavor_id: Optional[str] = None,
-        owner: Optional[str] = None,
+        flavor_name: Optional[str] = None,
+        user_id: Optional[str] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
     ) -> List[ComponentModel]:
@@ -506,8 +506,8 @@ class SqlZenStore(BaseZenStore):
         Args:
             project_id: Id of the Project containing the stack components
             type: Optionally filter by type of stack component
-            flavor_id: Optionally filter by flavor
-            owner: Optionally filter stack components by the owner
+            flavor_name: Optionally filter by flavor
+            user_id: Optionally filter stack components by the owner
             name: Optionally filter stack component by name
             is_shared: Optionally filter out stack component by the `is_shared`
                        flag
@@ -524,10 +524,12 @@ class SqlZenStore(BaseZenStore):
             # TODO: [ALEXEJ] prettify this
             if type:
                 query = query.where(StackComponentSchema.type == type)
-            if flavor_id:
-                query = query.where(StackComponentSchema.flavor_id == flavor_id)
-            if owner:
-                query = query.where(StackComponentSchema.owner == owner)
+            if flavor_name:
+                query = query.where(
+                    StackComponentSchema.flavor_name == flavor_name
+                )
+            if user_id:
+                query = query.where(StackComponentSchema.owner == user_id)
             if name:
                 query = query.where(StackComponentSchema.name == name)
             if is_shared is not None:
@@ -537,7 +539,7 @@ class SqlZenStore(BaseZenStore):
 
         return [comp.to_model() for comp in list_of_stack_components_in_db]
 
-    def _get_stack_component(self, component_id: str) -> ComponentModel:
+    def _get_stack_component(self, component_id: UUID) -> ComponentModel:
         """Get a stack component by id.
 
         Args:
@@ -556,7 +558,7 @@ class SqlZenStore(BaseZenStore):
         return stack_component.to_model()
 
     def _register_stack_component(
-        self, user_id: str, project_id: str, component: ComponentModel
+        self, user_id: str, project_id: UUID, component: ComponentModel
     ) -> ComponentModel:
         """Create a stack component.
 
@@ -602,7 +604,7 @@ class SqlZenStore(BaseZenStore):
     def _update_stack_component(
         self,
         user_id: str,
-        project_id: str,
+        project_id: UUID,
         component_id: str,
         component: ComponentModel,
     ) -> ComponentModel:
@@ -799,7 +801,7 @@ class SqlZenStore(BaseZenStore):
             existing_user = session.exec(
                 select(UserSchema).where(UserSchema.id == user_id)
             ).first()
-            if user is None:
+            if existing_user is None:
                 raise KeyError(
                     f"Unable to update user with id '{user_id}': "
                     "No user found with this id."
@@ -2213,39 +2215,6 @@ class SqlZenStore(BaseZenStore):
     # LEGACY CODE FROM THE PREVIOUS VERSION OF BASEZENSTORE
 
     # Private interface implementations:
-
-    def _get_component_flavor_and_config(
-        self, component_type: StackComponentType, name: str
-    ) -> Tuple[str, str]:
-        """Fetch the flavor and configuration for a stack component.
-
-        Args:
-            component_type: The type of the component to fetch.
-            name: The name of the component to fetch.
-
-        Returns:
-            Pair of (flavor, configuration) for stack component, as string and
-            base64-encoded yaml document, respectively
-
-        Raises:
-            KeyError: If no stack component exists for the given type and name.
-        """
-        with Session(self.engine) as session:
-            component_and_flavor = session.exec(
-                select(StackComponentSchema, FlavorSchema)
-                .where(StackComponentSchema.type == component_type)
-                .where(StackComponentSchema.name == name)
-                .where(StackComponentSchema.flavor_id == FlavorSchema.id)
-            ).one_or_none()
-            if component_and_flavor is None:
-                raise KeyError(
-                    f"Unable to find stack component (type: {component_type}) "
-                    f"with name '{name}'."
-                )
-        return (
-            component_and_flavor[1].name,
-            component_and_flavor[0].configuration,
-        )
 
     def _get_stack_component_names(
         self, component_type: StackComponentType
