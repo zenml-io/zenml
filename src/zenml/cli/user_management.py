@@ -21,7 +21,11 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.enums import CliCategories
 from zenml.exceptions import EntityExistsError
-from zenml.models.user_management_models import ProjectModel, TeamModel, UserModel
+from zenml.models.user_management_models import (
+    ProjectModel,
+    TeamModel,
+    UserModel,
+)
 from zenml.repository import Repository
 
 
@@ -235,6 +239,7 @@ def remove_users(team_name_or_id: str, user_names_or_ids: Tuple[str]) -> None:
         cli_utils.declare(
             f"Removed user '{user_name_or_id}' from team '{team_name_or_id}'."
         )
+
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def project() -> None:

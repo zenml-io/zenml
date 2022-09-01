@@ -24,8 +24,8 @@ from zenml.models.pipeline_models import (
 from zenml.models.stack_model import StackModel
 from zenml.models.user_management_models import (
     ProjectModel,
-    RoleModel,
     RoleAssignmentModel,
+    RoleModel,
     TeamModel,
     UserModel,
 )

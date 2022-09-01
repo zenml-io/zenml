@@ -152,7 +152,9 @@ async def get_project(project_name: str) -> ProjectModel:
     response_model=ProjectModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def update_project(project_name: str, project: ProjectModel) -> ProjectModel:
+async def update_project(
+    project_name: str, project: ProjectModel
+) -> ProjectModel:
     """Get a project for given name.
 
     # noqa: DAR401

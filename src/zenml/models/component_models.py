@@ -67,8 +67,7 @@ class ComponentModel(BaseModel):
         title="Flag describing if this component is shared.",
     )
     project: Optional[str] = Field(
-        default=None,
-        title="The project that contains this component."
+        default=None, title="The project that contains this component."
     )
     created_at: Optional[datetime] = Field(
         default=None,

@@ -47,12 +47,12 @@ from zenml.secrets_managers.local.local_secrets_manager import (
 )
 from zenml.stack import Stack
 from zenml.utils.networking_utils import scan_for_available_port
-from zenml.zen_stores.base_zen_store import BaseZenStore
-from zenml.zen_stores.sql_zen_store import SqlZenStore
-from zenml.zen_stores.rest_zen_store import RestZenStore
-from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
-from zenml.zen_stores.rest_zen_store import RestZenStoreConfiguration
-from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
+from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME, BaseZenStore
+from zenml.zen_stores.rest_zen_store import (
+    RestZenStore,
+    RestZenStoreConfiguration,
+)
+from zenml.zen_stores.sql_zen_store import SqlZenStore, SqlZenStoreConfiguration
 
 logger = get_logger(__name__)
 

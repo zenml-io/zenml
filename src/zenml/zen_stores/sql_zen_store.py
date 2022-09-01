@@ -14,25 +14,26 @@
 """SQL Zen Store implementation."""
 
 import os
-
-from ml_metadata.proto import metadata_store_pb2
-from sqlalchemy import or_
 from pathlib import Path, PurePath
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
 from uuid import UUID
 
+from ml_metadata.proto import metadata_store_pb2
+from sqlalchemy import or_
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.exc import ArgumentError, NoResultFound
 from sqlmodel import Session, SQLModel, create_engine, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
+from zenml.config.store_config import StoreConfiguration
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.exceptions import (
     EntityExistsError,
     StackComponentExistsError,
     StackExistsError,
 )
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.metadata_stores.sqlite_metadata_store import SQLiteMetadataStore
 from zenml.models import (
@@ -40,30 +41,21 @@ from zenml.models import (
     FlavorModel,
     PipelineRunModel,
     ProjectModel,
-    RoleModel,
     RoleAssignmentModel,
+    RoleModel,
     StackModel,
     TeamModel,
     UserModel,
 )
-from zenml.config.store_config import StoreConfiguration
-from zenml.io import fileio
-from zenml.logger import get_logger
-from zenml.post_execution.artifact import ArtifactView
-from zenml.utils import io_utils
-from zenml.zen_stores.base_zen_store import BaseZenStore, DEFAULT_USERNAME
 from zenml.models.code_models import CodeRepositoryModel
 from zenml.models.pipeline_models import PipelineModel, StepModel
+from zenml.post_execution.artifact import ArtifactView
 from zenml.post_execution.pipeline import PipelineView
 from zenml.post_execution.pipeline_run import PipelineRunView
 from zenml.post_execution.step import StepView
 from zenml.stack.flavor_registry import flavor_registry
 from zenml.utils import io_utils, uuid_utils
-from zenml.zen_stores.base_zen_store import (
-    DEFAULT_PROJECT_NAME,
-    DEFAULT_USERNAME,
-    BaseZenStore,
-)
+from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME, BaseZenStore
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -75,7 +67,6 @@ from zenml.zen_stores.schemas.schemas import (
     ProjectSchema,
     RoleSchema,
     StackComponentSchema,
-    StackCompositionSchema,
     StackSchema,
     StepSchema,
     TeamAssignmentSchema,
@@ -342,9 +333,9 @@ class SqlZenStore(BaseZenStore):
             query = select(StackSchema)
             # TODO: prettify
             if user_id:
-                 query = query.where(StackSchema.owner == user_id)
+                query = query.where(StackSchema.owner == user_id)
             if name:
-                 query = query.where(StackSchema.name == name)
+                query = query.where(StackSchema.name == name)
             if is_shared is not None:
                 query = query.where(StackSchema.is_shared == is_shared)
             stacks = session.exec(query).all()
@@ -362,8 +353,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             stack = session.exec(
-                select(StackSchema)
-                .where(StackSchema.id == stack_id)
+                select(StackSchema).where(StackSchema.id == stack_id)
             ).first()
 
             if stack is None:
@@ -371,10 +361,7 @@ class SqlZenStore(BaseZenStore):
             return stack.to_model()
 
     def _register_stack(
-        self,
-        user_id: UUID,
-        project_id: str,
-        stack: StackModel
+        self, user_id: UUID, project_id: str, stack: StackModel
     ) -> StackModel:
         """Register a new stack.
 
@@ -411,28 +398,29 @@ class SqlZenStore(BaseZenStore):
             # Get the Schemas of all components mentioned in the stack model
             component_ids = [c.id for c in stack.components.values()]
             defined_components = session.exec(
-                select(StackComponentSchema).where(or_(
-                    StackComponentSchema.id == component_ids[0],
-                    StackComponentSchema.id == component_ids[1]
-                ))).all()
+                select(StackComponentSchema).where(
+                    or_(
+                        StackComponentSchema.id == component_ids[0],
+                        StackComponentSchema.id == component_ids[1],
+                    )
+                )
+            ).all()
             # TODO: Make this work for arbitrary amounts of components
             # Create the stack
             stack_in_db = StackSchema.from_create_model(
                 project_id=project_id,
                 user_id=user_id,
                 defined_components=defined_components,
-                stack=stack
+                stack=stack,
             )
             session.add(stack_in_db)
             session.commit()
 
             return stack_in_db.to_model()
 
-    def _update_stack(self,
-                      stack_id: str,
-                      user_id: str,
-                      project_id: str,
-                      stack: StackModel) -> StackModel:
+    def _update_stack(
+        self, stack_id: str, user_id: str, project_id: str, stack: StackModel
+    ) -> StackModel:
         """Update an existing stack.
 
         Args:
@@ -511,7 +499,7 @@ class SqlZenStore(BaseZenStore):
         flavor_id: Optional[str] = None,
         owner: Optional[str] = None,
         name: Optional[str] = None,
-        is_shared: Optional[bool] = None
+        is_shared: Optional[bool] = None,
     ) -> List[ComponentModel]:
         """List all stack components within the filter.
 
@@ -529,18 +517,19 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
 
-            query = (select(StackComponentSchema)
-                     .where(StackComponentSchema.project_id == project_id))
+            query = select(StackComponentSchema).where(
+                StackComponentSchema.project_id == project_id
+            )
 
             # TODO: [ALEXEJ] prettify this
             if type:
-                 query = query.where(StackComponentSchema.type == type)
+                query = query.where(StackComponentSchema.type == type)
             if flavor_id:
-                 query = query.where(StackComponentSchema.flavor_id == flavor_id)
+                query = query.where(StackComponentSchema.flavor_id == flavor_id)
             if owner:
-                 query = query.where(StackComponentSchema.owner == owner)
+                query = query.where(StackComponentSchema.owner == owner)
             if name:
-                 query = query.where(StackComponentSchema.name == name)
+                query = query.where(StackComponentSchema.name == name)
             if is_shared is not None:
                 query = query.where(StackComponentSchema.is_shared == is_shared)
 
@@ -559,17 +548,15 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             stack_component = session.exec(
-                select(StackComponentSchema)
-                .where(StackComponentSchema.id == component_id)
+                select(StackComponentSchema).where(
+                    StackComponentSchema.id == component_id
+                )
             ).first()
 
         return stack_component.to_model()
 
     def _register_stack_component(
-        self,
-        user_id: str,
-        project_id: str,
-        component: ComponentModel
+        self, user_id: str, project_id: str, component: ComponentModel
     ) -> ComponentModel:
         """Create a stack component.
 
@@ -602,7 +589,8 @@ class SqlZenStore(BaseZenStore):
 
             # Create the component
             component_in_db = StackComponentSchema.from_create_model(
-                user_id=user_id, project_id=project_id, component=component)
+                user_id=user_id, project_id=project_id, component=component
+            )
 
             session.add(component_in_db)
             session.commit()
@@ -616,7 +604,7 @@ class SqlZenStore(BaseZenStore):
         user_id: str,
         project_id: str,
         component_id: str,
-        component: ComponentModel
+        component: ComponentModel,
     ) -> ComponentModel:
         """Update an existing stack component.
 
@@ -742,8 +730,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if user with the given name already exists
             existing_user = session.exec(
-                select(UserSchema)
-                .where(UserSchema.name == user.name)
+                select(UserSchema).where(UserSchema.name == user.name)
             ).first()
             if existing_user is not None:
                 raise EntityExistsError(
@@ -810,8 +797,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             existing_user = session.exec(
-                select(UserSchema)
-                .where(UserSchema.id == user_id)
+                select(UserSchema).where(UserSchema.id == user_id)
             ).first()
             if user is None:
                 raise KeyError(
@@ -834,8 +820,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             user = session.exec(
-                select(UserSchema)
-                .where(UserSchema.id == user_id)
+                select(UserSchema).where(UserSchema.id == user_id)
             ).first()
             if user is None:
                 raise KeyError(
@@ -893,8 +878,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if team with the given name already exists
             existing_team = session.exec(
-                select(TeamSchema)
-                .where(TeamSchema.name == team.name)
+                select(TeamSchema).where(TeamSchema.name == team.name)
             ).first()
             if existing_team is not None:
                 raise EntityExistsError(
@@ -948,14 +932,13 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             team_id: ID of the team to delete.
-        
+
         Raises:
             KeyError: If no team with the given ID exists.
         """
         with Session(self.engine) as session:
             team = session.exec(
-                select(TeamSchema)
-                .where(TeamSchema.id == team_id)
+                select(TeamSchema).where(TeamSchema.id == team_id)
             ).first()
             if team is None:
                 raise KeyError(
@@ -979,8 +962,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if team with the given ID exists
             team = session.exec(
-                select(TeamSchema)
-                .where(TeamSchema.id == team_id)
+                select(TeamSchema).where(TeamSchema.id == team_id)
             ).first()
             if team is None:
                 raise KeyError(
@@ -990,8 +972,7 @@ class SqlZenStore(BaseZenStore):
 
             # Check if user with the given ID exists
             user = session.exec(
-                select(UserSchema)
-                .where(UserSchema.id == user_id)
+                select(UserSchema).where(UserSchema.id == user_id)
             ).first()
             if user is None:
                 raise KeyError(
@@ -1016,7 +997,6 @@ class SqlZenStore(BaseZenStore):
             session.add(team)
             session.commit()
 
-
     def remove_user_from_team(self, user_id: str, team_id: str) -> None:
         """Removes a user from a team.
 
@@ -1030,8 +1010,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if team with the given ID exists
             team = session.exec(
-                select(TeamSchema)
-                .where(TeamSchema.id == team_id)
+                select(TeamSchema).where(TeamSchema.id == team_id)
             ).first()
             if team is None:
                 raise KeyError(
@@ -1041,8 +1020,7 @@ class SqlZenStore(BaseZenStore):
 
             # Check if user with the given ID exists
             user = session.exec(
-                select(UserSchema)
-                .where(UserSchema.id == user_id)
+                select(UserSchema).where(UserSchema.id == user_id)
             ).first()
             if user is None:
                 raise KeyError(
@@ -1069,8 +1047,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             team = session.exec(
-                select(TeamSchema)
-                .where(TeamSchema.id == team_id)
+                select(TeamSchema).where(TeamSchema.id == team_id)
             ).first()
             if team is None:
                 raise KeyError(
@@ -1093,8 +1070,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             user = session.exec(
-                select(UserSchema)
-                .where(UserSchema.id == user_id)
+                select(UserSchema).where(UserSchema.id == user_id)
             ).first()
             if user is None:
                 raise KeyError(
@@ -1154,8 +1130,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if user with the given name already exists
             user = session.exec(
-                select(UserSchema)
-                .where(UserSchema.id == user_id)
+                select(UserSchema).where(UserSchema.id == user_id)
             ).first()
             if user is None:
                 raise KeyError(
@@ -1165,8 +1140,7 @@ class SqlZenStore(BaseZenStore):
 
             # Check if role with the given name already exists
             role = session.exec(
-                select(RoleSchema)
-                .where(RoleSchema.id == role_id)
+                select(RoleSchema).where(RoleSchema.id == role_id)
             ).first()
             if role is None:
                 raise KeyError(
@@ -1176,8 +1150,7 @@ class SqlZenStore(BaseZenStore):
 
             # Check if project with the given name already exists
             project = session.exec(
-                select(ProjectSchema)
-                .where(ProjectSchema.id == project_id)
+                select(ProjectSchema).where(ProjectSchema.id == project_id)
             ).first()
             if project is None:
                 raise KeyError(
@@ -1271,8 +1244,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if project with the given name already exists
             existing_project = session.exec(
-                select(ProjectSchema)
-                .where(ProjectSchema.name == project.name)
+                select(ProjectSchema).where(ProjectSchema.name == project.name)
             ).first()
             if existing_project is not None:
                 raise EntityExistsError(
@@ -1324,7 +1296,9 @@ class SqlZenStore(BaseZenStore):
                 )
             return project.to_model()
 
-    def _update_project(self, project_name: str, project: ProjectModel) -> ProjectModel:
+    def _update_project(
+        self, project_name: str, project: ProjectModel
+    ) -> ProjectModel:
         """Update an existing project.
 
         Args:
@@ -1340,8 +1314,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if project with the given name already exists
             existing_project = session.exec(
-                select(ProjectSchema)
-                .where(ProjectSchema.name == project_name)
+                select(ProjectSchema).where(ProjectSchema.name == project_name)
             ).first()
             if existing_project is None:
                 raise KeyError(
@@ -1370,8 +1343,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if project with the given name already exists
             project = session.exec(
-                select(ProjectSchema)
-                .where(ProjectSchema.name == project_name)
+                select(ProjectSchema).where(ProjectSchema.name == project_name)
             ).first()
             if project is None:
                 raise KeyError(
@@ -1433,8 +1405,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if project with the given name already exists
             project = session.exec(
-                select(ProjectSchema)
-                .where(ProjectSchema.name == project_name)
+                select(ProjectSchema).where(ProjectSchema.name == project_name)
             ).first()
             if project is None:
                 raise KeyError(
@@ -1444,8 +1415,9 @@ class SqlZenStore(BaseZenStore):
 
             # Get all repositories in the project
             repositories = session.exec(
-                select(CodeRepositorySchema)
-                .where(CodeRepositorySchema.project_id == project.id)
+                select(CodeRepositorySchema).where(
+                    CodeRepositorySchema.project_id == project.id
+                )
             ).all()
 
         return [repository.to_model() for repository in repositories]
@@ -1468,8 +1440,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if project with the given name already exists
             project = session.exec(
-                select(ProjectSchema)
-                .where(ProjectSchema.name == project_name)
+                select(ProjectSchema).where(ProjectSchema.name == project_name)
             ).first()
             if project is None:
                 raise KeyError(
@@ -1479,8 +1450,9 @@ class SqlZenStore(BaseZenStore):
 
             # Check if repository with the given name already exists
             existing_repository = session.exec(
-                select(CodeRepositorySchema)
-                .where(CodeRepositorySchema.id == repository.id)
+                select(CodeRepositorySchema).where(
+                    CodeRepositorySchema.id == repository.id
+                )
             ).first()
             if existing_repository is None:
                 raise KeyError(
@@ -1510,8 +1482,9 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if repository with the given ID exists
             existing_repository = session.exec(
-                select(CodeRepositorySchema)
-                .where(CodeRepositorySchema.id == repository_id)
+                select(CodeRepositorySchema).where(
+                    CodeRepositorySchema.id == repository_id
+                )
             ).first()
             if existing_repository is None:
                 raise KeyError(
@@ -1539,8 +1512,9 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if repository with the given ID exists
             existing_repository = session.exec(
-                select(CodeRepositorySchema)
-                .where(CodeRepositorySchema.id == repository_id)
+                select(CodeRepositorySchema).where(
+                    CodeRepositorySchema.id == repository_id
+                )
             ).first()
             if existing_repository is None:
                 raise KeyError(
@@ -1569,8 +1543,9 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if repository with the given ID exists
             existing_repository = session.exec(
-                select(CodeRepositorySchema)
-                .where(CodeRepositorySchema.id == repository_id)
+                select(CodeRepositorySchema).where(
+                    CodeRepositorySchema.id == repository_id
+                )
             ).first()
             if existing_repository is None:
                 raise KeyError(
@@ -1610,8 +1585,9 @@ class SqlZenStore(BaseZenStore):
 
             # Get all pipelines in the project
             pipelines = session.exec(
-                select(PipelineSchema)
-                .where(PipelineSchema.project_id == project.id)
+                select(PipelineSchema).where(
+                    PipelineSchema.project_id == project.id
+                )
             ).all()
 
         return [pipeline.to_model() for pipeline in pipelines]
@@ -1645,8 +1621,9 @@ class SqlZenStore(BaseZenStore):
 
             # Check if pipeline with the given name already exists
             existing_pipeline = session.exec(
-                select(PipelineSchema)
-                .where(PipelineSchema.name == pipeline.name)
+                select(PipelineSchema).where(
+                    PipelineSchema.name == pipeline.name
+                )
             ).first()
             if existing_pipeline is not None:
                 raise EntityExistsError(
@@ -1676,8 +1653,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if pipeline with the given ID exists
             pipeline = session.exec(
-                select(PipelineSchema)
-                .where(PipelineSchema.id == pipeline_id)
+                select(PipelineSchema).where(PipelineSchema.id == pipeline_id)
             ).first()
             if pipeline is None:
                 return None
@@ -1702,8 +1678,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if pipeline with the given ID exists
             existing_pipeline = session.exec(
-                select(PipelineSchema)
-                .where(PipelineSchema.id == pipeline_id)
+                select(PipelineSchema).where(PipelineSchema.id == pipeline_id)
             ).first()
             if existing_pipeline is None:
                 raise KeyError(
@@ -1717,7 +1692,7 @@ class SqlZenStore(BaseZenStore):
             existing_pipeline.configuration = pipeline.configuration
             existing_pipeline.git_sha = pipeline.git_sha
             # Other fields are not updatable
-            
+
             session.add(existing_pipeline)
             session.commit()
 
@@ -1735,8 +1710,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if pipeline with the given ID exists
             pipeline = session.exec(
-                select(PipelineSchema)
-                .where(PipelineSchema.id == pipeline_id)
+                select(PipelineSchema).where(PipelineSchema.id == pipeline_id)
             ).first()
             if pipeline is None:
                 raise KeyError(
@@ -1759,7 +1733,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the pipeline doesn't exist.
         """
-        pass  # TODO 
+        pass  # TODO
 
     def _list_steps(self, pipeline_id: str) -> List[StepModel]:
         """List all steps.
@@ -1791,9 +1765,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if pipeline with the given ID exists
             pipeline = session.exec(
-                select(PipelineSchema).where(
-                    PipelineSchema.id == pipeline_id
-                )
+                select(PipelineSchema).where(PipelineSchema.id == pipeline_id)
             ).first()
             if pipeline is None:
                 raise KeyError(
@@ -1803,8 +1775,9 @@ class SqlZenStore(BaseZenStore):
 
             # Get all pipeline runs in the pipeline
             pipeline_runs = session.exec(
-                select(PipelineRunSchema)
-                .where(PipelineRunSchema.pipeline_id == pipeline.id)
+                select(PipelineRunSchema).where(
+                    PipelineRunSchema.pipeline_id == pipeline.id
+                )
             ).all()
 
         return [pipeline_run.to_model() for pipeline_run in pipeline_runs]
@@ -1827,8 +1800,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if pipeline with the given ID exists
             pipeline = session.exec(
-                select(PipelineSchema)
-                .where(PipelineSchema.id == pipeline_id)
+                select(PipelineSchema).where(PipelineSchema.id == pipeline_id)
             ).first()
             if pipeline is None:
                 raise KeyError(
@@ -1884,8 +1856,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if pipeline run with the given ID exists
             run = session.exec(
-                select(PipelineRunSchema)
-                .where(PipelineRunSchema.id == run_id)
+                select(PipelineRunSchema).where(PipelineRunSchema.id == run_id)
             ).first()
             if run is None:
                 raise KeyError(
@@ -1913,8 +1884,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if pipeline run with the given ID exists
             existing_run = session.exec(
-                select(PipelineRunSchema)
-                .where(PipelineRunSchema.id == run_id)
+                select(PipelineRunSchema).where(PipelineRunSchema.id == run_id)
             ).first()
             if existing_run is None:
                 raise KeyError(
@@ -1931,7 +1901,7 @@ class SqlZenStore(BaseZenStore):
 
             session.add(existing_run)
             session.commit()
-        
+
             return existing_run.to_model()
 
     def _delete_run(self, run_id: str) -> None:
@@ -1946,8 +1916,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if pipeline run with the given ID exists
             run = session.exec(
-                select(PipelineRunSchema)
-                .where(PipelineRunSchema.id == run_id)
+                select(PipelineRunSchema).where(PipelineRunSchema.id == run_id)
             ).first()
             if run is None:
                 raise KeyError(
@@ -2027,8 +1996,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if pipeline run with the given ID exists
             run = session.exec(
-                select(PipelineRunSchema)
-                .where(PipelineRunSchema.id == run_id)
+                select(PipelineRunSchema).where(PipelineRunSchema.id == run_id)
             ).first()
             if run is None:
                 raise KeyError(
@@ -2038,8 +2006,7 @@ class SqlZenStore(BaseZenStore):
 
             # Get the steps
             steps = session.exec(
-                select(StepSchema)
-                .where(StepSchema.pipeline_run_id == run_id)
+                select(StepSchema).where(StepSchema.pipeline_run_id == run_id)
             )
             return [step.to_model() for step in steps]
 
@@ -2058,9 +2025,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if step with the given ID exists
             step = session.exec(
-                select(StepSchema).where(
-                    StepSchema.id == step_id
-                )
+                select(StepSchema).where(StepSchema.id == step_id)
             ).first()
             if step is None:
                 raise KeyError(
@@ -2078,7 +2043,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The outputs of the step.
         """
-        pass # TODO: currently not saved in DB
+        pass  # TODO: currently not saved in DB
 
     def _get_run_step_inputs(self, step_id: str) -> Dict[str, ArtifactView]:
         """Get the inputs of a step.
@@ -2090,7 +2055,6 @@ class SqlZenStore(BaseZenStore):
             The inputs of the step.
         """
         pass  # TODO: currently not saved in DB
-
 
     # LEGACY CODE FROM THE PREVIOUS VERSION OF BASEZENSTORE
 
@@ -2570,10 +2534,7 @@ class SqlZenStore(BaseZenStore):
                     statement = statement.where(
                         PipelineRunSchema.project_name == project_name
                     )
-                return [
-                    run.to_model()
-                    for run in session.exec(statement).all()
-                ]
+                return [run.to_model() for run in session.exec(statement).all()]
             except NoResultFound as error:
                 raise KeyError from error
 
@@ -2785,6 +2746,7 @@ class SqlZenStore(BaseZenStore):
                 )
             except NoResultFound as error:
                 raise KeyError from error
+
     # TODO: [ALEXEJ] This should be list_flavors with a filter
 
     # Implementation-specific internal methods:
