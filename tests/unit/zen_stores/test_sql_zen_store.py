@@ -19,6 +19,7 @@ import pytest
 from zenml.exceptions import EntityExistsError
 from zenml.models.user_management_models import (
     ProjectModel,
+    RoleModel,
     TeamModel,
     UserModel,
 )
@@ -332,3 +333,62 @@ def test_deleting_user_succeeds(fresh_sql_zen_store: BaseZenStore):
     assert len(fresh_sql_zen_store.users) == 2
     fresh_sql_zen_store.delete_user(new_user_id)
     assert len(fresh_sql_zen_store.users) == 1
+
+
+#  .------.
+# | ROLES |
+# '-------'
+
+
+def test_roles_property_with_fresh_store(fresh_sql_zen_store: BaseZenStore):
+    """Tests the roles property with a fresh ZenStore."""
+    assert len(fresh_sql_zen_store.roles) == 0
+
+
+def test_creating_role(fresh_sql_zen_store: BaseZenStore):
+    """Tests creating a role."""
+    assert len(fresh_sql_zen_store.roles) == 0
+    new_role = RoleModel(name="admin")
+    fresh_sql_zen_store.create_role(new_role)
+    assert len(fresh_sql_zen_store.roles) == 1
+    assert fresh_sql_zen_store.get_role("admin") is not None
+
+
+def test_creating_existing_role_fails(fresh_sql_zen_store: BaseZenStore):
+    """Tests creating an existing role fails."""
+    new_role = RoleModel(name="admin")
+    fresh_sql_zen_store.create_role(new_role)
+    with pytest.raises(EntityExistsError):
+        fresh_sql_zen_store.create_role(new_role)
+    assert len(fresh_sql_zen_store.roles) == 1
+
+
+def test_getting_role_succeeds(fresh_sql_zen_store: BaseZenStore):
+    """Tests getting a role."""
+    new_role = RoleModel(name="admin")
+    fresh_sql_zen_store.create_role(new_role)
+    assert fresh_sql_zen_store.get_role("admin") is not None
+
+
+def test_getting_nonexistent_role_fails(fresh_sql_zen_store: BaseZenStore):
+    """Tests getting a nonexistent role fails."""
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.get_role("admin")
+
+
+def test_deleting_role_succeeds(fresh_sql_zen_store: BaseZenStore):
+    """Tests deleting a role."""
+    new_role = RoleModel(name="admin")
+    fresh_sql_zen_store.create_role(new_role)
+    assert len(fresh_sql_zen_store.roles) == 1
+    new_role_id = str(fresh_sql_zen_store.get_role("admin").id)
+    fresh_sql_zen_store.delete_role(new_role_id)
+    assert len(fresh_sql_zen_store.roles) == 0
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.get_role(new_role_id)
+
+
+def test_deleting_nonexistent_role_fails(fresh_sql_zen_store: BaseZenStore):
+    """Tests deleting a nonexistent role fails."""
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.delete_role(uuid.uuid4())
