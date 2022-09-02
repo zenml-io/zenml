@@ -27,7 +27,6 @@ from typing import (
     Type,
 )
 
-from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_SECRET_VALIDATION_LEVEL,
     ZENML_IGNORE_STORE_COUPLINGS,
@@ -39,7 +38,7 @@ from zenml.runtime_configuration import (
     RUN_NAME_OPTION_KEY,
     RuntimeConfiguration,
 )
-from zenml.utils import io_utils, string_utils
+from zenml.utils import string_utils
 
 if TYPE_CHECKING:
     from zenml.alerter import BaseAlerter
@@ -269,27 +268,10 @@ class Stack:
         from zenml.artifact_stores import LocalArtifactStore
         from zenml.metadata_stores import SQLiteMetadataStore
         from zenml.orchestrators import LocalOrchestrator
-        from zenml.stack.stack_component import uuid_factory
 
         orchestrator = LocalOrchestrator(name="default")
-
-        artifact_store_uuid = uuid_factory()
-        artifact_store_path = os.path.join(
-            GlobalConfiguration().config_directory,
-            "local_stores",
-            str(artifact_store_uuid),
-        )
-        io_utils.create_dir_recursive_if_not_exists(artifact_store_path)
-        artifact_store = LocalArtifactStore(
-            name="default",
-            uuid=artifact_store_uuid,
-            path=artifact_store_path,
-        )
-
-        metadata_store_path = os.path.join(artifact_store_path, "metadata.db")
-        metadata_store = SQLiteMetadataStore(
-            name="default", uri=metadata_store_path
-        )
+        artifact_store = LocalArtifactStore(name="default")
+        metadata_store = SQLiteMetadataStore(name="default")
 
         return cls(
             name="default",
