@@ -27,6 +27,7 @@ from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ENV_ZENML_DEBUG
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.models.user_management_models import TeamModel
 from zenml.pipelines import pipeline
 from zenml.repository import Repository
 from zenml.steps import StepContext, step
@@ -180,7 +181,7 @@ def clean_repo(
     Repository._reset_instance(original_repository)
 
 
-@pytest.fixture()
+@pytest.fixture
 def fresh_sql_zen_store() -> BaseZenStore:
     with tempfile.TemporaryDirectory(suffix="_zenml_sql_test") as temp_dir:
         yield SqlZenStore(
@@ -189,6 +190,20 @@ def fresh_sql_zen_store() -> BaseZenStore:
             ),
             track_analytics=False,
         )
+
+
+@pytest.fixture
+def fresh_sql_store_with_team() -> BaseZenStore:
+    with tempfile.TemporaryDirectory(suffix="_zenml_sql_test") as temp_dir:
+        store = SqlZenStore(
+            config=SqlZenStoreConfiguration(
+                url=f"sqlite:///{Path(temp_dir) / 'store.db'}"
+            ),
+            track_analytics=False,
+        )
+        new_team = TeamModel(name="arias_team")
+        store.create_team(new_team)
+        yield store
 
 
 @pytest.fixture

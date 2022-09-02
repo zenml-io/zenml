@@ -392,3 +392,126 @@ def test_deleting_nonexistent_role_fails(fresh_sql_zen_store: BaseZenStore):
     """Tests deleting a nonexistent role fails."""
     with pytest.raises(KeyError):
         fresh_sql_zen_store.delete_role(uuid.uuid4())
+
+
+#  .------.
+# | ROLES |
+# '-------'
+
+
+def test_assigning_role_to_user_succeeds(
+    fresh_sql_store_with_team: BaseZenStore,
+):
+    """Tests assigning a role to a user."""
+    new_role = RoleModel(name="aria_feeder")
+    current_user_id = str(fresh_sql_store_with_team.active_user.id)
+    fresh_sql_store_with_team.create_role(new_role)
+    new_role_id = str(fresh_sql_store_with_team.get_role("aria_feeder").id)
+    fresh_sql_store_with_team.assign_role(new_role_id, current_user_id)
+
+    assert len(fresh_sql_store_with_team.roles) == 1
+    assert len(fresh_sql_store_with_team.role_assignments) == 1
+
+
+def test_assigning_role_to_team_succeeds(
+    fresh_sql_store_with_team: BaseZenStore,
+):
+    """Tests assigning a role to a team."""
+    team_id = str(fresh_sql_store_with_team.get_team("arias_team").id)
+    new_role = RoleModel(name="blupus_friend")
+    fresh_sql_store_with_team.create_role(new_role)
+    new_role_id = str(fresh_sql_store_with_team.get_role("blupus_friend").id)
+    fresh_sql_store_with_team.assign_role(new_role_id, team_id, is_user=False)
+
+    assert len(fresh_sql_store_with_team.roles) == 1
+    assert len(fresh_sql_store_with_team.role_assignments) == 1
+    assert (
+        len(
+            fresh_sql_store_with_team.list_role_assignments(
+                fresh_sql_store_with_team.active_user.id
+            )
+        )
+        == 0
+    )
+
+
+# TODO: add this back in when exception is raised in SQLZenStore
+# def test_assigning_role_if_assignment_already_exists(
+#     fresh_sql_store_with_team: BaseZenStore,
+# ):
+#     """Tests assigning a role to a user if the assignment already exists."""
+#     new_role = RoleModel(name="aria_feeder")
+#     current_user_id = str(fresh_sql_store_with_team.active_user.id)
+#     fresh_sql_store_with_team.create_role(new_role)
+#     new_role_id = str(fresh_sql_store_with_team.get_role("aria_feeder").id)
+#     fresh_sql_store_with_team.assign_role(new_role_id, current_user_id)
+#     with pytest.raises(EntityExistsError):
+#         fresh_sql_store_with_team.assign_role(new_role_id, current_user_id)
+
+#     assert len(fresh_sql_store_with_team.roles) == 1
+#     assert len(fresh_sql_store_with_team.role_assignments) == 1
+
+
+def test_revoking_role_for_user_succeeds(
+    fresh_sql_store_with_team: BaseZenStore,
+):
+    """Tests revoking a role for a user."""
+    new_role = RoleModel(name="aria_feeder")
+    current_user_id = str(fresh_sql_store_with_team.active_user.id)
+    fresh_sql_store_with_team.create_role(new_role)
+    new_role_id = str(fresh_sql_store_with_team.get_role("aria_feeder").id)
+    fresh_sql_store_with_team.assign_role(new_role_id, current_user_id)
+    fresh_sql_store_with_team.revoke_role(new_role_id, current_user_id)
+
+    assert len(fresh_sql_store_with_team.roles) == 1
+    assert len(fresh_sql_store_with_team.role_assignments) == 0
+
+
+def test_revoking_role_for_team_succeeds(
+    fresh_sql_store_with_team: BaseZenStore,
+):
+    """Tests revoking a role for a team."""
+    team_id = str(fresh_sql_store_with_team.get_team("arias_team").id)
+    new_role = RoleModel(name="blupus_friend")
+    fresh_sql_store_with_team.create_role(new_role)
+    new_role_id = str(fresh_sql_store_with_team.get_role("blupus_friend").id)
+    fresh_sql_store_with_team.assign_role(new_role_id, team_id, is_user=False)
+    fresh_sql_store_with_team.revoke_role(new_role_id, team_id, is_user=False)
+
+    assert len(fresh_sql_store_with_team.roles) == 1
+    assert len(fresh_sql_store_with_team.role_assignments) == 0
+
+
+def test_revoking_nonexistent_role_fails(
+    fresh_sql_store_with_team: BaseZenStore,
+):
+    """Tests revoking a nonexistent role fails."""
+    current_user_id = str(fresh_sql_store_with_team.active_user.id)
+    with pytest.raises(KeyError):
+        fresh_sql_store_with_team.revoke_role(uuid.uuid4(), current_user_id)
+
+
+def test_revoking_role_for_nonexistent_user_fails(
+    fresh_sql_store_with_team: BaseZenStore,
+):
+    """Tests revoking a role for a nonexistent user fails."""
+    new_role = RoleModel(name="aria_feeder")
+    fresh_sql_store_with_team.create_role(new_role)
+    new_role_id = str(fresh_sql_store_with_team.get_role("aria_feeder").id)
+    current_user_id = str(fresh_sql_store_with_team.active_user.id)
+    fresh_sql_store_with_team.assign_role(new_role_id, current_user_id)
+    with pytest.raises(KeyError):
+        fresh_sql_store_with_team.revoke_role(new_role_id, uuid.uuid4())
+
+
+#  .----------------.
+# | METADATA_CONFIG |
+# '-----------------'
+
+
+def test_get_metadata_config_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting metadata config."""
+    metadata_config = fresh_sql_zen_store.get_metadata_config()
+    assert metadata_config is not None
