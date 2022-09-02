@@ -521,9 +521,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         """
         from zenml.zen_stores.base_zen_store import BaseZenStore
 
-        return BaseZenStore.get_default_store_config(
-            path=self.config_directory
-        )
+        return BaseZenStore.get_default_store_config(path=self.config_directory)
 
     def set_default_store(self) -> None:
         """Creates and sets the default store configuration.

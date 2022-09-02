@@ -11,95 +11,99 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Service implementation for the ZenML local server deployment."""
+"""Service implementation for the ZenML docker server deployment."""
 
-import ipaddress
 import os
 import shutil
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import (
-    DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
-    ENV_ZENML_CONFIG_PATH,
-    ZEN_SERVER_ENTRYPOINT,
-)
+from zenml.constants import ENV_ZENML_CONFIG_PATH, ZEN_SERVER_ENTRYPOINT
 from zenml.enums import StoreType
 from zenml.logger import get_logger
 from zenml.services import (
+    ContainerService,
+    ContainerServiceConfig,
+    ContainerServiceEndpoint,
+    ContainerServiceEndpointConfig,
     HTTPEndpointHealthMonitor,
     HTTPEndpointHealthMonitorConfig,
-    LocalDaemonService,
-    LocalDaemonServiceConfig,
-    LocalDaemonServiceEndpoint,
-    LocalDaemonServiceEndpointConfig,
     ServiceEndpointProtocol,
     ServiceType,
 )
+from zenml.services.container.container_service import (
+    SERVICE_CONTAINER_GLOBAL_CONFIG_DIR,
+    SERVICE_CONTAINER_GLOBAL_CONFIG_PATH,
+)
+from zenml.services.container.entrypoint import SERVICE_CONTAINER_PATH
 from zenml.utils.io_utils import get_global_config_directory
 from zenml.zen_server.deploy.base_deployer import BaseServerDeploymentConfig
+from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 logger = get_logger(__name__)
 
 ZEN_SERVER_HEALTHCHECK_URL_PATH = "health"
 
-LOCAL_ZENML_SERVER_CONFIG_PATH = os.path.join(
-    get_global_config_directory(),
+DOCKER_ZENML_SERVER_CONFIG_SUBPATH = os.path.join(
     "zen_server",
-    "local",
-)
-LOCAL_ZENML_SERVER_CONFIG_FILENAME = os.path.join(
-    LOCAL_ZENML_SERVER_CONFIG_PATH, "service.json"
-)
-LOCAL_ZENML_SERVER_GLOBAL_CONFIG_PATH = os.path.join(
-    LOCAL_ZENML_SERVER_CONFIG_PATH, ".zenconfig"
+    "docker",
 )
 
-LOCAL_ZENML_SERVER_DEFAULT_TIMEOUT = 30
+DOCKER_ZENML_SERVER_CONFIG_PATH = os.path.join(
+    get_global_config_directory(),
+    DOCKER_ZENML_SERVER_CONFIG_SUBPATH,
+)
+DOCKER_ZENML_SERVER_CONFIG_FILENAME = os.path.join(
+    DOCKER_ZENML_SERVER_CONFIG_PATH, "service.json"
+)
+DOCKER_ZENML_SERVER_GLOBAL_CONFIG_PATH = os.path.join(
+    DOCKER_ZENML_SERVER_CONFIG_PATH, SERVICE_CONTAINER_GLOBAL_CONFIG_DIR
+)
+DOCKER_ZENML_SERVER_DEFAULT_IMAGE = "zenmldocker/zenml-server"
+
+DOCKER_ZENML_SERVER_DEFAULT_TIMEOUT = 60
 
 
-class LocalServerDeploymentConfig(BaseServerDeploymentConfig):
-    """Local server deployment configuration.
+class DockerServerDeploymentConfig(BaseServerDeploymentConfig):
+    """Docker server deployment configuration.
 
     Attributes:
         port: The TCP port number where the server is accepting connections.
-        address: The IP address where the server is reachable.
+        image: The Docker image to use for the server.
     """
 
-    port: int = 8237
-    address: Union[
-        ipaddress.IPv4Address, ipaddress.IPv6Address
-    ] = ipaddress.IPv4Address(DEFAULT_LOCAL_SERVICE_IP_ADDRESS)
+    port: int = 8238
+    image: str = DOCKER_ZENML_SERVER_DEFAULT_IMAGE
 
 
-class LocalZenServer(LocalDaemonService):
-    """Service daemon that can be used to start a local ZenServer.
+class DockerZenServer(ContainerService):
+    """Service that can be used to start a docker ZenServer.
 
     Attributes:
         config: service configuration
-        endpoint: optional service endpoint
+        endpoint: service endpoint
     """
 
     SERVICE_TYPE = ServiceType(
-        name="local_zenml_server",
+        name="docker_zenml_server",
         type="zen_server",
-        flavor="local",
-        description="Local ZenML server deployment",
+        flavor="docker",
+        description="Docker ZenML server deployment",
     )
 
-    config: LocalDaemonServiceConfig
-    endpoint: LocalDaemonServiceEndpoint
+    config: ContainerServiceConfig
+    endpoint: ContainerServiceEndpoint
 
     def __init__(
         self,
-        server_config: Optional[LocalServerDeploymentConfig] = None,
+        server_config: Optional[DockerServerDeploymentConfig] = None,
         **attrs: Any,
     ) -> None:
         """Initialize the ZenServer.
 
         Args:
             server_config: server deployment configuration.
-            attrs: additional attributes.
+            attrs: Pydantic initialization arguments.
         """
         if server_config:
             # initialization from a server deployment configuration
@@ -107,7 +111,7 @@ class LocalZenServer(LocalDaemonService):
                 server_config
             )
             attrs["config"] = config
-            endpoint = LocalDaemonServiceEndpoint(
+            endpoint = ContainerServiceEndpoint(
                 config=endpoint_cfg,
                 monitor=HTTPEndpointHealthMonitor(
                     config=monitor_cfg,
@@ -120,10 +124,10 @@ class LocalZenServer(LocalDaemonService):
     @classmethod
     def _get_configuration(
         cls,
-        config: LocalServerDeploymentConfig,
+        config: DockerServerDeploymentConfig,
     ) -> Tuple[
-        LocalDaemonServiceConfig,
-        LocalDaemonServiceEndpointConfig,
+        ContainerServiceConfig,
+        ContainerServiceEndpointConfig,
         HTTPEndpointHealthMonitorConfig,
     ]:
         """Construct the service configuration from a server deployment configuration.
@@ -135,13 +139,13 @@ class LocalZenServer(LocalDaemonService):
             The service, service endpoint and endpoint monitor configuration.
         """
         return (
-            LocalDaemonServiceConfig(
-                root_runtime_path=LOCAL_ZENML_SERVER_CONFIG_PATH,
+            ContainerServiceConfig(
+                root_runtime_path=DOCKER_ZENML_SERVER_CONFIG_PATH,
                 singleton=True,
+                image=config.image,
             ),
-            LocalDaemonServiceEndpointConfig(
+            ContainerServiceEndpointConfig(
                 protocol=ServiceEndpointProtocol.HTTP,
-                ip_address=str(config.address),
                 port=config.port,
                 allocate_port=False,
             ),
@@ -152,52 +156,61 @@ class LocalZenServer(LocalDaemonService):
         )
 
     def _copy_global_configuration(self) -> None:
-        """Copy the global configuration to the local ZenML server location.
+        """Copy the global configuration to the docker ZenML server location.
 
-        The local ZenML server global configuration is a copy of the local
+        The docker ZenML server global configuration is a copy of the docker
         global configuration with the store configuration set to point to the
         local store.
         """
         gc = GlobalConfiguration()
 
         # this creates a copy of the global configuration with the store
-        # set to the local store and saves it to the server configuration path
+        # set to where the default local store is mounted in the docker
+        # container and saves it to the server configuration path
+        store_config = gc.get_default_store()
+        store_config.url = SqlZenStore.get_local_url(
+            SERVICE_CONTAINER_GLOBAL_CONFIG_PATH
+        )
         gc.copy_configuration(
-            config_path=LOCAL_ZENML_SERVER_GLOBAL_CONFIG_PATH,
-            store_config=gc.get_default_store(),
+            config_path=DOCKER_ZENML_SERVER_GLOBAL_CONFIG_PATH,
+            store_config=store_config,
         )
 
     @classmethod
-    def get_service(cls) -> Optional["LocalZenServer"]:
-        """Load and return the local ZenML server service, if present.
+    def get_service(cls) -> Optional["DockerZenServer"]:
+        """Load and return the docker ZenML server service, if present.
 
         Returns:
-            The local ZenML server service or None, if the local server
+            The docker ZenML server service or None, if the docker server
             deployment is not found.
         """
         from zenml.services import ServiceRegistry
 
         try:
-            with open(LOCAL_ZENML_SERVER_CONFIG_FILENAME, "r") as f:
+            with open(DOCKER_ZENML_SERVER_CONFIG_FILENAME, "r") as f:
                 return cast(
-                    LocalZenServer,
+                    DockerZenServer,
                     ServiceRegistry().load_service_from_json(f.read()),
                 )
         except FileNotFoundError:
             return None
 
-    def _get_daemon_cmd(self) -> Tuple[List[str], Dict[str, str]]:
-        """Get the command to start the daemon.
+    def _get_container_cmd(self) -> Tuple[List[str], Dict[str, str]]:
+        """Get the command to run the service container.
 
-        Overrides the base class implementation to add the environment variable
-        that forces the ZenML server to use the copied global config.
+        Override the inherited method to use a ZenML global config path inside
+        the container that points to the global config copy instead of the
+        one mounted from the local host.
 
         Returns:
-            The command to start the daemon and the environment variables to
-            set for the command.
+            Command needed to launch the docker container and the environment
+            variables to set, in the formats accepted by subprocess.Popen.
         """
-        cmd, env = super()._get_daemon_cmd()
-        env[ENV_ZENML_CONFIG_PATH] = LOCAL_ZENML_SERVER_GLOBAL_CONFIG_PATH
+        cmd, env = super()._get_container_cmd()
+        env[ENV_ZENML_CONFIG_PATH] = os.path.join(
+            SERVICE_CONTAINER_PATH,
+            SERVICE_CONTAINER_GLOBAL_CONFIG_DIR,
+        )
         return cmd, env
 
     def provision(self) -> None:
@@ -212,7 +225,7 @@ class LocalZenServer(LocalDaemonService):
             force: if True, the service daemon will be forcefully stopped
         """
         super().deprovision(force=force)
-        shutil.rmtree(LOCAL_ZENML_SERVER_CONFIG_PATH)
+        shutil.rmtree(DOCKER_ZENML_SERVER_CONFIG_PATH)
 
     def run(self) -> None:
         """Run the ZenServer.
@@ -238,7 +251,7 @@ class LocalZenServer(LocalDaemonService):
         try:
             uvicorn.run(
                 ZEN_SERVER_ENTRYPOINT,
-                host=self.endpoint.config.ip_address,
+                host="0.0.0.0",  # self.endpoint.config.ip_address,
                 port=self.endpoint.config.port,
                 log_level="info",
             )
@@ -258,7 +271,7 @@ class LocalZenServer(LocalDaemonService):
         return self.endpoint.status.uri
 
     def reconfigure(
-        self, config: LocalServerDeploymentConfig, timeout: int = 0
+        self, config: DockerServerDeploymentConfig, timeout: int = 0
     ) -> None:
         """Reconfigure and update the ZenServer configuration.
 
@@ -279,15 +292,15 @@ class LocalZenServer(LocalDaemonService):
             and new_monitor_cfg == self.endpoint.monitor.config
         ):
             logger.info(
-                "The local ZenML server is already configured with the same "
+                "The docker ZenML server is already configured with the same "
                 "parameters."
             )
         else:
             logger.info(
-                "The local ZenML server is already configured with "
+                "The dcoker ZenML server is already configured with "
                 "different parameters. Restarting..."
             )
-            self.stop(timeout=timeout or LOCAL_ZENML_SERVER_DEFAULT_TIMEOUT)
+            self.stop(timeout=timeout or DOCKER_ZENML_SERVER_DEFAULT_TIMEOUT)
 
             self.config, self.endpoint.config, self.endpoint.monitor.config = (
                 new_config,
@@ -296,5 +309,5 @@ class LocalZenServer(LocalDaemonService):
             )
 
         if not self.is_running:
-            logger.info("Starting the local ZenML server.")
+            logger.info("Starting the docker ZenML server.")
             self.start(timeout=timeout)

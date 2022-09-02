@@ -14,9 +14,10 @@
 """Zen Server base deployer definition."""
 
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar, List, Optional
-from pydantic import BaseModel, Field
+from typing import ClassVar, Generator, List, Optional
 from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 from zenml.logger import get_logger
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
@@ -36,6 +37,7 @@ class BaseServerDeploymentStatus(BaseModel):
     tear-down timeout/error etc.
     * for an unmanaged deployment, the operational status (i.e. whether the
     server is reachable)
+    * the URL of the server
 
     Attributes:
     """
@@ -43,6 +45,7 @@ class BaseServerDeploymentStatus(BaseModel):
     deployed: bool
     connected: bool
     last_error: Optional[str] = None
+    url: Optional[str] = None
 
 
 class BaseServerDeploymentConfig(BaseModel):
@@ -109,6 +112,9 @@ class BaseServerDeployer(ABC):
             timeout: The timeout in seconds to wait until the deployment is
                 torn down. If not supplied, the default timeout value is
                 implementation specific.
+
+        Raises:
+            KeyError: If the server deployment is not found.
         """
 
     @abstractmethod
@@ -120,6 +126,9 @@ class BaseServerDeployer(ABC):
 
         Returns:
             The server deployment status.
+
+        Raises:
+            KeyError: If the server deployment is not found.
         """
 
     @abstractmethod
@@ -133,6 +142,9 @@ class BaseServerDeployer(ABC):
             server: The server deployment name, identifier or URL.
             username: The username to use for the connection.
             password: The password to use for the connection.
+
+        Raises:
+            KeyError: If the server deployment is not found.
         """
 
     @abstractmethod
@@ -141,6 +153,9 @@ class BaseServerDeployer(ABC):
 
         Args:
             server: The server deployment name, identifier or URL.
+
+        Raises:
+            KeyError: If the server deployment is not found.
         """
 
     @abstractmethod
@@ -152,6 +167,9 @@ class BaseServerDeployer(ABC):
 
         Returns:
             The requested server deployment.
+
+        Raises:
+            KeyError: If the server deployment is not found.
         """
 
     @abstractmethod
@@ -160,4 +178,22 @@ class BaseServerDeployer(ABC):
 
         Returns:
             The list of server deployments.
+        """
+
+    @abstractmethod
+    def get_logs(
+        self, server: str, follow: bool = False, tail: Optional[int] = None
+    ) -> Generator[str, bool, None]:
+        """Get the server deployment logs.
+
+        Args:
+            server: The server deployment name, identifier or URL.
+            follow: if True, the logs will be streamed as they are written
+            tail: only retrieve the last NUM lines of log output.
+
+        Returns:
+            A generator that can be accessed to get the service logs.
+
+        Raises:
+            KeyError: If the server deployment is not found.
         """
