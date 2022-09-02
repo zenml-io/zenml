@@ -189,7 +189,7 @@ class BaseZenStore(BaseModel):
             return None
 
     @property
-    def default_project_id(self) -> str:
+    def default_project_id(self) -> UUID:
         """Get the ID of the default project, or None if it doesn't exist."""
         try:
             return self.get_project(DEFAULT_PROJECT_NAME).id
@@ -396,7 +396,7 @@ class BaseZenStore(BaseModel):
     # TODO: [ALEX] add filtering param(s)
     def list_stacks(
         self,
-        project_id: str,
+        project_id: UUID,
         user_id: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
@@ -417,7 +417,7 @@ class BaseZenStore(BaseModel):
     @abstractmethod
     def _list_stacks(
         self,
-        project_id: str,
+        project_id: UUID,
         owner: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,

@@ -324,9 +324,16 @@ class SqlZenStore(BaseZenStore):
             A list of all stacks.
         """
         with Session(self.engine) as session:
+            projects = session.exec(
+                select(StackSchema).where(StackSchema.project_id == project_id)
+            ).one_or_none()
+            if projects is None:
+                raise KeyError(f"Project with ID {project_id} not found.")
 
             # Get a list of all stacks
-            query = select(StackSchema)
+            query = select(StackSchema).where(
+                StackSchema.project_id == project_id
+            )
             # TODO: prettify
             if user_id:
                 query = query.where(StackSchema.owner == user_id)
