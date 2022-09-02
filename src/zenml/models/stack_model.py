@@ -100,12 +100,10 @@ class StackModel(BaseModel):
         Returns:
             the corresponding Stack instance
         """
-        stack_components = {}
-        for component_wrapper in self.components:
-            component_type = component_wrapper.type
-            component = component_wrapper.to_component()
-            stack_components[component_type] = component
-
+        stack_components = {
+            type_: model.to_component() 
+            for type_, model in self.components.items()
+        }
         return Stack.from_components(
             name=self.name, components=stack_components
         )

@@ -117,9 +117,10 @@ class ComponentModel(BaseModel):
         from zenml.repository import Repository
 
         flavor = Repository(skip_repository_check=True).get_flavor(  # type: ignore[call-arg]
-            name=self.flavor, component_type=self.type
+            name=self.flavor_name, component_type=self.type
         )
 
-        config = yaml.safe_load(base64.b64decode(self.config).decode())
-
+        config = yaml.safe_load(base64.b64decode(self.configuration).decode())
+        config["uuid"] = self.id
+        config["name"] = self.name
         return flavor.parse_obj(config)
