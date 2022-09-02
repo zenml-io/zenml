@@ -284,7 +284,7 @@ class Repository(metaclass=RepositoryMetaClass):
             )
             default_stack = self.zen_store.list_stacks(
                 name=DEFAULT_STACK_NAME,
-                project_id=self._config.active_project_name,
+                project_id=self.zen_store.default_project_id,
                 user_id=self.zen_store.default_user_id,
             )[0]
             # TODO: [server] its not guaranteed that this stack exists
@@ -304,7 +304,7 @@ class Repository(metaclass=RepositoryMetaClass):
                 )
                 default_stack = self.zen_store.list_stacks(
                     name="default",
-                    project_id=self._config.active_project_name,
+                    project_id=self.zen_store.default_project_id,
                     user_id=self.zen_store.default_user_id,
                 )[
                     0
@@ -601,7 +601,7 @@ class Repository(metaclass=RepositoryMetaClass):
         """
         if is_shared:
             stacks = self.zen_store.list_stacks(
-                project_id=self.zen_store.default_project_id,
+                project_id=self.active_project.id,
                 name=name,
                 is_shared=True,
             )
@@ -698,12 +698,7 @@ class Repository(metaclass=RepositoryMetaClass):
         Args:
             component: The new component to update with.
         """
-        self.zen_store.update_stack_component(
-            user_id=self.zen_store.default_user_id,  # TODO: [server] active user needs to go here
-            project_id=self.active_project.id,
-            component_id=component.id,
-            component=component,
-        )
+        self.zen_store.update_stack_component(component=component)
 
     def list_stack_components(
         self, component_type: StackComponentType
@@ -758,7 +753,8 @@ class Repository(metaclass=RepositoryMetaClass):
             )
         elif len(components) > 1:
             raise RuntimeError(
-                "Multiple components have been found for this name.", components
+                "Multiple components have been found for this name.",
+                components,
             )
 
         return components[0]

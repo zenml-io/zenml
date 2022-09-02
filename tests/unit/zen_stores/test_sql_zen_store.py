@@ -486,7 +486,7 @@ def test_revoking_nonexistent_role_fails(
     fresh_sql_store_with_team: BaseZenStore,
 ):
     """Tests revoking a nonexistent role fails."""
-    current_user_id = str(fresh_sql_store_with_team.active_user.id)
+    current_user_id = fresh_sql_store_with_team.active_user.id
     with pytest.raises(KeyError):
         fresh_sql_store_with_team.revoke_role(uuid.uuid4(), current_user_id)
 
@@ -544,3 +544,54 @@ def test_stack_names_property(
     stack_names = fresh_sql_zen_store.stack_names
     assert len(stack_names) == 1
     assert "default" in stack_names
+
+
+def test_list_stacks_fails_with_nonexistent_project(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests listing stacks fails with nonexistent project."""
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.list_stacks(uuid.uuid4())
+
+
+def test_stacks_property(fresh_sql_zen_store: BaseZenStore):
+    """Tests stacks property."""
+    assert len(fresh_sql_zen_store.stacks) == 1
+
+
+def test_get_stack_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting stack."""
+    current_stack_id = fresh_sql_zen_store.stacks[0].id
+    stack = fresh_sql_zen_store.get_stack(current_stack_id)
+    assert stack is not None
+
+
+def test_get_stack_fails_with_nonexistent_stack_id(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting stack fails with nonexistent stack id."""
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.get_stack(uuid.uuid4())
+
+
+# TODO: continue onwards to cover register, update and delete stacks
+# def test_register_stack_succeeds(
+#     fresh_sql_zen_store: BaseZenStore,
+# ):
+#     """Tests registering stack."""
+#     new_stack = StackModel(name="arias_stack", components={})
+#     fresh_sql_zen_store.register_stack(
+#         fresh_sql_zen_store.default_user_id,
+#         fresh_sql_zen_store.default_project_id,
+#         new_stack,
+#     )
+#     assert (
+#         len(
+#             fresh_sql_zen_store.list_stacks(
+#                 fresh_sql_zen_store.default_project_id
+#             )
+#         )
+#         == 2
+#     )

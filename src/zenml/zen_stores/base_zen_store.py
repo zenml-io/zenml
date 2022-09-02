@@ -189,7 +189,7 @@ class BaseZenStore(BaseModel):
             return None
 
     @property
-    def default_project_id(self) -> str:
+    def default_project_id(self) -> UUID:
         """Get the ID of the default project, or None if it doesn't exist."""
         try:
             return self.get_project(DEFAULT_PROJECT_NAME).id
@@ -396,7 +396,7 @@ class BaseZenStore(BaseModel):
     # TODO: [ALEX] add filtering param(s)
     def list_stacks(
         self,
-        project_id: str,
+        project_id: UUID,
         user_id: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
@@ -411,13 +411,16 @@ class BaseZenStore(BaseModel):
                        flag
         Returns:
             A list of all stacks.
+
+        Raises:
+            KeyError: if the project doesn't exist.
         """
         return self._list_stacks(project_id, user_id, name, is_shared)
 
     @abstractmethod
     def _list_stacks(
         self,
-        project_id: str,
+        project_id: UUID,
         owner: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
@@ -724,17 +727,11 @@ class BaseZenStore(BaseModel):
 
     def update_stack_component(
         self,
-        user_id: UUID,
-        project_id: UUID,
-        component_id: UUID,
         component: ComponentModel,
     ) -> ComponentModel:
         """Update an existing stack component.
 
         Args:
-            user_id: The user that created the stack component.
-            project_id: The project the stack component is created in.
-            component_id: The id of the stack component to update.
             component: The stack component to use for the update.
 
         Returns:
@@ -742,30 +739,22 @@ class BaseZenStore(BaseModel):
         """
         analytics_metadata = {
             "type": component.type.value,
-            "flavor": component.flavor,
+            "flavor": component.flavor_name,
         }
         self._track_event(
             AnalyticsEvent.UPDATED_STACK_COMPONENT,
             metadata=analytics_metadata,
         )
-        return self._update_stack_component(
-            user_id, project_id, component_id, component
-        )
+        return self._update_stack_component(component)
 
     @abstractmethod
     def _update_stack_component(
         self,
-        user_id: str,
-        project_id: str,
-        component_id: str,
         component: ComponentModel,
     ) -> ComponentModel:
         """Update an existing stack component.
 
         Args:
-            user_id: The user that created the stack component.
-            project_id: The project the stack component is created in.
-            component_id: The id of the stack component to update.
             component: The stack component to use for the update.
 
         Returns:
@@ -2504,22 +2493,7 @@ class BaseZenStore(BaseModel):
 
     # LEGACY CODE FROM THE PREVIOUS VERSION OF BASEZENSTORE
 
-    # Private interface (must be implemented, not to be called by user):
-    @abstractmethod
-    def _get_stack_component_names(
-        self, component_type: StackComponentType
-    ) -> List[str]:
-        """Get names of all registered stack components of a given type.
-
-        Args:
-            component_type: The type of the component to list names for.
-
-        Returns:
-            A list of names as strings.
-        """
-
     # Stack component flavors
-
     @property
     @abstractmethod
     def flavors(self) -> List[FlavorModel]:
