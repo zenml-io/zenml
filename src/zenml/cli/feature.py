@@ -44,8 +44,7 @@ def register_feature_store_subcommands() -> None:
             ctx: The click context.
         """
         repo = Repository()
-        active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
-        feature_store_wrapper = active_stack.get_component_wrapper(
+        feature_store_wrapper = repo.active_stack.get_component_wrapper(
             StackComponentType.FEATURE_STORE
         )
         if feature_store_wrapper is None:

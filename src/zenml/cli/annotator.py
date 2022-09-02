@@ -44,7 +44,7 @@ def register_annotator_subcommands() -> None:
             ctx: The click Context object.
         """
         repo = Repository()
-        active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
+        active_stack = repo.active_stack
         annotator_wrapper = active_stack.get_component_wrapper(
             StackComponentType.ANNOTATOR
         )

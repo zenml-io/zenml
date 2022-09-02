@@ -405,7 +405,7 @@ def update_stack(
 
     repo = Repository()
 
-    active_stack_name = repo.active_stack_name
+    active_stack_name = repo.active_stack.name
     stack_name = stack_name or active_stack_name
 
     with console.status(f"Updating stack `{stack_name}`...\n"):

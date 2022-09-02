@@ -57,8 +57,7 @@ def register_secrets_manager_subcommands() -> None:
             ctx: Click context.
         """
         repo = Repository()
-        active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
-        secrets_manager_wrapper = active_stack.get_component_wrapper(
+        secrets_manager_wrapper = repo.active_stack.get_component_wrapper(
             StackComponentType.SECRETS_MANAGER
         )
         if secrets_manager_wrapper is None:

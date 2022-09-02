@@ -53,8 +53,7 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
             ctx: The click context.
         """
         repo = Repository()
-        active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
-        model_deployer_wrapper = active_stack.get_component_wrapper(
+        model_deployer_wrapper = repo.active_stack.get_component_wrapper(
             StackComponentType.MODEL_DEPLOYER
         )
         if model_deployer_wrapper is None:

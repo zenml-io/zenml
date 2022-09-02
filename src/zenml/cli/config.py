@@ -241,7 +241,7 @@ def config_describe() -> None:
 
     stack_scope = "repository" if repo.uses_local_active_stack else "global"
     cli_utils.declare(
-        f"The active stack is: '{repo.active_stack_name}' ({stack_scope})"
+        f"The active stack is: '{repo.active_stack.name}' ({stack_scope})"
     )
     project_scope = "repository" if repo.uses_local_active_project else "global"
     if not active_project_name:

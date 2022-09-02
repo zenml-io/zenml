@@ -45,6 +45,7 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
+# TODO: [server] this is defined in two places now, should be fixed
 DEFAULT_STACK_NAME = "default"
 
 class RepositoryConfiguration(FileSyncModel):
