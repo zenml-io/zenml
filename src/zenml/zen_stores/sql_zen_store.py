@@ -322,6 +322,9 @@ class SqlZenStore(BaseZenStore):
                        flag
         Returns:
             A list of all stacks.
+
+        Raises:
+            KeyError: If the project does not exist.
         """
         with Session(self.engine) as session:
             projects = session.exec(
@@ -589,8 +592,9 @@ class SqlZenStore(BaseZenStore):
 
             return component_in_db.to_model()
 
-    def _update_stack_component(self,
-                                component: ComponentModel) -> ComponentModel:
+    def _update_stack_component(
+        self, component: ComponentModel
+    ) -> ComponentModel:
         """Update an existing stack component.
 
         Args:
@@ -603,8 +607,9 @@ class SqlZenStore(BaseZenStore):
             # Check if component with the domain key (name, prj, owner) already
             #  exists
             existing_component = session.exec(
-                select(StackComponentSchema)
-                .where(StackComponentSchema.id == component.id)
+                select(StackComponentSchema).where(
+                    StackComponentSchema.id == component.id
+                )
             ).first()
 
             # TODO: verify if is_shared status needs to be checked here
@@ -620,10 +625,6 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
             return existing_component.to_model()
-
-
-
-
 
     def _delete_stack_component(self, component_id: UUID) -> None:
         """Delete a stack component.

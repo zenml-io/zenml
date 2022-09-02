@@ -157,8 +157,8 @@ def _get_stack_component_model(
                     component_type, name=component_name
                 ),
                 (
-                        active_component is not None
-                        and component_name == active_component.name
+                    active_component is not None
+                    and component_name == active_component.name
                 ),
             )
         except KeyError:
@@ -665,7 +665,8 @@ def generate_stack_component_update_command(
         updated_component = component_class(**new_attributes)
 
         repo.update_stack_component(
-            component=ComponentModel.from_component(updated_component))
+            component=ComponentModel.from_component(updated_component)
+        )
         cli_utils.declare(f"Successfully updated {display_name} `{name}`.")
 
     return update_stack_component_command

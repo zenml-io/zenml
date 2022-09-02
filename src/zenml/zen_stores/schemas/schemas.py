@@ -392,8 +392,8 @@ class StackComponentSchema(SQLModel, table=True):
         )
 
     def from_update_model(
-            self,
-            component: ComponentModel,
+        self,
+        component: ComponentModel,
     ) -> "StackComponentSchema":
         """Update the updatable fields on an existing StackSchema.
 

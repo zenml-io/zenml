@@ -698,9 +698,7 @@ class Repository(metaclass=RepositoryMetaClass):
         Args:
             component: The new component to update with.
         """
-        self.zen_store.update_stack_component(
-            component=component
-        )
+        self.zen_store.update_stack_component(component=component)
 
     def list_stack_components(
         self, component_type: StackComponentType

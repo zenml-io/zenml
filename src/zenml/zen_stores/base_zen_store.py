@@ -411,6 +411,9 @@ class BaseZenStore(BaseModel):
                        flag
         Returns:
             A list of all stacks.
+
+        Raises:
+            KeyError: if the project doesn't exist.
         """
         return self._list_stacks(project_id, user_id, name, is_shared)
 
@@ -2375,7 +2378,7 @@ class BaseZenStore(BaseModel):
         Returns:
             The inputs of the step.
         """
-    
+
     #  .---------.
     # | METADATA |
     # '----------'
