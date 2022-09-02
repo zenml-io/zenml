@@ -1227,6 +1227,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If the role assignment already exists.
         """
+        # TODO: Check if the role assignment already exists + raise error
         with Session(self.engine) as session:
             # Check if role with the given name already exists
             role = session.exec(
