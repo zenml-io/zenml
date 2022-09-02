@@ -392,13 +392,13 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Get the Schemas of all components mentioned
-            filters = [(StackComponentSchema.id == c.id)
-                       for c in stack.components.values()]
+            filters = [
+                (StackComponentSchema.id == c.id)
+                for c in stack.components.values()
+            ]
 
             defined_components = session.exec(
-                select(StackComponentSchema).where(
-                    or_(*filters)
-                )
+                select(StackComponentSchema).where(or_(*filters))
             ).all()
 
             # Create the stack
@@ -437,17 +437,18 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Get the Schemas of all components mentioned
-            filters = [(StackComponentSchema.id == c.id)
-                       for c in stack.components.values()]
+            filters = [
+                (StackComponentSchema.id == c.id)
+                for c in stack.components.values()
+            ]
 
             defined_components = session.exec(
-                select(StackComponentSchema).where(
-                    or_(*filters)
-                )
+                select(StackComponentSchema).where(or_(*filters))
             ).all()
 
             existing_stack.from_update_model(
-                stack=stack, defined_components=defined_components)
+                stack=stack, defined_components=defined_components
+            )
             session.add(existing_stack)
             session.commit()
 

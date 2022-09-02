@@ -41,7 +41,7 @@ class StackModel(BaseModel):
     )
     components: Dict[StackComponentType, ComponentModel] = Field(
         title="A mapping of stack component types to the id's of"
-              "instances of components of this type."
+        "instances of components of this type."
     )
     is_shared: bool = Field(
         default=False,
@@ -80,8 +80,10 @@ class StackModel(BaseModel):
     def is_valid(self):
         # TODO: [server] the Model should validate if the stack configuration
         #  is valid in theory
-        if StackComponentType.ARTIFACT_STORE and \
-                StackComponentType.ORCHESTRATOR in self.components.keys():
+        if (
+            StackComponentType.ARTIFACT_STORE
+            and StackComponentType.ORCHESTRATOR in self.components.keys()
+        ):
             return True
         else:
             return False
