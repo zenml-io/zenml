@@ -694,9 +694,6 @@ class Repository(metaclass=RepositoryMetaClass):
             component: The new component to update with.
         """
         self.zen_store.update_stack_component(
-            user_id=self.zen_store.default_user_id, # TODO: [server] active user needs to go here
-            project_id=self.active_project.id,
-            component_id=component.id,
             component=component
         )
 

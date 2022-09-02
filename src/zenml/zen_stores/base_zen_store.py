@@ -724,17 +724,11 @@ class BaseZenStore(BaseModel):
 
     def update_stack_component(
         self,
-        user_id: UUID,
-        project_id: UUID,
-        component_id: UUID,
         component: ComponentModel,
     ) -> ComponentModel:
         """Update an existing stack component.
 
         Args:
-            user_id: The user that created the stack component.
-            project_id: The project the stack component is created in.
-            component_id: The id of the stack component to update.
             component: The stack component to use for the update.
 
         Returns:
@@ -742,30 +736,22 @@ class BaseZenStore(BaseModel):
         """
         analytics_metadata = {
             "type": component.type.value,
-            "flavor": component.flavor,
+            "flavor": component.flavor_name,
         }
         self._track_event(
             AnalyticsEvent.UPDATED_STACK_COMPONENT,
             metadata=analytics_metadata,
         )
-        return self._update_stack_component(
-            user_id, project_id, component_id, component
-        )
+        return self._update_stack_component(component)
 
     @abstractmethod
     def _update_stack_component(
         self,
-        user_id: str,
-        project_id: str,
-        component_id: str,
         component: ComponentModel,
     ) -> ComponentModel:
         """Update an existing stack component.
 
         Args:
-            user_id: The user that created the stack component.
-            project_id: The project the stack component is created in.
-            component_id: The id of the stack component to update.
             component: The stack component to use for the update.
 
         Returns:
