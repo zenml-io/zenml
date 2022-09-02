@@ -557,3 +557,41 @@ def test_list_stacks_fails_with_nonexistent_project(
 def test_stacks_property(fresh_sql_zen_store: BaseZenStore):
     """Tests stacks property."""
     assert len(fresh_sql_zen_store.stacks) == 1
+
+
+def test_get_stack_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting stack."""
+    current_stack_id = fresh_sql_zen_store.stacks[0].id
+    stack = fresh_sql_zen_store.get_stack(current_stack_id)
+    assert stack is not None
+
+
+def test_get_stack_fails_with_nonexistent_stack_id(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting stack fails with nonexistent stack id."""
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.get_stack(uuid.uuid4())
+
+
+# TODO: continue onwards to cover register, update and delete stacks
+# def test_register_stack_succeeds(
+#     fresh_sql_zen_store: BaseZenStore,
+# ):
+#     """Tests registering stack."""
+#     new_stack = StackModel(name="arias_stack", components={})
+#     fresh_sql_zen_store.register_stack(
+#         fresh_sql_zen_store.default_user_id,
+#         fresh_sql_zen_store.default_project_id,
+#         new_stack,
+#     )
+#     assert (
+#         len(
+#             fresh_sql_zen_store.list_stacks(
+#                 fresh_sql_zen_store.default_project_id
+#             )
+#         )
+#         == 2
+#     )
