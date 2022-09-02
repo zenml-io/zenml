@@ -156,9 +156,9 @@ def _get_stack_component_model(
         return None, False
 
     active_stack = repo.active_stack
-    active_component = active_stack.components[component_type]
-
-    if active_component:
+    active_component: Optional[ComponentModel] = None
+    if component_type in active_stack.components.keys():
+        active_component = active_stack.components[component_type]
         cli_utils.declare(
             f"No component name given; using `{active_component.name}` "
             f"from active stack."
@@ -167,7 +167,7 @@ def _get_stack_component_model(
     elif component_name:
         try:
             return (
-                repo.zen_store.get_stack_component(
+                repo.get_stack_component_by_name_and_type(
                     component_type, name=component_name
                 ),
                 (
@@ -280,8 +280,8 @@ def generate_stack_component_list_command(
             return
         active_stack = repo.active_stack
         active_component_name = None
-        active_component = active_stack.components[component_type]
-        if active_component:
+        if component_type in active_stack.components.keys():
+            active_component = active_stack.components[component_type]
             active_component_name = active_component.name
 
         cli_utils.print_stack_component_list(
@@ -709,7 +709,8 @@ def generate_stack_component_remove_attribute_command(
         cli_utils.print_active_config()
         with console.status(f"Updating {display_name} '{name}'...\n"):
             repo = Repository()
-            current_component = repo.get_stack_component(component_type, name)
+            current_component = repo.get_stack_component_by_name_and_type(
+                type=component_type, name=name)
             if current_component is None:
                 cli_utils.error(f"No {display_name} found for name '{name}'.")
 
@@ -733,12 +734,12 @@ def generate_stack_component_remove_attribute_command(
                 ):
                     cli_utils.error(
                         f"Cannot remove mandatory attribute '{arg}' of "
-                        f"'{name}' {current_component.TYPE}. "
+                        f"'{name}' {current_component.type}. "
                     )
                 elif arg not in optional_attributes:
                     cli_utils.error(
                         f"You cannot remove the attribute '{arg}' of "
-                        f"'{name}' {current_component.TYPE}. \n"
+                        f"'{name}' {current_component.type}. \n"
                         f"You can only remove the following optional "
                         f"attributes: "
                         f"'{', '.join(optional_attributes)}'."
@@ -793,7 +794,8 @@ def generate_stack_component_rename_command(
         cli_utils.print_active_config()
         with console.status(f"Renaming {display_name} '{name}'...\n"):
             repo = Repository()
-            current_component = repo.get_stack_component(component_type, name)
+            current_component = repo.get_stack_component_by_name_and_type(
+                type=component_type, name=name)
             if current_component is None:
                 cli_utils.error(f"No {display_name} found for name '{name}'.")
 
@@ -814,8 +816,6 @@ def generate_stack_component_rename_command(
             )
 
             repo.update_stack_component(
-                name=name,
-                component_type=component_type,
                 component=renamed_component,
             )
             cli_utils.declare(
@@ -890,8 +890,8 @@ def generate_stack_component_copy_command(
             f"Copying {display_name} `{source_component}`...\n"
         ):
             try:
-                component = repo.get_stack_component(
-                    component_type=component_type, name=source_component
+                component = repo.get_stack_component_by_name_and_type(
+                    type=component_type, name=source_component
                 )
             except KeyError:
                 cli_utils.error(
@@ -900,8 +900,8 @@ def generate_stack_component_copy_command(
                 )
 
             existing_component_names = {
-                wrapper.name
-                for wrapper in repo.zen_store.get_stack_components(
+                model.name
+                for model in repo.list_stack_components(
                     component_type=component_type
                 )
             }
@@ -944,12 +944,12 @@ def generate_stack_component_up_command(
         cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
-        component_wrapper, _ = _get_stack_component_model(
+        component_model, _ = _get_stack_component_model(
             component_type, component_name=name
         )
-        if component_wrapper is None:
+        if component_model is None:
             return
-        component = component_wrapper.to_component()
+        component = component_model.to_component()
 
         display_name = _component_display_name(component_type)
 
@@ -1033,13 +1033,13 @@ def generate_stack_component_down_command(
         cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
-        component_wrapper, _ = _get_stack_component_model(
+        component_model, _ = _get_stack_component_model(
             component_type, component_name=name
         )
-        if component_wrapper is None:
+        if component_model is None:
             return
 
-        component = component_wrapper.to_component()
+        component = component_model.to_component()
         display_name = _component_display_name(component_type)
 
         if not force:
@@ -1110,13 +1110,13 @@ def generate_stack_component_logs_command(
         cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
-        component_wrapper, _ = _get_stack_component_model(
+        component_model, _ = _get_stack_component_model(
             component_type, component_name=name
         )
-        if component_wrapper is None:
+        if component_model is None:
             return
 
-        component = component_wrapper.to_component()
+        component = component_model.to_component()
         display_name = _component_display_name(component_type)
         log_file = component.log_file
 

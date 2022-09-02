@@ -45,17 +45,15 @@ def register_annotator_subcommands() -> None:
         """
         repo = Repository()
         active_stack = repo.active_stack
-        annotator_wrapper = active_stack.get_component_wrapper(
-            StackComponentType.ANNOTATOR
-        )
-        if annotator_wrapper is None:
+        annotator_model = active_stack.components[StackComponentType.ANNOTATOR]
+        if annotator_model is None:
             cli_utils.error(
                 "No active annotator found. Please register an annotator "
                 "first and add it to your stack."
             )
             return
 
-        ctx.obj = annotator_wrapper.to_component()
+        ctx.obj = annotator_model.to_component()
 
     @dataset.command(
         "list",

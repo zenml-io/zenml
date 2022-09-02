@@ -57,16 +57,14 @@ def register_secrets_manager_subcommands() -> None:
             ctx: Click context.
         """
         repo = Repository()
-        secrets_manager_wrapper = repo.active_stack.get_component_wrapper(
-            StackComponentType.SECRETS_MANAGER
-        )
-        if secrets_manager_wrapper is None:
+        secrets_manager_model = repo.active_stack.components[StackComponentType.SECRETS_MANAGER]
+        if secrets_manager_model is None:
             error(
                 "No active secrets manager found. Please create a secrets manager "
                 "first and add it to your stack."
             )
 
-        ctx.obj = secrets_manager_wrapper.to_component()
+        ctx.obj = secrets_manager_model.to_component()
 
     @secret.command(
         "register",

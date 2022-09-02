@@ -41,7 +41,7 @@ class StackModel(BaseModel):
     )
     components: Dict[StackComponentType, ComponentModel] = Field(
         title="A mapping of stack component types to the id's of"
-        "instances of components of this type."
+              "instances of components of this type."
     )
     is_shared: bool = Field(
         default=False,
@@ -76,6 +76,16 @@ class StackModel(BaseModel):
             }
         }
 
+    @property
+    def is_valid(self):
+        # TODO: [server] the Model should validate if the stack configuration
+        #  is valid in theory
+        if StackComponentType.ARTIFACT_STORE and \
+                StackComponentType.ORCHESTRATOR in self.components.keys():
+            return True
+        else:
+            return False
+
     @classmethod
     def from_stack(cls, stack: Stack) -> "StackModel":
         """Creates a StackModel from an actual Stack instance.
@@ -108,26 +118,3 @@ class StackModel(BaseModel):
         return Stack.from_components(
             id=self.id, name=self.name, components=stack_components
         )
-
-    def get_component_wrapper(
-        self, component_type: StackComponentType
-    ) -> Optional[ComponentModel]:
-        """Returns the component of the given type.
-
-        Args:
-            component_type: the type of the component to return
-
-        Returns:
-            the component of the given type or None if not found
-        """
-        from zenml.repository import Repository
-
-        if component_type in self.components.keys():
-            repo = Repository()
-            component_model = repo.zen_store.get_stack_component(
-                component_type, self.components[component_type]
-            )
-
-            return component_model
-
-        return None

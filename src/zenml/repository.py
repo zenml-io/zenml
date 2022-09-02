@@ -286,9 +286,8 @@ class Repository(metaclass=RepositoryMetaClass):
                 name=DEFAULT_STACK_NAME,
                 project_id=self._config.active_project_name,
                 user_id=self.zen_store.default_user_id,
-            )[
-                0
-            ]  # TODO: [server] its not guaranteed that this stack exists
+            )[0]
+            # TODO: [server] its not guaranteed that this stack exists
             self._config.active_stack_id = default_stack.id
         else:
             # Ensure that the repository active stack is still valid
@@ -439,7 +438,7 @@ class Repository(metaclass=RepositoryMetaClass):
         If no object is passed, this will unset the active project.
 
         Args:
-            project: The project name to set as active.
+            project_name: The project name to set as active.
         """
         if project_name:
             self.zen_store.get_project(
@@ -634,27 +633,37 @@ class Repository(metaclass=RepositoryMetaClass):
             stack: The stack to register.
         """
         # TODO: [server] make sure the stack can be validated here
-        stack.validate()
-        created_stack = self.zen_store.register_stack(stack)
-        return created_stack
+        if stack.is_valid:
+            created_stack = self.zen_store.register_stack(
+                user_id=self.zen_store.default_user_id, # TODO: [server] replace with active user
+                project_id=self.active_project.id,
+                stack=stack)
+            return created_stack
+        else:
+            raise RuntimeError("Stack configuration is invalid. A valid"
+                               "stack must contain an Artifact Store and "
+                               "an Orchestrator.")
 
-    def update_stack(self, name: str, stack: StackModel) -> None:
+    def update_stack(self, stack: StackModel) -> None:
         """Updates a stack and its components.
 
         Args:
-            name: The original name of the stack.
             stack: The new stack to use as the updated version.
         """
-        stack.validate()
-        self.zen_store.update_stack(name, stack)
-        if self._config.active_stack_id == stack.id:
-            self.activate_stack(stack.name)
+        if stack.is_valid:
+            self.zen_store.update_stack(stack=stack)
+            if self._config.active_stack_id == stack.id:
+                self.activate_stack(stack)
+        else:
+            raise RuntimeError("Stack configuration is invalid. A valid"
+                               "stack must contain an Artifact Store and "
+                               "an Orchestrator.")
 
     def deregister_stack(self, stack: StackModel) -> None:
         """Deregisters a stack.
 
         Args:
-            name: The name of the stack to deregister.
+            stack: The model of the stack to deregister.
 
         Raises:
             ValueError: If the stack is the currently active stack for this
@@ -677,23 +686,18 @@ class Repository(metaclass=RepositoryMetaClass):
 
     def update_stack_component(
         self,
-        name: str,
-        component_type: StackComponentType,
-        component: StackComponent,
+        component: ComponentModel,
     ) -> None:
         """Updates a stack component.
 
         Args:
-            name: The original name of the stack component.
-            component_type: The type of the component to update.
             component: The new component to update with.
         """
-        from zenml.models import ComponentModel
-
         self.zen_store.update_stack_component(
-            name,
-            component_type,
-            ComponentModel.from_component(component),
+            user_id=self.zen_store.default_user_id, # TODO: [server] active user needs to go here
+            project_id=self.active_project.id,
+            component_id=component.id,
+            component=component
         )
 
     def list_stack_components(
@@ -742,7 +746,8 @@ class Repository(metaclass=RepositoryMetaClass):
 
         # TODO: [server] this error handling could be improved
         if not components:
-            raise KeyError("No stack with this name exists.")
+            raise KeyError("No stack component of type '%s' with the name '%s' "
+                           "exists.", type.value, name)
         elif len(components) > 1:
             raise RuntimeError(
                 "Multiple components have been found for this name.", components
@@ -754,7 +759,7 @@ class Repository(metaclass=RepositoryMetaClass):
         """Fetches a registered stack component.
 
         Args:
-            id: The id of the component to fetch.
+            component_id: The id of the component to fetch.
 
         Returns:
             The registered stack component.
@@ -787,27 +792,27 @@ class Repository(metaclass=RepositoryMetaClass):
             logger.info(component.post_registration_message)
 
     def deregister_stack_component(
-        self, component_type: StackComponentType, name: str
+        self, stack_component: ComponentModel
     ) -> None:
         """Deregisters a stack component.
 
         Args:
-            component_type: The type of the component to deregister.
-            name: The name of the component to deregister.
+            id: The id of the component to deregister.
         """
         try:
-            self.zen_store.deregister_stack_component(component_type, name=name)
+            self.zen_store.delete_stack_component(
+                component_id=stack_component.id)
             logger.info(
                 "Deregistered stack component (type: %s) with name '%s'.",
-                component_type.value,
-                name,
+                stack_component.type,
+                stack_component.name,
             )
         except KeyError:
             logger.warning(
                 "Unable to deregister stack component (type: %s) with name "
                 "'%s': No stack component with this name could be found.",
-                component_type.value,
-                name,
+                stack_component.type,
+                stack_component.name,
             )
 
     @track(event=AnalyticsEvent.GET_PIPELINES)
@@ -914,7 +919,7 @@ class Repository(metaclass=RepositoryMetaClass):
             )
 
         # TODO: [server]
-        stack_name = stack_name or self.active_stack_name
+        stack_name = stack_name or self.activate_stack.name
         if not stack_name:
             raise RuntimeError(
                 "No active stack is configured for the repository. Run "

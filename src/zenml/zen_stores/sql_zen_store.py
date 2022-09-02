@@ -391,17 +391,16 @@ class SqlZenStore(BaseZenStore):
                     f"this user."
                 )
 
-            # Get the Schemas of all components mentioned in the stack model
-            component_ids = [c.id for c in stack.components.values()]
+            # Get the Schemas of all components mentioned
+            filters = [(StackComponentSchema.id == c.id)
+                       for c in stack.components.values()]
+
             defined_components = session.exec(
                 select(StackComponentSchema).where(
-                    or_(
-                        StackComponentSchema.id == component_ids[0],
-                        StackComponentSchema.id == component_ids[1],
-                    )
+                    or_(*filters)
                 )
             ).all()
-            # TODO: Make this work for arbitrary amounts of components
+
             # Create the stack
             stack_in_db = StackSchema.from_create_model(
                 project_id=project_id,
@@ -414,15 +413,10 @@ class SqlZenStore(BaseZenStore):
 
             return stack_in_db.to_model()
 
-    def _update_stack(
-        self, stack_id: str, user_id: str, project_id: UUID, stack: StackModel
-    ) -> StackModel:
+    def _update_stack(self, stack: StackModel) -> StackModel:
         """Update an existing stack.
 
         Args:
-            stack_id: The id of the stack to update.
-            user_id: The user that created the stack
-            project_id: The project the user created this stack within
             stack: The stack to update.
 
         Returns:
@@ -432,40 +426,32 @@ class SqlZenStore(BaseZenStore):
             # Check if stack with the domain key (name, prj, owner) already
             #  exists
             existing_stack = session.exec(
-                select(StackSchema).where(StackSchema.id == stack_id)
+                select(StackSchema).where(StackSchema.id == stack.id)
             ).first()
             # TODO: verify if is_shared status needs to be checked here
             if existing_stack is None:
                 raise KeyError(
                     f"Unable to update stack with id "
-                    f"'{stack_id}': Found no"
+                    f"'{stack.id}': Found no"
                     f"existing stack with this id."
                 )
 
-            # TODO: validate the the composition of components is a valid stack
             # Get the Schemas of all components mentioned
+            filters = [(StackComponentSchema.id == c.id)
+                       for c in stack.components.values()]
+
             defined_components = session.exec(
                 select(StackComponentSchema).where(
-                    StackComponentSchema.id in stack.components.values()
+                    or_(*filters)
                 )
-            ).all
+            ).all()
 
-            # Create the stack
-            stack_in_db = StackSchema(
-                id=stack_id,
-                name=stack.name,
-                project_id=project_id,
-                owner=user_id,
-                components=defined_components,
-            )
-            session.add(stack_in_db)
+            existing_stack.from_update_model(
+                stack=stack, defined_components=defined_components)
+            session.add(existing_stack)
             session.commit()
 
-            components_in_model = {c.type: c.id for c in defined_components}
-
-            # TODO: [ALEXEJ] verify that the stack_in_db instance is actually
-            #  updated automatically after the session commit
-            return stack_in_db.to_model(components_in_model)
+            return existing_stack.to_model()
 
     def _delete_stack(self, stack_id: str) -> None:
         """Delete a stack.
@@ -493,7 +479,7 @@ class SqlZenStore(BaseZenStore):
         project_id: UUID,
         type: Optional[str] = None,
         flavor_name: Optional[str] = None,
-        user_id: Optional[str] = None,
+        user_id: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
     ) -> List[ComponentModel]:
@@ -617,7 +603,7 @@ class SqlZenStore(BaseZenStore):
         """
         # TODO: implement this
 
-    def _delete_stack_component(self, component_id: str) -> None:
+    def _delete_stack_component(self, component_id: UUID) -> None:
         """Delete a stack component.
 
         Args:
@@ -1237,6 +1223,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If the role assignment already exists.
         """
+        # TODO: Check if the role assignment already exists + raise error
         with Session(self.engine) as session:
             # Check if role with the given name already exists
             role = session.exec(

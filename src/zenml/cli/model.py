@@ -53,16 +53,14 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
             ctx: The click context.
         """
         repo = Repository()
-        model_deployer_wrapper = repo.active_stack.get_component_wrapper(
-            StackComponentType.MODEL_DEPLOYER
-        )
-        if model_deployer_wrapper is None:
+        model_deployer_model = repo.active_stack.components[StackComponentType.MODEL_DEPLOYER]
+        if model_deployer_model is None:
             error(
                 "No active model deployer found. Please add a model_deployer to "
                 "your stack."
             )
             return
-        ctx.obj = model_deployer_wrapper.to_component()
+        ctx.obj = model_deployer_model.to_component()
 
     @models.command(
         "list",
