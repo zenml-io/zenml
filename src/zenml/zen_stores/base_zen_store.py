@@ -550,33 +550,24 @@ class BaseZenStore(BaseModel):
 
     def update_stack(
         self,
-        stack_id: str,
-        user: UserModel,
-        project: ProjectModel,
         stack: StackModel,
     ) -> StackModel:
         """Update an existing stack.
 
         Args:
-            stack_id: The id of the stack to update.
             stack: The stack to update.
 
         Returns:
             The updated stack.
         """
-        metadata = {c.type.value: c.flavor for c in stack.components}
+        metadata = {c.type: c.flavor_name for c in stack.components.values()}
         metadata["store_type"] = self.type.value
         track_event(AnalyticsEvent.UPDATED_STACK, metadata=metadata)
-        return self._update_stack(
-            stack_id=stack_id, user=user, project=project, stack=stack
-        )
+        return self._update_stack(stack=stack)
 
     @abstractmethod
     def _update_stack(
         self,
-        stack_id: str,
-        user: UserModel,
-        project: ProjectModel,
         stack: StackModel,
     ) -> StackModel:
         """Update a stack.
@@ -622,7 +613,7 @@ class BaseZenStore(BaseModel):
         project_id: UUID,
         type: Optional[str] = None,
         flavor_name: Optional[str] = None,
-        user_id: Optional[str] = None,
+        user_id: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
     ) -> List[ComponentModel]:
@@ -655,7 +646,7 @@ class BaseZenStore(BaseModel):
         project_id: UUID,
         type: Optional[str] = None,
         flavor_name: Optional[str] = None,
-        user_id: Optional[str] = None,
+        user_id: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
     ) -> List[ComponentModel]:
@@ -733,9 +724,9 @@ class BaseZenStore(BaseModel):
 
     def update_stack_component(
         self,
-        user_id: str,
-        project_id: str,
-        component_id: str,
+        user_id: UUID,
+        project_id: UUID,
+        component_id: UUID,
         component: ComponentModel,
     ) -> ComponentModel:
         """Update an existing stack component.
@@ -784,7 +775,7 @@ class BaseZenStore(BaseModel):
             KeyError: if the stack component doesn't exist.
         """
 
-    def delete_stack_component(self, component_id: str) -> None:
+    def delete_stack_component(self, component_id: UUID) -> None:
         """Delete a stack component.
 
         Args:
@@ -796,7 +787,7 @@ class BaseZenStore(BaseModel):
         self._delete_stack_component(component_id)
 
     @abstractmethod
-    def _delete_stack_component(self, component_id: str) -> None:
+    def _delete_stack_component(self, component_id: UUID) -> None:
         """Delete a stack component.
 
         Args:

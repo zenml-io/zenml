@@ -36,6 +36,7 @@ from zenml.models.user_management_models import (
     UserModel,
 )
 
+
 # Projects, Repositories
 
 
@@ -77,7 +78,7 @@ class CodeRepositorySchema(SQLModel, table=True):
 
     @classmethod
     def from_model(
-        cls, model: CodeRepositoryModel, project_id: UUID
+            cls, model: CodeRepositoryModel, project_id: UUID
     ) -> "CodeRepositorySchema":
         return cls(name=model.name, project_id=project_id)
 
@@ -185,7 +186,7 @@ class UserRoleAssignmentSchema(SQLModel, table=True):
 
     @classmethod
     def from_model(
-        cls, model: RoleAssignmentModel
+            cls, model: RoleAssignmentModel
     ) -> "UserRoleAssignmentSchema":
         return cls(
             role_id=model.role_id,
@@ -222,7 +223,7 @@ class TeamRoleAssignmentSchema(SQLModel, table=True):
 
     @classmethod
     def from_model(
-        cls, model: RoleAssignmentModel
+            cls, model: RoleAssignmentModel
     ) -> "TeamRoleAssignmentSchema":
         return cls(
             role_id=model.role_id,
@@ -295,11 +296,11 @@ class StackSchema(SQLModel, table=True):
 
     @classmethod
     def from_create_model(
-        cls,
-        user_id: UUID,
-        project_id: UUID,
-        defined_components: List["StackComponentSchema"],
-        stack: StackModel,
+            cls,
+            user_id: UUID,
+            project_id: UUID,
+            defined_components: List["StackComponentSchema"],
+            stack: StackModel,
     ) -> "StackSchema":
         """Create an incomplete StackSchema with `id` and `created_at` missing.
 
@@ -314,6 +315,21 @@ class StackSchema(SQLModel, table=True):
             is_shared=stack.is_shared,
             components=defined_components,
         )
+
+    def from_update_model(
+            self,
+            defined_components: List["StackComponentSchema"],
+            stack: StackModel,
+    ) -> "StackSchema":
+        """Create an incomplete StackSchema with `id` and `created_at` missing.
+
+        Returns:
+            A StackComponentSchema
+        """
+        self.name = stack.name
+        self.is_shared = stack.is_shared
+        self.components = defined_components
+        return self
 
     def to_model(self) -> "StackModel":
         """Creates a ComponentModel from an instance of a StackSchema.
@@ -341,7 +357,8 @@ class StackComponentSchema(SQLModel, table=True):
 
     type: StackComponentType
     flavor_name: str
-    # flavor_id: UUID = Field(foreign_key="flavorschema.id", nullable=True)  # TODO: Prefill flavors
+    # flavor_id: UUID = Field(foreign_key="flavorschema.id", nullable=True)
+    # TODO: Prefill flavors
     owner: UUID = Field(foreign_key="userschema.id")
     project_id: UUID = Field(foreign_key="projectschema.id")
 
@@ -355,7 +372,7 @@ class StackComponentSchema(SQLModel, table=True):
 
     @classmethod
     def from_create_model(
-        cls, user_id: str, project_id: UUID, component: ComponentModel
+            cls, user_id: str, project_id: UUID, component: ComponentModel
     ) -> "StackComponentSchema":
         """Create a StackComponentSchema with `id` and `created_at` missing.
 

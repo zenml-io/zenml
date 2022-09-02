@@ -148,19 +148,19 @@ def stack() -> None:
     type=click.BOOL,
 )
 def register_stack(
-    stack_name: str,
-    artifact_store_name: str,
-    orchestrator_name: str,
-    container_registry_name: Optional[str] = None,
-    secrets_manager_name: Optional[str] = None,
-    step_operator_name: Optional[str] = None,
-    feature_store_name: Optional[str] = None,
-    model_deployer_name: Optional[str] = None,
-    experiment_tracker_name: Optional[str] = None,
-    alerter_name: Optional[str] = None,
-    annotator_name: Optional[str] = None,
-    data_validator_name: Optional[str] = None,
-    set_stack: bool = False,
+        stack_name: str,
+        artifact_store_name: str,
+        orchestrator_name: str,
+        container_registry_name: Optional[str] = None,
+        secrets_manager_name: Optional[str] = None,
+        step_operator_name: Optional[str] = None,
+        feature_store_name: Optional[str] = None,
+        model_deployer_name: Optional[str] = None,
+        experiment_tracker_name: Optional[str] = None,
+        alerter_name: Optional[str] = None,
+        annotator_name: Optional[str] = None,
+        data_validator_name: Optional[str] = None,
+        set_stack: bool = False,
 ) -> None:
     """Register a stack.
 
@@ -370,18 +370,18 @@ def register_stack(
     required=False,
 )
 def update_stack(
-    stack_name: Optional[str],
-    artifact_store_name: Optional[str] = None,
-    orchestrator_name: Optional[str] = None,
-    container_registry_name: Optional[str] = None,
-    step_operator_name: Optional[str] = None,
-    secrets_manager_name: Optional[str] = None,
-    feature_store_name: Optional[str] = None,
-    model_deployer_name: Optional[str] = None,
-    experiment_tracker_name: Optional[str] = None,
-    alerter_name: Optional[str] = None,
-    annotator_name: Optional[str] = None,
-    data_validator_name: Optional[str] = None,
+        stack_name: Optional[str],
+        artifact_store_name: Optional[str] = None,
+        orchestrator_name: Optional[str] = None,
+        container_registry_name: Optional[str] = None,
+        step_operator_name: Optional[str] = None,
+        secrets_manager_name: Optional[str] = None,
+        feature_store_name: Optional[str] = None,
+        model_deployer_name: Optional[str] = None,
+        experiment_tracker_name: Optional[str] = None,
+        alerter_name: Optional[str] = None,
+        annotator_name: Optional[str] = None,
+        data_validator_name: Optional[str] = None,
 ) -> None:
     """Update a stack.
 
@@ -421,21 +421,21 @@ def update_stack(
         if artifact_store_name:
             stack_components[
                 StackComponentType.ARTIFACT_STORE
-            ] = repo.get_stack_component(
+            ] = repo.get_stack_component_by_name_and_type(
                 StackComponentType.ARTIFACT_STORE, name=artifact_store_name
             )
 
         if orchestrator_name:
             stack_components[
                 StackComponentType.ORCHESTRATOR
-            ] = repo.get_stack_component(
+            ] = repo.get_stack_component_by_name_and_type(
                 StackComponentType.ORCHESTRATOR, name=orchestrator_name
             )
 
         if container_registry_name:
             stack_components[
                 StackComponentType.CONTAINER_REGISTRY
-            ] = repo.get_stack_component(
+            ] = repo.get_stack_component_by_name_and_type(
                 StackComponentType.CONTAINER_REGISTRY,
                 name=container_registry_name,
             )
@@ -443,7 +443,7 @@ def update_stack(
         if step_operator_name:
             stack_components[
                 StackComponentType.STEP_OPERATOR
-            ] = repo.get_stack_component(
+            ] = repo.get_stack_component_by_name_and_type(
                 StackComponentType.STEP_OPERATOR,
                 name=step_operator_name,
             )
@@ -451,7 +451,7 @@ def update_stack(
         if secrets_manager_name:
             stack_components[
                 StackComponentType.SECRETS_MANAGER
-            ] = repo.get_stack_component(
+            ] = repo.get_stack_component_by_name_and_type(
                 StackComponentType.SECRETS_MANAGER,
                 name=secrets_manager_name,
             )
@@ -459,7 +459,7 @@ def update_stack(
         if feature_store_name:
             stack_components[
                 StackComponentType.FEATURE_STORE
-            ] = repo.get_stack_component(
+            ] = repo.get_stack_component_by_name_and_type(
                 StackComponentType.FEATURE_STORE,
                 name=feature_store_name,
             )
@@ -467,7 +467,7 @@ def update_stack(
         if model_deployer_name:
             stack_components[
                 StackComponentType.MODEL_DEPLOYER
-            ] = repo.get_stack_component(
+            ] = repo.get_stack_component_by_name_and_type(
                 StackComponentType.MODEL_DEPLOYER,
                 name=model_deployer_name,
             )
@@ -475,7 +475,7 @@ def update_stack(
         if experiment_tracker_name:
             stack_components[
                 StackComponentType.EXPERIMENT_TRACKER
-            ] = repo.get_stack_component(
+            ] = repo.get_stack_component_by_name_and_type(
                 StackComponentType.EXPERIMENT_TRACKER,
                 name=experiment_tracker_name,
             )
@@ -483,7 +483,7 @@ def update_stack(
         if alerter_name:
             stack_components[
                 StackComponentType.ALERTER
-            ] = repo.get_stack_component(
+            ] = repo.get_stack_component_by_name_and_type(
                 StackComponentType.ALERTER,
                 name=alerter_name,
             )
@@ -491,7 +491,7 @@ def update_stack(
         if annotator_name:
             stack_components[
                 StackComponentType.ANNOTATOR
-            ] = repo.get_stack_component(
+            ] = repo.get_stack_component_by_name_and_type(
                 StackComponentType.ANNOTATOR,
                 name=annotator_name,
             )
@@ -499,15 +499,14 @@ def update_stack(
         if data_validator_name:
             stack_components[
                 StackComponentType.DATA_VALIDATOR
-            ] = repo.get_stack_component(
+            ] = repo.get_stack_component_by_name_and_type(
                 StackComponentType.DATA_VALIDATOR,
                 name=data_validator_name,
             )
 
-        stack_ = Stack.from_components(
-            name=stack_name, components=stack_components
-        )
-        repo.update_stack(stack_name, stack_)
+        current_stack.components = stack_components
+
+        repo.update_stack(current_stack)
         cli_utils.declare(f"Stack `{stack_name}` successfully updated!")
 
 
@@ -590,22 +589,23 @@ def update_stack(
     required=False,
 )
 def remove_stack_component(
-    stack_name: Optional[str],
-    container_registry_flag: Optional[bool] = False,
-    step_operator_flag: Optional[bool] = False,
-    secrets_manager_flag: Optional[bool] = False,
-    feature_store_flag: Optional[bool] = False,
-    model_deployer_flag: Optional[bool] = False,
-    experiment_tracker_flag: Optional[bool] = False,
-    alerter_flag: Optional[bool] = False,
-    annotator_flag: Optional[bool] = False,
-    data_validator_flag: Optional[bool] = False,
+        stack_name: Optional[str],
+        container_registry_flag: Optional[bool] = False,
+        step_operator_flag: Optional[bool] = False,
+        secrets_manager_flag: Optional[bool] = False,
+        feature_store_flag: Optional[bool] = False,
+        model_deployer_flag: Optional[bool] = False,
+        experiment_tracker_flag: Optional[bool] = False,
+        alerter_flag: Optional[bool] = False,
+        annotator_flag: Optional[bool] = False,
+        data_validator_flag: Optional[bool] = False,
 ) -> None:
     """Remove stack components from a stack.
 
     Args:
         stack_name: Name of the stack to remove components from.
-        container_registry_flag: To remove the container registry from this stack.
+        container_registry_flag: To remove the container registry from this
+        stack.
         step_operator_flag: To remove the step operator from this stack.
         secrets_manager_flag: To remove the secrets manager from this stack.
         feature_store_flag: To remove the feature store from this stack.
@@ -620,8 +620,7 @@ def remove_stack_component(
 
     repo = Repository()
 
-    active_stack_name = repo.active_stack_name
-    stack_name = stack_name or active_stack_name
+    stack_name = stack_name or repo.active_stack.name
 
     with console.status(f"Updating stack `{stack_name}`...\n"):
         repo = Repository()
@@ -631,39 +630,44 @@ def remove_stack_component(
             cli_utils.error(
                 f"Stack `{stack_name}` cannot be updated as it does not exist.",
             )
-        stack_components = current_stack.components
 
         if container_registry_flag:
-            stack_components.pop(StackComponentType.CONTAINER_REGISTRY, None)
+            current_stack.components.pop(
+                StackComponentType.CONTAINER_REGISTRY, None)
 
         if step_operator_flag:
-            stack_components.pop(StackComponentType.STEP_OPERATOR, None)
+            current_stack.components.pop(
+                StackComponentType.STEP_OPERATOR, None)
 
         if secrets_manager_flag:
-            stack_components.pop(StackComponentType.SECRETS_MANAGER, None)
+            current_stack.components.pop(
+                StackComponentType.SECRETS_MANAGER, None)
 
         if feature_store_flag:
-            stack_components.pop(StackComponentType.FEATURE_STORE, None)
+            current_stack.components.pop(
+                StackComponentType.FEATURE_STORE, None)
 
         if model_deployer_flag:
-            stack_components.pop(StackComponentType.MODEL_DEPLOYER, None)
+            current_stack.components.pop(
+                StackComponentType.MODEL_DEPLOYER, None)
 
         if experiment_tracker_flag:
-            stack_components.pop(StackComponentType.EXPERIMENT_TRACKER, None)
+            current_stack.components.pop(
+                StackComponentType.EXPERIMENT_TRACKER, None)
 
         if alerter_flag:
-            stack_components.pop(StackComponentType.ALERTER, None)
+            current_stack.components.pop(
+                StackComponentType.ALERTER, None)
 
         if annotator_flag:
-            stack_components.pop(StackComponentType.ANNOTATOR, None)
+            current_stack.components.pop(
+                StackComponentType.ANNOTATOR, None)
 
         if data_validator_flag:
-            stack_components.pop(StackComponentType.DATA_VALIDATOR, None)
+            current_stack.components.pop(
+                StackComponentType.DATA_VALIDATOR, None)
 
-        stack_ = Stack.from_components(
-            name=stack_name, components=stack_components
-        )
-        repo.update_stack(stack_name, stack_)
+        repo.update_stack(current_stack)
         cli_utils.declare(f"Stack `{stack_name}` successfully updated!")
 
 
@@ -671,8 +675,8 @@ def remove_stack_component(
 @click.argument("current_stack_name", type=str, required=True)
 @click.argument("new_stack_name", type=str, required=True)
 def rename_stack(
-    current_stack_name: str,
-    new_stack_name: str,
+        current_stack_name: str,
+        new_stack_name: str,
 ) -> None:
     """Rename a stack.
 
@@ -700,12 +704,11 @@ def rename_stack(
         except KeyError:
             pass
 
-        new_stack_ = Stack.from_components(
-            name=new_stack_name, components=stack_components
-        )
-        repo.update_stack(current_stack_name, new_stack_)
+        current_stack.name = new_stack_name
+        repo.update_stack(current_stack)
         cli_utils.declare(
-            f"Stack `{current_stack_name}` successfully renamed as `{new_stack_name}`!"
+            f"Stack `{current_stack_name}` successfully renamed as `"
+            f"{new_stack_name}`!"
         )
 
 
@@ -773,7 +776,7 @@ def describe_stack(stack_name: Optional[str]) -> None:
 @click.option("--yes", "-y", is_flag=True, required=False)
 @click.option("--force", "-f", "old_force", is_flag=True, required=False)
 def delete_stack(
-    stack_name: str, yes: bool = False, old_force: bool = False
+        stack_name: str, yes: bool = False, old_force: bool = False
 ) -> None:
     """Delete a stack.
 
@@ -850,7 +853,7 @@ def set_active_stack_command(stack_name: str) -> None:
         )
     else:
         with console.status(
-            f"Setting the{scope} active stack to '{stack_name}'..."
+                f"Setting the{scope} active stack to '{stack_name}'..."
         ):
             repo.activate_stack(stack_to_set_active)
             cli_utils.declare(
@@ -897,7 +900,7 @@ def up_stack() -> None:
     "old_force",
     is_flag=True,
     help="DEPRECATED: Deprovisions local resources instead of suspending "
-    "them. Use `-f/--force` instead.",
+         "them. Use `-f/--force` instead.",
 )
 @click.option(
     "--force",
@@ -937,7 +940,7 @@ def down_stack(force: bool = False, old_force: bool = False) -> None:
 
 
 def _get_component_as_dict(
-    component_type: StackComponentType, component_name: str
+        component_type: StackComponentType, component_name: str
 ) -> Dict[str, str]:
     """Return a dict representation of a component's key config values.
 
@@ -1003,7 +1006,7 @@ def export_stack(stack_name: str, filename: Optional[str]) -> None:
 
 
 def _import_stack_component(
-    component_type: StackComponentType, component_config: Dict[str, str]
+        component_type: StackComponentType, component_config: Dict[str, str]
 ) -> str:
     """Import a single stack component with given type/config.
 
@@ -1067,7 +1070,7 @@ def _import_stack_component(
     "--ignore-version-mismatch",
     is_flag=True,
     help="Import stack components even if the installed version of ZenML "
-    "is different from the one specified in the stack YAML file",
+         "is different from the one specified in the stack YAML file",
 )
 @click.option(
     "--decouple_stores",
@@ -1078,11 +1081,11 @@ def _import_stack_component(
 )
 @click.pass_context
 def import_stack(
-    ctx: click.Context,
-    stack_name: str,
-    filename: Optional[str],
-    ignore_version_mismatch: bool = False,
-    decouple_stores: bool = False,
+        ctx: click.Context,
+        stack_name: str,
+        filename: Optional[str],
+        ignore_version_mismatch: bool = False,
+        decouple_stores: bool = False,
 ) -> None:
     """Import a stack from YAML.
 
@@ -1164,8 +1167,8 @@ def import_stack(
 @click.argument("source_stack", type=str, required=True)
 @click.argument("target_stack", type=str, required=True)
 def copy_stack(
-    source_stack: str,
-    target_stack: str,
+        source_stack: str,
+        target_stack: str,
 ) -> None:
     """Copy a stack.
 
@@ -1208,8 +1211,8 @@ def copy_stack(
     type=bool,
 )
 def register_secrets(
-    skip_existing: bool,
-    stack_name: Optional[str] = None,
+        skip_existing: bool,
+        stack_name: Optional[str] = None,
 ) -> None:
     """Interactively registers all required secrets for a stack.
 

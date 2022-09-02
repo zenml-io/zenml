@@ -44,16 +44,14 @@ def register_feature_store_subcommands() -> None:
             ctx: The click context.
         """
         repo = Repository()
-        feature_store_wrapper = repo.active_stack.get_component_wrapper(
-            StackComponentType.FEATURE_STORE
-        )
-        if feature_store_wrapper is None:
+        feature_store_model = repo.active_stack.components[StackComponentType.FEATURE_STORE]
+        if feature_store_model is None:
             error(
                 "No active feature store found. Please create a feature store "
                 "first and add it to your stack."
             )
             return
-        ctx.obj = feature_store_wrapper.to_component()
+        ctx.obj = feature_store_model.to_component()
 
     @feature.command("get-data-sources")
     @click.pass_obj
