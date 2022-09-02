@@ -24,11 +24,12 @@ from ml_metadata.proto import metadata_store_pb2
 from pydantic import BaseModel
 
 from zenml.config.store_config import StoreConfiguration
-from zenml.enums import ExecutionStatus, StackComponentType, StoreType
+from zenml.enums import StackComponentType, StoreType
 from zenml.logger import get_logger
 from zenml.models import ComponentModel, FlavorModel, StackModel
 from zenml.models.code_models import CodeRepositoryModel
 from zenml.models.pipeline_models import (
+    ArtifactModel,
     PipelineModel,
     PipelineRunModel,
     StepModel,
@@ -40,7 +41,6 @@ from zenml.models.user_management_models import (
     TeamModel,
     UserModel,
 )
-from zenml.post_execution import ArtifactView
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
@@ -2040,119 +2040,78 @@ class BaseZenStore(BaseModel):
     # | RUNS |
     # '------'
 
-    def get_pipeline_runs(self, pipeline_id: str) -> List[PipelineRunModel]:
-        """Gets all pipeline runs in a pipeline.
-
-        Args:
-            pipeline_id: The ID of the pipeline to get.
-
-        Returns:
-            A list of all pipeline runs in the pipeline.
-
-        Raises:
-            KeyError: if the pipeline doesn't exist.
-        """
-        return self._get_pipeline_runs(pipeline_id)
-
-    @abstractmethod
-    def _get_pipeline_runs(self, pipeline_id: str) -> List[PipelineRunModel]:
-        """Gets all pipeline runs in a pipeline.
-
-        Args:
-            pipeline_id: The ID of the pipeline to get.
-
-        Returns:
-            A list of all pipeline runs in the pipeline.
-
-        Raises:
-            KeyError: if the pipeline doesn't exist.
-        """
-
-    def create_pipeline_run(
-        self, pipeline_id: str, pipeline_run: PipelineRunModel
-    ) -> PipelineRunModel:
-        """Creates a pipeline run.
-
-        Args:
-            pipeline_id: The ID of the pipeline to create the run in.
-            pipeline_run: The pipeline run to create.
-
-        Returns:
-            The created pipeline run.
-
-        Raises:
-            KeyError: if the pipeline doesn't exist.
-        """
-        return self._create_pipeline_run(pipeline_id, pipeline_run)
-
-    @abstractmethod
-    def _create_pipeline_run(
-        self, pipeline_id: str, pipeline_run: PipelineRunModel
-    ) -> PipelineRunModel:
-        """Creates a pipeline run.
-
-        Args:
-            pipeline_id: The ID of the pipeline to create the run in.
-            pipeline_run: The pipeline run to create.
-
-        Returns:
-            The created pipeline run.
-
-        Raises:
-            KeyError: if the pipeline doesn't exist.
-        """
-
-    # TODO: [ALEX] add filtering param(s)
     def list_runs(
         self,
-        project_name: Optional[str] = None,
+        project_id: Optional[str] = None,
         stack_id: Optional[str] = None,
         pipeline_id: Optional[str] = None,
-        trigger_id: Optional[str] = None,
+        user_id: Optional[str] = None,
     ) -> List[PipelineRunModel]:
-        """Gets all pipeline runs in a project.
+        """Gets all pipeline runs.
 
         Args:
-            project_name: Name of the project to get.
-            stack_id: ID of the stack to get.
-            pipeline_id: ID of the pipeline to get.
-            trigger_id: ID of the trigger to get.
+            project_id: If provided, only return runs for this project.
+            stack_id: If provided, only return runs for this stack.
+            pipeline_id: If provided, only return runs for this pipeline.
+            user_id: If provided, only return runs for this user.
 
         Returns:
-            A list of all pipeline runs in the project.
-
-        Raises:
-            KeyError: if the project doesn't exist.
+            A list of all pipeline runs.
         """
-        return self._list_pipeline_runs(
-            project_name=project_name,
+        return self._list_runs(
+            project_name=project_id,
             stack_id=stack_id,
             pipeline_id=pipeline_id,
-            trigger_id=trigger_id,
+            user_id=user_id,
         )
 
     # TODO: [ALEX] add filtering param(s)
     @abstractmethod
-    def _list_pipeline_runs(
+    def _list_runs(
         self,
-        project_name: Optional[str] = None,
+        project_id: Optional[str] = None,
         stack_id: Optional[str] = None,
         pipeline_id: Optional[str] = None,
-        trigger_id: Optional[str] = None,
+        user_id: Optional[str] = None,
     ) -> List[PipelineRunModel]:
-        """Gets all pipeline runs in a project.
+        """Gets all pipeline runs.
 
         Args:
-            project_name: Name of the project to get.
-            stack_id: ID of the stack to get.
-            pipeline_id: ID of the pipeline to get.
-            trigger_id: ID of the trigger to get.
+            project_id: If provided, only return runs for this project.
+            stack_id: If provided, only return runs for this stack.
+            pipeline_id: If provided, only return runs for this pipeline.
+            user_id: If provided, only return runs for this user.
 
         Returns:
-            A list of all pipeline runs in the project.
+            A list of all pipeline runs.
+        """
+
+    def create_run(self, pipeline_run: PipelineRunModel) -> PipelineRunModel:
+        """Creates a pipeline run.
+
+        Args:
+            pipeline_run: The pipeline run to create.
+
+        Returns:
+            The created pipeline run.
 
         Raises:
-            KeyError: if the project doesn't exist.
+            EntityExistsError: If an identical pipeline run already exists.
+        """
+        return self._create_run(pipeline_run)
+
+    @abstractmethod
+    def _create_run(self, pipeline_run: PipelineRunModel) -> PipelineRunModel:
+        """Creates a pipeline run.
+
+        Args:
+            pipeline_run: The pipeline run to create.
+
+        Returns:
+            The created pipeline run.
+
+        Raises:
+            EntityExistsError: If an identical pipeline run already exists.
         """
 
     def get_run(self, run_id: str) -> PipelineRunModel:
@@ -2400,11 +2359,75 @@ class BaseZenStore(BaseModel):
             KeyError: if the step doesn't exist.
         """
 
+    # TODO: old get_pipeline(), get_pipelines(), get_step_by_id(), get_step_artifacts()
+
+    # @abstractmethod
+    # def get_pipeline_run(
+    #     self, pipeline: PipelineModel, run_name: str
+    # ) -> Optional[PipelineRunModel]:
+    #     """Gets a specific run for the given pipeline.
+
+    #     Args:
+    #         pipeline: The pipeline for which to get the run.
+    #         run_name: The name of the run to get.
+
+    #     Returns:
+    #         The pipeline run with the given name.
+    #     """
+
+    # # TODO: [ALEX] add filtering param(s)
+    # # TODO: Consider changing to list_runs...
+    # @abstractmethod
+    # def get_pipeline_runs(
+    #     self, pipeline: PipelineModel
+    # ) -> Dict[str, PipelineRunModel]:
+    #     """Gets all runs for the given pipeline.
+
+    #     Args:
+    #         pipeline: a Pipeline object for which you want the runs.
+
+    #     Returns:
+    #         A dictionary of pipeline run names to PipelineRunView.
+    #     """
+
+    # @abstractmethod
+    # def get_pipeline_run_steps(
+    #     self, pipeline_run: PipelineRunModel
+    # ) -> Dict[str, StepModel]:
+    #     """Gets all steps for the given pipeline run.
+
+    #     Args:
+    #         pipeline_run: The pipeline run to get the steps for.
+
+    #     Returns:
+    #         A dictionary of step names to step views.
+    #     """
+
+    # @abstractmethod
+    # def get_step_status(self, step: StepModel) -> ExecutionStatus:
+    #     """Gets the execution status of a single step.
+
+    #     Args:
+    #         step (StepView): The step to get the status for.
+
+    #     Returns:
+    #         ExecutionStatus: The status of the step.
+    #     """
+
+    # @abstractmethod
+    # def get_producer_step_from_artifact(self, artifact_id: int) -> StepModel:
+    #     """Returns original StepView for an artifact.
+
+    #     Args:
+    #         artifact_id: ID of the artifact to be queried.
+
+    #     Returns:
+    #         Original StepView that produced the artifact.
+    #     """
+
     # TODO: change into an abstract method
     # TODO: use the correct return value + also amend the endpoint as well
-    # TODO: use an ArtifactModel for this instead of ArtifactView, to break the
-    #       dependency on Repository
-    def get_run_step_outputs(self, step_id: str) -> Dict[str, ArtifactView]:
+    def get_run_step_outputs(self, step_id: str) -> Dict[str, ArtifactModel]:
         """Get a list of outputs for a specific step.
 
         Args:
@@ -2416,7 +2439,7 @@ class BaseZenStore(BaseModel):
         return self._get_run_step_outputs(step_id)
 
     @abstractmethod
-    def _get_run_step_outputs(self, step_id: str) -> Dict[str, ArtifactView]:
+    def _get_run_step_outputs(self, step_id: str) -> Dict[str, ArtifactModel]:
         """Get the outputs of a step.
 
         Args:
@@ -2428,7 +2451,7 @@ class BaseZenStore(BaseModel):
 
     # TODO: change into an abstract method
     # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
-    def get_run_step_inputs(self, step_id: str) -> Dict[str, ArtifactView]:
+    def get_run_step_inputs(self, step_id: str) -> Dict[str, ArtifactModel]:
         """Get a list of inputs for a specific step.
 
         Args:
@@ -2440,7 +2463,7 @@ class BaseZenStore(BaseModel):
         return self._get_run_step_inputs(step_id)
 
     @abstractmethod
-    def _get_run_step_inputs(self, step_id: str) -> Dict[str, ArtifactView]:
+    def _get_run_step_inputs(self, step_id: str) -> Dict[str, ArtifactModel]:
         """Get the inputs of a step.
 
         Args:
@@ -2493,133 +2516,6 @@ class BaseZenStore(BaseModel):
 
         Returns:
             A list of names as strings.
-        """
-
-    @abstractmethod
-    def _delete_stack_component(
-        self, component_type: StackComponentType, name: str
-    ) -> None:
-        """Remove a StackComponent from storage.
-
-        Args:
-            component_type: The type of component to delete.
-            name: Then name of the component to delete.
-
-        Raises:
-            KeyError: If no component exists for given type and name.
-        """
-
-    # Pipelines and pipeline runs
-
-    @abstractmethod
-    def get_pipeline_run(
-        self, pipeline: PipelineModel, run_name: str
-    ) -> Optional[PipelineRunModel]:
-        """Gets a specific run for the given pipeline.
-
-        Args:
-            pipeline: The pipeline for which to get the run.
-            run_name: The name of the run to get.
-
-        Returns:
-            The pipeline run with the given name.
-        """
-
-    # TODO: [ALEX] add filtering param(s)
-    # TODO: Consider changing to list_runs...
-    @abstractmethod
-    def get_pipeline_runs(
-        self, pipeline: PipelineModel
-    ) -> Dict[str, PipelineRunModel]:
-        """Gets all runs for the given pipeline.
-
-        Args:
-            pipeline: a Pipeline object for which you want the runs.
-
-        Returns:
-            A dictionary of pipeline run names to PipelineRunView.
-        """
-
-    @abstractmethod
-    def get_pipeline_run_wrapper(
-        self,
-        pipeline_name: str,
-        run_name: str,
-        project_name: Optional[str] = None,
-    ) -> PipelineRunModel:
-        """Gets a pipeline run.
-
-        Args:
-            pipeline_name: Name of the pipeline for which to get the run.
-            run_name: Name of the pipeline run to get.
-            project_name: Optional name of the project from which to get the
-                pipeline run.
-
-        Raises:
-            KeyError: If no pipeline run (or project) with the given name
-                exists.
-        """
-
-    @abstractmethod
-    def get_pipeline_run_wrappers(
-        self, pipeline_name: str, project_name: Optional[str] = None
-    ) -> List[PipelineRunModel]:
-        """Gets pipeline runs.
-
-        Args:
-            pipeline_name: Name of the pipeline for which to get runs.
-            project_name: Optional name of the project from which to get the
-                pipeline runs.
-        """
-
-    @abstractmethod
-    def get_pipeline_run_steps(
-        self, pipeline_run: PipelineRunModel
-    ) -> Dict[str, StepModel]:
-        """Gets all steps for the given pipeline run.
-
-        Args:
-            pipeline_run: The pipeline run to get the steps for.
-
-        Returns:
-            A dictionary of step names to step views.
-        """
-
-    @abstractmethod
-    def get_step_status(self, step: StepModel) -> ExecutionStatus:
-        """Gets the execution status of a single step.
-
-        Args:
-            step (StepView): The step to get the status for.
-
-        Returns:
-            ExecutionStatus: The status of the step.
-        """
-
-    @abstractmethod
-    def get_producer_step_from_artifact(self, artifact_id: int) -> StepModel:
-        """Returns original StepView from an ArtifactView.
-
-        Args:
-            artifact_id: ID of the ArtifactView to be queried.
-
-        Returns:
-            Original StepView that produced the artifact.
-        """
-
-    @abstractmethod
-    def register_pipeline_run(
-        self,
-        pipeline_run: PipelineRunModel,
-    ) -> None:
-        """Registers a pipeline run.
-
-        Args:
-            pipeline_run: The pipeline run to register.
-
-        Raises:
-            EntityExistsError: If a pipeline run with the same name already
-                exists.
         """
 
     # Stack component flavors

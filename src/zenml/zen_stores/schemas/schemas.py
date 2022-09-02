@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQL Model Implementations."""
+import json
 from datetime import datetime
 from typing import List, Optional
 from uuid import UUID, uuid4
@@ -408,6 +409,9 @@ class StackComponentSchema(SQLModel, table=True):
         )
 
 
+# Pipelines, Steps, Runs
+
+
 class PipelineSchema(SQLModel, table=True):
     """SQL Model for pipelines."""
 
@@ -415,12 +419,12 @@ class PipelineSchema(SQLModel, table=True):
 
     name: str
 
-    # project_id - redundant since repository has this
-    repository_id: UUID = Field(foreign_key="coderepositoryschema.id")
-    created_by: UUID = Field(foreign_key="userschema.id")
+    project_id: UUID = Field(foreign_key="projectschema.id")
+    # repository_id: UUID = Field(foreign_key="coderepositoryschema.id")
+    owner: UUID = Field(foreign_key="userschema.id")
 
     docstring: str  # TODO: how to get this?
-    configuration: str
+    # configuration: str
     git_sha: str
 
     created_at: datetime = Field(default_factory=datetime.now)
@@ -470,24 +474,43 @@ class PipelineRunSchema(SQLModel, table=True):
 
     name: str
 
-    # project_id - redundant since stack/pipeline has this
+    # project_id - redundant since stack has this
     stack_id: UUID = Field(foreign_key="stackschema.id")
-    pipeline_id: UUID = Field(foreign_key="pipelineschema.id")
-    # context_id - TODO ?
-    created_by: UUID = Field(foreign_key="userschema.id")
+    owner: UUID = Field(foreign_key="userschema.id")
+    pipeline_id: Optional[UUID] = Field(
+        foreign_key="pipelineschema.id", nullable=True
+    )
 
     runtime_configuration: str
-    git_sha: str
+    git_sha: Optional[str] = Field(nullable=True)
     zenml_version: str
 
     created_at: datetime = Field(default_factory=datetime.now)
 
     @classmethod
     def from_model(cls, model: PipelineRunModel) -> "PipelineRunSchema":
-        pass  # TODO
+        return cls(
+            name=model.name,
+            stack_id=model.stack_id,
+            owner=model.owner,
+            pipeline_id=model.pipeline_id,
+            runtime_configuration=json.dumps(model.runtime_configuration),
+            git_sha=model.git_sha,
+            zenml_version=model.zenml_version,
+        )
 
     def to_model(self) -> PipelineRunModel:
-        pass  # TODO
+        return PipelineRunModel(
+            id=self.id,
+            name=self.name,
+            stack_id=self.stack_id,
+            owner=self.owner,
+            pipeline_id=self.pipeline_id,
+            runtime_configuration=json.loads(self.runtime_configuration),
+            git_sha=self.git_sha,
+            zenml_version=self.zenml_version,
+            created_at=self.created_at,
+        )
 
 
 class PipelineRunStepSchema(SQLModel, table=True):

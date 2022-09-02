@@ -61,7 +61,7 @@ async def get_runs(
     """
     try:
         return zen_store.list_runs(
-            project_name=project_name,
+            project_id=project_name,
             stack_id=stack_id,
             pipeline_id=pipeline_id,
             trigger_id=trigger_id,

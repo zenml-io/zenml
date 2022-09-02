@@ -63,7 +63,7 @@ class PipelineView:
         """
         # Do not cache runs as new runs might appear during this objects
         # lifecycle
-        runs = list(Repository().zen_store.get_pipeline_runs(self).values())
+        runs = list(Repository().zen_store.list_runs(self).values())
 
         for run in runs:
             run._run_wrapper = self._get_run_wrapper(run_name=run.name)
@@ -78,7 +78,7 @@ class PipelineView:
         """
         # Do not cache runs as new runs might appear during this objects
         # lifecycle
-        runs = Repository().zen_store.get_pipeline_runs(self)
+        runs = Repository().zen_store.list_runs(self)
         return list(runs.keys())
 
     def get_run(self, name: str) -> "PipelineRunView":
@@ -152,9 +152,7 @@ class PipelineView:
 
         repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
         try:
-            run_wrapper = repo.zen_store.get_pipeline_run_wrapper(
-                pipeline_name=self.name, run_name=run_name
-            )
+            run_wrapper = repo.zen_store.get_run()  # TODO
             return run_wrapper
         except KeyError:
             pass
