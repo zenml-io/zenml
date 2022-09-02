@@ -16,6 +16,16 @@
 A service is a process or set of processes that outlive a pipeline run.
 """
 
+from zenml.services.container.container_service import (
+    ContainerService,
+    ContainerServiceConfig,
+    ContainerServiceStatus,
+)
+from zenml.services.container.container_service_endpoint import (
+    ContainerServiceEndpoint,
+    ContainerServiceEndpointConfig,
+    ContainerServiceEndpointStatus,
+)
 from zenml.services.local.local_service import (
     LocalDaemonService,
     LocalDaemonServiceConfig,
@@ -47,7 +57,6 @@ from zenml.services.service_type import ServiceType
 from zenml.services.utils import load_last_service_from_step
 
 __all__ = [
-    "load_last_service_from_step",
     "ServiceState",
     "ServiceConfig",
     "ServiceStatus",
@@ -63,6 +72,12 @@ __all__ = [
     "HTTPEndpointHealthMonitor",
     "TCPEndpointHealthMonitorConfig",
     "TCPEndpointHealthMonitor",
+    "ContainerService",
+    "ContainerServiceConfig",
+    "ContainerServiceStatus",
+    "ContainerServiceEndpoint",
+    "ContainerServiceEndpointConfig",
+    "ContainerServiceEndpointStatus",
     "LocalDaemonService",
     "LocalDaemonServiceConfig",
     "LocalDaemonServiceStatus",
