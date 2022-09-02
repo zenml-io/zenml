@@ -2493,22 +2493,7 @@ class BaseZenStore(BaseModel):
 
     # LEGACY CODE FROM THE PREVIOUS VERSION OF BASEZENSTORE
 
-    # Private interface (must be implemented, not to be called by user):
-    @abstractmethod
-    def _get_stack_component_names(
-        self, component_type: StackComponentType
-    ) -> List[str]:
-        """Get names of all registered stack components of a given type.
-
-        Args:
-            component_type: The type of the component to list names for.
-
-        Returns:
-            A list of names as strings.
-        """
-
     # Stack component flavors
-
     @property
     @abstractmethod
     def flavors(self) -> List[FlavorModel]:

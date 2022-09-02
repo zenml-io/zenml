@@ -2306,25 +2306,6 @@ class SqlZenStore(BaseZenStore):
 
     # LEGACY CODE FROM THE PREVIOUS VERSION OF BASEZENSTORE
 
-    # Private interface implementations:
-
-    def _get_stack_component_names(
-        self, component_type: StackComponentType
-    ) -> List[str]:
-        """Get names of all registered stack components of a given type.
-
-        Args:
-            component_type: The type of the component to list names for.
-
-        Returns:
-            A list of names as strings.
-        """
-        with Session(self.engine) as session:
-            statement = select(StackComponentSchema).where(
-                StackComponentSchema.type == component_type
-            )
-            return [component.name for component in session.exec(statement)]
-
     # Handling stack component flavors
 
     @property
