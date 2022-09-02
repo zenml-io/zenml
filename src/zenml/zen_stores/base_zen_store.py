@@ -1445,23 +1445,6 @@ class BaseZenStore(BaseModel):
             KeyError: If the role, user, team, or project does not exists.
         """
 
-    #  .----------------.
-    # | METADATA_CONFIG |
-    # '-----------------'
-
-    @abstractmethod
-    def get_metadata_config(
-        self,
-    ) -> Union[
-        metadata_store_pb2.ConnectionConfig,
-        metadata_store_pb2.MetadataStoreClientConfig,
-    ]:
-        """Get the TFX metadata config of this ZenStore.
-
-        Returns:
-            The TFX metadata config of this ZenStore.
-        """
-
     #  .---------.
     # | PROJECTS |
     # '----------'
@@ -2359,6 +2342,71 @@ class BaseZenStore(BaseModel):
             KeyError: if the step doesn't exist.
         """
 
+    # TODO: change into an abstract method
+    # TODO: use the correct return value + also amend the endpoint as well
+    def get_run_step_outputs(self, step_id: str) -> Dict[str, ArtifactModel]:
+        """Get a list of outputs for a specific step.
+
+        Args:
+            step_id: The id of the step to get outputs for.
+
+        Returns:
+            A list of Dicts mapping artifact names to the output artifacts for the step.
+        """
+        return self._get_run_step_outputs(step_id)
+
+    @abstractmethod
+    def _get_run_step_outputs(self, step_id: str) -> Dict[str, ArtifactModel]:
+        """Get the outputs of a step.
+
+        Args:
+            step_id: The ID of the step to get outputs for.
+
+        Returns:
+            The outputs of the step.
+        """
+
+    # TODO: change into an abstract method
+    # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
+    def get_run_step_inputs(self, step_id: str) -> Dict[str, ArtifactModel]:
+        """Get a list of inputs for a specific step.
+
+        Args:
+            step_id: The id of the step to get inputs for.
+
+        Returns:
+            A list of Dicts mapping artifact names to the input artifacts for the step.
+        """
+        return self._get_run_step_inputs(step_id)
+
+    @abstractmethod
+    def _get_run_step_inputs(self, step_id: str) -> Dict[str, ArtifactModel]:
+        """Get the inputs of a step.
+
+        Args:
+            step_id: The ID of the step to get inputs for.
+
+        Returns:
+            The inputs of the step.
+        """
+    
+    #  .---------.
+    # | METADATA |
+    # '----------'
+
+    @abstractmethod
+    def get_metadata_config(
+        self,
+    ) -> Union[
+        metadata_store_pb2.ConnectionConfig,
+        metadata_store_pb2.MetadataStoreClientConfig,
+    ]:
+        """Get the TFX metadata config of this ZenStore.
+
+        Returns:
+            The TFX metadata config of this ZenStore.
+        """
+
     # TODO: old get_pipeline(), get_pipelines(), get_step_by_id(), get_step_artifacts()
 
     # @abstractmethod
@@ -2424,54 +2472,6 @@ class BaseZenStore(BaseModel):
     #     Returns:
     #         Original StepView that produced the artifact.
     #     """
-
-    # TODO: change into an abstract method
-    # TODO: use the correct return value + also amend the endpoint as well
-    def get_run_step_outputs(self, step_id: str) -> Dict[str, ArtifactModel]:
-        """Get a list of outputs for a specific step.
-
-        Args:
-            step_id: The id of the step to get outputs for.
-
-        Returns:
-            A list of Dicts mapping artifact names to the output artifacts for the step.
-        """
-        return self._get_run_step_outputs(step_id)
-
-    @abstractmethod
-    def _get_run_step_outputs(self, step_id: str) -> Dict[str, ArtifactModel]:
-        """Get the outputs of a step.
-
-        Args:
-            step_id: The ID of the step to get outputs for.
-
-        Returns:
-            The outputs of the step.
-        """
-
-    # TODO: change into an abstract method
-    # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
-    def get_run_step_inputs(self, step_id: str) -> Dict[str, ArtifactModel]:
-        """Get a list of inputs for a specific step.
-
-        Args:
-            step_id: The id of the step to get inputs for.
-
-        Returns:
-            A list of Dicts mapping artifact names to the input artifacts for the step.
-        """
-        return self._get_run_step_inputs(step_id)
-
-    @abstractmethod
-    def _get_run_step_inputs(self, step_id: str) -> Dict[str, ArtifactModel]:
-        """Get the inputs of a step.
-
-        Args:
-            step_id: The ID of the step to get inputs for.
-
-        Returns:
-            The inputs of the step.
-        """
 
     # # Public facing APIs
     # # TODO [ENG-894]: Refactor these with the proxy pattern, as noted in

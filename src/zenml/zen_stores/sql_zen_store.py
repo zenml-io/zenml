@@ -1337,23 +1337,6 @@ class SqlZenStore(BaseZenStore):
             session.delete(role)
             session.commit()
 
-    #  .----------------.
-    # | METADATA_CONFIG |
-    # '-----------------'
-
-    def get_metadata_config(
-        self,
-    ) -> Union[
-        metadata_store_pb2.ConnectionConfig,
-        metadata_store_pb2.MetadataStoreClientConfig,
-    ]:
-        """Get the TFX metadata config of this ZenStore.
-
-        Returns:
-            The TFX metadata config of this ZenStore.
-        """
-        return self.metadata_store.get_tfx_metadata_config()
-
     #  .---------.
     # | PROJECTS |
     # '----------'
@@ -2173,6 +2156,23 @@ class SqlZenStore(BaseZenStore):
             The inputs of the step.
         """
         pass  # TODO: currently not saved in DB
+
+    # .----------.
+    # | METADATA |
+    # '----------'
+
+    def get_metadata_config(
+        self,
+    ) -> Union[
+        metadata_store_pb2.ConnectionConfig,
+        metadata_store_pb2.MetadataStoreClientConfig,
+    ]:
+        """Get the TFX metadata config of this ZenStore.
+
+        Returns:
+            The TFX metadata config of this ZenStore.
+        """
+        return self.metadata_store.get_tfx_metadata_config()
 
     # def get_pipeline(self, pipeline_name: str) -> Optional[PipelineView]:
     #     """Returns a pipeline for the given name.
