@@ -44,7 +44,9 @@ def register_feature_store_subcommands() -> None:
             ctx: The click context.
         """
         repo = Repository()
-        feature_store_model = repo.active_stack.components[StackComponentType.FEATURE_STORE]
+        feature_store_model = repo.active_stack.components[
+            StackComponentType.FEATURE_STORE
+        ]
         if feature_store_model is None:
             error(
                 "No active feature store found. Please create a feature store "
