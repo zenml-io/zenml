@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Pipeline models implementation."""
 
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 from uuid import UUID
 
@@ -21,7 +22,6 @@ from pydantic import BaseModel, Field
 import zenml
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
-from zenml.models.stack_model import StackModel
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
@@ -145,18 +145,26 @@ class PipelineRunModel(BaseModel):
         pipeline: Pipeline that this run is referring to.
         stack: Stack that this run was performed on.
         runtime_configuration: Runtime configuration that was used for this run.
-        user_id: Id of the user that ran this pipeline.
-        project_name: Name of the project that this pipeline was run in.
+        owner: Id of the user that ran this pipeline.
     """
 
     id: Optional[UUID]
     name: str
-    zenml_version: str = zenml.__version__
-    git_sha: Optional[str] = Field(default_factory=get_git_sha)
 
-    pipeline: PipelineModel
-    stack: StackModel
+    owner: UUID
+    stack_id: UUID
+    pipeline_id: Optional[UUID]
+
     runtime_configuration: Dict[str, Any]
 
-    user_id: UUID
-    project_name: Optional[str]
+    zenml_version: str = zenml.__version__
+    git_sha: Optional[str] = Field(default_factory=get_git_sha)
+    created_at: Optional[datetime]
+
+
+class ArtifactModel(BaseModel):
+    """Pydantic object representing an artifact."""
+
+    id: Optional[UUID]
+    name: str
+    # TODO

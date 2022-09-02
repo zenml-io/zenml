@@ -87,6 +87,7 @@ class StackModel(BaseModel):
             a StackModel
         """
         return cls(
+            id=stack.id,
             name=stack.name,
             components={
                 type_: ComponentModel.from_component(component)
@@ -101,11 +102,11 @@ class StackModel(BaseModel):
             the corresponding Stack instance
         """
         stack_components = {
-            type_: model.to_component() 
+            type_: model.to_component()
             for type_, model in self.components.items()
         }
         return Stack.from_components(
-            name=self.name, components=stack_components
+            id=self.id, name=self.name, components=stack_components
         )
 
     def get_component_wrapper(

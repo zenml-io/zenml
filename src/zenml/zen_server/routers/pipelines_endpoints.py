@@ -263,7 +263,7 @@ async def get_pipeline_runs(pipeline_id: str) -> List[PipelineRunModel]:
         validation error: when unable to validate credentials
     """
     try:
-        return zen_store.get_pipeline_runs(pipeline_id=pipeline_id)
+        return zen_store.list_runs(pipeline_id=pipeline_id)
     except NotAuthorizedError as error:
         raise conflict(error) from error
     except NotFoundError as error:
@@ -295,10 +295,7 @@ async def create_pipeline_run(
         validation error: when unable to validate credentials
     """
     try:
-        # TODO: THIS ALSO EXISTS: zen_store.register_pipeline_run(pipeline_run)
-        zen_store.create_pipeline_run(
-            pipeline_id=pipeline_id, pipeline_run=pipeline_run
-        )
+        zen_store.create_run(pipeline_id=pipeline_id, pipeline_run=pipeline_run)
     except NotAuthorizedError as error:
         raise conflict(error) from error
     except NotFoundError as error:

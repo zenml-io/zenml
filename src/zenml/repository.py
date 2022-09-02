@@ -48,6 +48,7 @@ logger = get_logger(__name__)
 # TODO: [server] this is defined in two places now, should be fixed
 DEFAULT_STACK_NAME = "default"
 
+
 class RepositoryConfiguration(FileSyncModel):
     """Pydantic object used for serializing repository configuration options.
 
