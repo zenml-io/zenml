@@ -102,7 +102,7 @@ class ComponentModel(BaseModel):
             type=component.TYPE,
             flavor_name=component.FLAVOR,
             name=component.name,
-            uuid=component.uuid,
+            id=component.uuid,
             configuration=base64.b64encode(
                 yaml.dump(json.loads(component.json())).encode()
             ),

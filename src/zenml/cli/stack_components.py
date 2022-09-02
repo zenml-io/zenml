@@ -147,38 +147,32 @@ def _get_stack_component_model(
 
     repo = Repository()
 
-    components = repo.zen_store.list_stack_components(
-        project_id=repo.active_project.id,
-        type=component_type,
-    )
-    if len(components) == 0:
-        cli_utils.warning(f"No {plural_display_name} registered.")
-        return None, False
-
     active_stack = repo.active_stack
     active_component: Optional[ComponentModel] = None
-    if component_type in active_stack.components.keys():
-        active_component = active_stack.components[component_type]
-        cli_utils.declare(
-            f"No component name given; using `{active_component.name}` "
-            f"from active stack."
-        )
-        return active_component, True
-    elif component_name:
+
+    if component_name:
         try:
             return (
                 repo.get_stack_component_by_name_and_type(
                     component_type, name=component_name
                 ),
                 (
-                    active_component is not None
-                    and component_name == active_component.name
+                        active_component is not None
+                        and component_name == active_component.name
                 ),
             )
         except KeyError:
             cli_utils.error(
                 f"No {singular_display_name} found for name '{component_name}'."
             )
+    elif component_type in active_stack.components.keys():
+        active_component = active_stack.components[component_type]
+        cli_utils.declare(
+            f"No component name given; using `{active_component.name}` "
+            f"from active stack."
+        )
+        return active_component, True
+
     else:
         cli_utils.error(f"No {singular_display_name} in active stack.")
 
@@ -615,65 +609,64 @@ def generate_stack_component_update_command(
         component_model, _ = _get_stack_component_model(
             component_type, component_name=name
         )
+
         if component_model is None:
             return
-
         name = component_model.name
-        with console.status(f"Updating {display_name} '{name}'...\n"):
-            repo = Repository()
+        # with console.status(f"Updating {display_name} '{name}'...\n"):
+        repo = Repository()
 
-            try:
-                parsed_args = cli_utils.parse_unknown_options(
-                    kwargs, expand_args=True
+        try:
+            parsed_args = cli_utils.parse_unknown_options(
+                kwargs, expand_args=True
+            )
+        except AssertionError as e:
+            cli_utils.error(str(e))
+            return
+        for prop in MANDATORY_COMPONENT_ATTRIBUTES:
+            if prop in parsed_args:
+                cli_utils.error(
+                    f"Cannot update mandatory property '{prop}' of "
+                    f"'{name}' {component_model.type}. "
                 )
-            except AssertionError as e:
-                cli_utils.error(str(e))
-                return
-            for prop in MANDATORY_COMPONENT_ATTRIBUTES:
-                if prop in parsed_args:
-                    cli_utils.error(
-                        f"Cannot update mandatory property '{prop}' of "
-                        f"'{name}' {component_model.type}. "
-                    )
 
-            component_class = repo.get_flavor(
-                name=component_model.flavor_name,
-                component_type=component_type,
-            )
+        component_class = repo.get_flavor(
+            name=component_model.flavor_name,
+            component_type=component_type,
+        )
 
-            available_properties = _get_available_attributes(component_class)
-            for prop in parsed_args.keys():
-                if (prop not in available_properties) and (
-                    len(available_properties) > 0
-                ):
-                    cli_utils.error(
-                        f"You cannot update the {display_name} "
-                        f"`{component_model.name}` with property "
-                        f"'{prop}'. You can only update the following "
-                        f"properties: {available_properties}."
-                    )
-                elif prop not in available_properties:
-                    cli_utils.error(
-                        f"You cannot update the {display_name} "
-                        f"`{component_model.name}` with property "
-                        f"'{prop}' as this {display_name} has no optional "
-                        f"properties that can be configured."
-                    )
-                else:
-                    continue
+        available_properties = _get_available_attributes(component_class)
+        for prop in parsed_args.keys():
+            if (prop not in available_properties) and (
+                len(available_properties) > 0
+            ):
+                cli_utils.error(
+                    f"You cannot update the {display_name} "
+                    f"`{component_model.name}` with property "
+                    f"'{prop}'. You can only update the following "
+                    f"properties: {available_properties}."
+                )
+            elif prop not in available_properties:
+                cli_utils.error(
+                    f"You cannot update the {display_name} "
+                    f"`{component_model.name}` with property "
+                    f"'{prop}' as this {display_name} has no optional "
+                    f"properties that can be configured."
+                )
+            else:
+                continue
 
-            # Initialize a new component object to make sure pydantic validation
-            # is used
-            new_attributes = {
-                **component_model.to_component().dict(),
-                **parsed_args,
-            }
-            updated_component = component_class(**new_attributes)
+        # Initialize a new component object to make sure pydantic validation
+        # is used
+        new_attributes = {
+            **component_model.to_component().dict(),
+            **parsed_args,
+        }
+        updated_component = component_class(**new_attributes)
 
-            repo.update_stack_component(
-                name, updated_component.TYPE, updated_component
-            )
-            cli_utils.declare(f"Successfully updated {display_name} `{name}`.")
+        repo.update_stack_component(
+            component=ComponentModel.from_component(updated_component))
+        cli_utils.declare(f"Successfully updated {display_name} `{name}`.")
 
     return update_stack_component_command
 

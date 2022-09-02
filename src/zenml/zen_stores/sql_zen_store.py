@@ -435,7 +435,7 @@ class SqlZenStore(BaseZenStore):
             existing_stack = session.exec(
                 select(StackSchema).where(StackSchema.id == stack.id)
             ).first()
-            # TODO: verify if is_shared status needs to be checked here
+
             if existing_stack is None:
                 raise KeyError(
                     f"Unable to update stack with id "
@@ -511,7 +511,7 @@ class SqlZenStore(BaseZenStore):
                 StackComponentSchema.project_id == project_id
             )
 
-            # TODO: [ALEXEJ] prettify this
+            # TODO: [server] prettify this
             if type:
                 query = query.where(StackComponentSchema.type == type)
             if flavor_name:
@@ -570,7 +570,7 @@ class SqlZenStore(BaseZenStore):
                 .where(StackComponentSchema.owner == user_id)
                 .where(StackComponentSchema.type == component.type)
             ).first()
-            # TODO: verify if is_shared status needs to be checked here
+
             if existing_component is not None:
                 raise StackComponentExistsError(
                     f"Unable to register component with name "
@@ -587,29 +587,43 @@ class SqlZenStore(BaseZenStore):
             session.add(component_in_db)
             session.commit()
 
-            # TODO: [ALEXEJ] verify that the component_in_db instance is actually
-            # updated automatically after the session commit
             return component_in_db.to_model()
 
-    def _update_stack_component(
-        self,
-        user_id: str,
-        project_id: UUID,
-        component_id: str,
-        component: ComponentModel,
-    ) -> ComponentModel:
+    def _update_stack_component(self,
+                                component: ComponentModel) -> ComponentModel:
         """Update an existing stack component.
 
         Args:
-            user_id: The user that created the stack component.
-            project_id: The project the stack component is created in.
-            component_id: The id of the stack component to update.
             component: The stack component to use for the update.
 
         Returns:
             The updated stack component.
         """
-        # TODO: implement this
+        with Session(self.engine) as session:
+            # Check if component with the domain key (name, prj, owner) already
+            #  exists
+            existing_component = session.exec(
+                select(StackComponentSchema)
+                .where(StackComponentSchema.id == component.id)
+            ).first()
+
+            # TODO: verify if is_shared status needs to be checked here
+            if existing_component is None:
+                raise KeyError(
+                    f"Unable to update component with id "
+                    f"'{component.id}': Found no"
+                    f"existing component with this id."
+                )
+
+            existing_component.from_update_model(component=component)
+            session.add(existing_component)
+            session.commit()
+
+            return existing_component.to_model()
+
+
+
+
 
     def _delete_stack_component(self, component_id: UUID) -> None:
         """Delete a stack component.
@@ -1344,23 +1358,6 @@ class SqlZenStore(BaseZenStore):
 
             session.delete(role)
             session.commit()
-
-    #  .----------------.
-    # | METADATA_CONFIG |
-    # '-----------------'
-
-    def get_metadata_config(
-        self,
-    ) -> Union[
-        metadata_store_pb2.ConnectionConfig,
-        metadata_store_pb2.MetadataStoreClientConfig,
-    ]:
-        """Get the TFX metadata config of this ZenStore.
-
-        Returns:
-            The TFX metadata config of this ZenStore.
-        """
-        return self.metadata_store.get_tfx_metadata_config()
 
     #  .---------.
     # | PROJECTS |
@@ -2181,6 +2178,23 @@ class SqlZenStore(BaseZenStore):
             The inputs of the step.
         """
         pass  # TODO: currently not saved in DB
+
+    # .----------.
+    # | METADATA |
+    # '----------'
+
+    def get_metadata_config(
+        self,
+    ) -> Union[
+        metadata_store_pb2.ConnectionConfig,
+        metadata_store_pb2.MetadataStoreClientConfig,
+    ]:
+        """Get the TFX metadata config of this ZenStore.
+
+        Returns:
+            The TFX metadata config of this ZenStore.
+        """
+        return self.metadata_store.get_tfx_metadata_config()
 
     # def get_pipeline(self, pipeline_name: str) -> Optional[PipelineView]:
     #     """Returns a pipeline for the given name.

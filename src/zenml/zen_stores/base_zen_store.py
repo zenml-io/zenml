@@ -724,17 +724,11 @@ class BaseZenStore(BaseModel):
 
     def update_stack_component(
         self,
-        user_id: UUID,
-        project_id: UUID,
-        component_id: UUID,
         component: ComponentModel,
     ) -> ComponentModel:
         """Update an existing stack component.
 
         Args:
-            user_id: The user that created the stack component.
-            project_id: The project the stack component is created in.
-            component_id: The id of the stack component to update.
             component: The stack component to use for the update.
 
         Returns:
@@ -742,30 +736,22 @@ class BaseZenStore(BaseModel):
         """
         analytics_metadata = {
             "type": component.type.value,
-            "flavor": component.flavor,
+            "flavor": component.flavor_name,
         }
         self._track_event(
             AnalyticsEvent.UPDATED_STACK_COMPONENT,
             metadata=analytics_metadata,
         )
-        return self._update_stack_component(
-            user_id, project_id, component_id, component
-        )
+        return self._update_stack_component(component)
 
     @abstractmethod
     def _update_stack_component(
         self,
-        user_id: str,
-        project_id: str,
-        component_id: str,
         component: ComponentModel,
     ) -> ComponentModel:
         """Update an existing stack component.
 
         Args:
-            user_id: The user that created the stack component.
-            project_id: The project the stack component is created in.
-            component_id: The id of the stack component to update.
             component: The stack component to use for the update.
 
         Returns:
@@ -1443,23 +1429,6 @@ class BaseZenStore(BaseModel):
 
         Raises:
             KeyError: If the role, user, team, or project does not exists.
-        """
-
-    #  .----------------.
-    # | METADATA_CONFIG |
-    # '-----------------'
-
-    @abstractmethod
-    def get_metadata_config(
-        self,
-    ) -> Union[
-        metadata_store_pb2.ConnectionConfig,
-        metadata_store_pb2.MetadataStoreClientConfig,
-    ]:
-        """Get the TFX metadata config of this ZenStore.
-
-        Returns:
-            The TFX metadata config of this ZenStore.
         """
 
     #  .---------.
@@ -2359,6 +2328,71 @@ class BaseZenStore(BaseModel):
             KeyError: if the step doesn't exist.
         """
 
+    # TODO: change into an abstract method
+    # TODO: use the correct return value + also amend the endpoint as well
+    def get_run_step_outputs(self, step_id: str) -> Dict[str, ArtifactModel]:
+        """Get a list of outputs for a specific step.
+
+        Args:
+            step_id: The id of the step to get outputs for.
+
+        Returns:
+            A list of Dicts mapping artifact names to the output artifacts for the step.
+        """
+        return self._get_run_step_outputs(step_id)
+
+    @abstractmethod
+    def _get_run_step_outputs(self, step_id: str) -> Dict[str, ArtifactModel]:
+        """Get the outputs of a step.
+
+        Args:
+            step_id: The ID of the step to get outputs for.
+
+        Returns:
+            The outputs of the step.
+        """
+
+    # TODO: change into an abstract method
+    # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
+    def get_run_step_inputs(self, step_id: str) -> Dict[str, ArtifactModel]:
+        """Get a list of inputs for a specific step.
+
+        Args:
+            step_id: The id of the step to get inputs for.
+
+        Returns:
+            A list of Dicts mapping artifact names to the input artifacts for the step.
+        """
+        return self._get_run_step_inputs(step_id)
+
+    @abstractmethod
+    def _get_run_step_inputs(self, step_id: str) -> Dict[str, ArtifactModel]:
+        """Get the inputs of a step.
+
+        Args:
+            step_id: The ID of the step to get inputs for.
+
+        Returns:
+            The inputs of the step.
+        """
+    
+    #  .---------.
+    # | METADATA |
+    # '----------'
+
+    @abstractmethod
+    def get_metadata_config(
+        self,
+    ) -> Union[
+        metadata_store_pb2.ConnectionConfig,
+        metadata_store_pb2.MetadataStoreClientConfig,
+    ]:
+        """Get the TFX metadata config of this ZenStore.
+
+        Returns:
+            The TFX metadata config of this ZenStore.
+        """
+
     # TODO: old get_pipeline(), get_pipelines(), get_step_by_id(), get_step_artifacts()
 
     # @abstractmethod
@@ -2424,54 +2458,6 @@ class BaseZenStore(BaseModel):
     #     Returns:
     #         Original StepView that produced the artifact.
     #     """
-
-    # TODO: change into an abstract method
-    # TODO: use the correct return value + also amend the endpoint as well
-    def get_run_step_outputs(self, step_id: str) -> Dict[str, ArtifactModel]:
-        """Get a list of outputs for a specific step.
-
-        Args:
-            step_id: The id of the step to get outputs for.
-
-        Returns:
-            A list of Dicts mapping artifact names to the output artifacts for the step.
-        """
-        return self._get_run_step_outputs(step_id)
-
-    @abstractmethod
-    def _get_run_step_outputs(self, step_id: str) -> Dict[str, ArtifactModel]:
-        """Get the outputs of a step.
-
-        Args:
-            step_id: The ID of the step to get outputs for.
-
-        Returns:
-            The outputs of the step.
-        """
-
-    # TODO: change into an abstract method
-    # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
-    def get_run_step_inputs(self, step_id: str) -> Dict[str, ArtifactModel]:
-        """Get a list of inputs for a specific step.
-
-        Args:
-            step_id: The id of the step to get inputs for.
-
-        Returns:
-            A list of Dicts mapping artifact names to the input artifacts for the step.
-        """
-        return self._get_run_step_inputs(step_id)
-
-    @abstractmethod
-    def _get_run_step_inputs(self, step_id: str) -> Dict[str, ArtifactModel]:
-        """Get the inputs of a step.
-
-        Args:
-            step_id: The ID of the step to get inputs for.
-
-        Returns:
-            The inputs of the step.
-        """
 
     # # Public facing APIs
     # # TODO [ENG-894]: Refactor these with the proxy pattern, as noted in

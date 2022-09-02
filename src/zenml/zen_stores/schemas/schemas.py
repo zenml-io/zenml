@@ -305,7 +305,7 @@ class StackSchema(SQLModel, table=True):
         """Create an incomplete StackSchema with `id` and `created_at` missing.
 
         Returns:
-            A StackComponentSchema
+            A StackSchema
         """
 
         return cls(
@@ -321,10 +321,10 @@ class StackSchema(SQLModel, table=True):
         defined_components: List["StackComponentSchema"],
         stack: StackModel,
     ) -> "StackSchema":
-        """Create an incomplete StackSchema with `id` and `created_at` missing.
+        """Update the updatable fields on an existing StackSchema.
 
         Returns:
-            A StackComponentSchema
+            A StackSchema
         """
         self.name = stack.name
         self.is_shared = stack.is_shared
@@ -335,7 +335,7 @@ class StackSchema(SQLModel, table=True):
         """Creates a ComponentModel from an instance of a StackSchema.
 
         Returns:
-            a ComponentModel
+            a StackModel
         """
         return StackModel(
             id=self.id,
@@ -390,6 +390,20 @@ class StackComponentSchema(SQLModel, table=True):
             flavor_name=component.flavor_name,
             configuration=component.configuration,
         )
+
+    def from_update_model(
+            self,
+            component: ComponentModel,
+    ) -> "StackComponentSchema":
+        """Update the updatable fields on an existing StackSchema.
+
+        Returns:
+            A StackSchema
+        """
+        self.name = component.name
+        self.is_shared = component.is_shared
+        self.configuration = component.configuration
+        return self
 
     def to_model(self) -> "ComponentModel":
         """Creates a ComponentModel from an instance of a StackSchema.
