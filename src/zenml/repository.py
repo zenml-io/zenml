@@ -635,14 +635,17 @@ class Repository(metaclass=RepositoryMetaClass):
         # TODO: [server] make sure the stack can be validated here
         if stack.is_valid:
             created_stack = self.zen_store.register_stack(
-                user_id=self.zen_store.default_user_id, # TODO: [server] replace with active user
+                user_id=self.zen_store.default_user_id,  # TODO: [server] replace with active user
                 project_id=self.active_project.id,
-                stack=stack)
+                stack=stack,
+            )
             return created_stack
         else:
-            raise RuntimeError("Stack configuration is invalid. A valid"
-                               "stack must contain an Artifact Store and "
-                               "an Orchestrator.")
+            raise RuntimeError(
+                "Stack configuration is invalid. A valid"
+                "stack must contain an Artifact Store and "
+                "an Orchestrator."
+            )
 
     def update_stack(self, stack: StackModel) -> None:
         """Updates a stack and its components.
@@ -655,9 +658,11 @@ class Repository(metaclass=RepositoryMetaClass):
             if self._config.active_stack_id == stack.id:
                 self.activate_stack(stack)
         else:
-            raise RuntimeError("Stack configuration is invalid. A valid"
-                               "stack must contain an Artifact Store and "
-                               "an Orchestrator.")
+            raise RuntimeError(
+                "Stack configuration is invalid. A valid"
+                "stack must contain an Artifact Store and "
+                "an Orchestrator."
+            )
 
     def deregister_stack(self, stack: StackModel) -> None:
         """Deregisters a stack.
@@ -743,8 +748,11 @@ class Repository(metaclass=RepositoryMetaClass):
 
         # TODO: [server] this error handling could be improved
         if not components:
-            raise KeyError("No stack component of type '%s' with the name '%s' "
-                           "exists.", type.value, name)
+            raise KeyError(
+                "No stack component of type '%s' with the name '%s' " "exists.",
+                type.value,
+                name,
+            )
         elif len(components) > 1:
             raise RuntimeError(
                 "Multiple components have been found for this name.", components
@@ -798,7 +806,8 @@ class Repository(metaclass=RepositoryMetaClass):
         """
         try:
             self.zen_store.delete_stack_component(
-                component_id=stack_component.id)
+                component_id=stack_component.id
+            )
             logger.info(
                 "Deregistered stack component (type: %s) with name '%s'.",
                 stack_component.type,

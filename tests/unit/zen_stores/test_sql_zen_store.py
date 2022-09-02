@@ -515,3 +515,32 @@ def test_get_metadata_config_succeeds(
     """Tests getting metadata config."""
     metadata_config = fresh_sql_zen_store.get_metadata_config()
     assert metadata_config is not None
+
+
+#  .-------.
+# | STACKS |
+# '--------'
+
+
+def test_stacks_empty_method(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests stacks empty method."""
+    assert fresh_sql_zen_store.stacks_empty is False
+
+
+def test_list_stacks_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests listing stacks."""
+    current_project_id = str(fresh_sql_zen_store.list_projects()[0].id)
+    assert len(fresh_sql_zen_store.list_stacks(current_project_id)) == 1
+
+
+def test_stack_names_property(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests stack names property."""
+    stack_names = fresh_sql_zen_store.stack_names
+    assert len(stack_names) == 1
+    assert "default" in stack_names

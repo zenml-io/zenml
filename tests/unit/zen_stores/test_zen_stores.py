@@ -706,8 +706,8 @@ def test_pipeline_run_management(
         pipeline=PipelineModel.from_pipeline(pipeline),
         stack=StackWrapper.from_stack(stack),
         runtime_configuration={},
-        user_id=default_user.id,
-        project_name="project",
+        owner=default_user.id,
+        project_id="project",
     )
 
     fresh_zen_store.register_pipeline_run(run)
@@ -728,7 +728,7 @@ def test_pipeline_run_management(
         fresh_zen_store.get_pipeline_run_wrapper(
             pipeline_name=pipeline.name,
             run_name=run.name,
-            project_name=run.project_name,
+            project_name=run.project_id,
         )
         == run
     )

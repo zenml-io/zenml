@@ -703,7 +703,8 @@ def generate_stack_component_remove_attribute_command(
         with console.status(f"Updating {display_name} '{name}'...\n"):
             repo = Repository()
             current_component = repo.get_stack_component_by_name_and_type(
-                type=component_type, name=name)
+                type=component_type, name=name
+            )
             if current_component is None:
                 cli_utils.error(f"No {display_name} found for name '{name}'.")
 
@@ -788,7 +789,8 @@ def generate_stack_component_rename_command(
         with console.status(f"Renaming {display_name} '{name}'...\n"):
             repo = Repository()
             current_component = repo.get_stack_component_by_name_and_type(
-                type=component_type, name=name)
+                type=component_type, name=name
+            )
             if current_component is None:
                 cli_utils.error(f"No {display_name} found for name '{name}'.")
 

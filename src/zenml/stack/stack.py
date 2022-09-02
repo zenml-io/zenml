@@ -26,6 +26,7 @@ from typing import (
     Set,
     Type,
 )
+from uuid import UUID
 
 from zenml.constants import ENV_ZENML_SECRET_VALIDATION_LEVEL
 from zenml.enums import SecretValidationLevel, StackComponentType
@@ -71,6 +72,7 @@ class Stack:
 
     def __init__(
         self,
+        id: UUID,
         name: str,
         *,
         orchestrator: "BaseOrchestrator",
@@ -106,6 +108,7 @@ class Stack:
         Raises:
             StackValidationError: If the stack configuration is not valid.
         """
+        self._id = id
         self._name = name
         self._orchestrator = orchestrator
         self._artifact_store = artifact_store
@@ -121,7 +124,10 @@ class Stack:
 
     @classmethod
     def from_components(
-        cls, name: str, components: Dict[StackComponentType, "StackComponent"]
+        cls,
+        id: UUID,
+        name: str,
+        components: Dict[StackComponentType, "StackComponent"],
     ) -> "Stack":
         """Creates a stack instance from a dict of stack components.
 
@@ -231,6 +237,7 @@ class Stack:
             _raise_type_error(data_validator, BaseDataValidator)
 
         return Stack(
+            id=id,
             name=name,
             orchestrator=orchestrator,
             artifact_store=artifact_store,
@@ -269,6 +276,15 @@ class Stack:
             ]
             if component is not None
         }
+
+    @property
+    def id(self) -> str:
+        """The ID of the stack.
+
+        Returns:
+            The ID of the stack.
+        """
+        return self._id
 
     @property
     def name(self) -> str:
@@ -566,6 +582,7 @@ class Stack:
 
         self._validate_secrets(raise_exception=fail_if_secrets_missing)
 
+    # TODO: why is this here? this is not a stack method
     def _register_pipeline_run(
         self,
         pipeline: "BasePipeline",
@@ -577,21 +594,19 @@ class Stack:
             pipeline: The pipeline that is being run.
             runtime_configuration: The runtime configuration of the pipeline.
         """
-        from zenml.models import PipelineModel, PipelineRunModel
+        from zenml.models import PipelineRunModel
         from zenml.repository import Repository
 
         repo = Repository()
-        active_project = repo.active_project
-        pipeline_run_wrapper = PipelineRunModel(
+        pipeline_run = PipelineRunModel(
             name=runtime_configuration.run_name,
-            pipeline=PipelineModel.from_pipeline(pipeline),
-            stack=StackWrapper.from_stack(self),
+            owner=repo.zen_store.active_user.id,
+            stack_id=self.id,
+            pipeline=None,  # TODO: check if pipeline exists etc. else pass None
             runtime_configuration=runtime_configuration,
-            user_id=repo.zen_store.active_user.id,
-            project_name=active_project.name if active_project else None,
         )
 
-        Repository().zen_store.register_pipeline_run(pipeline_run_wrapper)
+        Repository().zen_store.create_run(pipeline_run)
 
     def deploy_pipeline(
         self,
