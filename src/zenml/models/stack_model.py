@@ -101,7 +101,7 @@ class StackModel(BaseModel):
             the corresponding Stack instance
         """
         stack_components = {
-            type_: model.to_component() 
+            type_: model.to_component()
             for type_, model in self.components.items()
         }
         return Stack.from_components(
