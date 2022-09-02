@@ -41,10 +41,11 @@ from zenml.utils.filesync_model import FileSyncModel
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
     from zenml.post_execution import PipelineView
-    from zenml.zen_stores.base_zen_store import DEFAULT_STACK_NAME, BaseZenStore
+    from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
 
+DEFAULT_STACK_NAME = "default"
 
 class RepositoryConfiguration(FileSyncModel):
     """Pydantic object used for serializing repository configuration options.

@@ -69,13 +69,12 @@ def init(path: Optional[Path]) -> None:
         except InitializationException as e:
             error(f"{e}")
 
-    gc = GlobalConfiguration()
     declare(
         f"The local active stack was initialized to "
-        f"'{gc.active_stack_name}'. This local configuration will only take "
-        f"effect when you're running ZenML from the initialized repository "
-        f"root, or from a subdirectory. For more information on repositories "
-        f"and configurations, please visit "
+        f"'{Repository().active_stack.name}'. This local configuration will "
+        f"only take effect when you're running ZenML from the initialized "
+        f"repository root, or from a subdirectory. For more information on "
+        f"repositories and configurations, please visit "
         f"https://docs.zenml.io/developer-guide/stacks-repositories."
     )
 
