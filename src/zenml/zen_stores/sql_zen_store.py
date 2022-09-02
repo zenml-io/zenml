@@ -69,10 +69,12 @@ from zenml.zen_stores.schemas import (
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
-SelectOfScalar.inherit_cache = True  # type: ignore
-Select.inherit_cache = True  # type: ignore
+SelectOfScalar.inherit_cache = True
+Select.inherit_cache = True
 
 logger = get_logger(__name__)
+
+ZENML_SQLITE_DB_FILENAME = "zenml.db"
 
 
 class SqlZenStoreConfiguration(StoreConfiguration):
@@ -200,7 +202,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The local SQL url for the given path.
         """
-        return f"sqlite:///{path}/zenml.db"
+        return f"sqlite:///{path}/{ZENML_SQLITE_DB_FILENAME}"
 
     @staticmethod
     def validate_url(url: str) -> str:
