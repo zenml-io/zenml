@@ -32,9 +32,7 @@ def running_zen_server(
 ) -> LocalZenServer:
     """Spin up a ZenServer to do tests on."""
     port = scan_for_available_port(start=8003, stop=9000)
-    zen_server = LocalZenServer(
-        LocalZenServerConfig(port=port)
-    )
+    zen_server = LocalZenServer(LocalZenServerConfig(port=port))
 
     zen_server.start(timeout=10)
 

@@ -32,3 +32,10 @@ try:
     from zenml.zen_server.deploy.local.local_zen_server import LocalZenServer
 except ImportError:
     pass
+
+# Try to import the DockerZenServer here because it needs to be registered in the
+# service registry early on in order to be available for use in other modules.
+try:
+    from zenml.zen_server.deploy.docker.docker_zen_server import DockerZenServer
+except ImportError:
+    pass
