@@ -19,6 +19,17 @@ from enum import Enum
 from zenml.utils.enum_utils import StrEnum
 
 
+class ArtifactType(StrEnum):
+    """All possible types an artifact can have."""
+
+    DATAANALYSIS = "DataAnalysisArtifact"
+    DATA = "DataArtifact"
+    MODEL = "ModelArtifact"
+    SCHEMA = "SchemaArtifact"
+    SERVICE = "ServiceArtifact"
+    STATISTICS = "StatisticsArtifact"
+
+
 class ExecutionStatus(StrEnum):
     """Enum that represents the current status of a step or pipeline run."""
 

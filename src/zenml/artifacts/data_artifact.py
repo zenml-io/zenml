@@ -14,9 +14,10 @@
 """Class for all ZenML data artifacts."""
 
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.enums import ArtifactType
 
 
 class DataArtifact(BaseArtifact):
     """Class for all ZenML data artifacts."""
 
-    TYPE_NAME = "DataArtifact"
+    TYPE_NAME = ArtifactType.DATA

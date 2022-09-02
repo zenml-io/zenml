@@ -2389,7 +2389,7 @@ class BaseZenStore(BaseModel):
         Returns:
             The inputs of the step.
         """
-    
+
     #  .---------.
     # | METADATA |
     # '----------'

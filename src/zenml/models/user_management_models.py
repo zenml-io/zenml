@@ -19,10 +19,6 @@ from uuid import UUID
 
 from pydantic import BaseModel, root_validator
 
-from zenml.logger import get_logger
-
-logger = get_logger(__name__)
-
 
 class RoleModel(BaseModel):
     """Pydantic object representing a role.
