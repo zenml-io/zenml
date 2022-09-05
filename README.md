@@ -56,6 +56,11 @@
     <br />
     <a href="https://docs.zenml.io/"><strong>Explore the docs »</strong></a>
     <br />
+    <div align="center">
+      Join our <a href="https://zenml.io/slack-invite" target="_blank">
+      <img width="25" src="https://cdn3.iconfinder.com/data/icons/logos-and-brands-adobe/512/306_Slack-512.png" alt="Slack"/>
+    <b>Slack Community</b> </a> and be part of the ZenML family.
+    </div>
     <br />
     <a href="https://zenml.io/features">Features</a>
     ·
@@ -69,7 +74,7 @@
     ·
     <a href="#-meet-the-team">Meet the Team</a>
     <br />
-    🎉 Version 0.12.0 is out. Check out the release notes
+    🎉 Version 0.13.1 is out. Check out the release notes
     <a href="https://github.com/zenml-io/zenml/releases">here</a>.
     <br />
     <br />
@@ -79,11 +84,6 @@
     <a href="https://twitter.com/zenml_io">
     <img src="https://img.shields.io/badge/-Twitter-black.svg?style=for-the-badge&logo=twitter&colorB=555" alt="Logo">
     </a>
-    <a href="https://zenml.io/slack-invite">
-    <img src="https://img.shields.io/badge/-Slack-black.svg?style=for-the-badge&logo=slack&colorB=555" alt="Logo">
-    </a>
-
-    
   </p>
 </div>
 
@@ -213,6 +213,20 @@ By the end, you'll get a glimpse of how to use ZenML to:
 + Track model hyperparameters and metrics with experiment tracking tools.
 + Measure and visualize train-test skew, training-serving skew, and data drift.
 
+## 👨‍🍳 Open Source MLOps Stack Recipes
+
+ZenML boasts a ton of [integrations](https://zenml.io/integrations) into popular MLOps tools. The [ZenML Stack](https://docs.zenml.io/developer-guide/stacks-profiles-repositories) concept ensures that these tools work nicely together, therefore bringing structure and standardization into the MLOps workflow.
+
+However, ZenML assumes that the stack infrastructure for these tools is already provisioned. If you do not have deployed infrastructure, and want to quickly spin up combinations of tools on the cloud, the [MLOps stack sister repository](https://github.com/zenml-io/mlops-stacks) contains a series of Terraform-based recipes to provision such stacks. These recipes can be used directly with ZenML:
+
+```bash
+pip install zenml[stacks]
+
+zenml stack recipe deploy <NAME_OF_STACK_RECIPE> --import
+```
+
+The above command not only provisions the given tools, but also automatically creates a ZenML stack with the configuration of the deployed recipe!
+
 ## 🍰 ZenBytes
 New to MLOps? Get up to speed by visiting the [ZenBytes](https://github.com/zenml-io/zenbytes) repo.
 
@@ -262,6 +276,7 @@ Read more about using ZenML for collaboration [here](https://docs.zenml.io/colla
 | 📒 **[API Reference]** | Detailed reference on ZenML's API. |
 | 🍰 **[ZenBytes]** | A guided and in-depth tutorial on MLOps and ZenML. |
 | 🗂️️ **[ZenFiles]** | End-to-end projects using ZenML. |
+| 👨‍🍳 **[MLOps Stacks]** | Terraform based infrastructure recipes for pre-made ZenML stacks. |
 | ⚽️ **[Examples]** | Learn best through examples where ZenML is used? We've got you covered. |
 | 📬 **[Blog]** | Use cases of ZenML and technical deep dives on how we built it. |
 | 🔈 **[Podcast]** | Conversations with leaders in ML, released every 2 weeks. |
@@ -279,6 +294,7 @@ Read more about using ZenML for collaboration [here](https://docs.zenml.io/colla
 [API Reference]: https://apidocs.zenml.io/
 [ZenBytes]: https://github.com/zenml-io/zenbytes
 [ZenFiles]: https://github.com/zenml-io/zenfiles
+[MLOps Stacks]: https://github.com/zenml-io/mlops-stacks
 [Examples]: https://github.com/zenml-io/zenml/tree/main/examples
 [Blog]: https://blog.zenml.io/
 [Podcast]: https://podcast.zenml.io/

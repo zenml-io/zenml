@@ -35,6 +35,7 @@
   * [Manage External Services](./developer-guide/advanced-usage/manage-external-services.md)
   * [Manage Docker Images](./developer-guide/advanced-usage/docker.md)
   * [Set Stacks and Profiles with Environment Variables](./developer-guide/advanced-usage/stack-profile-environment-variables.md)
+  * [Control the Step Execution Order](./developer-guide/advanced-usage/step-execution-order.md)
 
 ## MLOps Stacks
 
@@ -42,9 +43,11 @@
 * [Integration Overview](./mlops-stacks/integrations.md)
 * [Orchestrators](./mlops-stacks/orchestrators/orchestrators.md)
   * [Local Orchestrator](./mlops-stacks/orchestrators/local.md)
+  * [Local Docker Orchestrator](./mlops-stacks/orchestrators/local-docker.md)
   * [Kubeflow Orchestrator](./mlops-stacks/orchestrators/kubeflow.md)
   * [Kubernetes Orchestrator](./mlops-stacks/orchestrators/kubernetes.md)
   * [Google Cloud VertexAI Orchestrator](./mlops-stacks/orchestrators/gcloud-vertexai.md)
+  * [Tekton Orchestrator](./mlops-stacks/orchestrators/tekton.md)
   * [Github Actions Orchestrator](./mlops-stacks/orchestrators/github-actions.md)
   * [Airflow Orchestrator](./mlops-stacks/orchestrators/airflow.md)
   * [Develop a Custom Orchestrator](./mlops-stacks/orchestrators/custom.md)
@@ -95,6 +98,7 @@
   * [Amazon SageMaker](./mlops-stacks/step-operators/amazon-sagemaker.md)
   * [Google Cloud VertexAI](./mlops-stacks/step-operators/gcloud-vertexai.md)
   * [AzureML](./mlops-stacks/step-operators/azureml.md)
+  * [Spark](./mlops-stacks/step-operators/spark.md)
   * [Develop a Custom Step Operator](./mlops-stacks/step-operators/custom.md)
 * [Alerters](./mlops-stacks/alerters/alerters.md)
   * [Slack Alerter](./mlops-stacks/alerters/slack.md)
@@ -109,6 +113,7 @@
 ## Cloud Guide
 
 * [Overview: Options for Deploying Infrastructure](./cloud-guide/overview.md)
+* [Quick Deployments with Stack Recipes](./cloud-guide/stack-recipes.md)
 * [AWS](./cloud-guide/aws/aws.md)
   * [Set Up a Minimal MLOps Stack on AWS](./cloud-guide/aws/aws-guide.md)
 * [GCP](./cloud-guide/gcp/gcp.md)

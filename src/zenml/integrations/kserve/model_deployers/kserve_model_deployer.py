@@ -12,10 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the KServe Model Deployer."""
-
 import re
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, cast
 from uuid import UUID
 
 from kserve import KServeClient, V1beta1InferenceService, constants, utils
@@ -33,13 +32,20 @@ from zenml.model_deployers.base_model_deployer import BaseModelDeployer
 from zenml.repository import Repository
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
+from zenml.stack.stack import Stack
+from zenml.utils.analytics_utils import AnalyticsEvent, track_event
+from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+
+if TYPE_CHECKING:
+    from zenml.config.docker_configuration import DockerConfiguration
+    from zenml.runtime_configuration import RuntimeConfiguration
 
 logger = get_logger(__name__)
 
 DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT = 300
 
 
-class KServeModelDeployer(BaseModelDeployer):
+class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
     """KServe model deployer stack component implementation.
 
     Attributes:
@@ -69,7 +75,6 @@ class KServeModelDeployer(BaseModelDeployer):
     base_url: str
     secret: Optional[str]
     custom_domain: Optional[str]
-
     # private attributes
     _client: Optional[KServeClient] = None
 
@@ -275,6 +280,21 @@ class KServeModelDeployer(BaseModelDeployer):
         # start the service which in turn provisions the KServe
         # deployment server and waits for it to reach a ready state
         service.start(timeout=timeout)
+
+        # Add telemetry with metadata that gets the stack metadata and
+        # differentiates between pure model and custom code deployments
+        stack = Repository().active_stack
+        stack_metadata = {
+            component_type.value: component.FLAVOR
+            for component_type, component in stack.components.items()
+        }
+        metadata = {
+            "store_type": Repository().active_profile.store_type.value,
+            **stack_metadata,
+            "is_custom_code_deployment": config.container is not None,
+        }
+        track_event(AnalyticsEvent.MODEL_DEPLOYED, metadata=metadata)
+
         return service
 
     def get_kserve_deployments(
@@ -510,3 +530,46 @@ class KServeModelDeployer(BaseModelDeployer):
                     f"manager `{secret_manager.name}`."
                 )
         return None
+
+    def prepare_custom_deployment_image(
+        self,
+        pipeline_name: str,
+        stack: "Stack",
+        docker_configuration: "DockerConfiguration",
+        runtime_configuration: "RuntimeConfiguration",
+        entrypoint: List[str],
+    ) -> str:
+        """Prepare the custom deployment image for the KServe deployment.
+
+        This function is called by the deployment step of the pipeline.
+        It is responsible for the preparation of the custom deployment image
+        either by returning the image name in the case of a remote orchestrator
+        or by building a new image if only a local orchestrator is used.
+
+        Args:
+            pipeline_name: The pipeline to be deployed.
+            stack: The stack to be deployed.
+            docker_configuration: The Docker configuration to be used.
+            runtime_configuration: The runtime configuration to be used.
+            entrypoint: The entrypoint to be used.
+
+        Returns:
+            The name of the image to be used for the deployment.
+        """
+        # verify the flavor of the orchestrator.
+        # if the orchestrator is local, then we need to build a docker image with the repo
+        # and requirements and push it to the container registry.
+        # if the orchestrator is remote, then we can use the same image used to run the pipeline.
+        if stack.orchestrator.FLAVOR == "local":
+            # more information about stack ..
+            custom_docker_image_name = self.build_and_push_docker_image(
+                pipeline_name=pipeline_name,
+                docker_configuration=docker_configuration,
+                stack=stack,
+                runtime_configuration=runtime_configuration,
+                entrypoint=" ".join(entrypoint),
+            )
+        else:
+            custom_docker_image_name = runtime_configuration["docker_image"]
+
+        return custom_docker_image_name

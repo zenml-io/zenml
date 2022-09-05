@@ -31,12 +31,12 @@ from zenml.integrations.great_expectations.data_validators.ge_data_validator imp
 )
 from zenml.logger import get_logger
 from zenml.post_execution import StepView
-from zenml.visualizers import BaseStepVisualizer
+from zenml.visualizers import BaseVisualizer
 
 logger = get_logger(__name__)
 
 
-class GreatExpectationsVisualizer(BaseStepVisualizer):
+class GreatExpectationsVisualizer(BaseVisualizer):
     """The implementation of a Great Expectations Visualizer."""
 
     def visualize(self, object: StepView, *args: Any, **kwargs: Any) -> None:

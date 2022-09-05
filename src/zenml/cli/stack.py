@@ -992,7 +992,7 @@ def down_stack(force: bool = False, old_force: bool = False) -> None:
     Args:
         force: Deprovisions local resources instead of suspending them.
         old_force: DEPRECATED: Deprovisions local resources instead of
-            suspending them. Use `-y/--yes` instead.
+            suspending them. Use `-f/--force` instead.
     """
     if old_force:
         force = old_force
@@ -1143,9 +1143,26 @@ def _import_stack_component(
 @stack.command("import", help="Import a stack from YAML.")
 @click.argument("stack_name", type=str, required=True)
 @click.argument("filename", type=str, required=False)
+@click.option(
+    "--ignore-version-mismatch",
+    is_flag=True,
+    help="Import stack components even if the installed version of ZenML "
+    "is different from the one specified in the stack YAML file",
+)
+@click.option(
+    "--decouple_stores",
+    "decouple_stores",
+    is_flag=True,
+    help="Decouple the given artifact/metadata store from prior associations.",
+    type=click.BOOL,
+)
 @click.pass_context
 def import_stack(
-    ctx: click.Context, stack_name: str, filename: Optional[str]
+    ctx: click.Context,
+    stack_name: str,
+    filename: Optional[str],
+    ignore_version_mismatch: bool = False,
+    decouple_stores: bool = False,
 ) -> None:
     """Import a stack from YAML.
 
@@ -1153,6 +1170,11 @@ def import_stack(
         ctx: The click context.
         stack_name: The name of the stack to import.
         filename: The filename to import the stack from.
+        ignore_version_mismatch: Import stack components even if
+            the installed version of ZenML is different from the
+            one specified in the stack YAML file.
+        decouple_stores: Resets the previous couplings of the given
+            artifact/metadata stores and creates a new one.
     """
     track_event(AnalyticsEvent.IMPORT_STACK)
 
@@ -1171,14 +1193,25 @@ def import_stack(
         data = read_yaml(filename)
         cli_utils.declare(f"Using '{filename}' to import '{stack_name}' stack.")
 
-    # assert zenml version is the same
+    # assert zenml version is the same if force is false
     if data["zenml_version"] != zenml.__version__:
-        cli_utils.error(
-            f"Cannot import stacks from other ZenML versions. "
-            f"The stack was created using ZenML version "
-            f"{data['zenml_version']}, you have version "
-            f"{zenml.__version__} installed."
-        )
+        if ignore_version_mismatch:
+            cli_utils.warning(
+                f"The stack that will be installed is using ZenML version "
+                f"{data['zenml_version']}. You have version "
+                f"{zenml.__version__} installed. Some components might not "
+                "work as expected."
+            )
+        else:
+            cli_utils.error(
+                f"Cannot import stacks from other ZenML versions. "
+                f"The stack was created using ZenML version "
+                f"{data['zenml_version']}, you have version "
+                f"{zenml.__version__} installed. You can "
+                "retry using the `--ignore-version-mismatch` "
+                "flag. However, be aware that this might "
+                "fail or lead to other unexpected behavior."
+            )
 
     # ask user for new stack_name if current one already exists
     repo = Repository()
@@ -1199,7 +1232,12 @@ def import_stack(
         component_names[component_type + "_name"] = component_name
 
     # register new stack
-    ctx.invoke(register_stack, stack_name=stack_name, **component_names)
+    ctx.invoke(
+        register_stack,
+        stack_name=stack_name,
+        decouple_stores=decouple_stores,
+        **component_names,
+    )
 
 
 @stack.command("copy", help="Copy a stack to a new stack name.")

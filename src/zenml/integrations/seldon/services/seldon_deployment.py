@@ -13,11 +13,11 @@
 #  permissions and limitations under the License.
 """Implementation for the Seldon Deployment step."""
 
+import json
 import os
-from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple
+from typing import Any, Dict, Generator, Optional, Tuple
 from uuid import UUID
 
-import numpy as np
 import requests
 from pydantic import Field, ValidationError
 
@@ -31,9 +31,6 @@ from zenml.logger import get_logger
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.services.service_status import ServiceState, ServiceStatus
 from zenml.services.service_type import ServiceType
-
-if TYPE_CHECKING:
-    from numpy.typing import NDArray
 
 logger = get_logger(__name__)
 
@@ -54,6 +51,8 @@ class SeldonDeploymentConfig(ServiceConfig):
             https://docs.seldon.io/projects/seldon-core/en/latest/reference/apis/metadata.html).
         extra_args: additional arguments to pass to the Seldon Core deployment
             resource configuration.
+        is_custom_deployment: whether the deployment is a custom deployment
+        spec: custom Kubernetes resource specification for the Seldon Core
     """
 
     model_uri: str = ""
@@ -64,6 +63,8 @@ class SeldonDeploymentConfig(ServiceConfig):
     secret_name: Optional[str]
     model_metadata: Dict[str, Any] = Field(default_factory=dict)
     extra_args: Dict[str, Any] = Field(default_factory=dict)
+    is_custom_deployment: Optional[bool] = False
+    spec: Optional[Dict[Any, Any]] = Field(default_factory=dict)
 
     def get_seldon_deployment_labels(self) -> Dict[str, str]:
         """Generate labels for the Seldon Core deployment from the service configuration.
@@ -287,6 +288,8 @@ class SeldonDeploymentService(BaseService):
             secret_name=self.config.secret_name,
             labels=self._get_seldon_deployment_labels(),
             annotations=self.config.get_seldon_deployment_annotations(),
+            is_custom_deployment=self.config.is_custom_deployment,
+            spec=self.config.spec,
         )
         deployment.spec.replicas = self.config.replicas
         deployment.spec.predictors[0].replicas = self.config.replicas
@@ -358,7 +361,7 @@ class SeldonDeploymentService(BaseService):
             "api/v0.1/predictions",
         )
 
-    def predict(self, request: "NDArray[Any]") -> "NDArray[Any]":
+    def predict(self, request: str) -> Any:
         """Make a prediction using the service.
 
         Args:
@@ -379,9 +382,14 @@ class SeldonDeploymentService(BaseService):
 
         if self.prediction_url is None:
             raise ValueError("`self.prediction_url` is not set, cannot post.")
+
+        if isinstance(request, str):
+            request = json.loads(request)
+        else:
+            raise ValueError("Request must be a json string.")
         response = requests.post(
             self.prediction_url,
-            json={"data": {"ndarray": request.tolist()}},
+            json={"data": {"ndarray": request}},
         )
         response.raise_for_status()
-        return np.array(response.json()["data"]["ndarray"])
+        return response.json()

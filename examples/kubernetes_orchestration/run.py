@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 from pipelines.kubernetes_example_pipeline import kubernetes_example_pipeline
-from steps import evaluator, importer, skew_comparison, svc_trainer
+from steps import digits_data_loader, evaluator, skew_comparison, svc_trainer
 
 from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
     FacetStatisticsVisualizer,
@@ -21,7 +21,7 @@ from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
 
 if __name__ == "__main__":
     pipeline_instance = kubernetes_example_pipeline(
-        importer=importer(),
+        importer=digits_data_loader(),
         trainer=svc_trainer(),
         evaluator=evaluator(),
         skew_comparison=skew_comparison(),
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     # schedule = Schedule(cron_expression="*/5 * * * *")  # every 5 minutes
     #
     # kubernetes_example_pipeline(
-    #     importer=importer(),
+    #     importer=digits_data_loader(),
     #     trainer=svc_trainer(),
     #     evaluator=evaluator(),
     #     skew_comparison=skew_comparison(),

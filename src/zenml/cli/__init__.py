@@ -817,6 +817,72 @@ of the model deployer into the CLI with the following command:
 zenml model-deployer logs MODEL_DEPLOYER_NAME
 ```
 
+Deploying cloud resources using Stack Recipes
+-----------------------------------------------
+
+Stack Recipes allow you to quickly deploy fully-fledged MLOps stacks with just a few
+commands. Each recipe uses Terraform modules under the hood and once executed can set up
+a ZenML stack, ready to run your pipelines!
+
+A number of stack recipes are already available at [the `mlops-stacks` repository](https://github.com/zenml-io/mlops-stacks/). List them
+using the following command:
+
+```bash
+zenml stack recipes list
+```
+
+If you want to pull any specific recipe to your local system, use the `pull` command:
+```bash
+zenml stack recipe pull <stack-recipe-name>
+```
+If you don't specify a name, `zenml stack recipe pull` will pull all the recipes.
+
+If you notice any inconsistency with the locally-pulled version and the GitHub repository,
+run the `pull` command with the `-y` flag to download any recent changes.
+```bash
+zenml stack recipe pull <stack-recipe-name> -y
+```
+
+Optionally, you can specify the relative path at which you want to install the
+stack recipe(s). Use the `-p` or `--path` flag.
+```bash
+zenml stack recipe pull <stack-recipe-name> --path=<PATH>
+```
+By default, all recipes get downloaded under a directory called `zenml_stack_recipes`.
+
+To deploy a recipe, use the `deploy` command. Before running deploy, review the 
+`zenml_stack_recipes/<stack-recipe-name>/locals.tf` file for configuring non-sensitive 
+variables and the `zenml_stack_recipes/<stack-recipe-name>/values.tfvars` file to 
+add sensitive information like access keys and passwords.
+```bash
+zenml stack recipe deploy <stack-recipe-name>
+```
+
+Running deploy without any options will create a new ZenML stack with the same name as
+the stack recipe name. Use the `--stack-name` option to specify your own name.
+```bash
+zenml stack recipe deploy <stack-recipe-name> --stack-name=my_stack
+```
+
+If you wish to review the stack information from the newly-generated resources before
+importing, you can run `deploy` with the `--no-import` flag.
+```bash
+zenml stack recipe deploy <stack-recipe-name> --no-import
+```
+This will still create a stack YAML configuration file but will not auto-import it. You can
+make any changes you want to the configuration and then run `zenml stack import` manually.
+
+To remove all resources created as part of the recipe, run the `destroy` command.
+```bash
+zenml stack recipe destroy <stack-recipe-name>
+```
+
+To delete all the recipe files from your system, you can use the `clean` command.
+```bash
+zenml stack recipe clean
+```
+This deletes all the recipes from the default path where they were downloaded.
+
 """
 
 from zenml.cli.annotator import *  # noqa
@@ -831,5 +897,6 @@ from zenml.cli.secret import *  # noqa
 from zenml.cli.server import *  # noqa
 from zenml.cli.stack import *  # noqa
 from zenml.cli.stack_components import *  # noqa
+from zenml.cli.stack_recipes import *  # noqa
 from zenml.cli.user_management import *  # noqa
 from zenml.cli.version import *  # noqa

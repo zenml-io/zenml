@@ -202,3 +202,82 @@ A concrete example of using the Seldon Core Model Deployer can be found
 
 For more information and a full list of configurable attributes of the Seldon Core Model Deployer, check out the 
 [API Docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.seldon.model_deployers).
+
+## Custom Model Deployment
+
+When you have a custom use-case where Seldon Core pre-packaged inference servers cannot cover your needs, you can leverage the language wrappers to containerise your machine learning model(s) and logic.
+With ZenML's Seldon Core Integration, you can create your own custom model
+deployment code by creating a custom predict function that will be passed
+to a custom deployment step responsible for preparing a Docker image for the
+model server.
+
+This `custom_predict` function should be getting the model and the input data as arguments and return the output data. ZenML will take care of loading the model
+into memory, starting the `seldon-core-microservice` that will be responsible for serving the model, and running the predict function.
+
+```python
+def pre_process(input: np.ndarray) -> np.ndarray:
+    """Pre process the data to be used for prediction."""
+    pass
+
+
+def post_process(prediction: np.ndarray) -> str:
+    """Pre process the data"""
+    pass
+
+
+def custom_predict(
+    model: Any,
+    request: Array_Like,
+) -> Array_Like:
+    """Custom Prediction function.
+
+    The custom predict function is the core of the custom deployment, the function
+    is called by the custom deployment class defined for the serving tool.
+    The current implementation requires the function to get the model loaded in the memory and
+    a request with the data to predict.
+
+    Args:
+        model (Any): The model to use for prediction.
+        request: The prediction response of the model is an array-like format.
+    Returns:
+        The prediction in an array-like format. (e.g: np.ndarray, List[Any], str, bytes, Dict[str, Any])
+    """
+    pass
+```
+
+Then this custom predict function `path` can be passed to the custom deployment parameters.
+
+```python
+seldon_tensorflow_custom_deployment = seldon_custom_model_deployer_step(
+    config=SeldonDeployerStepConfig(
+        service_config=SeldonDeploymentConfig(
+            model_name="seldon-tensorflow-custom-model",
+            replicas=1,
+            implementation="custom",
+            resources={"requests": {"cpu": "200m", "memory": "500m"}},
+        ),
+        timeout=240,
+        custom_deploy_parameters=CustomDeployParameters(
+            predict_function="seldon_tensorflow.steps.tf_custom_deploy_code.custom_predict"
+        ),
+    )
+)
+```
+The full code example can be found [here](https://github.com/zenml-io/zenml/blob/main/examples/custom_code_deployment/).
+
+### Advanced Custom Code Deployment with Seldon Core Integration
+
+{% hint style="warning" %}
+Before creating your custom model class, you should take a look at the
+[custom Python model](https://docs.seldon.io/projects/seldon-core/en/latest/python/python_wrapping_docker.html) 
+section of the Seldon Core documentation.
+{% endhint %}
+
+The built-in Seldon Core custom deployment step is a good starting point for
+deploying your custom models. However if you want to deploy more than the
+trained model, you can create your own Custom Class and a custom step
+to achieve this.
+
+Example of the [custom class](https://apidocs.zenml.io/0.13.0/api_docs/integrations/#zenml.integrations.seldon.custom_deployer.zenml_custom_model.ZenMLCustomModel)
+
+The built-in Seldon Core custom deployment step responsible for packaging, preparing and deploying to Seldon Core can be found [here](https://apidocs.zenml.io/0.13.0/api_docs/integrations/#zenml.integrations.seldon.steps.seldon_deployer.seldon_model_deployer_step)

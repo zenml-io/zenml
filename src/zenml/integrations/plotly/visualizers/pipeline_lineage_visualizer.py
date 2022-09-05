@@ -22,7 +22,7 @@ from plotly.graph_objs import Figure
 
 from zenml.logger import get_logger
 from zenml.post_execution import PipelineView
-from zenml.visualizers import BasePipelineVisualizer
+from zenml.visualizers import BaseVisualizer
 
 logger = get_logger(__name__)
 
@@ -30,7 +30,7 @@ logger = get_logger(__name__)
 #  should use plotly in more useful ways.
 
 
-class PipelineLineageVisualizer(BasePipelineVisualizer):
+class PipelineLineageVisualizer(BaseVisualizer):
     """Visualize the lineage of runs in a pipeline using plotly."""
 
     @abstractmethod

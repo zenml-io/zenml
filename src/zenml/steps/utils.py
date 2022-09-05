@@ -63,6 +63,7 @@ from zenml.config.docker_configuration import DockerConfiguration
 from zenml.config.resource_configuration import ResourceConfiguration
 from zenml.constants import (
     MLMD_CONTEXT_DOCKER_CONFIGURATION_PROPERTY_NAME,
+    MLMD_CONTEXT_RUNTIME_CONFIG_PROPERTY_NAME,
     MLMD_CONTEXT_STEP_RESOURCES_PROPERTY_NAME,
     ZENML_MLMD_CONTEXT_TYPE,
 )
@@ -70,6 +71,7 @@ from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_context import StepContext
 from zenml.steps.step_environment import StepEnvironment
@@ -534,6 +536,10 @@ class _FunctionExecutor(BaseExecutor):
             pipeline_node=self._context.pipeline_node
         )
 
+        runtime_config = collect_runtime_config(
+            pipeline_node=self._context.pipeline_node
+        )
+
         # Wrap the execution of the step function in a step environment
         # that the step function code can access to retrieve information about
         # the pipeline runtime, such as the current step name and the current
@@ -544,6 +550,7 @@ class _FunctionExecutor(BaseExecutor):
             step_name=step_name,
             cache_enabled=getattr(self, PARAM_ENABLE_CACHE),
             docker_configuration=docker_config,
+            runtime_configuration=runtime_config,
         ):
             return_values = self._FUNCTION(**function_params)
 
@@ -717,3 +724,28 @@ def collect_docker_configuration(
             return DockerConfiguration.parse_raw(config_json)
     else:
         raise RuntimeError("Unable to find Docker configuration.")
+
+
+def collect_runtime_config(
+    pipeline_node: pipeline_pb2.PipelineNode,
+) -> RuntimeConfiguration:
+    """Collects the Runtime config of a step.
+
+    Args:
+        pipeline_node: Pipeline node info for a step.
+
+    Returns:
+        The Runtime configuration for that step.
+
+    Raises:
+        RuntimeError: If no runtime configuration was found.
+    """
+    for context in pipeline_node.contexts.contexts:
+        if context.type.name == ZENML_MLMD_CONTEXT_TYPE:
+            config_json = context.properties[
+                MLMD_CONTEXT_RUNTIME_CONFIG_PROPERTY_NAME
+            ].field_value.string_value
+            parsed = json.loads(config_json)
+            return RuntimeConfiguration(**parsed)
+    else:
+        raise RuntimeError("Unable to find resource configuration.")

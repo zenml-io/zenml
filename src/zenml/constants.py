@@ -184,3 +184,6 @@ MLMD_CONTEXT_DOCKER_CONFIGURATION_PROPERTY_NAME = "docker_configuration"
 MLMD_CONTEXT_RUNTIME_CONFIG_PROPERTY_NAME = "runtime_configuration"
 MLMD_CONTEXT_STEP_RESOURCES_PROPERTY_NAME = "step_resources"
 MLMD_CONTEXT_MATERIALIZER_SOURCES_PROPERTY_NAME = "materializer_sources"
+
+# model metadata yaml file name
+MODEL_METADATA_YAML_FILE_NAME = "model_metadata.yaml"

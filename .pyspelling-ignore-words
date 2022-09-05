@@ -1,5 +1,6 @@
 "\nTo"
 ADDR
+AFileSystem
 AIPlatform
 AKS
 APIs
@@ -91,9 +92,13 @@ ClassifierMixin
 ClassifierMixin
 ClickException
 CloudSQL
+ClusterRole
+ClusterRoleBinding
+ClusterServingRuntimes
 Colab
 ColorOptions
 ColumnMapping
+ComponentSpecs
 ComponentWrapper
 ComputeTarget
 ConfigMap
@@ -101,8 +106,10 @@ ConnectionError
 ContainerOp
 ContainerOps
 ContainerRegistryReadOnly
+Containerise
 Contextmanager
 Cron
+CustomDeployParameters
 CustomFormatter
 DAGs
 DMatrix
@@ -199,6 +206,7 @@ GitHubActionsOrchestrator
 GitHubContainerRegistry
 GitLab
 GitNotFoundError
+GitStackRecipesHandler
 GlobalConfiguration
 GmbH
 Gojek
@@ -244,7 +252,9 @@ KFPCompiler
 KMS
 KServe
 KServeDeployerStepConfig
+KServeDeployerStepConfig
 KServeDeployment
+KServeDeploymentConfig
 KServeDeploymentConfig
 KServeDeploymentService
 KServeModelDeployer
@@ -269,8 +279,10 @@ LocalArtifactStore
 LocalDaemonService
 LocalDaemonService
 LocalDaemonServiceConfig
+LocalDockerOrchestrator
 LocalExample
 LocalOrchestrator
+LocalStack
 LocationConstraint
 LogRecord
 LookupError
@@ -281,6 +293,7 @@ MLFlowDeploymentLoaderStepConfig
 MLFlowDeploymentService
 MLFlowExperimentTracker
 MLFlowModelDeployer
+MLLib
 MLMD
 MLOps
 MLRUNS
@@ -297,6 +310,7 @@ MadeWithML
 MaterializerInterfaceError
 MaterializerName
 Mattermost
+Mesos
 MetadataStore
 MiB
 Microsoft
@@ -304,6 +318,7 @@ MinIO
 MissingStepParameterError
 Mixin
 ModelArtifact
+ModelMesh
 ModelMesh
 ModelRun
 ModuleNotFoundError
@@ -381,6 +396,7 @@ ProfileVisualizer
 ProvisioningError
 PyPI
 PyPi
+PySpark
 PyTorch
 Pydantic
 Pydantic's
@@ -395,9 +411,11 @@ RL
 RedPill
 Reproducibility
 ResourceConfiguration
+ResourceConfigurations
 RichHandler
 Roadmap
 RoleBinding
+Rollouts
 Rollouts
 Runtime
 RuntimeConfiguration
@@ -442,6 +460,7 @@ SeldonDeployment
 SeldonDeploymentConfig
 SeldonDeploymentExistsError
 SeldonDeploymentNotFoundError
+SeldonDeploymentPredictiveUnit
 SeldonDeploymentService
 SeldonIO
 SeldonModelDeployer
@@ -460,6 +479,12 @@ SingletonMetaClass
 SlackAlerter
 SleepingDaemon
 SleepingDaemonConfig
+SparkConf
+SparkConf
+SparkConf
+SparkDataFrameMaterializer
+SparkModelMaterializer
+SparkStepOperator
 SqlZenStore
 StackComponent
 StackComponentConfiguration
@@ -471,6 +496,8 @@ StackComponentType
 StackComponentWrapper
 StackComponents
 StackExistsError
+StackRecipe
+StackRecipeRepo
 StackValidationError
 StackValidator
 StackWrapper
@@ -503,6 +530,7 @@ TFTrainer
 TFX
 TFX's
 TODO
+Tekton
 TempPathFactory
 TensorBoard
 TensorBoardInfo
@@ -513,6 +541,7 @@ Tokenize
 Tokenizer
 TorchServe
 TorchServe's
+TorchServeParameters
 TorchServeParameters
 TorchVision
 TrainerConfig
@@ -532,6 +561,7 @@ UsingWithRDS
 Util
 VPC
 VRAM
+ValidationError
 ValueError
 VertexAI
 VertexOrchestrator
@@ -562,6 +592,7 @@ ZenHacks
 ZenML
 ZenML's
 ZenMLCLI
+ZenMLCustomModel
 ZenMLEKSNodeRole
 ZenMLEKSRole
 ZenServer
@@ -609,6 +640,7 @@ apiGroups
 apiVersion
 apidocs
 apis
+archiver
 arg
 argmax
 argo
@@ -618,6 +650,7 @@ args
 arn
 asia
 aspyre
+asyncio
 attr
 attrs
 auth
@@ -634,12 +667,15 @@ azureblob
 azurecr
 azureml
 bMw
+ba
 backend
 backends
 backfill
 backoff
 baseclass
 basename
+bdb
+bff
 bigrams
 blogpost
 bool
@@ -652,6 +688,7 @@ catchup
 categoricaltargetdrift
 cbe
 cd
+cda
 centric
 ceph
 charset
@@ -670,6 +707,7 @@ configmap
 configmaps
 configs
 conll
+containerise
 containerregistry
 copyfile
 cp
@@ -685,8 +723,10 @@ cryptoKeys
 csv
 ctx
 cuda
+cudart
 customCodeServiceAgent
 customizable
+customizations
 cwd
 cytoscape
 da
@@ -708,6 +748,7 @@ datasets
 datasource
 datatypes
 datetime
+dbc
 dct
 de
 dec
@@ -737,21 +778,26 @@ dirs
 distilbert
 dkr
 dl
+dlerror
 dmatrix
 dockerfile
 dockerhub
 dockerignore
 docstring
 docstrings
+domainmapping
 ds
 dsl
+dso
 dst
 dt
 dv
+eaa
 eb
 ec
 ecr
 edwardgeorge
+ee
 eks
 elif
 emptyDir
@@ -775,8 +821,11 @@ extensibility
 fSDFfjklsdfj
 faq
 fastai
+fc
 fcdb
 fce
+fcf
+fcp
 fd
 feedforward
 fff
@@ -787,6 +836,7 @@ filesystem
 finetune
 finetuned
 finetunes
+fm
 fn
 formatter
 fromisoformat
@@ -819,12 +869,16 @@ graphviz
 grey
 gserviceaccount
 gsutil
+hadoop
 hardcoded
 hasattr
 hashable
 hashicorp
+hbgnl
+hcvcb
 healthcheck
 healthchecks
+hellonext
 hkls
 hoc
 hostname
@@ -844,6 +898,7 @@ iam
 iam
 imdb
 img
+impl
 implementors
 inference
 inferenceservice
@@ -867,6 +922,7 @@ isdir
 isinstance
 istio
 istioctl
+iterable
 iteratively
 jejik
 jira
@@ -884,10 +940,12 @@ keras
 keyRings
 kfp
 kfp
+kfserving
 knative
 kr
 kserve
 kserve
+kservegs
 kubeconfig
 kubectl
 kubeflow
@@ -896,6 +954,7 @@ kv
 kwarg
 kwargs
 len
+libcudart
 lifecycle
 lightgbm
 linux
@@ -908,6 +967,7 @@ logdir
 logfile
 lr
 luna
+machinelearning
 mailto
 makedirs
 matchwith
@@ -918,6 +978,8 @@ maxresults
 mb
 md
 metaclass
+mgdv
+microservice
 microservices
 microsoft
 minimalistic
@@ -932,8 +994,10 @@ mlserver
 mnist
 mnist
 mobilenetv
+modelFormat
 modelUri
 msi
+mybucket
 mypy
 myregistry
 mysql
@@ -953,9 +1017,12 @@ normed
 notodo
 np
 npz
+ns
+ns
 num
 numericaltargetdrift
 numpy
+nzf
 observability
 odbc
 onerror
@@ -981,7 +1048,9 @@ pluggable
 png
 pos
 powershell
+pqh
 pre
+preconfigure
 preds
 prem
 premiumsupport
@@ -1019,6 +1088,8 @@ quickstart
 rb
 rbac
 rclone
+rds
+rds
 readthedocs
 reconfigures
 redis
@@ -1029,9 +1100,11 @@ regressionmodelperformance
 repo
 repos
 reproducibility
+requestPath
 requiredintegrations
 rf
 rf
+rfn
 rmtree
 roadmap
 roleRef
@@ -1054,6 +1127,7 @@ scipy
 sdk
 secretmanager
 seldon
+seldonio
 sepc
 serializable
 serverCaCert
@@ -1071,6 +1145,7 @@ shutil
 signum
 signup
 sklearn
+sklearnserver
 sm
 sourcery
 splitext
@@ -1091,6 +1166,7 @@ stderr
 stdin
 stdout
 stefan
+storageUri
 str
 sts
 subclassed
@@ -1120,11 +1196,13 @@ symlinks
 sys
 syspath
 tada
+tekton
 tempfile
 tensorboard
 tensorflow
 terraform
 tf
+tfvars
 tfx
 thinknum
 tiangolo
@@ -1138,6 +1216,7 @@ tokenizer
 tokenizers
 tolist
 topdown
+torch-model-archiver
 torchvision
 touchpoint
 traceback
@@ -1186,6 +1265,7 @@ vpcs
 walkthrough
 wandb
 wb
+webhook
 webpage
 webserver
 westus
