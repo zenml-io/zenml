@@ -279,6 +279,7 @@ LocalArtifactStore
 LocalDaemonService
 LocalDaemonService
 LocalDaemonServiceConfig
+LocalDockerOrchestrator
 LocalExample
 LocalOrchestrator
 LocalStack
@@ -560,6 +561,7 @@ UsingWithRDS
 Util
 VPC
 VRAM
+ValidationError
 ValueError
 VertexAI
 VertexOrchestrator
@@ -705,6 +707,7 @@ configmap
 configmaps
 configs
 conll
+containerise
 containerregistry
 copyfile
 cp
@@ -1279,5 +1282,3 @@ zenml
 zenmldocker
 zenmlregistry
 zenserver
-ValidationError
-containerise
