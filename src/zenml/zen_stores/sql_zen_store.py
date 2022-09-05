@@ -329,7 +329,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             projects = session.exec(
                 select(StackSchema).where(StackSchema.project_id == project_id)
-            ).one_or_none()
+            ).all()
             if projects is None:
                 raise KeyError(f"Project with ID {project_id} not found.")
 

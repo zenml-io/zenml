@@ -490,7 +490,7 @@ class BaseZenStore(BaseModel):
             StackExistsError: In case a stack with that name is already owned
                 by this user on this project.
         """
-        metadata = {c.type.value: c.flavor for c in stack.components}
+        metadata = {ct: c.flavor_name for ct, c in stack.components.items()}
         metadata["store_type"] = self.type.value
         self._track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
         return self._register_stack(
