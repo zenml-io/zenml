@@ -51,6 +51,7 @@ class LineageGraph(BaseModel):
         self.nodes.append(
             StepNode(
                 id=step_id,
+                status=step.status,
                 data=StepNodeDetails(
                     execution_id=execution_id,
                     entrypoint_name=step.entrypoint_name,  # redundant for consistency
