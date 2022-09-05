@@ -132,7 +132,8 @@ class RepositoryMetaClass(ABCMeta):
                     "adjust your step to disable caching if needed. "
                     "Alternatively, use a `StepContext` inside your step "
                     "instead, as covered here: "
-                    "https://docs.zenml.io/developer-guide/advanced-usage/step-fixtures#step-contexts",
+                    "https://docs.zenml.io/developer-guide/advanced-usage"
+                    "/step-fixtures#step-contexts",
                 )
 
         if args or kwargs:
@@ -154,8 +155,8 @@ class Repository(metaclass=RepositoryMetaClass):
     """
 
     def __init__(
-        self,
-        root: Optional[Path] = None,
+            self,
+            root: Optional[Path] = None,
     ) -> None:
         """Initializes the global repository instance.
 
@@ -298,7 +299,8 @@ class Repository(metaclass=RepositoryMetaClass):
                 #  guarantee that the stack is actually active
             except KeyError:
                 logger.warning(
-                    "Stack with id:'%s' not found. Switching the repository active stack "
+                    "Stack with id:'%s' not found. Switching the repository "
+                    "active stack "
                     "to 'default'",
                     self._config.active_stack_id,
                 )
@@ -343,7 +345,7 @@ class Repository(metaclass=RepositoryMetaClass):
     @staticmethod
     @track(event=AnalyticsEvent.INITIALIZE_REPO)
     def initialize(
-        root: Optional[Path] = None,
+            root: Optional[Path] = None,
     ) -> None:
         """Initializes a new ZenML repository at the given path.
 
@@ -372,7 +374,8 @@ class Repository(metaclass=RepositoryMetaClass):
         """Check if the repository is using a local configuration.
 
         Returns:
-            True if the repository is using a local configuration, False otherwise.
+            True if the repository is using a local configuration,
+            False otherwise.
         """
         return self._config is not None
 
@@ -424,12 +427,13 @@ class Repository(metaclass=RepositoryMetaClass):
         """Check if the repository is using a local active project setting.
 
         Returns:
-            True if the repository is using a local active project setting, False
+            True if the repository is using a local active project setting,
+            False
             otherwise.
         """
         return (
-            self._config is not None
-            and self._config.active_project_name is not None
+                self._config is not None
+                and self._config.active_project_name is not None
         )
 
     def set_active_project(self, project_name: Optional[str] = None) -> None:
@@ -507,7 +511,7 @@ class Repository(metaclass=RepositoryMetaClass):
         return self.zen_store.stacks
 
     @property
-    def stack_configurations(self) -> Dict[str, Dict[StackComponentType, str]]:
+    def stack_configurations(self) -> Dict[str, Dict[str, str]]:
         """Configuration dicts for all stacks registered in this repository.
 
         This property is intended as a quick way to get information about the
@@ -530,7 +534,8 @@ class Repository(metaclass=RepositoryMetaClass):
         for stack in stacks:
             dict_of_stacks[stack.name] = {"shared": str(stack.is_shared)}
             for component_type, component in stack.components.items():
-                dict_of_stacks[stack.name][component_type.value] = component.name
+                dict_of_stacks[stack.name][
+                    str(component_type.value)] = component.name
 
         return dict_of_stacks
 
@@ -568,8 +573,8 @@ class Repository(metaclass=RepositoryMetaClass):
             otherwise.
         """
         return (
-            self._config is not None
-            and self._config.active_stack_id is not None
+                self._config is not None
+                and self._config.active_stack_id is not None
         )
 
     @track(event=AnalyticsEvent.SET_STACK)
@@ -588,7 +593,7 @@ class Repository(metaclass=RepositoryMetaClass):
             GlobalConfiguration().active_stack_id = stack.id
 
     def get_stack_by_name(
-        self, name: str, is_shared: bool = False
+            self, name: str, is_shared: bool = False
     ) -> StackModel:
         """Fetches a stack by name within the active stack
 
@@ -609,7 +614,8 @@ class Repository(metaclass=RepositoryMetaClass):
             # TODO: [server] access the user id in a more elegant way
             stacks = self.zen_store.list_stacks(
                 project_id=self.active_project.id,
-                user_id=self.zen_store.default_user_id,  # GlobalConfiguration().user_id,
+                user_id=self.zen_store.default_user_id,
+                # GlobalConfiguration().user_id,
                 name=name,
             )
 
@@ -635,7 +641,8 @@ class Repository(metaclass=RepositoryMetaClass):
         # TODO: [server] make sure the stack can be validated here
         if stack.is_valid:
             created_stack = self.zen_store.register_stack(
-                user_id=self.zen_store.default_user_id,  # TODO: [server] replace with active user
+                user_id=self.zen_store.default_user_id,
+                # TODO: [server] replace with active user
                 project_id=self.active_project.id,
                 stack=stack,
             )
@@ -690,8 +697,8 @@ class Repository(metaclass=RepositoryMetaClass):
             )
 
     def update_stack_component(
-        self,
-        component: ComponentModel,
+            self,
+            component: ComponentModel,
     ) -> None:
         """Updates a stack component.
 
@@ -701,7 +708,7 @@ class Repository(metaclass=RepositoryMetaClass):
         self.zen_store.update_stack_component(component=component)
 
     def list_stack_components(
-        self, component_type: StackComponentType
+            self, component_type: StackComponentType
     ) -> List[ComponentModel]:
         """Fetches all registered stack components of the given type.
 
@@ -716,7 +723,7 @@ class Repository(metaclass=RepositoryMetaClass):
         )
 
     def get_stack_component_by_name_and_type(
-        self, type: StackComponentType, name: str, is_shared: bool = False
+            self, type: StackComponentType, name: str, is_shared: bool = False
     ) -> ComponentModel:
         """Fetches a stack by name within the active stack
 
@@ -741,7 +748,8 @@ class Repository(metaclass=RepositoryMetaClass):
                 project_id=self.active_project.id,
                 name=name,
                 type=type,
-                user_id=self.zen_store.default_user_id,  # GlobalConfiguration().user_id,
+                user_id=self.zen_store.default_user_id,
+                # GlobalConfiguration().user_id,
             )
 
         # TODO: [server] this error handling could be improved
@@ -777,8 +785,8 @@ class Repository(metaclass=RepositoryMetaClass):
         ).to_component()
 
     def register_stack_component(
-        self,
-        component: StackComponent,
+            self,
+            component: StackComponent,
     ) -> None:
         """Registers a stack component.
 
@@ -796,7 +804,7 @@ class Repository(metaclass=RepositoryMetaClass):
             logger.info(component.post_registration_message)
 
     def deregister_stack_component(
-        self, stack_component: ComponentModel
+            self, stack_component: ComponentModel
     ) -> None:
         """Deregisters a stack component.
 
@@ -822,7 +830,7 @@ class Repository(metaclass=RepositoryMetaClass):
 
     @track(event=AnalyticsEvent.GET_PIPELINES)
     def get_pipelines(
-        self, stack_name: Optional[str] = None
+            self, stack_name: Optional[str] = None
     ) -> List["PipelineView"]:
         """Fetches post-execution pipeline views.
 
@@ -849,12 +857,12 @@ class Repository(metaclass=RepositoryMetaClass):
 
     @track(event=AnalyticsEvent.GET_PIPELINE)
     def get_pipeline(
-        self,
-        pipeline: Optional[
-            Union["BasePipeline", Type["BasePipeline"], str]
-        ] = None,
-        stack_name: Optional[str] = None,
-        **kwargs: Any,
+            self,
+            pipeline: Optional[
+                Union["BasePipeline", Type["BasePipeline"], str]
+            ] = None,
+            stack_name: Optional[str] = None,
+            **kwargs: Any,
     ) -> Optional["PipelineView"]:
         """Fetches a post-execution pipeline view.
 
@@ -893,11 +901,11 @@ class Repository(metaclass=RepositoryMetaClass):
         elif isinstance(pipeline, zenml.pipelines.base_pipeline.BasePipeline):
             pipeline_name = pipeline.name
         elif isinstance(pipeline, type) and issubclass(
-            pipeline, zenml.pipelines.base_pipeline.BasePipeline
+                pipeline, zenml.pipelines.base_pipeline.BasePipeline
         ):
             pipeline_name = pipeline.__name__
         elif "pipeline_name" in kwargs and isinstance(
-            kwargs.get("pipeline_name"), str
+                kwargs.get("pipeline_name"), str
         ):
             logger.warning(
                 "Using 'pipeline_name' to get a pipeline from "
@@ -948,7 +956,7 @@ class Repository(metaclass=RepositoryMetaClass):
 
     @staticmethod
     def find_repository(
-        path: Optional[Path] = None, enable_warnings: bool = False
+            path: Optional[Path] = None, enable_warnings: bool = False
     ) -> Optional[Path]:
         """Search for a ZenML repository directory.
 
@@ -996,7 +1004,8 @@ class Repository(metaclass=RepositoryMetaClass):
             )
 
         def _find_repo_helper(path_: Path) -> Optional[Path]:
-            """Helper function to recursively search parent directories for a ZenML repository.
+            """Helper function to recursively search parent directories for a
+            ZenML repository.
 
             Args:
                 path_: The path to search.
@@ -1022,7 +1031,7 @@ class Repository(metaclass=RepositoryMetaClass):
         return None
 
     def get_flavor(
-        self, name: str, component_type: StackComponentType
+            self, name: str, component_type: StackComponentType
     ) -> Type[StackComponent]:
         """Fetches a registered flavor.
 
