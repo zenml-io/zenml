@@ -16,7 +16,7 @@
 import base64
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Dict, Any
 from uuid import UUID
 
 import yaml
@@ -55,7 +55,7 @@ class ComponentModel(BaseModel):
     flavor_name: Optional[str] = Field(
         title="The flavor of the Stack Component.",
     )
-    configuration: bytes = Field(  # b64 encoded yaml config
+    configuration: str = Field(  # Json representation of the configuration
         title="The id of the Stack Component.",
     )
     owner: Optional[UUID] = Field(
@@ -81,7 +81,7 @@ class ComponentModel(BaseModel):
                 "name": "vertex_prd_orchestrator",
                 "type": "orchestrator",
                 "flavor": "vertex",
-                "config": b"RANDOM64STRING",
+                "config": {"location": "europe-west3"},
                 "owner": "8d0acbc3-c51a-452c-bda3-e1b5469f79fd",
                 "created_by": "8d0acbc3-c51a-452c-bda3-e1b5469f79fd",
                 "created_at": "2022-08-12T07:12:44.931Z",
@@ -103,13 +103,11 @@ class ComponentModel(BaseModel):
             flavor_name=component.FLAVOR,
             name=component.name,
             id=component.uuid,
-            configuration=base64.b64encode(
-                yaml.dump(json.loads(component.json())).encode()
-            ),
+            configuration=component.json()
         )
 
     def to_component(self) -> "StackComponent":
-        """Converts the ComponentModel into an actual instance of a Stack Component.
+        """Converts the ComponentModel into an instance of a Stack Component.
 
         Returns:
             a StackComponent
@@ -120,7 +118,7 @@ class ComponentModel(BaseModel):
             name=self.flavor_name, component_type=self.type
         )
 
-        config = yaml.safe_load(base64.b64decode(self.configuration).decode())
+        config = json.loads(self.configuration)
         config["uuid"] = self.id
         config["name"] = self.name
         return flavor.parse_obj(config)

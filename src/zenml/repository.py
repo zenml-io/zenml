@@ -535,7 +535,7 @@ class Repository(metaclass=RepositoryMetaClass):
             dict_of_stacks[stack.name] = {"shared": str(stack.is_shared)}
             for component_type, component in stack.components.items():
                 dict_of_stacks[stack.name][
-                    str(component_type.value)] = component.name
+                    str(component_type)] = component.name
 
         return dict_of_stacks
 
@@ -749,15 +749,12 @@ class Repository(metaclass=RepositoryMetaClass):
                 name=name,
                 type=type,
                 user_id=self.zen_store.default_user_id,
-                # GlobalConfiguration().user_id,
             )
 
         # TODO: [server] this error handling could be improved
         if not components:
             raise KeyError(
-                "No stack component of type '%s' with the name '%s' " "exists.",
-                type.value,
-                name,
+                "No stack component of type {type} with the name {name} exists."
             )
         elif len(components) > 1:
             raise RuntimeError(
@@ -1047,7 +1044,7 @@ class Repository(metaclass=RepositoryMetaClass):
         """
         logger.debug(
             "Fetching the flavor of type '%s' with name '%s'.",
-            component_type.value,
+            component_type,
             name,
         )
 

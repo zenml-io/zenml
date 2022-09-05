@@ -15,6 +15,7 @@
 
 import base64
 import datetime
+import json
 import os
 import subprocess
 import sys
@@ -278,9 +279,7 @@ def print_stack_component_list(
             "UUID": component.id,
             **{
                 key.upper(): str(value)
-                for key, value in yaml.safe_load(
-                    base64.b64decode(component.configuration).decode()
-                ).items()
+                for key, value in json.loads(component.configuration).items()
             },
         }
         configurations.append(component_config)

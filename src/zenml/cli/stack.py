@@ -987,7 +987,8 @@ def _get_component_as_dict(
         A dict representation of the component's key config values.
     """
     repo = Repository()
-    component = repo.get_stack_component(component_type, name=component_name)
+    component = repo.get_stack_component_by_name_and_type(type=component_type,
+                                                          name=component_name)
     component_dict = {
         key: value
         for key, value in json.loads(component.json()).items()
@@ -1013,31 +1014,32 @@ def export_stack(stack_name: str, filename: Optional[str]) -> None:
     # TODO [ENG-893]: code duplicate with describe_stack()
     repo = Repository()
 
-    stack_configurations = repo.stack_configurations
-    if len(stack_configurations) == 0:
-        cli_utils.error("No stacks registered.")
 
     try:
-        stack_configuration = stack_configurations[stack_name]
+        stack = repo.get_stack_by_name(stack_name)
     except KeyError:
         cli_utils.error(f"Stack '{stack_name}' does not exist.")
+    else:
+        # create a dict of all components in the specified stack
+        component_data = {}
+        for component_type, component in stack.components.items():
+            component_dict = {
+                key: value
+                for key, value in json.loads(component.json()).items()
+                if key != "uuid" and value is not None
+            }
+            component_data[component_type] = component_dict
 
-    # create a dict of all components in the specified stack
-    component_data = {}
-    for component_type, component_name in stack_configuration.items():
-        component_dict = _get_component_as_dict(component_type, component_name)
-        component_data[str(component_type)] = component_dict
-
-    # write zenml version and stack dict to YAML
-    yaml_data = {
-        "zenml_version": zenml.__version__,
-        "stack_name": stack_name,
-        "components": component_data,
-    }
-    if filename is None:
-        filename = stack_name + ".yaml"
-    write_yaml(filename, yaml_data)
-    cli_utils.declare(f"Exported stack '{stack_name}' to file '{filename}'.")
+        # write zenml version and stack dict to YAML
+        yaml_data = {
+            "zenml_version": zenml.__version__,
+            "stack_name": stack_name,
+            "components": component_data,
+        }
+        if filename is None:
+            filename = stack_name + ".yaml"
+        write_yaml(filename, yaml_data)
+        cli_utils.declare(f"Exported stack '{stack_name}' to file '{filename}'.")
 
 
 def _import_stack_component(

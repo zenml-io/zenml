@@ -394,67 +394,67 @@ def generate_stack_component_register_command(
             cli_utils.error(str(e))
             return
 
-        try:
+        #try:
             # with console.status(f"Registering {display_name} '{name}'...\n"):
-            _register_stack_component(
-                component_type=component_type,
-                component_name=name,
-                component_flavor=flavor,
-                **parsed_args,
-            )
-        except ValidationError as e:
-            if not interactive:
-                cli_utils.error(
-                    f"When you are registering a new {display_name} with the "
-                    f"flavor `{flavor}`, make sure that you are utilizing "
-                    f"the right attributes. Current problems:\n\n{e}"
-                )
-                return
-            else:
-                cli_utils.warning(
-                    f"You did not set all required fields for a "
-                    f"{flavor} {display_name}. You'll be guided through the "
-                    f"missing fields now. You'll be able to skip optional "
-                    f"fields by just pressing enter. To cancel simply interrupt"
-                    f" with CTRL+C."
-                )
-
-                repo = Repository()
-                flavor_class = repo.get_flavor(
-                    name=flavor, component_type=component_type
-                )
-                missing_fields = {
-                    k: v.required
-                    for k, v in flavor_class.__fields__.items()
-                    if v.name not in ["name", "uuid", *parsed_args.keys()]
-                }
-
-                completed_fields = parsed_args.copy()
-                for field, field_req in missing_fields.items():
-                    if field_req:
-                        user_input = click.prompt(f"{field}")
-                    else:
-                        prompt = f"{field} (Optional)'"
-                        user_input = click.prompt(prompt, default="")
-                    if user_input:
-                        completed_fields[field] = user_input
-
-                try:
-                    with console.status(
-                        f"Registering {display_name} '{name}'" f"...\n"
-                    ):
-
-                        _register_stack_component(
-                            component_type=component_type,
-                            component_name=name,
-                            component_flavor=flavor,
-                            **completed_fields,
-                        )
-                except Exception as e:
-                    cli_utils.error(str(e))
-
-        except Exception as e:
-            cli_utils.error(str(e))
+        _register_stack_component(
+            component_type=component_type,
+            component_name=name,
+            component_flavor=flavor,
+            **parsed_args,
+        )
+        # except ValidationError as e:
+        #     if not interactive:
+        #         cli_utils.error(
+        #             f"When you are registering a new {display_name} with the "
+        #             f"flavor `{flavor}`, make sure that you are utilizing "
+        #             f"the right attributes. Current problems:\n\n{e}"
+        #         )
+        #         return
+        #     else:
+        #         cli_utils.warning(
+        #             f"You did not set all required fields for a "
+        #             f"{flavor} {display_name}. You'll be guided through the "
+        #             f"missing fields now. You'll be able to skip optional "
+        #             f"fields by just pressing enter. To cancel simply interrupt"
+        #             f" with CTRL+C."
+        #         )
+        #
+        #         repo = Repository()
+        #         flavor_class = repo.get_flavor(
+        #             name=flavor, component_type=component_type
+        #         )
+        #         missing_fields = {
+        #             k: v.required
+        #             for k, v in flavor_class.__fields__.items()
+        #             if v.name not in ["name", "uuid", *parsed_args.keys()]
+        #         }
+        #
+        #         completed_fields = parsed_args.copy()
+        #         for field, field_req in missing_fields.items():
+        #             if field_req:
+        #                 user_input = click.prompt(f"{field}")
+        #             else:
+        #                 prompt = f"{field} (Optional)'"
+        #                 user_input = click.prompt(prompt, default="")
+        #             if user_input:
+        #                 completed_fields[field] = user_input
+        #
+        #         try:
+        #             with console.status(
+        #                 f"Registering {display_name} '{name}'" f"...\n"
+        #             ):
+        #
+        #                 _register_stack_component(
+        #                     component_type=component_type,
+        #                     component_name=name,
+        #                     component_flavor=flavor,
+        #                     **completed_fields,
+        #                 )
+        #         except Exception as e:
+        #             cli_utils.error(str(e))
+        #
+        # except Exception as e:
+        #     cli_utils.error(str(e))
 
         cli_utils.declare(f"Successfully registered {display_name} `{name}`.")
 
