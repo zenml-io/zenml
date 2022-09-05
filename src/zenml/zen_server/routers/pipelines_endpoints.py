@@ -124,14 +124,14 @@ async def update_pipeline(pipeline_id: str, updated_pipeline) -> PipelineModel:
     """
     try:
         return zen_store.update_pipeline(pipeline_id, updated_pipeline)
-    except:
-        raise not_found(error_detail(e)) from e
     except NotAuthorizedError as error:
         raise conflict(error) from error
     except NotFoundError as error:
         raise not_found(error) from error
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
+    except:
+        raise not_found(error_detail(e)) from e
 
 
 @router.delete(

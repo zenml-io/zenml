@@ -33,7 +33,6 @@ from zenml.exceptions import ProvisioningError
 from zenml.models import StackModel
 from zenml.repository import Repository
 from zenml.secret import ArbitrarySecretSchema
-from zenml.stack import Stack
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
@@ -148,20 +147,28 @@ def stack() -> None:
     help="Immediately set this stack as active.",
     type=click.BOOL,
 )
+@click.option(
+    "--share",
+    "share",
+    is_flag=True,
+    help="Use this flag to share this stack with other users.",
+    type=click.BOOL,
+)
 def register_stack(
-        stack_name: str,
-        artifact_store_name: str,
-        orchestrator_name: str,
-        container_registry_name: Optional[str] = None,
-        secrets_manager_name: Optional[str] = None,
-        step_operator_name: Optional[str] = None,
-        feature_store_name: Optional[str] = None,
-        model_deployer_name: Optional[str] = None,
-        experiment_tracker_name: Optional[str] = None,
-        alerter_name: Optional[str] = None,
-        annotator_name: Optional[str] = None,
-        data_validator_name: Optional[str] = None,
-        set_stack: bool = False,
+    stack_name: str,
+    artifact_store_name: str,
+    orchestrator_name: str,
+    container_registry_name: Optional[str] = None,
+    secrets_manager_name: Optional[str] = None,
+    step_operator_name: Optional[str] = None,
+    feature_store_name: Optional[str] = None,
+    model_deployer_name: Optional[str] = None,
+    experiment_tracker_name: Optional[str] = None,
+    alerter_name: Optional[str] = None,
+    annotator_name: Optional[str] = None,
+    data_validator_name: Optional[str] = None,
+    set_stack: bool = False,
+    share: bool = None
 ) -> None:
     """Register a stack.
 
@@ -179,6 +186,7 @@ def register_stack(
         annotator_name: Name of the annotator for this stack.
         data_validator_name: Name of the data validator for this stack.
         set_stack: Immediately set this stack as active.
+        share: Share the stack with other users.
     """
     cli_utils.print_active_config()
 
@@ -186,14 +194,16 @@ def register_stack(
         repo = Repository()
 
         stack_components = {
-            StackComponentType.ARTIFACT_STORE: (repo
-            .get_stack_component_by_name_and_type(
-                StackComponentType.ARTIFACT_STORE, name=artifact_store_name
-            )),
-            StackComponentType.ORCHESTRATOR: (repo
-            .get_stack_component_by_name_and_type(
-                StackComponentType.ORCHESTRATOR, name=orchestrator_name
-            )),
+            StackComponentType.ARTIFACT_STORE: (
+                repo.get_stack_component_by_name_and_type(
+                    StackComponentType.ARTIFACT_STORE, name=artifact_store_name
+                )
+            ),
+            StackComponentType.ORCHESTRATOR: (
+                repo.get_stack_component_by_name_and_type(
+                    StackComponentType.ORCHESTRATOR, name=orchestrator_name
+                )
+            ),
         }
 
         if container_registry_name:
@@ -268,11 +278,9 @@ def register_stack(
                 name=data_validator_name,
             )
 
-        stack_ = StackModel(name=stack_name,
-                            components=stack_components,
-                            is_shared=False)
-
-        # Validate stack here
+        stack_ = StackModel(
+            name=stack_name, components=stack_components, is_shared=share
+        )
 
         created_stack = repo.register_stack(stack_)
         cli_utils.declare(f"Stack '{stack_name}' successfully registered!")
@@ -375,19 +383,34 @@ def register_stack(
     type=str,
     required=False,
 )
+@click.option(
+    "--is-shared",
+    "is_shared",
+    is_flag=True,
+    help="Use this flag to share this stack with other users.",
+    type=click.BOOL,
+)
+@click.option(
+    "--share",
+    "share",
+    is_flag=True,
+    help="Use this flag to share this stack with other users.",
+    type=click.BOOL,
+)
 def update_stack(
-        stack_name: Optional[str],
-        artifact_store_name: Optional[str] = None,
-        orchestrator_name: Optional[str] = None,
-        container_registry_name: Optional[str] = None,
-        step_operator_name: Optional[str] = None,
-        secrets_manager_name: Optional[str] = None,
-        feature_store_name: Optional[str] = None,
-        model_deployer_name: Optional[str] = None,
-        experiment_tracker_name: Optional[str] = None,
-        alerter_name: Optional[str] = None,
-        annotator_name: Optional[str] = None,
-        data_validator_name: Optional[str] = None,
+    stack_name: Optional[str],
+    artifact_store_name: Optional[str] = None,
+    orchestrator_name: Optional[str] = None,
+    container_registry_name: Optional[str] = None,
+    step_operator_name: Optional[str] = None,
+    secrets_manager_name: Optional[str] = None,
+    feature_store_name: Optional[str] = None,
+    model_deployer_name: Optional[str] = None,
+    experiment_tracker_name: Optional[str] = None,
+    alerter_name: Optional[str] = None,
+    annotator_name: Optional[str] = None,
+    data_validator_name: Optional[str] = None,
+    share: bool = False
 ) -> None:
     """Update a stack.
 
@@ -406,6 +429,7 @@ def update_stack(
         alerter_name: Name of the new alerter for this stack.
         annotator_name: Name of the new annotator for this stack.
         data_validator_name: Name of the new data validator for this stack.
+        share: Allows sharing the stack with other users.
     """
     cli_utils.print_active_config()
 
@@ -510,6 +534,11 @@ def update_stack(
                 name=data_validator_name,
             )
 
+        if share:
+            # THis allows users to switch stacks from private to shared
+            #  the opposite switch is currently unsupported
+            current_stack.is_shared = share
+
         current_stack.components = stack_components
 
         repo.update_stack(current_stack)
@@ -595,16 +624,16 @@ def update_stack(
     required=False,
 )
 def remove_stack_component(
-        stack_name: Optional[str],
-        container_registry_flag: Optional[bool] = False,
-        step_operator_flag: Optional[bool] = False,
-        secrets_manager_flag: Optional[bool] = False,
-        feature_store_flag: Optional[bool] = False,
-        model_deployer_flag: Optional[bool] = False,
-        experiment_tracker_flag: Optional[bool] = False,
-        alerter_flag: Optional[bool] = False,
-        annotator_flag: Optional[bool] = False,
-        data_validator_flag: Optional[bool] = False,
+    stack_name: Optional[str],
+    container_registry_flag: Optional[bool] = False,
+    step_operator_flag: Optional[bool] = False,
+    secrets_manager_flag: Optional[bool] = False,
+    feature_store_flag: Optional[bool] = False,
+    model_deployer_flag: Optional[bool] = False,
+    experiment_tracker_flag: Optional[bool] = False,
+    alerter_flag: Optional[bool] = False,
+    annotator_flag: Optional[bool] = False,
+    data_validator_flag: Optional[bool] = False,
 ) -> None:
     """Remove stack components from a stack.
 
@@ -682,8 +711,8 @@ def remove_stack_component(
 @click.argument("current_stack_name", type=str, required=True)
 @click.argument("new_stack_name", type=str, required=True)
 def rename_stack(
-        current_stack_name: str,
-        new_stack_name: str,
+    current_stack_name: str,
+    new_stack_name: str,
 ) -> None:
     """Rename a stack.
 
@@ -700,7 +729,6 @@ def rename_stack(
                 f"Stack `{current_stack_name}` cannot be renamed as it does "
                 f"not exist.",
             )
-        current_stack.components
 
         try:
             repo.get_stack_by_name(new_stack_name)
@@ -736,7 +764,7 @@ def list_stacks() -> None:
             "ACTIVE": ":point_right:" if is_active else "",
             "STACK NAME": stack_name,
             **{
-                component_type.value.upper(): value
+                component_type.upper(): value
                 for component_type, value in stack_configuration.items()
             },
         }
@@ -783,7 +811,7 @@ def describe_stack(stack_name: Optional[str]) -> None:
 @click.option("--yes", "-y", is_flag=True, required=False)
 @click.option("--force", "-f", "old_force", is_flag=True, required=False)
 def delete_stack(
-        stack_name: str, yes: bool = False, old_force: bool = False
+    stack_name: str, yes: bool = False, old_force: bool = False
 ) -> None:
     """Delete a stack.
 
@@ -860,7 +888,7 @@ def set_active_stack_command(stack_name: str) -> None:
         )
     else:
         with console.status(
-                f"Setting the{scope} active stack to '{stack_name}'..."
+            f"Setting the{scope} active stack to '{stack_name}'..."
         ):
             repo.activate_stack(stack_to_set_active)
             cli_utils.declare(
@@ -907,7 +935,7 @@ def up_stack() -> None:
     "old_force",
     is_flag=True,
     help="DEPRECATED: Deprovisions local resources instead of suspending "
-         "them. Use `-f/--force` instead.",
+    "them. Use `-f/--force` instead.",
 )
 @click.option(
     "--force",
@@ -947,7 +975,7 @@ def down_stack(force: bool = False, old_force: bool = False) -> None:
 
 
 def _get_component_as_dict(
-        component_type: StackComponentType, component_name: str
+    component_type: StackComponentType, component_name: str
 ) -> Dict[str, str]:
     """Return a dict representation of a component's key config values.
 
@@ -1013,7 +1041,7 @@ def export_stack(stack_name: str, filename: Optional[str]) -> None:
 
 
 def _import_stack_component(
-        component_type: StackComponentType, component_config: Dict[str, str]
+    component_type: StackComponentType, component_config: Dict[str, str]
 ) -> str:
     """Import a single stack component with given type/config.
 
@@ -1077,7 +1105,7 @@ def _import_stack_component(
     "--ignore-version-mismatch",
     is_flag=True,
     help="Import stack components even if the installed version of ZenML "
-         "is different from the one specified in the stack YAML file",
+    "is different from the one specified in the stack YAML file",
 )
 @click.option(
     "--decouple_stores",
@@ -1088,11 +1116,11 @@ def _import_stack_component(
 )
 @click.pass_context
 def import_stack(
-        ctx: click.Context,
-        stack_name: str,
-        filename: Optional[str],
-        ignore_version_mismatch: bool = False,
-        decouple_stores: bool = False,
+    ctx: click.Context,
+    stack_name: str,
+    filename: Optional[str],
+    ignore_version_mismatch: bool = False,
+    decouple_stores: bool = False,
 ) -> None:
     """Import a stack from YAML.
 
@@ -1174,8 +1202,8 @@ def import_stack(
 @click.argument("source_stack", type=str, required=True)
 @click.argument("target_stack", type=str, required=True)
 def copy_stack(
-        source_stack: str,
-        target_stack: str,
+    source_stack: str,
+    target_stack: str,
 ) -> None:
     """Copy a stack.
 
@@ -1218,8 +1246,8 @@ def copy_stack(
     type=bool,
 )
 def register_secrets(
-        skip_existing: bool,
-        stack_name: Optional[str] = None,
+    skip_existing: bool,
+    stack_name: Optional[str] = None,
 ) -> None:
     """Interactively registers all required secrets for a stack.
 

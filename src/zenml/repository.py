@@ -528,9 +528,9 @@ class Repository(metaclass=RepositoryMetaClass):
 
         dict_of_stacks = dict()
         for stack in stacks:
-            dict_of_stacks[stack.name] = {}
+            dict_of_stacks[stack.name] = {"shared": str(stack.is_shared)}
             for component_type, component in stack.components.items():
-                dict_of_stacks[stack.name][component_type] = component.name
+                dict_of_stacks[stack.name][component_type.value] = component.name
 
         return dict_of_stacks
 
