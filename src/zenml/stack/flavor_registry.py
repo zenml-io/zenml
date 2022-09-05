@@ -48,11 +48,15 @@ class FlavorRegistry:
             GCPContainerRegistry,
             GitHubContainerRegistry,
         )
-        from zenml.orchestrators import LocalOrchestrator
+        from zenml.orchestrators import (
+            LocalDockerOrchestrator,
+            LocalOrchestrator,
+        )
         from zenml.secrets_managers import LocalSecretsManager
 
         default_flavors = [
             LocalOrchestrator,
+            LocalDockerOrchestrator,
             LocalArtifactStore,
             DefaultContainerRegistry,
             AzureContainerRegistry,

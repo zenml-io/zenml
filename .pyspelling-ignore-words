@@ -288,6 +288,7 @@ LocalArtifactStore
 LocalDaemonService
 LocalDaemonService
 LocalDaemonServiceConfig
+LocalDockerOrchestrator
 LocalExample
 LocalOrchestrator
 LocalStack
