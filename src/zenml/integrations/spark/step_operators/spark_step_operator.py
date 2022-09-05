@@ -20,7 +20,9 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from pydantic import validator
 from pyspark.conf import SparkConf
 
-from zenml.config.docker_configuration import DockerConfiguration
+from zenml.integrations.spark.step_operators.spark_entrypoint_configuration import (
+    SparkEntrypointConfiguration,
+)
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.step_operators import BaseStepOperator
@@ -28,6 +30,7 @@ from zenml.step_operators import BaseStepOperator
 logger = get_logger(__name__)
 if TYPE_CHECKING:
     from zenml.config.resource_configuration import ResourceConfiguration
+    from zenml.config.step_configurations import Step
 
 
 class SparkStepOperator(BaseStepOperator):
@@ -138,17 +141,14 @@ class SparkStepOperator(BaseStepOperator):
     def _backend_configuration(
         self,
         spark_config: SparkConf,
-        docker_configuration: "DockerConfiguration",
-        pipeline_name: str,
+        step: "Step",
     ) -> None:
         """Configures Spark to handle backends like YARN, Mesos or Kubernetes.
 
         Args:
             spark_config: a SparkConf object which collects all the
                 configuration parameters
-            pipeline_name: name of the pipeline which the step to be executed
-                is part of
-            docker_configuration: the Docker configuration for this step
+            step: The step that will be executed.
         """
 
     def _io_configuration(self, spark_config: SparkConf) -> None:
@@ -245,10 +245,7 @@ class SparkStepOperator(BaseStepOperator):
         Args:
             spark_config: a SparkConf object which collects all the
                 configuration parameters
-            entrypoint_command: a list of strings which is normally used to
-                execute the step as a module. However, in the context of this
-                step operator, this list is used to form the application
-                parameters for spark-submit.
+            entrypoint_command: The entrypoint command to run.
 
         Raises:
             RuntimeError: if the spark-submit fails
@@ -266,15 +263,14 @@ class SparkStepOperator(BaseStepOperator):
         # Add the application path
         command.append(self.application_path)  # type: ignore[arg-type]
 
-        # Add the application parameters
-        for arg in [
-            "--main_module",
-            "--step_source_path",
-            "--execution_info_path",
-            "--input_artifact_types_path",
-        ]:
-            i = entrypoint_command.index(arg)
-            command.extend([arg, entrypoint_command[i + 1]])
+        # Update the default step operator command to use the spark entrypoint
+        # configuration
+        original_args = SparkEntrypointConfiguration._parse_arguments(
+            entrypoint_command
+        )
+        command += SparkEntrypointConfiguration.get_entrypoint_arguments(
+            **original_args
+        )
 
         final_command = " ".join(command)
 
@@ -296,20 +292,18 @@ class SparkStepOperator(BaseStepOperator):
         self,
         pipeline_name: str,
         run_name: str,
-        docker_configuration: "DockerConfiguration",
+        step: "Step",
         entrypoint_command: List[str],
-        resource_configuration: "ResourceConfiguration",
     ) -> None:
-        """Launches the step on Spark.
+        """Launches a step on Spark.
 
         Args:
             pipeline_name: Name of the pipeline which the step to be executed
                 is part of.
             run_name: Name of the pipeline run which the step to be executed
                 is part of.
-            docker_configuration: The Docker configuration for this step.
+            step: Configuration of the step that will to execute.
             entrypoint_command: Command that executes the step.
-            resource_configuration: The resource configuration for this step.
         """
         # Start off with an empty configuration
         conf = SparkConf()
@@ -317,15 +311,11 @@ class SparkStepOperator(BaseStepOperator):
         # Add the resource configuration such as cores, memory.
         self._resource_configuration(
             spark_config=conf,
-            resource_configuration=resource_configuration,
+            resource_configuration=step.config.resource_configuration,
         )
 
         # Add the backend configuration such as namespace, docker images names.
-        self._backend_configuration(
-            spark_config=conf,
-            docker_configuration=docker_configuration,
-            pipeline_name=pipeline_name,
-        )
+        self._backend_configuration(spark_config=conf, step=step)
 
         # Add the IO configuration for the inputs and the outputs
         self._io_configuration(

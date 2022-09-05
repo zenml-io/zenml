@@ -15,7 +15,6 @@
 
 import os
 import time
-from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     AbstractSet,
@@ -27,6 +26,8 @@ from typing import (
     Type,
 )
 
+from zenml.config.pipeline_configurations import PipelineDeployment
+from zenml.config.step_configurations import Step
 from zenml.constants import (
     ENV_ZENML_SECRET_VALIDATION_LEVEL,
     ZENML_IGNORE_STORE_COUPLINGS,
@@ -34,16 +35,13 @@ from zenml.constants import (
 from zenml.enums import SecretValidationLevel, StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.logger import get_logger
-from zenml.runtime_configuration import (
-    RUN_NAME_OPTION_KEY,
-    RuntimeConfiguration,
-)
-from zenml.utils import string_utils
+from zenml.utils import runtime_options_utils, string_utils
 
 if TYPE_CHECKING:
     from zenml.alerter import BaseAlerter
     from zenml.annotators import BaseAnnotator
     from zenml.artifact_stores import BaseArtifactStore
+    from zenml.config.base_runtime_options import BaseRuntimeOptions
     from zenml.container_registries import BaseContainerRegistry
     from zenml.data_validators import BaseDataValidator
     from zenml.experiment_trackers.base_experiment_tracker import (
@@ -53,7 +51,6 @@ if TYPE_CHECKING:
     from zenml.metadata_stores import BaseMetadataStore
     from zenml.model_deployers import BaseModelDeployer
     from zenml.orchestrators import BaseOrchestrator
-    from zenml.pipelines import BasePipeline
     from zenml.secrets_managers import BaseSecretsManager
     from zenml.stack import StackComponent
     from zenml.step_operators import BaseStepOperator
@@ -424,32 +421,6 @@ class Stack:
         """
         return self._data_validator
 
-    @property
-    def runtime_options(self) -> Dict[str, Any]:
-        """Runtime options that are available to configure this stack.
-
-        This method combines the available runtime options for all components
-        of this stack. See `StackComponent.runtime_options()` for
-        more information.
-
-        Returns:
-            A dictionary of runtime options.
-        """
-        runtime_options: Dict[str, Any] = {}
-        for component in self.components.values():
-            duplicate_runtime_options = (
-                runtime_options.keys() & component.runtime_options.keys()
-            )
-            if duplicate_runtime_options:
-                logger.warning(
-                    "Found duplicate runtime options %s.",
-                    duplicate_runtime_options,
-                )
-
-            runtime_options.update(component.runtime_options)
-
-        return runtime_options
-
     def dict(self) -> Dict[str, str]:
         """Converts the stack into a dictionary.
 
@@ -498,6 +469,22 @@ class Stack:
             component.required_secrets for component in self.components.values()
         ]
         return set.union(*secrets) if secrets else set()
+
+    @property
+    def runtime_option_classes(self) -> Dict[str, Type["BaseRuntimeOptions"]]:
+        """Runtime option classes of all components of this stack.
+
+        Returns:
+            All runtime option classes and their respective keys.
+        """
+        runtime_option_classes = {}
+        for component in self.components.values():
+            if component.runtime_options_class:
+                key = runtime_options_utils.get_runtime_options_key_for_stack_component(
+                    component
+                )
+                runtime_option_classes[key] = component.runtime_options_class
+        return runtime_option_classes
 
     def _validate_secrets(self, raise_exception: bool) -> None:
         """Validates that all secrets of the stack exists.
@@ -714,46 +701,47 @@ class Stack:
 
     def _register_pipeline_run(
         self,
-        pipeline: "BasePipeline",
-        runtime_configuration: "RuntimeConfiguration",
+        pipeline: "PipelineDeployment",
     ) -> None:
         """Registers a pipeline run in the ZenStore.
 
         Args:
-            pipeline: The pipeline that is being run.
-            runtime_configuration: The runtime configuration of the pipeline.
+            pipeline: The pipeline that will run.
         """
         from zenml.repository import Repository
         from zenml.zen_stores.models import StackWrapper
         from zenml.zen_stores.models.pipeline_models import (
             PipelineRunWrapper,
             PipelineWrapper,
+            StepWrapper,
         )
 
         repo = Repository()
         active_project = repo.active_project
+
+        step_wrappers = [
+            StepWrapper(name=step.config.name)
+            for step in pipeline.steps.values()
+        ]
+        pipeline_wrapper = PipelineWrapper(
+            name=pipeline.pipeline.name, steps=step_wrappers
+        )
         pipeline_run_wrapper = PipelineRunWrapper(
-            name=runtime_configuration.run_name,
-            pipeline=PipelineWrapper.from_pipeline(pipeline),
+            name=pipeline.run_name,
+            pipeline=pipeline_wrapper,
             stack=StackWrapper.from_stack(self),
-            runtime_configuration=runtime_configuration,
+            runtime_configuration=pipeline.pipeline.extra,
             user_id=repo.active_user.id,
             project_name=active_project.name if active_project else None,
         )
 
         Repository().zen_store.register_pipeline_run(pipeline_run_wrapper)
 
-    def deploy_pipeline(
-        self,
-        pipeline: "BasePipeline",
-        runtime_configuration: RuntimeConfiguration,
-    ) -> Any:
+    def deploy_pipeline(self, pipeline: PipelineDeployment) -> Any:
         """Deploys a pipeline on this stack.
 
         Args:
             pipeline: The pipeline to deploy.
-            runtime_configuration: Contains all the runtime configuration
-                options specified for the pipeline run.
 
         Returns:
             The return value of the call to `orchestrator.run_pipeline(...)`.
@@ -773,73 +761,80 @@ class Stack:
                 )
 
         for component in self.components.values():
-            component.prepare_pipeline_deployment(
-                pipeline=pipeline,
-                stack=self,
-                runtime_configuration=runtime_configuration,
-            )
-
-        for component in self.components.values():
-            component.prepare_pipeline_run()
-
-        runtime_configuration[
-            RUN_NAME_OPTION_KEY
-        ] = runtime_configuration.run_name or (
-            f"{pipeline.name}-"
-            f'{datetime.now().strftime("%d_%h_%y-%H_%M_%S_%f")}'
-        )
+            component.prepare_pipeline_deployment(pipeline=pipeline, stack=self)
 
         logger.info(
             "Using stack `%s` to run pipeline `%s`...",
             self.name,
-            pipeline.name,
+            pipeline.pipeline.name,
         )
         start_time = time.time()
 
-        original_cache_boolean = pipeline.enable_cache
-        if "enable_cache" in runtime_configuration:
-            logger.info(
-                "Runtime configuration overwriting the pipeline cache settings"
-                " to enable_cache=`%s` for this pipeline run. The default "
-                "caching strategy is retained for future pipeline runs.",
-                runtime_configuration["enable_cache"],
-            )
-            pipeline.enable_cache = runtime_configuration.get("enable_cache")
+        self._register_pipeline_run(pipeline=pipeline)
 
-        self._register_pipeline_run(
-            pipeline=pipeline, runtime_configuration=runtime_configuration
-        )
-
-        return_value = self.orchestrator.run(
-            pipeline, stack=self, runtime_configuration=runtime_configuration
-        )
-
-        # Put pipeline level cache policy back to make sure the next runs
-        #  default to that policy again in case the runtime configuration
-        #  is not set explicitly
-        pipeline.enable_cache = original_cache_boolean
+        return_value = self.orchestrator.run(pipeline_run=pipeline, stack=self)
 
         run_duration = time.time() - start_time
         logger.info(
             "Pipeline run `%s` has finished in %s.",
-            runtime_configuration.run_name,
+            pipeline.run_name,
             string_utils.get_human_readable_time(run_duration),
         )
 
-        for component in self.components.values():
-            component.cleanup_pipeline_run()
-
         return return_value
 
-    def prepare_step_run(self) -> None:
-        """Prepares running a step."""
-        for component in self.components.values():
-            component.prepare_step_run()
+    def _get_active_components_for_step(
+        self, step: Step
+    ) -> Dict[StackComponentType, "StackComponent"]:
+        """Gets all the active stack components for a stack.
 
-    def cleanup_step_run(self) -> None:
-        """Cleans up resources after the step run is finished."""
-        for component in self.components.values():
-            component.cleanup_step_run()
+        Args:
+            step: The step for which to get the active components.
+
+        Returns:
+            Dictionary of active stack components.
+        """
+
+        def _is_active(component: "StackComponent") -> bool:
+            """Checks whether a stack component is actively used in the step.
+
+            Args:
+                component: The component to check.
+
+            Returns:
+                If the component is used in this step.
+            """
+            if component.TYPE == StackComponentType.STEP_OPERATOR:
+                return component.name == step.config.step_operator
+
+            if component.TYPE == StackComponentType.EXPERIMENT_TRACKER:
+                return component.name == step.config.experiment_tracker
+
+            return True
+
+        return {
+            component_type: component
+            for component_type, component in self.components.items()
+            if _is_active(component)
+        }
+
+    def prepare_step_run(self, step: "Step") -> None:
+        """Prepares running a step.
+
+        Args:
+            step: The step that will be executed.
+        """
+        for component in self._get_active_components_for_step(step).values():
+            component.prepare_step_run(step=step)
+
+    def cleanup_step_run(self, step: "Step") -> None:
+        """Cleans up resources after the step run is finished.
+
+        Args:
+            step: The step that was executed.
+        """
+        for component in self._get_active_components_for_step(step).values():
+            component.cleanup_step_run(step=step)
 
     @property
     def is_provisioned(self) -> bool:

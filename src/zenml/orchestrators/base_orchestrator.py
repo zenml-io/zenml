@@ -29,16 +29,14 @@
 # The `run_step()` method of this file is a modified version of the local dag
 # runner implementation of tfx
 """Base orchestrator class."""
-
 import hashlib
 import json
 import os
 import time
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Sequence, Type
 
-from pydantic.json import pydantic_encoder
-from tfx.dsl.compiler.compiler import Compiler
+from google.protobuf import json_format
 from tfx.dsl.compiler.constants import PIPELINE_RUN_ID_PARAMETER_NAME
 from tfx.dsl.io.fileio import NotFoundError
 from tfx.orchestration import metadata
@@ -49,36 +47,35 @@ from tfx.orchestration.portable import (
     outputs_utils,
     runtime_parameter_utils,
 )
+from tfx.orchestration.portable.base_executor_operator import (
+    BaseExecutorOperator,
+)
+from tfx.orchestration.portable.python_executor_operator import (
+    PythonExecutorOperator,
+)
 from tfx.proto.orchestration import executable_spec_pb2
+from tfx.proto.orchestration.pipeline_pb2 import ContextSpec
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 
+from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.constants import (
-    MLMD_CONTEXT_DOCKER_CONFIGURATION_PROPERTY_NAME,
-    MLMD_CONTEXT_MATERIALIZER_SOURCES_PROPERTY_NAME,
-    MLMD_CONTEXT_RUNTIME_CONFIG_PROPERTY_NAME,
+    MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME,
     MLMD_CONTEXT_STACK_PROPERTY_NAME,
-    MLMD_CONTEXT_STEP_RESOURCES_PROPERTY_NAME,
+    MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME,
     ZENML_MLMD_CONTEXT_TYPE,
 )
 from zenml.enums import StackComponentType
-from zenml.exceptions import DuplicateRunNameError
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.orchestrators.utils import (
-    add_context_to_node,
-    create_tfx_pipeline,
-    get_cache_status,
-    get_step_for_node,
-)
+from zenml.orchestrators.utils import get_cache_status
 from zenml.repository import Repository
 from zenml.stack import StackComponent
-from zenml.steps import BaseStep
 from zenml.utils import source_utils, string_utils
 
 if TYPE_CHECKING:
-    from zenml.pipelines import BasePipeline
-    from zenml.runtime_configuration import RuntimeConfiguration
+    from zenml.config.pipeline_configurations import PipelineDeployment
+    from zenml.config.step_configurations import Step, StepConfiguration
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -166,15 +163,14 @@ class BaseOrchestrator(StackComponent, ABC):
 
     # Class Configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.ORCHESTRATOR
+    _active_run_config: Optional["PipelineDeployment"] = None
+    _active_pb2_pipeline: Optional[Pb2Pipeline] = None
 
     @abstractmethod
     def prepare_or_run_pipeline(
         self,
-        sorted_steps: List[BaseStep],
-        pipeline: "BasePipeline",
-        pb2_pipeline: Pb2Pipeline,
+        pipeline: "PipelineDeployment",
         stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
         """This method needs to be implemented by the respective orchestrator.
 
@@ -207,113 +203,100 @@ class BaseOrchestrator(StackComponent, ABC):
         prerequisites, parses input parameters and finally executes the step
         using the `run_step()`method.
 
-        If the orchestrator needs to know the upstream steps for a specific
-        step to build a DAG, it can use the `get_upstream_step_names()` method
-        to get them.
-
         Args:
-            sorted_steps: List of sorted steps.
-            pipeline: Zenml Pipeline instance.
-            pb2_pipeline: Protobuf Pipeline instance.
-            stack: The stack the pipeline was run on.
-            runtime_configuration: The Runtime configuration of the current run.
+            pipeline: Representation of the pipeline to run.
+            stack: The stack the pipeline will run on.
 
         Returns:
             The optional return value from this method will be returned by the
             `pipeline_instance.run()` call when someone is running a pipeline.
         """
 
-    def run(
-        self,
-        pipeline: "BasePipeline",
-        stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
-    ) -> Any:
-        """Runs a pipeline.
-
-        To do this, a protobuf pipeline is created, the context of the
-        individual steps is expanded to include relevant data, the steps are
-        sorted into execution order and the implementation specific
-        `prepare_or_run_pipeline()` method is called.
+    def _prepare_run(self, pipeline_run: "PipelineDeployment") -> None:
+        """Prepares a run.
 
         Args:
-            pipeline: The pipeline to run.
-            stack: The stack on which the pipeline is run.
-            runtime_configuration: Runtime configuration of the pipeline run.
+            pipeline_run: The run to prepare.
+        """
+        self._active_run_config = pipeline_run
+
+        pb2_pipeline = Pb2Pipeline()
+        pb2_pipeline_json = string_utils.b64_decode(
+            self._active_run_config.proto_pipeline
+        )
+        json_format.Parse(pb2_pipeline_json, pb2_pipeline)
+        self._active_pb2_pipeline = pb2_pipeline
+
+    def _cleanup_run(self) -> None:
+        """Cleans up the active run."""
+        self._active_run_config = None
+        self._active_pb2_pipeline = None
+
+    def run(self, pipeline_run: "PipelineDeployment", stack: "Stack") -> Any:
+        """Runs a pipeline on a stack.
+
+        Args:
+            pipeline_run: The pipeline to run.
+            stack: The stack on which to run the pipeline.
 
         Returns:
-            The result of the call to `prepare_or_run_pipeline()`.
+            Orchestrator-specific return value.
         """
-        # Create the protobuf pipeline which will be needed for various reasons
-        # in the following steps
-        pb2_pipeline: Pb2Pipeline = Compiler().compile(
-            create_tfx_pipeline(pipeline, stack=stack)
-        )
-
-        self._configure_node_context(
-            pipeline=pipeline,
-            pb2_pipeline=pb2_pipeline,
-            stack=stack,
-            runtime_configuration=runtime_configuration,
-        )
-
-        sorted_steps = self._get_sorted_steps(
-            pipeline=pipeline, pb2_pipeline=pb2_pipeline
-        )
+        self._prepare_run(pipeline_run=pipeline_run)
 
         result = self.prepare_or_run_pipeline(
-            sorted_steps=sorted_steps,
-            pipeline=pipeline,
-            pb2_pipeline=pb2_pipeline,
-            stack=stack,
-            runtime_configuration=runtime_configuration,
+            pipeline=pipeline_run, stack=stack
         )
+
+        self._cleanup_run()
 
         return result
 
     @staticmethod
-    def _get_sorted_steps(
-        pipeline: "BasePipeline", pb2_pipeline: Pb2Pipeline
-    ) -> List["BaseStep"]:
-        """Get steps sorted in the execution order.
-
-        This simplifies the building of a DAG at a later stage as it can be
-        built with one iteration over this sorted list of steps.
+    def _ensure_artifact_classes_loaded(
+        step_configuration: "StepConfiguration",
+    ) -> None:
+        """Ensures that all artifact classes for a step are loaded.
 
         Args:
-            pipeline: The pipeline
-            pb2_pipeline: The protobuf pipeline representation
-
-        Returns:
-            List of steps in execution order
+            step_configuration: A step configuration.
         """
-        # Create a list of sorted steps
-        sorted_steps = []
-        for node in pb2_pipeline.nodes:
-            pipeline_node: PipelineNode = node.pipeline_node
-            sorted_steps.append(
-                get_step_for_node(
-                    pipeline_node, steps=list(pipeline.steps.values())
-                )
+        artifact_class_sources = set(
+            input_.artifact_source
+            for input_ in step_configuration.inputs.values()
+        ) | set(
+            output.artifact_source
+            for output in step_configuration.outputs.values()
+        )
+
+        for source in artifact_class_sources:
+            # Tfx depends on these classes being loaded so it can detect the
+            # correct artifact class
+            source_utils.validate_source_class(
+                source, expected_class=BaseArtifact
             )
-        return sorted_steps
 
     def run_step(
-        self,
-        step: "BaseStep",
-        run_name: str,
-        pb2_pipeline: Pb2Pipeline,
+        self, step: "Step", run_name: Optional[str] = None
     ) -> Optional[data_types.ExecutionInfo]:
         """This sets up a component launcher and executes the given step.
 
         Args:
             step: The step to be executed
             run_name: The unique run name
-            pb2_pipeline: Protobuf Pipeline instance
 
         Returns:
             The execution info of the step.
         """
+        assert self._active_run_config
+        assert self._active_pb2_pipeline
+
+        self._ensure_artifact_classes_loaded(step.config)
+
+        step_name = step.config.name
+        pb2_pipeline = self._active_pb2_pipeline
+
+        run_name = run_name or self._active_run_config.run_name
         # Substitute the runtime parameter to be a concrete run_id, it is
         # important for this to be unique for each run.
         runtime_parameter_utils.substitute_runtime_parameter(
@@ -327,29 +310,34 @@ class BaseOrchestrator(StackComponent, ABC):
             pb2_pipeline
         )
         executor_spec = runner_utils.extract_executor_spec(
-            deployment_config, step.name
+            deployment_config, step_name
         )
         custom_driver_spec = runner_utils.extract_custom_driver_spec(
-            deployment_config, step.name
+            deployment_config, step_name
         )
 
         # At this point the active metadata store is queried for the
         # metadata_connection
-        repo = Repository()
-        metadata_store = repo.active_stack.metadata_store
+        stack = Repository().active_stack
         metadata_connection = metadata.Metadata(
-            metadata_store.get_tfx_metadata_config()
+            stack.metadata_store.get_tfx_metadata_config()
+        )
+        executor_operator = self._get_executor_operator(
+            step_operator=step.config.step_operator
         )
         custom_executor_operators = {
-            executable_spec_pb2.PythonClassExecutableSpec: step.executor_operator
+            executable_spec_pb2.PythonClassExecutableSpec: executor_operator
         }
 
         # The protobuf node for the current step is loaded here.
-        pipeline_node = self._get_node_with_step_name(
-            step_name=step.name, pb2_pipeline=pb2_pipeline
+        pipeline_node = self._get_node_with_step_name(step_name)
+
+        self._add_mlmd_contexts(
+            pipeline_node=pipeline_node,
+            deployment=self._active_run_config,
+            stack=stack,
         )
 
-        # Create the tfx launcher responsible for executing the step.
         component_launcher = launcher.Launcher(
             pipeline_node=pipeline_node,
             mlmd_connection=metadata_connection,
@@ -360,13 +348,17 @@ class BaseOrchestrator(StackComponent, ABC):
             custom_executor_operators=custom_executor_operators,
         )
 
-        # In some stack configurations, some stack components (like experiment
-        # trackers) will run some code before and after the actual step run.
-        # This is where the step actually gets executed using the
-        # component_launcher
-        repo.active_stack.prepare_step_run()
-        execution_info = self._execute_step(component_launcher)
-        repo.active_stack.cleanup_step_run()
+        # If a step operator is used, the current environment will not be the
+        # one executing the step function code and therefore we don't need to
+        # run any preparation
+        if step.config.step_operator:
+            execution_info = self._execute_step(component_launcher)
+        else:
+            stack.prepare_step_run(step=step)
+            try:
+                execution_info = self._execute_step(component_launcher)
+            finally:
+                stack.cleanup_step_run(step=step)
 
         return execution_info
 
@@ -381,26 +373,13 @@ class BaseOrchestrator(StackComponent, ABC):
 
         Returns:
             Optional execution info returned by the launcher.
-
-        Raises:
-            DuplicateRunNameError: If the run name is already in use.
         """
         pipeline_step_name = tfx_launcher._pipeline_node.node_info.id
         start_time = time.time()
         logger.info(f"Step `{pipeline_step_name}` has started.")
-        try:
-            execution_info = tfx_launcher.launch()
-            if execution_info and get_cache_status(execution_info):
-                logger.info(f"Using cached version of `{pipeline_step_name}`.")
-        except RuntimeError as e:
-            if "execution has already succeeded" in str(e):
-                # Hacky workaround to catch the error that a pipeline run with
-                # this name already exists. Raise an error with a more
-                # descriptive
-                # message instead.
-                raise DuplicateRunNameError()
-            else:
-                raise
+        execution_info = tfx_launcher.launch()
+        if execution_info and get_cache_status(execution_info):
+            logger.info(f"Using cached version of `{pipeline_step_name}`.")
 
         run_duration = time.time() - start_time
         logger.info(
@@ -409,29 +388,121 @@ class BaseOrchestrator(StackComponent, ABC):
         )
         return execution_info
 
-    def get_upstream_step_names(
-        self, step: "BaseStep", pb2_pipeline: Pb2Pipeline
-    ) -> List[str]:
-        """Given a step, use the associated pb2 node to find the names of all upstream nodes.
+    @staticmethod
+    def _get_executor_operator(
+        step_operator: Optional[str],
+    ) -> Type[BaseExecutorOperator]:
+        """Gets the TFX executor operator for the given step operator.
 
         Args:
-            step: Instance of a Pipeline Step
-            pb2_pipeline: Protobuf Pipeline instance
+            step_operator: The optional step operator used to run a step.
 
         Returns:
-            List of step names from direct upstream steps
+            The executor operator for the given step operator.
         """
-        node = self._get_node_with_step_name(step.name, pb2_pipeline)
+        if step_operator:
+            from zenml.step_operators.step_executor_operator import (
+                StepExecutorOperator,
+            )
 
-        upstream_steps = []
-        for upstream_node in node.upstream_nodes:
-            upstream_steps.append(upstream_node)
+            return StepExecutorOperator
+        else:
+            return PythonExecutorOperator
 
-        return upstream_steps
+    @staticmethod
+    def _add_pipeline_node_context(
+        pipeline_node: PipelineNode,
+        type_: str,
+        name: str,
+        properties: Dict[str, str],
+    ) -> None:
+        """Adds a new context to a TFX protobuf pipeline node.
+
+        Args:
+            pipeline_node: A tfx protobuf pipeline node
+            type_: The type name for the context to be added
+            name: Unique key for the context
+            properties: dictionary of strings as properties of the context
+        """
+        context: ContextSpec = pipeline_node.contexts.contexts.add()
+        context.type.name = type_
+        context.name.field_value.string_value = name
+        for key, value in properties.items():
+            c_property = context.properties[key]
+            c_property.field_value.string_value = value
+
+    def _add_mlmd_contexts(
+        self,
+        pipeline_node: PipelineNode,
+        deployment: "PipelineDeployment",
+        stack: "Stack",
+    ) -> None:
+        """Adds context to each pipeline node of a pb2_pipeline.
+
+        This attaches important contexts to the nodes; namely
+        pipeline.docker_configuration, stack information and the runtime
+        configuration.
+
+        Args:
+            pipeline_node: The pipeline node to which the contexts should be
+                added.
+            deployment: The pipeline deployment to store in the contexts.
+            stack: The stack the pipeline will run on.
+        """
+        stack_json = json.dumps(stack.dict(), sort_keys=True)
+        pipeline_config = deployment.json(
+            exclude={"run_name", "proto_pipeline", "steps"}, sort_keys=True
+        )
+
+        context_properties = {
+            MLMD_CONTEXT_STACK_PROPERTY_NAME: stack_json,
+            MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME: pipeline_config,
+        }
+
+        step = self._get_step_for_node(
+            pipeline_node, steps=list(deployment.steps.values())
+        )
+
+        step_context_properties = context_properties.copy()
+        step_context_properties[
+            MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME
+        ] = step.json(sort_keys=True)
+
+        properties_json = json.dumps(step_context_properties, sort_keys=True)
+        context_name = hashlib.md5(properties_json.encode()).hexdigest()
+
+        self._add_pipeline_node_context(
+            pipeline_node,
+            type_=ZENML_MLMD_CONTEXT_TYPE,
+            name=context_name,
+            properties=step_context_properties,
+        )
+
+    @staticmethod
+    def _get_step_for_node(
+        node: PipelineNode, steps: Sequence["Step"]
+    ) -> "Step":
+        """Gets the ZenML step for a pipeline node.
+
+        Args:
+            node: The node for which to get the step.
+            steps: Sequence of steps.
+
+        Raises:
+            RuntimeError: If no step for the node was found.
+
+        Returns:
+            The step for the given node.
+        """
+        step_name = node.node_info.id
+        try:
+            return next(step for step in steps if step.config.name == step_name)
+        except StopIteration:
+            raise RuntimeError(f"Unable to find step with name '{step_name}'.")
 
     @staticmethod
     def requires_resources_in_orchestration_environment(
-        step: "BaseStep",
+        step: "Step",
     ) -> bool:
         """Checks if the orchestrator should run this step on special resources.
 
@@ -445,19 +516,16 @@ class BaseOrchestrator(StackComponent, ABC):
         # If the step requires custom resources and doesn't run with a step
         # operator, it would need these requirements in the orchestrator
         # environment
-        return not (
-            step.custom_step_operator or step.resource_configuration.empty
-        )
+        if step.config.step_operator:
+            return False
 
-    @staticmethod
-    def _get_node_with_step_name(
-        step_name: str, pb2_pipeline: Pb2Pipeline
-    ) -> PipelineNode:
+        return not step.config.resource_configuration.empty
+
+    def _get_node_with_step_name(self, step_name: str) -> PipelineNode:
         """Given the name of a step, return the node with that name from the pb2_pipeline.
 
         Args:
             step_name: Name of the step
-            pb2_pipeline: pb2 pipeline containing nodes
 
         Returns:
             PipelineNode instance
@@ -465,7 +533,9 @@ class BaseOrchestrator(StackComponent, ABC):
         Raises:
             KeyError: If the step name is not found in the pipeline.
         """
-        for node in pb2_pipeline.nodes:
+        assert self._active_pb2_pipeline
+
+        for node in self._active_pb2_pipeline.nodes:
             if (
                 node.WhichOneof("node") == "pipeline_node"
                 and node.pipeline_node.node_info.id == step_name
@@ -474,78 +544,5 @@ class BaseOrchestrator(StackComponent, ABC):
 
         raise KeyError(
             f"Step {step_name} not found in Pipeline "
-            f"{pb2_pipeline.pipeline_info.id}"
+            f"{self._active_pb2_pipeline.pipeline_info.id}"
         )
-
-    @staticmethod
-    def _configure_node_context(
-        pipeline: "BasePipeline",
-        pb2_pipeline: Pb2Pipeline,
-        stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
-    ) -> None:
-        """Adds context to each pipeline node of a pb2_pipeline.
-
-        This attaches important contexts to the nodes; namely
-        pipeline.docker_configuration, stack information and the runtime
-        configuration.
-
-        Args:
-            pipeline: Zenml Pipeline instance
-            pb2_pipeline: Protobuf Pipeline instance
-            stack: The stack the pipeline was run on
-            runtime_configuration: The Runtime configuration of the current run
-        """
-        stack_json = json.dumps(stack.dict(), sort_keys=True)
-
-        # Copy and remove the run name so an otherwise identical run reuses
-        # our MLMD context
-        runtime_config_copy = runtime_configuration.copy()
-        runtime_config_copy.pop("run_name")
-        runtime_config_json = json.dumps(
-            runtime_config_copy, sort_keys=True, default=pydantic_encoder
-        )
-
-        docker_config_json = pipeline.docker_configuration.json(sort_keys=True)
-
-        context_properties = {
-            MLMD_CONTEXT_STACK_PROPERTY_NAME: stack_json,
-            MLMD_CONTEXT_RUNTIME_CONFIG_PROPERTY_NAME: runtime_config_json,
-            MLMD_CONTEXT_DOCKER_CONFIGURATION_PROPERTY_NAME: docker_config_json,
-        }
-
-        for node in pb2_pipeline.nodes:
-            pipeline_node: PipelineNode = node.pipeline_node
-
-            step = get_step_for_node(
-                pipeline_node, steps=list(pipeline.steps.values())
-            )
-            step_context_properties = context_properties.copy()
-            step_context_properties[
-                MLMD_CONTEXT_STEP_RESOURCES_PROPERTY_NAME
-            ] = step.resource_configuration.json(sort_keys=True)
-
-            # We add the resolved materializer sources here so step operators
-            # can fetch it in the entrypoint. This is needed to support
-            # custom materializers which would otherwise be ignored.
-            materializer_sources = {
-                output_name: source_utils.resolve_class(materializer_class)
-                for output_name, materializer_class in step.get_materializers(
-                    ensure_complete=True
-                ).items()
-            }
-            step_context_properties[
-                MLMD_CONTEXT_MATERIALIZER_SOURCES_PROPERTY_NAME
-            ] = json.dumps(materializer_sources, sort_keys=True)
-
-            properties_json = json.dumps(
-                step_context_properties, sort_keys=True
-            )
-            context_name = hashlib.md5(properties_json.encode()).hexdigest()
-
-            add_context_to_node(
-                pipeline_node,
-                type_=ZENML_MLMD_CONTEXT_TYPE,
-                name=context_name,
-                properties=step_context_properties,
-            )

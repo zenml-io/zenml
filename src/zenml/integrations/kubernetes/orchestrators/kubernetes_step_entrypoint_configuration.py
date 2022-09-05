@@ -13,12 +13,9 @@
 #  permissions and limitations under the License.
 """Entrypoint configuration for the Kubernetes worker/step pods."""
 
-from typing import TYPE_CHECKING, Any, List, Set
+from typing import Any, List, Optional, Set
 
 from zenml.entrypoints import StepEntrypointConfiguration
-
-if TYPE_CHECKING:
-    from zenml.steps import BaseStep
 
 RUN_NAME_OPTION = "run_name"
 
@@ -27,7 +24,7 @@ class KubernetesStepEntrypointConfiguration(StepEntrypointConfiguration):
     """Entrypoint configuration for running steps on Kubernetes."""
 
     @classmethod
-    def get_custom_entrypoint_options(cls) -> Set[str]:
+    def get_entrypoint_options(cls) -> Set[str]:
         """Kubernetes specific entrypoint options.
 
         The argument `RUN_NAME_OPTION` is needed for `get_run_name` to have
@@ -36,30 +33,26 @@ class KubernetesStepEntrypointConfiguration(StepEntrypointConfiguration):
         Returns:
             Set of entrypoint options.
         """
-        return {RUN_NAME_OPTION}
+        return super().get_entrypoint_options() | {RUN_NAME_OPTION}
 
     @classmethod
-    def get_custom_entrypoint_arguments(
-        cls, step: "BaseStep", *args: Any, **kwargs: Any
-    ) -> List[str]:
+    def get_entrypoint_arguments(cls, **kwargs: Any) -> List[str]:
         """Kubernetes specific entrypoint arguments.
 
         Sets the value for the `RUN_NAME_OPTION` argument.
 
         Args:
-            step: ZenML step for which the entrypoint is built.
-            args: additional (unused) arguments.
-            kwargs: keyword args; needs to include `RUN_NAME_OPTION`.
+            **kwargs: Additional args.
 
         Returns:
             List of entrypoint arguments.
         """
-        return [
+        return super().get_entrypoint_arguments(**kwargs) + [
             f"--{RUN_NAME_OPTION}",
             kwargs[RUN_NAME_OPTION],
         ]
 
-    def get_run_name(self, pipeline_name: str) -> str:
+    def get_run_name(self, pipeline_name: str) -> Optional[str]:
         """Returns the ZenML run name.
 
         Args:

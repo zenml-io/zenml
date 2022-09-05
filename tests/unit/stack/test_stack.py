@@ -17,13 +17,14 @@ from contextlib import ExitStack as does_not_raise
 import pytest
 
 from zenml.artifact_stores import LocalArtifactStore
+from zenml.config.compiler import Compiler
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.pipeline_configurations import PipelineRunConfiguration
 from zenml.container_registries import DefaultContainerRegistry
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.metadata_stores import SQLiteMetadataStore
 from zenml.orchestrators import LocalOrchestrator
-from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.stack import Stack
 
 
@@ -138,31 +139,6 @@ def test_stack_returns_all_its_components():
     assert stack.components == expected_components
 
 
-def test_stack_runtime_options_combines_runtime_options_of_components(
-    stack_with_mock_components,
-):
-    """Tests that the stack gets the available runtime options of all its
-    components and combines them."""
-    stack_with_mock_components.orchestrator.runtime_options = {
-        "key_1": None,
-        "key_2": "Aria",
-    }
-    stack_with_mock_components.metadata_store.runtime_options = {
-        "key_1": None,
-        "key_3": "Not Aria",
-    }
-    stack_with_mock_components.artifact_store.runtime_options = {}
-
-    expected_runtime_options = {
-        "key_1": None,
-        "key_2": "Aria",
-        "key_3": "Not Aria",
-    }
-    assert (
-        stack_with_mock_components.runtime_options == expected_runtime_options
-    )
-
-
 def test_stack_requirements(stack_with_mock_components):
     """Tests that the stack returns the requirements of all its components."""
     stack_with_mock_components.orchestrator.requirements = {"one_requirement"}
@@ -220,21 +196,21 @@ def test_stack_deployment(
     )
 
     pipeline = one_step_pipeline(empty_step())
-    run_name = "some_unique_pipeline_run_name"
-    runtime_config = RuntimeConfiguration(run_name=run_name)
+    deployment = Compiler().compile(
+        pipeline=pipeline,
+        stack=stack_with_mock_components,
+        run_configuration=PipelineRunConfiguration(),
+    )
     return_value = stack_with_mock_components.deploy_pipeline(
-        pipeline=pipeline, runtime_configuration=runtime_config
+        pipeline=deployment,
     )
 
     for component in stack_with_mock_components.components.values():
         component.prepare_pipeline_deployment.assert_called_once()
-        component.prepare_pipeline_run.assert_called_once()
-        component.cleanup_pipeline_run.assert_called_once()
 
     stack_with_mock_components.orchestrator.run.assert_called_once_with(
-        pipeline,
+        pipeline_run=deployment,
         stack=stack_with_mock_components,
-        runtime_configuration=runtime_config,
     )
     assert return_value is pipeline_run_return_value
 

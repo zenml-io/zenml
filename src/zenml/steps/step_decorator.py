@@ -28,17 +28,28 @@ from typing import (
 from zenml.steps import BaseStep
 from zenml.steps.utils import (
     INSTANCE_CONFIGURATION,
-    OUTPUT_SPEC,
     PARAM_CREATED_BY_FUNCTIONAL_API,
     PARAM_CUSTOM_STEP_OPERATOR,
     PARAM_ENABLE_CACHE,
+    PARAM_EXPERIMENT_TRACKER,
+    PARAM_EXTRA_OPTIONS,
+    PARAM_OUTPUT_ARTIFACTS,
+    PARAM_OUTPUT_MATERIALIZERS,
+    PARAM_OUTPUT_TYPES,
     PARAM_RESOURCE_CONFIGURATION,
+    PARAM_RUNTIME_OPTIONS,
+    PARAM_STEP_OPERATOR,
     STEP_INNER_FUNC_NAME,
 )
 
 if TYPE_CHECKING:
     from zenml.artifacts.base_artifact import BaseArtifact
+    from zenml.config.base_runtime_options import RuntimeOptionsOrDict
+    from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.steps import ResourceConfiguration
+
+    ArtifactClassOrStr = Union[str, Type["BaseArtifact"]]
+    MaterializerClassOrStr = Union[str, Type["BaseMaterializer"]]
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -53,9 +64,15 @@ def step(
     *,
     name: Optional[str] = None,
     enable_cache: bool = True,
-    output_types: Optional[Dict[str, Type["BaseArtifact"]]] = None,
+    experiment_tracker: Optional[str] = None,
+    step_operator: Optional[str] = None,
+    output_artifacts: Optional[Dict[str, "ArtifactClassOrStr"]] = None,
+    output_materializers: Optional[Dict[str, "MaterializerClassOrStr"]] = None,
+    runtime_options: Optional[Dict[str, "RuntimeOptionsOrDict"]] = None,
+    extra: Optional[Dict[str, Any]] = None,
     custom_step_operator: Optional[str] = None,
-    resource_configuration: Optional["ResourceConfiguration"] = None
+    output_types: Optional[Dict[str, Type["BaseArtifact"]]] = None,
+    resource_configuration: Optional["ResourceConfiguration"] = None,
 ) -> Callable[[F], Type[BaseStep]]:
     ...
 
@@ -65,9 +82,15 @@ def step(
     *,
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
-    output_types: Optional[Dict[str, Type["BaseArtifact"]]] = None,
+    experiment_tracker: Optional[str] = None,
+    step_operator: Optional[str] = None,
+    output_artifacts: Optional[Dict[str, "ArtifactClassOrStr"]] = None,
+    output_materializers: Optional[Dict[str, "MaterializerClassOrStr"]] = None,
+    runtime_options: Optional[Dict[str, "RuntimeOptionsOrDict"]] = None,
+    extra: Optional[Dict[str, Any]] = None,
     custom_step_operator: Optional[str] = None,
-    resource_configuration: Optional["ResourceConfiguration"] = None
+    output_types: Optional[Dict[str, Type["BaseArtifact"]]] = None,
+    resource_configuration: Optional["ResourceConfiguration"] = None,
 ) -> Union[Type[BaseStep], Callable[[F], Type[BaseStep]]]:
     """Outer decorator function for the creation of a ZenML step.
 
@@ -82,6 +105,12 @@ def step(
             value is passed, caching is enabled by default unless the step
             requires a `StepContext` (see
             `zenml.steps.step_context.StepContext` for more information).
+        experiment_tracker: The experiment tracker to use for this step.
+        step_operator: The step operator to use for this step.
+        output_materializers: Output materializers for this step.
+        output_artifacts: Output artifacts for this step.
+        runtime_options: Runtime options for this step.
+        extra: Extra configurations for this step.
         output_types: A dictionary which sets different outputs to non-default
             artifact types.
         custom_step_operator: Optional name of a
@@ -104,7 +133,6 @@ def step(
             The class of a newly generated ZenML Step.
         """
         step_name = name or func.__name__
-        output_spec = output_types or {}
 
         return type(  # noqa
             step_name,
@@ -112,12 +140,18 @@ def step(
             {
                 STEP_INNER_FUNC_NAME: staticmethod(func),
                 INSTANCE_CONFIGURATION: {
-                    PARAM_ENABLE_CACHE: enable_cache,
                     PARAM_CREATED_BY_FUNCTIONAL_API: True,
+                    PARAM_ENABLE_CACHE: enable_cache,
+                    PARAM_EXPERIMENT_TRACKER: experiment_tracker,
+                    PARAM_STEP_OPERATOR: step_operator,
+                    PARAM_OUTPUT_ARTIFACTS: output_artifacts,
+                    PARAM_OUTPUT_MATERIALIZERS: output_materializers,
+                    PARAM_RUNTIME_OPTIONS: runtime_options,
+                    PARAM_EXTRA_OPTIONS: extra,
                     PARAM_CUSTOM_STEP_OPERATOR: custom_step_operator,
+                    PARAM_OUTPUT_TYPES: output_types,
                     PARAM_RESOURCE_CONFIGURATION: resource_configuration,
                 },
-                OUTPUT_SPEC: output_spec,
                 "__module__": func.__module__,
                 "__doc__": func.__doc__,
             },

@@ -13,26 +13,26 @@
 #  permissions and limitations under the License.
 """Implementation of the Sagemaker Step Operator."""
 
-from typing import TYPE_CHECKING, ClassVar, List, Optional, Tuple
+from typing import TYPE_CHECKING, ClassVar, List, Optional
 
 import sagemaker
 
 from zenml.enums import StackComponentType
 from zenml.integrations.aws import AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
 from zenml.logger import get_logger
-from zenml.repository import Repository
-from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 from zenml.utils import deprecation_utils
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
-    from zenml.config.docker_configuration import DockerConfiguration
-    from zenml.config.resource_configuration import ResourceConfiguration
-
+    from zenml.config.pipeline_configurations import PipelineDeployment
+    from zenml.config.step_configurations import Step
 
 logger = get_logger(__name__)
+
+SAGEMAKER_DOCKER_IMAGE_KEY = "sagemaker_docker_image"
+_ENTRYPOINT_ENV_VARIABLE = "__ZENML_ENTRYPOINT"
 
 
 class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
@@ -76,25 +76,43 @@ class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
         Returns:
             A validator that checks that the stack contains a container registry.
         """
-
-        def _ensure_local_orchestrator(stack: Stack) -> Tuple[bool, str]:
-            return (
-                stack.orchestrator.FLAVOR == "local",
-                "Local orchestrator is required",
-            )
-
         return StackValidator(
             required_components={StackComponentType.CONTAINER_REGISTRY},
-            custom_validation_function=_ensure_local_orchestrator,
         )
+
+    def prepare_pipeline_deployment(
+        self,
+        pipeline: "PipelineDeployment",
+        stack: "Stack",
+    ) -> None:
+        """Build a Docker image and push it to the container registry.
+
+        Args:
+            pipeline: Representation of the pipeline to run.
+            stack: Stack on which the pipeline will run.
+        """
+        steps_to_run = [
+            step
+            for step in pipeline.steps.values()
+            if step.config.step_operator == self.name
+        ]
+        if not steps_to_run:
+            return
+
+        image_digest = self.build_and_push_docker_image(
+            run_config=pipeline,
+            stack=stack,
+            entrypoint=f"${_ENTRYPOINT_ENV_VARIABLE}",
+        )
+        for step in steps_to_run:
+            step.config.extra[SAGEMAKER_DOCKER_IMAGE_KEY] = image_digest
 
     def launch(
         self,
         pipeline_name: str,
         run_name: str,
-        docker_configuration: "DockerConfiguration",
+        step: "Step",
         entrypoint_command: List[str],
-        resource_configuration: "ResourceConfiguration",
     ) -> None:
         """Launches a step on Sagemaker.
 
@@ -103,19 +121,10 @@ class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
                 is part of.
             run_name: Name of the pipeline run which the step to be executed
                 is part of.
-            docker_configuration: The Docker configuration for this step.
+            step: Configuration of the step that will to execute.
             entrypoint_command: Command that executes the step.
-            resource_configuration: The resource configuration for this step.
         """
-        image_name = self.build_and_push_docker_image(
-            pipeline_name=pipeline_name,
-            docker_configuration=docker_configuration,
-            stack=Repository().active_stack,
-            runtime_configuration=RuntimeConfiguration(),
-            entrypoint=" ".join(entrypoint_command),
-        )
-
-        if not resource_configuration.empty:
+        if not step.config.resource_configuration.empty:
             logger.warning(
                 "Specifying custom step resources is not supported for "
                 "the SageMaker step operator. If you want to run this step "
@@ -126,10 +135,14 @@ class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
                 self.name,
             )
 
+        image_name = step.config.extra[SAGEMAKER_DOCKER_IMAGE_KEY]
+        environment = {_ENTRYPOINT_ENV_VARIABLE: " ".join(entrypoint_command)}
+        print(entrypoint_command)
         session = sagemaker.Session(default_bucket=self.bucket)
         estimator = sagemaker.estimator.Estimator(
             image_name,
             self.role,
+            environment=environment,
             instance_count=1,
             instance_type=self.instance_type,
             sagemaker_session=session,

@@ -13,15 +13,8 @@
 #  permissions and limitations under the License.
 """Implementation of utils specific to the MLflow integration."""
 
-from mlflow import (  # type: ignore[import]
-    ActiveRun,
-    get_experiment_by_name,
-    search_runs,
-    set_experiment,
-    set_tracking_uri,
-    start_run,
-)
-from mlflow.entities import Experiment  # type: ignore[import]
+import mlflow
+from mlflow.entities import Run
 
 from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
     MLFlowExperimentTracker,
@@ -30,6 +23,8 @@ from zenml.logger import get_logger
 from zenml.repository import Repository
 
 logger = get_logger(__name__)
+
+ZENML_TAG_KEY = "zenml"
 
 
 def get_missing_mlflow_experiment_tracker_error() -> ValueError:
@@ -63,3 +58,31 @@ def get_tracking_uri() -> str:
         raise get_missing_mlflow_experiment_tracker_error()
 
     return tracker.get_tracking_uri()
+
+
+def is_zenml_run(run: Run) -> bool:
+    """Checks if a MLflow run is a ZenML run or not.
+
+    Args:
+        run: The run to check.
+
+    Returns:
+        If the run is a ZenML run.
+    """
+    return ZENML_TAG_KEY in run.data.tags
+
+
+def stop_zenml_mlflow_runs() -> None:
+    """Stops active ZenML Mlflow runs.
+
+    This function stops all MLflow active runs until no active run exists or
+    a non-ZenML run is active.
+    """
+    active_run = mlflow.active_run()
+    while active_run:
+        if is_zenml_run(active_run):
+            logger.debug("Stopping mlflow run %s.", active_run.info.run_id)
+            mlflow.end_run()
+            active_run = mlflow.active_run()
+        else:
+            break

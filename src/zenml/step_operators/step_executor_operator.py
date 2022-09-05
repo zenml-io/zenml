@@ -16,8 +16,7 @@
 
 import json
 import os
-import sys
-from typing import TYPE_CHECKING, Any, List, Tuple, cast
+from typing import TYPE_CHECKING, Any, List, cast
 
 from tfx.orchestration.portable import data_types
 from tfx.orchestration.portable.base_executor_operator import (
@@ -29,18 +28,21 @@ from tfx.proto.orchestration import (
     pipeline_pb2,
 )
 
-import zenml
-import zenml.constants
+from zenml.config.step_configurations import Step
+from zenml.constants import (
+    MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME,
+    ZENML_MLMD_CONTEXT_TYPE,
+)
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.repository import Repository
+from zenml.step_operators.step_operator_entrypoint_configuration import (
+    StepOperatorEntrypointConfiguration,
+)
 from zenml.steps.utils import (
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
-    PARAM_CUSTOM_STEP_OPERATOR,
-    collect_docker_configuration,
-    collect_step_resources,
+    PARAM_PIPELINE_PARAMETER_NAME,
 )
-from zenml.utils import source_utils, yaml_utils
 
 if TYPE_CHECKING:
     from zenml.stack import Stack
@@ -103,42 +105,39 @@ class StepExecutorOperator(BaseExecutorOperator):
     SUPPORTED_PLATFORM_CONFIG_TYPE: List[Any] = []
 
     @staticmethod
-    def _resolve_user_modules(
+    def _get_step(
         pipeline_node: pipeline_pb2.PipelineNode,
-    ) -> Tuple[str, str]:
-        """Resolves the main and step module.
+    ) -> "Step":
+        """Collects the configuration of a step.
 
         Args:
             pipeline_node: Pipeline node info for a step.
 
         Returns:
-            A tuple containing the path of the resolved main module and step
-            class.
+            The step configuration.
+
+        Raises:
+            RuntimeError: If no step configuration was found.
         """
-        main_module_path = zenml.constants.USER_MAIN_MODULE
-        if not main_module_path:
-            main_module_path = source_utils.get_module_source_from_module(
-                sys.modules["__main__"]
-            )
+        for context in pipeline_node.contexts.contexts:
+            if context.type.name == ZENML_MLMD_CONTEXT_TYPE:
+                config_json = context.properties[
+                    MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME
+                ].field_value.string_value
 
-        step_type = cast(str, pipeline_node.node_info.type.name)
-        step_module_path, step_class = step_type.rsplit(".", maxsplit=1)
-        if step_module_path == "__main__":
-            step_module_path = main_module_path
+                return Step.parse_raw(config_json)
 
-        step_source_path = f"{step_module_path}.{step_class}"
-
-        return main_module_path, step_source_path
+        raise RuntimeError("Unable to find step.")
 
     @staticmethod
     def _get_step_operator(
-        stack: "Stack", execution_info: data_types.ExecutionInfo
+        stack: "Stack", step_operator_name: str
     ) -> "BaseStepOperator":
         """Fetches the step operator specified in the execution info.
 
         Args:
             stack: Stack on which the step is being executed.
-            execution_info: Execution info needed to run the step.
+            step_operator_name: Name of the step operator to get.
 
         Returns:
             The step operator to run a step.
@@ -155,19 +154,32 @@ class StepExecutorOperator(BaseExecutorOperator):
                 f"No step operator specified for active stack '{stack.name}'."
             )
 
-        step_operator_property_name = (
-            INTERNAL_EXECUTION_PARAMETER_PREFIX + PARAM_CUSTOM_STEP_OPERATOR
-        )
-        required_step_operator = json.loads(
-            execution_info.exec_properties[step_operator_property_name]
-        )
-        if required_step_operator != step_operator.name:
+        if step_operator_name != step_operator.name:
             raise RuntimeError(
-                f"No step operator named '{required_step_operator}' in active "
+                f"No step operator named '{step_operator_name}' in active "
                 f"stack '{stack.name}'."
             )
 
         return step_operator
+
+    @staticmethod
+    def _get_step_name_in_pipeline(
+        execution_info: data_types.ExecutionInfo,
+    ) -> str:
+        """Gets the name of a step inside its pipeline.
+
+        Args:
+            execution_info: The step execution info.
+
+        Returns:
+            The name of the step in the pipeline.
+        """
+        property_name = (
+            INTERNAL_EXECUTION_PARAMETER_PREFIX + PARAM_PIPELINE_PARAMETER_NAME
+        )
+        return cast(
+            str, json.loads(execution_info.exec_properties[property_name])
+        )
 
     def run_executor(
         self,
@@ -189,10 +201,11 @@ class StepExecutorOperator(BaseExecutorOperator):
         assert execution_info.tmp_dir
         assert execution_info.execution_output_uri
 
-        step_name = execution_info.pipeline_node.node_info.id
         stack = Repository().active_stack
+        step = self._get_step(pipeline_node=execution_info.pipeline_node)
+        assert step.config.step_operator
         step_operator = self._get_step_operator(
-            stack=stack, execution_info=execution_info
+            stack=stack, step_operator_name=step.config.step_operator
         )
 
         # Write the execution info to a temporary directory inside the artifact
@@ -202,53 +215,27 @@ class StepExecutorOperator(BaseExecutorOperator):
         )
         _write_execution_info(execution_info, path=execution_info_path)
 
-        main_module, step_source_path = self._resolve_user_modules(
-            pipeline_node=execution_info.pipeline_node
-        )
+        step_name_in_pipeline = self._get_step_name_in_pipeline(execution_info)
 
-        input_artifact_types_path = os.path.join(
-            execution_info.tmp_dir, "input_artifacts.json"
+        entrypoint_command = (
+            StepOperatorEntrypointConfiguration.get_entrypoint_command()
+            + StepOperatorEntrypointConfiguration.get_entrypoint_arguments(
+                step_name=step_name_in_pipeline,
+                execution_info_path=execution_info_path,
+            )
         )
-        input_artifact_type_mapping = {
-            input_name: source_utils.resolve_class(artifacts[0].__class__)
-            for input_name, artifacts in execution_info.input_dict.items()
-        }
-        yaml_utils.write_json(
-            input_artifact_types_path, input_artifact_type_mapping
-        )
-        entrypoint_command = [
-            "python",
-            "-m",
-            "zenml.step_operators.entrypoint",
-            "--main_module",
-            main_module,
-            "--step_source_path",
-            step_source_path,
-            "--execution_info_path",
-            execution_info_path,
-            "--input_artifact_types_path",
-            input_artifact_types_path,
-        ]
 
         logger.info(
             "Using step operator `%s` to run step `%s`.",
             step_operator.name,
-            step_name,
-        )
-
-        resource_configuration = collect_step_resources(
-            pipeline_node=execution_info.pipeline_node
-        )
-        docker_configuration = collect_docker_configuration(
-            pipeline_node=execution_info.pipeline_node
+            step_name_in_pipeline,
         )
 
         step_operator.launch(
             pipeline_name=execution_info.pipeline_info.id,
             run_name=execution_info.pipeline_run_id,
-            docker_configuration=docker_configuration,
+            step=step,
             entrypoint_command=entrypoint_command,
-            resource_configuration=resource_configuration,
         )
 
         return _read_executor_output(execution_info.execution_output_uri)

@@ -34,12 +34,12 @@ from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
-    from zenml.config.docker_configuration import DockerConfiguration
-    from zenml.runtime_configuration import RuntimeConfiguration
+    from zenml.config.pipeline_configurations import PipelineDeployment
 
 logger = get_logger(__name__)
 
 DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT = 300
+SELDON_DOCKER_IMAGE_KEY = "seldon_docker_image"
 
 
 class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
@@ -159,6 +159,22 @@ class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
             .strip("-")
             .lower()
         )
+
+    def prepare_pipeline_deployment(
+        self,
+        pipeline: "PipelineDeployment",
+        stack: "Stack",
+    ) -> None:
+        """Build a Docker image and push it to the container registry.
+
+        Args:
+            pipeline: Representation of the pipeline to run.
+            stack: Stack on which the pipeline will run.
+        """
+        repo_digest = self.build_and_push_docker_image(
+            run_config=pipeline, stack=stack
+        )
+        pipeline.add_extra(SELDON_DOCKER_IMAGE_KEY, repo_digest)
 
     def _create_or_update_kubernetes_secret(self) -> Optional[str]:
         """Create or update a Kubernetes secret.
@@ -492,46 +508,3 @@ class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
         # secret used to store the authentication information for the Seldon
         # Core model server storage initializer
         self._delete_kubernetes_secret()
-
-    def prepare_custom_deployment_image(
-        self,
-        pipeline_name: str,
-        stack: "Stack",
-        docker_configuration: "DockerConfiguration",
-        runtime_configuration: "RuntimeConfiguration",
-        entrypoint: List[str],
-    ) -> str:
-        """Prepare the custom deployment image for the Seldon deployment.
-
-        This function is called by the deployment step of the pipeline.
-        It is responsible for the preparation of the custom deployment image
-        either by returning the image name in the case of a remote orchestrator
-        or by building a new image if only a local orchestrator is used.
-
-        Args:
-            pipeline_name: The pipeline to be deployed.
-            stack: The stack to be deployed.
-            docker_configuration: The Docker configuration to be used.
-            runtime_configuration: The runtime configuration to be used.
-            entrypoint: The entrypoint to be used.
-
-        Returns:
-            The name of the image to be used for the deployment.
-        """
-        # verify the flavor of the orchestrator.
-        # if the orchestrator is local, then we need to build a docker image with the repo
-        # and requirements and push it to the container registry.
-        # if the orchestrator is remote, then we can use the same image used to run the pipeline.
-        if stack.orchestrator.FLAVOR == "local":
-            # more information about stack ..
-            custom_docker_image_name = self.build_and_push_docker_image(
-                pipeline_name=pipeline_name,
-                docker_configuration=docker_configuration,
-                stack=stack,
-                runtime_configuration=runtime_configuration,
-                entrypoint=" ".join(entrypoint),
-            )
-        else:
-            custom_docker_image_name = runtime_configuration["docker_image"]
-
-        return custom_docker_image_name

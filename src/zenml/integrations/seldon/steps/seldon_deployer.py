@@ -277,13 +277,11 @@ def seldon_custom_model_deployer_step(
     # get the active model deployer
     model_deployer = SeldonModelDeployer.get_active_model_deployer()
 
-    # get pipeline name, step name, run id, docker config and the runtime config
+    # get pipeline name, step name, run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
     pipeline_name = step_env.pipeline_name
     pipeline_run_id = step_env.pipeline_run_id
     step_name = step_env.step_name
-    docker_configuration = step_env.docker_configuration
-    runtime_configuration = step_env.runtime_configuration
 
     # update the step configuration with the real pipeline runtime information
     config.service_config.pipeline_name = pipeline_name
@@ -335,14 +333,7 @@ def seldon_custom_model_deployer_step(
         )
     stack = context.stack
 
-    # prepare the custom deployment docker image
-    custom_docker_image_name = model_deployer.prepare_custom_deployment_image(
-        pipeline_name=pipeline_name,
-        stack=stack,
-        docker_configuration=docker_configuration,
-        runtime_configuration=runtime_configuration,
-        entrypoint=entrypoint_command,
-    )
+    docker_image = "TODO"
 
     # copy the model files to new specific directory for the deployment
     served_model_uri = os.path.join(context.get_output_artifact_uri(), "seldon")
@@ -370,7 +361,7 @@ def seldon_custom_model_deployer_step(
     # create the specification for the custom deployment
     service_config.spec = create_seldon_core_custom_spec(
         model_uri=service_config.model_uri,
-        custom_docker_image=custom_docker_image_name,
+        custom_docker_image=docker_image,
         secret_name=model_deployer.kubernetes_secret_name,
         command=entrypoint_command,
     )

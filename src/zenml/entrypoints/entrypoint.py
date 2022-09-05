@@ -11,29 +11,34 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Functionality to run ZenML steps."""
+"""Functionality to run ZenML steps or pipelines."""
 
 import argparse
+import logging
+import sys
 
-from zenml.entrypoints.step_entrypoint_configuration import (
+from zenml import constants
+from zenml.entrypoints.base_entrypoint_configuration import (
     ENTRYPOINT_CONFIG_SOURCE_OPTION,
-    StepEntrypointConfiguration,
+    BaseEntrypointConfiguration,
 )
 from zenml.utils import source_utils
 
 
+def _setup_logging() -> None:
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+    logging.getLogger().setLevel(logging.INFO)
+
+
 def main() -> None:
-    """Runs the ZenML step defined by the command line arguments.
+    """Runs the entrypoint configuration given by the command line arguments."""
+    _setup_logging()
 
-    This main logic for running the step is not implemented in this file,
-    instead it simply creates an object of a
-    `zenml.entrypoints.StepEntrypointConfiguration` subclass (the concrete
-    implementation can be specified using the command line arguments) and calls
-    its `run()` method.
+    # Make sure this entrypoint does not run an entire pipeline when
+    # importing user modules. This could happen if the `pipeline.run()` call
+    # is not wrapped in a function or an `if __name__== "__main__":` check)
+    constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
 
-    Raises:
-        TypeError: If the command line arguments are invalid.
-    """
     # Read the source for the entrypoint configuration class from the command
     # line arguments
     parser = argparse.ArgumentParser()
@@ -42,16 +47,10 @@ def main() -> None:
 
     # Create an instance of the entrypoint configuration and pass it the
     # remaining command line arguments
-    entrypoint_config_class = source_utils.load_source_path_class(
-        args.entrypoint_config_source
+    entrypoint_config_class = source_utils.load_and_validate_class(
+        args.entrypoint_config_source,
+        expected_class=BaseEntrypointConfiguration,
     )
-    if not issubclass(entrypoint_config_class, StepEntrypointConfiguration):
-        raise TypeError(
-            f"The entrypoint config source `{args.entrypoint_config_source}` "
-            f"passed to the entrypoint is not pointing to a "
-            f"`{StepEntrypointConfiguration}` subclass."
-        )
-
     entrypoint_config = entrypoint_config_class(arguments=remaining_args)
 
     # Run the entrypoint configuration

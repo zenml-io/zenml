@@ -190,7 +190,9 @@ def test_setting_step_parameter_with_config_object():
     pipeline_instance = create_pipeline_with_config_value(config_value)
     step_instance = pipeline_instance.steps["step_"]
 
-    assert step_instance.PARAM_SPEC["value"] == config_value
+    assert (
+        step_instance.configuration.function_parameters["value"] == config_value
+    )
 
 
 def test_overwrite_step_parameter_with_config_yaml(tmp_path):
@@ -208,7 +210,10 @@ def test_overwrite_step_parameter_with_config_yaml(tmp_path):
         yaml_path, overwrite_step_parameters=True
     )
     step_instance = pipeline_instance.steps["step_"]
-    assert step_instance.PARAM_SPEC["value"] == yaml_config_value
+    assert (
+        step_instance.configuration.function_parameters["value"]
+        == yaml_config_value
+    )
 
 
 def test_dont_overwrite_step_parameter_with_config_yaml(tmp_path):
@@ -225,7 +230,9 @@ def test_dont_overwrite_step_parameter_with_config_yaml(tmp_path):
     )
     pipeline_instance = pipeline_instance.with_config(yaml_path)
     step_instance = pipeline_instance.steps["step_"]
-    assert step_instance.PARAM_SPEC["value"] == config_value
+    assert (
+        step_instance.configuration.function_parameters["value"] == config_value
+    )
 
 
 def test_yaml_configuration_with_invalid_step_name(tmp_path):
@@ -236,20 +243,6 @@ def test_yaml_configuration_with_invalid_step_name(tmp_path):
     write_yaml(
         yaml_path,
         {"steps": {"WRONG_STEP_NAME": {"parameters": {"value": 0}}}},
-    )
-    with pytest.raises(PipelineConfigurationError):
-        _ = pipeline_instance.with_config(yaml_path)
-
-
-def test_yaml_configuration_with_invalid_parameter_name(tmp_path):
-    """Test that a config yaml with an invalid parameter
-    name raises an exception"""
-    pipeline_instance = create_pipeline_with_config_value(0)
-
-    yaml_path = os.path.join(tmp_path, "config.yaml")
-    write_yaml(
-        yaml_path,
-        {"steps": {"step_": {"parameters": {"WRONG_PARAMETER_NAME": 0}}}},
     )
     with pytest.raises(PipelineConfigurationError):
         _ = pipeline_instance.with_config(yaml_path)
@@ -304,77 +297,10 @@ def test_pipeline_stores_docker_config():
     def my_pipeline():
         pass
 
-    assert my_pipeline().docker_configuration == docker_config
-
-
-def test_pipeline_migrates_old_docker_attributes_to_docker_config():
-    """Tests that the pipeline migrates old docker attributes to the docker
-    configuration."""
-
-    legacy_requirements = ["aria==12.0"]
-    legacy_required_integrations = ["TENSORFLOW"]
-    legacy_dockerignore_file = "/old/.dockerignore"
-
-    new_requirements = ["aria==13.0"]
-    new_required_integrations = ["PYTORCH"]
-    new_dockerignore_file = "/new/.dockerignore"
-
-    # empty docker config, use legacy attributes
-    @pipeline(
-        requirements=legacy_requirements,
-        required_integrations=legacy_required_integrations,
-        dockerignore_file=legacy_dockerignore_file,
+    stored_docker_config = DockerConfiguration.parse_obj(
+        my_pipeline().configuration.runtime_options["docker"]
     )
-    def my_pipeline():
-        pass
-
-    pipeline_config = my_pipeline().docker_configuration
-
-    assert pipeline_config.requirements == legacy_requirements
-    assert pipeline_config.required_integrations == legacy_required_integrations
-    assert pipeline_config.dockerignore == legacy_dockerignore_file
-
-    # docker config defines all values, legacy attributes ignored
-    docker_config = DockerConfiguration(
-        requirements=new_requirements,
-        required_integrations=new_required_integrations,
-        dockerignore=new_dockerignore_file,
-    )
-
-    @pipeline(
-        docker_configuration=docker_config,
-        requirements=legacy_requirements,
-        required_integrations=legacy_required_integrations,
-        dockerignore_file=legacy_dockerignore_file,
-    )
-    def my_pipeline():
-        pass
-
-    pipeline_config = my_pipeline().docker_configuration
-
-    assert pipeline_config.requirements == new_requirements
-    assert pipeline_config.required_integrations == new_required_integrations
-    assert pipeline_config.dockerignore == new_dockerignore_file
-
-    # migrate dockerignore only
-    docker_config = DockerConfiguration(
-        requirements=new_requirements,
-        required_integrations=new_required_integrations,
-    )
-
-    @pipeline(
-        docker_configuration=docker_config,
-        required_integrations=legacy_required_integrations,
-        dockerignore_file=legacy_dockerignore_file,
-    )
-    def my_pipeline():
-        pass
-
-    pipeline_config = my_pipeline().docker_configuration
-
-    assert pipeline_config.requirements == new_requirements
-    assert pipeline_config.required_integrations == new_required_integrations
-    assert pipeline_config.dockerignore == legacy_dockerignore_file
+    assert stored_docker_config == docker_config
 
 
 def test_pipeline_run_fails_when_required_step_operator_is_missing(
@@ -383,7 +309,7 @@ def test_pipeline_run_fails_when_required_step_operator_is_missing(
     """Tests that running a pipeline with a step that requires a custom step
     operator fails if the active stack does not contain this step operator."""
 
-    @step(custom_step_operator="azureml")
+    @step(step_operator="azureml")
     def step_that_requires_step_operator() -> None:
         pass
 

@@ -14,24 +14,30 @@
 """Implementation of the MLflow experiment tracker for ZenML."""
 
 import os
-from typing import Any, ClassVar, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Type, cast
 
-import mlflow  # type: ignore[import]
-from mlflow.entities import Experiment  # type: ignore[import]
-from mlflow.store.db.db_types import DATABASE_ENGINES  # type: ignore[import]
+import mlflow
+from mlflow.entities import Experiment, Run
+from mlflow.store.db.db_types import DATABASE_ENGINES
 from pydantic import root_validator, validator
 
+import zenml
 from zenml.artifact_stores import LocalArtifactStore
-from zenml.environment import Environment
+from zenml.config.base_runtime_options import BaseRuntimeOptions
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
 )
-from zenml.integrations.mlflow import MLFLOW_MODEL_EXPERIMENT_TRACKER_FLAVOR
+from zenml.integrations.mlflow import (
+    MLFLOW_MODEL_EXPERIMENT_TRACKER_FLAVOR,
+    mlflow_utils,
+)
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.stack import StackValidator
 from zenml.utils.secret_utils import SecretField
 
+if TYPE_CHECKING:
+    from zenml.config.step_configurations import Step
 logger = get_logger(__name__)
 
 
@@ -39,6 +45,20 @@ MLFLOW_TRACKING_USERNAME = "MLFLOW_TRACKING_USERNAME"
 MLFLOW_TRACKING_PASSWORD = "MLFLOW_TRACKING_PASSWORD"
 MLFLOW_TRACKING_TOKEN = "MLFLOW_TRACKING_TOKEN"
 MLFLOW_TRACKING_INSECURE_TLS = "MLFLOW_TRACKING_INSECURE_TLS"
+
+
+class MLFlowExperimentTrackerRuntimeOptions(BaseRuntimeOptions):
+    """Runtime options for the MLflow experiment tracker.
+
+    Attributes:
+        experiment_name: The MLflow experiment name.
+        nested: If `True`, will create a nested sub-run for the step.
+        tags: Tags for the Mlflow run.
+    """
+
+    experiment_name: Optional[str] = None
+    nested: bool = False
+    tags: Dict[str, Any] = {}
 
 
 class MLFlowExperimentTracker(BaseExperimentTracker):
@@ -155,65 +175,6 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
 
         return values
 
-    @staticmethod
-    def is_remote_tracking_uri(tracking_uri: str) -> bool:
-        """Checks whether the given tracking uri is remote or not.
-
-        Args:
-            tracking_uri: The tracking uri to check.
-
-        Returns:
-            `True` if the tracking uri is remote, `False` otherwise.
-        """
-        return any(
-            tracking_uri.startswith(prefix)
-            for prefix in ["http://", "https://"]
-        )
-
-    @staticmethod
-    def _local_mlflow_backend() -> str:
-        """Gets the local MLflow backend inside the ZenML artifact repository directory.
-
-        Returns:
-            The MLflow tracking URI for the local MLflow backend.
-        """
-        repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
-        artifact_store = repo.active_stack.artifact_store
-        local_mlflow_backend_uri = os.path.join(artifact_store.path, "mlruns")
-        if not os.path.exists(local_mlflow_backend_uri):
-            os.makedirs(local_mlflow_backend_uri)
-        return "file:" + local_mlflow_backend_uri
-
-    def get_tracking_uri(self) -> str:
-        """Returns the configured tracking URI or a local fallback.
-
-        Returns:
-            The tracking URI.
-        """
-        return self.tracking_uri or self._local_mlflow_backend()
-
-    def configure_mlflow(self) -> None:
-        """Configures the MLflow tracking URI and any additional credentials."""
-        mlflow.set_tracking_uri(self.get_tracking_uri())
-
-        if self.tracking_username:
-            os.environ[MLFLOW_TRACKING_USERNAME] = self.tracking_username
-        if self.tracking_password:
-            os.environ[MLFLOW_TRACKING_PASSWORD] = self.tracking_password
-        if self.tracking_token:
-            os.environ[MLFLOW_TRACKING_TOKEN] = self.tracking_token
-        os.environ[MLFLOW_TRACKING_INSECURE_TLS] = (
-            "true" if self.tracking_insecure_tls else "false"
-        )
-
-    def prepare_step_run(self) -> None:
-        """Sets the MLflow tracking uri and credentials."""
-        self.configure_mlflow()
-
-    def cleanup_step_run(self) -> None:
-        """Resets the MLflow tracking uri."""
-        mlflow.set_tracking_uri("")
-
     @property
     def local_path(self) -> Optional[str]:
         """Path to the local directory where the MLflow artifacts are stored.
@@ -252,83 +213,163 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             )
 
     @property
-    def active_experiment(self) -> Optional[Experiment]:
-        """Returns the currently active MLflow experiment.
+    def runtime_options_class(self) -> Optional[Type["BaseRuntimeOptions"]]:
+        """Runtime options class for the Mlflow experiment tracker.
 
         Returns:
-            The active experiment or `None` if no experiment is active.
+            The runtime options class.
         """
-        step_env = Environment().step_environment
+        return MLFlowExperimentTrackerRuntimeOptions
 
-        if not step_env:
-            # we're not inside a step
-            return None
+    @staticmethod
+    def is_remote_tracking_uri(tracking_uri: str) -> bool:
+        """Checks whether the given tracking uri is remote or not.
 
-        mlflow.set_experiment(experiment_name=step_env.pipeline_name)
-        return mlflow.get_experiment_by_name(step_env.pipeline_name)
-
-    def _find_active_run(
-        self,
-    ) -> Tuple[Optional[mlflow.ActiveRun], Optional[str], Optional[str]]:
-        """Find the currently active MLflow run.
+        Args:
+            tracking_uri: The tracking uri to check.
 
         Returns:
-            The active MLflow run, the experiment id and the run id
+            `True` if the tracking uri is remote, `False` otherwise.
         """
-        step_env = Environment().step_environment
+        return any(
+            tracking_uri.startswith(prefix)
+            for prefix in ["http://", "https://"]
+        )
 
-        if not self.active_experiment or not step_env:
-            return None, None, None
+    @staticmethod
+    def _local_mlflow_backend() -> str:
+        """Gets the local MLflow backend inside the ZenML artifact repository directory.
 
-        experiment_id = self.active_experiment.experiment_id
+        Returns:
+            The MLflow tracking URI for the local MLflow backend.
+        """
+        repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
+        artifact_store = repo.active_stack.artifact_store
+        local_mlflow_backend_uri = os.path.join(artifact_store.path, "mlruns")
+        if not os.path.exists(local_mlflow_backend_uri):
+            os.makedirs(local_mlflow_backend_uri)
+        return "file:" + local_mlflow_backend_uri
 
-        # TODO [ENG-458]: find a solution to avoid race-conditions while
-        #  creating the same MLflow run from parallel steps
+    def get_tracking_uri(self) -> str:
+        """Returns the configured tracking URI or a local fallback.
+
+        Returns:
+            The tracking URI.
+        """
+        return self.tracking_uri or self._local_mlflow_backend()
+
+    def prepare_step_run(self, step: "Step") -> None:
+        """Sets the MLflow tracking uri and credentials.
+
+        Args:
+            step: The step that will be executed.
+        """
+        self.configure_mlflow()
+        config = cast(
+            MLFlowExperimentTrackerRuntimeOptions,
+            self.get_runtime_options(step)
+            or MLFlowExperimentTrackerRuntimeOptions(),
+        )
+        run_name = "run_name"
+        pipeline_name = "pipeline_name"
+
+        experiment_name = config.experiment_name or pipeline_name
+        experiment = self._set_active_experiment(experiment_name)
+        run_id = self.get_run_id(
+            experiment_name=experiment_name, run_name=run_name
+        )
+
+        tags = config.tags.copy()
+        tags.update(self._get_internal_tags())
+
+        mlflow.start_run(
+            run_id=run_id,
+            run_name=run_name,
+            experiment_id=experiment.experiment_id,
+            tags=tags,
+        )
+
+        if config.nested:
+            mlflow.start_run(run_name=step.config.name, nested=True, tags=tags)
+
+    def cleanup_step_run(self, step: "Step") -> None:
+        """Stops active MLflow runs and resets the MLflow tracking uri.
+
+        Args:
+            step: The step that was executed.
+        """
+        mlflow_utils.stop_zenml_mlflow_runs()
+        mlflow.set_tracking_uri("")
+
+    def configure_mlflow(self) -> None:
+        """Configures the MLflow tracking URI and any additional credentials."""
+        mlflow.set_tracking_uri(self.get_tracking_uri())
+
+        if self.tracking_username:
+            os.environ[MLFLOW_TRACKING_USERNAME] = self.tracking_username
+        if self.tracking_password:
+            os.environ[MLFLOW_TRACKING_PASSWORD] = self.tracking_password
+        if self.tracking_token:
+            os.environ[MLFLOW_TRACKING_TOKEN] = self.tracking_token
+        os.environ[MLFLOW_TRACKING_INSECURE_TLS] = (
+            "true" if self.tracking_insecure_tls else "false"
+        )
+
+    def get_run_id(self, experiment_name: str, run_name: str) -> Optional[str]:
+        """Gets the if of a run with the given name and experiment.
+
+        Args:
+            experiment_name: Name of the experiment in which to search for the
+                run.
+            run_name: Name of the run to search.
+
+        Returns:
+            The id of the run if it exists.
+        """
+        self.configure_mlflow()
+
         runs = mlflow.search_runs(
-            experiment_ids=[experiment_id],
-            filter_string=f'tags.mlflow.runName = "{step_env.pipeline_run_id}"',
+            experiment_names=[experiment_name],
+            filter_string=f'tags.mlflow.runName = "{run_name}"',
             output_format="list",
         )
 
-        run_id = runs[0].info.run_id if runs else None
+        if not runs:
+            return None
 
-        current_active_run = mlflow.active_run()
-        if not (
-            current_active_run and current_active_run.info.run_id == run_id
-        ):
-            current_active_run = None
+        run: Run = runs[0]
+        if mlflow_utils.is_zenml_run(run):
+            return cast(str, run.info.run_id)
+        else:
+            return None
 
-        return current_active_run, experiment_id, run_id
+    @staticmethod
+    def _set_active_experiment(experiment_name: str) -> Experiment:
+        """Sets the active MLflow experiment.
 
-    @property
-    def active_run(self) -> Optional[mlflow.ActiveRun]:
-        """Returns the currently active MLflow run.
+        If no experiment with this name exists, it is created and then
+        activated.
+
+        Args:
+            experiment_name: Name of the experiment to activate.
+
+        Raises:
+            RuntimeError: If the experiment creation or activation failed.
 
         Returns:
-            The active MLflow run.
+            The experiment.
         """
-        step_env = Environment().step_environment
-        current_active_run, experiment_id, run_id = self._find_active_run()
-        if current_active_run:
-            return current_active_run
-        else:
-            return mlflow.start_run(
-                run_id=run_id,
-                run_name=step_env.pipeline_run_id,
-                experiment_id=experiment_id,
-            )
+        mlflow.set_experiment(experiment_name=experiment_name)
+        experiment = mlflow.get_experiment_by_name(experiment_name)
+        if not experiment:
+            raise RuntimeError("Failed to set active mlflow experiment.")
+        return experiment
 
-    @property
-    def active_nested_run(self) -> Optional[mlflow.ActiveRun]:
-        """Returns a nested run in the currently active MLflow run.
+    @staticmethod
+    def _get_internal_tags() -> Dict[str, Any]:
+        """Gets ZenML internal tags for MLflow runs.
 
         Returns:
-            The nested MLflow run.
+            Internal tags.
         """
-        step_env = Environment().step_environment
-        current_active_run, _, _ = self._find_active_run()
-        if current_active_run:
-            return mlflow.start_run(run_name=step_env.step_name, nested=True)
-        else:
-            # Return None
-            return current_active_run
+        return {mlflow_utils.ZENML_TAG_KEY: zenml.__version__}

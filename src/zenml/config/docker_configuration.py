@@ -16,8 +16,12 @@
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel, Extra
+from pydantic import Extra
 
+from zenml.config.base_runtime_options import (
+    BaseRuntimeOptions,
+    ConfigurationLevel,
+)
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -45,7 +49,7 @@ class PythonEnvironmentExportMethod(Enum):
         }[self]
 
 
-class DockerConfiguration(BaseModel):
+class DockerConfiguration(BaseRuntimeOptions):
     """Configuration for building Docker images to run ZenML pipelines.
 
     Build process:
@@ -137,6 +141,8 @@ class DockerConfiguration(BaseModel):
             responsible for making sure the right stack is active inside the
             Docker image.
     """
+
+    LEVEL = ConfigurationLevel.PIPELINE
 
     parent_image: Optional[str] = None
     dockerfile: Optional[str] = None

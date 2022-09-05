@@ -49,7 +49,7 @@ from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
     from zenml.config.docker_configuration import DockerConfiguration
-    from zenml.config.resource_configuration import ResourceConfiguration
+    from zenml.config.step_configurations import Step
 
 logger = get_logger(__name__)
 
@@ -207,9 +207,8 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
         self,
         pipeline_name: str,
         run_name: str,
-        docker_configuration: "DockerConfiguration",
+        step: "Step",
         entrypoint_command: List[str],
-        resource_configuration: "ResourceConfiguration",
     ) -> None:
         """Launches a step on AzureML.
 
@@ -218,11 +217,10 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
                 is part of.
             run_name: Name of the pipeline run which the step to be executed
                 is part of.
-            docker_configuration: The Docker configuration for this step.
+            step: Configuration of the step that will to execute.
             entrypoint_command: Command that executes the step.
-            resource_configuration: The resource configuration for this step.
         """
-        if not resource_configuration.empty:
+        if not step.config.resource_configuration.empty:
             logger.warning(
                 "Specifying custom step resources is not supported for "
                 "the AzureML step operator. If you want to run this step "

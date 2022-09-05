@@ -355,13 +355,11 @@ def kserve_custom_model_deployer_step(
     # get the active model deployer
     model_deployer = KServeModelDeployer.get_active_model_deployer()
 
-    # get pipeline name, step name, run id and pipeline requirements
+    # get pipeline name, step name, run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
     pipeline_name = step_env.pipeline_name
     pipeline_run_id = step_env.pipeline_run_id
     step_name = step_env.step_name
-    docker_configuration = step_env.docker_configuration
-    runtime_configuration = step_env.runtime_configuration
 
     # update the step configuration with the real pipeline runtime information
     config.service_config.pipeline_name = pipeline_name
@@ -413,14 +411,7 @@ def kserve_custom_model_deployer_step(
         )
     stack = context.stack
 
-    # prepare the custom deployment docker image
-    custom_docker_image_name = model_deployer.prepare_custom_deployment_image(
-        pipeline_name=pipeline_name,
-        stack=stack,
-        docker_configuration=docker_configuration,
-        runtime_configuration=runtime_configuration,
-        entrypoint=entrypoint_command,
-    )
+    docker_image = "TODO"
 
     # copy the model files to a new specific directory for the deployment
     served_model_uri = os.path.join(context.get_output_artifact_uri(), "kserve")
@@ -448,7 +439,7 @@ def kserve_custom_model_deployer_step(
     # Prepare container config for custom model deployment
     service_config.container = {
         "name": service_config.model_name,
-        "image": custom_docker_image_name,
+        "image": docker_image,
         "command": entrypoint_command,
         "storage_uri": service_config.model_uri,
     }

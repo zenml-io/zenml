@@ -13,10 +13,9 @@
 #  permissions and limitations under the License.
 """Implementation of the GitHub Actions Orchestrator entrypoint."""
 
-from typing import Any, List, Set, cast
+from typing import Any, List, Optional, Set, cast
 
 from zenml.entrypoints import StepEntrypointConfiguration
-from zenml.steps import BaseStep
 
 RUN_ID_OPTION = "run_id"
 
@@ -25,23 +24,20 @@ class GitHubActionsEntrypointConfiguration(StepEntrypointConfiguration):
     """Entrypoint configuration for running steps on GitHub Actions runners."""
 
     @classmethod
-    def get_custom_entrypoint_options(cls) -> Set[str]:
+    def get_entrypoint_options(cls) -> Set[str]:
         """GitHub Actions specific entrypoint options.
 
         Returns:
             Set with the custom run id option.
         """
-        return {RUN_ID_OPTION}
+        return super().get_entrypoint_options() | {RUN_ID_OPTION}
 
     @classmethod
-    def get_custom_entrypoint_arguments(
-        cls, step: BaseStep, **kwargs: Any
-    ) -> List[str]:
+    def get_entrypoint_arguments(cls, **kwargs: Any) -> List[str]:
         """Adds a run id argument for the entrypoint.
 
         Args:
-            step: Step for which the arguments are passed.
-            **kwargs: Additional keyword arguments.
+            **kwargs: Additional args.
 
         Returns:
             GitHub Actions placeholder for the run id option.
@@ -52,9 +48,12 @@ class GitHubActionsEntrypointConfiguration(StepEntrypointConfiguration):
             "${{ github.run_id }}_${{ github.run_number }}_"
             "${{ github.run_attempt }}"
         )
-        return [f"--{RUN_ID_OPTION}", run_id]
+        return super().get_entrypoint_arguments(**kwargs) + [
+            f"--{RUN_ID_OPTION}",
+            run_id,
+        ]
 
-    def get_run_name(self, pipeline_name: str) -> str:
+    def get_run_name(self, pipeline_name: str) -> Optional[str]:
         """Returns the pipeline run name.
 
         Args:

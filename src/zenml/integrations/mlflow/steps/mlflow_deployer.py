@@ -15,8 +15,7 @@
 
 from typing import Optional, Type, cast
 
-from mlflow import get_artifact_uri  # type: ignore[import]
-from mlflow.tracking import MlflowClient  # type: ignore[import]
+from mlflow.tracking import MlflowClient, artifact_utils
 
 from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
@@ -24,7 +23,6 @@ from zenml.environment import Environment
 from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
     MLFlowExperimentTracker,
 )
-from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
 from zenml.integrations.mlflow.mlflow_utils import (
     get_missing_mlflow_experiment_tracker_error,
 )
@@ -54,6 +52,9 @@ class MLFlowDeployerConfig(BaseStepConfig):
     Attributes:
         model_name: the name of the MLflow model logged in the MLflow artifact
             store for the current pipeline.
+        experiment_name: Name of the MLflow experiment in which the model was
+            logged.
+        run_name: Name of the MLflow run in which the model was logged.
         workers: number of workers to use for the prediction service
         mlserver: set to True to use the MLflow MLServer backend (see
             https://github.com/SeldonIO/MLServer). If False, the
@@ -62,13 +63,13 @@ class MLFlowDeployerConfig(BaseStepConfig):
     """
 
     model_name: str = "model"
-    model_uri: str = ""
+    experiment_name: Optional[str] = None
+    run_name: Optional[str] = None
     workers: int = 1
     mlserver: bool = False
     timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT
 
 
-@enable_mlflow
 @step(enable_cache=False)
 def mlflow_model_deployer_step(
     deploy_decision: bool,
@@ -97,19 +98,25 @@ def mlflow_model_deployer_step(
     if not isinstance(experiment_tracker, MLFlowExperimentTracker):
         raise get_missing_mlflow_experiment_tracker_error()
 
-    client = MlflowClient()
-    model_uri = ""
-    mlflow_run = experiment_tracker.active_run
-    if mlflow_run and client.list_artifacts(
-        mlflow_run.info.run_id, config.model_name
-    ):
-        model_uri = get_artifact_uri(config.model_name)
-
     # get pipeline name, step name and run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
     pipeline_name = step_env.pipeline_name
     run_id = step_env.pipeline_run_id
     step_name = step_env.step_name
+
+    client = MlflowClient()
+    mlflow_run_id = experiment_tracker.get_run_id(
+        experiment_name=config.experiment_name or pipeline_name,
+        run_name=config.run_name or run_id,
+    )
+
+    model_uri = ""
+    if mlflow_run_id and client.list_artifacts(
+        mlflow_run_id, config.model_name
+    ):
+        model_uri = artifact_utils.get_artifact_uri(
+            run_id=mlflow_run_id, artifact_path=config.model_name
+        )
 
     # fetch existing services with same pipeline name, step name and model name
     existing_services = model_deployer.find_model_server(

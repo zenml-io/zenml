@@ -49,6 +49,7 @@ def stack_with_mock_components(mocker):
     orchestrator.required_secrets = set()
     metadata_store.required_secrets = set()
     artifact_store.required_secrets = set()
+    artifact_store.path = "/"
 
     return Stack(
         name="mock_stack",

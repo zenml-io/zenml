@@ -15,9 +15,6 @@ from contextlib import ExitStack as does_not_raise
 from typing import Dict, List, Optional
 
 import pytest
-from tfx.orchestration.portable.python_executor_operator import (
-    PythonExecutorOperator,
-)
 
 from zenml.artifacts import DataArtifact, ModelArtifact
 from zenml.environment import Environment
@@ -25,8 +22,8 @@ from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.pipelines import pipeline
-from zenml.step_operators.step_executor_operator import StepExecutorOperator
 from zenml.steps import BaseStepConfig, Output, StepContext, step
+from zenml.utils import source_utils
 
 
 def test_step_decorator_creates_class_in_same_module_as_decorated_function():
@@ -214,16 +211,18 @@ def test_initialize_step_with_config():
         step_with_config(config=StepConfig(), config2=StepConfig())
 
 
+class CustomType:
+    pass
+
+
+class CustomTypeMaterializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (CustomType,)
+    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
+
+
 def test_only_registered_output_artifact_types_are_allowed():
     """Tests that only artifact types which are registered for the output type
     are allowed as custom output artifact types."""
-
-    class CustomType:
-        pass
-
-    class CustomTypeMaterializer(BaseMaterializer):
-        ASSOCIATED_TYPES = (CustomType,)
-        ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
     @step(output_types={"output": DataArtifact})
     def some_step() -> CustomType:
@@ -273,31 +272,15 @@ def test_enabling_a_custom_step_operator_for_a_step():
     def step_without_step_operator() -> None:
         pass
 
-    @step(custom_step_operator="some_step_operator")
+    @step(step_operator="some_step_operator")
     def step_with_step_operator() -> None:
         pass
 
-    assert step_without_step_operator().custom_step_operator is None
+    assert step_without_step_operator().configuration.step_operator is None
     assert (
-        step_with_step_operator().custom_step_operator == "some_step_operator"
+        step_with_step_operator().configuration.step_operator
+        == "some_step_operator"
     )
-
-
-def test_step_executor_operator():
-    """Tests that the step returns the correct executor operator."""
-
-    @step(custom_step_operator=None)
-    def step_without_step_operator() -> None:
-        pass
-
-    @step(custom_step_operator="some_step_operator")
-    def step_with_step_operator() -> None:
-        pass
-
-    assert (
-        step_without_step_operator().executor_operator is PythonExecutorOperator
-    )
-    assert step_with_step_operator().executor_operator is StepExecutorOperator
 
 
 def test_pipeline_parameter_name_is_empty_when_initializing_a_step():
@@ -384,10 +367,18 @@ def test_setting_a_materializer_for_a_step_with_multiple_outputs():
         pass
 
     step_instance = some_step().with_return_materializers(BaseMaterializer)
-    assert step_instance.get_materializers()["some_output"] is BaseMaterializer
+
+    base_materializer_source = source_utils.resolve_class(BaseMaterializer)
+
     assert (
-        step_instance.get_materializers()["some_other_output"]
-        is BaseMaterializer
+        step_instance.configuration.outputs["some_output"].materializer_source
+        == base_materializer_source
+    )
+    assert (
+        step_instance.configuration.outputs[
+            "some_other_output"
+        ].materializer_source
+        == base_materializer_source
     )
 
 
@@ -395,47 +386,59 @@ def test_overwriting_step_materializers():
     """Tests that calling `with_return_materializers` multiple times allows
     overwriting of the step materializers."""
 
+    base_materializer_source = source_utils.resolve_class(BaseMaterializer)
+    builtin_materializer_source = source_utils.resolve_class(
+        BuiltInMaterializer
+    )
+
     @step
     def some_step() -> Output(some_output=int, some_other_output=str):
         pass
 
     step_instance = some_step()
-    assert not step_instance._explicit_materializers
+    assert not step_instance.configuration.outputs
 
     step_instance = step_instance.with_return_materializers(
         {"some_output": BaseMaterializer}
     )
     assert (
-        step_instance._explicit_materializers["some_output"] is BaseMaterializer
+        step_instance.configuration.outputs["some_output"].materializer_source
+        == base_materializer_source
     )
-    assert "some_other_output" not in step_instance._explicit_materializers
+    assert "some_other_output" not in step_instance.configuration.outputs
 
     step_instance = step_instance.with_return_materializers(
         {"some_other_output": BuiltInMaterializer}
     )
     assert (
-        step_instance._explicit_materializers["some_other_output"]
-        is BuiltInMaterializer
+        step_instance.configuration.outputs[
+            "some_other_output"
+        ].materializer_source
+        == builtin_materializer_source
     )
     assert (
-        step_instance._explicit_materializers["some_output"] is BaseMaterializer
+        step_instance.configuration.outputs["some_output"].materializer_source
+        == base_materializer_source
     )
 
     step_instance = step_instance.with_return_materializers(
         {"some_output": BuiltInMaterializer}
     )
     assert (
-        step_instance._explicit_materializers["some_output"]
-        is BuiltInMaterializer
+        step_instance.configuration.outputs["some_output"].materializer_source
+        == builtin_materializer_source
     )
 
     step_instance.with_return_materializers(BaseMaterializer)
     assert (
-        step_instance._explicit_materializers["some_output"] is BaseMaterializer
+        step_instance.configuration.outputs["some_output"].materializer_source
+        == base_materializer_source
     )
     assert (
-        step_instance._explicit_materializers["some_other_output"]
-        is BaseMaterializer
+        step_instance.configuration.outputs[
+            "some_other_output"
+        ].materializer_source
+        == base_materializer_source
     )
 
 
@@ -529,6 +532,10 @@ def test_step_source_execution_parameter_changes_when_function_body_changes():
     )
 
 
+class MyCustomMaterializer(BuiltInMaterializer):
+    pass
+
+
 def test_materializer_source_execution_parameter_changes_when_materializer_changes():
     """Tests that changing the step materializer changes the materializer
     source execution parameter."""
@@ -536,9 +543,6 @@ def test_materializer_source_execution_parameter_changes_when_materializer_chang
     @step
     def some_step() -> int:
         return 1
-
-    class MyCustomMaterializer(BuiltInMaterializer):
-        pass
 
     step_1 = some_step().with_return_materializers(BuiltInMaterializer)
     step_2 = some_step().with_return_materializers(MyCustomMaterializer)
@@ -645,15 +649,17 @@ def test_call_step_with_missing_materializer_for_type():
         some_step()()
 
 
+class MyType:
+    pass
+
+
+class MyTypeMaterializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (MyType,)
+
+
 def test_call_step_with_default_materializer_registered():
     """Tests that calling a step with a registered default materializer for the
     output works."""
-
-    class MyType:
-        pass
-
-    class MyTypeMaterializer(BaseMaterializer):
-        ASSOCIATED_TYPES = (MyType,)
 
     @step
     def some_step() -> MyType:
@@ -676,9 +682,11 @@ def test_step_uses_config_class_default_values_if_no_config_is_passed():
 
     # don't pass the config when initializing the step
     step_instance = some_step()
-    step_instance._update_and_verify_parameter_spec()
+    step_instance._finalize_configuration({})
 
-    assert step_instance.PARAM_SPEC["some_parameter"] == 1
+    assert (
+        step_instance.configuration.function_parameters["some_parameter"] == 1
+    )
 
 
 def test_step_fails_if_config_parameter_value_is_missing():
@@ -696,7 +704,7 @@ def test_step_fails_if_config_parameter_value_is_missing():
     step_instance = some_step()
 
     with pytest.raises(MissingStepParameterError):
-        step_instance._update_and_verify_parameter_spec()
+        step_instance._finalize_function_parameters()
 
 
 def test_step_config_allows_none_as_default_value():
@@ -714,7 +722,7 @@ def test_step_config_allows_none_as_default_value():
     step_instance = some_step()
 
     with does_not_raise():
-        step_instance._update_and_verify_parameter_spec()
+        step_instance._finalize_function_parameters()
 
 
 def test_calling_a_step_twice_raises_an_exception():

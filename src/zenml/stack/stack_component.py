@@ -15,20 +15,31 @@
 
 import textwrap
 from abc import ABC
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Set
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    Optional,
+    Set,
+    Type,
+    Union,
+)
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Extra, Field, root_validator
 
+from zenml.config.step_configurations import Step
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackComponentInterfaceError
 from zenml.logger import get_logger
-from zenml.utils import secret_utils
+from zenml.utils import runtime_options_utils, secret_utils
 
 if TYPE_CHECKING:
-    from zenml.pipelines import BasePipeline
-    from zenml.runtime_configuration import RuntimeConfiguration
+    from zenml.config.base_runtime_options import BaseRuntimeOptions
+    from zenml.config.pipeline_configurations import PipelineDeployment
     from zenml.stack import Stack, StackValidator
+
 
 logger = get_logger(__name__)
 
@@ -222,6 +233,48 @@ class StackComponent(BaseModel, ABC):
         }
 
     @property
+    def runtime_options_class(self) -> Optional[Type["BaseRuntimeOptions"]]:
+        """Class specifying available runtime options for this component.
+
+        Returns:
+            Optional runtime option class.
+        """
+        return None
+
+    def get_runtime_options(
+        self, container: Union["Step", "PipelineDeployment"]
+    ) -> Optional["BaseRuntimeOptions"]:
+        """Gets runtime options for this stack component.
+
+        This will return `None` if the stack component doesn't specify a
+        runtime options class or the container doesn't contain runtime
+        options for this component.
+
+        Args:
+            container: The `Step` or `PipelineDeployment` from which to get
+                the runtime options.
+
+        Returns:
+            Optional runtime options for this stack component.
+        """
+        if not self.runtime_options_class:
+            return None
+
+        key = runtime_options_utils.get_runtime_options_key_for_stack_component(
+            self
+        )
+        options = (
+            container.config.runtime_options
+            if isinstance(container, Step)
+            else container.pipeline.runtime_options
+        )
+
+        if key not in options:
+            return None
+
+        return self.runtime_options_class(**options[key].dict())
+
+    @property
     def log_file(self) -> Optional[str]:
         """Optional path to a log file for the stack component.
 
@@ -232,19 +285,6 @@ class StackComponent(BaseModel, ABC):
         #  component. E.g. let each component return a generator that yields
         #  logs instead of specifying a single file path.
         return None
-
-    @property
-    def runtime_options(self) -> Dict[str, Any]:
-        """Runtime options that are available to configure this component.
-
-        The items of the dictionary should map option names (which can be used
-        to configure the option in the `RuntimeConfiguration`) to default
-        values for the option (or `None` if there is no default value).
-
-        Returns:
-            A dictionary of runtime options.
-        """
-        return {}
 
     @property
     def requirements(self) -> Set[str]:
@@ -295,9 +335,8 @@ class StackComponent(BaseModel, ABC):
 
     def prepare_pipeline_deployment(
         self,
-        pipeline: "BasePipeline",
+        pipeline: "PipelineDeployment",
         stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
     ) -> None:
         """Prepares deploying the pipeline.
 
@@ -306,23 +345,23 @@ class StackComponent(BaseModel, ABC):
         options or if they need to run code before the pipeline deployment.
 
         Args:
-            pipeline: The pipeline that will be deployed.
+            pipeline: Representation of the pipeline that will be deployed.
             stack: The stack on which the pipeline will be deployed.
-            runtime_configuration: Contains all the runtime configuration
-                options specified for the pipeline run.
         """
 
-    def prepare_pipeline_run(self) -> None:
-        """Prepares running the pipeline."""
+    def prepare_step_run(self, step: "Step") -> None:
+        """Prepares running a step.
 
-    def cleanup_pipeline_run(self) -> None:
-        """Cleans up resources after the pipeline run is finished."""
+        Args:
+            step: The step that will be executed.
+        """
 
-    def prepare_step_run(self) -> None:
-        """Prepares running a step."""
+    def cleanup_step_run(self, step: "Step") -> None:
+        """Cleans up resources after the step run is finished.
 
-    def cleanup_step_run(self) -> None:
-        """Cleans up resources after the step run is finished."""
+        Args:
+            step: The step that was executed.
+        """
 
     @property
     def post_registration_message(self) -> Optional[str]:
