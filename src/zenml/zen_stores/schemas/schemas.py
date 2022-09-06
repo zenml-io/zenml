@@ -17,17 +17,12 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID, uuid4
 
-from sqlmodel import Field, Relationship, Session, SQLModel, select
+from sqlmodel import Field, Relationship, SQLModel
 
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.models.code_models import CodeRepositoryModel
 from zenml.models.component_models import ComponentModel
-from zenml.models.pipeline_models import (
-    PipelineModel,
-    PipelineRunModel,
-    StepModel,
-    StepRunModel,
-)
+from zenml.models.pipeline_models import PipelineModel, PipelineRunModel
 from zenml.models.stack_model import StackModel
 from zenml.models.user_management_models import (
     ProjectModel,
@@ -439,58 +434,31 @@ class PipelineSchema(SQLModel, table=True):
 
     docstring: str  # TODO: how to get this?
     # configuration: str
-    git_sha: str
 
     created_at: datetime = Field(default_factory=datetime.now)
+
+    # runs = Relationship(
+    #     back_populates="pipeline",
+    # )
 
     @classmethod
     def from_model(cls, model: PipelineModel) -> "PipelineSchema":
         pass  # TODO
 
     def to_model(self) -> "PipelineModel":
-        with Session(self.engine) as session:
-            steps = session.exec(
-                select(StepSchema).where(StepSchema.pipeline_id == self.id)
-            ).all()
-
-        return PipelineModel(
-            id=self.id,
-            name=self.name,
-            docstring=self.docstring,
-            steps=[step.to_model() for step in steps],
-        )
-
-
-class StepSchema(SQLModel, table=True):
-    """SQL Model for steps of a pipeline."""
-
-    id: UUID = Field(primary_key=True, default_factory=uuid4)
-    name: str
-    pipeline_id: UUID = Field(foreign_key="pipelineschema.id")
-    source: str  # TODO: how to get this?
-
-    @classmethod
-    def from_model(cls, model: StepModel) -> "StepSchema":
         pass  # TODO
-
-    def to_model(self) -> "StepModel":
-        return StepModel(
-            id=self.id,
-            name=self.name,
-            source=self.source,
-        )
 
 
 class PipelineRunSchema(SQLModel, table=True):
     """SQL Model for pipeline runs."""
 
     id: UUID = Field(primary_key=True, default_factory=uuid4)
-
+    mlmd_id: int = Field(default=None, nullable=True)
     name: str
 
     # project_id - redundant since stack has this
-    stack_id: UUID = Field(foreign_key="stackschema.id")
     owner: UUID = Field(foreign_key="userschema.id")
+    stack_id: UUID = Field(foreign_key="stackschema.id")
     pipeline_id: Optional[UUID] = Field(
         foreign_key="pipelineschema.id", nullable=True
     )
@@ -501,9 +469,16 @@ class PipelineRunSchema(SQLModel, table=True):
 
     created_at: datetime = Field(default_factory=datetime.now)
 
+    # pipeline: PipelineSchema = Relationship(back_populates="runs")
+
     @classmethod
-    def from_model(cls, model: PipelineRunModel) -> "PipelineRunSchema":
+    def from_model(
+        cls,
+        model: PipelineRunModel,
+        pipeline: Optional[PipelineSchema] = None,
+    ) -> "PipelineRunSchema":
         return cls(
+            mlmd_id=model.mlmd_id,
             name=model.name,
             stack_id=model.stack_id,
             owner=model.owner,
@@ -511,11 +486,13 @@ class PipelineRunSchema(SQLModel, table=True):
             runtime_configuration=json.dumps(model.runtime_configuration),
             git_sha=model.git_sha,
             zenml_version=model.zenml_version,
+            pipeline=pipeline,
         )
 
     def to_model(self) -> PipelineRunModel:
         return PipelineRunModel(
             id=self.id,
+            mlmd_id=self.mlmd_id,
             name=self.name,
             stack_id=self.stack_id,
             owner=self.owner,
@@ -525,30 +502,6 @@ class PipelineRunSchema(SQLModel, table=True):
             zenml_version=self.zenml_version,
             created_at=self.created_at,
         )
-
-
-class PipelineRunStepSchema(SQLModel, table=True):
-    """SQL Model for pipeline run steps."""
-
-    id: UUID = Field(primary_key=True, default_factory=uuid4)
-
-    name: str
-
-    pipeline_run_id: UUID = Field(foreign_key="pipelinerunschema.id")
-    # created_by - redundant since run has this
-
-    status: ExecutionStatus
-    docstring: str
-    runtime_configuration: str
-
-    # created_at - redundant since run has this
-
-    @classmethod
-    def from_model(cls, model: StepRunModel) -> "PipelineRunStepSchema":
-        pass  # TODO
-
-    def to_model(self) -> "StepRunModel":
-        pass  # TODO
 
 
 # MLMD

@@ -15,8 +15,7 @@
 
 from collections import OrderedDict
 from typing import Any, Dict, List, Optional
-
-from ml_metadata import proto
+from uuid import UUID
 
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_apidocs_link, get_logger
@@ -28,6 +27,44 @@ from zenml.runtime_configuration import RuntimeConfiguration
 logger = get_logger(__name__)
 
 
+def get_run(name: str) -> "PipelineRunView":
+    """Fetches the post-execution view of a run with the given name.
+
+    Args:
+        name: The name of the run to fetch.
+
+    Returns:
+        The post-execution view of the run with the given name.
+
+    Raises:
+        KeyError: If there is no run with the given name in this project.
+    """
+    repo = Repository()
+    run = repo.zen_store.get_run_in_project(
+        run_name=name,
+        project_id=repo.active_project.id,
+    )
+    if not run:
+        raise KeyError(f"No run found for name `{name}`.")
+    return PipelineRunView(run)
+
+
+def get_unlisted_runs() -> List["PipelineRunView"]:
+    """Fetches post-execution views of all unlisted runs.
+
+    Unlisted runs are runs that are not associated with any pipeline.
+
+    Returns:
+        A list of post-execution run views.
+    """
+    repo = Repository()
+    runs = repo.zen_store.list_runs(
+        project_id=repo.active_project.id,
+        unlisted=True,
+    )
+    return [PipelineRunView(model) for model in runs]
+
+
 class PipelineRunView:
     """Post-execution pipeline run class.
 
@@ -35,12 +72,7 @@ class PipelineRunView:
     pipeline execution.
     """
 
-    def __init__(
-        self,
-        id_: int,
-        name: str,
-        executions: List[proto.Execution],
-    ):
+    def __init__(self, model: PipelineRunModel):
         """Initializes a post-execution pipeline run object.
 
         In most cases `PipelineRunView` objects should not be created manually
@@ -51,15 +83,12 @@ class PipelineRunView:
             name: The name of this pipeline run.
             executions: All executions associated with this pipeline run.
         """
-        self._id = id_
-        self._name = name
-
-        self._executions = executions
+        self._model = model
         self._steps: Dict[str, StepView] = OrderedDict()
 
-        # This might be set from the parent pipeline view in case this run
-        # is also tracked in the ZenStore
-        self._run_wrapper: Optional[PipelineRunModel] = None
+    @property
+    def id(self) -> UUID:
+        return self._model.id
 
     @property
     def name(self) -> str:
@@ -68,7 +97,7 @@ class PipelineRunView:
         Returns:
             The name of the pipeline run.
         """
-        return self._name
+        return self._model.name
 
     @property
     def zenml_version(self) -> Optional[str]:
@@ -77,9 +106,7 @@ class PipelineRunView:
         Returns:
             The version of ZenML that this pipeline run was performed with.
         """
-        if self._run_wrapper:
-            return self._run_wrapper.zenml_version
-        return None
+        return self._model.zenml_version
 
     @property
     def git_sha(self) -> Optional[str]:
@@ -91,9 +118,7 @@ class PipelineRunView:
         Returns:
             The git commit SHA that this pipeline run was performed on.
         """
-        if self._run_wrapper:
-            return self._run_wrapper.git_sha
-        return None
+        return self._model.git_sha
 
     @property
     def runtime_configuration(self) -> Optional["RuntimeConfiguration"]:
@@ -104,12 +129,7 @@ class PipelineRunView:
         Returns:
             The runtime configuration that was used for this pipeline run.
         """
-        if self._run_wrapper:
-            return RuntimeConfiguration(
-                **self._run_wrapper.runtime_configuration
-            )
-
-        return None
+        return RuntimeConfiguration(**self._model.runtime_configuration)
 
     @property
     def status(self) -> ExecutionStatus:
@@ -223,14 +243,10 @@ class PipelineRunView:
             # we already fetched the steps, no need to do anything
             return
 
-        self._steps = Repository().zen_store.get_pipeline_run_steps(self)
-
-        if self._run_wrapper:
-            # If we have the run wrapper from the ZenStore, pass on the step
-            # wrapper so users can access additional information about the step.
-            for step_wrapper in self._run_wrapper.pipeline.steps:
-                if step_wrapper.name in self._steps:
-                    self._steps[step_wrapper.name]._step_wrapper = step_wrapper
+        steps = Repository().zen_store.list_run_steps(self._model.mlmd_id)
+        self._steps = {
+            step_name: StepView(step) for step_name, step in steps.items()
+        }
 
     def __repr__(self) -> str:
         """Returns a string representation of this pipeline run.
@@ -239,8 +255,8 @@ class PipelineRunView:
             A string representation of this pipeline run.
         """
         return (
-            f"{self.__class__.__qualname__}(id={self._id}, "
-            f"name='{self._name}')"
+            f"{self.__class__.__qualname__}(id={self.id}, "
+            f"name='{self.name}')"
         )
 
     def __eq__(self, other: Any) -> bool:
@@ -253,5 +269,5 @@ class PipelineRunView:
             True if the other object is referring to the same pipeline run.
         """
         if isinstance(other, PipelineRunView):
-            return self._id == other._id
+            return self.id == other.id
         return NotImplemented

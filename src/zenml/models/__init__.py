@@ -19,7 +19,7 @@ from zenml.models.flavor_model import FlavorModel
 from zenml.models.pipeline_models import (
     PipelineModel,
     PipelineRunModel,
-    StepModel,
+    StepRunModel,
 )
 from zenml.models.stack_model import StackModel
 from zenml.models.user_management_models import (
@@ -36,7 +36,7 @@ __all__ = [
     "StackModel",
     "PipelineModel",
     "PipelineRunModel",
-    "StepModel",
+    "StepRunModel",
     "UserModel",
     "ProjectModel",
     "RoleModel",

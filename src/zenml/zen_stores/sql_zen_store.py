@@ -15,7 +15,7 @@
 
 import os
 from pathlib import Path, PurePath
-from typing import Any, ClassVar, Dict, List, Optional, Type, Union
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
 from uuid import UUID
 
 from ml_metadata.proto import metadata_store_pb2
@@ -27,7 +27,7 @@ from sqlmodel import Session, SQLModel, create_engine, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.config.store_config import StoreConfiguration
-from zenml.enums import StackComponentType, StoreType
+from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.exceptions import (
     EntityExistsError,
     StackComponentExistsError,
@@ -48,7 +48,11 @@ from zenml.models import (
     UserModel,
 )
 from zenml.models.code_models import CodeRepositoryModel
-from zenml.models.pipeline_models import ArtifactModel, PipelineModel, StepModel
+from zenml.models.pipeline_models import (
+    ArtifactModel,
+    PipelineModel,
+    StepRunModel,
+)
 from zenml.stack.flavor_registry import flavor_registry
 from zenml.utils import io_utils, uuid_utils
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME, BaseZenStore
@@ -64,7 +68,6 @@ from zenml.zen_stores.schemas.schemas import (
     RoleSchema,
     StackComponentSchema,
     StackSchema,
-    StepSchema,
     TeamAssignmentSchema,
     TeamRoleAssignmentSchema,
     TeamSchema,
@@ -1705,11 +1708,11 @@ class SqlZenStore(BaseZenStore):
     # | PIPELINES |
     # '-----------'
 
-    def _list_pipelines(self, project_name: str) -> List[PipelineModel]:
+    def _list_pipelines(self, project_id: Optional[str]) -> List[PipelineModel]:
         """List all pipelines in the project.
 
         Args:
-            project_name: Name of the project.
+            project_id: If provided, only list pipelines in this project.
 
         Returns:
             A list of pipelines.
@@ -1719,31 +1722,29 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             # Check if project with the given name exists
-            project = session.exec(
-                select(ProjectSchema).where(ProjectSchema.name == project_name)
-            ).first()
-            if project is None:
-                raise KeyError(
-                    f"Unable to list pipelines in project {project_name}: "
-                    f"No project with this name found."
-                )
+            query = select(PipelineSchema)
+            if project_id is not None:
+                project = session.exec(
+                    select(ProjectSchema).where(ProjectSchema.id == project_id)
+                ).first()
+                if project is None:
+                    raise KeyError(
+                        f"Unable to list pipelines in project {project_id}: "
+                        f"No project with this ID found."
+                    )
+                query = query.where(PipelineSchema.project_id == project_id)
 
             # Get all pipelines in the project
-            pipelines = session.exec(
-                select(PipelineSchema).where(
-                    PipelineSchema.project_id == project.id
-                )
-            ).all()
-
-        return [pipeline.to_model() for pipeline in pipelines]
+            pipelines = session.exec(query).all()
+            return [pipeline.to_model() for pipeline in pipelines]
 
     def _create_pipeline(
-        self, project_name: str, pipeline: PipelineModel
+        self, project_id: str, pipeline: PipelineModel
     ) -> PipelineModel:
         """Creates a new pipeline in a project.
 
         Args:
-            project_name: Name of the project to create the pipeline in.
+            project_id: ID of the project to create the pipeline in.
             pipeline: The pipeline to create.
 
         Returns:
@@ -1756,12 +1757,12 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if project with the given name exists
             project = session.exec(
-                select(ProjectSchema).where(ProjectSchema.name == project_name)
+                select(ProjectSchema).where(ProjectSchema.id == project_id)
             ).first()
             if project is None:
                 raise KeyError(
-                    f"Unable to create pipeline in project {project_name}: "
-                    f"No project with this name found."
+                    f"Unable to create pipeline in project {project_id}: "
+                    f"No project with this ID found."
                 )
 
             # Check if pipeline with the given name already exists
@@ -1772,7 +1773,7 @@ class SqlZenStore(BaseZenStore):
             ).first()
             if existing_pipeline is not None:
                 raise EntityExistsError(
-                    f"Unable to create pipeline in project {project_name}: "
+                    f"Unable to create pipeline in project {project_id}: "
                     f"A pipeline with this name already exists."
                 )
 
@@ -1787,13 +1788,13 @@ class SqlZenStore(BaseZenStore):
             return new_pipeline.to_model()
 
     def get_pipeline(self, pipeline_id: str) -> Optional[PipelineModel]:
-        """Returns a pipeline for the given name.
+        """Get a pipeline with a given ID.
 
         Args:
             pipeline_id: ID of the pipeline.
 
         Returns:
-            PipelineModel if found, None otherwise.
+            The pipeline, if found, None otherwise.
         """
         with Session(self.engine) as session:
             # Check if pipeline with the given ID exists
@@ -1803,6 +1804,30 @@ class SqlZenStore(BaseZenStore):
             if pipeline is None:
                 return None
 
+            return pipeline.to_model()
+
+    def get_pipeline_in_project(
+        self, pipeline_name: str, project_id: str
+    ) -> Optional[PipelineModel]:
+        """Get a pipeline with a given name in a project.
+
+        Args:
+            pipeline_name: Name of the pipeline.
+            project_id: ID of the project.
+
+        Returns:
+            The pipeline, if found, None otherwise.
+        """
+        with Session(self.engine) as session:
+            # Check if pipeline with the given name exists in the project
+            pipeline = session.exec(
+                select(PipelineSchema).where(
+                    PipelineSchema.name == pipeline_name,
+                    PipelineSchema.project_id == project_id,
+                )
+            ).first()
+            if pipeline is None:
+                return None
             return pipeline.to_model()
 
     def _update_pipeline(
@@ -1863,7 +1888,7 @@ class SqlZenStore(BaseZenStore):
                     f"No pipeline with this ID found."
                 )
 
-            session.delete(pipeline)  # TODO: cascade? what about runs?
+            session.delete(pipeline)
             session.commit()
 
     def _get_pipeline_configuration(self, pipeline_id: str) -> Dict[Any, Any]:
@@ -1880,7 +1905,7 @@ class SqlZenStore(BaseZenStore):
         """
         pass  # TODO
 
-    def _list_steps(self, pipeline_id: str) -> List[StepModel]:
+    def _list_steps(self, pipeline_id: str) -> List[StepRunModel]:
         """List all steps.
 
         Args:
@@ -1895,36 +1920,62 @@ class SqlZenStore(BaseZenStore):
     # | RUNS |
     # '------'
 
+    def _sync_runs(self):
+        """Sync runs from the database with those registered in MLMD."""
+        with Session(self.engine) as session:
+            zenml_runs = session.exec(select(PipelineRunSchema)).all()
+        zenml_runs = {run.name: run for run in zenml_runs}
+        mlmd_runs = self.metadata_store.get_all_runs()
+        for run_name, mlmd_id in mlmd_runs.items():
+
+            # If the run is in MLMD but not in ZenML, we create it
+            if run_name not in zenml_runs:
+                new_run = PipelineRunModel(name=run_name, mlmd_id=mlmd_id)
+                self._create_run(new_run)
+                continue
+
+            # If an existing run had no MLMD ID, we update it
+            existing_run = zenml_runs[run_name]
+            if not existing_run.mlmd_id:
+                existing_run.mlmd_id = mlmd_id
+                self._update_run(run_id=existing_run.id, run=existing_run)
+
     def _list_runs(
         self,
         project_id: Optional[str] = None,
         stack_id: Optional[str] = None,
-        pipeline_id: Optional[str] = None,
         user_id: Optional[str] = None,
+        pipeline_id: Optional[str] = None,
+        unlisted: bool = False,
     ) -> List[PipelineRunModel]:
         """Gets all pipeline runs.
 
         Args:
             project_id: If provided, only return runs for this project.
             stack_id: If provided, only return runs for this stack.
-            pipeline_id: If provided, only return runs for this pipeline.
             user_id: If provided, only return runs for this user.
+            pipeline_id: If provided, only return runs for this pipeline.
+            unlisted: If True, only return unlisted runs that are not
+                associated with any pipeline (filter by pipeline_id==None).
 
         Returns:
             A list of all pipeline runs.
         """
+        self._sync_runs()  # Sync with MLMD
         with Session(self.engine) as session:
             query = select(PipelineRunSchema)
-            if project_id is not None:
+            if stack_id is not None:
+                query = query.where(PipelineRunSchema.stack_id == stack_id)
+            elif project_id is not None:
                 query = query.where(
                     PipelineRunSchema.stack_id == StackSchema.id
                 ).where(StackSchema.project_id == project_id)
-            if stack_id is not None:
-                query = query.where(PipelineRunSchema.stack_id == stack_id)
             if pipeline_id is not None:
                 query = query.where(
                     PipelineRunSchema.pipeline_id == pipeline_id
                 )
+            elif unlisted:
+                query = query.where(PipelineRunSchema.pipeline_id == None)
             if user_id is not None:
                 query = query.where(PipelineRunSchema.owner == user_id)
             runs = session.exec(query).all()
@@ -1977,6 +2028,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the pipeline run doesn't exist.
         """
+        self._sync_runs()  # Sync with MLMD
         with Session(self.engine) as session:
             # Check if pipeline run with the given ID exists
             run = session.exec(
@@ -1987,6 +2039,32 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to get pipeline run with ID {run_id}: "
                     f"No pipeline run with this ID found."
                 )
+
+            return run.to_model()
+
+    def get_run_in_project(
+        self, run_name: str, project_id: str
+    ) -> Optional[PipelineModel]:
+        """Get a pipeline run with a given name in a project.
+
+        Args:
+            run_name: Name of the pipeline run.
+            project_id: ID of the project.
+
+        Returns:
+            The pipeline run, if found, None otherwise.
+        """
+        self._sync_runs()  # Sync with MLMD
+        with Session(self.engine) as session:
+            # Check if pipeline run with the given name exists in the project
+            run = session.exec(
+                select(PipelineRunSchema)
+                .where(PipelineRunSchema.name == run_name)
+                .where(PipelineRunSchema.stack_id == StackSchema.id)
+                .where(StackSchema.project_id == project_id)
+            ).first()
+            if run is None:
+                return None
 
             return run.to_model()
 
@@ -2016,7 +2094,8 @@ class SqlZenStore(BaseZenStore):
                     f"No pipeline run with this ID found."
                 )
 
-            # Update the pipeline run
+            # Update the pipeline run  TODO: from_update_model
+            existing_run.mlmd_id = run.mlmd_id
             existing_run.name = run.name
             existing_run.runtime_configuration = run.runtime_configuration
             existing_run.git_sha = run.git_sha
@@ -2049,7 +2128,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Delete the pipeline run
-            session.delete(run)
+            session.delete(run)  # TODO: this doesn't delete from MLMD
             session.commit()
 
     def _get_run_dag(self, run_id: str) -> str:
@@ -2105,36 +2184,18 @@ class SqlZenStore(BaseZenStore):
     # | STEPS |
     # '-------'
 
-    def _list_run_steps(self, run_id: str) -> List[StepModel]:
+    def list_run_steps(self, run_id: int) -> List[StepRunModel]:
         """Gets all steps in a pipeline run.
 
         Args:
-            run_id: The ID of the pipeline run to get.
+            run_id: The ID of the pipeline run for which to list runs.
 
         Returns:
             A list of all steps in the pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
         """
-        with Session(self.engine) as session:
-            # Check if pipeline run with the given ID exists
-            run = session.exec(
-                select(PipelineRunSchema).where(PipelineRunSchema.id == run_id)
-            ).first()
-            if run is None:
-                raise KeyError(
-                    f"Unable to get steps for pipeline run with ID {run_id}: "
-                    f"No pipeline run with this ID found."
-                )
+        return self.metadata_store.get_pipeline_run_steps(run_id)
 
-            # Get the steps
-            steps = session.exec(
-                select(StepSchema).where(StepSchema.pipeline_run_id == run_id)
-            )
-            return [step.to_model() for step in steps]
-
-    def _get_run_step(self, step_id: str) -> StepModel:
+    def get_run_step(self, step_id: int) -> StepRunModel:
         """Get a step by ID.
 
         Args:
@@ -2146,39 +2207,33 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the step doesn't exist.
         """
-        with Session(self.engine) as session:
-            # Check if step with the given ID exists
-            step = session.exec(
-                select(StepSchema).where(StepSchema.id == step_id)
-            ).first()
-            if step is None:
-                raise KeyError(
-                    f"Unable to get step with ID {step_id}: "
-                    f"No step with this ID found."
-                )
-            return step.to_model()
+        return self.metadata_store.get_step_by_id(step_id)
 
-    def _get_run_step_outputs(self, step_id: str) -> Dict[str, ArtifactModel]:
-        """Get the outputs of a step.
+    def get_run_step_artifacts(
+        self, step: StepRunModel
+    ) -> Tuple[Dict[str, ArtifactModel], Dict[str, ArtifactModel]]:
+        """Returns input and output artifacts for the given step.
 
         Args:
-            step_id: The ID of the step to get outputs for.
+            step: The step for which to get the artifacts.
 
         Returns:
-            The outputs of the step.
+            A tuple (inputs, outputs) where inputs and outputs
+            are both Dicts mapping artifact names
+            to the input and output artifacts respectively.
         """
-        pass  # TODO: currently not saved in DB
+        return self.metadata_store.get_step_artifacts(step)
 
-    def _get_run_step_inputs(self, step_id: str) -> Dict[str, ArtifactModel]:
-        """Get the inputs of a step.
+    def get_run_step_status(self, step_id: int) -> ExecutionStatus:
+        """Gets the execution status of a single step.
 
         Args:
-            step_id: The ID of the step to get inputs for.
+            step_id: The ID of the step to get the status for.
 
         Returns:
-            The inputs of the step.
+            ExecutionStatus: The status of the step.
         """
-        pass  # TODO: currently not saved in DB
+        return self.metadata_store.get_step_status(step_id=step_id)
 
     # .----------.
     # | METADATA |
@@ -2196,113 +2251,6 @@ class SqlZenStore(BaseZenStore):
             The TFX metadata config of this ZenStore.
         """
         return self.metadata_store.get_tfx_metadata_config()
-
-    # def get_pipeline(self, pipeline_name: str) -> Optional[PipelineView]:
-    #     """Returns a pipeline for the given name.
-
-    #     Args:
-    #         pipeline_name: Name of the pipeline.
-
-    #     Returns:
-    #         PipelineView if found, None otherwise.
-    #     """
-    #     return self.metadata_store.get_pipeline(pipeline_name)
-
-    # def get_pipelines(self) -> List[PipelineView]:
-    #     """Returns a list of all pipelines stored in this ZenStore.
-
-    #     Returns:
-    #         A list of all pipelines stored in this ZenStore.
-    #     """
-    #     return self.metadata_store.get_pipelines()
-
-    # def get_pipeline_run(
-    #     self, pipeline: PipelineView, run_name: str
-    # ) -> Optional[PipelineRunView]:
-    #     """Gets a specific run for the given pipeline.
-
-    #     Args:
-    #         pipeline: The pipeline for which to get the run.
-    #         run_name: The name of the run to get.
-
-    #     Returns:
-    #         The pipeline run with the given name.
-    #     """
-    #     return self.metadata_store.get_pipeline_run(pipeline, run_name)
-
-    # def get_pipeline_runs(
-    #     self, pipeline: PipelineView
-    # ) -> Dict[str, PipelineRunView]:
-    #     """Gets all runs for the given pipeline.
-
-    #     Args:
-    #         pipeline: a Pipeline object for which you want the runs.
-
-    #     Returns:
-    #         A dictionary of pipeline run names to PipelineRunView.
-    #     """
-    #     return self.metadata_store.get_pipeline_runs(pipeline)
-
-    # def get_pipeline_run_steps(
-    #     self, pipeline_run: PipelineRunView
-    # ) -> Dict[str, StepView]:
-    #     """Gets all steps for the given pipeline run.
-
-    #     Args:
-    #         pipeline_run: The pipeline run to get the steps for.
-
-    #     Returns:
-    #         A dictionary of step names to step views.
-    #     """
-    #     return self.metadata_store.get_pipeline_run_steps(pipeline_run)
-
-    # def get_step_by_id(self, step_id: int) -> StepView:
-    #     """Gets a `StepView` by its ID.
-
-    #     Args:
-    #         step_id (int): The ID of the step to get.
-
-    #     Returns:
-    #         StepView: The `StepView` with the given ID.
-    #     """
-    #     return self.metadata_store.get_step_by_id(step_id)
-
-    # def get_step_status(self, step: StepView) -> ExecutionStatus:
-    #     """Gets the execution status of a single step.
-
-    #     Args:
-    #         step (StepView): The step to get the status for.
-
-    #     Returns:
-    #         ExecutionStatus: The status of the step.
-    #     """
-    #     return self.metadata_store.get_step_status(step)
-
-    # def get_step_artifacts(
-    #     self, step: StepView
-    # ) -> Tuple[Dict[str, ArtifactView], Dict[str, ArtifactView]]:
-    #     """Returns input and output artifacts for the given step.
-
-    #     Args:
-    #         step: The step for which to get the artifacts.
-
-    #     Returns:
-    #         A tuple (inputs, outputs) where inputs and outputs
-    #         are both Dicts mapping artifact names
-    #         to the input and output artifacts respectively.
-    #     """
-    #     return self.metadata_store.get_step_artifacts(step)
-
-    # def get_producer_step_from_artifact(self, artifact_id: int) -> StepModel:
-    #     """Returns original StepView from an ArtifactView.
-
-    #     Args:
-    #         artifact_id: ID of the ArtifactView to be queried.
-
-    #     Returns:
-    #         Original StepView that produced the artifact.
-    #     """
-    #     return self.metadata_store.get_producer_step_from_artifact(artifact_id)
 
     # LEGACY CODE FROM THE PREVIOUS VERSION OF BASEZENSTORE
 

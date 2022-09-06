@@ -16,10 +16,9 @@
 import os
 from abc import ABCMeta
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
 from uuid import UUID
 
-import zenml
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
@@ -31,16 +30,14 @@ from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.exceptions import InitializationException
 from zenml.io import fileio
-from zenml.logger import get_apidocs_link, get_logger
-from zenml.models import ComponentModel, StackModel
+from zenml.logger import get_logger
+from zenml.models import ComponentModel, ProjectModel, StackModel
 from zenml.stack import StackComponent
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
-    from zenml.pipelines import BasePipeline
-    from zenml.post_execution import PipelineView
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
@@ -480,7 +477,7 @@ class Repository(metaclass=RepositoryMetaClass):
         return project_name
 
     @property
-    def active_project(self) -> Optional["Project"]:
+    def active_project(self) -> Optional["ProjectModel"]:
         """Get the currently active project of the local repository.
 
         If no active project is configured locally for the repository, the
@@ -819,118 +816,6 @@ class Repository(metaclass=RepositoryMetaClass):
                 stack_component.type,
                 stack_component.name,
             )
-
-    @track(event=AnalyticsEvent.GET_PIPELINES)
-    def get_pipelines(
-        self, stack_name: Optional[str] = None
-    ) -> List["PipelineView"]:
-        """Fetches post-execution pipeline views.
-
-        Args:
-            stack_name: If specified, pipelines of the given stack are returned.
-                Otherwise, pipelines of the currently active stack are returned.
-
-        Returns:
-            A list of post-execution pipeline views.
-
-        Raises:
-            RuntimeError: If no stack name is specified and no active stack name
-                is configured.
-        """
-        # TODO: [server] handle the active stack correctly
-        stack_name = stack_name or self._config.active_stack_id
-        if not stack_name:
-            raise RuntimeError(
-                "No active stack is configured for the repository. Run "
-                "`zenml stack set STACK_NAME` to update the active stack."
-            )
-        return self.zen_store.get_pipelines()
-        # TODO: [server] find correct method in zen_store
-
-    @track(event=AnalyticsEvent.GET_PIPELINE)
-    def get_pipeline(
-        self,
-        pipeline: Optional[
-            Union["BasePipeline", Type["BasePipeline"], str]
-        ] = None,
-        stack_name: Optional[str] = None,
-        **kwargs: Any,
-    ) -> Optional["PipelineView"]:
-        """Fetches a post-execution pipeline view.
-
-        Use it in one of these ways:
-        ```python
-        # Get the pipeline by name
-        Repository().get_pipeline("first_pipeline")
-
-        # Get the step by supplying the original pipeline class
-        Repository().get_step(first_pipeline)
-
-        # Get the step by supplying an instance of the original pipeline class
-        Repository().get_step(first_pipeline())
-        ```
-
-        If the specified pipeline does not (yet) exist within the repository,
-        `None` will be returned.
-
-        Args:
-            pipeline: Class or class instance of the pipeline
-            stack_name: If specified, pipelines of the given stack are returned.
-                Otherwise, pipelines of the currently active stack are returned.
-            **kwargs: The deprecated `pipeline_name` is caught as a kwarg to
-                specify the pipeline instead of using the `pipeline` argument.
-
-        Returns:
-            A post-execution pipeline view for the given name or `None` if
-            it doesn't exist.
-
-        Raises:
-            RuntimeError: If no stack name is specified and no active stack name
-                is configured.
-        """
-        if isinstance(pipeline, str):
-            pipeline_name = pipeline
-        elif isinstance(pipeline, zenml.pipelines.base_pipeline.BasePipeline):
-            pipeline_name = pipeline.name
-        elif isinstance(pipeline, type) and issubclass(
-            pipeline, zenml.pipelines.base_pipeline.BasePipeline
-        ):
-            pipeline_name = pipeline.__name__
-        elif "pipeline_name" in kwargs and isinstance(
-            kwargs.get("pipeline_name"), str
-        ):
-            logger.warning(
-                "Using 'pipeline_name' to get a pipeline from "
-                "'Repository().get_pipeline()' is deprecated and "
-                "will be removed in the future. Instead please "
-                "use 'pipeline' to access a pipeline in your Repository based "
-                "on the name of the pipeline or even the class or instance "
-                "of the pipeline. Learn more in our API docs: %s",
-                get_apidocs_link(
-                    "repository", "zenml.repository.Repository.get_pipeline"
-                ),
-            )
-
-            pipeline_name = kwargs.pop("pipeline_name")
-        else:
-            raise RuntimeError(
-                "No pipeline specified to get from "
-                "`Repository()`. Please set a `pipeline` "
-                "within the `get_pipeline()` method. Learn more "
-                "in our API docs: %s",
-                get_apidocs_link(
-                    "repository", "zenml.repository.Repository.get_pipeline"
-                ),
-            )
-
-        # TODO: [server]
-        stack_name = stack_name or self.activate_stack.name
-        if not stack_name:
-            raise RuntimeError(
-                "No active stack is configured for the repository. Run "
-                "`zenml stack set STACK_NAME` to update the active stack."
-            )
-        return self.zen_store.get_pipeline(pipeline_name)
 
     @staticmethod
     def is_repository_directory(path: Path) -> bool:

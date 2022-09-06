@@ -602,7 +602,7 @@ class Stack:
             name=runtime_configuration.run_name,
             owner=repo.zen_store.active_user.id,
             stack_id=self.id,
-            pipeline=None,  # TODO: check if pipeline exists etc. else pass None
+            pipeline_id=None,  # TODO: check if pipeline exists etc. else pass None
             runtime_configuration=runtime_configuration,
         )
 

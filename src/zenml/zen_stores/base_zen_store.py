@@ -17,14 +17,14 @@ import json
 import os
 from abc import abstractmethod
 from pathlib import Path, PurePath
-from typing import Any, ClassVar, Dict, List, Optional, Type, Union
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
 from uuid import UUID
 
 from ml_metadata.proto import metadata_store_pb2
 from pydantic import BaseModel
 
 from zenml.config.store_config import StoreConfiguration
-from zenml.enums import StackComponentType, StoreType
+from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.logger import get_logger
 from zenml.models import ComponentModel, FlavorModel, StackModel
 from zenml.models.code_models import CodeRepositoryModel
@@ -32,7 +32,7 @@ from zenml.models.pipeline_models import (
     ArtifactModel,
     PipelineModel,
     PipelineRunModel,
-    StepModel,
+    StepRunModel,
 )
 from zenml.models.user_management_models import (
     ProjectModel,
@@ -1819,26 +1819,26 @@ class BaseZenStore(BaseModel):
     # '-----------'
 
     # TODO: [ALEX] add filtering param(s)
-    def list_pipelines(self, project_name: str) -> List[PipelineModel]:
-        """Gets all pipelines in a project.
-
-        Args:
-            project_name: Name of the project to get.
-
-        Returns:
-            A list of all pipelines in the project.
-
-        Raises:
-            KeyError: if the project doesn't exist.
-        """
-        return self._list_pipelines(project_name)
-
-    @abstractmethod
-    def _list_pipelines(self, project_name: str) -> List[PipelineModel]:
+    def list_pipelines(self, project_id: Optional[str]) -> List[PipelineModel]:
         """List all pipelines in the project.
 
         Args:
-            project_name: Name of the project.
+            project_id: If provided, only list pipelines in this project.
+
+        Returns:
+            A list of pipelines.
+
+        Raises:
+            KeyError: if the project does not exist.
+        """
+        return self._list_pipelines(project_id)
+
+    @abstractmethod
+    def _list_pipelines(self, project_id: Optional[str]) -> List[PipelineModel]:
+        """List all pipelines in the project.
+
+        Args:
+            project_id: If provided, only list pipelines in this project.
 
         Returns:
             A list of pipelines.
@@ -1848,12 +1848,12 @@ class BaseZenStore(BaseModel):
         """
 
     def create_pipeline(
-        self, project_name: str, pipeline: PipelineModel
+        self, project_id: str, pipeline: PipelineModel
     ) -> PipelineModel:
         """Creates a new pipeline in a project.
 
         Args:
-            project_name: Name of the project to create the pipeline in.
+            project_id: ID of the project to create the pipeline in.
             pipeline: The pipeline to create.
 
         Returns:
@@ -1864,16 +1864,16 @@ class BaseZenStore(BaseModel):
             EntityExistsError: If an identical pipeline already exists.
         """
         self._track_event(AnalyticsEvent.CREATE_PIPELINE)
-        return self._create_pipeline(project_name, pipeline)
+        return self._create_pipeline(project_id, pipeline)
 
     @abstractmethod
     def _create_pipeline(
-        self, project_name: str, pipeline: PipelineModel
+        self, project_id: str, pipeline: PipelineModel
     ) -> PipelineModel:
         """Creates a new pipeline in a project.
 
         Args:
-            project_name: Name of the project to create the pipeline in.
+            project_id: ID of the project to create the pipeline in.
             pipeline: The pipeline to create.
 
         Returns:
@@ -1893,6 +1893,20 @@ class BaseZenStore(BaseModel):
 
         Returns:
             PipelineModel if found, None otherwise.
+        """
+
+    @abstractmethod
+    def get_pipeline_in_project(
+        self, pipeline_name: str, project_id: str
+    ) -> Optional[PipelineModel]:
+        """Get a pipeline with a given name in a project.
+
+        Args:
+            pipeline_name: Name of the pipeline.
+            project_id: ID of the project.
+
+        Returns:
+            The pipeline, if found, None otherwise.
         """
 
     def update_pipeline(
@@ -1986,7 +2000,7 @@ class BaseZenStore(BaseModel):
     # TODO: Discuss whether we even need this, given that the endpoint is on
     # pipeline RUNs
     # TODO: [ALEX] add filtering param(s)
-    def list_steps(self, pipeline_id: str) -> List[StepModel]:
+    def list_steps(self, pipeline_id: str) -> List[StepRunModel]:
         """List all steps for a specific pipeline.
 
         Args:
@@ -1998,7 +2012,7 @@ class BaseZenStore(BaseModel):
         return self._list_steps(pipeline_id)
 
     @abstractmethod
-    def _list_steps(self, pipeline_id: str) -> List[StepModel]:
+    def _list_steps(self, pipeline_id: str) -> List[StepRunModel]:
         """List all steps.
 
         Args:
@@ -2016,43 +2030,49 @@ class BaseZenStore(BaseModel):
         self,
         project_id: Optional[str] = None,
         stack_id: Optional[str] = None,
-        pipeline_id: Optional[str] = None,
         user_id: Optional[str] = None,
+        pipeline_id: Optional[str] = None,
+        unlisted: bool = False,
     ) -> List[PipelineRunModel]:
         """Gets all pipeline runs.
 
         Args:
             project_id: If provided, only return runs for this project.
             stack_id: If provided, only return runs for this stack.
-            pipeline_id: If provided, only return runs for this pipeline.
             user_id: If provided, only return runs for this user.
+            pipeline_id: If provided, only return runs for this pipeline.
+            unlisted: If True, only return unlisted runs that are not
+                associated with any pipeline (filter by `pipeline_id==None`).
 
         Returns:
             A list of all pipeline runs.
         """
         return self._list_runs(
-            project_name=project_id,
+            project_id=project_id,
             stack_id=stack_id,
-            pipeline_id=pipeline_id,
             user_id=user_id,
+            pipeline_id=pipeline_id,
+            unlisted=unlisted,
         )
 
-    # TODO: [ALEX] add filtering param(s)
     @abstractmethod
     def _list_runs(
         self,
         project_id: Optional[str] = None,
         stack_id: Optional[str] = None,
-        pipeline_id: Optional[str] = None,
         user_id: Optional[str] = None,
+        pipeline_id: Optional[str] = None,
+        unlisted: bool = False,
     ) -> List[PipelineRunModel]:
         """Gets all pipeline runs.
 
         Args:
             project_id: If provided, only return runs for this project.
             stack_id: If provided, only return runs for this stack.
-            pipeline_id: If provided, only return runs for this pipeline.
             user_id: If provided, only return runs for this user.
+            pipeline_id: If provided, only return runs for this pipeline.
+            unlisted: If True, only return unlisted runs that are not
+                associated with any pipeline (filter by pipeline_id==None).
 
         Returns:
             A list of all pipeline runs.
@@ -2112,6 +2132,20 @@ class BaseZenStore(BaseModel):
 
         Raises:
             KeyError: if the pipeline run doesn't exist.
+        """
+
+    @abstractmethod
+    def get_run_in_project(
+        self, run_name: str, project_id: str
+    ) -> Optional[PipelineModel]:
+        """Get a pipeline run with a given name in a project.
+
+        Args:
+            run_name: Name of the pipeline run.
+            project_id: ID of the project.
+
+        Returns:
+            The pipeline run, if found, None otherwise.
         """
 
     def update_run(
@@ -2275,50 +2309,19 @@ class BaseZenStore(BaseModel):
     # | STEPS |
     # '-------'
 
-    # TODO: [ALEX] add filtering param(s)
-    def list_run_steps(self, run_id: str) -> List[StepModel]:
+    @abstractmethod
+    def list_run_steps(self, run_id: int) -> List[StepRunModel]:
         """Gets all steps in a pipeline run.
 
         Args:
-            run_id: The ID of the pipeline run to get.
+            run_id: The ID of the pipeline run for which to list runs.
 
         Returns:
             A list of all steps in the pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
         """
-        return self._list_run_steps(run_id)
-
-    # TODO: [ALEX] add filtering param(s)
-    @abstractmethod
-    def _list_run_steps(self, run_id: str) -> List[StepModel]:
-        """Gets all steps in a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get.
-
-        Returns:
-            A list of all steps in the pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-
-    # TODO: change into an abstract method
-    def get_run_step(self, step_id: str) -> StepModel:
-        """Get a step by id.
-
-        Args:
-            step_id: The id of the step to get.
-
-        Returns:
-            The step with the given id.
-        """
-        return self._get_run_step(step_id)
 
     @abstractmethod
-    def _get_run_step(self, step_id: str) -> StepModel:
+    def get_run_step(self, step_id: str) -> StepRunModel:
         """Get a step by ID.
 
         Args:
@@ -2326,57 +2329,59 @@ class BaseZenStore(BaseModel):
 
         Returns:
             The step.
-
-        Raises:
-            KeyError: if the step doesn't exist.
         """
 
-    # TODO: change into an abstract method
-    # TODO: use the correct return value + also amend the endpoint as well
-    def get_run_step_outputs(self, step_id: str) -> Dict[str, ArtifactModel]:
+    def get_run_step_outputs(
+        self, step: StepRunModel
+    ) -> Dict[str, ArtifactModel]:
         """Get a list of outputs for a specific step.
 
         Args:
             step_id: The id of the step to get outputs for.
 
         Returns:
-            A list of Dicts mapping artifact names to the output artifacts for the step.
+            A dict mapping artifact names to the output artifacts for the step.
         """
-        return self._get_run_step_outputs(step_id)
+        return self.get_run_step_artifacts(step)[1]
 
-    @abstractmethod
-    def _get_run_step_outputs(self, step_id: str) -> Dict[str, ArtifactModel]:
-        """Get the outputs of a step.
-
-        Args:
-            step_id: The ID of the step to get outputs for.
-
-        Returns:
-            The outputs of the step.
-        """
-
-    # TODO: change into an abstract method
     # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
-    def get_run_step_inputs(self, step_id: str) -> Dict[str, ArtifactModel]:
+    def get_run_step_inputs(
+        self, step: StepRunModel
+    ) -> Dict[str, ArtifactModel]:
         """Get a list of inputs for a specific step.
 
         Args:
             step_id: The id of the step to get inputs for.
 
         Returns:
-            A list of Dicts mapping artifact names to the input artifacts for the step.
+            A dict mapping artifact names to the input artifacts for the step.
         """
-        return self._get_run_step_inputs(step_id)
+        return self.get_run_step_artifacts(step)[0]
 
     @abstractmethod
-    def _get_run_step_inputs(self, step_id: str) -> Dict[str, ArtifactModel]:
-        """Get the inputs of a step.
+    def get_run_step_artifacts(
+        self, step: StepRunModel
+    ) -> Tuple[Dict[str, ArtifactModel], Dict[str, ArtifactModel]]:
+        """Returns input and output artifacts for the given step.
 
         Args:
-            step_id: The ID of the step to get inputs for.
+            step: The step for which to get the artifacts.
 
         Returns:
-            The inputs of the step.
+            A tuple (inputs, outputs) where inputs and outputs
+            are both Dicts mapping artifact names
+            to the input and output artifacts respectively.
+        """
+
+    @abstractmethod
+    def get_run_step_status(self, step_id: int) -> ExecutionStatus:
+        """Gets the execution status of a single step.
+
+        Args:
+            step_id: The ID of the step to get the status for.
+
+        Returns:
+            ExecutionStatus: The status of the step.
         """
 
     #  .---------.
@@ -2395,72 +2400,6 @@ class BaseZenStore(BaseModel):
         Returns:
             The TFX metadata config of this ZenStore.
         """
-
-    # TODO: old get_pipeline(), get_pipelines(), get_step_by_id(), get_step_artifacts()
-
-    # @abstractmethod
-    # def get_pipeline_run(
-    #     self, pipeline: PipelineModel, run_name: str
-    # ) -> Optional[PipelineRunModel]:
-    #     """Gets a specific run for the given pipeline.
-
-    #     Args:
-    #         pipeline: The pipeline for which to get the run.
-    #         run_name: The name of the run to get.
-
-    #     Returns:
-    #         The pipeline run with the given name.
-    #     """
-
-    # # TODO: [ALEX] add filtering param(s)
-    # # TODO: Consider changing to list_runs...
-    # @abstractmethod
-    # def get_pipeline_runs(
-    #     self, pipeline: PipelineModel
-    # ) -> Dict[str, PipelineRunModel]:
-    #     """Gets all runs for the given pipeline.
-
-    #     Args:
-    #         pipeline: a Pipeline object for which you want the runs.
-
-    #     Returns:
-    #         A dictionary of pipeline run names to PipelineRunView.
-    #     """
-
-    # @abstractmethod
-    # def get_pipeline_run_steps(
-    #     self, pipeline_run: PipelineRunModel
-    # ) -> Dict[str, StepModel]:
-    #     """Gets all steps for the given pipeline run.
-
-    #     Args:
-    #         pipeline_run: The pipeline run to get the steps for.
-
-    #     Returns:
-    #         A dictionary of step names to step views.
-    #     """
-
-    # @abstractmethod
-    # def get_step_status(self, step: StepModel) -> ExecutionStatus:
-    #     """Gets the execution status of a single step.
-
-    #     Args:
-    #         step (StepView): The step to get the status for.
-
-    #     Returns:
-    #         ExecutionStatus: The status of the step.
-    #     """
-
-    # @abstractmethod
-    # def get_producer_step_from_artifact(self, artifact_id: int) -> StepModel:
-    #     """Returns original StepView for an artifact.
-
-    #     Args:
-    #         artifact_id: ID of the artifact to be queried.
-
-    #     Returns:
-    #         Original StepView that produced the artifact.
-    #     """
 
     # # Public facing APIs
     # # TODO [ENG-894]: Refactor these with the proxy pattern, as noted in

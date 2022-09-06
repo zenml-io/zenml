@@ -16,12 +16,11 @@
 from typing import TYPE_CHECKING, Any, Optional, Type
 
 from zenml.logger import get_logger
-from zenml.repository import Repository
+from zenml.models.pipeline_models import ArtifactModel
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
     from zenml.materializers.base_materializer import BaseMaterializer
-    from zenml.post_execution.step import StepView
 
 logger = get_logger(__name__)
 
@@ -33,15 +32,7 @@ class ArtifactView:
     execution.
     """
 
-    def __init__(
-        self,
-        id_: int,
-        type_: str,
-        uri: str,
-        materializer: str,
-        data_type: str,
-        parent_step_id: int,
-    ):
+    def __init__(self, model: ArtifactModel):
         """Initializes a post-execution artifact object.
 
         In most cases `ArtifactView` objects should not be created manually but
@@ -58,12 +49,7 @@ class ArtifactView:
                 to read the artifact.
             parent_step_id: The ID of the parent step.
         """
-        self._id = id_
-        self._type = type_
-        self._uri = uri
-        self._materializer = materializer
-        self._data_type = data_type
-        self._parent_step_id = parent_step_id
+        self._model = model
 
     @property
     def id(self) -> int:
@@ -72,7 +58,7 @@ class ArtifactView:
         Returns:
             The artifact id.
         """
-        return self._id
+        return self._model.mlmd_id
 
     @property
     def type(self) -> str:
@@ -81,7 +67,7 @@ class ArtifactView:
         Returns:
             The artifact type.
         """
-        return self._type
+        return self._model.type
 
     @property
     def data_type(self) -> str:
@@ -90,7 +76,7 @@ class ArtifactView:
         Returns:
             The data type of the artifact.
         """
-        return self._data_type
+        return self._model.data_type
 
     @property
     def uri(self) -> str:
@@ -99,7 +85,11 @@ class ArtifactView:
         Returns:
             The URI where the artifact data is stored.
         """
-        return self._uri
+        return self._model.uri
+
+    @property
+    def materializer(self) -> str:
+        return self._model.materializer
 
     @property
     def parent_step_id(self) -> int:
@@ -110,16 +100,16 @@ class ArtifactView:
         Returns:
             The ID of the parent step.
         """
-        return self._parent_step_id
+        return self._model.parent_step_id
 
     @property
-    def producer_step(self) -> "StepView":
-        """Returns the original StepView that produced the artifact.
+    def producer_step_id(self) -> int:
+        """Returns the ID of the original step that produced the artifact.
 
         Returns:
-            The original StepView that produced the artifact.
+            The ID of the original step that produced the artifact.
         """
-        return Repository().zen_store.get_producer_step_from_artifact(self.id)
+        return self._model.producer_step_id
 
     @property
     def is_cached(self) -> bool:
@@ -128,8 +118,7 @@ class ArtifactView:
         Returns:
             True if artifact was cached in a previous run, else False.
         """
-        # TODO: query from ZenAPI?
-        return self.producer_step.id != self.parent_step_id
+        return self._model.is_cached
 
     def read(
         self,
@@ -155,12 +144,12 @@ class ArtifactView:
         if not materializer_class:
             try:
                 materializer_class = source_utils.load_source_path_class(
-                    self._materializer
+                    self.materializer
                 )
             except (ModuleNotFoundError, AttributeError) as e:
                 logger.error(
                     f"ZenML can not locate and import the materializer module "
-                    f"{self._materializer} which was used to write this "
+                    f"{self.materializer} which was used to write this "
                     f"artifact. If you want to read from it, please provide "
                     f"a 'materializer_class'."
                 )
@@ -169,12 +158,12 @@ class ArtifactView:
         if not output_data_type:
             try:
                 output_data_type = source_utils.load_source_path_class(
-                    self._data_type
+                    self.data_type
                 )
             except (ModuleNotFoundError, AttributeError) as e:
                 logger.error(
                     f"ZenML can not locate and import the data type of this "
-                    f"artifact {self._data_type}. If you want to read "
+                    f"artifact {self.data_type}. If you want to read "
                     f"from it, please provide a 'output_data_type'."
                 )
                 raise ModuleNotFoundError(e) from e
@@ -182,8 +171,8 @@ class ArtifactView:
         logger.debug(
             "Using '%s' to read '%s' (uri: %s).",
             materializer_class.__qualname__,
-            self._type,
-            self._uri,
+            self.type,
+            self.uri,
         )
 
         # TODO [ENG-162]: passing in `self` to initialize the materializer only
@@ -199,9 +188,9 @@ class ArtifactView:
             A string representation of this artifact.
         """
         return (
-            f"{self.__class__.__qualname__}(id={self._id}, "
-            f"type='{self._type}', uri='{self._uri}', "
-            f"materializer='{self._materializer}')"
+            f"{self.__class__.__qualname__}(id={self.id}, "
+            f"type='{self.type}', uri='{self.uri}', "
+            f"materializer='{self.materializer}')"
         )
 
     def __eq__(self, other: Any) -> bool:
@@ -215,5 +204,5 @@ class ArtifactView:
             False.
         """
         if isinstance(other, ArtifactView):
-            return self._id == other._id and self._uri == other._uri
+            return self.id == other.id and self.uri == other.uri
         return NotImplemented

@@ -35,11 +35,10 @@ from zenml.artifacts.constants import (
 )
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
-from zenml.post_execution import (
-    ArtifactView,
-    PipelineRunView,
-    PipelineView,
-    StepView,
+from zenml.models.pipeline_models import (
+    ArtifactModel,
+    PipelineModel,
+    StepRunModel,
 )
 from zenml.steps.utils import (
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
@@ -100,7 +99,7 @@ class BaseMetadataStore(BaseModel, ABC):
     def _check_if_executions_belong_to_pipeline(
         self,
         executions: List[proto.Execution],
-        pipeline: PipelineView,
+        pipeline_id: int,
     ) -> bool:
         """Returns `True` if the executions are associated with the pipeline context.
 
@@ -116,20 +115,20 @@ class BaseMetadataStore(BaseModel, ABC):
                 execution.id
             )
             for context in associated_contexts:
-                if context.id == pipeline._id:  # noqa
+                if context.id == pipeline_id:  # noqa
                     return True
         return False
 
-    def _get_step_view_from_execution(
+    def _get_step_model_from_execution(
         self, execution: proto.Execution
-    ) -> StepView:
-        """Get original StepView from an execution.
+    ) -> StepRunModel:
+        """Get original StepRunModel from an execution.
 
         Args:
             execution: proto.Execution object from mlmd store.
 
         Returns:
-            Original `StepView` derived from the proto.Execution.
+            Original `StepRunModel` derived from the proto.Execution.
 
         Raises:
             KeyError: If the execution is not associated with a step.
@@ -201,26 +200,26 @@ class BaseMetadataStore(BaseModel, ABC):
                 # take the latest one and add execution to the parents.
                 parents_step_ids.add(events_for_input_artifact[-1].execution_id)
 
-        return StepView(
-            id_=execution.id,
-            parents_step_ids=list(parents_step_ids),
+        return StepRunModel(
+            mlmd_id=execution.id,
+            parent_step_ids=list(parents_step_ids),
             entrypoint_name=impl_name,
             name=step_name,
-            parameters=step_parameters,
+            # TODO: docstring, pipeline_run_id
         )
 
-    def get_pipelines(self) -> List[PipelineView]:
+    def get_pipelines(self) -> List[PipelineModel]:
         """Returns a list of all pipelines stored in this metadata store.
 
         Returns:
-            List[PipelineView]: a list of all pipelines stored in this metadata store.
+            A list of all pipelines stored in this metadata store.
         """
         pipelines = []
         for pipeline_context in self.store.get_contexts_by_type(
             PIPELINE_CONTEXT_TYPE_NAME
         ):
-            pipeline = PipelineView(
-                id_=pipeline_context.id,
+            pipeline = PipelineModel(
+                id=pipeline_context.id,
                 name=pipeline_context.name,
             )
             pipelines.append(pipeline)
@@ -228,144 +227,80 @@ class BaseMetadataStore(BaseModel, ABC):
         logger.debug("Fetched %d pipelines.", len(pipelines))
         return pipelines
 
-    def get_pipeline(self, pipeline_name: str) -> Optional[PipelineView]:
+    def get_pipeline(self, pipeline_name: str) -> Optional[PipelineModel]:
         """Returns a pipeline for the given name.
 
         Args:
             pipeline_name: Name of the pipeline.
 
         Returns:
-            PipelineView if found, None otherwise.
+            The pipeline, if found, None otherwise.
         """
         pipeline_context = self.store.get_context_by_type_and_name(
             PIPELINE_CONTEXT_TYPE_NAME, pipeline_name
         )
         if pipeline_context:
             logger.debug("Fetched pipeline with name '%s'", pipeline_name)
-            return PipelineView(
-                id_=pipeline_context.id,
+            return PipelineModel(
+                id=pipeline_context.id,
                 name=pipeline_context.name,
             )
         else:
             logger.info("No pipelines found for name '%s'", pipeline_name)
             return None
 
-    def get_pipeline_runs(
-        self, pipeline: PipelineView
-    ) -> Dict[str, PipelineRunView]:
-        """Gets all runs for the given pipeline.
-
-        Args:
-            pipeline: a Pipeline object for which you want the runs.
+    def get_all_runs(self) -> Dict[str, int]:
+        """Gets a mapping run name -> ID for all runs registered in MLMD.
 
         Returns:
-            A dictionary of pipeline run names to PipelineRunView.
+            A mapping run name -> ID for all runs registered in MLMD.
         """
         all_pipeline_runs = self.store.get_contexts_by_type(
             PIPELINE_RUN_CONTEXT_TYPE_NAME
         )
-        runs: Dict[str, PipelineRunView] = OrderedDict()
+        return {run.name: run.id for run in all_pipeline_runs}
 
-        for run in all_pipeline_runs:
-            executions = self.store.get_executions_by_context(run.id)
-            if self._check_if_executions_belong_to_pipeline(
-                executions, pipeline
-            ):
-                run_view = PipelineRunView(
-                    id_=run.id,
-                    name=run.name,
-                    executions=executions,
-                )
-                runs[run.name] = run_view
-
-        logger.debug(
-            "Fetched %d pipeline runs for pipeline named '%s'.",
-            len(runs),
-            pipeline.name,
-        )
-
-        return runs
-
-    def get_pipeline_run(
-        self, pipeline: PipelineView, run_name: str
-    ) -> Optional[PipelineRunView]:
-        """Gets a specific run for the given pipeline.
-
-        Args:
-            pipeline: The pipeline for which to get the run.
-            run_name: The name of the run to get.
-
-        Returns:
-            The pipeline run with the given name.
-        """
-        run = self.store.get_context_by_type_and_name(
-            PIPELINE_RUN_CONTEXT_TYPE_NAME, run_name
-        )
-
-        if not run:
-            # No context found for the given run name
-            return None
-
-        executions = self.store.get_executions_by_context(run.id)
-        if self._check_if_executions_belong_to_pipeline(executions, pipeline):
-            logger.debug("Fetched pipeline run with name '%s'", run_name)
-            return PipelineRunView(
-                id_=run.id,
-                name=run.name,
-                executions=executions,
-            )
-
-        logger.info("No pipeline run found for name '%s'", run_name)
-        return None
-
-    def get_pipeline_run_steps(
-        self, pipeline_run: PipelineRunView
-    ) -> Dict[str, StepView]:
+    def get_pipeline_run_steps(self, run_id: int) -> Dict[str, StepRunModel]:
         """Gets all steps for the given pipeline run.
 
         Args:
-            pipeline_run: The pipeline run to get the steps for.
+            run_id: The ID of the pipeline run to get the steps for.
 
         Returns:
             A dictionary of step names to step views.
         """
-        steps: Dict[str, StepView] = OrderedDict()
+        steps: Dict[str, StepRunModel] = OrderedDict()
         # reverse the executions as they get returned in reverse chronological
         # order from the metadata store
-        for execution in reversed(pipeline_run._executions):  # noqa
-            step = self._get_step_view_from_execution(execution)
+        executions = self.store.get_executions_by_context(run_id)
+        for execution in reversed(executions):  # noqa
+            step = self._get_step_model_from_execution(execution)
             steps[step.name] = step
-
-        logger.debug(
-            "Fetched %d steps for pipeline run '%s'.",
-            len(steps),
-            pipeline_run.name,
-        )
-
+        logger.debug(f"Fetched {len(steps)} steps for pipeline run '{run_id}'.")
         return steps
 
-    def get_step_by_id(self, step_id: int) -> StepView:
-        """Gets a `StepView` by its ID.
+    def get_step_by_id(self, step_id: int) -> StepRunModel:
+        """Gets a `StepRunModel` by its ID.
 
         Args:
-            step_id (int): The ID of the step to get.
+            step_id: The ID of the step to get.
 
         Returns:
-            StepView: The `StepView` with the given ID.
+            The `StepRunModel` with the given ID.
         """
         execution = self.store.get_executions_by_id([step_id])[0]
-        return self._get_step_view_from_execution(execution)
+        return self._get_step_model_from_execution(execution)
 
-    def get_step_status(self, step: StepView) -> ExecutionStatus:
+    def get_step_status(self, step_id: int) -> ExecutionStatus:
         """Gets the execution status of a single step.
 
         Args:
-            step (StepView): The step to get the status for.
+            step_id: The ID of the step to get the status for.
 
         Returns:
             ExecutionStatus: The status of the step.
         """
-        proto = self.store.get_executions_by_id([step._id])[0]  # noqa
+        proto = self.store.get_executions_by_id([step_id])[0]  # noqa
         state = proto.last_known_state
 
         if state == proto.COMPLETE:
@@ -378,8 +313,8 @@ class BaseMetadataStore(BaseModel, ABC):
             return ExecutionStatus.FAILED
 
     def get_step_artifacts(
-        self, step: StepView
-    ) -> Tuple[Dict[str, ArtifactView], Dict[str, ArtifactView]]:
+        self, step: StepRunModel
+    ) -> Tuple[Dict[str, ArtifactModel], Dict[str, ArtifactModel]]:
         """Returns input and output artifacts for the given step.
 
         Args:
@@ -395,13 +330,13 @@ class BaseMetadataStore(BaseModel, ABC):
             type_.id: type_.name for type_ in self.store.get_artifact_types()
         }
 
-        events = self.store.get_events_by_execution_ids([step._id])  # noqa
+        events = self.store.get_events_by_execution_ids([step.mlmd_id])  # noqa
         artifacts = self.store.get_artifacts_by_id(
             [event.artifact_id for event in events]
         )
 
-        inputs: Dict[str, ArtifactView] = {}
-        outputs: Dict[str, ArtifactView] = {}
+        inputs: Dict[str, ArtifactModel] = {}
+        outputs: Dict[str, ArtifactModel] = {}
 
         # sort them according to artifact_id's so that the zip works.
         events.sort(key=lambda x: x.artifact_id)
@@ -419,22 +354,29 @@ class BaseMetadataStore(BaseModel, ABC):
                 DATATYPE_PROPERTY_KEY
             ].string_value
 
-            parent_step_id = step.id
+            parent_step_id = step.mlmd_id
             if event_proto.type == event_proto.INPUT:
                 # In the case that this is an input event, we actually need
                 # to resolve it via its parents outputs.
-                for parent in step.parent_steps:
-                    for a in parent.outputs.values():
-                        if artifact_proto.id == a.id:
-                            parent_step_id = parent.id
+                for parent_id in step.parent_step_ids:
+                    parent_step = self.get_step_by_id(parent_id)
+                    parent_outputs = self.get_step_artifacts(parent_step)[1]
+                    for parent_output in parent_outputs.values():
+                        if artifact_proto.id == parent_output.mlmd_id:
+                            parent_step_id = parent_id
 
-            artifact = ArtifactView(
-                id_=event_proto.artifact_id,
-                type_=artifact_type,
+            artifact_id = event_proto.artifact_id
+            producer_step = self.get_producer_step_from_artifact(artifact_id)
+            producer_step_id = producer_step.mlmd_id
+            artifact = ArtifactModel(
+                mlmd_id=artifact_id,
+                type=artifact_type,
                 uri=artifact_proto.uri,
                 materializer=materializer,
                 data_type=data_type,
                 parent_step_id=parent_step_id,
+                producer_step_id=producer_step_id,
+                is_cached=parent_step_id != producer_step_id,
             )
 
             if event_proto.type == event_proto.INPUT:
@@ -451,14 +393,14 @@ class BaseMetadataStore(BaseModel, ABC):
 
         return inputs, outputs
 
-    def get_producer_step_from_artifact(self, artifact_id: int) -> StepView:
-        """Returns original StepView from an ArtifactView.
+    def get_producer_step_from_artifact(self, artifact_id: int) -> StepRunModel:
+        """Returns original StepRunModel from an ArtifactModel.
 
         Args:
-            artifact_id: ID of the ArtifactView to be queried.
+            artifact_id: ID of the ArtifactModel to be queried.
 
         Returns:
-            Original StepView that produced the artifact.
+            Original StepRunModel that produced the artifact.
         """
         executions_ids = set(
             event.execution_id
@@ -466,7 +408,7 @@ class BaseMetadataStore(BaseModel, ABC):
             if event.type == event.OUTPUT
         )
         execution = self.store.get_executions_by_id(executions_ids)[0]
-        return self._get_step_view_from_execution(execution)
+        return self._get_step_model_from_execution(execution)
 
     class Config:
         """Pydantic configuration class."""
