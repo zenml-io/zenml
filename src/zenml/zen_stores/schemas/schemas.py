@@ -52,7 +52,7 @@ class ProjectSchema(SQLModel, table=True):
     )
 
     @classmethod
-    def from_model(cls, model: ProjectModel) -> "ProjectSchema":
+    def from_create_model(cls, model: ProjectModel) -> "ProjectSchema":
         return cls(name=model.name, description=model.description)
 
     def to_model(self) -> ProjectModel:
@@ -73,7 +73,7 @@ class CodeRepositorySchema(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.now)
 
     @classmethod
-    def from_model(
+    def from_create_model(
         cls, model: CodeRepositoryModel, project_id: UUID
     ) -> "CodeRepositorySchema":
         return cls(name=model.name, project_id=project_id)
@@ -112,7 +112,7 @@ class UserSchema(SQLModel, table=True):
     )
 
     @classmethod
-    def from_model(cls, model: UserModel) -> "UserSchema":
+    def from_create_model(cls, model: UserModel) -> "UserSchema":
         return cls(name=model.name)
 
     def to_model(self) -> UserModel:
@@ -134,7 +134,7 @@ class TeamSchema(SQLModel, table=True):
     )
 
     @classmethod
-    def from_model(cls, model: TeamModel) -> "TeamSchema":
+    def from_create_model(cls, model: TeamModel) -> "TeamSchema":
         return cls(name=model.name)
 
     def to_model(self) -> TeamModel:
@@ -156,7 +156,7 @@ class RoleSchema(SQLModel, table=True):
     )
 
     @classmethod
-    def from_model(cls, model: RoleModel) -> "RoleSchema":
+    def from_create_model(cls, model: RoleModel) -> "RoleSchema":
         return cls(name=model.name)
 
     def to_model(self) -> RoleModel:
@@ -179,16 +179,6 @@ class UserRoleAssignmentSchema(SQLModel, table=True):
     project: Optional[ProjectSchema] = Relationship(
         back_populates="user_role_assignments"
     )
-
-    @classmethod
-    def from_model(
-        cls, model: RoleAssignmentModel
-    ) -> "UserRoleAssignmentSchema":
-        return cls(
-            role_id=model.role_id,
-            user_id=model.user_id,
-            project_id=model.project_id,
-        )
 
     def to_model(self) -> RoleAssignmentModel:
         return RoleAssignmentModel(
@@ -216,16 +206,6 @@ class TeamRoleAssignmentSchema(SQLModel, table=True):
     project: Optional[ProjectSchema] = Relationship(
         back_populates="team_role_assignments"
     )
-
-    @classmethod
-    def from_model(
-        cls, model: RoleAssignmentModel
-    ) -> "TeamRoleAssignmentSchema":
-        return cls(
-            role_id=model.role_id,
-            team_id=model.team_id,
-            project_id=model.project_id,
-        )
 
     def to_model(self) -> RoleAssignmentModel:
         return RoleAssignmentModel(
@@ -448,7 +428,7 @@ class PipelineSchema(SQLModel, table=True):
     # )
 
     @classmethod
-    def from_model(cls, model: PipelineModel) -> "PipelineSchema":
+    def from_create_model(cls, model: PipelineModel) -> "PipelineSchema":
         pass  # TODO
 
     def to_model(self) -> "PipelineModel":
@@ -478,7 +458,7 @@ class PipelineRunSchema(SQLModel, table=True):
     # pipeline: PipelineSchema = Relationship(back_populates="runs")
 
     @classmethod
-    def from_model(
+    def from_create_model(
         cls,
         model: PipelineRunModel,
         pipeline: Optional[PipelineSchema] = None,

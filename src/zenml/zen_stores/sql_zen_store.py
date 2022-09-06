@@ -749,7 +749,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Create the user
-            new_user = UserSchema.from_model(user)
+            new_user = UserSchema.from_create_model(user)
             session.add(new_user)
             session.commit()
 
@@ -897,7 +897,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Create the team
-            new_team = TeamSchema.from_model(team)
+            new_team = TeamSchema.from_create_model(team)
             session.add(new_team)
             session.commit()
 
@@ -1127,7 +1127,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Create role
-            role_schema = RoleSchema.from_model(role)
+            role_schema = RoleSchema.from_create_model(role)
             session.add(role_schema)
             session.commit()
             return role_schema.to_model()
@@ -1401,7 +1401,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Create the project
-            new_project = ProjectSchema.from_model(project)
+            new_project = ProjectSchema.from_create_model(project)
             session.add(new_project)
             session.commit()
 
@@ -1778,7 +1778,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Create the pipeline
-            new_pipeline = PipelineSchema.from_model(pipeline)
+            new_pipeline = PipelineSchema.from_create_model(pipeline)
             session.add(new_pipeline)
             session.commit()
 
@@ -2007,7 +2007,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Create the pipeline run
-            new_run = PipelineRunSchema.from_model(pipeline_run)
+            new_run = PipelineRunSchema.from_create_model(pipeline_run)
             session.add(new_run)
             session.commit()
 
