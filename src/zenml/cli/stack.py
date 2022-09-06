@@ -30,9 +30,9 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import ProvisioningError
+from zenml.models import StackModel
 from zenml.repository import Repository
 from zenml.secret import ArbitrarySecretSchema
-from zenml.stack import Stack
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
@@ -147,6 +147,13 @@ def stack() -> None:
     help="Immediately set this stack as active.",
     type=click.BOOL,
 )
+@click.option(
+    "--share",
+    "share",
+    is_flag=True,
+    help="Use this flag to share this stack with other users.",
+    type=click.BOOL,
+)
 def register_stack(
     stack_name: str,
     artifact_store_name: str,
@@ -161,6 +168,7 @@ def register_stack(
     annotator_name: Optional[str] = None,
     data_validator_name: Optional[str] = None,
     set_stack: bool = False,
+    share: bool = None,
 ) -> None:
     """Register a stack.
 
@@ -178,6 +186,7 @@ def register_stack(
         annotator_name: Name of the annotator for this stack.
         data_validator_name: Name of the data validator for this stack.
         set_stack: Immediately set this stack as active.
+        share: Share the stack with other users.
     """
     cli_utils.print_active_config()
 
@@ -185,49 +194,54 @@ def register_stack(
         repo = Repository()
 
         stack_components = {
-            StackComponentType.ARTIFACT_STORE: repo.get_stack_component(
-                StackComponentType.ARTIFACT_STORE, name=artifact_store_name
+            StackComponentType.ARTIFACT_STORE: (
+                repo.get_stack_component_by_name_and_type(
+                    StackComponentType.ARTIFACT_STORE, name=artifact_store_name
+                )
             ),
-            StackComponentType.ORCHESTRATOR: repo.get_stack_component(
-                StackComponentType.ORCHESTRATOR, name=orchestrator_name
+            StackComponentType.ORCHESTRATOR: (
+                repo.get_stack_component_by_name_and_type(
+                    StackComponentType.ORCHESTRATOR, name=orchestrator_name
+                )
             ),
         }
 
         if container_registry_name:
             stack_components[
                 StackComponentType.CONTAINER_REGISTRY
-            ] = repo.get_stack_component(
+            ] = repo.get_stack_component_by_name_and_type(
                 StackComponentType.CONTAINER_REGISTRY,
                 name=container_registry_name,
-            )
-
-        if secrets_manager_name:
-            stack_components[
-                StackComponentType.SECRETS_MANAGER
-            ] = repo.get_stack_component(
-                StackComponentType.SECRETS_MANAGER,
-                name=secrets_manager_name,
             )
 
         if step_operator_name:
             stack_components[
                 StackComponentType.STEP_OPERATOR
-            ] = repo.get_stack_component(
+            ] = repo.get_stack_component_by_name_and_type(
                 StackComponentType.STEP_OPERATOR,
                 name=step_operator_name,
+            )
+
+        if secrets_manager_name:
+            stack_components[
+                StackComponentType.SECRETS_MANAGER
+            ] = repo.get_stack_component_by_name_and_type(
+                StackComponentType.SECRETS_MANAGER,
+                name=secrets_manager_name,
             )
 
         if feature_store_name:
             stack_components[
                 StackComponentType.FEATURE_STORE
-            ] = repo.get_stack_component(
+            ] = repo.get_stack_component_by_name_and_type(
                 StackComponentType.FEATURE_STORE,
                 name=feature_store_name,
             )
+
         if model_deployer_name:
             stack_components[
                 StackComponentType.MODEL_DEPLOYER
-            ] = repo.get_stack_component(
+            ] = repo.get_stack_component_by_name_and_type(
                 StackComponentType.MODEL_DEPLOYER,
                 name=model_deployer_name,
             )
@@ -235,7 +249,7 @@ def register_stack(
         if experiment_tracker_name:
             stack_components[
                 StackComponentType.EXPERIMENT_TRACKER
-            ] = repo.get_stack_component(
+            ] = repo.get_stack_component_by_name_and_type(
                 StackComponentType.EXPERIMENT_TRACKER,
                 name=experiment_tracker_name,
             )
@@ -243,7 +257,7 @@ def register_stack(
         if alerter_name:
             stack_components[
                 StackComponentType.ALERTER
-            ] = repo.get_stack_component(
+            ] = repo.get_stack_component_by_name_and_type(
                 StackComponentType.ALERTER,
                 name=alerter_name,
             )
@@ -251,7 +265,7 @@ def register_stack(
         if annotator_name:
             stack_components[
                 StackComponentType.ANNOTATOR
-            ] = repo.get_stack_component(
+            ] = repo.get_stack_component_by_name_and_type(
                 StackComponentType.ANNOTATOR,
                 name=annotator_name,
             )
@@ -259,15 +273,15 @@ def register_stack(
         if data_validator_name:
             stack_components[
                 StackComponentType.DATA_VALIDATOR
-            ] = repo.get_stack_component(
+            ] = repo.get_stack_component_by_name_and_type(
                 StackComponentType.DATA_VALIDATOR,
                 name=data_validator_name,
             )
 
-        stack_ = Stack.from_components(
-            name=stack_name, components=stack_components
+        stack_ = StackModel(
+            name=stack_name, components=stack_components, is_shared=share
         )
-        # TODO: [server] make sure stack is a StackModel here
+
         created_stack = repo.register_stack(stack_)
         cli_utils.declare(f"Stack '{stack_name}' successfully registered!")
 
@@ -369,6 +383,20 @@ def register_stack(
     type=str,
     required=False,
 )
+@click.option(
+    "--is-shared",
+    "is_shared",
+    is_flag=True,
+    help="Use this flag to share this stack with other users.",
+    type=click.BOOL,
+)
+@click.option(
+    "--share",
+    "share",
+    is_flag=True,
+    help="Use this flag to share this stack with other users.",
+    type=click.BOOL,
+)
 def update_stack(
     stack_name: Optional[str],
     artifact_store_name: Optional[str] = None,
@@ -382,6 +410,7 @@ def update_stack(
     alerter_name: Optional[str] = None,
     annotator_name: Optional[str] = None,
     data_validator_name: Optional[str] = None,
+    share: bool = False,
 ) -> None:
     """Update a stack.
 
@@ -400,6 +429,7 @@ def update_stack(
         alerter_name: Name of the new alerter for this stack.
         annotator_name: Name of the new annotator for this stack.
         data_validator_name: Name of the new data validator for this stack.
+        share: Allows sharing the stack with other users.
     """
     cli_utils.print_active_config()
 
@@ -503,6 +533,11 @@ def update_stack(
                 StackComponentType.DATA_VALIDATOR,
                 name=data_validator_name,
             )
+
+        if share:
+            # THis allows users to switch stacks from private to shared
+            #  the opposite switch is currently unsupported
+            current_stack.is_shared = share
 
         current_stack.components = stack_components
 
@@ -694,7 +729,6 @@ def rename_stack(
                 f"Stack `{current_stack_name}` cannot be renamed as it does "
                 f"not exist.",
             )
-        current_stack.components
 
         try:
             repo.get_stack_by_name(new_stack_name)
@@ -730,7 +764,7 @@ def list_stacks() -> None:
             "ACTIVE": ":point_right:" if is_active else "",
             "STACK NAME": stack_name,
             **{
-                component_type.value.upper(): value
+                component_type.upper(): value
                 for component_type, value in stack_configuration.items()
             },
         }
@@ -953,13 +987,15 @@ def _get_component_as_dict(
         A dict representation of the component's key config values.
     """
     repo = Repository()
-    component = repo.get_stack_component(component_type, name=component_name)
+    component = repo.get_stack_component_by_name_and_type(
+        type=component_type, name=component_name
+    )
     component_dict = {
         key: value
         for key, value in json.loads(component.json()).items()
         if key != "uuid" and value is not None
     }
-    component_dict["flavor"] = component.FLAVOR
+    component_dict["flavor_name"] = component.flavor_name
     return component_dict
 
 
@@ -979,31 +1015,21 @@ def export_stack(stack_name: str, filename: Optional[str]) -> None:
     # TODO [ENG-893]: code duplicate with describe_stack()
     repo = Repository()
 
-    stack_configurations = repo.stack_configurations
-    if len(stack_configurations) == 0:
-        cli_utils.error("No stacks registered.")
-
     try:
-        stack_configuration = stack_configurations[stack_name]
+        stack = repo.get_stack_by_name(stack_name)
     except KeyError:
         cli_utils.error(f"Stack '{stack_name}' does not exist.")
+    else:
+        # write zenml version and stack dict to YAML
+        yaml_data = stack.to_yaml()
+        yaml_data["zenml_version"] = zenml.__version__
 
-    # create a dict of all components in the specified stack
-    component_data = {}
-    for component_type, component_name in stack_configuration.items():
-        component_dict = _get_component_as_dict(component_type, component_name)
-        component_data[str(component_type)] = component_dict
-
-    # write zenml version and stack dict to YAML
-    yaml_data = {
-        "zenml_version": zenml.__version__,
-        "stack_name": stack_name,
-        "components": component_data,
-    }
-    if filename is None:
-        filename = stack_name + ".yaml"
-    write_yaml(filename, yaml_data)
-    cli_utils.declare(f"Exported stack '{stack_name}' to file '{filename}'.")
+        if filename is None:
+            filename = stack_name + ".yaml"
+        write_yaml(filename, yaml_data)
+        cli_utils.declare(
+            f"Exported stack '{stack_name}' to file '{filename}'."
+        )
 
 
 def _import_stack_component(
@@ -1020,7 +1046,7 @@ def _import_stack_component(
     """
     component_type = StackComponentType(component_type)
     component_name = component_config.pop("name")
-    component_flavor = component_config.pop("flavor")
+    component_flavor = component_config.pop("flavor_name")
 
     # make sure component can be registered, otherwise ask for new name
     while True:
@@ -1073,20 +1099,12 @@ def _import_stack_component(
     help="Import stack components even if the installed version of ZenML "
     "is different from the one specified in the stack YAML file",
 )
-@click.option(
-    "--decouple_stores",
-    "decouple_stores",
-    is_flag=True,
-    help="Decouple the given artifact/metadata store from prior associations.",
-    type=click.BOOL,
-)
 @click.pass_context
 def import_stack(
     ctx: click.Context,
     stack_name: str,
     filename: Optional[str],
     ignore_version_mismatch: bool = False,
-    decouple_stores: bool = False,
 ) -> None:
     """Import a stack from YAML.
 
@@ -1159,7 +1177,6 @@ def import_stack(
     ctx.invoke(
         register_stack,
         stack_name=stack_name,
-        decouple_stores=decouple_stores,
         **component_names,
     )
 

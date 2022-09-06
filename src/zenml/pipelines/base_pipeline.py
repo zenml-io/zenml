@@ -47,6 +47,7 @@ from zenml.logger import get_logger
 from zenml.pipelines.schedule import Schedule
 from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
+from zenml.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps.base_step import BaseStepMeta
 from zenml.steps.utils import clone_step
@@ -55,7 +56,6 @@ from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 if TYPE_CHECKING:
     from zenml.post_execution import PipelineRunView
-    from zenml.stack import Stack
 
 logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME: str = "connect"
@@ -422,7 +422,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             schedule=schedule,
             **additional_parameters,
         )
-        stack = Repository().active_stack.to_stack()
+        stack = Stack.from_model(Repository().active_stack)
 
         stack_metadata = {
             component_type.value: component.FLAVOR

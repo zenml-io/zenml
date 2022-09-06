@@ -15,6 +15,7 @@
 
 import base64
 import datetime
+import json
 import os
 import subprocess
 import sys
@@ -278,9 +279,7 @@ def print_stack_component_list(
             "UUID": component.id,
             **{
                 key.upper(): str(value)
-                for key, value in yaml.safe_load(
-                    base64.b64decode(component.configuration).decode()
-                ).items()
+                for key, value in json.loads(component.configuration).items()
             },
         }
         configurations.append(component_config)
@@ -288,7 +287,7 @@ def print_stack_component_list(
 
 
 def print_stack_configuration(
-    config: Dict["StackComponentType", str], active: bool, stack_name: str
+    config: Dict[str, str], active: bool, stack_name: str
 ) -> None:
     """Prints the configuration options of a stack.
 
@@ -308,8 +307,9 @@ def print_stack_configuration(
     )
     rich_table.add_column("COMPONENT_TYPE", overflow="fold")
     rich_table.add_column("COMPONENT_NAME", overflow="fold")
+    config.pop("shared")
     for component_type, name in config.items():
-        rich_table.add_row(component_type.value, name)
+        rich_table.add_row(component_type, name)
 
     # capitalize entries in first column
     rich_table.columns[0]._cells = [

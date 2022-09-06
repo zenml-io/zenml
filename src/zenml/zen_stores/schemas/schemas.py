@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """SQL Model Implementations."""
+import base64
 import json
 from datetime import datetime
 from typing import List, Optional
@@ -375,7 +376,6 @@ class StackComponentSchema(SQLModel, table=True):
         Returns:
             A StackComponentSchema
         """
-
         return cls(
             name=component.name,
             project_id=project_id,
@@ -383,7 +383,9 @@ class StackComponentSchema(SQLModel, table=True):
             is_shared=component.is_shared,
             type=component.type,
             flavor_name=component.flavor_name,
-            configuration=component.configuration,
+            configuration=base64.b64encode(
+                json.dumps(component.configuration).encode("utf-8")
+            ),
         )
 
     def from_update_model(
@@ -397,7 +399,9 @@ class StackComponentSchema(SQLModel, table=True):
         """
         self.name = component.name
         self.is_shared = component.is_shared
-        self.configuration = component.configuration
+        self.configuration = base64.b64encode(
+            json.dumps(component.configuration).encode("utf-8")
+        )
         return self
 
     def to_model(self) -> "ComponentModel":
@@ -414,7 +418,9 @@ class StackComponentSchema(SQLModel, table=True):
             owner=self.owner,
             project_id=self.project_id,
             is_shared=self.is_shared,
-            configuration=self.configuration,
+            configuration=json.loads(
+                base64.b64decode(self.configuration).decode()
+            ),
         )
 
 

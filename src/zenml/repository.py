@@ -129,7 +129,8 @@ class RepositoryMetaClass(ABCMeta):
                     "adjust your step to disable caching if needed. "
                     "Alternatively, use a `StepContext` inside your step "
                     "instead, as covered here: "
-                    "https://docs.zenml.io/developer-guide/advanced-usage/step-fixtures#step-contexts",
+                    "https://docs.zenml.io/developer-guide/advanced-usage"
+                    "/step-fixtures#step-contexts",
                 )
 
         if args or kwargs:
@@ -295,7 +296,8 @@ class Repository(metaclass=RepositoryMetaClass):
                 #  guarantee that the stack is actually active
             except KeyError:
                 logger.warning(
-                    "Stack with id:'%s' not found. Switching the repository active stack "
+                    "Stack with id:'%s' not found. Switching the repository "
+                    "active stack "
                     "to 'default'",
                     self._config.active_stack_id,
                 )
@@ -369,7 +371,8 @@ class Repository(metaclass=RepositoryMetaClass):
         """Check if the repository is using a local configuration.
 
         Returns:
-            True if the repository is using a local configuration, False otherwise.
+            True if the repository is using a local configuration,
+            False otherwise.
         """
         return self._config is not None
 
@@ -421,7 +424,8 @@ class Repository(metaclass=RepositoryMetaClass):
         """Check if the repository is using a local active project setting.
 
         Returns:
-            True if the repository is using a local active project setting, False
+            True if the repository is using a local active project setting,
+            False
             otherwise.
         """
         return (
@@ -504,7 +508,7 @@ class Repository(metaclass=RepositoryMetaClass):
         return self.zen_store.stacks
 
     @property
-    def stack_configurations(self) -> Dict[str, Dict[StackComponentType, str]]:
+    def stack_configurations(self) -> Dict[str, Dict[str, str]]:
         """Configuration dicts for all stacks registered in this repository.
 
         This property is intended as a quick way to get information about the
@@ -525,9 +529,9 @@ class Repository(metaclass=RepositoryMetaClass):
 
         dict_of_stacks = dict()
         for stack in stacks:
-            dict_of_stacks[stack.name] = {}
+            dict_of_stacks[stack.name] = {"shared": str(stack.is_shared)}
             for component_type, component in stack.components.items():
-                dict_of_stacks[stack.name][component_type] = component.name
+                dict_of_stacks[stack.name][str(component_type)] = component.name
 
         return dict_of_stacks
 
@@ -606,7 +610,8 @@ class Repository(metaclass=RepositoryMetaClass):
             # TODO: [server] access the user id in a more elegant way
             stacks = self.zen_store.list_stacks(
                 project_id=self.active_project.id,
-                user_id=self.zen_store.default_user_id,  # GlobalConfiguration().user_id,
+                user_id=self.zen_store.default_user_id,
+                # GlobalConfiguration().user_id,
                 name=name,
             )
 
@@ -632,7 +637,8 @@ class Repository(metaclass=RepositoryMetaClass):
         # TODO: [server] make sure the stack can be validated here
         if stack.is_valid:
             created_stack = self.zen_store.register_stack(
-                user_id=self.zen_store.default_user_id,  # TODO: [server] replace with active user
+                user_id=self.zen_store.default_user_id,
+                # TODO: [server] replace with active user
                 project_id=self.active_project.id,
                 stack=stack,
             )
@@ -738,15 +744,13 @@ class Repository(metaclass=RepositoryMetaClass):
                 project_id=self.active_project.id,
                 name=name,
                 type=type,
-                user_id=self.zen_store.default_user_id,  # GlobalConfiguration().user_id,
+                user_id=self.zen_store.default_user_id,
             )
 
         # TODO: [server] this error handling could be improved
         if not components:
             raise KeyError(
-                "No stack component of type '%s' with the name '%s' " "exists.",
-                type.value,
-                name,
+                "No stack component of type {type} with the name {name} exists."
             )
         elif len(components) > 1:
             raise RuntimeError(
@@ -881,7 +885,8 @@ class Repository(metaclass=RepositoryMetaClass):
             )
 
         def _find_repo_helper(path_: Path) -> Optional[Path]:
-            """Helper function to recursively search parent directories for a ZenML repository.
+            """Helper function to recursively search parent directories for a
+            ZenML repository.
 
             Args:
                 path_: The path to search.
@@ -923,7 +928,7 @@ class Repository(metaclass=RepositoryMetaClass):
         """
         logger.debug(
             "Fetching the flavor of type '%s' with name '%s'.",
-            component_type.value,
+            component_type,
             name,
         )
 

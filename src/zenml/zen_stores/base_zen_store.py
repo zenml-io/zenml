@@ -12,8 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base Zen Store implementation."""
-import base64
-import json
 import os
 from abc import abstractmethod
 from pathlib import Path, PurePath
@@ -216,10 +214,6 @@ class BaseZenStore(BaseModel):
         """
         from zenml.config.global_config import GlobalConfiguration
 
-        orchestrator_config = {}
-        encoded_orchestrator_config = base64.urlsafe_b64encode(
-            json.dumps(orchestrator_config).encode()
-        )
         # Register the default orchestrator
         # try:
         orchestrator = self.register_stack_component(
@@ -229,7 +223,7 @@ class BaseZenStore(BaseModel):
                 name="default",
                 type=StackComponentType.ORCHESTRATOR,
                 flavor_name="local",
-                configuration=encoded_orchestrator_config,
+                configuration={},
             ),
         )
         # except StackComponentExistsError:
@@ -243,10 +237,7 @@ class BaseZenStore(BaseModel):
             "default_local_store",
         )
         io_utils.create_dir_recursive_if_not_exists(artifact_store_path)
-        artifact_store_config = {"path": artifact_store_path}
-        encoded_artifact_store_config = base64.urlsafe_b64encode(
-            json.dumps(artifact_store_config).encode()
-        )
+
         # try:
         artifact_store = self.register_stack_component(
             user_id=self.default_user_id,
@@ -255,7 +246,7 @@ class BaseZenStore(BaseModel):
                 name="default",
                 type=StackComponentType.ARTIFACT_STORE,
                 flavor_name="local",
-                configuration=encoded_artifact_store_config,
+                configuration={"path": artifact_store_path},
             ),
         )
         # except StackComponentExistsError:
@@ -474,7 +465,7 @@ class BaseZenStore(BaseModel):
         """
 
     def register_stack(
-        self, user_id: UUID, project_id: str, stack: StackModel
+        self, user_id: UUID, project_id: UUID, stack: StackModel
     ) -> StackModel:
         """Register a new stack.
 
@@ -490,7 +481,7 @@ class BaseZenStore(BaseModel):
             StackExistsError: In case a stack with that name is already owned
                 by this user on this project.
         """
-        metadata = {c.type.value: c.flavor for c in stack.components}
+        metadata = {ct: c.flavor_name for ct, c in stack.components.items()}
         metadata["store_type"] = self.type.value
         self._track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
         return self._register_stack(
@@ -499,7 +490,7 @@ class BaseZenStore(BaseModel):
 
     @abstractmethod
     def _register_stack(
-        self, user_id: UUID, project_id: str, stack: StackModel
+        self, user_id: UUID, project_id: UUID, stack: StackModel
     ) -> StackModel:
         """Register a new stack.
 
@@ -694,7 +685,7 @@ class BaseZenStore(BaseModel):
         """
 
     def register_stack_component(
-        self, user_id: UUID, project_id: str, component: ComponentModel
+        self, user_id: UUID, project_id: UUID, component: ComponentModel
     ) -> ComponentModel:
         """Create a stack component.
 
@@ -712,7 +703,7 @@ class BaseZenStore(BaseModel):
 
     @abstractmethod
     def _register_stack_component(
-        self, user_id: UUID, project_id: str, component: ComponentModel
+        self, user_id: UUID, project_id: UUID, component: ComponentModel
     ) -> ComponentModel:
         """Create a stack component.
 

@@ -42,16 +42,27 @@ from types import (
     ModuleType,
     TracebackType,
 )
-from typing import Any, Callable, Iterator, List, Optional, Type, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Iterator,
+    List,
+    Optional,
+    Type,
+    Union,
+)
 
 from zenml import __version__
 from zenml.constants import APP_NAME
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.logger import get_logger
-from zenml.stack import StackComponent
 
 logger = get_logger(__name__)
+
+if TYPE_CHECKING:
+    from zenml.stack import StackComponent
 
 
 def is_standard_pin(pin: str) -> bool:
@@ -582,7 +593,7 @@ def import_python_file(file_path: str, zen_root: str) -> types.ModuleType:
 
 def validate_flavor_source(
     source: str, component_type: StackComponentType
-) -> Type[StackComponent]:
+) -> Type["StackComponent"]:
     """Import a StackComponent class from a given source and validate its type.
 
     Args:

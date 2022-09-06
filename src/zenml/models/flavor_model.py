@@ -11,16 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Optional, Type
+from typing import TYPE_CHECKING, Optional, Type
 
 from pydantic import BaseModel
 
 from zenml.enums import StackComponentType
-from zenml.stack import StackComponent
 from zenml.utils.source_utils import (
     load_source_path_class,
     validate_flavor_source,
 )
+
+if TYPE_CHECKING:
+    from zenml.stack import StackComponent
 
 
 class FlavorModel(BaseModel):

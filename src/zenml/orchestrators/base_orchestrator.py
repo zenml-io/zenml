@@ -72,14 +72,13 @@ from zenml.orchestrators.utils import (
     get_step_for_node,
 )
 from zenml.repository import Repository
-from zenml.stack import StackComponent
+from zenml.stack import Stack, StackComponent
 from zenml.steps import BaseStep
 from zenml.utils import source_utils, string_utils
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
-    from zenml.stack import Stack
 
 logger = get_logger(__name__)
 
@@ -363,9 +362,10 @@ class BaseOrchestrator(StackComponent, ABC):
         # trackers) will run some code before and after the actual step run.
         # This is where the step actually gets executed using the
         # component_launcher
-        repo.active_stack.to_stack().prepare_step_run()
+        active_stack = Stack.from_model(repo.active_stack)
+        active_stack.prepare_step_run()
         execution_info = self._execute_step(component_launcher)
-        repo.active_stack.to_stack().cleanup_step_run()
+        active_stack.cleanup_step_run()
 
         return execution_info
 
