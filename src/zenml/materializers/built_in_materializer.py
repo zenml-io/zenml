@@ -279,6 +279,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         # If the data is serializable, just write it into a single JSON file.
         if _is_serializable(data):
             yaml_utils.write_json(self.data_path, data)
+            return
 
         # non-serializable dict: Handle as non-serializable list of lists.
         if isinstance(data, dict):
