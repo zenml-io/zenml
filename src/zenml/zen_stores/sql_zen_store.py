@@ -814,7 +814,7 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to update user with id '{user_id}': "
                     "No user found with this id."
                 )
-            existing_user.name = user.name  # other attributes are not updatable
+            existing_user.from_update_model(user)
             session.add(existing_user)
             session.commit()
             return existing_user.to_model()
@@ -1471,8 +1471,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Update the project
-            existing_project.name = project.name
-            existing_project.description = project.description
+            existing_project.from_update_model(project)
             # other fields are not updatable
             session.add(existing_project)
             session.commit()
@@ -1671,9 +1670,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Update the repository
-            existing_repository.name = repository.name
-            # project_id is updated in `_connect_project_repository`
-            # other fields are not updatable
+            existing_repository.from_update_model(repository)
             session.add(existing_repository)
             session.commit()
 
@@ -1857,11 +1854,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Update the pipeline
-            existing_pipeline.name = pipeline.name
-            existing_pipeline.docstring = pipeline.docstring
-            # existing_pipeline.configuration = pipeline.configuration
-            existing_pipeline.git_sha = pipeline.git_sha
-            # Other fields are not updatable
+            existing_pipeline.from_update_model(pipeline)
 
             session.add(existing_pipeline)
             session.commit()
@@ -2094,13 +2087,8 @@ class SqlZenStore(BaseZenStore):
                     f"No pipeline run with this ID found."
                 )
 
-            # Update the pipeline run  TODO: from_update_model
-            existing_run.mlmd_id = run.mlmd_id
-            existing_run.name = run.name
-            existing_run.runtime_configuration = run.runtime_configuration
-            existing_run.git_sha = run.git_sha
-            existing_run.zenml_version = run.zenml_version
-            # Other fields are not updatable
+            # Update the pipeline run
+            existing_run.from_update_model(run)
 
             session.add(existing_run)
             session.commit()

@@ -55,6 +55,11 @@ class ProjectSchema(SQLModel, table=True):
     def from_create_model(cls, model: ProjectModel) -> "ProjectSchema":
         return cls(name=model.name, description=model.description)
 
+    def from_update_model(self, model: ProjectModel) -> "ProjectSchema":
+        self.name = model.name
+        self.description = model.description
+        return self
+
     def to_model(self) -> ProjectModel:
         return ProjectModel(
             id=self.id,
@@ -77,6 +82,12 @@ class CodeRepositorySchema(SQLModel, table=True):
         cls, model: CodeRepositoryModel, project_id: UUID
     ) -> "CodeRepositorySchema":
         return cls(name=model.name, project_id=project_id)
+
+    def from_update_model(
+        self, model: CodeRepositoryModel
+    ) -> "CodeRepositorySchema":
+        self.name = model.name
+        return self
 
     def to_model(self) -> CodeRepositoryModel:
         return CodeRepositoryModel(
@@ -114,6 +125,10 @@ class UserSchema(SQLModel, table=True):
     @classmethod
     def from_create_model(cls, model: UserModel) -> "UserSchema":
         return cls(name=model.name)
+
+    def from_update_model(self, model: UserModel) -> "UserSchema":
+        self.name = model.name
+        return self
 
     def to_model(self) -> UserModel:
         return UserModel(id=self.id, name=self.name, created_at=self.created_at)
@@ -431,6 +446,12 @@ class PipelineSchema(SQLModel, table=True):
     def from_create_model(cls, model: PipelineModel) -> "PipelineSchema":
         pass  # TODO
 
+    def from_update_model(self, model: PipelineModel) -> "PipelineSchema":
+        self.name = model.name
+        self.docstring = model.docstring
+        # self.configuration = model.configuration
+        return self
+
     def to_model(self) -> "PipelineModel":
         pass  # TODO
 
@@ -474,6 +495,14 @@ class PipelineRunSchema(SQLModel, table=True):
             zenml_version=model.zenml_version,
             pipeline=pipeline,
         )
+
+    def from_update_model(self, model: PipelineRunModel) -> "PipelineRunSchema":
+        self.mlmd_id = model.mlmd_id
+        self.name = model.name
+        self.runtime_configuration = json.dumps(model.runtime_configuration)
+        self.git_sha = model.git_sha
+        self.zenml_version = model.zenml_version
+        return self
 
     def to_model(self) -> PipelineRunModel:
         return PipelineRunModel(
