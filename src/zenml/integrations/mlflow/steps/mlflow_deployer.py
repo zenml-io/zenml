@@ -37,6 +37,7 @@ from zenml.integrations.mlflow.services.mlflow_deployment import (
 )
 from zenml.logger import get_logger
 from zenml.repository import Repository
+from zenml.stack.stack import Stack
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseStep,
@@ -90,9 +91,9 @@ def mlflow_model_deployer_step(
     model_deployer = MLFlowModelDeployer.get_active_model_deployer()
 
     # fetch the MLflow artifacts logged during the pipeline run
-    experiment_tracker = Repository(  # type: ignore[call-arg]
-        skip_repository_check=True
-    ).active_stack.experiment_tracker
+    repo = Repository(skip_repository_check=True)
+    active_stack = Stack.from_model(repo.active_stack)
+    experiment_tracker = active_stack.experiment_tracker
 
     if not isinstance(experiment_tracker, MLFlowExperimentTracker):
         raise get_missing_mlflow_experiment_tracker_error()

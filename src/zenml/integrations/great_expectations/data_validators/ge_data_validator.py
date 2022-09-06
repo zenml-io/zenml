@@ -49,6 +49,7 @@ from zenml.integrations.great_expectations.utils import create_batch_request
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.repository import Repository
+from zenml.stack.stack import Stack
 from zenml.steps import STEP_ENVIRONMENT_NAME, StepEnvironment
 from zenml.utils import io_utils
 from zenml.utils.string_utils import random_str
@@ -309,7 +310,8 @@ class GreatExpectationsDataValidator(BaseDataValidator):
             if self.configure_local_docs:
 
                 repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
-                artifact_store = repo.active_stack.artifact_store
+                active_stack = Stack.from_model(repo.active_stack)
+                artifact_store = active_stack.artifact_store
                 if artifact_store.FLAVOR != "local":
                     self._context.config.data_docs_sites[
                         "zenml_local"

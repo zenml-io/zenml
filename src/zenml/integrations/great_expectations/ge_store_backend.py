@@ -29,6 +29,7 @@ from great_expectations.exceptions import (  # type: ignore[import]
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.repository import Repository
+from zenml.stack.stack import Stack
 from zenml.utils import io_utils
 
 logger = get_logger(__name__)
@@ -53,7 +54,8 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):  # type: ignore[misc]
         super().__init__(**kwargs)
 
         repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
-        artifact_store = repo.active_stack.artifact_store
+        active_stack = Stack.from_model(repo.active_stack)
+        artifact_store = active_stack.artifact_store
         self.root_path = os.path.join(artifact_store.path, "great_expectations")
 
         # extract the protocol used in the artifact store root path

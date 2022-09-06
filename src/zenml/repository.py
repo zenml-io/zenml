@@ -750,7 +750,7 @@ class Repository(metaclass=RepositoryMetaClass):
         # TODO: [server] this error handling could be improved
         if not components:
             raise KeyError(
-                "No stack component of type {type} with the name {name} exists."
+                f"No stack component of type '{type}' with the name '{name}' exists."
             )
         elif len(components) > 1:
             raise RuntimeError(
