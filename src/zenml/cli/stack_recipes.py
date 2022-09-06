@@ -105,7 +105,7 @@ class Terraform:
             )
         if not self._is_helm_installed():
             raise RuntimeError(
-                "helm is not installed on your machine or not available on  "
+                "Helm is not installed on your machine or not available on  "
                 "your $PATH. It is required for stack recipes to create releases "
                 "on Kubernetes. Please visit "
                 "https://helm.sh/docs/intro/install/ "
@@ -113,7 +113,7 @@ class Terraform:
             )
         if not self._is_docker_installed():
             raise RuntimeError(
-                "docker is not installed on your machine or not available on  "
+                "Docker is not installed on your machine or not available on  "
                 "your $PATH. It is required for stack recipes to configure "
                 "access to the container registry. Please visit "
                 "https://docs.docker.com/engine/install/ "
