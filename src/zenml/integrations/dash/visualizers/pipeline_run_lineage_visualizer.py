@@ -160,7 +160,7 @@ class PipelineRunLineageVisualizer(BaseVisualizer):
         for step in object.steps:
             step_output_artifacts = list(step.outputs.values())
             execution_id = (
-                step_output_artifacts[0].producer_step.id
+                step_output_artifacts[0].producer_step_id
                 if step_output_artifacts
                 else step.id
             )
@@ -176,7 +176,6 @@ class PipelineRunLineageVisualizer(BaseVisualizer):
                         "entrypoint_name": step.entrypoint_name,  # redundant for consistency
                         "name": step.name,  # redundant for consistency
                         "type": "step",
-                        "parameters": step.parameters,
                         "inputs": {k: v.uri for k, v in step.inputs.items()},
                         "outputs": {k: v.uri for k, v in step.outputs.items()},
                     },
@@ -198,7 +197,7 @@ class PipelineRunLineageVisualizer(BaseVisualizer):
                             "artifact_type": artifact.type,
                             "artifact_data_type": artifact.data_type,
                             "parent_step_id": artifact.parent_step_id,
-                            "producer_step_id": artifact.producer_step.id,
+                            "producer_step_id": artifact.producer_step_id,
                             "uri": artifact.uri,
                         },
                         "classes": f"rectangle "
@@ -363,8 +362,6 @@ class PipelineRunLineageVisualizer(BaseVisualizer):
                     for k, v in data["outputs"].items():
                         text += f"**{k}**: {v}" + "\n\n"
                     text += "### Params:"
-                    for k, v in data["parameters"].items():
-                        text += f"**{k}**: {v}" + "\n\n"
             return text
 
         @app.callback(  # type: ignore[misc]
