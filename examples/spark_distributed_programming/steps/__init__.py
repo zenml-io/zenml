@@ -18,8 +18,10 @@ from zenml.integrations.spark.step_operators.spark_step_operator import (
     SparkStepOperator,
 )
 from zenml.repository import Repository
+from zenml.stack.stack import Stack
 
-step_operator = Repository().active_stack.step_operator
+active_stack = Stack.from_model(Repository().active_stack)
+step_operator = active_stack.step_operator
 if not step_operator or not isinstance(step_operator, SparkStepOperator):
     raise RuntimeError(
         "Your active stack needs to contain a Spark step operator for this "

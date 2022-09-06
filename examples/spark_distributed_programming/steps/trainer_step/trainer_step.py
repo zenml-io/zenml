@@ -18,9 +18,11 @@ from pyspark.ml.classification import RandomForestClassifier
 from pyspark.sql import DataFrame
 
 from zenml.repository import Repository
+from zenml.stack.stack import Stack
 from zenml.steps import step
 
-step_operator = Repository().active_stack.step_operator
+active_stack = Stack.from_model(Repository().active_stack)
+step_operator = active_stack.step_operator
 
 
 @step(custom_step_operator=step_operator.name)
