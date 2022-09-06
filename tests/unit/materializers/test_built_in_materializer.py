@@ -143,3 +143,9 @@ def test_mixture_of_all_builtin_types():
         {1.0, 2.0, 4, 4},  # set of serializable types
     ]  # non-serializable list
     _test_materialization(type_=list, example=example)
+
+
+def test_none_values():
+    """Tests serialization of `None` values in container types."""
+    _test_materialization(type_=list, example=[1, "a", None])
+    _test_materialization(type_=dict, example={"key": None})

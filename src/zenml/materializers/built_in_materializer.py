@@ -140,6 +140,8 @@ def _is_serializable(obj: Any) -> bool:
     Returns:
         True if the entire object is JSON-serializable, else False.
     """
+    if obj is None:
+        return True
     if isinstance(obj, tuple(BASIC_TYPES)):
         return True
     if isinstance(obj, (list, tuple, set)):
