@@ -995,7 +995,7 @@ def _get_component_as_dict(
         for key, value in json.loads(component.json()).items()
         if key != "uuid" and value is not None
     }
-    component_dict["flavor"] = component.FLAVOR
+    component_dict["flavor_name"] = component.flavor_name
     return component_dict
 
 
@@ -1023,6 +1023,7 @@ def export_stack(stack_name: str, filename: Optional[str]) -> None:
     else:
         # write zenml version and stack dict to YAML
         yaml_data = stack.to_yaml()
+        yaml_data["zenml_version"] = zenml.__version__
 
         if filename is None:
             filename = stack_name + ".yaml"
@@ -1044,7 +1045,7 @@ def _import_stack_component(
     """
     component_type = StackComponentType(component_type)
     component_name = component_config.pop("name")
-    component_flavor = component_config.pop("flavor")
+    component_flavor = component_config.pop("flavor_name")
 
     # make sure component can be registered, otherwise ask for new name
     while True:
@@ -1097,20 +1098,12 @@ def _import_stack_component(
     help="Import stack components even if the installed version of ZenML "
     "is different from the one specified in the stack YAML file",
 )
-@click.option(
-    "--decouple_stores",
-    "decouple_stores",
-    is_flag=True,
-    help="Decouple the given artifact/metadata store from prior associations.",
-    type=click.BOOL,
-)
 @click.pass_context
 def import_stack(
     ctx: click.Context,
     stack_name: str,
     filename: Optional[str],
-    ignore_version_mismatch: bool = False,
-    decouple_stores: bool = False,
+    ignore_version_mismatch: bool = False
 ) -> None:
     """Import a stack from YAML.
 
@@ -1183,7 +1176,6 @@ def import_stack(
     ctx.invoke(
         register_stack,
         stack_name=stack_name,
-        decouple_stores=decouple_stores,
         **component_names,
     )
 
