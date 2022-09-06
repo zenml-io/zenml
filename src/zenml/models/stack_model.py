@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Stack wrapper implementation."""
+import json
 from datetime import datetime
 from typing import Dict, Optional
 from uuid import UUID
@@ -20,7 +21,6 @@ from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
 from zenml.models.component_models import ComponentModel
-from zenml.stack import Stack
 
 
 class StackModel(BaseModel):
@@ -88,35 +88,20 @@ class StackModel(BaseModel):
         else:
             return False
 
-    @classmethod
-    def from_stack(cls, stack: Stack) -> "StackModel":
-        """Creates a StackModel from an actual Stack instance.
+    def to_yaml(self):
+        """Create yaml representation of the Stack Model."""
+        component_data = {}
+        for component_type, component in self.components.items():
+            component_dict = json.loads(component.json())
+            component_dict.pop("project")   # Not needed in the yaml repr
+            component_dict.pop("created_at")  # Not needed in the yaml repr
+            component_data[component_type.value] = component_dict
 
-        Args:
-            stack: the instance of a Stack
-
-        Returns:
-            a StackModel
-        """
-        return cls(
-            id=stack.id,
-            name=stack.name,
-            components={
-                type_: ComponentModel.from_component(component)
-                for type_, component in stack.components.items()
-            },
-        )
-
-    def to_stack(self) -> Stack:
-        """Creates the corresponding Stack instance from the StackModel.
-
-        Returns:
-            the corresponding Stack instance
-        """
-        stack_components = {
-            type_: model.to_component()
-            for type_, model in self.components.items()
+        # write zenml version and stack dict to YAML
+        yaml_data = {
+            "stack_name": self.name,
+            "components": component_data,
         }
-        return Stack.from_components(
-            id=self.id, name=self.name, components=stack_components
-        )
+
+        return yaml_data
+

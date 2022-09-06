@@ -55,7 +55,7 @@ class ComponentModel(BaseModel):
     flavor_name: Optional[str] = Field(
         title="The flavor of the Stack Component.",
     )
-    configuration: str = Field(  # Json representation of the configuration
+    configuration: Dict[str, Any] = Field(  # Json representation of the configuration
         title="The id of the Stack Component.",
     )
     owner: Optional[UUID] = Field(
@@ -81,7 +81,7 @@ class ComponentModel(BaseModel):
                 "name": "vertex_prd_orchestrator",
                 "type": "orchestrator",
                 "flavor": "vertex",
-                "config": {"location": "europe-west3"},
+                "configuration": {"location": "europe-west3"},
                 "owner": "8d0acbc3-c51a-452c-bda3-e1b5469f79fd",
                 "created_by": "8d0acbc3-c51a-452c-bda3-e1b5469f79fd",
                 "created_at": "2022-08-12T07:12:44.931Z",
@@ -103,7 +103,7 @@ class ComponentModel(BaseModel):
             flavor_name=component.FLAVOR,
             name=component.name,
             id=component.uuid,
-            configuration=component.json()
+            configuration=json.loads(component.json())
         )
 
     def to_component(self) -> "StackComponent":
@@ -118,7 +118,7 @@ class ComponentModel(BaseModel):
             name=self.flavor_name, component_type=self.type
         )
 
-        config = json.loads(self.configuration)
+        config = self.configuration
         config["uuid"] = self.id
         config["name"] = self.name
         return flavor.parse_obj(config)

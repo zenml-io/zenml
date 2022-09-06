@@ -18,6 +18,7 @@ import json
 from typing import Dict, Optional
 
 import click
+import yaml
 
 import zenml
 from zenml.cli import utils as cli_utils
@@ -1020,22 +1021,9 @@ def export_stack(stack_name: str, filename: Optional[str]) -> None:
     except KeyError:
         cli_utils.error(f"Stack '{stack_name}' does not exist.")
     else:
-        # create a dict of all components in the specified stack
-        component_data = {}
-        for component_type, component in stack.components.items():
-            component_dict = {
-                key: value
-                for key, value in json.loads(component.json()).items()
-                if key != "uuid" and value is not None
-            }
-            component_data[component_type] = component_dict
-
         # write zenml version and stack dict to YAML
-        yaml_data = {
-            "zenml_version": zenml.__version__,
-            "stack_name": stack_name,
-            "components": component_data,
-        }
+        yaml_data = stack.to_yaml()
+
         if filename is None:
             filename = stack_name + ".yaml"
         write_yaml(filename, yaml_data)

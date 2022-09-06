@@ -390,7 +390,7 @@ class StackComponentSchema(SQLModel, table=True):
             type=component.type,
             flavor_name=component.flavor_name,
             configuration=base64.b64encode(
-                component.configuration.encode('utf-8')),
+                json.dumps(component.configuration).encode('utf-8')),
         )
 
     def from_update_model(
@@ -405,7 +405,7 @@ class StackComponentSchema(SQLModel, table=True):
         self.name = component.name
         self.is_shared = component.is_shared
         self.configuration = base64.b64encode(
-                component.configuration.encode('utf-8'))
+                json.dumps(component.configuration).encode('utf-8'))
         return self
 
     def to_model(self) -> "ComponentModel":
@@ -422,7 +422,8 @@ class StackComponentSchema(SQLModel, table=True):
             owner=self.owner,
             project_id=self.project_id,
             is_shared=self.is_shared,
-            configuration=base64.b64decode(self.configuration).decode(),
+            configuration=json.loads(base64.b64decode(
+                self.configuration).decode()),
         )
 
 
