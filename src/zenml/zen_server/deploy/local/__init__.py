@@ -12,3 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """ZenServer Local Deployment."""
+
+from zenml.zen_server.deploy.local.local_provider import LocalServerProvider
+
+__all__ = [
+    "LocalServerProvider",
+]

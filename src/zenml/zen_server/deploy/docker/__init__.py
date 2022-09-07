@@ -12,3 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """ZenServer Docker Deployment."""
+
+
+from zenml.zen_server.deploy.docker.docker_provider import DockerServerProvider
+
+__all__ = [
+    "DockerServerProvider",
+]

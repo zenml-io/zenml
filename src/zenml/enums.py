@@ -124,3 +124,10 @@ class SecretValidationLevel(StrEnum):
     SECRET_AND_KEY_EXISTS = "SECRET_AND_KEY_EXISTS"
     SECRET_EXISTS = "SECRET_EXISTS"
     NONE = "NONE"
+
+
+class ServerProviderType(StrEnum):
+    """ZenML server providers."""
+
+    LOCAL = "local"
+    DOCKER = "docker"
