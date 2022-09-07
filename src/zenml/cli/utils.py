@@ -56,7 +56,8 @@ if TYPE_CHECKING:
     from zenml.integrations.integration import Integration
     from zenml.model_deployers import BaseModelDeployer
     from zenml.secret import BaseSecretSchema
-    from zenml.services import BaseService
+    from zenml.services import BaseService, ServiceState
+    from zenml.zen_server.deploy.deployment import ServerDeployment
     from zenml.zen_stores.models import ComponentWrapper, FlavorWrapper
 
 
@@ -661,22 +662,22 @@ def print_list_items(list_items: List[str], column_title: str) -> None:
     console.print(rich_table)
 
 
-def get_service_status_emoji(service: "BaseService") -> str:
-    """Get the rich emoji representing the operational status of a Service.
+def get_service_state_emoji(state: "ServiceState") -> str:
+    """Get the rich emoji representing the operational state of a Service.
 
     Args:
-        service: Service to get emoji for.
+        state: Service state to get emoji for.
 
     Returns:
         String representing the emoji.
     """
     from zenml.services.service_status import ServiceState
 
-    if service.status.state == ServiceState.ACTIVE:
+    if state == ServiceState.ACTIVE:
         return ":white_check_mark:"
-    if service.status.state == ServiceState.INACTIVE:
+    if state == ServiceState.INACTIVE:
         return ":pause_button:"
-    if service.status.state == ServiceState.ERROR:
+    if state == ServiceState.ERROR:
         return ":heavy_exclamation_mark:"
     return ":hourglass_not_done:"
 
@@ -699,7 +700,7 @@ def pretty_print_model_deployer(
         dict_model_name = served_model_info.get("MODEL_NAME", "")
         model_service_dicts.append(
             {
-                "STATUS": get_service_status_emoji(model_service),
+                "STATUS": get_service_state_emoji(model_service.status.state),
                 "UUID": dict_uuid,
                 "PIPELINE_NAME": dict_pl_name,
                 "PIPELINE_STEP_NAME": dict_pl_stp_name,
@@ -736,7 +737,7 @@ def print_served_model_configuration(
     served_model_info = {
         **served_model_info,
         "UUID": str(model_service.uuid),
-        "STATUS": get_service_status_emoji(model_service),
+        "STATUS": get_service_state_emoji(model_service.status.state),
         "STATUS_MESSAGE": model_service.status.last_error,
         "PIPELINE_NAME": model_service.config.pipeline_name,
         "PIPELINE_RUN_ID": model_service.config.pipeline_run_id,
@@ -754,4 +755,74 @@ def print_served_model_configuration(
         component.upper()  # type: ignore[union-attr]
         for component in rich_table.columns[0]._cells
     ]
+    console.print(rich_table)
+
+
+def print_server_deployment_list(servers: List["ServerDeployment"]) -> None:
+    """Print a table with a list of ZenML server deployments.
+
+    Args:
+        servers: list of ZenML server deployments
+    """
+    server_dicts = []
+    for server in servers:
+        status = ""
+        url = ""
+        connected = ""
+        if server.status:
+            status = get_service_state_emoji(server.status.status)
+            if server.status.url:
+                url = server.status.url
+            if server.status.connected:
+                connected = ":point_left:"
+        server_dicts.append(
+            {
+                "STATUS": status,
+                "NAME": server.config.name,
+                "PROVIDER": server.config.provider.value,
+                "URL": url,
+                "CONNECTED": connected,
+            }
+        )
+    print_table(server_dicts)
+
+
+def print_server_deployment(server: "ServerDeployment") -> None:
+    """Prints the configuration and status of a ZenML server deployment.
+
+    Args:
+        server: Server deployment to print
+    """
+    server_name = server.config.name
+    title = f"ZenML server '{server_name}'"
+
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title=title,
+        show_header=False,
+        show_lines=True,
+    )
+    rich_table.add_column("", overflow="fold")
+    rich_table.add_column("", overflow="fold")
+
+    server_info = [
+        (str(k).upper(), str(v)) for k, v in server.config.dict().items()
+    ]
+
+    if server.status:
+        server_info.extend(
+            [
+                ("URL", server.status.url or ""),
+                ("STATUS", get_service_state_emoji(server.status.status)),
+                ("STATUS_MESSAGE", server.status.status_message or ""),
+                (
+                    "CONNECTED",
+                    ":white_check_mark:" if server.status.connected else "",
+                ),
+            ]
+        )
+
+    for item in server_info:
+        rich_table.add_row(*item)
+
     console.print(rich_table)

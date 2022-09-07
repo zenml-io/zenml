@@ -13,22 +13,23 @@
 #  permissions and limitations under the License.
 """Service implementation for the ZenML docker server deployment."""
 
+import ipaddress
 import os
 import shutil
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Dict, List, Optional, Tuple, Union, cast
 
 from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import ENV_ZENML_CONFIG_PATH, ZEN_SERVER_ENTRYPOINT
+from zenml.constants import (
+    DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
+    ENV_ZENML_CONFIG_PATH,
+    ZEN_SERVER_ENTRYPOINT,
+)
 from zenml.enums import StoreType
 from zenml.logger import get_logger
 from zenml.services import (
     ContainerService,
     ContainerServiceConfig,
     ContainerServiceEndpoint,
-    ContainerServiceEndpointConfig,
-    HTTPEndpointHealthMonitor,
-    HTTPEndpointHealthMonitorConfig,
-    ServiceEndpointProtocol,
     ServiceType,
 )
 from zenml.services.container.container_service import (
@@ -37,7 +38,7 @@ from zenml.services.container.container_service import (
 )
 from zenml.services.container.entrypoint import SERVICE_CONTAINER_PATH
 from zenml.utils.io_utils import get_global_config_directory
-from zenml.zen_server.deploy.base_deployer import BaseServerDeploymentConfig
+from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 logger = get_logger(__name__)
@@ -64,7 +65,7 @@ DOCKER_ZENML_SERVER_DEFAULT_IMAGE = "zenmldocker/zenml-server"
 DOCKER_ZENML_SERVER_DEFAULT_TIMEOUT = 60
 
 
-class DockerServerDeploymentConfig(BaseServerDeploymentConfig):
+class DockerServerDeploymentConfig(ServerDeploymentConfig):
     """Docker server deployment configuration.
 
     Attributes:
@@ -74,6 +75,19 @@ class DockerServerDeploymentConfig(BaseServerDeploymentConfig):
 
     port: int = 8238
     image: str = DOCKER_ZENML_SERVER_DEFAULT_IMAGE
+    address: Union[
+        ipaddress.IPv4Address, ipaddress.IPv6Address
+    ] = ipaddress.IPv4Address(DEFAULT_LOCAL_SERVICE_IP_ADDRESS)
+
+
+class DockerZenServerConfig(ContainerServiceConfig):
+    """Docker Zen server configuration.
+
+    Attributes:
+        server: The deployment configuration.
+    """
+
+    server: DockerServerDeploymentConfig
 
 
 class DockerZenServer(ContainerService):
@@ -91,69 +105,8 @@ class DockerZenServer(ContainerService):
         description="Docker ZenML server deployment",
     )
 
-    config: ContainerServiceConfig
+    config: DockerZenServerConfig
     endpoint: ContainerServiceEndpoint
-
-    def __init__(
-        self,
-        server_config: Optional[DockerServerDeploymentConfig] = None,
-        **attrs: Any,
-    ) -> None:
-        """Initialize the ZenServer.
-
-        Args:
-            server_config: server deployment configuration.
-            attrs: Pydantic initialization arguments.
-        """
-        if server_config:
-            # initialization from a server deployment configuration
-            config, endpoint_cfg, monitor_cfg = self._get_configuration(
-                server_config
-            )
-            attrs["config"] = config
-            endpoint = ContainerServiceEndpoint(
-                config=endpoint_cfg,
-                monitor=HTTPEndpointHealthMonitor(
-                    config=monitor_cfg,
-                ),
-            )
-            attrs["endpoint"] = endpoint
-
-        super().__init__(**attrs)
-
-    @classmethod
-    def _get_configuration(
-        cls,
-        config: DockerServerDeploymentConfig,
-    ) -> Tuple[
-        ContainerServiceConfig,
-        ContainerServiceEndpointConfig,
-        HTTPEndpointHealthMonitorConfig,
-    ]:
-        """Construct the service configuration from a server deployment configuration.
-
-        Args:
-            config: server deployment configuration.
-
-        Returns:
-            The service, service endpoint and endpoint monitor configuration.
-        """
-        return (
-            ContainerServiceConfig(
-                root_runtime_path=DOCKER_ZENML_SERVER_CONFIG_PATH,
-                singleton=True,
-                image=config.image,
-            ),
-            ContainerServiceEndpointConfig(
-                protocol=ServiceEndpointProtocol.HTTP,
-                port=config.port,
-                allocate_port=False,
-            ),
-            HTTPEndpointHealthMonitorConfig(
-                healthcheck_uri_path=ZEN_SERVER_HEALTHCHECK_URL_PATH,
-                use_head_request=True,
-            ),
-        )
 
     def _copy_global_configuration(self) -> None:
         """Copy the global configuration to the docker ZenML server location.
@@ -232,7 +185,7 @@ class DockerZenServer(ContainerService):
 
         Raises:
             ValueError: if started with a global configuration that connects to
-            another ZenML server.
+                another ZenML server.
         """
         import uvicorn  # type: ignore[import]
 
@@ -257,57 +210,3 @@ class DockerZenServer(ContainerService):
             )
         except KeyboardInterrupt:
             logger.info("ZenServer stopped. Resuming normal execution.")
-
-    @property
-    def zen_server_url(self) -> Optional[str]:
-        """Get the URI where the service responsible for the ZenServer is running.
-
-        Returns:
-            The URI where the service can be contacted for requests,
-                or None, if the service isn't running.
-        """
-        if not self.is_running:
-            return None
-        return self.endpoint.status.uri
-
-    def reconfigure(
-        self, config: DockerServerDeploymentConfig, timeout: int = 0
-    ) -> None:
-        """Reconfigure and update the ZenServer configuration.
-
-
-        Args:
-            config: new server configuration.
-            timeout: amount of time to wait for the service to start/restart.
-                If set to 0, the method will return immediately after checking
-                the service status.
-        """
-        new_config, new_endpoint_cfg, new_monitor_cfg = self._get_configuration(
-            config
-        )
-        assert self.endpoint.monitor
-        if (
-            new_config == self.config
-            and new_endpoint_cfg == self.endpoint.config
-            and new_monitor_cfg == self.endpoint.monitor.config
-        ):
-            logger.info(
-                "The docker ZenML server is already configured with the same "
-                "parameters."
-            )
-        else:
-            logger.info(
-                "The dcoker ZenML server is already configured with "
-                "different parameters. Restarting..."
-            )
-            self.stop(timeout=timeout or DOCKER_ZENML_SERVER_DEFAULT_TIMEOUT)
-
-            self.config, self.endpoint.config, self.endpoint.monitor.config = (
-                new_config,
-                new_endpoint_cfg,
-                new_monitor_cfg,
-            )
-
-        if not self.is_running:
-            logger.info("Starting the docker ZenML server.")
-            self.start(timeout=timeout)

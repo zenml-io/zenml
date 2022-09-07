@@ -11,12 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Service implementation for the ZenML local server deployment."""
+"""Local ZenML server deployment service implementation."""
 
 import ipaddress
 import os
 import shutil
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from typing import Dict, List, Optional, Tuple, Union, cast
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
@@ -27,17 +27,13 @@ from zenml.constants import (
 from zenml.enums import StoreType
 from zenml.logger import get_logger
 from zenml.services import (
-    HTTPEndpointHealthMonitor,
-    HTTPEndpointHealthMonitorConfig,
     LocalDaemonService,
     LocalDaemonServiceConfig,
     LocalDaemonServiceEndpoint,
-    LocalDaemonServiceEndpointConfig,
-    ServiceEndpointProtocol,
     ServiceType,
 )
 from zenml.utils.io_utils import get_global_config_directory
-from zenml.zen_server.deploy.base_deployer import BaseServerDeploymentConfig
+from zenml.zen_server.deploy.deployment import ServerDeploymentConfig
 
 logger = get_logger(__name__)
 
@@ -58,7 +54,7 @@ LOCAL_ZENML_SERVER_GLOBAL_CONFIG_PATH = os.path.join(
 LOCAL_ZENML_SERVER_DEFAULT_TIMEOUT = 30
 
 
-class LocalServerDeploymentConfig(BaseServerDeploymentConfig):
+class LocalServerDeploymentConfig(ServerDeploymentConfig):
     """Local server deployment configuration.
 
     Attributes:
@@ -70,6 +66,16 @@ class LocalServerDeploymentConfig(BaseServerDeploymentConfig):
     address: Union[
         ipaddress.IPv4Address, ipaddress.IPv6Address
     ] = ipaddress.IPv4Address(DEFAULT_LOCAL_SERVICE_IP_ADDRESS)
+
+
+class LocalZenServerConfig(LocalDaemonServiceConfig):
+    """Local Zen server configuration.
+
+    Attributes:
+        server: The deployment configuration.
+    """
+
+    server: LocalServerDeploymentConfig
 
 
 class LocalZenServer(LocalDaemonService):
@@ -87,69 +93,8 @@ class LocalZenServer(LocalDaemonService):
         description="Local ZenML server deployment",
     )
 
-    config: LocalDaemonServiceConfig
+    config: LocalZenServerConfig
     endpoint: LocalDaemonServiceEndpoint
-
-    def __init__(
-        self,
-        server_config: Optional[LocalServerDeploymentConfig] = None,
-        **attrs: Any,
-    ) -> None:
-        """Initialize the ZenServer.
-
-        Args:
-            server_config: server deployment configuration.
-            attrs: additional attributes.
-        """
-        if server_config:
-            # initialization from a server deployment configuration
-            config, endpoint_cfg, monitor_cfg = self._get_configuration(
-                server_config
-            )
-            attrs["config"] = config
-            endpoint = LocalDaemonServiceEndpoint(
-                config=endpoint_cfg,
-                monitor=HTTPEndpointHealthMonitor(
-                    config=monitor_cfg,
-                ),
-            )
-            attrs["endpoint"] = endpoint
-
-        super().__init__(**attrs)
-
-    @classmethod
-    def _get_configuration(
-        cls,
-        config: LocalServerDeploymentConfig,
-    ) -> Tuple[
-        LocalDaemonServiceConfig,
-        LocalDaemonServiceEndpointConfig,
-        HTTPEndpointHealthMonitorConfig,
-    ]:
-        """Construct the service configuration from a server deployment configuration.
-
-        Args:
-            config: server deployment configuration.
-
-        Returns:
-            The service, service endpoint and endpoint monitor configuration.
-        """
-        return (
-            LocalDaemonServiceConfig(
-                root_runtime_path=LOCAL_ZENML_SERVER_CONFIG_PATH,
-                singleton=True,
-            ),
-            LocalDaemonServiceEndpointConfig(
-                protocol=ServiceEndpointProtocol.HTTP,
-                ip_address=str(config.address),
-                port=config.port,
-                allocate_port=False,
-            ),
-            HTTPEndpointHealthMonitorConfig(
-                healthcheck_uri_path=ZEN_SERVER_HEALTHCHECK_URL_PATH,
-                use_head_request=True,
-            ),
-        )
 
     def _copy_global_configuration(self) -> None:
         """Copy the global configuration to the local ZenML server location.
@@ -219,7 +164,7 @@ class LocalZenServer(LocalDaemonService):
 
         Raises:
             ValueError: if started with a global configuration that connects to
-            another ZenML server.
+                another ZenML server.
         """
         import uvicorn  # type: ignore[import]
 
@@ -244,57 +189,3 @@ class LocalZenServer(LocalDaemonService):
             )
         except KeyboardInterrupt:
             logger.info("ZenServer stopped. Resuming normal execution.")
-
-    @property
-    def zen_server_url(self) -> Optional[str]:
-        """Get the URI where the service responsible for the ZenServer is running.
-
-        Returns:
-            The URI where the service can be contacted for requests,
-                or None, if the service isn't running.
-        """
-        if not self.is_running:
-            return None
-        return self.endpoint.status.uri
-
-    def reconfigure(
-        self, config: LocalServerDeploymentConfig, timeout: int = 0
-    ) -> None:
-        """Reconfigure and update the ZenServer configuration.
-
-
-        Args:
-            config: new server configuration.
-            timeout: amount of time to wait for the service to start/restart.
-                If set to 0, the method will return immediately after checking
-                the service status.
-        """
-        new_config, new_endpoint_cfg, new_monitor_cfg = self._get_configuration(
-            config
-        )
-        assert self.endpoint.monitor
-        if (
-            new_config == self.config
-            and new_endpoint_cfg == self.endpoint.config
-            and new_monitor_cfg == self.endpoint.monitor.config
-        ):
-            logger.info(
-                "The local ZenML server is already configured with the same "
-                "parameters."
-            )
-        else:
-            logger.info(
-                "The local ZenML server is already configured with "
-                "different parameters. Restarting..."
-            )
-            self.stop(timeout=timeout or LOCAL_ZENML_SERVER_DEFAULT_TIMEOUT)
-
-            self.config, self.endpoint.config, self.endpoint.monitor.config = (
-                new_config,
-                new_endpoint_cfg,
-                new_monitor_cfg,
-            )
-
-        if not self.is_running:
-            logger.info("Starting the local ZenML server.")
-            self.start(timeout=timeout)
