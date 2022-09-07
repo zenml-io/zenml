@@ -496,7 +496,7 @@ class SqlZenStore(BaseZenStore):
 
     def _list_stack_components(
         self,
-        project_id: UUID,
+        project_name_or_id: Union[str, UUID],
         type: Optional[str] = None,
         flavor_name: Optional[str] = None,
         user_id: Optional[UUID] = None,
@@ -506,7 +506,8 @@ class SqlZenStore(BaseZenStore):
         """List all stack components within the filter.
 
         Args:
-            project_id: Id of the Project containing the stack components
+            project_name_or_id: Id or name of the Project containing the stack
+                                components
             type: Optionally filter by type of stack component
             flavor_name: Optionally filter by flavor
             user_id: Optionally filter stack components by the owner
@@ -518,11 +519,22 @@ class SqlZenStore(BaseZenStore):
             All stack components currently registered.
         """
         with Session(self.engine) as session:
+            if isinstance(project_name_or_id, str):
+                project_filter = ProjectSchema.name == project_name_or_id
+            else:
+                project_filter = ProjectSchema.id == project_name_or_id
+            project = session.exec(
+                select(ProjectSchema)
+                .where(project_filter)
+            ).first()
+            if project is None:
+                raise KeyError(f"Project with ID {project_name_or_id} "
+                               f"not found.")
 
+            # Get a list of all stacks
             query = select(StackComponentSchema).where(
-                StackComponentSchema.project_id == project_id
+                StackComponentSchema.project_id == project.id
             )
-
             # TODO: [server] prettify this
             if type:
                 query = query.where(StackComponentSchema.type == type)

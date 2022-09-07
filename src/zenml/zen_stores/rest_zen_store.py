@@ -187,7 +187,72 @@ class RestZenStore(BaseZenStore):
         # REST zen stores are not backed by local files
         return config
 
+    #  Zen-Store API
 
+    def _list_users(self) -> List[UserModel]:
+        """List all users.
+
+        Returns:
+            A list of all users.
+        """
+        return [UserModel.parse_obj(user) for user in self.get(f"{USERS}")]
+
+    def _create_user(self, user: UserModel) -> UserModel:
+        """Creates a new user.
+
+        Args:
+            user: User to be created.
+
+        Returns:
+            The newly created user.
+
+        Raises:
+            EntityExistsError: If a user with the given name already exists.
+        """
+        return UserModel.parse_obj(self.post(USERS, body=user))
+
+    def _get_user(
+        self, user_name_or_id: str
+    ) -> UserModel:
+        """Gets a specific user.
+
+        Args:
+            user_name_or_id: The name or ID of the user to get.
+
+        Returns:
+            The requested user, if it was found.
+
+        Raises:
+            KeyError: If no user with the given name or ID exists.
+        """
+        return UserModel.parse_obj(self.get(f"{USERS}/{user_name_or_id}"))
+
+    def _update_user(self, user_id: str, user: UserModel) -> UserModel:
+        """Updates an existing user.
+
+        Args:
+            user_id: The ID of the user to update.
+            user: The User model to use for the update.
+
+        Returns:
+            The updated user.
+
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
+        return UserModel.parse_obj(self.put(f"{USERS}/{user_id}",
+                                            body=user))
+
+    def _delete_user(self, user_id: str) -> None:
+        """Deletes a user.
+
+        Args:
+            user_id: The ID of the user to delete.
+
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
+        self.delete(f"{USERS}/{user_id}")
 
     def _handle_response(self, response: requests.Response) -> Json:
         """Handle API response, translating http status codes to Exception.

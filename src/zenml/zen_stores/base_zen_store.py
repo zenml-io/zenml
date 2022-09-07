@@ -507,41 +507,6 @@ class BaseZenStore(BaseModel):
                 by this user on this project.
         """
 
-    # def _register_stack_and_stack_components(
-    #     self,
-    #     user_id: str,
-    #     project_id: str,
-    #     stack: StackModel
-    # ) -> StackModel:
-    #     """Register a new stack and all of its components.
-
-    #     Args:
-    #         stack: The stack to register.
-    #         user_id: The user that is registering this stack
-    #         project_id: The project within which that stack is registered
-
-    #     Returns:
-    #         The registered stack.
-
-    #     Raises:
-    #         StackExistsError: In case a stack with that name is already owned
-    #             by this user on this project.
-    #     """
-    #     for component in stack.components:
-    #         try:
-    #             self._register_stack_component(
-    #                 user_id=user_id,
-    #                 project_id=project_id,
-    #                 component=component
-    #             )
-    #         except StackComponentExistsError:
-    #             pass
-    #     return self._register_stack(
-    #         user_id=user_id,
-    #         project_id=project_id,
-    #         stack=stack
-    #     )
-
     def update_stack(
         self,
         stack: StackModel,
@@ -604,7 +569,7 @@ class BaseZenStore(BaseModel):
     # TODO: [ALEX] add filtering param(s)
     def list_stack_components(
         self,
-        project_id: UUID,
+        project_name_or_id: Union[str, UUID],
         type: Optional[str] = None,
         flavor_name: Optional[str] = None,
         user_id: Optional[UUID] = None,
@@ -614,7 +579,8 @@ class BaseZenStore(BaseModel):
         """List all stack components within the filter.
 
         Args:
-            project_id: Id of the Project containing the stack components
+            project_name_or_id: Id or name of the Project containing the stack
+                                component
             type: Optionally filter by type of stack component
             flavor_name: Optionally filter by flavor
             user_id: Optionally filter stack components by the owner
@@ -626,7 +592,7 @@ class BaseZenStore(BaseModel):
             All stack components currently registered.
         """
         return self._list_stack_components(
-            project_id=project_id,
+            project_name_or_id=project_name_or_id,
             type=type,
             flavor_name=flavor_name,
             user_id=user_id,
@@ -637,7 +603,7 @@ class BaseZenStore(BaseModel):
     @abstractmethod
     def _list_stack_components(
         self,
-        project_id: UUID,
+        project_name_or_id: Union[str, UUID],
         type: Optional[str] = None,
         flavor_name: Optional[str] = None,
         user_id: Optional[UUID] = None,
@@ -647,7 +613,7 @@ class BaseZenStore(BaseModel):
         """List all stack components within the filter.
 
         Args:
-            project_id: Id of the Project containing the stack components
+            project_name_or_id: Union[str, UUID],
             type: Optionally filter by type of stack component
             flavor_name: Optionally filter by flavor
             owner: Optionally filter stack components by the owner

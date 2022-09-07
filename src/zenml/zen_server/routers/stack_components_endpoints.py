@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from typing import Dict, List
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -44,7 +45,7 @@ router = APIRouter(
     response_model=List[StackComponentType],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_stack_component_types() -> List[StackComponentType]:
+async def get_stack_component_types() -> List[str]:
     """Get a list of all stack component types.
 
     Returns:
@@ -56,7 +57,7 @@ async def get_stack_component_types() -> List[StackComponentType]:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.stack_component_types
+        return StackComponentType.values()
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:
@@ -66,15 +67,15 @@ async def get_stack_component_types() -> List[StackComponentType]:
 
 
 @router.get(
-    "/{component_type}",
+    "/",
     response_model=List[ComponentModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_stack_components(component_type: str) -> List[ComponentModel]:
+async def list_stack_components(project_name: str) -> List[ComponentModel]:
     """Get a list of all stack components for a specific type.
 
     Args:
-        component_type: Type of stack component.
+        project_name: Name of the project
 
     Returns:
         List of stack components for a specific type.
@@ -85,7 +86,11 @@ async def get_stack_components(component_type: str) -> List[ComponentModel]:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.get_stack_components(component_type)
+        # TODO [server]: introduce other
+        #  filters, specifically for type
+        return zen_store.list_stack_components(
+            project_name_or_id=project_name
+        )
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:
@@ -144,14 +149,14 @@ async def get_stack_component(component_id: str) -> ComponentModel:
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        return zen_store.get_stack_component(component_id)
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    # try:
+    return zen_store.get_stack_component(UUID(component_id))
+    # except NotAuthorizedError as error:
+    #     raise HTTPException(status_code=401, detail=error_detail(error))
+    # except NotFoundError as error:
+    #     raise HTTPException(status_code=404, detail=error_detail(error))
+    # except ValidationError as error:
+    #     raise HTTPException(status_code=422, detail=error_detail(error))
 
 
 @router.put(
