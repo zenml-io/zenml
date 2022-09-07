@@ -41,32 +41,33 @@ class FlavorRegistry:
     def register_default_flavors(self) -> None:
         """Registers the default built-in flavors."""
         from zenml.artifact_stores import LocalArtifactStore
-        from zenml.container_registries import (
-            AzureContainerRegistry,
-            DefaultContainerRegistry,
-            DockerHubContainerRegistry,
-            GCPContainerRegistry,
-            GitHubContainerRegistry,
-        )
+        # from zenml.container_registries import (
+        #     AzureContainerRegistry,
+        #     DefaultContainerRegistry,
+        #     DockerHubContainerRegistry,
+        #     GCPContainerRegistry,
+        #     GitHubContainerRegistry,
+        # )
         from zenml.orchestrators import LocalOrchestrator
-        from zenml.secrets_managers import LocalSecretsManager
+        # from zenml.secrets_managers import LocalSecretsManager
 
         default_flavors = [
             LocalOrchestrator,
             LocalArtifactStore,
-            DefaultContainerRegistry,
-            AzureContainerRegistry,
-            DockerHubContainerRegistry,
-            GCPContainerRegistry,
-            GitHubContainerRegistry,
-            LocalSecretsManager,
+            # DefaultContainerRegistry,
+            # AzureContainerRegistry,
+            # DockerHubContainerRegistry,
+            # GCPContainerRegistry,
+            # GitHubContainerRegistry,
+            # LocalSecretsManager,
         ]
         for flavor in default_flavors:
             self._register_flavor(
                 FlavorModel(
                     name=flavor.FLAVOR,  # type: ignore[attr-defined]
                     type=flavor.TYPE,  # type: ignore[attr-defined]
-                    source=flavor.__module__ + "." + flavor.__name__,
+                    implementation_source=flavor.__module__ + "." + flavor.__name__,
+                    config_source=flavor.config_class.__module__ + "." + flavor.config_class.__name__,
                     integration="built-in",
                 )
             )
@@ -75,11 +76,11 @@ class FlavorRegistry:
         """Registers the flavors implemented by integrations."""
         from zenml.integrations.registry import integration_registry
 
-        for integration in integration_registry.integrations.values():
-            integrated_flavors = integration.flavors()
-            if integrated_flavors:
-                for flavor in integrated_flavors:
-                    self._register_flavor(flavor)
+        # for integration in integration_registry.integrations.values():
+        #     integrated_flavors = integration.flavors()
+        #     if integrated_flavors:
+        #         for flavor in integrated_flavors:
+        #             self._register_flavor(flavor)
 
     def _register_flavor(
         self,

@@ -46,7 +46,7 @@ from tfx.dsl.io.fileio import NotFoundError
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import ArtifactStoreInterfaceError
-from zenml.stack import StackComponent
+from zenml.stack import StackComponent, StackComponentConfig
 from zenml.utils import io_utils
 
 PathType = Union[bytes, str]
@@ -153,18 +153,68 @@ def _sanitize_paths(_func: Callable[..., Any]) -> Callable[..., Any]:
     return inner_function
 
 
-class BaseArtifactStore(StackComponent):
-    """Base class for all ZenML artifact stores.
-
-    Attributes:
-        path: The root path of the artifact store.
-    """
-
+class BaseArtifactStoreConfig(StackComponentConfig):
     path: str
+    supported_schemes: Set[str]
 
-    # Class Configuration
+    @root_validator(skip_on_failure=True)
+    def _ensure_artifact_store(cls, values: Dict[str, Any]) -> Any:
+        """Validator function for the Artifact Stores.
+
+        Checks whether supported schemes are defined and the given path is
+        supported.
+
+        Args:
+            values: The values to validate.
+
+        Returns:
+            The validated values.
+
+        Raises:
+            ArtifactStoreInterfaceError: If the scheme is not supported.
+        """
+        try:
+            getattr(cls, "SUPPORTED_SCHEMES")
+        except AttributeError:
+            raise ArtifactStoreInterfaceError(
+                "When you are working with any classes which subclass from "
+                "'zenml.artifact_store.BaseArtifactStore' please make sure "
+                "that your class has a ClassVar named `SUPPORTED_SCHEMES` "
+                "which should hold a set of supported file schemes such "
+                "as {'s3://'} or {'gcs://'}. \n"
+                + textwrap.dedent(
+                    """
+                    When you are working with any classes which subclass from
+                    zenml.artifact_store.BaseArtifactStore please make sure
+                    that your class has a ClassVar named `SUPPORTED_SCHEMES`
+                    which should hold a set of supported file schemes such
+                    as {"s3://"} or {"gcs://"}.
+
+                    Example:
+
+                    class S3ArtifactStore(StackComponent):
+                        ...
+                        # Class Variables
+                        SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"s3://"}
+                        ...
+                    """
+                )
+            )
+        if not any(values["path"].startswith(i) for i in cls.supported_schemes):
+            raise ArtifactStoreInterfaceError(
+                f"The path: '{values['path']}' you defined for your "
+                f"artifact store is not supported by the implementation of "
+                f"{cls.schema()['title']}, because it does not start with "
+                f"one of its supported schemes: {cls.supported_schemes}."
+            )
+
+        return values
+
+
+class BaseArtifactStore(StackComponent):
+    """Base class for all ZenML artifact stores."""
+
     TYPE: ClassVar[StackComponentType] = StackComponentType.ARTIFACT_STORE
-    SUPPORTED_SCHEMES: ClassVar[Set[str]]
 
     # --- User interface ---
     @abstractmethod
@@ -319,59 +369,6 @@ class BaseArtifactStore(StackComponent):
         super(BaseArtifactStore, self).__init__(*args, **kwargs)
         self._register()
 
-    @root_validator(skip_on_failure=True)
-    def _ensure_artifact_store(cls, values: Dict[str, Any]) -> Any:
-        """Validator function for the Artifact Stores.
-
-        Checks whether supported schemes are defined and the given path is
-        supported.
-
-        Args:
-            values: The values to validate.
-
-        Returns:
-            The validated values.
-
-        Raises:
-            ArtifactStoreInterfaceError: If the scheme is not supported.
-        """
-        try:
-            getattr(cls, "SUPPORTED_SCHEMES")
-        except AttributeError:
-            raise ArtifactStoreInterfaceError(
-                "When you are working with any classes which subclass from "
-                "'zenml.artifact_store.BaseArtifactStore' please make sure "
-                "that your class has a ClassVar named `SUPPORTED_SCHEMES` "
-                "which should hold a set of supported file schemes such "
-                "as {'s3://'} or {'gcs://'}. \n"
-                + textwrap.dedent(
-                    """
-                    When you are working with any classes which subclass from
-                    zenml.artifact_store.BaseArtifactStore please make sure
-                    that your class has a ClassVar named `SUPPORTED_SCHEMES`
-                    which should hold a set of supported file schemes such
-                    as {"s3://"} or {"gcs://"}.
-
-                    Example:
-
-                    class S3ArtifactStore(StackComponent):
-                        ...
-                        # Class Variables
-                        SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"s3://"}
-                        ...
-                    """
-                )
-            )
-        if not any(values["path"].startswith(i) for i in cls.SUPPORTED_SCHEMES):
-            raise ArtifactStoreInterfaceError(
-                f"The path: '{values['path']}' you defined for your "
-                f"artifact store is not supported by the implementation of "
-                f"{cls.schema()['title']}, because it does not start with "
-                f"one of its supported schemes: {cls.SUPPORTED_SCHEMES}."
-            )
-
-        return values
-
     def _register(self, priority: int = 5) -> None:
         """Create and register a filesystem within the TFX registry.
 
@@ -423,3 +420,6 @@ class BaseArtifactStore(StackComponent):
         DEFAULT_FILESYSTEM_REGISTRY.register(
             filesystem_class, priority=priority
         )
+
+    def config_class(self):
+        return BaseArtifactStoreConfig

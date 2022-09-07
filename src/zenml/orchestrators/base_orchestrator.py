@@ -35,7 +35,7 @@ import json
 import os
 import time
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 
 from pydantic.json import pydantic_encoder
 from tfx.dsl.compiler.compiler import Compiler
@@ -72,7 +72,7 @@ from zenml.orchestrators.utils import (
     get_step_for_node,
 )
 from zenml.repository import Repository
-from zenml.stack import StackComponent
+from zenml.stack import StackComponent, StackComponentConfig
 from zenml.steps import BaseStep
 from zenml.utils import source_utils, string_utils
 
@@ -122,6 +122,10 @@ setattr(
 ### END OF TFX PATCH
 
 
+class BaseOrchestratorConfig(StackComponentConfig):
+    pass
+
+
 class BaseOrchestrator(StackComponent, ABC):
     """Base class for all orchestrators.
 
@@ -164,8 +168,10 @@ class BaseOrchestrator(StackComponent, ABC):
     details of what needs to be implemented within it.
     """
 
-    # Class Configuration
-    TYPE: ClassVar[StackComponentType] = StackComponentType.ORCHESTRATOR
+    TYPE = StackComponentType.ORCHESTRATOR
+
+    def config_class(self):
+        return BaseOrchestratorConfig
 
     @abstractmethod
     def prepare_or_run_pipeline(

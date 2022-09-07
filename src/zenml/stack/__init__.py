@@ -25,11 +25,12 @@ A stack is made up of multiple components. Some examples are:
 """
 
 from zenml.stack.stack import Stack
-from zenml.stack.stack_component import StackComponent
+from zenml.stack.stack_component import StackComponent, StackComponentConfig
 from zenml.stack.stack_validator import StackValidator
 
 __all__ = [
     "Stack",
     "StackComponent",
     "StackValidator",
+    "StackComponentConfig",
 ]

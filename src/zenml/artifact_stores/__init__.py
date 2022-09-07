@@ -27,7 +27,10 @@ modules, such as the `GCPArtifactStore` in the `gcp` integration and the
 `AzureArtifactStore` in the `azure` integration.
 """
 
-from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+from zenml.artifact_stores.base_artifact_store import (
+    BaseArtifactStore,
+    BaseArtifactStoreConfig
+)
 from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
 
-__all__ = ["BaseArtifactStore", "LocalArtifactStore"]
+__all__ = ["BaseArtifactStore", "BaseArtifactStoreConfig", "LocalArtifactStore"]

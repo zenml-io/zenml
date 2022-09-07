@@ -49,10 +49,35 @@ from typing import (
 
 from pydantic import validator
 
-from zenml.artifact_stores import BaseArtifactStore
+from zenml.artifact_stores import BaseArtifactStore, BaseArtifactStoreConfig
 from zenml.exceptions import ArtifactStoreInterfaceError
 
 PathType = Union[bytes, str]
+
+
+class LocalArtifactStoreConfig(BaseArtifactStoreConfig):
+    supported_schemes: Set[str] = {""}
+
+    @validator("path")
+    def ensure_path_local(cls, path: str) -> str:
+        """Pydantic validator which ensures that the given path is a local path.
+
+        Args:
+            path: The path to validate.
+
+        Returns:
+            str: The validated (local) path.
+
+        Raises:
+            ArtifactStoreInterfaceError: If the given path is not a local path.
+        """
+        remote_prefixes = ["gs://", "hdfs://", "s3://", "az://", "abfs://"]
+        if any(path.startswith(prefix) for prefix in remote_prefixes):
+            raise ArtifactStoreInterfaceError(
+                f"The path:{path} you defined for your local artifact store "
+                f"start with one of the remote prefixes."
+            )
+        return path
 
 
 class LocalArtifactStore(BaseArtifactStore):
@@ -60,16 +85,6 @@ class LocalArtifactStore(BaseArtifactStore):
 
     # Class Configuration
     FLAVOR: ClassVar[str] = "local"
-    SUPPORTED_SCHEMES: ClassVar[Set[str]] = {""}
-
-    @property
-    def local_path(self) -> str:
-        """Path to the local directory where the artifacts are stored.
-
-        Returns:
-            str: The path to the local directory where the artifacts are stored.
-        """
-        return self.path
 
     @staticmethod
     def open(name: PathType, mode: str = "r") -> Any:
@@ -242,23 +257,4 @@ class LocalArtifactStore(BaseArtifactStore):
         """
         yield from os.walk(top, topdown=topdown, onerror=onerror)  # type: ignore[type-var, misc]
 
-    @validator("path")
-    def ensure_path_local(cls, path: str) -> str:
-        """Pydantic validator which ensures that the given path is a local path.
 
-        Args:
-            path: The path to validate.
-
-        Returns:
-            str: The validated (local) path.
-
-        Raises:
-            ArtifactStoreInterfaceError: If the given path is not a local path.
-        """
-        remote_prefixes = ["gs://", "hdfs://", "s3://", "az://", "abfs://"]
-        if any(path.startswith(prefix) for prefix in remote_prefixes):
-            raise ArtifactStoreInterfaceError(
-                f"The path:{path} you defined for your local artifact store "
-                f"start with one of the remote prefixes."
-            )
-        return path

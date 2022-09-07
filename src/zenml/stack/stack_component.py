@@ -14,8 +14,8 @@
 """Implementation of the ZenML Stack Component class."""
 
 import textwrap
-from abc import ABC
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Set
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Set, Type
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Extra, Field, root_validator
@@ -24,6 +24,8 @@ from zenml.enums import StackComponentType
 from zenml.exceptions import StackComponentInterfaceError
 from zenml.logger import get_logger
 from zenml.utils import secret_utils
+from zenml.models.flavor_model import FlavorModel
+from zenml.utils.source_utils import load_source_path_class
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
@@ -33,20 +35,10 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class StackComponent(BaseModel, ABC):
-    """Abstract StackComponent class for all components of a ZenML stack.
-
-    Attributes:
-        name: The name of the component.
-        uuid: Unique identifier of the component.
-    """
+class StackComponentConfig(BaseModel, ABC):
 
     name: str
-    uuid: UUID = Field(default_factory=uuid4)
-
-    # Class Configuration
-    TYPE: ClassVar[StackComponentType]
-    FLAVOR: ClassVar[str]
+    id: Optional[str]
 
     def __init__(self, **kwargs: Any) -> None:
         """Ensures that secret references don't clash with pydantic validation.
@@ -108,6 +100,38 @@ class StackComponent(BaseModel, ABC):
                 )
 
         super().__init__(**kwargs)
+
+    @classmethod
+    def from_flavor(cls, flavor: "FlavorModel") -> Type["StackComponentConfig"]:
+        try:
+            return load_source_path_class(source=flavor.config_source)  # noqa
+        except (ModuleNotFoundError, ImportError, NotImplementedError):
+            if flavor.integration:
+                raise ImportError(
+                    f"The configuration for the flavor {flavor.name} "
+                    f"is defined within the source {flavor.config_source} and "
+                    f"it can not be imported right now. Please make sure that "
+                    f"this execution is carried out in an environment where "
+                    f"this source is reachable as a module."
+                )
+
+
+class StackComponent:
+    """Abstract StackComponent class for all components of a ZenML stack. """
+
+    TYPE: ClassVar[StackComponentType]
+    FLAVOR: ClassVar[str]
+
+    def __init__(self, config: StackComponentConfig):
+        self._config = config
+
+    @property
+    def config_class(self) -> Type[Any]:
+        return StackComponentConfig
+
+    @property
+    def config(self):
+        return self.config_class(self._config)
 
     def __custom_getattribute__(self, key: str) -> Any:
         """Returns the (potentially resolved) attribute value for the given key.

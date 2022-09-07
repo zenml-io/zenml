@@ -32,7 +32,7 @@ from zenml.environment import Environment
 from zenml.exceptions import InitializationException
 from zenml.io import fileio
 from zenml.logger import get_apidocs_link, get_logger
-from zenml.models import ComponentModel, StackModel
+from zenml.models import ComponentModel, StackModel, FlavorModel
 from zenml.stack import StackComponent
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -1027,9 +1027,9 @@ class Repository(metaclass=RepositoryMetaClass):
             logger.warning(warning_message)
         return None
 
-    def get_flavor(
+    def get_flavor_by_name_and_type(
             self, name: str, component_type: StackComponentType
-    ) -> Type[StackComponent]:
+    ) -> FlavorModel:
         """Fetches a registered flavor.
 
         Args:
@@ -1043,9 +1043,7 @@ class Repository(metaclass=RepositoryMetaClass):
             KeyError: If no flavor exists for the given type and name.
         """
         logger.debug(
-            "Fetching the flavor of type '%s' with name '%s'.",
-            component_type,
-            name,
+            f"Fetching the flavor of type {component_type} with name {name}."
         )
 
         from zenml.stack.flavor_registry import flavor_registry
@@ -1056,7 +1054,7 @@ class Repository(metaclass=RepositoryMetaClass):
 
         try:
             # Try to find if there are any custom flavor implementations
-            flavor_wrapper = self.zen_store.get_flavor_by_name_and_type(
+            flavor_model = self.zen_store.get_flavor_by_name_and_type(
                 flavor_name=name,
                 component_type=component_type,
             )
@@ -1072,11 +1070,11 @@ class Repository(metaclass=RepositoryMetaClass):
 
         except KeyError:
             if name in zenml_flavors:
-                flavor_wrapper = zenml_flavors[name]
+                flavor_model = zenml_flavors[name]
             else:
                 raise KeyError(
                     f"There is no flavor '{name}' for the type "
                     f"{component_type}"
                 )
 
-        return flavor_wrapper.to_flavor()
+        return flavor_model

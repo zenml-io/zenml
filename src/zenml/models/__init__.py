@@ -37,6 +37,7 @@ __all__ = [
     "PipelineModel",
     "PipelineRunModel",
     "StepModel",
+    "FlavorModel",
     "UserModel",
     "ProjectModel",
     "RoleModel",

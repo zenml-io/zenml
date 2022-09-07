@@ -95,11 +95,11 @@ class BaseZenStore(BaseModel):
             self._initialize_database()
 
     @staticmethod
-    def get_store_class(type: StoreType) -> Type["BaseZenStore"]:
+    def get_store_class(store_type: StoreType) -> Type["BaseZenStore"]:
         """Returns the class of the given store type.
 
         Args:
-            type: The type of the store to get the class for.
+            store_type: The type of the store to get the class for.
 
         Returns:
             The class of the given store type or None if the type is unknown.
@@ -107,22 +107,17 @@ class BaseZenStore(BaseModel):
         Raises:
             TypeError: If the store type is unsupported.
         """
-        from zenml.zen_stores.sql_zen_store import SqlZenStore
-
-        # from zenml.zen_stores.rest_zen_store import RestZenStore
-
-        store_class = {
-            StoreType.SQL: SqlZenStore,
-            # StoreType.REST: RestZenStore,
-        }.get(type)
-
-        if store_class is None:
+        if store_type == StoreType.SQL:
+            from zenml.zen_stores.sql_zen_store import SqlZenStore
+            return SqlZenStore
+        # elif store_type == StoreType.REST:
+            # from zenml.zen_stores.rest_zen_store import RestZenStore
+            # return RestZenStore
+        else:
             raise TypeError(
                 f"No store implementation found for store type "
                 f"`{type.value}`."
             )
-
-        return store_class
 
     @staticmethod
     def create_store(
