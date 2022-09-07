@@ -147,7 +147,7 @@ def test_mlflow_experiment_tracker_set_config() -> None:
         tracking_username="john_doe",
         tracking_password="password",
         tracking_token="token1234",
-        tracking_insecure_tls=True
+        tracking_insecure_tls=True,
     )
 
     stack._experiment_tracker.configure_mlflow()
