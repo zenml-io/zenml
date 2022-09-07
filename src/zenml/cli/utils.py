@@ -439,7 +439,9 @@ def print_active_stack() -> None:
 
     repo = Repository()
     scope = "repository" if repo.uses_local_active_stack else "global"
-    declare(f"Running with active stack: '{repo.active_stack.name}' ({scope})")
+    declare(
+        f"Running with active stack: '{repo.active_stack_model.name}' ({scope})"
+    )
 
 
 def format_date(

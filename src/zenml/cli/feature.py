@@ -44,7 +44,7 @@ def register_feature_store_subcommands() -> None:
             ctx: The click context.
         """
         repo = Repository()
-        feature_store_model = repo.active_stack.components[
+        feature_store_model = repo.active_stack_model.components[
             StackComponentType.FEATURE_STORE
         ]
         if feature_store_model is None:

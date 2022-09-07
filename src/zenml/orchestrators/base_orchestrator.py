@@ -364,7 +364,7 @@ class BaseOrchestrator(StackComponent, ABC):
         # trackers) will run some code before and after the actual step run.
         # This is where the step actually gets executed using the
         # component_launcher
-        active_stack = Stack.from_model(repo.active_stack)
+        active_stack = repo.active_stack
         active_stack.prepare_step_run()
         execution_info = self._execute_step(component_launcher)
         active_stack.cleanup_step_run()

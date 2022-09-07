@@ -71,8 +71,8 @@ def init(path: Optional[Path]) -> None:
 
     declare(
         f"The local active stack was initialized to "
-        f"'{Repository().active_stack.name}'. This local configuration will "
-        f"only take effect when you're running ZenML from the initialized "
+        f"'{Repository().active_stack_model.name}'. This local configuration "
+        f"will only take effect when you're running ZenML from the initialized "
         f"repository root, or from a subdirectory. For more information on "
         f"repositories and configurations, please visit "
         f"https://docs.zenml.io/developer-guide/stacks-repositories."
@@ -95,8 +95,8 @@ def _delete_local_files(force_delete: bool = False) -> None:
             return
 
     repo = Repository()
-    if repo.active_stack:
-        stack_components = repo.active_stack.components
+    if repo.active_stack_model:
+        stack_components = repo.active_stack_model.components
         for _, component in stack_components.items():
             local_path = component.local_path
             if local_path:

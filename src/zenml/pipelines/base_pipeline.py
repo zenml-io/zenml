@@ -429,7 +429,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             schedule=schedule,
             **additional_parameters,
         )
-        stack = Stack.from_model(Repository().active_stack)
+        stack = Repository().active_stack
 
         stack_metadata = {
             component_type.value: component.FLAVOR

@@ -39,7 +39,7 @@ if TYPE_CHECKING:
     from zenml.enums import StackComponentType
     from zenml.models import ComponentModel, ProjectModel, StackModel
     from zenml.runtime_configuration import RuntimeConfiguration
-    from zenml.stack import StackComponent
+    from zenml.stack import Stack, StackComponent
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
@@ -538,14 +538,14 @@ class Repository(metaclass=RepositoryMetaClass):
         return dict_of_stacks
 
     @property
-    def active_stack(self) -> "StackModel":
-        """The active stack for this repository.
+    def active_stack_model(self) -> "StackModel":
+        """The model of the active stack for this repository.
 
         If no active stack is configured locally for the repository, the active
         stack in the global configuration is used instead.
 
         Returns:
-            The active stack for this repository.
+            The model of the active stack for this repository.
         """
         stack_id = None
         if self._config:
@@ -561,6 +561,17 @@ class Repository(metaclass=RepositoryMetaClass):
             )
 
         return self.zen_store.get_stack(stack_id=stack_id)
+
+    @property
+    def active_stack(self) -> "Stack":
+        """The active stack for this repository.
+
+        Returns:
+            The active stack for this repository.
+        """
+        from zenml.stack.stack import Stack
+
+        return Stack.from_model(self.active_stack_model)
 
     @property
     def uses_local_active_stack(self) -> bool:
@@ -619,10 +630,10 @@ class Repository(metaclass=RepositoryMetaClass):
 
         # TODO: [server] this error handling could be improved
         if not stacks:
-            raise KeyError("No stack with this name exists.")
+            raise KeyError(f"No stack with name '{name}' exists.")
         elif len(stacks) > 1:
             raise RuntimeError(
-                "Multiple stacks have been found for this name.", stacks
+                f"Multiple stacks have been found for name  '{name}'.", stacks
             )
 
         return stacks[0]
@@ -752,7 +763,7 @@ class Repository(metaclass=RepositoryMetaClass):
         # TODO: [server] this error handling could be improved
         if not components:
             raise KeyError(
-                "No stack component of type {type} with the name {name} exists."
+                f"No stack component of type '{type}' with the name '{name}' exists."
             )
         elif len(components) > 1:
             raise RuntimeError(
