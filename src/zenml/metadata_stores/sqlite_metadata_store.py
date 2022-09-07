@@ -13,13 +13,16 @@
 #  permissions and limitations under the License.
 """Metadata store for SQLite."""
 
+import os
 from pathlib import Path
-from typing import ClassVar, Union
+from typing import Any, ClassVar, Dict, Union
 
 from ml_metadata.proto import metadata_store_pb2
-from pydantic import validator
+from pydantic import root_validator, validator
 from tfx.orchestration import metadata
 
+from zenml.config.global_config import GlobalConfiguration
+from zenml.constants import LOCAL_STORES_DIRECTORY_NAME
 from zenml.metadata_stores import BaseMetadataStore
 from zenml.utils import io_utils
 
@@ -27,7 +30,7 @@ from zenml.utils import io_utils
 class SQLiteMetadataStore(BaseMetadataStore):
     """SQLite backend for ZenML metadata store."""
 
-    uri: str
+    uri: str = ""
 
     # Class Configuration
     FLAVOR: ClassVar[str] = "sqlite"
@@ -53,6 +56,30 @@ class SQLiteMetadataStore(BaseMetadataStore):
             The tfx metadata config.
         """
         return metadata.sqlite_metadata_connection_config(self.uri)
+
+    @root_validator
+    def _default_local_uri(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Generates a local SQLite URI if not configured.
+
+        Args:
+            values: The values to validate.
+
+        Returns:
+            The validated values.
+        """
+        uri = values.get("uri")
+        metadata_store_id = values.get("uuid")
+        if uri == "" and metadata_store_id:
+            metadata_store_path = os.path.join(
+                GlobalConfiguration().config_directory,
+                LOCAL_STORES_DIRECTORY_NAME,
+                str(metadata_store_id),
+            )
+            io_utils.create_dir_recursive_if_not_exists(metadata_store_path)
+            uri = os.path.join(metadata_store_path, "metadata.db")
+            values["uri"] = uri
+
+        return values
 
     @validator("uri")
     def ensure_uri_is_local(cls, uri: str) -> str:
