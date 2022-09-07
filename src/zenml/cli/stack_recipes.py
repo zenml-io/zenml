@@ -84,7 +84,7 @@ class Terraform:
         """Checks if necessary tools are installed on the host system.
 
         Raises:
-            RuntimeError: if any tool is not installed.
+            RuntimeError: if any required tool is not installed.
         """
         if not self._is_terraform_installed():
             raise RuntimeError(
@@ -905,7 +905,7 @@ if terraform_installed:  # noqa: C901
             git_stack_recipes_handler: The GitStackRecipesHandler instance.
             stack_recipe_name: The name of the stack_recipe.
             path: The path at which you want to install the stack_recipe(s).
-            force: Force pull the stack recipe overwriting any existing files.
+            force: Force pull the stack recipe, overwriting any existing files.
             stack_name: A name for the ZenML stack that gets imported as a result
                 of the recipe deployment.
             import_stack_flag: Import the stack automatically after the recipe is
