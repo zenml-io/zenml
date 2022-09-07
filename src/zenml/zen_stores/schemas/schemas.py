@@ -433,8 +433,8 @@ class PipelineSchema(SQLModel, table=True):
     # repository_id: UUID = Field(foreign_key="coderepositoryschema.id")
     owner: UUID = Field(foreign_key="userschema.id")
 
-    docstring: str  # TODO: how to get this?
-    # configuration: str
+    docstring: Optional[str] = Field(nullable=True)
+    configuration: str
 
     created_at: datetime = Field(default_factory=datetime.now)
 
@@ -444,16 +444,28 @@ class PipelineSchema(SQLModel, table=True):
 
     @classmethod
     def from_create_model(cls, model: PipelineModel) -> "PipelineSchema":
-        pass  # TODO
+        return cls(
+            name=model.name,
+            project_id=model.project_id,
+            owner=model.owner,
+            docstring=model.docstring,
+            configuration=json.dumps(model.configuration),
+        )
 
     def from_update_model(self, model: PipelineModel) -> "PipelineSchema":
         self.name = model.name
         self.docstring = model.docstring
-        # self.configuration = model.configuration
         return self
 
     def to_model(self) -> "PipelineModel":
-        pass  # TODO
+        return PipelineModel(
+            id=self.id,
+            name=self.name,
+            project_id=self.project_id,
+            owner=self.owner,
+            docstring=self.docstring,
+            configuration=json.loads(self.configuration),
+        )
 
 
 class PipelineRunSchema(SQLModel, table=True):

@@ -1917,7 +1917,7 @@ class SqlZenStore(BaseZenStore):
         """Sync runs from the database with those registered in MLMD."""
         with Session(self.engine) as session:
             zenml_runs = session.exec(select(PipelineRunSchema)).all()
-        zenml_runs = {run.name: run for run in zenml_runs}
+        zenml_runs = {run.name: run.to_model() for run in zenml_runs}
         mlmd_runs = self.metadata_store.get_all_runs()
         for run_name, mlmd_id in mlmd_runs.items():
 
