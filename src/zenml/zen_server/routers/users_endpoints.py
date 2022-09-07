@@ -13,12 +13,13 @@
 #  permissions and limitations under the License.
 
 from typing import List
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
 from zenml.constants import INVITE_TOKEN, ROLES, USERS, VERSION_1
 from zenml.exceptions import EntityExistsError
-from zenml.models import RoleModel, UserModel
+from zenml.models import RoleModel, UserModel, RoleAssignmentModel
 from zenml.zen_server.utils import (
     authorize,
     conflict,
@@ -41,11 +42,8 @@ router = APIRouter(
     response_model=List[UserModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def list_users(invite_token: str) -> List[UserModel]:
+async def list_users() -> List[UserModel]:
     """Returns a list of all users.
-
-    Args:
-        invite_token: Token to use for the invitation.
 
     Returns:
         A list of all users.
@@ -56,7 +54,7 @@ async def list_users(invite_token: str) -> List[UserModel]:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.list_users(invite_token=invite_token)
+        return zen_store.list_users()
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:
@@ -87,7 +85,7 @@ async def create_user(user: UserModel) -> UserModel:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.create_user(user.name)
+        return zen_store.create_user(user)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:
@@ -103,7 +101,7 @@ async def create_user(user: UserModel) -> UserModel:
     response_model=UserModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_user(user_id: str, invite_token: str) -> UserModel:
+async def get_user(user_id: str) -> UserModel:
     """Returns a specific user.
 
     Args:
@@ -119,7 +117,7 @@ async def get_user(user_id: str, invite_token: str) -> UserModel:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.get_user(user_id=user_id, invite_token=invite_token)
+        return zen_store.get_user(user_name_or_id=user_id)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:
@@ -180,8 +178,6 @@ async def delete_user(user_id: str) -> None:
     """
     try:
         zen_store.delete_user(user_id)
-    except KeyError as error:
-        raise not_found(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:
@@ -193,11 +189,11 @@ async def delete_user(user_id: str) -> None:
 
 
 @router.get(
-    "/{user_id}}" + ROLES,
+    "/{user_id}" + ROLES,
     response_model=List[RoleModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_role_assignments_for_user(user_id: str) -> List[RoleModel]:
+async def get_role_assignments_for_user(user_id: str) -> List[RoleAssignmentModel]:
     """Returns a list of all roles that are assigned to a user.
 
     Args:
@@ -224,7 +220,7 @@ async def get_role_assignments_for_user(user_id: str) -> List[RoleModel]:
 
 
 @router.post(
-    "/{user_id}}" + ROLES,
+    "/{user_id}" + ROLES,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 async def assign_role(user_id: str, role_id: str, project_id: str) -> None:
@@ -265,7 +261,7 @@ async def assign_role(user_id: str, role_id: str, project_id: str) -> None:
 
 
 @router.get(
-    "/{user_id}}" + INVITE_TOKEN,
+    "/{user_id}" + INVITE_TOKEN,
     response_model=str,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -296,7 +292,7 @@ async def get_invite_token(user_id: str) -> str:
 
 
 @router.delete(
-    "/{user_id}}" + INVITE_TOKEN,
+    "/{user_id}" + INVITE_TOKEN,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 async def invalidate_invite_token(user_id: str) -> None:
@@ -321,7 +317,7 @@ async def invalidate_invite_token(user_id: str) -> None:
 
 
 @router.delete(
-    "/{user_id}}" + ROLES + "/{role_id}",
+    "/{user_id}" + ROLES + "/{role_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def unassign_role(user_id: str, role_id: str, project_id: str) -> None:
