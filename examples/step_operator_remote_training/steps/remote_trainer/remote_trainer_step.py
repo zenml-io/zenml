@@ -16,11 +16,9 @@ from sklearn.base import ClassifierMixin
 from sklearn.svm import SVC
 
 from zenml.repository import Repository
-from zenml.stack.stack import Stack
 from zenml.steps import step
 
-active_stack = Stack.from_model(Repository().active_stack)
-step_operator = active_stack.step_operator
+step_operator = Repository().active_stack.step_operator
 if not step_operator:
     raise RuntimeError(
         "Your active stack needs to contain a step operator for this "
