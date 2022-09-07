@@ -35,7 +35,7 @@ import json
 import os
 import time
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Dict
 
 from pydantic.json import pydantic_encoder
 from tfx import types
