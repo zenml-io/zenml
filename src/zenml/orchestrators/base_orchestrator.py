@@ -72,14 +72,13 @@ from zenml.orchestrators.utils import (
     get_step_for_node,
 )
 from zenml.repository import Repository
-from zenml.stack import StackComponent, StackComponentConfig
+from zenml.stack import Stack, StackComponent,StackComponentConfig
 from zenml.steps import BaseStep
 from zenml.utils import source_utils, string_utils
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
-    from zenml.stack import Stack
 
 logger = get_logger(__name__)
 

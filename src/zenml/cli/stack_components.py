@@ -27,7 +27,6 @@ from typing import (
 )
 
 import click
-from pydantic import ValidationError
 from rich.markdown import Markdown
 
 from zenml.cli import utils as cli_utils
@@ -394,8 +393,8 @@ def generate_stack_component_register_command(
             cli_utils.error(str(e))
             return
 
-        #try:
-            # with console.status(f"Registering {display_name} '{name}'...\n"):
+        # try:
+        # with console.status(f"Registering {display_name} '{name}'...\n"):
         _register_stack_component(
             component_type=component_type,
             component_name=name,

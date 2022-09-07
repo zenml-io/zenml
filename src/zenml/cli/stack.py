@@ -18,7 +18,6 @@ import json
 from typing import Dict, Optional
 
 import click
-import yaml
 
 import zenml
 from zenml.cli import utils as cli_utils
@@ -169,7 +168,7 @@ def register_stack(
     annotator_name: Optional[str] = None,
     data_validator_name: Optional[str] = None,
     set_stack: bool = False,
-    share: bool = None
+    share: bool = None,
 ) -> None:
     """Register a stack.
 
@@ -411,7 +410,7 @@ def update_stack(
     alerter_name: Optional[str] = None,
     annotator_name: Optional[str] = None,
     data_validator_name: Optional[str] = None,
-    share: bool = False
+    share: bool = False,
 ) -> None:
     """Update a stack.
 
@@ -988,8 +987,9 @@ def _get_component_as_dict(
         A dict representation of the component's key config values.
     """
     repo = Repository()
-    component = repo.get_stack_component_by_name_and_type(type=component_type,
-                                                          name=component_name)
+    component = repo.get_stack_component_by_name_and_type(
+        type=component_type, name=component_name
+    )
     component_dict = {
         key: value
         for key, value in json.loads(component.json()).items()
@@ -1015,7 +1015,6 @@ def export_stack(stack_name: str, filename: Optional[str]) -> None:
     # TODO [ENG-893]: code duplicate with describe_stack()
     repo = Repository()
 
-
     try:
         stack = repo.get_stack_by_name(stack_name)
     except KeyError:
@@ -1028,7 +1027,9 @@ def export_stack(stack_name: str, filename: Optional[str]) -> None:
         if filename is None:
             filename = stack_name + ".yaml"
         write_yaml(filename, yaml_data)
-        cli_utils.declare(f"Exported stack '{stack_name}' to file '{filename}'.")
+        cli_utils.declare(
+            f"Exported stack '{stack_name}' to file '{filename}'."
+        )
 
 
 def _import_stack_component(
@@ -1103,7 +1104,7 @@ def import_stack(
     ctx: click.Context,
     stack_name: str,
     filename: Optional[str],
-    ignore_version_mismatch: bool = False
+    ignore_version_mismatch: bool = False,
 ) -> None:
     """Import a stack from YAML.
 

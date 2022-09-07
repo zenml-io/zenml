@@ -110,7 +110,7 @@ class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
         image_name = self.build_and_push_docker_image(
             pipeline_name=pipeline_name,
             docker_configuration=docker_configuration,
-            stack=Repository().active_stack,
+            stack=Stack.from_model(Repository().active_stack),
             runtime_configuration=RuntimeConfiguration(),
             entrypoint=" ".join(entrypoint_command),
         )

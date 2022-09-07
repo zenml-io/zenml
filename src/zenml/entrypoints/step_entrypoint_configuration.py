@@ -32,6 +32,7 @@ from zenml.artifacts.type_registry import type_registry
 from zenml.integrations.registry import integration_registry
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.repository import Repository
+from zenml.stack.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps import utils as step_utils
 from zenml.utils import source_utils, string_utils
@@ -624,7 +625,9 @@ class StepEntrypointConfiguration(ABC):
 
         # Execute the actual step code.
         run_name = self.get_run_name(pipeline_name=pipeline_name)
-        orchestrator = Repository().active_stack.orchestrator
+        repo = Repository()  # type: ignore[call-arg]
+        active_stack = Stack.from_model(repo.active_stack)
+        orchestrator = active_stack.orchestrator
         execution_info = orchestrator.run_step(
             step=step, run_name=run_name, pb2_pipeline=pb2_pipeline
         )

@@ -28,6 +28,7 @@ class ArtifactType(StrEnum):
     SCHEMA = "SchemaArtifact"
     SERVICE = "ServiceArtifact"
     STATISTICS = "StatisticsArtifact"
+    BASE = "BaseArtifact"
 
 
 class ExecutionStatus(StrEnum):

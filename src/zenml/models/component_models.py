@@ -13,13 +13,11 @@
 #  permissions and limitations under the License.
 """Component wrapper implementation."""
 
-import base64
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional, Dict, Any
+from typing import TYPE_CHECKING, Any, Dict, Optional
 from uuid import UUID
 
-import yaml
 from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
@@ -55,7 +53,9 @@ class ComponentModel(BaseModel):
     flavor_name: Optional[str] = Field(
         title="The flavor of the Stack Component.",
     )
-    configuration: Dict[str, Any] = Field(  # Json representation of the configuration
+    configuration: Dict[
+        str, Any
+    ] = Field(  # Json representation of the configuration
         title="The id of the Stack Component.",
     )
     owner: Optional[UUID] = Field(
@@ -103,7 +103,7 @@ class ComponentModel(BaseModel):
             flavor_name=component.FLAVOR,
             name=component.name,
             id=component.uuid,
-            configuration=json.loads(component.json())
+            configuration=json.loads(component.json()),
         )
 
     def to_component(self) -> "StackComponent":

@@ -32,7 +32,7 @@ from zenml.constants import ENV_ZENML_SECRET_VALIDATION_LEVEL
 from zenml.enums import SecretValidationLevel, StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.logger import get_logger
-from zenml.models import StackModel, ComponentModel
+from zenml.models import ComponentModel, StackModel
 from zenml.runtime_configuration import (
     RUN_NAME_OPTION_KEY,
     RuntimeConfiguration,
@@ -154,7 +154,7 @@ class Stack:
         return Stack.from_components(
             id=stack_model.id,
             name=stack_model.name,
-            components=stack_components
+            components=stack_components,
         )
 
     @classmethod
@@ -637,7 +637,7 @@ class Stack:
             name=runtime_configuration.run_name,
             owner=repo.zen_store.active_user.id,
             stack_id=self.id,
-            pipeline=None,  # TODO: check if pipeline exists etc. else pass None
+            pipeline_id=None,  # TODO: check if pipeline exists etc. else pass None
             runtime_configuration=runtime_configuration,
         )
 

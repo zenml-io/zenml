@@ -23,6 +23,7 @@ from pyspark.conf import SparkConf
 from zenml.config.docker_configuration import DockerConfiguration
 from zenml.logger import get_logger
 from zenml.repository import Repository
+from zenml.stack.stack import Stack
 from zenml.step_operators import BaseStepOperator
 
 logger = get_logger(__name__)
@@ -175,7 +176,8 @@ class SparkStepOperator(BaseStepOperator):
         """
         # Get active artifact store
         repo = Repository()
-        artifact_store = repo.active_stack.artifact_store
+        active_stack = Stack.from_model(repo.active_stack)
+        artifact_store = active_stack.artifact_store
 
         from zenml.integrations.s3 import S3_ARTIFACT_STORE_FLAVOR
 

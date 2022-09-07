@@ -42,8 +42,16 @@ from types import (
     ModuleType,
     TracebackType,
 )
-from typing import Any, Callable, Iterator, List, Optional, Type, Union, \
-    TYPE_CHECKING
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Iterator,
+    List,
+    Optional,
+    Type,
+    Union,
+)
 
 from zenml import __version__
 from zenml.constants import APP_NAME

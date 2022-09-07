@@ -45,9 +45,9 @@ from zenml.exceptions import (
 )
 from zenml.logger import get_logger
 from zenml.pipelines.schedule import Schedule
-from zenml.post_execution import PipelineRunView
 from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
+from zenml.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps.base_step import BaseStepMeta
 from zenml.steps.utils import clone_step
@@ -55,7 +55,7 @@ from zenml.utils import io_utils, yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 if TYPE_CHECKING:
-    from zenml.stack import Stack
+    from zenml.post_execution import PipelineRunView
 
 logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME: str = "connect"
@@ -570,30 +570,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
         pipeline_view = Repository().get_pipeline(cls)
         if pipeline_view:
             return pipeline_view.runs  # type: ignore[no-any-return]
-        else:
-            raise RuntimeError(
-                f"The PipelineView for `{cls.__name__}` could "
-                f"not be found. Are you sure this pipeline has "
-                f"been run already?"
-            )
-
-    @classmethod
-    def get_run(cls, run_name: str) -> Optional["PipelineRunView"]:
-        """Get a specific past run from the associated PipelineView.
-
-        Args:
-            run_name: Name of the run
-
-        Returns:
-            The PipelineRunView of the specific pipeline run.
-
-        Raises:
-            RuntimeError: In case the repository does not contain the view
-                of the current pipeline.
-        """
-        pipeline_view = Repository().get_pipeline(cls)
-        if pipeline_view:
-            return pipeline_view.get_run(run_name)  # type: ignore[no-any-return]
         else:
             raise RuntimeError(
                 f"The PipelineView for `{cls.__name__}` could "

@@ -35,6 +35,7 @@ from zenml.integrations.registry import integration_registry
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.repository import Repository
+from zenml.stack.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps.utils import _FunctionExecutor, generate_component_class
 from zenml.utils import source_utils, yaml_utils
@@ -197,7 +198,8 @@ def main(
     # create an instance of the active stack. This makes sure the artifact
     # store is created and registered in `fileio` so we can read the entrypoint
     # inputs
-    stack = Repository().active_stack
+    repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
+    stack = Stack.from_model(repo.active_stack)
 
     input_artifact_type_mapping = yaml_utils.read_json(
         input_artifact_types_path

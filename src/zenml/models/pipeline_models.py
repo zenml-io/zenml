@@ -14,20 +14,13 @@
 """Pipeline models implementation."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, cast
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-import zenml
-from zenml.enums import ExecutionStatus
-from zenml.logger import get_logger
-
-if TYPE_CHECKING:
-    from zenml.pipelines import BasePipeline
-    from zenml.steps import BaseStep
-
-logger = get_logger(__name__)
+from zenml import __version__ as current_zenml_version
+from zenml.enums import ArtifactType
 
 
 def get_git_sha(clean: bool = True) -> Optional[str]:
@@ -60,45 +53,6 @@ def get_git_sha(clean: bool = True) -> Optional[str]:
     return cast(str, repo.head.object.hexsha)
 
 
-class StepModel(BaseModel):
-    """Step of a pipeline (abstract)."""
-
-    id: Optional[UUID]
-    name: str
-    source: str
-
-
-class StepRunModel(BaseModel):
-    """The representation of an actualized, step that is part of a pipeline run.
-
-    Attributes:
-        name: Step name
-        docstring: Docstring of the step
-        source: Path to the code that implements this step
-        status: Status of the step within its run
-    """
-
-    id: Optional[UUID]
-    name: str
-    docstring: Optional[str]
-    status: ExecutionStatus
-
-    @classmethod
-    def from_step(cls, step: "BaseStep") -> "StepModel":
-        """Creates a StepWrapper from a step instance.
-
-        Args:
-            step: The step instance.
-
-        Returns:
-            A StepWrapper instance.
-        """
-        return cls(
-            name=step.name,
-            docstring=step.__doc__,
-        )
-
-
 class PipelineModel(BaseModel):
     """Pydantic object representing a pipeline.
 
@@ -110,26 +64,14 @@ class PipelineModel(BaseModel):
 
     id: Optional[UUID]
     name: str
+
+    project_id: Optional[UUID]  # TODO: make this required
+    owner: Optional[UUID]
+
     docstring: Optional[str]
-    steps: List[StepModel]
+    # configuration: str
 
-    @classmethod
-    def from_pipeline(cls, pipeline: "BasePipeline") -> "PipelineModel":
-        """Creates a PipelineWrapper from a pipeline instance.
-
-        Args:
-            pipeline: The pipeline instance.
-
-        Returns:
-            A PipelineWrapper instance.
-        """
-        steps = [StepModel.from_step(step) for step in pipeline.steps.values()]
-
-        return cls(
-            name=pipeline.name,
-            docstring=pipeline.__doc__,
-            steps=steps,
-        )
+    created_at: Optional[datetime]
 
 
 class PipelineRunModel(BaseModel):
@@ -148,23 +90,40 @@ class PipelineRunModel(BaseModel):
         owner: Id of the user that ran this pipeline.
     """
 
-    id: Optional[UUID]
+    id: Optional[UUID]  # ID in our DB
+    mlmd_id: Optional[int]  # ID in MLMD
     name: str
 
-    owner: UUID
-    stack_id: UUID
+    owner: Optional[UUID]
+    stack_id: Optional[UUID]
     pipeline_id: Optional[UUID]
 
-    runtime_configuration: Dict[str, Any]
+    runtime_configuration: Optional[Dict[str, Any]]
 
-    zenml_version: str = zenml.__version__
+    zenml_version: Optional[str] = current_zenml_version
     git_sha: Optional[str] = Field(default_factory=get_git_sha)
     created_at: Optional[datetime]
+
+
+class StepRunModel(BaseModel):
+    """Pydantic object representing a step of a pipeline run."""
+
+    mlmd_id: int  # ID in MLMD
+    name: str
+    pipeline_run_id: Optional[UUID]  # TODO: make required
+    parent_step_ids: List[int]  # ID in MLMD
+    docstring: Optional[str]
+    entrypoint_name: str
 
 
 class ArtifactModel(BaseModel):
     """Pydantic object representing an artifact."""
 
-    id: Optional[UUID]
-    name: str
-    # TODO
+    mlmd_id: int  # ID in MLMD
+    type: ArtifactType
+    uri: str
+    materializer: str
+    data_type: str
+    parent_step_id: int  # ID in MLMD
+    producer_step_id: int  # ID in MLMD
+    is_cached: bool

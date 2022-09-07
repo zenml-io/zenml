@@ -93,7 +93,7 @@ class StackModel(BaseModel):
         component_data = {}
         for component_type, component in self.components.items():
             component_dict = json.loads(component.json())
-            component_dict.pop("project")   # Not needed in the yaml repr
+            component_dict.pop("project")  # Not needed in the yaml repr
             component_dict.pop("created_at")  # Not needed in the yaml repr
             component_data[component_type.value] = component_dict
 
@@ -104,4 +104,3 @@ class StackModel(BaseModel):
         }
 
         return yaml_data
-

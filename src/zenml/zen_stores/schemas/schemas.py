@@ -18,18 +18,12 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID, uuid4
 
-import yaml
-from sqlmodel import Field, Relationship, Session, SQLModel, select
+from sqlmodel import Field, Relationship, SQLModel
 
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.models.code_models import CodeRepositoryModel
 from zenml.models.component_models import ComponentModel
-from zenml.models.pipeline_models import (
-    PipelineModel,
-    PipelineRunModel,
-    StepModel,
-    StepRunModel,
-)
+from zenml.models.pipeline_models import PipelineModel, PipelineRunModel
 from zenml.models.stack_model import StackModel
 from zenml.models.user_management_models import (
     ProjectModel,
@@ -58,8 +52,13 @@ class ProjectSchema(SQLModel, table=True):
     )
 
     @classmethod
-    def from_model(cls, model: ProjectModel) -> "ProjectSchema":
+    def from_create_model(cls, model: ProjectModel) -> "ProjectSchema":
         return cls(name=model.name, description=model.description)
+
+    def from_update_model(self, model: ProjectModel) -> "ProjectSchema":
+        self.name = model.name
+        self.description = model.description
+        return self
 
     def to_model(self) -> ProjectModel:
         return ProjectModel(
@@ -79,10 +78,16 @@ class CodeRepositorySchema(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.now)
 
     @classmethod
-    def from_model(
+    def from_create_model(
         cls, model: CodeRepositoryModel, project_id: UUID
     ) -> "CodeRepositorySchema":
         return cls(name=model.name, project_id=project_id)
+
+    def from_update_model(
+        self, model: CodeRepositoryModel
+    ) -> "CodeRepositorySchema":
+        self.name = model.name
+        return self
 
     def to_model(self) -> CodeRepositoryModel:
         return CodeRepositoryModel(
@@ -118,8 +123,12 @@ class UserSchema(SQLModel, table=True):
     )
 
     @classmethod
-    def from_model(cls, model: UserModel) -> "UserSchema":
+    def from_create_model(cls, model: UserModel) -> "UserSchema":
         return cls(name=model.name)
+
+    def from_update_model(self, model: UserModel) -> "UserSchema":
+        self.name = model.name
+        return self
 
     def to_model(self) -> UserModel:
         return UserModel(id=self.id, name=self.name, created_at=self.created_at)
@@ -140,7 +149,7 @@ class TeamSchema(SQLModel, table=True):
     )
 
     @classmethod
-    def from_model(cls, model: TeamModel) -> "TeamSchema":
+    def from_create_model(cls, model: TeamModel) -> "TeamSchema":
         return cls(name=model.name)
 
     def to_model(self) -> TeamModel:
@@ -162,7 +171,7 @@ class RoleSchema(SQLModel, table=True):
     )
 
     @classmethod
-    def from_model(cls, model: RoleModel) -> "RoleSchema":
+    def from_create_model(cls, model: RoleModel) -> "RoleSchema":
         return cls(name=model.name)
 
     def to_model(self) -> RoleModel:
@@ -185,16 +194,6 @@ class UserRoleAssignmentSchema(SQLModel, table=True):
     project: Optional[ProjectSchema] = Relationship(
         back_populates="user_role_assignments"
     )
-
-    @classmethod
-    def from_model(
-        cls, model: RoleAssignmentModel
-    ) -> "UserRoleAssignmentSchema":
-        return cls(
-            role_id=model.role_id,
-            user_id=model.user_id,
-            project_id=model.project_id,
-        )
 
     def to_model(self) -> RoleAssignmentModel:
         return RoleAssignmentModel(
@@ -222,16 +221,6 @@ class TeamRoleAssignmentSchema(SQLModel, table=True):
     project: Optional[ProjectSchema] = Relationship(
         back_populates="team_role_assignments"
     )
-
-    @classmethod
-    def from_model(
-        cls, model: RoleAssignmentModel
-    ) -> "TeamRoleAssignmentSchema":
-        return cls(
-            role_id=model.role_id,
-            team_id=model.team_id,
-            project_id=model.project_id,
-        )
 
     def to_model(self) -> RoleAssignmentModel:
         return RoleAssignmentModel(
@@ -390,7 +379,8 @@ class StackComponentSchema(SQLModel, table=True):
             type=component.type,
             flavor_name=component.flavor_name,
             configuration=base64.b64encode(
-                json.dumps(component.configuration).encode('utf-8')),
+                json.dumps(component.configuration).encode("utf-8")
+            ),
         )
 
     def from_update_model(
@@ -405,7 +395,8 @@ class StackComponentSchema(SQLModel, table=True):
         self.name = component.name
         self.is_shared = component.is_shared
         self.configuration = base64.b64encode(
-                json.dumps(component.configuration).encode('utf-8'))
+            json.dumps(component.configuration).encode("utf-8")
+        )
         return self
 
     def to_model(self) -> "ComponentModel":
@@ -422,8 +413,9 @@ class StackComponentSchema(SQLModel, table=True):
             owner=self.owner,
             project_id=self.project_id,
             is_shared=self.is_shared,
-            configuration=json.loads(base64.b64decode(
-                self.configuration).decode()),
+            configuration=json.loads(
+                base64.b64decode(self.configuration).decode()
+            ),
         )
 
 
@@ -443,58 +435,37 @@ class PipelineSchema(SQLModel, table=True):
 
     docstring: str  # TODO: how to get this?
     # configuration: str
-    git_sha: str
 
     created_at: datetime = Field(default_factory=datetime.now)
 
+    # runs = Relationship(
+    #     back_populates="pipeline",
+    # )
+
     @classmethod
-    def from_model(cls, model: PipelineModel) -> "PipelineSchema":
+    def from_create_model(cls, model: PipelineModel) -> "PipelineSchema":
         pass  # TODO
+
+    def from_update_model(self, model: PipelineModel) -> "PipelineSchema":
+        self.name = model.name
+        self.docstring = model.docstring
+        # self.configuration = model.configuration
+        return self
 
     def to_model(self) -> "PipelineModel":
-        with Session(self.engine) as session:
-            steps = session.exec(
-                select(StepSchema).where(StepSchema.pipeline_id == self.id)
-            ).all()
-
-        return PipelineModel(
-            id=self.id,
-            name=self.name,
-            docstring=self.docstring,
-            steps=[step.to_model() for step in steps],
-        )
-
-
-class StepSchema(SQLModel, table=True):
-    """SQL Model for steps of a pipeline."""
-
-    id: UUID = Field(primary_key=True, default_factory=uuid4)
-    name: str
-    pipeline_id: UUID = Field(foreign_key="pipelineschema.id")
-    source: str  # TODO: how to get this?
-
-    @classmethod
-    def from_model(cls, model: StepModel) -> "StepSchema":
         pass  # TODO
-
-    def to_model(self) -> "StepModel":
-        return StepModel(
-            id=self.id,
-            name=self.name,
-            source=self.source,
-        )
 
 
 class PipelineRunSchema(SQLModel, table=True):
     """SQL Model for pipeline runs."""
 
     id: UUID = Field(primary_key=True, default_factory=uuid4)
-
+    mlmd_id: int = Field(default=None, nullable=True)
     name: str
 
     # project_id - redundant since stack has this
-    stack_id: UUID = Field(foreign_key="stackschema.id")
     owner: UUID = Field(foreign_key="userschema.id")
+    stack_id: UUID = Field(foreign_key="stackschema.id")
     pipeline_id: Optional[UUID] = Field(
         foreign_key="pipelineschema.id", nullable=True
     )
@@ -505,9 +476,16 @@ class PipelineRunSchema(SQLModel, table=True):
 
     created_at: datetime = Field(default_factory=datetime.now)
 
+    # pipeline: PipelineSchema = Relationship(back_populates="runs")
+
     @classmethod
-    def from_model(cls, model: PipelineRunModel) -> "PipelineRunSchema":
+    def from_create_model(
+        cls,
+        model: PipelineRunModel,
+        pipeline: Optional[PipelineSchema] = None,
+    ) -> "PipelineRunSchema":
         return cls(
+            mlmd_id=model.mlmd_id,
             name=model.name,
             stack_id=model.stack_id,
             owner=model.owner,
@@ -515,11 +493,21 @@ class PipelineRunSchema(SQLModel, table=True):
             runtime_configuration=json.dumps(model.runtime_configuration),
             git_sha=model.git_sha,
             zenml_version=model.zenml_version,
+            pipeline=pipeline,
         )
+
+    def from_update_model(self, model: PipelineRunModel) -> "PipelineRunSchema":
+        self.mlmd_id = model.mlmd_id
+        self.name = model.name
+        self.runtime_configuration = json.dumps(model.runtime_configuration)
+        self.git_sha = model.git_sha
+        self.zenml_version = model.zenml_version
+        return self
 
     def to_model(self) -> PipelineRunModel:
         return PipelineRunModel(
             id=self.id,
+            mlmd_id=self.mlmd_id,
             name=self.name,
             stack_id=self.stack_id,
             owner=self.owner,
@@ -529,30 +517,6 @@ class PipelineRunSchema(SQLModel, table=True):
             zenml_version=self.zenml_version,
             created_at=self.created_at,
         )
-
-
-class PipelineRunStepSchema(SQLModel, table=True):
-    """SQL Model for pipeline run steps."""
-
-    id: UUID = Field(primary_key=True, default_factory=uuid4)
-
-    name: str
-
-    pipeline_run_id: UUID = Field(foreign_key="pipelinerunschema.id")
-    # created_by - redundant since run has this
-
-    status: ExecutionStatus
-    docstring: str
-    runtime_configuration: str
-
-    # created_at - redundant since run has this
-
-    @classmethod
-    def from_model(cls, model: StepRunModel) -> "PipelineRunStepSchema":
-        pass  # TODO
-
-    def to_model(self) -> "StepRunModel":
-        pass  # TODO
 
 
 # MLMD
