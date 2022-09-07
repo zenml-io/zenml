@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,44 +11,63 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""CLI for manipulating ZenML local and global config file."""
+"""CLI for managing ZenML server deployments."""
 
 import ipaddress
 from importlib import import_module
-from typing import Optional, Union
+from typing import Any, Dict, Optional, Union
 
 import click
-from click_params import IP_ADDRESS  # type: ignore[import]
 from rich.errors import MarkupError
 from rich.markdown import Markdown
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.console import console
-from zenml.enums import CliCategories
+from zenml.enums import CliCategories, ServerProviderType
 from zenml.logger import get_logger
-from zenml.zen_server.deploy.base_deployer import (
-    BaseServerDeployer,
-    BaseServerDeploymentConfig,
+from zenml.zen_server.deploy.deployer import ServerDeployer
+from zenml.zen_server.deploy.deployment import (
+    ServerDeployment,
+    ServerDeploymentConfig,
 )
-from zenml.zen_server.deploy.docker.docker_deployer import (
-    DOCKER_SERVER_SINGLETON_NAME,
-    DockerServerDeployer,
-)
-from zenml.zen_server.deploy.docker.docker_zen_server import (
-    DockerServerDeploymentConfig,
-)
-from zenml.zen_server.deploy.local.local_deployer import (
-    LOCAL_SERVER_SINGLETON_NAME,
-    LocalServerDeployer,
-)
-from zenml.zen_server.deploy.local.local_zen_server import (
-    LocalServerDeploymentConfig,
-)
+from zenml.zen_server.deploy.exceptions import ServerDeploymentNotFoundError
 
 logger = get_logger(__name__)
 
 help_message = "Commands for managing the ZenServer."
+
+
+def get_one_server(server_name: Optional[str]) -> ServerDeployment:
+    """Get a single server deployment by name.
+
+    Call this function to retrieve a single server deployment. If no name is
+    provided and there is only one server deployment, that one will be returned,
+    otherwise an error will be raised.
+
+    Args:
+        server_name: Name of the server deployment.
+
+    Returns:
+        The server deployment.
+    """
+    deployer = ServerDeployer()
+    servers = deployer.list_servers(server_name=server_name)
+
+    if not servers:
+        if server_name:
+            cli_utils.error(
+                f"No ZenML server with the name '{server_name}' was found !"
+            )
+        else:
+            cli_utils.error("No ZenML servers were found !")
+    elif len(servers) > 1:
+        cli_utils.error(
+            "Found multiple ZenML servers running. You have to supply a "
+            "server name."
+        )
+
+    return servers[0]
 
 
 @cli.group(
@@ -71,30 +90,26 @@ def explain_server() -> None:
 
 
 @server.command("up", help="Provision and start a ZenML server.")
-@click.option("--port", type=int, default=8237, show_default=True)
+@click.option("--name", type=str, help="Name for the ZenML server deployment.")
 @click.option(
-    "--local",
+    "--provider",
+    "-p",
+    type=click.Choice(
+        [p.value for p in ServerProviderType], case_sensitive=True
+    ),
+    help="Server deployment provider.",
+    default=ServerProviderType.LOCAL.value,
+)
+@click.option(
+    "--connect",
     is_flag=True,
-    help="Deploy the ZenML server as a local daemon process.",
+    help="Connect the client to the ZenML server after it's deployed.",
     type=click.BOOL,
 )
+@click.option("--port", type=int, default=None)
 @click.option(
-    "--container",
-    is_flag=True,
-    help="Deploy the ZenML server as a container.",
-    type=click.BOOL,
+    "--username", type=str, default="default", show_default=True, help="The ."
 )
-@click.option(
-    "--skip-connect",
-    is_flag=True,
-    help="Don't automatically connecting the client to the ZenML server.",
-    type=click.BOOL,
-)
-@click.option(
-    "--ip-address", type=IP_ADDRESS, default="127.0.0.1", show_default=True
-)
-@click.option("--port", type=int, default=8237, show_default=True)
-@click.option("--username", type=str, default="default", show_default=True)
 @click.option("--password", type=str, default="", show_default=True)
 @click.option(
     "--timeout",
@@ -108,172 +123,193 @@ def explain_server() -> None:
     ),
 )
 def up_server(
-    local: bool,
-    container: bool,
-    skip_connect: bool,
-    ip_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address],
-    port: int,
+    provider: str,
+    connect: bool,
     username: str,
     password: str,
+    name: Optional[str],
+    ip_address: Union[
+        ipaddress.IPv4Address, ipaddress.IPv6Address, None
+    ] = None,
     timeout: Optional[int] = None,
+    port: Optional[int] = None,
 ) -> None:
     """Provisions resources for a ZenML server.
 
     Args:
-        local: Deploy the ZenML server as a local daemon process.
-        container: Deploy the ZenML server as a container.
+        name: Name for the ZenML server deployment.
+        provider: ZenML server provider name.
+        connect: Connecting the client to the ZenML server.
         ip_address: The IP address to bind the server to.
         port: The port to bind the server to.
         username: The username to use for authentication.
         password: The password to use for authentication.
+        timeout: Time in seconds to wait for the server to start.
     """
-    if local and container:
-        cli_utils.error(
-            "The `--local` and `--container` options are mutually exclusive."
-        )
-    if not local and not container:
-        # Default to using the local daemon process deployment method
-        local = True
-
-    deployer: BaseServerDeployer
-    server_config: BaseServerDeploymentConfig
-
-    if local:
-        deployer = LocalServerDeployer()
-
-        server_config = LocalServerDeploymentConfig(
-            name=LOCAL_SERVER_SINGLETON_NAME,
-            address=ip_address,
-            port=port,
-            username=username,
-            password=password,
-        )
-
-    elif container:
-        deployer = DockerServerDeployer()
-
-        server_config = DockerServerDeploymentConfig(
-            name=DOCKER_SERVER_SINGLETON_NAME,
-            port=port,
-            username=username,
-            password=password,
-        )
-
-    deployer.up(server_config, connect=not skip_connect, timeout=timeout)
-
-    server_status = deployer.status(server_config.name)
-    cli_utils.declare(
-        f"ZenML server '{server_config.name}' running at '{server_status.url}'."
+    name = name or provider
+    config_attrs: Dict[str, Any] = dict(
+        name=name,
+        provider=ServerProviderType(provider),
     )
+    if port is not None:
+        config_attrs["port"] = port
+    if ip_address is not None:
+        config_attrs["ip_address"] = ip_address
+
+    deployer = ServerDeployer()
+    server_config = ServerDeploymentConfig(**config_attrs)
+
+    server = deployer.deploy_server(server_config, timeout=timeout)
+    if server.status and server.status.url:
+        cli_utils.declare(
+            f"ZenML server '{name}' running at '{server.status.url}'."
+        )
+    if connect:
+        deployer.connect_to_server(name, username, password)
 
 
-@server.command("status")
-@click.argument(
-    "server",
-    type=str,
-    required=True,
+@server.command("down", help="Shut down and remove a ZenML server instance.")
+@click.option(
+    "--timeout",
+    "-t",
+    type=click.INT,
+    default=None,
+    help=(
+        "Time in seconds to wait for the server to stop. Set to 0 to "
+        "return immediately after stopping the server, without waiting for it "
+        "to shut down."
+    ),
 )
-def status_server(server: str) -> None:
-    """Get the status of a ZenML server."""
+@click.argument(
+    "server_name",
+    type=str,
+    required=False,
+)
+def down_server(
+    server_name: Optional[str], timeout: Optional[int] = None
+) -> None:
+    """Shut down a ZenML server instance.
 
-    deployer: BaseServerDeployer
-    if server == LOCAL_SERVER_SINGLETON_NAME:
-        deployer = LocalServerDeployer()
-    elif server == DOCKER_SERVER_SINGLETON_NAME:
-        deployer = DockerServerDeployer()
-    else:
-        cli_utils.error(f"Unknown server '{server}'.")
+    Args:
+        server_name: Name of the ZenML server deployment.
+        timeout: Time in seconds to wait for the server to stop.
+    """
+    server = get_one_server(server_name)
+    server_name = server.config.name
+    deployer = ServerDeployer()
 
     try:
-        server_status = deployer.status(server)
-    except KeyError:
-        cli_utils.error(f"No ZenML server with the name '{server}' was found !")
+        deployer.remove_server(server_name, timeout=timeout)
+    except ServerDeploymentNotFoundError as e:
+        cli_utils.error(f"Server not found: {e}")
 
-    cli_utils.declare(f"Local ZenML server running at '{server_status.url}'.")
+    cli_utils.declare(f"Removed the '{server_name}' ZenML server.")
 
 
-@server.command("down")
+@server.command("status", help="Get the status of a ZenML server.")
 @click.argument(
-    "server",
+    "server_name",
     type=str,
-    required=True,
+    required=False,
 )
-def down_server(server: str) -> None:
-    """Shut down a ZenML server instance."""
+def status_server(server_name: Optional[str] = None) -> None:
+    """Get the status of a ZenML server.
 
-    deployer: BaseServerDeployer
-    if server == LOCAL_SERVER_SINGLETON_NAME:
-        deployer = LocalServerDeployer()
-    elif server == DOCKER_SERVER_SINGLETON_NAME:
-        deployer = DockerServerDeployer()
+    Args:
+        server_name: Name of the ZenML server deployment.
+    """
+    server = get_one_server(server_name)
+    server_name = server.config.name
+
+    cli_utils.print_server_deployment(server)
+
+
+@server.command("list", help="List the status of all ZenML servers.")
+@click.option(
+    "--provider",
+    "-p",
+    type=click.Choice(
+        [p.value for p in ServerProviderType], case_sensitive=True
+    ),
+    help="Server deployment provider.",
+    default=None,
+)
+def list_servers(
+    provider: Optional[str] = None,
+) -> None:
+    """List the status of all ZenML servers.
+
+    Args:
+        provider: Server deployment provider.
+    """
+    deployer = ServerDeployer()
+
+    if provider is not None:
+        servers = deployer.list_servers(
+            provider_type=ServerProviderType(provider)
+        )
     else:
-        cli_utils.error(f"Unknown server '{server}'.")
+        servers = deployer.list_servers()
 
-    try:
-        deployer.get(server)
-    except KeyError:
-        cli_utils.error(f"No ZenML server with the name '{server}' was found !")
-
-    deployer.down(server)
-    cli_utils.declare(f"Stopped the '{server}' ZenML server.")
+    cli_utils.print_server_deployment_list(servers)
 
 
-@server.command("connect")
+@server.command("connect", help="Connect to a ZenML server.")
 @click.argument(
-    "server",
+    "server_name",
     type=str,
-    required=True,
+    required=False,
 )
 @click.option("--username", type=str, default="default", show_default=True)
 @click.option("--password", type=str, default="", show_default=True)
-def connect_server(server: str, username: str, password: str) -> None:
-    """Connect to a ZenServer."""
+def connect_server(
+    username: str,
+    password: str,
+    server_name: Optional[str] = None,
+) -> None:
+    """Connect to a ZenML server.
 
-    deployer: BaseServerDeployer
-    if server == LOCAL_SERVER_SINGLETON_NAME:
-        deployer = LocalServerDeployer()
-    elif server == DOCKER_SERVER_SINGLETON_NAME:
-        deployer = DockerServerDeployer()
-    else:
-        cli_utils.error(f"Unknown server '{server}'.")
+    Args:
+        username: The username to use for authentication.
+        password: The password to use for authentication.
+        server_name: Name of the ZenML server deployment.
+    """
+    server = get_one_server(server_name)
+    server_name = server.config.name
+    deployer = ServerDeployer()
 
     try:
-        deployer.connect(server=server, username=username, password=password)
-    except KeyError:
-        cli_utils.error(f"No ZenML server with the name '{server}' was found !")
-
-    cli_utils.declare(
-        f"Connected to the '{server}' ZenML server as user {username}."
-    )
+        deployer.connect_to_server(server_name, username, password)
+    except ServerDeploymentNotFoundError as e:
+        cli_utils.error(f"Server not found: {e}")
 
 
-@server.command("disconnect")
+@server.command("disconnect", help="Disconnect from a ZenML server.")
 @click.argument(
-    "server",
+    "server_name",
     type=str,
-    required=True,
+    required=False,
 )
-def disconnect_server(server: str) -> None:
-    """Disconnect from a ZenServer."""
+def disconnect_server(server_name: Optional[str] = None) -> None:
+    """Disconnect from a ZenML server.
 
-    deployer: BaseServerDeployer
-    if server == LOCAL_SERVER_SINGLETON_NAME:
-        deployer = LocalServerDeployer()
-    elif server == DOCKER_SERVER_SINGLETON_NAME:
-        deployer = DockerServerDeployer()
-    else:
-        cli_utils.error(f"Unknown server '{server}'.")
+    Args:
+        server_name: Name of the ZenML server deployment.
+    """
+    deployer = ServerDeployer()
 
     try:
-        deployer.disconnect(server=server)
-    except KeyError:
-        cli_utils.error(f"No ZenML server with the name '{server}' was found !")
-
-    cli_utils.declare(f"Disconnected from the '{server}' ZenML server.")
+        deployer.disconnect_from_server(server_name)
+    except ServerDeploymentNotFoundError as e:
+        cli_utils.error(f"Server not found: {e}")
 
 
 @server.command("logs", help="Show the logs for a ZenML server.")
-@click.argument("server", type=click.STRING)
+@click.argument(
+    "server_name",
+    type=click.STRING,
+    required=False,
+)
 @click.option(
     "--follow",
     "-f",
@@ -294,32 +330,27 @@ def disconnect_server(server: str) -> None:
     help="Show raw log contents (don't pretty-print logs).",
 )
 def get_server_logs(
-    server: str,
     follow: bool,
-    tail: Optional[int],
     raw: bool,
+    tail: Optional[int] = None,
+    server_name: Optional[str] = None,
 ) -> None:
     """Display the logs for a ZenML server.
 
     Args:
-        server: The name of the ZenML server instance.
+        server_name: The name of the ZenML server instance.
         follow: Continue to output new log data as it becomes available.
         tail: Only show the last NUM lines of log output.
         raw: Show raw log contents (don't pretty-print logs).
     """
-
-    deployer: BaseServerDeployer
-    if server == LOCAL_SERVER_SINGLETON_NAME:
-        deployer = LocalServerDeployer()
-    elif server == DOCKER_SERVER_SINGLETON_NAME:
-        deployer = DockerServerDeployer()
-    else:
-        cli_utils.error(f"Unknown server '{server}'.")
+    server = get_one_server(server_name)
+    server_name = server.config.name
+    deployer = ServerDeployer()
 
     try:
-        logs = deployer.get_logs(server, follow=follow, tail=tail)
-    except KeyError:
-        cli_utils.error(f"No ZenML server with the name '{server}' was found !")
+        logs = deployer.get_server_logs(server_name)
+    except ServerDeploymentNotFoundError as e:
+        cli_utils.error(f"Server not found: {e}")
 
     for line in logs:
         # don't pretty-print log lines that are already pretty-printed

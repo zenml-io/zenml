@@ -11,10 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of a local daemon entrypoint.
+"""Implementation of a containerized service entrypoint.
 
 This executable file is utilized as an entrypoint for all ZenML services
-that are implemented as locally running docker containeres.
+that are implemented as locally running docker containers.
 """
 
 import os
@@ -43,9 +43,7 @@ def launch_service(service_config_file: str) -> None:
 
     logger = get_logger(__name__)
 
-    logger.info(
-        "Loading service daemon configuration from %s", service_config_file
-    )
+    logger.info("Loading service configuration from %s", service_config_file)
     with open(service_config_file, "r") as f:
         config = f.read()
 

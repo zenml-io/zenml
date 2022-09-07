@@ -360,7 +360,6 @@ class ContainerService(BaseService):
 
     def _start_container(self) -> None:
         """Start the service docker container associated with this service."""
-
         container = self.container
 
         if container:
@@ -394,9 +393,10 @@ class ContainerService(BaseService):
         self._setup_runtime_path()
 
         ports: Dict[int, Optional[int]] = {}
-        if self.endpoint and self.endpoint.status.port:
+        if self.endpoint:
             self.endpoint.prepare_for_start()
-            ports[self.endpoint.status.port] = self.endpoint.status.port
+            if self.endpoint.status.port:
+                ports[self.endpoint.status.port] = self.endpoint.status.port
 
         command, env = self._get_container_cmd()
         volumes = self._get_container_volumes()
