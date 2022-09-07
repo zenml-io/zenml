@@ -315,8 +315,17 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             # we're not inside a step
             return None
 
-        mlflow.set_experiment(experiment_name=step_env.pipeline_name)
-        return mlflow.get_experiment_by_name(step_env.pipeline_name)
+        # If using Databricks, then we need to append an slash to the name of
+        # the experiment because Databricks needs it to be an absolute path
+        # within the Databricks workspace.
+        experiment_name = (
+            f"/{step_env.pipeline_name}"
+            if self.is_databricks_tracking_uri(self.tracking_uri)
+            else step_env.pipeline_name
+        )
+
+        mlflow.set_experiment(experiment_name=experiment_name)
+        return mlflow.get_experiment_by_name(experiment_name)
 
     def _find_active_run(
         self,
