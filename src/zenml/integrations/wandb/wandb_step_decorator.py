@@ -24,7 +24,6 @@ from zenml.integrations.wandb.experiment_trackers.wandb_experiment_tracker impor
 )
 from zenml.logger import get_logger
 from zenml.repository import Repository
-from zenml.stack.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps.utils import STEP_INNER_FUNC_NAME
 
@@ -191,9 +190,9 @@ def wandb_step_entrypoint(
             run_name = f"{step_env.pipeline_run_id}_{step_env.step_name}"
             tags = (step_env.pipeline_name, step_env.pipeline_run_id)
 
-            repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
-            active_stack = Stack.from_model(repo.active_stack)
-            experiment_tracker = active_stack.experiment_tracker
+            experiment_tracker = Repository(  # type: ignore[call-arg]
+                skip_repository_check=True
+            ).active_stack.experiment_tracker
 
             if not isinstance(experiment_tracker, WandbExperimentTracker):
                 raise ValueError(
