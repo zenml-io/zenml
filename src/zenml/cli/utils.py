@@ -399,9 +399,8 @@ def print_stack_component_configuration(
 
     component_dict = component.dict()
     component_dict.pop("configuration")
-    component_dict.update(
-        yaml.safe_load(base64.b64decode(component.configuration).decode())
-    )
+    component_dict.update(component.configuration)
+
     items = component_dict.items()
     for item in items:
         elements = []
