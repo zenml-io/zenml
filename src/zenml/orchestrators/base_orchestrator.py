@@ -38,6 +38,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar, List, Optional
 
 from pydantic.json import pydantic_encoder
+from tfx import types
 from tfx.dsl.compiler.compiler import Compiler
 from tfx.dsl.compiler.constants import PIPELINE_RUN_ID_PARAMETER_NAME
 from tfx.dsl.io.fileio import NotFoundError
@@ -110,6 +111,23 @@ def _patched_remove_stateful_working_dir(stateful_working_dir: str) -> None:
             stateful_working_dir,
         )
 
+def _patched_remove_output_dirs(output_dict: Dict[str, List[types.Artifact]]) -> None:
+  """Remove dirs of output artifacts' URI.
+  
+  Args:
+    output_dict: Dictionary of strings to output artifacts.
+  """
+  # The original implementation was doing a fileio.rmtree 
+  # without checking for the existence of the object. This 
+  # caused a cascading failure, and users of ZenML then see 
+  # an internal TFX error in some cases.
+  for _, artifact_list in output_dict.items():
+    for artifact in artifact_list:
+        if fileio.isdir(artifact.uri):
+            fileio.rmtree(artifact.uri)
+        elif fileio.exists(artifact.uri):
+            fileio.remove(artifact.uri)
+
 
 assert hasattr(
     outputs_utils, "remove_stateful_working_dir"
@@ -118,6 +136,14 @@ setattr(
     outputs_utils,
     "remove_stateful_working_dir",
     _patched_remove_stateful_working_dir,
+)
+assert hasattr(
+    outputs_utils, "remove_output_dirs"
+), "Unable to find tfx function."
+setattr(
+    outputs_utils,
+    "remove_output_dirs",
+    _patched_remove_output_dirs,
 )
 ### END OF TFX PATCH
 
