@@ -282,7 +282,7 @@ class Repository(metaclass=RepositoryMetaClass):
             )
             default_stack = self.zen_store.list_stacks(
                 name=DEFAULT_STACK_NAME,
-                project_id=self.zen_store.default_project_id,
+                project_name_or_id=self.zen_store.default_project_id,
                 user_id=self.zen_store.default_user_id,
             )[0]
             # TODO: [server] its not guaranteed that this stack exists
@@ -602,14 +602,14 @@ class Repository(metaclass=RepositoryMetaClass):
         """
         if is_shared:
             stacks = self.zen_store.list_stacks(
-                project_id=self.active_project.id,
+                project_name_or_id=self.active_project.id,
                 name=name,
                 is_shared=True,
             )
         else:
             # TODO: [server] access the user id in a more elegant way
             stacks = self.zen_store.list_stacks(
-                project_id=self.active_project.id,
+                project_name_or_id=self.active_project.id,
                 user_id=self.zen_store.default_user_id,
                 # GlobalConfiguration().user_id,
                 name=name,

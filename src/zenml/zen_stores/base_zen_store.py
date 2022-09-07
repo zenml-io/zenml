@@ -274,7 +274,7 @@ class BaseZenStore(BaseModel):
         Returns:
             A list of all stacks registered in this zen store.
         """
-        return self.list_stacks(project_id=self.default_project_id)
+        return self.list_stacks(project_name_or_id=self.default_project_id)
 
     @property
     def url(self) -> str:
@@ -387,7 +387,7 @@ class BaseZenStore(BaseModel):
     # TODO: [ALEX] add filtering param(s)
     def list_stacks(
         self,
-        project_id: UUID,
+        project_name_or_id: Union[str, UUID],
         user_id: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
@@ -395,7 +395,7 @@ class BaseZenStore(BaseModel):
         """List all stacks within the filter.
 
         Args:
-            project_id: Id of the Project containing the stack components
+            project_name_or_id: Id or name of the Project containing the stack
             user_id: Optionally filter stack components by the owner
             name: Optionally filter stack component by name
             is_shared: Optionally filter out stack component by the `is_shared`
@@ -406,12 +406,12 @@ class BaseZenStore(BaseModel):
         Raises:
             KeyError: if the project doesn't exist.
         """
-        return self._list_stacks(project_id, user_id, name, is_shared)
+        return self._list_stacks(project_name_or_id, user_id, name, is_shared)
 
     @abstractmethod
     def _list_stacks(
         self,
-        project_id: UUID,
+        project_name_or_id: Union[str, UUID],
         owner: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
@@ -419,7 +419,7 @@ class BaseZenStore(BaseModel):
         """List all stacks within the filter.
 
         Args:
-            project_id: Id of the Project containing the stack components
+            project_name_or_id: Id or name of the Project containing the stack
             user_id: Optionally filter stack components by the owner
             name: Optionally filter stack component by name
             is_shared: Optionally filter out stack component by the `is_shared`
@@ -881,23 +881,17 @@ class BaseZenStore(BaseModel):
 
     # TODO: make the invite_token optional
     # TODO: [ALEX] add filtering param(s)
-    def list_users(self, invite_token: str = None) -> List[UserModel]:
+    def list_users(self) -> List[UserModel]:
         """List all users.
-
-        Args:
-            invite_token: Token to use for the invitation.
 
         Returns:
             A list of all users.
         """
-        return self._list_users(invite_token=invite_token)
+        return self._list_users()
 
     @abstractmethod
-    def _list_users(self, invite_token: str = None) -> List[UserModel]:
+    def _list_users(self) -> List[UserModel]:
         """List all users.
-
-        Args:
-            invite_token: The invite token to filter by.
 
         Returns:
             A list of all users.
@@ -933,13 +927,12 @@ class BaseZenStore(BaseModel):
         """
 
     def get_user(
-        self, user_name_or_id: str, invite_token: str = None
+        self, user_name_or_id: str
     ) -> UserModel:
         """Gets a specific user.
 
         Args:
             user_name_or_id: The name or ID of the user to get.
-            invite_token: Token to use for the invitation.
 
         Returns:
             The requested user, if it was found.
@@ -949,18 +942,17 @@ class BaseZenStore(BaseModel):
         """
         # No tracking events, here for consistency
         return self._get_user(
-            user_name_or_id=user_name_or_id, invite_token=invite_token
+            user_name_or_id=user_name_or_id
         )
 
     @abstractmethod
     def _get_user(
-        self, user_name_or_id: str, invite_token: str = None
+        self, user_name_or_id: str
     ) -> UserModel:
         """Gets a specific user.
 
         Args:
             user_name_or_id: The name or ID of the user to get.
-            invite_token: Token to use for the invitation.
 
         Returns:
             The requested user, if it was found.

@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from typing import List
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -50,7 +51,7 @@ async def get_stacks(project_name: str) -> List[StackModel]:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.get_stacks(project_name=project_name)
+        return zen_store.list_stacks(project_name_or_id=project_name)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:
@@ -79,7 +80,7 @@ async def get_stack(stack_id: str) -> StackModel:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.get_stack(stack_id)
+        return zen_store.get_stack(UUID(stack_id))
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:
@@ -109,14 +110,14 @@ async def update_stack(stack_id: str, stack: StackModel) -> StackModel:
         422 error: when unable to validate input
     """
     try:
-        zen_store.update_stack(stack_id, stack)
+        stack.id = UUID(stack_id)
+        return zen_store.update_stack(stack)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
-
 
 @router.delete(
     "/{stack_id}",

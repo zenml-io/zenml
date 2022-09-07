@@ -403,7 +403,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             )
             default_stack = self.zen_store.list_stacks(
                 name=DEFAULT_STACK_NAME,
-                project_id=self.zen_store.get_project(
+                project_name_or_id=self.zen_store.get_project(
                     self.active_project_name
                 ).id,
                 user_id=self.zen_store.default_user_id,
@@ -427,7 +427,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 )
             default_stack = self.zen_store.list_stacks(
                 name=DEFAULT_STACK_NAME,
-                project_id=self.zen_store.get_project(
+                project_name_or_id=self.zen_store.get_project(
                     self.active_project_name
                 ).id,
                 user_id=self.zen_store.default_user_id,

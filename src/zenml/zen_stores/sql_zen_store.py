@@ -310,7 +310,7 @@ class SqlZenStore(BaseZenStore):
 
     def _list_stacks(
         self,
-        project_id: UUID,
+        project_name_or_id: Union[str, UUID],
         user_id: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
@@ -318,7 +318,7 @@ class SqlZenStore(BaseZenStore):
         """List all stacks within the filter.
 
         Args:
-            project_id: Id of the Project containing the stack components
+            project_name_or_id: Name or Id of the Project containing the stack
             user_id: Optionally filter stack components by the owner
             name: Optionally filter stack component by name
             is_shared: Optionally filter out stack component by the `is_shared`
@@ -330,15 +330,21 @@ class SqlZenStore(BaseZenStore):
             KeyError: If the project does not exist.
         """
         with Session(self.engine) as session:
-            projects = session.exec(
-                select(StackSchema).where(StackSchema.project_id == project_id)
-            ).all()
-            if projects is None:
-                raise KeyError(f"Project with ID {project_id} not found.")
+            if isinstance(project_name_or_id, str):
+                project_filter = ProjectSchema.name == project_name_or_id
+            else:
+                project_filter = ProjectSchema.id == project_name_or_id
+            project = session.exec(
+                select(ProjectSchema)
+                .where(project_filter)
+            ).first()
+            if project is None:
+                raise KeyError(f"Project with ID {project_name_or_id} "
+                               f"not found.")
 
             # Get a list of all stacks
             query = select(StackSchema).where(
-                StackSchema.project_id == project_id
+                StackSchema.project_id == project.id
             )
             # TODO: prettify
             if user_id:
@@ -711,11 +717,8 @@ class SqlZenStore(BaseZenStore):
         """
         return DEFAULT_USERNAME
 
-    def _list_users(self, invite_token: str = None) -> List[UserModel]:
+    def _list_users(self) -> List[UserModel]:
         """List all users.
-
-        Args:
-            invite_token: The invite token to filter by.
 
         Returns:
             A list of all users.
@@ -759,13 +762,12 @@ class SqlZenStore(BaseZenStore):
             return new_user.to_model()
 
     def _get_user(
-        self, user_name_or_id: str, invite_token: str = None
+        self, user_name_or_id: str
     ) -> UserModel:
         """Gets a specific user.
 
         Args:
             user_name_or_id: The name or ID of the user to get.
-            invite_token: Token to use for the invitation.
 
         Returns:
             The requested user, if it was found.
