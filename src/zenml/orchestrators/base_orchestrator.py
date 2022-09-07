@@ -37,6 +37,8 @@ import time
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar, List, Optional
 
+from google.protobuf.json_format import Parse
+from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
 from pydantic.json import pydantic_encoder
 from tfx.dsl.compiler.compiler import Compiler
 from tfx.dsl.compiler.constants import PIPELINE_RUN_ID_PARAMETER_NAME
@@ -334,9 +336,9 @@ class BaseOrchestrator(StackComponent, ABC):
 
         # Query the ZenStore for the metadata connection
         repo = Repository()
-        metadata_connection = metadata.Metadata(
-            Repository().zen_store.get_metadata_config()
-        )
+        metadata_config = Repository().zen_store.get_metadata_config()
+        metadata_config_pb = Parse(metadata_config, ConnectionConfig())
+        metadata_connection = metadata.Metadata(metadata_config_pb)
 
         custom_executor_operators = {
             executable_spec_pb2.PythonClassExecutableSpec: step.executor_operator

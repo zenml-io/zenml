@@ -21,7 +21,7 @@ from zenml.enums import StoreType
 from zenml.repository import Repository
 from zenml.zen_server.routers import (
     auth_endpoints,
-    # metadata_config_endpoints,
+    metadata_config_endpoints,
     pipelines_endpoints,
     projects_endpoints,
     repositories_endpoints,
@@ -64,8 +64,7 @@ async def health() -> str:
 
 
 app.include_router(auth_endpoints.router)
-# TODO: [server] make metadata config serializable
-# app.include_router(metadata_config_endpoints.router)
+app.include_router(metadata_config_endpoints.router)
 app.include_router(pipelines_endpoints.router)
 app.include_router(projects_endpoints.router)
 app.include_router(repositories_endpoints.router)

@@ -15,27 +15,13 @@
 
 import re
 from pathlib import Path, PurePath
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union, cast
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
 
 import requests
-from ml_metadata.proto import metadata_store_pb2
 from pydantic import BaseModel
 
 from zenml.config.store_config import StoreConfiguration
-from zenml.constants import (
-    FLAVORS,
-    PIPELINE_RUNS,
-    PROJECTS,
-    ROLE_ASSIGNMENTS,
-    ROLES,
-    STACK_COMPONENTS,
-    STACK_CONFIGURATIONS,
-    STACKS,
-    STACKS_EMPTY,
-    TEAMS,
-    USERS,
-)
-from zenml.enums import ExecutionStatus, StackComponentType, StoreType
+from zenml.enums import StoreType
 from zenml.exceptions import (
     DoesNotExistException,
     EntityExistsError,
@@ -43,21 +29,6 @@ from zenml.exceptions import (
     StackExistsError,
 )
 from zenml.logger import get_logger
-from zenml.models import (
-    ComponentModel,
-    FlavorModel,
-    PipelineRunModel,
-    ProjectModel,
-    RoleAssignmentModel,
-    RoleModel,
-    StackModel,
-    TeamModel,
-    UserModel,
-)
-from zenml.post_execution.artifact import ArtifactView
-from zenml.post_execution.pipeline import PipelineView
-from zenml.post_execution.pipeline_run import PipelineRunView
-from zenml.post_execution.step import StepView
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
@@ -186,8 +157,6 @@ class RestZenStore(BaseZenStore):
         """
         # REST zen stores are not backed by local files
         return config
-
-
 
     def _handle_response(self, response: requests.Response) -> Json:
         """Handle API response, translating http status codes to Exception.

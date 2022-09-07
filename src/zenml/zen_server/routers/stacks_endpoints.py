@@ -119,6 +119,7 @@ async def update_stack(stack_id: str, stack: StackModel) -> StackModel:
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
 
+
 @router.delete(
     "/{stack_id}",
     responses={401: error_response, 404: error_response, 422: error_response},

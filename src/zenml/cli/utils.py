@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Utility functions for the CLI."""
 
-import base64
 import datetime
 import json
 import os
@@ -35,7 +34,6 @@ from typing import (
 )
 
 import click
-import yaml
 from dateutil import tz
 from pydantic import BaseModel
 from rich import box, table

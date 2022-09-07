@@ -18,7 +18,6 @@ from pathlib import Path, PurePath
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
 from uuid import UUID
 
-from ml_metadata.proto import metadata_store_pb2
 from pydantic import BaseModel
 
 from zenml.config.store_config import StoreConfiguration
@@ -926,9 +925,7 @@ class BaseZenStore(BaseModel):
             EntityExistsError: If a user with the given name already exists.
         """
 
-    def get_user(
-        self, user_name_or_id: str
-    ) -> UserModel:
+    def get_user(self, user_name_or_id: str) -> UserModel:
         """Gets a specific user.
 
         Args:
@@ -941,14 +938,10 @@ class BaseZenStore(BaseModel):
             KeyError: If no user with the given name or ID exists.
         """
         # No tracking events, here for consistency
-        return self._get_user(
-            user_name_or_id=user_name_or_id
-        )
+        return self._get_user(user_name_or_id=user_name_or_id)
 
     @abstractmethod
-    def _get_user(
-        self, user_name_or_id: str
-    ) -> UserModel:
+    def _get_user(self, user_name_or_id: str) -> UserModel:
         """Gets a specific user.
 
         Args:
@@ -2372,12 +2365,7 @@ class BaseZenStore(BaseModel):
     # '----------'
 
     @abstractmethod
-    def get_metadata_config(
-        self,
-    ) -> Union[
-        metadata_store_pb2.ConnectionConfig,
-        metadata_store_pb2.MetadataStoreClientConfig,
-    ]:
+    def get_metadata_config(self) -> str:
         """Get the TFX metadata config of this ZenStore.
 
         Returns:

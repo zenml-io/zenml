@@ -18,7 +18,6 @@ from pathlib import Path, PurePath
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
 from uuid import UUID
 
-from ml_metadata.proto import metadata_store_pb2
 from sqlalchemy import or_
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import make_url
@@ -335,12 +334,12 @@ class SqlZenStore(BaseZenStore):
             else:
                 project_filter = ProjectSchema.id == project_name_or_id
             project = session.exec(
-                select(ProjectSchema)
-                .where(project_filter)
+                select(ProjectSchema).where(project_filter)
             ).first()
             if project is None:
-                raise KeyError(f"Project with ID {project_name_or_id} "
-                               f"not found.")
+                raise KeyError(
+                    f"Project with ID {project_name_or_id} " f"not found."
+                )
 
             # Get a list of all stacks
             query = select(StackSchema).where(
@@ -761,9 +760,7 @@ class SqlZenStore(BaseZenStore):
 
             return new_user.to_model()
 
-    def _get_user(
-        self, user_name_or_id: str
-    ) -> UserModel:
+    def _get_user(self, user_name_or_id: str) -> UserModel:
         """Gets a specific user.
 
         Args:
@@ -2229,18 +2226,16 @@ class SqlZenStore(BaseZenStore):
     # | METADATA |
     # '----------'
 
-    def get_metadata_config(
-        self,
-    ) -> Union[
-        metadata_store_pb2.ConnectionConfig,
-        metadata_store_pb2.MetadataStoreClientConfig,
-    ]:
+    def get_metadata_config(self) -> str:
         """Get the TFX metadata config of this ZenStore.
 
         Returns:
             The TFX metadata config of this ZenStore.
         """
-        return self.metadata_store.get_tfx_metadata_config()
+        from google.protobuf.json_format import MessageToJson
+
+        config = self.metadata_store.get_tfx_metadata_config()
+        return MessageToJson(config)
 
     # LEGACY CODE FROM THE PREVIOUS VERSION OF BASEZENSTORE
 

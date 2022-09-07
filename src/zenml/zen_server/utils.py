@@ -1,4 +1,3 @@
-import os
 from typing import Any, List
 
 from fastapi import Depends, HTTPException
@@ -6,8 +5,6 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
 from starlette import status
 
-from zenml.config.global_config import GlobalConfiguration
-from zenml.enums import StoreType
 from zenml.repository import Repository
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
