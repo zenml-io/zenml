@@ -176,6 +176,7 @@ class PipelineRunLineageVisualizer(BaseVisualizer):
                         "entrypoint_name": step.entrypoint_name,  # redundant for consistency
                         "name": step.name,  # redundant for consistency
                         "type": "step",
+                        "parameters": step.parameters,
                         "inputs": {k: v.uri for k, v in step.inputs.items()},
                         "outputs": {k: v.uri for k, v in step.outputs.items()},
                     },
@@ -361,7 +362,9 @@ class PipelineRunLineageVisualizer(BaseVisualizer):
                     text += "### Outputs:" + "\n\n"
                     for k, v in data["outputs"].items():
                         text += f"**{k}**: {v}" + "\n\n"
-                    text += "### Params:"
+                    text += "### Params:" + "\n\n"
+                    for k, v in data["parameters"].items():
+                        text += f"**{k}**: {v}" + "\n\n"
             return text
 
         @app.callback(  # type: ignore[misc]

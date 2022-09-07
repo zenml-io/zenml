@@ -113,6 +113,7 @@ class StepRunModel(BaseModel):
     pipeline_run_id: Optional[UUID]  # TODO: make required
     parent_step_ids: List[int]  # ID in MLMD
     docstring: Optional[str]
+    parameters: Dict[str, str]
     entrypoint_name: str
 
 

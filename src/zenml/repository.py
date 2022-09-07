@@ -305,7 +305,7 @@ class Repository(metaclass=RepositoryMetaClass):
                 )
                 default_stack = self.zen_store.list_stacks(
                     name="default",
-                    project_id=self.zen_store.default_project_id,
+                    project_name_or_id=self.zen_store.default_project_id,
                     user_id=self.zen_store.default_user_id,
                 )[
                     0

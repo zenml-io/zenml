@@ -117,6 +117,15 @@ class StepView:
         return self._model.docstring
 
     @property
+    def parameters(self) -> Dict[str, str]:
+        """The parameters used to run this step.
+
+        Returns:
+            The parameters used to run this step.
+        """
+        return self._model.parameters
+
+    @property
     def status(self) -> ExecutionStatus:
         """Returns the current status of the step.
 

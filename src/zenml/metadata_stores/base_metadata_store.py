@@ -153,7 +153,8 @@ class BaseMetadataStore(BaseModel, ABC):
         for k, v in execution.custom_properties.items():
             if not k.startswith(INTERNAL_EXECUTION_PARAMETER_PREFIX):
                 try:
-                    step_parameters[k] = json.loads(v.string_value)
+                    json.loads(v.string_value)
+                    step_parameters[k] = v.string_value
                 except JSONDecodeError:
                     # this means there is a property in there that is neither
                     # an internal one or one created by zenml. Therefore, we can
@@ -205,6 +206,7 @@ class BaseMetadataStore(BaseModel, ABC):
             parent_step_ids=list(parents_step_ids),
             entrypoint_name=impl_name,
             name=step_name,
+            parameters=step_parameters,
             # TODO: docstring, pipeline_run_id
         )
 
