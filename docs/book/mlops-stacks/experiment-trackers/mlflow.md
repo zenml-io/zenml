@@ -80,6 +80,10 @@ server.
 Token for authenticating with the MLflow tracking server.
 * `tracking_insecure_tls` (optional): Set to skip verifying the MLflow tracking server SSL
 certificate.
+* `databricks_host`: The host of the Databricks workspace with the MLflow managed
+server to connect to. This is only required if `tracking_uri` value is set to
+`"databricks"`. More information:
+[Access the MLflow tracking server from outside Databricks](https://docs.databricks.com/applications/mlflow/access-hosted-tracking-server.html)
     
 Either `tracking_token` or `tracking_username` and `tracking_password` must be
 specified.
