@@ -320,7 +320,8 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         # within the Databricks workspace.
         experiment_name = (
             f"/{step_env.pipeline_name}"
-            if self.is_databricks_tracking_uri(self.tracking_uri)
+            if self.tracking_uri
+            and self.is_databricks_tracking_uri(self.tracking_uri)
             else step_env.pipeline_name
         )
 
