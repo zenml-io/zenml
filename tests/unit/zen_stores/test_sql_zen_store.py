@@ -17,12 +17,7 @@ import uuid
 import pytest
 
 from zenml.exceptions import EntityExistsError
-from zenml.models.user_management_models import (
-    ProjectModel,
-    RoleModel,
-    TeamModel,
-    UserModel,
-)
+from zenml.models import ProjectModel, RoleModel, TeamModel, UserModel
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 #  .---------.

@@ -23,18 +23,18 @@ from pydantic import BaseModel
 from zenml.config.store_config import StoreConfiguration
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.logger import get_logger
-from zenml.models import ComponentModel, FlavorModel, StackModel
-from zenml.models.code_models import CodeRepositoryModel
-from zenml.models.pipeline_models import (
+from zenml.models import (
     ArtifactModel,
+    CodeRepositoryModel,
+    ComponentModel,
+    FlavorModel,
     PipelineModel,
     PipelineRunModel,
-    StepRunModel,
-)
-from zenml.models.user_management_models import (
     ProjectModel,
     RoleAssignmentModel,
     RoleModel,
+    StackModel,
+    StepRunModel,
     TeamModel,
     UserModel,
 )

@@ -65,22 +65,6 @@ class TeamModel(BaseModel):
     created_at: Optional[datetime] = None
 
 
-class ProjectModel(BaseModel):
-    """Pydantic object representing a project.
-
-    Attributes:
-        id: Id of the project.
-        created_at: Date when the project was created.
-        name: Name of the project.
-        description: Optional project description.
-    """
-
-    id: Optional[UUID] = None
-    name: str
-    description: Optional[str] = None
-    created_at: Optional[datetime] = None
-
-
 class RoleAssignmentModel(BaseModel):
     """Pydantic object representing a role assignment.
 

@@ -21,12 +21,7 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.enums import CliCategories
 from zenml.exceptions import EntityExistsError
-from zenml.models.user_management_models import (
-    ProjectModel,
-    RoleModel,
-    TeamModel,
-    UserModel,
-)
+from zenml.models import ProjectModel, RoleModel, TeamModel, UserModel
 from zenml.repository import Repository
 
 

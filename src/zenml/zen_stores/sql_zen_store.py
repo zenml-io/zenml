@@ -55,10 +55,7 @@ from zenml.models.pipeline_models import (
 from zenml.stack.flavor_registry import flavor_registry
 from zenml.utils import io_utils, uuid_utils
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME, BaseZenStore
-
-# Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
-# warning
-from zenml.zen_stores.schemas.schemas import (
+from zenml.zen_stores.schemas import (
     CodeRepositorySchema,
     FlavorSchema,
     PipelineRunSchema,
@@ -74,6 +71,8 @@ from zenml.zen_stores.schemas.schemas import (
     UserSchema,
 )
 
+# Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
+# warning
 SelectOfScalar.inherit_cache = True  # type: ignore
 Select.inherit_cache = True  # type: ignore
 
