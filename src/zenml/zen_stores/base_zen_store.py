@@ -455,7 +455,7 @@ class BaseZenStore(BaseModel):
         self,
         user_id: UUID,
         project_name_or_id: Union[str, UUID],
-        stack: StackModel
+        stack: StackModel,
     ) -> StackModel:
         """Register a new stack.
 
@@ -484,7 +484,7 @@ class BaseZenStore(BaseModel):
         self,
         user_id: UUID,
         project_name_or_id: Union[str, UUID],
-        stack: StackModel
+        stack: StackModel,
     ) -> StackModel:
         """Register a new stack.
 
@@ -649,7 +649,7 @@ class BaseZenStore(BaseModel):
         self,
         user_id: UUID,
         project_name_or_id: Union[str, UUID],
-        component: ComponentModel
+        component: ComponentModel,
     ) -> ComponentModel:
         """Create a stack component.
 
@@ -664,7 +664,7 @@ class BaseZenStore(BaseModel):
         return self._register_stack_component(
             user_id=user_id,
             project_name_or_id=project_name_or_id,
-            component=component
+            component=component,
         )
 
     @abstractmethod
@@ -672,7 +672,7 @@ class BaseZenStore(BaseModel):
         self,
         user_id: UUID,
         project_name_or_id: Union[str, UUID],
-        component: ComponentModel
+        component: ComponentModel,
     ) -> ComponentModel:
         """Create a stack component.
 

@@ -16,8 +16,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from zenml.constants import STACK_COMPONENTS, STACKS, VERSION_1
-from zenml.enums import StackComponentType
+from zenml.constants import STACKS, VERSION_1
 from zenml.models import StackModel
 from zenml.zen_server.utils import (
     authorize,
@@ -146,6 +145,7 @@ async def delete_stack(stack_id: str) -> None:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
+
 
 # TODO: [server] this endpoint below might no longer be necessary as the
 #  full list of Component models can already be found on the StackModel

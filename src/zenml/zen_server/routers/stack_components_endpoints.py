@@ -88,9 +88,7 @@ async def list_stack_components(project_name: str) -> List[ComponentModel]:
     try:
         # TODO [server]: introduce other
         #  filters, specifically for type
-        return zen_store.list_stack_components(
-            project_name_or_id=project_name
-        )
+        return zen_store.list_stack_components(project_name_or_id=project_name)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:
