@@ -42,9 +42,15 @@ def test_whylogs_materializer(clean_repo):
 
     with does_not_raise():
         test_pipeline(
-            read_view=read_view().with_return_materializers(WhylogsMaterializer)
+            read_view=read_view().with_return_materializers(
+                WhylogsMaterializer
+            )
         ).run()
 
     last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
     dataset_profile_view = last_run.steps[-1].output.read()
     assert isinstance(dataset_profile_view, DatasetProfileView)
+    assert dataset_profile_view.creation_timestamp is not None
+    assert dataset_profile_view.dataset_timestamp is not None
+    assert datetime.now() > dataset_profile_view.creation_timestamp
+    assert datetime.now() > dataset_profile_view.dataset_timestamp
