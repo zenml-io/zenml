@@ -116,7 +116,7 @@ def _patched_remove_output_dirs(output_dict: Dict[str, List[Artifact]]) -> None:
     """Remove dirs of output artifacts' URI.
 
     Args:
-      output_dict: Dictionary of strings to output artifacts.
+        output_dict: Dictionary of strings to output artifacts.
     """
     # The original implementation was doing a fileio.rmtree
     # without checking for the existence of the object. This
