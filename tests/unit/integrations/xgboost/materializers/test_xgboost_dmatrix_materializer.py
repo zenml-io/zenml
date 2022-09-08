@@ -44,5 +44,7 @@ def test_xgboost_dmatrix_materializer(clean_repo):
         ).run()
 
     last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
-    booster = last_run.steps[-1].output.read()
-    assert isinstance(booster, xgb.DMatrix)
+    dmatrix = last_run.steps[-1].output.read()
+    assert isinstance(dmatrix, xgb.DMatrix)
+    assert dmatrix.num_row() == 5
+    assert dmatrix.num_col() == 5
