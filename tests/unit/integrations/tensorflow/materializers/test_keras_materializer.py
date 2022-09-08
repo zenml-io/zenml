@@ -47,3 +47,5 @@ def test_tensorflow_keras_materializer(clean_repo):
     last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
     model = last_run.steps[-1].output.read()
     assert isinstance(model, keras.Model)
+    assert isinstance(model.optimizer, keras.optimizers.Adam)
+    assert model.trainable

@@ -45,3 +45,4 @@ def test_tensorflow_tf_dataset_materializer(clean_repo):
     last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
     dataset = last_run.steps[-1].output.read()
     assert isinstance(dataset, tf.data.Dataset)
+    assert isinstance(dataset.element_spec.dtype, type(tf.int32))
