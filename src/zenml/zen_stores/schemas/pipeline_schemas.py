@@ -15,10 +15,10 @@
 
 import json
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID, uuid4
 
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.models import PipelineModel, PipelineRunModel
 
@@ -39,9 +39,9 @@ class PipelineSchema(SQLModel, table=True):
 
     created_at: datetime = Field(default_factory=datetime.now)
 
-    # runs = Relationship(
-    #     back_populates="pipeline",
-    # )
+    runs: List["PipelineRunSchema"] = Relationship(
+        back_populates="pipeline",
+    )
 
     @classmethod
     def from_create_model(cls, model: PipelineModel) -> "PipelineSchema":
@@ -66,6 +66,7 @@ class PipelineSchema(SQLModel, table=True):
             owner=self.owner,
             docstring=self.docstring,
             configuration=json.loads(self.configuration),
+            created_at=self.created_at,
         )
 
 
@@ -89,7 +90,7 @@ class PipelineRunSchema(SQLModel, table=True):
 
     created_at: datetime = Field(default_factory=datetime.now)
 
-    # pipeline: PipelineSchema = Relationship(back_populates="runs")
+    pipeline: PipelineSchema = Relationship(back_populates="runs")
 
     @classmethod
     def from_create_model(
