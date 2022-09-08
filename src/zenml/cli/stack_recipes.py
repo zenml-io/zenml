@@ -141,7 +141,7 @@ class Terraform:
             True if kubectl is installed, false otherwise.
         """
         try:
-            subprocess.check_call(["kubectl", "version"])
+            subprocess.check_output(["kubectl"])
         except subprocess.CalledProcessError:
             return False
 
@@ -154,7 +154,7 @@ class Terraform:
             True if helm is installed, false otherwise.
         """
         try:
-            subprocess.check_call(["helm", "version"])
+            subprocess.check_output(["helm", "version"])
         except subprocess.CalledProcessError:
             return False
 
@@ -167,7 +167,7 @@ class Terraform:
             True if docker is installed, false otherwise.
         """
         try:
-            subprocess.check_call(["docker", "--version"])
+            subprocess.check_output(["docker", "--version"])
         except subprocess.CalledProcessError:
             return False
 
@@ -989,6 +989,23 @@ if terraform_installed:  # noqa: C901
 
                 # set terraform log level
                 tf_client.set_log_level(log_level=log_level)
+
+                # warn that prerequisites should be met
+                metadata = yaml_utils.read_yaml(
+                file_path=os.path.join(
+                    local_stack_recipe.path, "metadata.yaml"
+                    )
+                )
+                if not cli_utils.confirmation(
+                    "\nPrerequisites for running this recipe are as follows.\n"
+                    f"{metadata['Prerequisites']}"
+                    "\n\n Are all of these conditions met?"
+                ):
+                    cli_utils.warning(
+                        "Prerequisites are not installed. Please make sure they "
+                        "are met and run deploy again."
+                    )
+                    return
 
                 if not skip_check:
                     logger.info(
