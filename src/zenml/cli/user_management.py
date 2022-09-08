@@ -20,7 +20,7 @@ import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.enums import CliCategories
-from zenml.exceptions import EntityExistsError
+from zenml.exceptions import EntityExistsError, IllegalOperationError
 from zenml.models import ProjectModel, RoleModel, TeamModel, UserModel
 from zenml.repository import Repository
 
@@ -82,15 +82,9 @@ def delete_user(user_name_or_id: str) -> None:
     """
     cli_utils.print_active_config()
     try:
-        user = Repository().zen_store.get_user(user_name_or_id)
-    except KeyError as err:
+        Repository().delete_user(user_name_or_id)
+    except (KeyError, IllegalOperationError) as err:
         cli_utils.error(str(err))
-    if Repository().zen_store.active_user_name == user.name:
-        cli_utils.error(
-            "You cannot delete yourself. If you wish to delete your current "
-            "user account, please contact your ZenML administrator."
-        )
-    Repository().zen_store.delete_user(user_id=user.id)
     cli_utils.declare(f"Deleted user '{user_name_or_id}'.")
 
 
@@ -183,23 +177,16 @@ def add_users(team_name_or_id: str, user_names_or_ids: Tuple[str]) -> None:
 
     try:
         team = Repository().zen_store.get_team(team_name_or_id)
-    except KeyError as err:
-        cli_utils.error(str(err))
-
-    for user_name_or_id in user_names_or_ids:
-        try:
+        for user_name_or_id in user_names_or_ids:
             user = Repository().zen_store.get_user(user_name_or_id)
-        except KeyError as err:
-            cli_utils.error(str(err))
-        try:
             Repository().zen_store.add_user_to_team(
                 user_id=user.id, team_id=team.id
             )
-        except EntityExistsError as err:
-            cli_utils.error(str(err))
-        cli_utils.declare(
-            f"Added user '{user_name_or_id}' to team '{team_name_or_id}'."
-        )
+            cli_utils.declare(
+                f"Added user '{user_name_or_id}' to team '{team_name_or_id}'."
+            )
+    except (KeyError, EntityExistsError) as err:
+        cli_utils.error(str(err))
 
 
 @team.command("remove", help="Remove users from a team.")
@@ -218,23 +205,16 @@ def remove_users(team_name_or_id: str, user_names_or_ids: Tuple[str]) -> None:
 
     try:
         team = Repository().zen_store.get_team(team_name_or_id)
-    except KeyError as err:
-        cli_utils.error(str(err))
-
-    for user_name_or_id in user_names_or_ids:
-        try:
+        for user_name_or_id in user_names_or_ids:
             user = Repository().zen_store.get_user(user_name_or_id)
-        except KeyError as err:
-            cli_utils.error(str(err))
-        try:
             Repository().zen_store.remove_user_from_team(
                 user_id=user.id, team_id=team.id
             )
-        except KeyError as err:
-            cli_utils.error(str(err))
-        cli_utils.declare(
-            f"Removed user '{user_name_or_id}' from team '{team_name_or_id}'."
-        )
+            cli_utils.declare(
+                f"Removed user '{user_name_or_id}' from team '{team_name_or_id}'."
+            )
+    except KeyError as err:
+        cli_utils.error(str(err))
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
@@ -326,21 +306,15 @@ def delete_project(project_name_or_id: str) -> None:
         project_name_or_id: Name or ID of project to delete.
     """
     cli_utils.print_active_config()
-    try:
-        project = Repository().zen_store.get_project(project_name_or_id)
-    except KeyError as err:
-        cli_utils.error(str(err))
-    if Repository().active_project_name == project.name:
-        cli_utils.error(
-            f"Project '{project_name_or_id}' cannot be deleted since it is "
-            "currently active. Please set another project as active first."
-        )
     cli_utils.confirmation(
         f"Are you sure you want to delete project `{project_name_or_id}`? "
         "This will permanently delete all associated stacks, stack components, "
         "pipelines, runs, artifacts and metadata."
     )
-    Repository().zen_store.delete_project(project_name=project.name)
+    try:
+        Repository().delete_project(project_name_or_id)
+    except (KeyError, IllegalOperationError) as err:
+        cli_utils.error(str(err))
     cli_utils.declare(f"Deleted project '{project_name_or_id}'.")
 
 

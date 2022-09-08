@@ -27,7 +27,11 @@ from zenml.constants import (
     handle_bool_env_var,
 )
 from zenml.environment import Environment
-from zenml.exceptions import AlreadyExistsException, InitializationException
+from zenml.exceptions import (
+    AlreadyExistsException,
+    IllegalOperationError,
+    InitializationException,
+)
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models.pipeline_models import PipelineModel, PipelineRunModel
@@ -1077,3 +1081,31 @@ class Repository(metaclass=RepositoryMetaClass):
             runtime_configuration=runtime_configuration,
         )
         self.zen_store.create_run(pipeline_run)
+
+    def delete_user(self, user_name_or_id: str) -> None:
+        """Delete a user.
+
+        Args:
+            user_name_or_id: The name or ID of the user to delete.
+        """
+        user = self.zen_store.get_user(user_name_or_id)
+        if self.zen_store.active_user_name == user.name:
+            raise IllegalOperationError(
+                "You cannot delete yourself. If you wish to delete your active "
+                "user account, please contact your ZenML administrator."
+            )
+        Repository().zen_store.delete_user(user_id=user.id)
+
+    def delete_project(self, project_name_or_id: str) -> None:
+        """Delete a project.
+
+        Args:
+            project_name_or_id: The name or ID of the project to delete.
+        """
+        project = self.zen_store.get_project(project_name_or_id)
+        if self.active_project_name == project.name:
+            raise IllegalOperationError(
+                f"Project '{project_name_or_id}' cannot be deleted since it is "
+                "currently active. Please set another project as active first."
+            )
+        Repository().zen_store.delete_project(project_id=project.id)

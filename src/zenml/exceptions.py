@@ -244,3 +244,7 @@ class GitNotFoundError(ImportError):
 
 class DuplicatedConfigurationError(ZenMLBaseException):
     """Raised when a configuration parameter is set twice."""
+
+
+class IllegalOperationError(ZenMLBaseException):
+    """Raised when an illegal operation is attempted."""
