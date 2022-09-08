@@ -140,6 +140,8 @@ def _is_serializable(obj: Any) -> bool:
     Returns:
         True if the entire object is JSON-serializable, else False.
     """
+    if obj is None:
+        return True
     if isinstance(obj, tuple(BASIC_TYPES)):
         return True
     if isinstance(obj, (list, tuple, set)):
@@ -279,6 +281,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         # If the data is serializable, just write it into a single JSON file.
         if _is_serializable(data):
             yaml_utils.write_json(self.data_path, data)
+            return
 
         # non-serializable dict: Handle as non-serializable list of lists.
         if isinstance(data, dict):

@@ -36,6 +36,11 @@ process to customize the resulting image to your needs.
 For a full list of configuration options, check out
 [our API Docs](https://apidocs.zenml.io/latest/api_docs/config/#zenml.config.docker_configuration.DockerConfiguration).
 
+For the configuration examples described below, you'll need to import the `DockerConfiguration` module:
+```python
+from zenml.config.docker_configuration import DockerConfiguration
+```
+
 ### Which files get included
 
 ZenML will try to determine the root directory of your source files in the following order:

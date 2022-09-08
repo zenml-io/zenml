@@ -43,7 +43,10 @@ def test_default_local_stack():
         str(stack.artifact_store.uuid),
     )
     expected_metadata_store_uri = os.path.join(
-        expected_artifact_store_path, "metadata.db"
+        GlobalConfiguration().config_directory,
+        "local_stores",
+        str(stack.metadata_store.uuid),
+        "metadata.db",
     )
 
     assert stack.artifact_store.path == expected_artifact_store_path

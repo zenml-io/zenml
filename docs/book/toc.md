@@ -35,6 +35,7 @@
   * [Manage External Services](./developer-guide/advanced-usage/manage-external-services.md)
   * [Manage Docker Images](./developer-guide/advanced-usage/docker.md)
   * [Set Stacks and Profiles with Environment Variables](./developer-guide/advanced-usage/stack-profile-environment-variables.md)
+  * [Configure Stack Components using Secrets](./developer-guide/advanced-usage/secret-references.md)
   * [Control the Step Execution Order](./developer-guide/advanced-usage/step-execution-order.md)
 
 ## MLOps Stacks
@@ -43,6 +44,7 @@
 * [Integration Overview](./mlops-stacks/integrations.md)
 * [Orchestrators](./mlops-stacks/orchestrators/orchestrators.md)
   * [Local Orchestrator](./mlops-stacks/orchestrators/local.md)
+  * [Local Docker Orchestrator](./mlops-stacks/orchestrators/local-docker.md)
   * [Kubeflow Orchestrator](./mlops-stacks/orchestrators/kubeflow.md)
   * [Kubernetes Orchestrator](./mlops-stacks/orchestrators/kubernetes.md)
   * [Google Cloud VertexAI Orchestrator](./mlops-stacks/orchestrators/gcloud-vertexai.md)
