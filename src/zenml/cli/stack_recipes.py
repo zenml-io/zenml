@@ -628,6 +628,11 @@ class GitStackRecipesHandler(object):
         )
         shutil.rmtree(stack_recipes_directory)
 
+    def get_active_version(self) -> str:
+        """Returns the active version of the mlops-stacks repository"""
+        self.stack_recipe_repo.checkout_latest_release()
+        return self.stack_recipe_repo.active_version
+
 
 pass_git_stack_recipes_handler = click.make_pass_decorator(
     GitStackRecipesHandler, ensure=True
@@ -759,7 +764,7 @@ if terraform_installed:  # noqa: C901
             print(stack_recipe_obj.readme_content)
 
     @stack_recipe.command(
-        help="Describe the stack components and their tools that are"
+        help="Describe the stack components and their tools that are "
         "created as part of this recipe."
     )
     @pass_git_stack_recipes_handler
@@ -791,6 +796,20 @@ if terraform_installed:  # noqa: C901
             )
             logger.info(metadata["Description"])
 
+    @stack_recipe.command(
+        help="The active version of the mlops-stacks repository"
+    )
+    @pass_git_stack_recipes_handler
+    def version(
+        git_stack_recipes_handler: GitStackRecipesHandler,
+    ) -> None:
+        """The active version of the mlops-stacks repository.
+
+        Args:
+            git_stack_recipes_handler: The GitStackRecipesHandler instance.
+        """
+        cli_utils.declare(git_stack_recipes_handler.get_active_version())
+    
     @stack_recipe.command(
         help="Pull stack recipes straight into your current working directory."
     )
