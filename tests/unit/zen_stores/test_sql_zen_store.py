@@ -562,7 +562,7 @@ def test_get_stack_fails_with_nonexistent_stack_id(
         fresh_sql_zen_store.get_stack(uuid.uuid4())
 
 
-# TODO: continue onwards to cover register, update and delete stacks
+# TODO: continue on to cover register, update and delete stacks
 # def test_register_stack_succeeds(
 #     fresh_sql_zen_store: BaseZenStore,
 # ):

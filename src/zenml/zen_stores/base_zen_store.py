@@ -1946,7 +1946,7 @@ class BaseZenStore(BaseModel):
     # TODO: change into an abstract method
     # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
     # TODO: Discuss whether we even need this, given that the endpoint is on
-    # pipeline RUNs
+    # pipeline runs
     # TODO: [ALEX] add filtering param(s)
     def list_steps(self, pipeline_id: str) -> List[StepRunModel]:
         """List all steps for a specific pipeline.

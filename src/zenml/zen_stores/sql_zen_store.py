@@ -402,7 +402,7 @@ class SqlZenStore(BaseZenStore):
                     f"Project with ID {project_name_or_id} " f"not found."
                 )
 
-            # Check if stack with the domain key (name, prj, owner) already
+            # Check if stack with the domain key (name, project, owner) already
             #  exists
             existing_stack = session.exec(
                 select(StackSchema)
@@ -451,7 +451,7 @@ class SqlZenStore(BaseZenStore):
             The updated stack.
         """
         with Session(self.engine) as session:
-            # Check if stack with the domain key (name, prj, owner) already
+            # Check if stack with the domain key (name, project, owner) already
             #  exists
             existing_stack = session.exec(
                 select(StackSchema).where(StackSchema.id == stack.id)
@@ -612,7 +612,7 @@ class SqlZenStore(BaseZenStore):
 
             # TODO: [server] verify that this logic is already handled at repo
             #                level
-            # # Check if component with the domain key (name, prj, owner) already
+            # # Check if component with the domain key (name, project, owner) already
             # #  exists
             # existing_component = session.exec(
             #     select(StackComponentSchema)
@@ -652,7 +652,7 @@ class SqlZenStore(BaseZenStore):
             The updated stack component.
         """
         with Session(self.engine) as session:
-            # Check if component with the domain key (name, prj, owner) already
+            # Check if component with the domain key (name, project, owner) already
             #  exists
             existing_component = session.exec(
                 select(StackComponentSchema).where(
@@ -1236,7 +1236,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             project_name_or_id: Name or Id of the Project for the role
-                                asssignment
+                                assignment
             team_id: If provided, only list assignments for the given team
             user_id: If provided, only list assignments for the given user
 

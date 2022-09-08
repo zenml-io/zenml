@@ -535,7 +535,7 @@ def update_stack(
             )
 
         if share:
-            # THis allows users to switch stacks from private to shared
+            # This allows users to switch stacks from private to shared
             #  the opposite switch is currently unsupported
             current_stack.is_shared = share
 
