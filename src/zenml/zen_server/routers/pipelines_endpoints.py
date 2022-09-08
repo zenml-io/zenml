@@ -67,7 +67,7 @@ async def get_pipelines(project_name: str) -> List[PipelineModel]:
         raise not_found(error_detail(e)) from e
     # except NotAuthorizedError as error:
     #     raise conflict(error) from error
-    # except NotFoundError as error:
+    # except KeyError as error:
     #     raise not_found(error) from error
     # except ValidationError as error:
     #     raise HTTPException(status_code=422, detail=error_detail(error))
@@ -215,33 +215,33 @@ async def create_pipeline_run(
         return zen_store.create_run(pipeline_run=pipeline_run)
     except NotAuthorizedError as error:
         raise conflict(error) from error
-    except NotFoundError as error:
+    except KeyError as error:
         raise conflict(error) from error
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
 
 
-@router.get(
-    PIPELINES + "/{pipeline_id}" + PIPELINE_CONFIGURATION,
-    response_model=Dict[Any, Any],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-async def get_pipeline_configuration(pipeline_id: str) -> Dict[Any, Any]:
-    """Get the pipeline configuration for a given pipeline.
-
-    Args:
-        pipeline_id: ID of the pipeline.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
-    """
-    try:
-        zen_store.get_pipeline_configuration(pipeline_id=pipeline_id)
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+# @router.get(
+#     PIPELINES + "/{pipeline_id}" + PIPELINE_CONFIGURATION,
+#     response_model=Dict[Any, Any],
+#     responses={401: error_response, 404: error_response, 422: error_response},
+# )
+# async def get_pipeline_configuration(pipeline_id: str) -> Dict[Any, Any]:
+#     """Get the pipeline configuration for a given pipeline.
+#
+#     Args:
+#         pipeline_id: ID of the pipeline.
+#
+#     Raises:
+#         401 error: when not authorized to login
+#         404 error: when trigger does not exist
+#         422 error: when unable to validate input
+#     """
+#     try:
+#         zen_store.get_pipeline_configuration(pipeline_id=pipeline_id)
+#     except NotAuthorizedError as error:
+#         raise HTTPException(status_code=401, detail=error_detail(error))
+#     except KeyError as error:
+#         raise HTTPException(status_code=404, detail=error_detail(error))
+#     except ValidationError as error:
+#         raise HTTPException(status_code=422, detail=error_detail(error))

@@ -2027,7 +2027,7 @@ class SqlZenStore(BaseZenStore):
 
     def _list_runs(
         self,
-        project_name_or_id: Union[str, UUID],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[str] = None,
         user_id: Optional[str] = None,
         pipeline_id: Optional[str] = None,
@@ -2050,24 +2050,23 @@ class SqlZenStore(BaseZenStore):
         #  not all, this might have to be redone
         self._sync_runs()  # Sync with MLMD
         with Session(self.engine) as session:
-            if isinstance(project_name_or_id, str):
-                project_filter = ProjectSchema.name == project_name_or_id
-            else:
-                project_filter = ProjectSchema.id == project_name_or_id
-            project = session.exec(
-                select(ProjectSchema).where(project_filter)
-            ).first()
-            if project is None:
-                raise KeyError(
-                    f"Project with ID {project_name_or_id} " f"not found."
-                )
-
             query = (
                 select(PipelineRunSchema)
                 .where(PipelineRunSchema.stack_id == StackSchema.id)
-                .where(StackSchema.project_id == project.id)
             )
-
+            if project_name_or_id is not None:
+                if isinstance(project_name_or_id, str):
+                    project_filter = ProjectSchema.name == project_name_or_id
+                else:
+                    project_filter = ProjectSchema.id == project_name_or_id
+                project = session.exec(
+                    select(ProjectSchema).where(project_filter)
+                ).first()
+                if project is None:
+                    raise KeyError(
+                        f"Project with ID {project_name_or_id} " f"not found."
+                    )
+                query = query.where(StackSchema.project_id == project.id)
             if stack_id is not None:
                 query = query.where(PipelineRunSchema.stack_id == stack_id)
             if pipeline_id is not None:
