@@ -17,7 +17,8 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 
 from zenml.constants import INVITE_TOKEN, ROLES, USERS, VERSION_1
-from zenml.exceptions import EntityExistsError
+from zenml.exceptions import EntityExistsError, NotAuthorizedError, \
+    ValidationError
 from zenml.models import RoleAssignmentModel, RoleModel, UserModel
 from zenml.zen_server.utils import (
     authorize,
@@ -56,7 +57,7 @@ async def list_users() -> List[UserModel]:
         return zen_store.list_users()
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -87,7 +88,7 @@ async def create_user(user: UserModel) -> UserModel:
         return zen_store.create_user(user)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=409, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -119,12 +120,10 @@ async def get_user(user_id: str) -> UserModel:
         return zen_store.get_user(user_name_or_id=user_id)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
-    except KeyError as error:
-        raise not_found(error) from error
 
 
 @router.put(
@@ -151,7 +150,7 @@ async def update_user(user_id: str, user: UserModel) -> UserModel:
         return zen_store.update_user(user_id, user)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -214,7 +213,7 @@ async def get_role_assignments_for_user(
         raise not_found(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -255,7 +254,7 @@ async def assign_role(user_id: str, role_id: str, project_id: str) -> None:
         raise not_found(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=409, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -286,7 +285,7 @@ async def get_invite_token(user_id: str) -> str:
         return zen_store.get_invite_token(user_id)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -311,7 +310,7 @@ async def invalidate_invite_token(user_id: str) -> None:
         zen_store.invalidate_invite_token(user_id)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=409, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -338,13 +337,13 @@ async def unassign_role(user_id: str, role_id: str, project_id: str) -> None:
             role_id=role_id,
             user_or_team_id=user_id,
             is_user=True,
-            project_id=project_id,
+            project_name_or_id=project_id,
         )
     except KeyError as error:
         raise not_found(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))

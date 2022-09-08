@@ -11,12 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Dict, List
+from typing import Dict, List, Optional
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 
 from zenml.constants import GRAPH, RUNS, RUNTIME_CONFIGURATION, STEPS, VERSION_1
+from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.models.pipeline_models import PipelineRunModel
 from zenml.zen_server.utils import (
     authorize,
@@ -36,12 +38,14 @@ router = APIRouter(
 
 @router.get(
     "/",
-    response_model=List[Dict],
+    response_model=PipelineRunModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def get_runs(
-    project_name: str, stack_id: str, pipeline_id: str, trigger_id: str
-) -> List[Dict]:
+    project_name: Optional[str] = None,
+    stack_id: Optional[str] = None,
+    pipeline_id: Optional[str] = None
+) -> List[PipelineRunModel]:
     """Get pipeline runs according to query filters.
 
     Args:
@@ -61,16 +65,13 @@ async def get_runs(
     """
     try:
         return zen_store.list_runs(
-            project_id=project_name,
+            project_name_or_id=project_name,
             stack_id=stack_id,
-            pipeline_id=pipeline_id,
-            trigger_id=trigger_id,
+            pipeline_id=pipeline_id
         )
-    except KeyError as e:
-        raise not_found(error_detail(e)) from e
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -98,11 +99,9 @@ async def get_run(run_id: str) -> PipelineRunModel:
     """
     try:
         return zen_store.get_run(run_id)
-    except KeyError as e:
-        raise not_found(error_detail(e)) from e
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -132,7 +131,7 @@ async def update_run(run_id: str, run: PipelineRunModel) -> PipelineRunModel:
         return zen_store.update_run(run_id, run)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -157,7 +156,7 @@ async def delete_run(run_id: str) -> None:
         zen_store.delete_run(run_id)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -189,7 +188,7 @@ async def get_run_dag(run_id: str) -> str:  # TODO: use file type / image type
         return FileResponse(image_object_path)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -218,7 +217,7 @@ async def get_run_steps(run_id: str) -> List[Dict]:
         return zen_store.list_run_steps(run_id)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -248,7 +247,7 @@ async def get_run_runtime_configuration(run_id: str) -> Dict:
         return zen_store.get_run_runtime_configuration(run_id)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -287,7 +286,7 @@ async def get_run_component_side_effects(
         )
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))

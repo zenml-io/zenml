@@ -652,7 +652,7 @@ class Repository(metaclass=RepositoryMetaClass):
             created_stack = self.zen_store.register_stack(
                 user_id=self.zen_store.default_user_id,
                 # TODO: [server] replace with active user
-                project_id=self.active_project.id,
+                project_name_or_id=self.active_project.id,
                 stack=stack,
             )
             return created_stack
@@ -728,7 +728,7 @@ class Repository(metaclass=RepositoryMetaClass):
             A list of all registered stack components of the given type.
         """
         return self.zen_store.list_stack_components(
-            project_id=self.active_project.id, type=component_type
+            project_name_or_id=self.active_project.id, type=component_type
         )
 
     def get_stack_component_by_name_and_type(
@@ -746,7 +746,7 @@ class Repository(metaclass=RepositoryMetaClass):
         """
         if is_shared:
             components = self.zen_store.list_stack_components(
-                project_id=self.active_project.id,
+                project_name_or_id=self.active_project.id,
                 name=name,
                 type=type,
                 is_shared=True,
@@ -754,7 +754,7 @@ class Repository(metaclass=RepositoryMetaClass):
         else:
             # TODO: [server] access the user id in a more elegant way
             components = self.zen_store.list_stack_components(
-                project_id=self.active_project.id,
+                project_name_or_id=self.active_project.id,
                 name=name,
                 type=type,
                 user_id=self.zen_store.default_user_id,
@@ -802,7 +802,7 @@ class Repository(metaclass=RepositoryMetaClass):
         from zenml.models import ComponentModel
 
         self.zen_store.register_stack_component(
-            project_id=self.active_project.id,
+            project_name_or_id=self.active_project.id,
             user_id=self.zen_store.default_user_id,  # TODO: Do this right
             component=ComponentModel.from_component(component),
         )

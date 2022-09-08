@@ -27,8 +27,6 @@ from zenml.zen_stores.base_zen_store import BaseZenStore
 
 def test_only_one_default_project(fresh_sql_zen_store: BaseZenStore):
     """Tests that only one default project can be created."""
-    assert fresh_sql_zen_store.projects == fresh_sql_zen_store.list_projects()
-    assert len(fresh_sql_zen_store.projects) == 1
     assert len(fresh_sql_zen_store.list_projects()) == 1
 
 
@@ -517,13 +515,6 @@ def test_get_metadata_config_succeeds(
 # '--------'
 
 
-def test_stacks_empty_method(
-    fresh_sql_zen_store: BaseZenStore,
-):
-    """Tests stacks empty method."""
-    assert fresh_sql_zen_store.stacks_empty is False
-
-
 def test_list_stacks_succeeds(
     fresh_sql_zen_store: BaseZenStore,
 ):
@@ -571,7 +562,7 @@ def test_get_stack_fails_with_nonexistent_stack_id(
         fresh_sql_zen_store.get_stack(uuid.uuid4())
 
 
-# TODO: continue onwards to cover register, update and delete stacks
+# TODO: continue on to cover register, update and delete stacks
 # def test_register_stack_succeeds(
 #     fresh_sql_zen_store: BaseZenStore,
 # ):
