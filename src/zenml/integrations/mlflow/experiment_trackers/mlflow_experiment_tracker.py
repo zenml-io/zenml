@@ -89,7 +89,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
     tracking_password: Optional[str] = SecretField()
     tracking_token: Optional[str] = SecretField()
     tracking_insecure_tls: bool = False
-    databricks_host: Optional[str] = SecretField()
+    databricks_host: Optional[str] = None
 
     # Class Configuration
     FLAVOR: ClassVar[str] = MLFLOW_MODEL_EXPERIMENT_TRACKER_FLAVOR
