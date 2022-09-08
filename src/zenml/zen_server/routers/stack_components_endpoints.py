@@ -11,18 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Dict, List, Optional
+from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from zenml.constants import (
-    COMPONENT_SIDE_EFFECTS,
-    FLAVORS,
-    STACK_COMPONENTS,
-    TYPES,
-    VERSION_1,
-)
+from zenml.constants import FLAVORS, STACK_COMPONENTS, TYPES, VERSION_1
 from zenml.enums import StackComponentType
 from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.models import ComponentModel, FlavorModel
@@ -39,6 +33,7 @@ router = APIRouter(
     dependencies=[Depends(authorize)],
     responses={401: error_response},
 )
+
 
 @router.get(
     TYPES,
@@ -72,9 +67,9 @@ async def get_stack_component_types() -> List[str]:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def list_stack_components(
-        project_name: str,
-        component_type: Optional[str] = None,
-        component_name: Optional[str] = None,
+    project_name: str,
+    component_type: Optional[str] = None,
+    component_name: Optional[str] = None,
 ) -> List[ComponentModel]:
     """Get a list of all stack components for a specific type.
 
@@ -97,7 +92,7 @@ async def list_stack_components(
         return zen_store.list_stack_components(
             project_name_or_id=project_name,
             type=component_type,
-            name=component_name
+            name=component_name,
         )
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
@@ -193,7 +188,8 @@ async def update_stack_component(
     """
     try:
         return zen_store.update_stack_component(
-            component_id=UUID(component_id), component=component)
+            component_id=UUID(component_id), component=component
+        )
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:

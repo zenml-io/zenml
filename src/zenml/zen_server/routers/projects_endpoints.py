@@ -26,8 +26,10 @@ from zenml.constants import (
 )
 from zenml.exceptions import (
     EntityExistsError,
+    NotAuthorizedError,
     StackComponentExistsError,
-    StackExistsError, NotAuthorizedError, ValidationError,
+    StackExistsError,
+    ValidationError,
 )
 from zenml.models import (
     CodeRepositoryModel,

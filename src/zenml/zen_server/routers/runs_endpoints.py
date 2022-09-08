@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from typing import Dict, List, Optional
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
@@ -24,7 +23,6 @@ from zenml.zen_server.utils import (
     authorize,
     error_detail,
     error_response,
-    not_found,
     zen_store,
 )
 
@@ -44,7 +42,7 @@ router = APIRouter(
 async def get_runs(
     project_name: Optional[str] = None,
     stack_id: Optional[str] = None,
-    pipeline_id: Optional[str] = None
+    pipeline_id: Optional[str] = None,
 ) -> List[PipelineRunModel]:
     """Get pipeline runs according to query filters.
 
@@ -67,7 +65,7 @@ async def get_runs(
         return zen_store.list_runs(
             project_name_or_id=project_name,
             stack_id=stack_id,
-            pipeline_id=pipeline_id
+            pipeline_id=pipeline_id,
         )
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))

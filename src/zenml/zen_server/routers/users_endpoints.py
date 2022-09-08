@@ -17,8 +17,11 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 
 from zenml.constants import INVITE_TOKEN, ROLES, USERS, VERSION_1
-from zenml.exceptions import EntityExistsError, NotAuthorizedError, \
-    ValidationError
+from zenml.exceptions import (
+    EntityExistsError,
+    NotAuthorizedError,
+    ValidationError,
+)
 from zenml.models import RoleAssignmentModel, RoleModel, UserModel
 from zenml.zen_server.utils import (
     authorize,

@@ -209,8 +209,10 @@ class DuplicateRunNameError(RuntimeError):
 class NotAuthorizedError(ZenMLBaseException):
     """Raised when the user does not have permission to perform an action"""
 
+
 class ValidationError(ZenMLBaseException):
     """Raised when the Model passed to the ZenStore"""
+
 
 class StackExistsError(ZenMLBaseException):
     """Raised when trying to register a stack with a name that already exists."""

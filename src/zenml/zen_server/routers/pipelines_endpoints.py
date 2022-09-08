@@ -11,17 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Any, Dict, List
+from typing import Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from zenml.constants import (
-    PIPELINE_CONFIGURATION,
-    PIPELINES,
-    RUNS,
-    TRIGGERS,
-    VERSION_1,
-)
+from zenml.constants import PIPELINES, RUNS, VERSION_1
 from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.models import PipelineRunModel
 from zenml.models.pipeline_models import PipelineModel
@@ -108,7 +102,7 @@ async def get_pipeline(pipeline_id: str) -> PipelineModel:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def update_pipeline(
-        pipeline_id: str, updated_pipeline: PipelineModel
+    pipeline_id: str, updated_pipeline: PipelineModel
 ) -> PipelineModel:
     """Updates the attribute on a specific pipeline using its unique id.
 

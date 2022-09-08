@@ -706,8 +706,9 @@ class BaseZenStore(BaseModel):
             AnalyticsEvent.UPDATED_STACK_COMPONENT,
             metadata=analytics_metadata,
         )
-        return self._update_stack_component(component_id=component_id,
-                                            component=component)
+        return self._update_stack_component(
+            component_id=component_id, component=component
+        )
 
     @abstractmethod
     def _update_stack_component(

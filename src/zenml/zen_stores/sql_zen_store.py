@@ -641,9 +641,7 @@ class SqlZenStore(BaseZenStore):
             return component_in_db.to_model()
 
     def _update_stack_component(
-        self,
-        component_id: UUID,
-        component: ComponentModel
+        self, component_id: UUID, component: ComponentModel
     ) -> ComponentModel:
         """Update an existing stack component.
 
@@ -1255,15 +1253,17 @@ class SqlZenStore(BaseZenStore):
                     select(ProjectSchema).where(project_filter)
                 ).first()
                 if project is None:
-                    raise KeyError(f"Project with ID {project_name_or_id}"
-                                   f" not found.")
+                    raise KeyError(
+                        f"Project with ID {project_name_or_id}" f" not found."
+                    )
 
             # Get user role assignments
             query = select(UserRoleAssignmentSchema)
 
             if project is not None:
-                query = query.where(UserRoleAssignmentSchema
-                                    .project_id == project.id)
+                query = query.where(
+                    UserRoleAssignmentSchema.project_id == project.id
+                )
             if user_id is not None:
                 query = query.where(UserRoleAssignmentSchema.user_id == user_id)
             user_role_assignments = session.exec(query).all()
@@ -1844,11 +1844,11 @@ class SqlZenStore(BaseZenStore):
             existing_pipeline = session.exec(
                 select(PipelineSchema)
                 .where(PipelineSchema.name == pipeline.name)
-                .where(PipelineSchema.project_id == project_id)
+                .where(PipelineSchema.project_id == project.id)
             ).first()
             if existing_pipeline is not None:
                 raise EntityExistsError(
-                    f"Unable to create pipeline in project {project.id}: "
+                    f"Unable to create pipeline in project {project_name_or_id}: "
                     f"A pipeline with this name already exists."
                 )
 
@@ -1927,7 +1927,7 @@ class SqlZenStore(BaseZenStore):
             if pipeline is None:
                 raise KeyError(
                     f"Unable to get pipeline '{pipeline_name}' in project "
-                    f"'{project_id}': No pipeline with this name found."
+                    f"'{project_name_or_id}': No pipeline with this name found."
                 )
             return pipeline.to_model()
 
@@ -2062,9 +2062,8 @@ class SqlZenStore(BaseZenStore):
         #  not all, this might have to be redone
         self._sync_runs()  # Sync with MLMD
         with Session(self.engine) as session:
-            query = (
-                select(PipelineRunSchema)
-                .where(PipelineRunSchema.stack_id == StackSchema.id)
+            query = select(PipelineRunSchema).where(
+                PipelineRunSchema.stack_id == StackSchema.id
             )
             if project_name_or_id is not None:
                 if isinstance(project_name_or_id, str):
@@ -2210,7 +2209,8 @@ class SqlZenStore(BaseZenStore):
             if run is None:
                 raise KeyError(
                     f"Unable to get pipeline run '{run_name}' in project "
-                    f"'{project_id}': No pipeline run with this name found."
+                    f"'{project_name_or_id}': No pipeline run with this name "
+                    "found."
                 )
 
             return run.to_model()

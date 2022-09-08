@@ -37,7 +37,7 @@ from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
     from zenml.enums import StackComponentType
-    from zenml.models import ComponentModel, ProjectModel, StackModel
+    from zenml.models import ComponentModel, ProjectModel, StackModel, UserModel
     from zenml.runtime_configuration import RuntimeConfiguration
     from zenml.stack import Stack, StackComponent
     from zenml.zen_stores.base_zen_store import BaseZenStore
