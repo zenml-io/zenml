@@ -45,3 +45,5 @@ def test_great_expectations_materializer(clean_repo):
     last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
     expectation_suite = last_run.steps[-1].output.read()
     assert isinstance(expectation_suite, ExpectationSuite)
+    assert expectation_suite.expectation_suite_name == "arias_suite"
+    assert len(expectation_suite.expectations) == 0
