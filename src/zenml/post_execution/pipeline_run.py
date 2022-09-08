@@ -44,8 +44,6 @@ def get_run(name: str) -> "PipelineRunView":
         run_name=name,
         project_id=repo.active_project.id,
     )
-    if not run:
-        raise KeyError(f"No run found for name `{name}`.")
     return PipelineRunView(run)
 
 

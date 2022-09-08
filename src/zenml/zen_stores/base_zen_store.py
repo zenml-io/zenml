@@ -1862,13 +1862,16 @@ class BaseZenStore(BaseModel):
 
     @abstractmethod
     def get_pipeline(self, pipeline_id: str) -> Optional[PipelineModel]:
-        """Returns a pipeline for the given name.
+        """Get a pipeline with a given ID.
 
         Args:
             pipeline_id: ID of the pipeline.
 
         Returns:
-            PipelineModel if found, None otherwise.
+            The pipeline.
+
+        Raises:
+            KeyError: if the pipeline does not exist.
         """
 
     @abstractmethod
@@ -1882,7 +1885,10 @@ class BaseZenStore(BaseModel):
             project_id: ID of the project.
 
         Returns:
-            The pipeline, if found, None otherwise.
+            The pipeline.
+
+        Raises:
+            KeyError: if the pipeline does not exist.
         """
 
     def update_pipeline(
@@ -1943,7 +1949,7 @@ class BaseZenStore(BaseModel):
             KeyError: if the pipeline doesn't exist.
         """
 
-    def get_pipeline_configuration(self, pipeline_id: str) -> Dict[Any, Any]:
+    def get_pipeline_configuration(self, pipeline_id: str) -> Dict[str, str]:
         """Gets the pipeline configuration.
 
         Args:
@@ -2121,7 +2127,10 @@ class BaseZenStore(BaseModel):
             project_id: ID of the project.
 
         Returns:
-            The pipeline run, if found, None otherwise.
+            The pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
         """
 
     def update_run(

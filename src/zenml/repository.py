@@ -978,6 +978,70 @@ class Repository(metaclass=RepositoryMetaClass):
 
         return flavor_wrapper.to_flavor()
 
+    def _register_pipeline(
+        self, pipeline_name: str, pipeline_configuration: str
+    ) -> UUID:
+        """Registers a pipeline in the ZenStore within the active project.
+
+        This will do one of the following three things:
+        A) If there is no pipeline with this name, register a new pipeline.
+        B) If a pipeline exists that has the same config, use that pipeline.
+        C) If a pipeline with different config exists, raise an error.
+
+        Args:
+            pipeline_name: The name of the pipeline to register.
+            pipeline_configuration: The configuration of the pipeline.
+
+        Returns:
+            The id of the existing or newly registered pipeline.
+
+        Raises:
+            AlreadyExistsError: If there is an existing pipeline in the project
+                with the same name but a different configuration.
+        """
+        try:
+            existing_pipeline = self.zen_store.get_pipeline_in_project(
+                pipeline_name=pipeline_name, project_id=self.active_project.id
+            )
+
+        # A) If there is no pipeline with this name, register a new pipeline.
+        except KeyError:
+            pipeline = PipelineModel(
+                name=pipeline_name,
+                owner=self.active_user.id,
+                project_id=self.active_project.id,
+                configuration=pipeline_configuration,
+            )
+            pipeline = self.zen_store.create_pipeline(
+                project_id=self.active_project.id, pipeline=pipeline
+            )
+            logger.info(f"Registered new pipeline with name {pipeline.name}.")
+            return pipeline.id
+
+        # B) If a pipeline exists that has the same config, use that pipeline.
+        if pipeline_configuration == existing_pipeline.configuration:
+            logger.debug(f"Did not register pipeline since it already exists.")
+            return existing_pipeline.id
+
+        # C) If a pipeline with different config exists, raise an error.
+        error_msg = (
+            f"Cannot run pipeline '{pipeline_name}' since this name has "
+            "already been registered with a different pipeline "
+            "configuration. You have three options to resolve this issue: "
+            "1) You can register a new pipeline by changing the 'name' "
+            "argument of your pipeline, e.g., via "
+            '`my_pipeline(step1=..., ..., name="My New Pipeline Name")`. '
+            "2) You can execute the current run without linking it to any "
+            "pipeline by setting the 'unlisted' argument to `True`, e.g., "
+            "via `my_pipeline_instance.run(unlisted=True)`. "
+            "Unlisted runs are not linked to any pipeline, but are still "
+            "tracked by ZenML and can be accessed via the 'All Runs' tab. "
+            "3) You can delete the existing pipeline via "
+            f"`zenml pipeline delete {pipeline_name}`. This will then "
+            "change all existing runs of this pipeline to become unlisted."
+        )
+        raise AlreadyExistsException(error_msg)
+
     def register_pipeline_run(
         self,
         pipeline_name: str,
@@ -996,52 +1060,15 @@ class Repository(metaclass=RepositoryMetaClass):
             unlisted: Whether the pipeline run should be unlisted (not assigned
                 to any pipeline).
         """
-        existing_pipeline = self.zen_store.get_pipeline_in_project(
-            pipeline_name=pipeline_name, project_id=self.active_project.id
-        )
-
-        # Determine the pipeline ID (and potentially create a new pipeline)
-        # A) If `unlisted` is True, we don't assign the run to any pipeline
+        # If `unlisted` is True, we don't assign the run to any pipeline
         if unlisted:
             pipeline_id = None
-        # B) If no pipeline with this name exists, we create a new pipeline
-        elif not existing_pipeline:
-            pipeline = PipelineModel(
-                name=pipeline_name,
-                owner=self.active_user.id,
-                project_id=self.active_project.id,
-                configuration=pipeline_configuration,
-            )
-            pipeline = self.zen_store.create_pipeline(
-                project_id=self.active_project.id, pipeline=pipeline
-            )
-            pipeline_id = pipeline.id
-            logger.info(f"Registered new pipeline with name {pipeline.name}.")
-        # C) If a pipeline with same config exist, we use that pipeline
-        elif pipeline_configuration == existing_pipeline.configuration:
-            pipeline_id = existing_pipeline.id
-            logger.debug(f"Did not register pipeline since it already exists.")
-        # D) If a pipeline with different config exists, we raise an error
         else:
-            error_msg = (
-                f"Cannot run pipeline '{pipeline_name}' since this name has "
-                "already been registered with a different pipeline "
-                "configuration. You have three options to resolve this issue: "
-                "1) You can register a new pipeline by changing the 'name' "
-                "argument of your pipeline, e.g., via "
-                '`my_pipeline(step1=..., ..., name="My New Pipeline Name")`. '
-                "2) You can execute the current run without linking it to any "
-                "pipeline by setting the 'unlisted' argument to `True`, e.g., "
-                "via `my_pipeline_instance.run(unlisted=True)`. "
-                "Unlisted runs are not linked to any pipeline, but are still "
-                "tracked by ZenML and can be accessed via the 'All Runs' tab. "
-                "3) You can delete the existing pipeline via "
-                f"`zenml pipeline delete {pipeline_name}`. This will then "
-                "change all existing runs of this pipeline to become unlisted."
+            pipeline_id = self._register_pipeline(
+                pipeline_name=pipeline_name,
+                pipeline_configuration=pipeline_configuration,
             )
-            raise AlreadyExistsException(error_msg)
 
-        # Create new run
         pipeline_run = PipelineRunModel(
             name=runtime_configuration.run_name,
             owner=self.active_user.id,

@@ -1762,9 +1762,9 @@ class SqlZenStore(BaseZenStore):
 
             # Check if pipeline with the given name already exists
             existing_pipeline = session.exec(
-                select(PipelineSchema).where(
-                    PipelineSchema.name == pipeline.name
-                )
+                select(PipelineSchema)
+                .where(PipelineSchema.name == pipeline.name)
+                .where(PipelineSchema.project_id == project_id)
             ).first()
             if existing_pipeline is not None:
                 raise EntityExistsError(
@@ -1789,7 +1789,10 @@ class SqlZenStore(BaseZenStore):
             pipeline_id: ID of the pipeline.
 
         Returns:
-            The pipeline, if found, None otherwise.
+            The pipeline.
+
+        Raises:
+            KeyError: if the pipeline does not exist.
         """
         with Session(self.engine) as session:
             # Check if pipeline with the given ID exists
@@ -1797,7 +1800,10 @@ class SqlZenStore(BaseZenStore):
                 select(PipelineSchema).where(PipelineSchema.id == pipeline_id)
             ).first()
             if pipeline is None:
-                return None
+                raise KeyError(
+                    f"Unable to get pipeline with ID '{pipeline_id}': "
+                    "No pipeline with this ID found."
+                )
 
             return pipeline.to_model()
 
@@ -1811,7 +1817,10 @@ class SqlZenStore(BaseZenStore):
             project_id: ID of the project.
 
         Returns:
-            The pipeline, if found, None otherwise.
+            The pipeline.
+
+        Raises:
+            KeyError: if the pipeline does not exist.
         """
         with Session(self.engine) as session:
             # Check if pipeline with the given name exists in the project
@@ -1822,7 +1831,10 @@ class SqlZenStore(BaseZenStore):
                 )
             ).first()
             if pipeline is None:
-                return None
+                raise KeyError(
+                    f"Unable to get pipeline '{pipeline_name}' in project "
+                    f"'{project_id}': No pipeline with this name found."
+                )
             return pipeline.to_model()
 
     def _update_pipeline(
@@ -1882,7 +1894,7 @@ class SqlZenStore(BaseZenStore):
             session.delete(pipeline)
             session.commit()
 
-    def _get_pipeline_configuration(self, pipeline_id: str) -> Dict[Any, Any]:
+    def _get_pipeline_configuration(self, pipeline_id: str) -> Dict[str, str]:
         """Gets the pipeline configuration.
 
         Args:
@@ -1894,7 +1906,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the pipeline doesn't exist.
         """
-        pass  # TODO
+        return self.get_pipeline(pipeline_id).configuration
 
     def _list_steps(self, pipeline_id: str) -> List[StepRunModel]:
         """List all steps.
@@ -2060,7 +2072,10 @@ class SqlZenStore(BaseZenStore):
             project_id: ID of the project.
 
         Returns:
-            The pipeline run, if found, None otherwise.
+            The pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
         """
         self._sync_runs()  # Sync with MLMD
         with Session(self.engine) as session:
@@ -2072,7 +2087,10 @@ class SqlZenStore(BaseZenStore):
                 .where(StackSchema.project_id == project_id)
             ).first()
             if run is None:
-                return None
+                raise KeyError(
+                    f"Unable to get pipeline run '{run_name}' in project "
+                    f"'{project_id}': No pipeline run with this name found."
+                )
 
             return run.to_model()
 
