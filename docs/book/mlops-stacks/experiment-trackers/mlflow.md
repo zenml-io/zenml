@@ -66,12 +66,20 @@ what other types of components it can be combined with. This option requires
 [authentication related parameters](#authentication-methods) to be configured
 for the MLflow Experiment Tracker.
 
+* [Databricks scenario](https://www.databricks.com/product/managed-mlflow):
+This scenario assumes that you have a Databricks workspace and you want to
+use the managed MLflow Tracking server it provides. This option requires
+[authentication related parameters](#authentication-methods) to be configured
+for the MLflow Experiment Tracker.
+
 ### Authentication Methods
 
 You need to configure the following credentials for authentication to a remote
 MLflow tracking server:
 
-* `tracking_uri`: The URL pointing to the MLflow tracking server.
+* `tracking_uri`: The URL pointing to the MLflow tracking server. If using
+an MLflow Tracking Server managed by Databricks, then the value of this
+attribute should be `"databricks"`.
 * `tracking_username`: Username for authenticating with the MLflow tracking
 server. 
 * `tracking_password`: Password for authenticating with the MLflow tracking
