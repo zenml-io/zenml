@@ -19,15 +19,33 @@ from torch.utils.data.dataset import Dataset
 from zenml.integrations.pytorch.materializers.pytorch_dataloader_materializer import (
     PyTorchDataLoaderMaterializer,
 )
+from zenml.pipelines import pipeline
 from zenml.steps import step
 
 
-def test_pytorch_dataloader_materializer():
-    """Tests whether the steps work for the PyTorch dataloader materializer."""
+def test_pytorch_module_materializer(clean_repo):
+    """Tests whether the steps work for the Sklearn materializer."""
 
     @step
-    def some_step() -> DataLoader:
-        return DataLoader(Dataset())
+    def read_dataloader() -> DataLoader:
+        """Reads and materializes a PyTorch DataLoader."""
+        return DataLoader(Dataset(), batch_size=37, num_workers=7)
+
+    @pipeline
+    def test_pipeline(read_dataloader) -> None:
+        """Tests the PyTorch DataLoader materializer."""
+        read_dataloader()
 
     with does_not_raise():
-        some_step().with_return_materializers(PyTorchDataLoaderMaterializer)()
+        test_pipeline(
+            read_dataloader=read_dataloader().with_return_materializers(
+                PyTorchDataLoaderMaterializer
+            )
+        ).run()
+
+    last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
+    dataloader = last_run.steps[-1].output.read()
+    assert isinstance(dataloader, DataLoader)
+    assert dataloader.dataset is not None
+    assert dataloader.batch_size == 37
+    assert dataloader.num_workers == 7
