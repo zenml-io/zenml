@@ -324,17 +324,7 @@ class SqlZenStore(BaseZenStore):
             KeyError: If the project does not exist.
         """
         with Session(self.engine) as session:
-            if isinstance(project_name_or_id, str):
-                project_filter = ProjectSchema.name == project_name_or_id
-            else:
-                project_filter = ProjectSchema.id == project_name_or_id
-            project = session.exec(
-                select(ProjectSchema).where(project_filter)
-            ).first()
-            if project is None:
-                raise KeyError(
-                    f"Project with ID {project_name_or_id} " f"not found."
-                )
+            project = self._get_project_schema(project_name_or_id)
 
             # Get a list of all stacks
             query = select(StackSchema).where(
@@ -390,18 +380,7 @@ class SqlZenStore(BaseZenStore):
                 by this user on this project.
         """
         with Session(self.engine) as session:
-            if isinstance(project_name_or_id, str):
-                project_filter = ProjectSchema.name == project_name_or_id
-            else:
-                project_filter = ProjectSchema.id == project_name_or_id
-            project = session.exec(
-                select(ProjectSchema).where(project_filter)
-            ).first()
-            if project is None:
-                raise KeyError(
-                    f"Project with ID {project_name_or_id} " f"not found."
-                )
-
+            project = self._get_project_schema(project_name_or_id)
             # Check if stack with the domain key (name, project, owner) already
             #  exists
             existing_stack = session.exec(
@@ -528,17 +507,7 @@ class SqlZenStore(BaseZenStore):
             All stack components currently registered.
         """
         with Session(self.engine) as session:
-            if isinstance(project_name_or_id, str):
-                project_filter = ProjectSchema.name == project_name_or_id
-            else:
-                project_filter = ProjectSchema.id == project_name_or_id
-            project = session.exec(
-                select(ProjectSchema).where(project_filter)
-            ).first()
-            if project is None:
-                raise KeyError(
-                    f"Project with ID {project_name_or_id} " f"not found."
-                )
+            project = self._get_project_schema(project_name_or_id)
 
             # Get a list of all stacks
             query = select(StackComponentSchema).where(
@@ -598,17 +567,7 @@ class SqlZenStore(BaseZenStore):
             The created stack component.
         """
         with Session(self.engine) as session:
-            if isinstance(project_name_or_id, str):
-                project_filter = ProjectSchema.name == project_name_or_id
-            else:
-                project_filter = ProjectSchema.id == project_name_or_id
-            project = session.exec(
-                select(ProjectSchema).where(project_filter)
-            ).first()
-            if project is None:
-                raise KeyError(
-                    f"Project with ID {project_name_or_id} " f"not found."
-                )
+            project = self._get_project_schema(project_name_or_id)
 
             # TODO: [server] verify that this logic is already handled at repo
             #                level
@@ -810,24 +769,12 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: If no user with the given name or ID exists.
         """
-        is_uuid = uuid_utils.is_valid_uuid(user_name_or_id)
-
-        query = select(UserSchema)
-        if is_uuid:
-            query = query.where(UserSchema.id == user_name_or_id)
-        else:
-            query = query.where(UserSchema.name == user_name_or_id)
-
-        with Session(self.engine) as session:
-            user = session.exec(query).first()
-            if user is None and is_uuid:
-                raise KeyError(f"No user with ID '{user_name_or_id}' found.")
-            if user is None:
-                raise KeyError(
-                    f"The given user name or ID '{user_name_or_id}' is not a "
-                    "valid ID and no user with this name exists either."
-                )
-            return user.to_model()
+        user = self._get_schema_by_name_or_id(
+            object_name_or_id=user_name_or_id,
+            schema_class=UserSchema,
+            schema_name="user",
+        )
+        return user.to_model()
 
     def _update_user(self, user_id: str, user: UserModel) -> UserModel:
         """Updates an existing user.
@@ -955,24 +902,12 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: If no team with the given name or ID exists.
         """
-        is_uuid = uuid_utils.is_valid_uuid(team_name_or_id)
-
-        query = select(TeamSchema)
-        if is_uuid:
-            query = query.where(TeamSchema.id == team_name_or_id)
-        else:
-            query = query.where(TeamSchema.name == team_name_or_id)
-
-        with Session(self.engine) as session:
-            team = session.exec(query).first()
-            if team is None and is_uuid:
-                raise KeyError(f"No team with ID '{team_name_or_id}' found.")
-            if team is None:
-                raise KeyError(
-                    f"The given team name or ID '{team_name_or_id}' is not a "
-                    "valid ID and no team with this name exists either."
-                )
-            return team.to_model()
+        team = self._get_schema_by_name_or_id(
+            object_name_or_id=team_name_or_id,
+            schema_class=TeamSchema,
+            schema_name="team",
+        )
+        return team.to_model()
 
     def _delete_team(self, team_id: str) -> None:
         """Deletes a team.
@@ -1181,24 +1116,12 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: If no role with the given name exists.
         """
-        is_uuid = uuid_utils.is_valid_uuid(role_name_or_id)
-
-        query = select(RoleSchema)
-        if is_uuid:
-            query = query.where(RoleSchema.id == role_name_or_id)
-        else:
-            query = query.where(RoleSchema.name == role_name_or_id)
-
-        with Session(self.engine) as session:
-            role = session.exec(query).first()
-            if role is None and is_uuid:
-                raise KeyError(f"No role with ID '{role_name_or_id}' found.")
-            if role is None:
-                raise KeyError(
-                    f"The given role name or ID '{role_name_or_id}' is not a "
-                    "valid ID and no role with this name exists either."
-                )
-            return role.to_model()
+        role = self._get_schema_by_name_or_id(
+            object_name_or_id=role_name_or_id,
+            schema_class=RoleSchema,
+            schema_name="role",
+        )
+        return role.to_model()
 
     def _delete_role(self, role_id: str) -> None:
         """Deletes a role.
@@ -1242,25 +1165,11 @@ class SqlZenStore(BaseZenStore):
             A list of all role assignments.
         """
         with Session(self.engine) as session:
-
-            project = None
-            if project_name_or_id is not None:
-                if isinstance(project_name_or_id, str):
-                    project_filter = ProjectSchema.name == project_name_or_id
-                else:
-                    project_filter = ProjectSchema.id == project_name_or_id
-                project = session.exec(
-                    select(ProjectSchema).where(project_filter)
-                ).first()
-                if project is None:
-                    raise KeyError(
-                        f"Project with ID {project_name_or_id}" f" not found."
-                    )
-
             # Get user role assignments
             query = select(UserRoleAssignmentSchema)
 
-            if project is not None:
+            if project_name_or_id is not None:
+                project = self._get_project_schema(project_name_or_id)
                 query = query.where(
                     UserRoleAssignmentSchema.project_id == project.id
                 )
@@ -1270,7 +1179,8 @@ class SqlZenStore(BaseZenStore):
 
             # Get team role assignments
             query = select(TeamRoleAssignmentSchema)
-            if project is not None:
+            if project_name_or_id is not None:
+                project = self._get_project_schema(project_name_or_id)
                 query = query.where(
                     TeamRoleAssignmentSchema.project_id == project.id
                 )
@@ -1314,21 +1224,7 @@ class SqlZenStore(BaseZenStore):
                     "No role with this id found."
                 )
 
-            # Check if project with the given name already exists
-            if project_name_or_id:
-                if isinstance(project_name_or_id, str):
-                    project_filter = ProjectSchema.name == project_name_or_id
-                else:
-                    project_filter = ProjectSchema.id == project_name_or_id
-                project = session.exec(
-                    select(ProjectSchema).where(project_filter)
-                ).first()
-                if project is None:
-                    raise KeyError(
-                        f"Project with ID {project_name_or_id} " f"not found."
-                    )
-            else:
-                project = None
+            project = self._get_project_schema(project_name_or_id)
 
             # Assign role to user
             if is_user:
@@ -1392,17 +1288,7 @@ class SqlZenStore(BaseZenStore):
             KeyError: If the role, user, team, or project does not exists.
         """
         with Session(self.engine) as session:
-            if isinstance(project_name_or_id, str):
-                project_filter = ProjectSchema.name == project_name_or_id
-            else:
-                project_filter = ProjectSchema.id == project_name_or_id
-            project = session.exec(
-                select(ProjectSchema).where(project_filter)
-            ).first()
-            if project is None:
-                raise KeyError(
-                    f"Project with ID {project_name_or_id} " f"not found."
-                )
+            project = self._get_project_schema(project_name_or_id)
             if is_user:
                 role = session.exec(
                     select(UserRoleAssignmentSchema)
@@ -1489,27 +1375,8 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: If there is no such project.
         """
-        is_uuid = uuid_utils.is_valid_uuid(project_name_or_id)
-
-        query = select(ProjectSchema)
-        if is_uuid:
-            query = query.where(ProjectSchema.id == project_name_or_id)
-        else:
-            query = query.where(ProjectSchema.name == project_name_or_id)
-
-        with Session(self.engine) as session:
-            project = session.exec(query).first()
-            if project is None and is_uuid:
-                raise KeyError(
-                    f"No project with ID '{project_name_or_id}' found."
-                )
-            if project is None:
-                raise KeyError(
-                    f"The given project name or ID '{project_name_or_id}' is "
-                    "not a valid ID and no project with this name exists "
-                    "either."
-                )
-            return project.to_model()
+        project = self._get_project_schema(project_name_or_id)
+        return project.to_model()
 
     def _update_project(
         self, project_name: str, project: ProjectModel
@@ -1780,7 +1647,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             project_name_or_id: If provided, only list pipelines in this
-                                project.
+                project.
 
         Returns:
             A list of pipelines.
@@ -1792,17 +1659,7 @@ class SqlZenStore(BaseZenStore):
             # Check if project with the given name exists
             query = select(PipelineSchema)
             if project_name_or_id is not None:
-                if isinstance(project_name_or_id, str):
-                    project_filter = ProjectSchema.name == project_name_or_id
-                else:
-                    project_filter = ProjectSchema.id == project_name_or_id
-                project = session.exec(
-                    select(ProjectSchema).where(project_filter)
-                ).first()
-                if project is None:
-                    raise KeyError(
-                        f"Project with ID {project_name_or_id} " f"not found."
-                    )
+                project = self._get_project_schema(project_name_or_id)
                 query = query.where(PipelineSchema.project_id == project.id)
 
             # Get all pipelines in the project
@@ -1816,7 +1673,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             project_name_or_id: ID or name of the project to create the pipeline
-                                in.
+                in.
             pipeline: The pipeline to create.
 
         Returns:
@@ -1828,17 +1685,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             # Check if project with the given name exists
-            if isinstance(project_name_or_id, str):
-                project_filter = ProjectSchema.name == project_name_or_id
-            else:
-                project_filter = ProjectSchema.id == project_name_or_id
-            project = session.exec(
-                select(ProjectSchema).where(project_filter)
-            ).first()
-            if project is None:
-                raise KeyError(
-                    f"Project with ID {project_name_or_id} " f"not found."
-                )
+            project = self._get_project_schema(project_name_or_id)
 
             # Check if pipeline with the given name already exists
             existing_pipeline = session.exec(
@@ -1905,18 +1752,7 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the pipeline does not exist.
         """
         with Session(self.engine) as session:
-            # Check if project with the given name exists
-            if isinstance(project_name_or_id, str):
-                project_filter = ProjectSchema.name == project_name_or_id
-            else:
-                project_filter = ProjectSchema.id == project_name_or_id
-            project = session.exec(
-                select(ProjectSchema).where(project_filter)
-            ).first()
-            if project is None:
-                raise KeyError(
-                    f"Project with ID {project_name_or_id} " f"not found."
-                )
+            project = self._get_project_schema(project_name_or_id)
             # Check if pipeline with the given name exists in the project
             pipeline = session.exec(
                 select(PipelineSchema).where(
@@ -2066,17 +1902,7 @@ class SqlZenStore(BaseZenStore):
                 PipelineRunSchema.stack_id == StackSchema.id
             )
             if project_name_or_id is not None:
-                if isinstance(project_name_or_id, str):
-                    project_filter = ProjectSchema.name == project_name_or_id
-                else:
-                    project_filter = ProjectSchema.id == project_name_or_id
-                project = session.exec(
-                    select(ProjectSchema).where(project_filter)
-                ).first()
-                if project is None:
-                    raise KeyError(
-                        f"Project with ID {project_name_or_id} " f"not found."
-                    )
+                project = self._get_project_schema(project_name_or_id)
                 query = query.where(StackSchema.project_id == project.id)
             if stack_id is not None:
                 query = query.where(PipelineRunSchema.stack_id == stack_id)
@@ -2188,17 +2014,7 @@ class SqlZenStore(BaseZenStore):
         """
         self._sync_runs()  # Sync with MLMD
         with Session(self.engine) as session:
-            if isinstance(project_name_or_id, str):
-                project_filter = ProjectSchema.name == project_name_or_id
-            else:
-                project_filter = ProjectSchema.id == project_name_or_id
-            project = session.exec(
-                select(ProjectSchema).where(project_filter)
-            ).first()
-            if project is None:
-                raise KeyError(
-                    f"Project with ID {project_name_or_id} " f"not found."
-                )
+            project = self._get_project_schema(project_name_or_id)
             # Check if pipeline run with the given name exists in the project
             run = session.exec(
                 select(PipelineRunSchema)
@@ -2391,6 +2207,72 @@ class SqlZenStore(BaseZenStore):
 
         config = self.metadata_store.get_tfx_metadata_config()
         return MessageToJson(config)
+
+    # .-------------------------.
+    # | INTERNAL HELPER METHODS |
+    # '-------------------------'
+
+    def _get_schema_by_name_or_id(
+        self,
+        object_name_or_id: Union[str, UUID],
+        schema_class: Type[SQLModel],
+        schema_name: str,
+    ) -> SQLModel:
+        """Query a schema by its 'name' or 'id' field.
+
+        Args:
+            object_name_or_id: The name or ID of the object to query.
+            schema_class: The schema class to query. E.g., `ProjectSchema`.
+            schema_name: The name of the schema used for error messages.
+                E.g., "project".
+
+        Returns:
+            The schema object.
+
+        Raises:
+            KeyError: if the object couldn't be found.
+        """
+        if uuid_utils.is_valid_uuid(object_name_or_id):
+            filter = schema_class.id == object_name_or_id
+            error_msg = (
+                f"Unable to get {schema_name} with name or ID "
+                f"'{object_name_or_id}': No {schema_name} with this ID found."
+            )
+        else:
+            filter = schema_class.name == object_name_or_id
+            error_msg = (
+                f"Unable to get {schema_name} with name or ID "
+                f"'{object_name_or_id}': '{object_name_or_id}' is not a valid "
+                f" UUID and no {schema_name} with this name exists."
+            )
+        with Session(self.engine) as session:
+            schema = session.exec(select(schema_class).where(filter)).first()
+            if schema is None:
+                raise KeyError(error_msg)
+            return schema
+
+    def _get_project_schema(
+        self, project_name_or_id: Union[str, UUID]
+    ) -> ProjectSchema:
+        """Gets a project schema by name or ID.
+
+        This is a helper method that is used in various places to find the
+        project associated to some other object.
+
+        Args:
+            project_name_or_id: The name or ID of the project to get.
+
+        Returns:
+            The project schema.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
+        return self._get_schema_by_name_or_id(
+            object_name_or_id=project_name_or_id,
+            schema_class=ProjectSchema,
+            schema_name="project",
+        )
 
     # LEGACY CODE FROM THE PREVIOUS VERSION OF BASEZENSTORE
 

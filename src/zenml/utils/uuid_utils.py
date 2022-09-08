@@ -13,10 +13,11 @@
 #  permissions and limitations under the License.
 """Utility functions for handling UUIDs."""
 
+from typing import Any
 from uuid import UUID
 
 
-def is_valid_uuid(value: str, version: int = 4) -> bool:
+def is_valid_uuid(value: Any, version: int = 4) -> bool:
     """Checks if a string is a valid UUID.
 
     Args:
@@ -26,8 +27,12 @@ def is_valid_uuid(value: str, version: int = 4) -> bool:
     Returns:
         True if string is a valid UUID, False otherwise.
     """
-    try:
-        UUID(value, version=version)
+    if isinstance(value, UUID):
         return True
-    except ValueError:
-        return False
+    if isinstance(value, str):
+        try:
+            UUID(value, version=version)
+            return True
+        except ValueError:
+            return False
+    return False
