@@ -47,3 +47,7 @@ def test_huggingface_datasets_materializer(clean_repo):
     last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
     dataset = last_run.steps[-1].output.read()
     assert isinstance(dataset, Dataset)
+    assert dataset.data.shape == (3, 1)
+    data = dataset.data.to_pydict()
+    assert "0" in data.keys()
+    assert [1, 2, 3] in data.values()

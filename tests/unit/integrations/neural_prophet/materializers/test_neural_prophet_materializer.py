@@ -13,20 +13,47 @@
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
 
+import numpy as np
+import pandas as pd
 from neuralprophet import NeuralProphet
 
 from zenml.integrations.neural_prophet.materializers.neural_prophet_materializer import (
     NeuralProphetMaterializer,
 )
+from zenml.pipelines import pipeline
 from zenml.steps import step
 
 
-def test_neural_prophet_booster_materializer():
-    """Tests whether the steps work for the NeuralProphet materializer."""
+def test_neural_prophet_booster_materializer(clean_repo):
+    """Tests whether the steps work for the Neural Prophet forecaster materializer."""
 
     @step
-    def some_step() -> NeuralProphet:
-        return NeuralProphet()
+    def read_forecaster() -> NeuralProphet:
+        """Reads and materializes a Neural Prophet forecaster."""
+        sample_df = pd.DataFrame(
+            {
+                "ds": pd.date_range("2018-01-01", periods=10),
+                "y": np.random.rand(10),
+            }
+        )
+        m = NeuralProphet(epochs=7, batch_size=37)
+        m.fit(sample_df)
+        return m
+
+    @pipeline
+    def test_pipeline(read_forecaster) -> None:
+        """Tests the Neural Prophet forecaster materializer."""
+        read_forecaster()
 
     with does_not_raise():
-        some_step().with_return_materializers(NeuralProphetMaterializer)()
+        test_pipeline(
+            read_forecaster=read_forecaster().with_return_materializers(
+                NeuralProphetMaterializer
+            )
+        ).run()
+
+    last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
+    forecaster = last_run.steps[-1].output.read()
+    assert isinstance(forecaster, NeuralProphet)
+    assert forecaster.config_train.epochs == 7
+    assert forecaster.config_train.batch_size == 37

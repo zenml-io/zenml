@@ -47,3 +47,5 @@ def test_huggingface_tf_pretrained_model_materializer(clean_repo):
     last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
     model = last_run.steps[-1].output.read()
     assert isinstance(model, TFPreTrainedModel)
+    assert model.config.max_position_embeddings == 512
+    assert model.config.model_type == "bert"

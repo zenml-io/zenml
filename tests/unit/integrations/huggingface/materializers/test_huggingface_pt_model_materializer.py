@@ -47,3 +47,4 @@ def test_huggingface_pretrained_model_materializer(clean_repo):
     last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
     model = last_run.steps[-1].output.read()
     assert isinstance(model, PreTrainedModel)
+    assert model.config.model_type == "roberta"
