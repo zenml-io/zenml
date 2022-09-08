@@ -29,7 +29,7 @@ def test_sklearn_materializer(clean_repo):
     @step
     def read_model() -> ClassifierMixin:
         """Reads and materializes a Sklearn model."""
-        return SVC()
+        return SVC(gamma="auto")
 
     @pipeline
     def test_pipeline(read_model) -> None:
@@ -46,3 +46,4 @@ def test_sklearn_materializer(clean_repo):
     last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
     model = last_run.steps[-1].output.read()
     assert isinstance(model, ClassifierMixin)
+    assert model.gamma == "auto"
