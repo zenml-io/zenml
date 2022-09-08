@@ -54,7 +54,7 @@ class StackComponentSchema(SQLModel, table=True):
 
     @classmethod
     def from_create_model(
-        cls, user_id: str, project_id: UUID, component: ComponentModel
+        cls, user_id: UUID, project_id: UUID, component: ComponentModel
     ) -> "StackComponentSchema":
         """Create a StackComponentSchema with `id` and `created_at` missing.
 

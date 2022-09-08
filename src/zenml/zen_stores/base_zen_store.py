@@ -751,7 +751,11 @@ class BaseZenStore(BaseModel):
         """
 
     def get_stack_component_side_effects(
-        self, component_id: str, run_id: str, pipeline_id: str, stack_id: str
+        self,
+        component_id: UUID,
+        run_id: UUID,
+        pipeline_id: UUID,
+        stack_id: UUID,
     ) -> Dict[Any, Any]:
         """Get the side effects of a stack component.
 
@@ -767,7 +771,11 @@ class BaseZenStore(BaseModel):
 
     @abstractmethod
     def _get_stack_component_side_effects(
-        self, component_id: str, run_id: str, pipeline_id: str, stack_id: str
+        self,
+        component_id: UUID,
+        run_id: UUID,
+        pipeline_id: UUID,
+        stack_id: UUID,
     ) -> Dict[Any, Any]:
         """Get the side effects of a stack component.
 
@@ -899,7 +907,7 @@ class BaseZenStore(BaseModel):
             EntityExistsError: If a user with the given name already exists.
         """
 
-    def get_user(self, user_name_or_id: str) -> UserModel:
+    def get_user(self, user_name_or_id: UUID) -> UserModel:
         """Gets a specific user.
 
         Args:
@@ -915,7 +923,7 @@ class BaseZenStore(BaseModel):
         return self._get_user(user_name_or_id=user_name_or_id)
 
     @abstractmethod
-    def _get_user(self, user_name_or_id: str) -> UserModel:
+    def _get_user(self, user_name_or_id: UUID) -> UserModel:
         """Gets a specific user.
 
         Args:
@@ -928,7 +936,7 @@ class BaseZenStore(BaseModel):
             KeyError: If no user with the given name or ID exists.
         """
 
-    def update_user(self, user_id: str, user: UserModel) -> UserModel:
+    def update_user(self, user_id: UUID, user: UserModel) -> UserModel:
         """Updates an existing user.
 
         Args:
@@ -945,7 +953,7 @@ class BaseZenStore(BaseModel):
         return self._update_user(user_id, user)
 
     @abstractmethod
-    def _update_user(self, user_id: str, user: UserModel) -> UserModel:
+    def _update_user(self, user_id: UUID, user: UserModel) -> UserModel:
         """Update the user.
 
         Args:
@@ -959,7 +967,7 @@ class BaseZenStore(BaseModel):
             KeyError: If no user with the given name exists.
         """
 
-    def delete_user(self, user_id: str) -> None:
+    def delete_user(self, user_id: UUID) -> None:
         """Deletes a user.
 
         Args:
@@ -972,7 +980,7 @@ class BaseZenStore(BaseModel):
         return self._delete_user(user_id)
 
     @abstractmethod
-    def _delete_user(self, user_id: str) -> None:
+    def _delete_user(self, user_id: UUID) -> None:
         """Deletes a user.
 
         Args:
@@ -984,7 +992,7 @@ class BaseZenStore(BaseModel):
 
     # TODO: Check whether this needs to be an abstract method or not (probably?)
     @abstractmethod
-    def get_invite_token(self, user_id: str) -> str:
+    def get_invite_token(self, user_id: UUID) -> str:
         """Gets an invite token for a user.
 
         Args:
@@ -995,7 +1003,7 @@ class BaseZenStore(BaseModel):
         """
 
     @abstractmethod
-    def invalidate_invite_token(self, user_id: str) -> None:
+    def invalidate_invite_token(self, user_id: UUID) -> None:
         """Invalidates an invite token for a user.
 
         Args:
@@ -1049,7 +1057,7 @@ class BaseZenStore(BaseModel):
             EntityExistsError: If a team with the given name already exists.
         """
 
-    def get_team(self, team_name_or_id: str) -> TeamModel:
+    def get_team(self, team_name_or_id: UUID) -> TeamModel:
         """Gets a specific team.
 
         Args:
@@ -1065,7 +1073,7 @@ class BaseZenStore(BaseModel):
         return self._get_team(team_name_or_id)
 
     @abstractmethod
-    def _get_team(self, team_name_or_id: str) -> TeamModel:
+    def _get_team(self, team_name_or_id: UUID) -> TeamModel:
         """Gets a specific team.
 
         Args:
@@ -1078,7 +1086,7 @@ class BaseZenStore(BaseModel):
             KeyError: If no team with the given name or ID exists.
         """
 
-    def delete_team(self, team_id: str) -> None:
+    def delete_team(self, team_id: UUID) -> None:
         """Deletes a team.
 
         Args:
@@ -1091,7 +1099,7 @@ class BaseZenStore(BaseModel):
         return self._delete_team(team_id)
 
     @abstractmethod
-    def _delete_team(self, team_id: str) -> None:
+    def _delete_team(self, team_id: UUID) -> None:
         """Deletes a team.
 
         Args:
@@ -1102,7 +1110,7 @@ class BaseZenStore(BaseModel):
         """
 
     @abstractmethod
-    def add_user_to_team(self, user_id: str, team_id: str) -> None:
+    def add_user_to_team(self, user_id: UUID, team_id: UUID) -> None:
         """Adds a user to a team.
 
         Args:
@@ -1114,7 +1122,7 @@ class BaseZenStore(BaseModel):
         """
 
     @abstractmethod
-    def remove_user_from_team(self, user_id: str, team_id: str) -> None:
+    def remove_user_from_team(self, user_id: UUID, team_id: UUID) -> None:
         """Removes a user from a team.
 
         Args:
@@ -1126,7 +1134,7 @@ class BaseZenStore(BaseModel):
         """
 
     @abstractmethod
-    def get_users_for_team(self, team_id: str) -> List[UserModel]:
+    def get_users_for_team(self, team_id: UUID) -> List[UserModel]:
         """Fetches all users of a team.
 
         Args:
@@ -1140,7 +1148,7 @@ class BaseZenStore(BaseModel):
         """
 
     @abstractmethod
-    def get_teams_for_user(self, user_id: str) -> List[TeamModel]:
+    def get_teams_for_user(self, user_id: UUID) -> List[TeamModel]:
         """Fetches all teams for a user.
 
         Args:
@@ -1208,7 +1216,7 @@ class BaseZenStore(BaseModel):
         """
 
     # TODO: consider using team_id instead
-    def get_role(self, role_name_or_id: str) -> RoleModel:
+    def get_role(self, role_name_or_id: UUID) -> RoleModel:
         """Gets a specific role.
 
         Args:
@@ -1224,7 +1232,7 @@ class BaseZenStore(BaseModel):
         return self._get_role(role_name_or_id)
 
     @abstractmethod
-    def _get_role(self, role_name_or_id: str) -> RoleModel:
+    def _get_role(self, role_name_or_id: UUID) -> RoleModel:
         """Gets a specific role.
 
         Args:
@@ -1237,7 +1245,7 @@ class BaseZenStore(BaseModel):
             KeyError: If no role with the given name exists.
         """
 
-    def delete_role(self, role_id: str) -> None:
+    def delete_role(self, role_id: UUID) -> None:
         """Deletes a role.
 
         Args:
@@ -1250,7 +1258,7 @@ class BaseZenStore(BaseModel):
         return self._delete_role(role_id)
 
     @abstractmethod
-    def _delete_role(self, role_id: str) -> None:
+    def _delete_role(self, role_id: UUID) -> None:
         """Deletes a role.
 
         Args:
@@ -1290,8 +1298,8 @@ class BaseZenStore(BaseModel):
 
     def assign_role(
         self,
-        role_id: str,
-        user_or_team_id: str,
+        role_id: UUID,
+        user_or_team_id: UUID,
         project_name_or_id: Optional[Union[str, UUID]] = None,
         is_user: bool = True,
     ) -> None:
@@ -1318,8 +1326,8 @@ class BaseZenStore(BaseModel):
     @abstractmethod
     def _assign_role(
         self,
-        role_id: str,
-        user_or_team_id: str,
+        role_id: UUID,
+        user_or_team_id: UUID,
         project_name_or_id: Optional[Union[str, UUID]],
         is_user: bool = True,
     ) -> None:
@@ -1339,8 +1347,8 @@ class BaseZenStore(BaseModel):
 
     def revoke_role(
         self,
-        role_id: str,
-        user_or_team_id: str,
+        role_id: UUID,
+        user_or_team_id: UUID,
         is_user: bool = True,
         project_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> None:
@@ -1369,8 +1377,8 @@ class BaseZenStore(BaseModel):
     @abstractmethod
     def _revoke_role(
         self,
-        role_id: str,
-        user_or_team_id: str,
+        role_id: UUID,
+        user_or_team_id: UUID,
         is_user: bool = True,
         project_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> None:
@@ -1439,7 +1447,7 @@ class BaseZenStore(BaseModel):
             EntityExistsError: If a project with the given name already exists.
         """
 
-    def get_project(self, project_name_or_id: str) -> ProjectModel:
+    def get_project(self, project_name_or_id: UUID) -> ProjectModel:
         """Get an existing project by name or ID.
 
         Args:
@@ -1455,7 +1463,7 @@ class BaseZenStore(BaseModel):
         return self._get_project(project_name_or_id)
 
     @abstractmethod
-    def _get_project(self, project_name_or_id: str) -> ProjectModel:
+    def _get_project(self, project_name_or_id: UUID) -> ProjectModel:
         """Get an existing project by name or ID.
 
         Args:
@@ -1554,7 +1562,9 @@ class BaseZenStore(BaseModel):
             KeyError: if the project doesn't exist.
         """
 
-    def set_default_stack(self, project_name: str, stack_id: str) -> StackModel:
+    def set_default_stack(
+        self, project_name: str, stack_id: UUID
+    ) -> StackModel:
         """Sets the default stack in a project.
 
         Args:
@@ -1568,7 +1578,7 @@ class BaseZenStore(BaseModel):
 
     @abstractmethod
     def _set_default_stack(
-        self, project_name: str, stack_id: str
+        self, project_name: str, stack_id: UUID
     ) -> StackModel:
         """Sets the default stack in a project.
 
@@ -1654,7 +1664,7 @@ class BaseZenStore(BaseModel):
             KeyError: if the project or repository doesn't exist.
         """
 
-    def get_repository(self, repository_id: str) -> CodeRepositoryModel:
+    def get_repository(self, repository_id: UUID) -> CodeRepositoryModel:
         """Gets a repository.
 
         Args:
@@ -1669,7 +1679,7 @@ class BaseZenStore(BaseModel):
         return self._get_repository(repository_id)
 
     @abstractmethod
-    def _get_repository(self, repository_id: str) -> CodeRepositoryModel:
+    def _get_repository(self, repository_id: UUID) -> CodeRepositoryModel:
         """Get a repository by ID.
 
         Args:
@@ -1683,7 +1693,7 @@ class BaseZenStore(BaseModel):
         """
 
     def update_repository(
-        self, repository_id: str, repository: CodeRepositoryModel
+        self, repository_id: UUID, repository: CodeRepositoryModel
     ):
         """Updates a repository.
 
@@ -1702,7 +1712,7 @@ class BaseZenStore(BaseModel):
 
     @abstractmethod
     def _update_repository(
-        self, repository_id: str, repository: CodeRepositoryModel
+        self, repository_id: UUID, repository: CodeRepositoryModel
     ) -> CodeRepositoryModel:
         """Update a repository.
 
@@ -1717,7 +1727,7 @@ class BaseZenStore(BaseModel):
             KeyError: if the repository doesn't exist.
         """
 
-    def delete_repository(self, repository_id: str):
+    def delete_repository(self, repository_id: UUID):
         """Deletes a repository.
 
         Args:
@@ -1730,7 +1740,7 @@ class BaseZenStore(BaseModel):
         return self._delete_repository(repository_id)
 
     @abstractmethod
-    def _delete_repository(self, repository_id: str) -> None:
+    def _delete_repository(self, repository_id: UUID) -> None:
         """Delete a repository.
 
         Args:
@@ -1837,7 +1847,7 @@ class BaseZenStore(BaseModel):
         """
 
     @abstractmethod
-    def get_pipeline(self, pipeline_id: str) -> Optional[PipelineModel]:
+    def get_pipeline(self, pipeline_id: UUID) -> Optional[PipelineModel]:
         """Get a pipeline with a given ID.
 
         Args:
@@ -1868,7 +1878,7 @@ class BaseZenStore(BaseModel):
         """
 
     def update_pipeline(
-        self, pipeline_id: str, pipeline: PipelineModel
+        self, pipeline_id: UUID, pipeline: PipelineModel
     ) -> PipelineModel:
         """Updates a pipeline.
 
@@ -1887,7 +1897,7 @@ class BaseZenStore(BaseModel):
 
     @abstractmethod
     def _update_pipeline(
-        self, pipeline_id: str, pipeline: PipelineModel
+        self, pipeline_id: UUID, pipeline: PipelineModel
     ) -> PipelineModel:
         """Updates a pipeline.
 
@@ -1902,7 +1912,7 @@ class BaseZenStore(BaseModel):
             KeyError: if the pipeline doesn't exist.
         """
 
-    def delete_pipeline(self, pipeline_id: str) -> None:
+    def delete_pipeline(self, pipeline_id: UUID) -> None:
         """Deletes a pipeline.
 
         Args:
@@ -1915,7 +1925,7 @@ class BaseZenStore(BaseModel):
         return self._delete_pipeline(pipeline_id)
 
     @abstractmethod
-    def _delete_pipeline(self, pipeline_id: str) -> None:
+    def _delete_pipeline(self, pipeline_id: UUID) -> None:
         """Deletes a pipeline.
 
         Args:
@@ -1925,7 +1935,7 @@ class BaseZenStore(BaseModel):
             KeyError: if the pipeline doesn't exist.
         """
 
-    def get_pipeline_configuration(self, pipeline_id: str) -> Dict[str, str]:
+    def get_pipeline_configuration(self, pipeline_id: UUID) -> Dict[str, str]:
         """Gets the pipeline configuration.
 
         Args:
@@ -1940,7 +1950,7 @@ class BaseZenStore(BaseModel):
         return self._get_pipeline_configuration(pipeline_id)
 
     @abstractmethod
-    def _get_pipeline_configuration(self, pipeline_id: str) -> Dict[Any, Any]:
+    def _get_pipeline_configuration(self, pipeline_id: UUID) -> Dict[Any, Any]:
         """Gets the pipeline configuration.
 
         Args:
@@ -1958,7 +1968,7 @@ class BaseZenStore(BaseModel):
     # TODO: Discuss whether we even need this, given that the endpoint is on
     # pipeline runs
     # TODO: [ALEX] add filtering param(s)
-    def list_steps(self, pipeline_id: str) -> List[StepRunModel]:
+    def list_steps(self, pipeline_id: UUID) -> List[StepRunModel]:
         """List all steps for a specific pipeline.
 
         Args:
@@ -1970,7 +1980,7 @@ class BaseZenStore(BaseModel):
         return self._list_steps(pipeline_id)
 
     @abstractmethod
-    def _list_steps(self, pipeline_id: str) -> List[StepRunModel]:
+    def _list_steps(self, pipeline_id: UUID) -> List[StepRunModel]:
         """List all steps.
 
         Args:
@@ -2064,7 +2074,7 @@ class BaseZenStore(BaseModel):
             EntityExistsError: If an identical pipeline run already exists.
         """
 
-    def get_run(self, run_id: str) -> PipelineRunModel:
+    def get_run(self, run_id: UUID) -> PipelineRunModel:
         """Gets a pipeline run.
 
         Args:
@@ -2079,7 +2089,7 @@ class BaseZenStore(BaseModel):
         return self._get_run(run_id)
 
     @abstractmethod
-    def _get_run(self, run_id: str) -> PipelineRunModel:
+    def _get_run(self, run_id: UUID) -> PipelineRunModel:
         """Gets a pipeline run.
 
         Args:
@@ -2110,7 +2120,7 @@ class BaseZenStore(BaseModel):
         """
 
     def update_run(
-        self, run_id: str, run: PipelineRunModel
+        self, run_id: UUID, run: PipelineRunModel
     ) -> PipelineRunModel:
         """Updates a pipeline run.
 
@@ -2128,7 +2138,7 @@ class BaseZenStore(BaseModel):
 
     @abstractmethod
     def _update_run(
-        self, run_id: str, run: PipelineRunModel
+        self, run_id: UUID, run: PipelineRunModel
     ) -> PipelineRunModel:
         """Updates a pipeline run.
 
@@ -2143,7 +2153,7 @@ class BaseZenStore(BaseModel):
             KeyError: if the pipeline run doesn't exist.
         """
 
-    def delete_run(self, run_id: str) -> None:
+    def delete_run(self, run_id: UUID) -> None:
         """Deletes a pipeline run.
 
         Args:
@@ -2155,7 +2165,7 @@ class BaseZenStore(BaseModel):
         return self._delete_run(run_id)
 
     @abstractmethod
-    def _delete_run(self, run_id: str) -> None:
+    def _delete_run(self, run_id: UUID) -> None:
         """Deletes a pipeline run.
 
         Args:
@@ -2166,7 +2176,7 @@ class BaseZenStore(BaseModel):
         """
 
     # TODO: figure out args and output for this
-    def get_run_dag(self, run_id: str) -> str:
+    def get_run_dag(self, run_id: UUID) -> str:
         """Gets the DAG for a pipeline run.
 
         Args:
@@ -2182,7 +2192,7 @@ class BaseZenStore(BaseModel):
 
     # TODO: figure out args and output for this
     @abstractmethod
-    def _get_run_dag(self, run_id: str) -> str:
+    def _get_run_dag(self, run_id: UUID) -> str:
         """Gets the DAG for a pipeline run.
 
         Args:
@@ -2195,7 +2205,7 @@ class BaseZenStore(BaseModel):
             KeyError: if the pipeline run doesn't exist.
         """
 
-    def get_run_runtime_configuration(self, run_id: str) -> Dict:
+    def get_run_runtime_configuration(self, run_id: UUID) -> Dict:
         """Gets the runtime configuration for a pipeline run.
 
         Args:
@@ -2210,7 +2220,7 @@ class BaseZenStore(BaseModel):
         return self._get_run_runtime_configuration(run_id)
 
     @abstractmethod
-    def _get_run_runtime_configuration(self, run_id: str) -> Dict:
+    def _get_run_runtime_configuration(self, run_id: UUID) -> Dict:
         """Gets the runtime configuration for a pipeline run.
 
         Args:
@@ -2226,7 +2236,7 @@ class BaseZenStore(BaseModel):
     # TODO: Figure out what exactly gets returned from this
     def get_run_component_side_effects(
         self,
-        run_id: str,
+        run_id: UUID,
         component_id: Optional[str] = None,
         component_type: Optional[StackComponentType] = None,
     ) -> Dict:
@@ -2249,7 +2259,7 @@ class BaseZenStore(BaseModel):
     @abstractmethod
     def _get_run_component_side_effects(
         self,
-        run_id: str,
+        run_id: UUID,
         component_id: Optional[str] = None,
         component_type: Optional[StackComponentType] = None,
     ) -> Dict:
@@ -2282,7 +2292,7 @@ class BaseZenStore(BaseModel):
         """
 
     @abstractmethod
-    def get_run_step(self, step_id: str) -> StepRunModel:
+    def get_run_step(self, step_id: int) -> StepRunModel:
         """Get a step by ID.
 
         Args:

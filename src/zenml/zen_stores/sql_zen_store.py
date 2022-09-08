@@ -551,7 +551,7 @@ class SqlZenStore(BaseZenStore):
 
     def _register_stack_component(
         self,
-        user_id: str,
+        user_id: UUID,
         project_name_or_id: Union[str, UUID],
         component: ComponentModel,
     ) -> ComponentModel:
@@ -654,7 +654,11 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
     def _get_stack_component_side_effects(
-        self, component_id: str, run_id: str, pipeline_id: str, stack_id: str
+        self,
+        component_id: UUID,
+        run_id: UUID,
+        pipeline_id: UUID,
+        stack_id: UUID,
     ) -> Dict[Any, Any]:
         """Get the side effects of a stack component.
 
@@ -757,7 +761,7 @@ class SqlZenStore(BaseZenStore):
 
             return new_user.to_model()
 
-    def _get_user(self, user_name_or_id: str) -> UserModel:
+    def _get_user(self, user_name_or_id: UUID) -> UserModel:
         """Gets a specific user.
 
         Args:
@@ -776,7 +780,7 @@ class SqlZenStore(BaseZenStore):
         )
         return user.to_model()
 
-    def _update_user(self, user_id: str, user: UserModel) -> UserModel:
+    def _update_user(self, user_id: UUID, user: UserModel) -> UserModel:
         """Updates an existing user.
 
         Args:
@@ -803,7 +807,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             return existing_user.to_model()
 
-    def _delete_user(self, user_id: str) -> None:
+    def _delete_user(self, user_id: UUID) -> None:
         """Deletes a user.
 
         Args:
@@ -824,7 +828,7 @@ class SqlZenStore(BaseZenStore):
             session.delete(user)
             session.commit()
 
-    def get_invite_token(self, user_id: str) -> str:
+    def get_invite_token(self, user_id: UUID) -> str:
         """Gets an invite token for a user.
 
         Args:
@@ -835,7 +839,7 @@ class SqlZenStore(BaseZenStore):
         """
         raise NotImplementedError()  # TODO
 
-    def invalidate_invite_token(self, user_id: str) -> None:
+    def invalidate_invite_token(self, user_id: UUID) -> None:
         """Invalidates an invite token for a user.
 
         Args:
@@ -890,7 +894,7 @@ class SqlZenStore(BaseZenStore):
 
             return new_team.to_model()
 
-    def _get_team(self, team_name_or_id: str) -> TeamModel:
+    def _get_team(self, team_name_or_id: UUID) -> TeamModel:
         """Gets a specific team.
 
         Args:
@@ -909,7 +913,7 @@ class SqlZenStore(BaseZenStore):
         )
         return team.to_model()
 
-    def _delete_team(self, team_id: str) -> None:
+    def _delete_team(self, team_id: UUID) -> None:
         """Deletes a team.
 
         Args:
@@ -930,7 +934,7 @@ class SqlZenStore(BaseZenStore):
             session.delete(team)
             session.commit()
 
-    def add_user_to_team(self, user_id: str, team_id: str) -> None:
+    def add_user_to_team(self, user_id: UUID, team_id: UUID) -> None:
         """Adds a user to a team.
 
         Args:
@@ -979,7 +983,7 @@ class SqlZenStore(BaseZenStore):
             session.add(team)
             session.commit()
 
-    def remove_user_from_team(self, user_id: str, team_id: str) -> None:
+    def remove_user_from_team(self, user_id: UUID, team_id: UUID) -> None:
         """Removes a user from a team.
 
         Args:
@@ -1015,7 +1019,7 @@ class SqlZenStore(BaseZenStore):
             session.add(team)
             session.commit()
 
-    def get_users_for_team(self, team_id: str) -> List[UserModel]:
+    def get_users_for_team(self, team_id: UUID) -> List[UserModel]:
         """Fetches all users of a team.
 
         Args:
@@ -1038,7 +1042,7 @@ class SqlZenStore(BaseZenStore):
                 )
             return [user.to_model() for user in team.users]
 
-    def get_teams_for_user(self, user_id: str) -> List[TeamModel]:
+    def get_teams_for_user(self, user_id: UUID) -> List[TeamModel]:
         """Fetches all teams for a user.
 
         Args:
@@ -1104,7 +1108,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             return role_schema.to_model()
 
-    def _get_role(self, role_name_or_id: str) -> RoleModel:
+    def _get_role(self, role_name_or_id: UUID) -> RoleModel:
         """Gets a specific role.
 
         Args:
@@ -1123,7 +1127,7 @@ class SqlZenStore(BaseZenStore):
         )
         return role.to_model()
 
-    def _delete_role(self, role_id: str) -> None:
+    def _delete_role(self, role_id: UUID) -> None:
         """Deletes a role.
 
         Args:
@@ -1196,8 +1200,8 @@ class SqlZenStore(BaseZenStore):
     def _assign_role(
         self,
         project_name_or_id: Optional[Union[str, UUID]],
-        role_id: str,
-        user_or_team_id: str,
+        role_id: UUID,
+        user_or_team_id: UUID,
         is_user: bool = True,
     ) -> None:
         """Assigns a role to a user or team, scoped to a specific project.
@@ -1270,8 +1274,8 @@ class SqlZenStore(BaseZenStore):
     def _revoke_role(
         self,
         project_name_or_id: Optional[Union[str, UUID]],
-        role_id: str,
-        user_or_team_id: str,
+        role_id: UUID,
+        user_or_team_id: UUID,
         is_user: bool = True,
     ) -> None:
         """Revokes a role from a user or team for a given project.
@@ -1363,7 +1367,7 @@ class SqlZenStore(BaseZenStore):
 
             return new_project.to_model()
 
-    def _get_project(self, project_name_or_id: str) -> ProjectModel:
+    def _get_project(self, project_name_or_id: UUID) -> ProjectModel:
         """Get an existing project by name or ID.
 
         Args:
@@ -1450,7 +1454,7 @@ class SqlZenStore(BaseZenStore):
         pass  # TODO
 
     def _set_default_stack(
-        self, project_name: str, stack_id: str
+        self, project_name: str, stack_id: UUID
     ) -> StackModel:
         """Sets the default stack in a project.
 
@@ -1548,7 +1552,7 @@ class SqlZenStore(BaseZenStore):
 
             return existing_repository.to_model()
 
-    def _get_repository(self, repository_id: str) -> CodeRepositoryModel:
+    def _get_repository(self, repository_id: UUID) -> CodeRepositoryModel:
         """Get a repository by ID.
 
         Args:
@@ -1576,7 +1580,7 @@ class SqlZenStore(BaseZenStore):
             return existing_repository.to_model()
 
     def _update_repository(
-        self, repository_id: str, repository: CodeRepositoryModel
+        self, repository_id: UUID, repository: CodeRepositoryModel
     ) -> CodeRepositoryModel:
         """Update a repository.
 
@@ -1610,7 +1614,7 @@ class SqlZenStore(BaseZenStore):
 
             return existing_repository.to_model()
 
-    def _delete_repository(self, repository_id: str) -> None:
+    def _delete_repository(self, repository_id: UUID) -> None:
         """Delete a repository.
 
         Args:
@@ -1709,7 +1713,7 @@ class SqlZenStore(BaseZenStore):
 
             return new_pipeline.to_model()
 
-    def get_pipeline(self, pipeline_id: str) -> Optional[PipelineModel]:
+    def get_pipeline(self, pipeline_id: UUID) -> Optional[PipelineModel]:
         """Get a pipeline with a given ID.
 
         Args:
@@ -1768,7 +1772,7 @@ class SqlZenStore(BaseZenStore):
             return pipeline.to_model()
 
     def _update_pipeline(
-        self, pipeline_id: str, pipeline: PipelineModel
+        self, pipeline_id: UUID, pipeline: PipelineModel
     ) -> PipelineModel:
         """Updates a pipeline.
 
@@ -1801,7 +1805,7 @@ class SqlZenStore(BaseZenStore):
 
             return existing_pipeline.to_model()
 
-    def _delete_pipeline(self, pipeline_id: str) -> None:
+    def _delete_pipeline(self, pipeline_id: UUID) -> None:
         """Deletes a pipeline.
 
         Args:
@@ -1824,7 +1828,7 @@ class SqlZenStore(BaseZenStore):
             session.delete(pipeline)
             session.commit()
 
-    def _get_pipeline_configuration(self, pipeline_id: str) -> Dict[str, str]:
+    def _get_pipeline_configuration(self, pipeline_id: UUID) -> Dict[str, str]:
         """Gets the pipeline configuration.
 
         Args:
@@ -1838,7 +1842,7 @@ class SqlZenStore(BaseZenStore):
         """
         return self.get_pipeline(pipeline_id).configuration
 
-    def _list_steps(self, pipeline_id: str) -> List[StepRunModel]:
+    def _list_steps(self, pipeline_id: UUID) -> List[StepRunModel]:
         """List all steps.
 
         Args:
@@ -1969,7 +1973,7 @@ class SqlZenStore(BaseZenStore):
 
             return new_run.to_model()
 
-    def _get_run(self, run_id: str) -> PipelineRunModel:
+    def _get_run(self, run_id: UUID) -> PipelineRunModel:
         """Gets a pipeline run.
 
         Args:
@@ -2032,7 +2036,7 @@ class SqlZenStore(BaseZenStore):
             return run.to_model()
 
     def _update_run(
-        self, run_id: str, run: PipelineRunModel
+        self, run_id: UUID, run: PipelineRunModel
     ) -> PipelineRunModel:
         """Updates a pipeline run.
 
@@ -2065,7 +2069,7 @@ class SqlZenStore(BaseZenStore):
 
             return existing_run.to_model()
 
-    def _delete_run(self, run_id: str) -> None:
+    def _delete_run(self, run_id: UUID) -> None:
         """Deletes a pipeline run.
 
         Args:
@@ -2089,7 +2093,7 @@ class SqlZenStore(BaseZenStore):
             session.delete(run)  # TODO: this doesn't delete from MLMD
             session.commit()
 
-    def _get_run_dag(self, run_id: str) -> str:
+    def _get_run_dag(self, run_id: UUID) -> str:
         """Gets the DAG for a pipeline run.
 
         Args:
@@ -2103,7 +2107,7 @@ class SqlZenStore(BaseZenStore):
         """
         pass  # TODO
 
-    def _get_run_runtime_configuration(self, run_id: str) -> Dict:
+    def _get_run_runtime_configuration(self, run_id: UUID) -> Dict:
         """Gets the runtime configuration for a pipeline run.
 
         Args:
@@ -2120,7 +2124,7 @@ class SqlZenStore(BaseZenStore):
 
     def _get_run_component_side_effects(
         self,
-        run_id: str,
+        run_id: UUID,
         component_id: Optional[str] = None,
         component_type: Optional[StackComponentType] = None,
     ) -> Dict:
