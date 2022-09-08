@@ -38,7 +38,6 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 
 from pydantic.json import pydantic_encoder
-from tfx import types
 from tfx.dsl.compiler.compiler import Compiler
 from tfx.dsl.compiler.constants import PIPELINE_RUN_ID_PARAMETER_NAME
 from tfx.dsl.io.fileio import NotFoundError
@@ -53,6 +52,7 @@ from tfx.orchestration.portable import (
 from tfx.proto.orchestration import executable_spec_pb2
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
+from tfx.types.artifact import Artifact
 
 from zenml.constants import (
     MLMD_CONTEXT_DOCKER_CONFIGURATION_PROPERTY_NAME,
@@ -112,9 +112,7 @@ def _patched_remove_stateful_working_dir(stateful_working_dir: str) -> None:
         )
 
 
-def _patched_remove_output_dirs(
-    output_dict: Dict[str, List[types.Artifact]]
-) -> None:
+def _patched_remove_output_dirs(output_dict: Dict[str, List[Artifact]]) -> None:
     """Remove dirs of output artifacts' URI.
 
     Args:
