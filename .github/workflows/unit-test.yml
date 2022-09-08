@@ -41,7 +41,7 @@ jobs:
       - name: Install Prerequisites
         run: |
           source $VENV
-          zenml integration install kubeflow s3 gcp azure gcp_secrets_manager vertex vault pillow evidently -f
+          zenml integration install kubeflow s3 gcp azure gcp_secrets_manager vertex vault pillow evidently mlflow -f
 
       - name: Setup tmate session
         if: ${{ github.event.inputs.tags }}
