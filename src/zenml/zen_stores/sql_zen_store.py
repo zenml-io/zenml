@@ -2103,12 +2103,29 @@ class SqlZenStore(BaseZenStore):
             ).first()
             if existing_run is not None:
                 raise EntityExistsError(
-                    f"Unable to create pipeline run: {pipeline_run.name}"
+                    f"Unable to create pipeline run {pipeline_run.name}: "
                     f"A pipeline run with this name already exists."
                 )
 
+            # Query pipeline
+            if pipeline_run.pipeline_id is not None:
+                pipeline = session.exec(
+                    select(PipelineSchema).where(
+                        PipelineSchema.id == pipeline_run.pipeline_id
+                    )
+                ).first()
+                if pipeline is None:
+                    raise KeyError(
+                        f"Unable to create pipeline run: {pipeline_run.name}: "
+                        f"No pipeline with ID {pipeline_run.pipeline_id} found."
+                    )
+                new_run = PipelineRunSchema.from_create_model(
+                    model=pipeline_run, pipeline=pipeline
+                )
+            else:
+                new_run = PipelineRunSchema.from_create_model(pipeline_run)
+
             # Create the pipeline run
-            new_run = PipelineRunSchema.from_create_model(pipeline_run)
             session.add(new_run)
             session.commit()
 

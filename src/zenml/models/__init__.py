@@ -17,10 +17,10 @@ from zenml.models.code_models import CodeRepositoryModel
 from zenml.models.component_models import ComponentModel
 from zenml.models.flavor_models import FlavorModel
 from zenml.models.pipeline_models import (
+    ArtifactModel,
     PipelineModel,
     PipelineRunModel,
     StepRunModel,
-    ArtifactModel,
 )
 from zenml.models.project_models import ProjectModel
 from zenml.models.stack_models import StackModel
