@@ -19,15 +19,30 @@ import xgboost as xgb
 from zenml.integrations.xgboost.materializers.xgboost_dmatrix_materializer import (
     XgboostDMatrixMaterializer,
 )
+from zenml.pipelines import pipeline
 from zenml.steps import step
 
 
-def test_xgboost_dmatrix_materializer():
-    """Tests whether the steps work for the xgboost dmatrix materializer."""
+def test_xgboost_dmatrix_materializer(clean_repo):
+    """Tests whether the steps work for the XGBoost Booster materializer."""
 
     @step
-    def some_step() -> xgb.DMatrix:
+    def read_dmatrix() -> xgb.DMatrix:
+        """Reads and materializes a XGBoost DMatrix object."""
         return xgb.DMatrix(np.random.randn(5, 5))
 
+    @pipeline
+    def test_pipeline(read_dmatrix) -> None:
+        """Tests the XGBoost DMatrix object materializer."""
+        read_dmatrix()
+
     with does_not_raise():
-        some_step().with_return_materializers(XgboostDMatrixMaterializer)()
+        test_pipeline(
+            read_dmatrix=read_dmatrix().with_return_materializers(
+                XgboostDMatrixMaterializer
+            )
+        ).run()
+
+    last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
+    booster = last_run.steps[-1].output.read()
+    assert isinstance(booster, xgb.DMatrix)
