@@ -47,6 +47,7 @@ async def list_stacks(
 
     Args:
         project_name: Name of the project
+        stack_name: Optionally filter by stack name
 
     Returns:
         All stacks.
@@ -92,7 +93,7 @@ async def get_stack(stack_id: str) -> StackModel:
         return zen_store.get_stack(UUID(stack_id))
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -123,7 +124,7 @@ async def update_stack(stack_id: str, stack: StackModel) -> StackModel:
         return zen_store.update_stack(stack)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -184,7 +185,7 @@ async def delete_stack(stack_id: str) -> None:
 #         return zen_store.get_stack_configuration(stack_id)
 #     except NotAuthorizedError as error:
 #         raise HTTPException(status_code=401, detail=error_detail(error))
-#     except NotFoundError as error:
+#     except KeyError as error:
 #         raise HTTPException(status_code=404, detail=error_detail(error))
 #     except ValidationError as error:
 #         raise HTTPException(status_code=422, detail=error_detail(error))

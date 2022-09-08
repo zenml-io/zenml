@@ -641,7 +641,9 @@ class SqlZenStore(BaseZenStore):
             return component_in_db.to_model()
 
     def _update_stack_component(
-        self, component: ComponentModel
+        self,
+        component_id: UUID,
+        component: ComponentModel
     ) -> ComponentModel:
         """Update an existing stack component.
 
@@ -652,11 +654,9 @@ class SqlZenStore(BaseZenStore):
             The updated stack component.
         """
         with Session(self.engine) as session:
-            # Check if component with the domain key (name, project, owner) already
-            #  exists
             existing_component = session.exec(
                 select(StackComponentSchema).where(
-                    StackComponentSchema.id == component.id
+                    StackComponentSchema.id == component_id
                 )
             ).first()
 
