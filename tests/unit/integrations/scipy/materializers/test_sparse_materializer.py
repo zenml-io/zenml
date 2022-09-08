@@ -18,17 +18,36 @@ from scipy.sparse import coo_matrix, spmatrix
 from zenml.integrations.scipy.materializers.sparse_materializer import (
     SparseMaterializer,
 )
+from zenml.pipelines import pipeline
 from zenml.steps import step
 
 
-def test_scipy_sparse_materializer():
-    """Tests whether the steps work for the SciPy sparse materializer."""
+def test_scipy_sparse_matrix_materializer(clean_repo):
+    """Tests whether the steps work for the SciPy sparse matrix materializer."""
 
     @step
-    def some_step() -> spmatrix:
-        # using a subclass (coo_matrix) since spmatrix is a base class
-        # and cannot be directly instantiated
+    def read_sparse_matrix() -> spmatrix:
+        """Reads and materializes a SciPy sparse matrix Booster."""
         return coo_matrix(([1, 2, 3], ([0, 1, 2], [0, 1, 2])), shape=(3, 3))
 
+    @pipeline
+    def test_pipeline(read_sparse_matrix) -> None:
+        """Tests the SciPy sparse matrix materializer."""
+        read_sparse_matrix()
+
     with does_not_raise():
-        some_step().with_return_materializers(SparseMaterializer)()
+        test_pipeline(
+            read_sparse_matrix=read_sparse_matrix().with_return_materializers(
+                SparseMaterializer
+            )
+        ).run()
+
+    last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
+    sparse_matrix = last_run.steps[-1].output.read()
+    assert isinstance(sparse_matrix, spmatrix)
+    assert sparse_matrix.format == "coo"
+    assert sparse_matrix.shape == (3, 3)
+    assert sparse_matrix.nnz == 3
+    assert sparse_matrix.data.tolist() == [1, 2, 3]
+    assert sparse_matrix.row.tolist() == [0, 1, 2]
+    assert sparse_matrix.col.tolist() == [0, 1, 2]

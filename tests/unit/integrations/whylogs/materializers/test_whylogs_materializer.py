@@ -42,9 +42,7 @@ def test_whylogs_materializer(clean_repo):
 
     with does_not_raise():
         test_pipeline(
-            read_view=read_view().with_return_materializers(
-                WhylogsMaterializer
-            )
+            read_view=read_view().with_return_materializers(WhylogsMaterializer)
         ).run()
 
     last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
