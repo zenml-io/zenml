@@ -1268,7 +1268,7 @@ class BaseZenStore(BaseModel):
     @abstractmethod
     def list_role_assignments(
         self,
-        project_name_or_id: Optional[Union[str, UUID]],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
         team_id: Optional[str] = None,
         user_id: Optional[str] = None,
     ) -> List[RoleAssignmentModel]:
@@ -1288,7 +1288,7 @@ class BaseZenStore(BaseModel):
         self,
         role_id: str,
         user_or_team_id: str,
-        project_name_or_id: Optional[Union[str, UUID]],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
         is_user: bool = True,
     ) -> None:
         """Assigns a role to a user or team, scoped to a specific project.

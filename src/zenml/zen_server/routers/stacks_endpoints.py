@@ -11,13 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
 from zenml.constants import STACK_COMPONENTS, STACKS, VERSION_1
 from zenml.enums import StackComponentType
+from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.models import StackModel
 from zenml.zen_server.utils import (
     authorize,
@@ -39,7 +40,10 @@ router = APIRouter(
     response_model=List[StackModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def list_stacks(project_name: str) -> List[StackModel]:
+async def list_stacks(
+    project_name: str,
+    stack_name: Optional[str] = None,
+) -> List[StackModel]:
     """Returns all stacks.
 
     Args:
@@ -54,10 +58,13 @@ async def list_stacks(project_name: str) -> List[StackModel]:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.list_stacks(project_name_or_id=project_name)
+        return zen_store.list_stacks(
+            project_name_or_id=project_name,
+            name=stack_name
+        )
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -142,7 +149,7 @@ async def delete_stack(stack_id: str) -> None:
         zen_store.delete_stack(UUID(stack_id))  # aka 'deregister_stack'
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))

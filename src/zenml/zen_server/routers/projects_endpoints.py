@@ -27,7 +27,7 @@ from zenml.constants import (
 from zenml.exceptions import (
     EntityExistsError,
     StackComponentExistsError,
-    StackExistsError,
+    StackExistsError, NotAuthorizedError, ValidationError,
 )
 from zenml.models import (
     CodeRepositoryModel,
@@ -107,7 +107,7 @@ async def create_project(project: ProjectModel) -> ProjectModel:
         raise conflict(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=409, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -141,8 +141,6 @@ async def get_project(project_name: str) -> ProjectModel:
         raise not_found(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
 

@@ -486,7 +486,7 @@ class SqlZenStore(BaseZenStore):
 
             return existing_stack.to_model()
 
-    def _delete_stack(self, stack_id: str) -> None:
+    def _delete_stack(self, stack_id: UUID) -> None:
         """Delete a stack.
 
         Args:
@@ -495,7 +495,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             try:
                 stack = session.exec(
-                    select(StackSchema).where(StackSchema.id == id)
+                    select(StackSchema).where(StackSchema.id == stack_id)
                 ).one()
                 session.delete(stack)
             except NoResultFound as error:
@@ -1232,7 +1232,7 @@ class SqlZenStore(BaseZenStore):
 
     def list_role_assignments(
         self,
-        project_name_or_id: Optional[Union[str, UUID]],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
         team_id: Optional[str] = None,
         user_id: Optional[str] = None,
     ) -> List[RoleAssignmentModel]:
@@ -1248,9 +1248,8 @@ class SqlZenStore(BaseZenStore):
             A list of all role assignments.
         """
         with Session(self.engine) as session:
-            # Get user role assignments
-            query = select(UserRoleAssignmentSchema)
 
+            project = None
             if project_name_or_id is not None:
                 if isinstance(project_name_or_id, str):
                     project_filter = ProjectSchema.name == project_name_or_id
@@ -1261,8 +1260,13 @@ class SqlZenStore(BaseZenStore):
                     .where(project_filter)
                 ).first()
                 if project is None:
-                    raise KeyError(f"Project with ID {project_name_or_id} not found.")
+                    raise KeyError(f"Project with ID {project_name_or_id}"
+                                   f" not found.")
 
+            # Get user role assignments
+            query = select(UserRoleAssignmentSchema)
+
+            if project is not None:
                 query = query.where(UserRoleAssignmentSchema
                                     .project_id == project.id)
             if user_id is not None:
@@ -1271,9 +1275,9 @@ class SqlZenStore(BaseZenStore):
 
             # Get team role assignments
             query = select(TeamRoleAssignmentSchema)
-            if project_id is not None:
+            if project is not None:
                 query = query.where(
-                    TeamRoleAssignmentSchema.project_id == project_id
+                    TeamRoleAssignmentSchema.project_id == project.id
                 )
             if team_id is not None:
                 query = query.where(TeamRoleAssignmentSchema.team_id == team_id)

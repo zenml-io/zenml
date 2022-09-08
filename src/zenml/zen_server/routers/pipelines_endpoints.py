@@ -22,6 +22,7 @@ from zenml.constants import (
     TRIGGERS,
     VERSION_1,
 )
+from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.models import PipelineRunModel
 from zenml.models.pipeline_models import PipelineModel
 from zenml.zen_server.utils import (
@@ -95,7 +96,7 @@ async def get_pipeline(pipeline_id: str) -> PipelineModel:
         return zen_store.get_pipeline(pipeline_id)
     except NotAuthorizedError as error:
         raise conflict(error) from error
-    except NotFoundError as error:
+    except KeyError as error:
         raise not_found(error) from error
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -106,7 +107,9 @@ async def get_pipeline(pipeline_id: str) -> PipelineModel:
     response_model=PipelineModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def update_pipeline(pipeline_id: str, updated_pipeline) -> PipelineModel:
+async def update_pipeline(
+        pipeline_id: str, updated_pipeline: PipelineModel
+) -> PipelineModel:
     """Updates the attribute on a specific pipeline using its unique id.
 
     Args:
@@ -126,12 +129,10 @@ async def update_pipeline(pipeline_id: str, updated_pipeline) -> PipelineModel:
         return zen_store.update_pipeline(pipeline_id, updated_pipeline)
     except NotAuthorizedError as error:
         raise conflict(error) from error
-    except NotFoundError as error:
+    except KeyError as error:
         raise not_found(error) from error
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
-    except:
-        raise not_found(error_detail(e)) from e
 
 
 @router.delete(
@@ -153,91 +154,7 @@ async def delete_pipeline(pipeline_id: str) -> None:
         zen_store.delete_pipeline(pipeline_id)
     except NotAuthorizedError as error:
         raise conflict(error) from error
-    except NotFoundError as error:
-        raise not_found(error) from error
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
-
-
-@router.get(
-    PIPELINES + "/{pipeline_id}" + TRIGGERS,
-    response_model=List[Dict],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-async def get_pipeline_triggers(pipeline_id: str) -> List[Dict]:
-    """Gets a list of triggers for a specific pipeline.
-
-    Args:
-        pipeline_id: ID of the pipeline to get.
-
-    Returns:
-        List of triggers.
-
-    Raises:
-        conflict: when not authorized to login
-        not_found: when user does not exist
-        validation error: when unable to validate credentials
-    """
-    try:
-        return zen_store.get_pipeline_triggers(pipeline_id)
-    except NotAuthorizedError as error:
-        raise conflict(error) from error
-    except NotFoundError as error:
-        raise not_found(error) from error
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
-
-
-@router.post(
-    PIPELINES + "/{pipeline_id}" + TRIGGERS,
-    responses={401: error_response, 409: error_response, 422: error_response},
-)
-async def create_pipeline_trigger(pipeline_id: str, trigger) -> None:
-    """Create a trigger for a pipeline.
-
-    Args:
-        pipeline_id: ID of the pipeline for which to create the trigger.
-        trigger: the trigger you wish to create.
-
-    Raises:
-        conflict: when not authorized to login
-        conflict: when user does not exist
-        validation error: when unable to validate credentials
-    """
-    try:
-        zen_store.create_pipeline_triggers(pipeline_id, trigger)
-    except NotAuthorizedError as error:
-        raise conflict(error) from error
-    except ConflictError as error:
-        raise conflict(error) from error
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
-
-
-@router.get(
-    PIPELINES + "/{pipeline_id}" + RUNS,
-    response_model=List[Dict],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-async def get_pipeline_triggers(pipeline_id: str) -> List[Dict]:
-    """Gets a list of triggers for a specific pipeline.
-
-    Args:
-        pipeline_id: ID of the pipeline to get.
-
-    Returns:
-        List of triggers.
-
-    Raises:
-        conflict: when not authorized to login
-        not_found: when user does not exist
-        validation error: when unable to validate credentials
-    """
-    try:
-        return zen_store.get_pipeline_triggers(pipeline_id)
-    except NotAuthorizedError as error:
-        raise conflict(error) from error
-    except NotFoundError as error:
+    except KeyError as error:
         raise not_found(error) from error
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -245,17 +162,17 @@ async def get_pipeline_triggers(pipeline_id: str) -> List[Dict]:
 
 @router.get(
     PIPELINES + "/{pipeline_id}" + RUNS,
-    response_model=List[PipelineRunModel],
+    response_model=List[Dict],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def get_pipeline_runs(pipeline_id: str) -> List[PipelineRunModel]:
-    """Returns all runs for a pipeline.
+    """Gets a list of triggers for a specific pipeline.
 
     Args:
-        pipeline_id: ID of the pipeline.
+        pipeline_id: ID of the pipeline to get.
 
     Returns:
-        List of runs for a pipeline.
+        List of triggers.
 
     Raises:
         conflict: when not authorized to login
@@ -266,7 +183,7 @@ async def get_pipeline_runs(pipeline_id: str) -> List[PipelineRunModel]:
         return zen_store.list_runs(pipeline_id=pipeline_id)
     except NotAuthorizedError as error:
         raise conflict(error) from error
-    except NotFoundError as error:
+    except KeyError as error:
         raise not_found(error) from error
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -295,7 +212,7 @@ async def create_pipeline_run(
         validation error: when unable to validate credentials
     """
     try:
-        zen_store.create_run(pipeline_id=pipeline_id, pipeline_run=pipeline_run)
+        return zen_store.create_run(pipeline_run=pipeline_run)
     except NotAuthorizedError as error:
         raise conflict(error) from error
     except NotFoundError as error:
@@ -324,7 +241,7 @@ async def get_pipeline_configuration(pipeline_id: str) -> Dict[Any, Any]:
         zen_store.get_pipeline_configuration(pipeline_id=pipeline_id)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
