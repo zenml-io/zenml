@@ -33,7 +33,7 @@ from zenml.console import console
 from zenml.exceptions import GitNotFoundError
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.utils import io_utils
+from zenml.utils import io_utils, yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 logger = get_logger(__name__)
@@ -266,7 +266,7 @@ class Terraform:
 
 
 class LocalStackRecipe:
-    """Class to encapsulate the local stack that can be run from the CLI."""
+    """Class to encapsulate the local recipe that can be run from the CLI."""
 
     def __init__(self, path: Path, name: str) -> None:
         """Create a new LocalStack instance.
@@ -546,7 +546,7 @@ class GitStackRecipesHandler(object):
     def get_stack_recipes(
         self, stack_recipe_name: Optional[str] = None
     ) -> List[StackRecipe]:
-        """Method that allows you to get an stack recipe by name.
+        """Method that allows you to get a stack recipe by name.
 
         If no stack recipe is supplied,  all stack recipes are returned.
 
@@ -732,8 +732,41 @@ if terraform_installed:  # noqa: C901
 
         else:
             md = Markdown(stack_recipe_obj.readme_content)
-            with console.pager(styles=True):
+            with console.pager(styles=False):
                 console.print(md)
+
+    @stack_recipe.command(
+        help="Describe the stack components and their tools that are"
+        "created as part of this recipe."
+    )
+    @pass_git_stack_recipes_handler
+    @click.argument("stack_recipe_name")
+    def describe(
+        git_stack_recipes_handler: GitStackRecipesHandler,
+        stack_recipe_name: str,
+    ) -> None:
+        """Describe the stack components and their tools that are created as part of this recipe.
+
+        Outputs a the "Description" section of the recipe metadata.
+
+        Args:
+            git_stack_recipes_handler: The GitStackRecipesHandler instance.
+            stack_recipe_name: The name of the stack recipe.
+        """
+        try:
+            stack_recipe_obj = git_stack_recipes_handler.get_stack_recipes(
+                stack_recipe_name
+            )[0]
+        except KeyError as e:
+            cli_utils.error(str(e))
+
+        else:
+            metadata = yaml_utils.read_yaml(
+                file_path=os.path.join(
+                    stack_recipe_obj.path_in_repo, "metadata.yaml"
+                )
+            )
+            logger.info(metadata["Description"])
 
     @stack_recipe.command(
         help="Pull stack recipes straight into your current working directory."
