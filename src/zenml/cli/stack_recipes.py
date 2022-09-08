@@ -756,9 +756,7 @@ if terraform_installed:  # noqa: C901
             cli_utils.error(str(e))
 
         else:
-            md = Markdown(stack_recipe_obj.readme_content)
-            with console.pager(styles=False):
-                console.print(md)
+            print(stack_recipe_obj.readme_content)
 
     @stack_recipe.command(
         help="Describe the stack components and their tools that are"
@@ -1040,8 +1038,7 @@ if terraform_installed:  # noqa: C901
                         f"{os.path.join(local_stack_recipe.path, 'locals.tf')}\n"
                     )
 
-                    with console.pager(styles=False):
-                        console.print(local_stack_recipe.locals_content)
+                    print(local_stack_recipe.locals_content)
 
                 if skip_check or cli_utils.confirmation(
                     f"\nDo you wish to deploy the {stack_recipe_name} recipe "
