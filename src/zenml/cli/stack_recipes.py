@@ -48,7 +48,12 @@ ALPHA_MESSAGE = (
     "through these commands. If you encounter any problems, create an issue "
     f"on the repository {STACK_RECIPES_GITHUB_REPO} and we'll help you out!"
 )
-HELP_MESSAGE = "Commands for using the stack recipes."
+NOT_INSTALLED_MESSAGE = (
+    "The stack recipe commands seem to be unavailable on your machine. This "
+    "is probably because ZenML was installed without the optional terraform "
+    "dependencies. To install the missing dependencies: \n\n"
+    f'`pip install "zenml[stacks]=={zenml.__version__}"`.'
+)
 
 try:
     # Make sure all stack recipe dependencies are installed
@@ -60,13 +65,6 @@ except ImportError:
     # the `zenml stack recipe` CLI group and don't add any subcommands that would
     # just fail.
     terraform_installed = False
-
-    HELP_MESSAGE += (
-        "\n\n**Note**: The stack recipe commands seem to be unavailable on "
-        "your machine. This is probably because ZenML was installed without "
-        "the optional terraform dependencies. To install the missing dependencies: \n\n"
-        f'`pip install "zenml[stacks]=={zenml.__version__}"`.'
-    )
 
 
 class Terraform:
@@ -637,7 +635,34 @@ pass_git_stack_recipes_handler = click.make_pass_decorator(
 pass_tf_client = click.make_pass_decorator(Terraform, ensure=True)
 
 
-@stack.group("recipe", cls=TagGroup, help=HELP_MESSAGE)
+class RecipeGroup(TagGroup):
+    """Click group that always prints a warning message."""
+
+    def invoke(self, ctx: click.Context) -> Any:
+        """Invokes the subcommand or prints an error message.
+
+        If terraform is installed, this forwards the invocation to the super
+        class which invokes the subcommand. If terraform is not installed,
+        prints a warning message.
+
+        Args:
+            ctx: Click context.
+
+        Returns:
+            Invocation result.
+        """
+        if terraform_installed:
+            return super().invoke(ctx)
+        else:
+            cli_utils.warning(NOT_INSTALLED_MESSAGE)
+
+
+@stack.group(
+    "recipe",
+    cls=RecipeGroup,
+    help="Commands for using the stack recipes.",
+    invoke_without_command=True,
+)
 def stack_recipe() -> None:
     """Access all ZenML stack recipes."""
 
