@@ -21,12 +21,7 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.enums import CliCategories
 from zenml.exceptions import EntityExistsError
-from zenml.models.user_management_models import (
-    ProjectModel,
-    RoleModel,
-    TeamModel,
-    UserModel,
-)
+from zenml.models import ProjectModel, RoleModel, TeamModel, UserModel
 from zenml.repository import Repository
 
 
@@ -251,7 +246,7 @@ def project() -> None:
 def list_projects() -> None:
     """List all projects."""
     cli_utils.print_active_config()
-    projects = Repository().zen_store.projects
+    projects = Repository().zen_store.list_projects()
 
     if projects:
         active_project = Repository().active_project

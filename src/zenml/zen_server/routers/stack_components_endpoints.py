@@ -149,14 +149,14 @@ async def get_stack_component(component_id: str) -> ComponentModel:
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    # try:
-    return zen_store.get_stack_component(UUID(component_id))
-    # except NotAuthorizedError as error:
-    #     raise HTTPException(status_code=401, detail=error_detail(error))
-    # except NotFoundError as error:
-    #     raise HTTPException(status_code=404, detail=error_detail(error))
-    # except ValidationError as error:
-    #     raise HTTPException(status_code=422, detail=error_detail(error))
+    try:
+        return zen_store.get_stack_component(UUID(component_id))
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except NotFoundError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
 
 
 @router.put(

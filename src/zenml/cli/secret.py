@@ -57,7 +57,7 @@ def register_secrets_manager_subcommands() -> None:
             ctx: Click context.
         """
         repo = Repository()
-        secrets_manager_model = repo.active_stack.components[
+        secrets_manager_model = repo.active_stack_model.components[
             StackComponentType.SECRETS_MANAGER
         ]
         if secrets_manager_model is None:

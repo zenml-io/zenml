@@ -64,12 +64,12 @@ async def get_pipelines(project_name: str) -> List[PipelineModel]:
         return zen_store.list_pipelines(project_name)
     except KeyError as e:
         raise not_found(error_detail(e)) from e
-    except NotAuthorizedError as error:
-        raise conflict(error) from error
-    except NotFoundError as error:
-        raise not_found(error) from error
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    # except NotAuthorizedError as error:
+    #     raise conflict(error) from error
+    # except NotFoundError as error:
+    #     raise not_found(error) from error
+    # except ValidationError as error:
+    #     raise HTTPException(status_code=422, detail=error_detail(error))
 
 
 @router.get(

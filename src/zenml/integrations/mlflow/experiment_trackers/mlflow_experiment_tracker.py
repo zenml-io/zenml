@@ -30,7 +30,6 @@ from zenml.integrations.mlflow import MLFLOW_MODEL_EXPERIMENT_TRACKER_FLAVOR
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.stack import StackValidator
-from zenml.stack.stack import Stack
 from zenml.utils.secret_utils import SecretField
 
 logger = get_logger(__name__)
@@ -179,8 +178,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             The MLflow tracking URI for the local MLflow backend.
         """
         repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
-        active_stack = Stack.from_model(repo.active_stack)
-        artifact_store = active_stack.artifact_store
+        artifact_store = repo.active_stack.artifact_store
         local_mlflow_backend_uri = os.path.join(artifact_store.path, "mlruns")
         if not os.path.exists(local_mlflow_backend_uri):
             os.makedirs(local_mlflow_backend_uri)

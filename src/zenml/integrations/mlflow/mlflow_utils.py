@@ -28,7 +28,6 @@ from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker imp
 )
 from zenml.logger import get_logger
 from zenml.repository import Repository
-from zenml.stack.stack import Stack
 
 logger = get_logger(__name__)
 
@@ -59,9 +58,7 @@ def get_tracking_uri() -> str:
     Returns:
         MLflow tracking URI.
     """
-    repo = Repository(skip_repository_check=True)
-    active_stack = Stack.from_model(repo.active_stack)
-    tracker = active_stack.experiment_tracker
+    tracker = Repository().active_stack.experiment_tracker
     if tracker is None or not isinstance(tracker, MLFlowExperimentTracker):
         raise get_missing_mlflow_experiment_tracker_error()
 

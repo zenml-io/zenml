@@ -19,7 +19,6 @@ from pydantic import BaseModel
 
 from zenml.repository import Repository
 from zenml.secret import BaseSecretSchema
-from zenml.stack.stack import Stack
 
 T = TypeVar("T", bound=BaseSecretSchema)
 
@@ -53,8 +52,7 @@ class AuthenticationMixin(BaseModel):
         if not self.authentication_secret:
             return None
 
-        repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
-        active_stack = Stack.from_model(repo.active_stack)
+        active_stack = Repository(skip_repository_check=True).active_stack  # type: ignore[call-arg]
         secrets_manager = active_stack.secrets_manager
         if not secrets_manager:
             raise RuntimeError(

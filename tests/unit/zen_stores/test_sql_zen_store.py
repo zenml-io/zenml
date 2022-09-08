@@ -17,12 +17,7 @@ import uuid
 import pytest
 
 from zenml.exceptions import EntityExistsError
-from zenml.models.user_management_models import (
-    ProjectModel,
-    RoleModel,
-    TeamModel,
-    UserModel,
-)
+from zenml.models import ProjectModel, RoleModel, TeamModel, UserModel
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 #  .---------.
@@ -32,8 +27,6 @@ from zenml.zen_stores.base_zen_store import BaseZenStore
 
 def test_only_one_default_project(fresh_sql_zen_store: BaseZenStore):
     """Tests that only one default project can be created."""
-    assert fresh_sql_zen_store.projects == fresh_sql_zen_store.list_projects()
-    assert len(fresh_sql_zen_store.projects) == 1
     assert len(fresh_sql_zen_store.list_projects()) == 1
 
 
@@ -520,13 +513,6 @@ def test_get_metadata_config_succeeds(
 #  .-------.
 # | STACKS |
 # '--------'
-
-
-def test_stacks_empty_method(
-    fresh_sql_zen_store: BaseZenStore,
-):
-    """Tests stacks empty method."""
-    assert fresh_sql_zen_store.stacks_empty is False
 
 
 def test_list_stacks_succeeds(

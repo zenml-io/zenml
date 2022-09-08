@@ -18,24 +18,23 @@ from pathlib import Path, PurePath
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
 from uuid import UUID
 
-from ml_metadata.proto import metadata_store_pb2
 from pydantic import BaseModel
 
 from zenml.config.store_config import StoreConfiguration
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.logger import get_logger
-from zenml.models import ComponentModel, FlavorModel, StackModel
-from zenml.models.code_models import CodeRepositoryModel
-from zenml.models.pipeline_models import (
+from zenml.models import (
     ArtifactModel,
+    CodeRepositoryModel,
+    ComponentModel,
+    FlavorModel,
     PipelineModel,
     PipelineRunModel,
-    StepRunModel,
-)
-from zenml.models.user_management_models import (
     ProjectModel,
     RoleAssignmentModel,
     RoleModel,
+    StackModel,
+    StepRunModel,
     TeamModel,
     UserModel,
 )
@@ -174,7 +173,7 @@ class BaseZenStore(BaseModel):
         """Initialize the database on first use."""
         self.create_default_user()
         self.create_default_project()
-        if self.stacks_empty:
+        if len(self.list_stacks(self.default_project_id)) == 0:
             logger.info("Initializing database...")
             self.register_default_stack()
 
@@ -218,7 +217,7 @@ class BaseZenStore(BaseModel):
         # try:
         orchestrator = self.register_stack_component(
             user_id=self.default_user_id,
-            project_id=self.default_project_id,
+            project_name_or_id=self.default_project_id,
             component=ComponentModel(
                 name="default",
                 type=StackComponentType.ORCHESTRATOR,
@@ -241,7 +240,7 @@ class BaseZenStore(BaseModel):
         # try:
         artifact_store = self.register_stack_component(
             user_id=self.default_user_id,
-            project_id=self.default_project_id,
+            project_name_or_id=self.default_project_id,
             component=ComponentModel(
                 name="default",
                 type=StackComponentType.ARTIFACT_STORE,
@@ -260,7 +259,7 @@ class BaseZenStore(BaseModel):
         )
         self._register_stack(
             user_id=self.default_user_id,
-            project_id=self.default_project_id,
+            project_name_or_id=self.default_project_id,
             stack=stack,
         )
         self._track_event(
@@ -372,18 +371,6 @@ class BaseZenStore(BaseModel):
     # | STACKS |
     # '--------'
 
-    @property
-    @abstractmethod
-    def stacks_empty(self) -> bool:
-        """Check if the store is empty (no stacks are configured).
-
-        The implementation of this method should check if the store is empty
-        without having to load all the stacks from the persistent storage.
-
-        Returns:
-            True if the store is empty, False otherwise.
-        """
-
     # TODO: [ALEX] add filtering param(s)
     def list_stacks(
         self,
@@ -465,14 +452,18 @@ class BaseZenStore(BaseModel):
         """
 
     def register_stack(
-        self, user_id: UUID, project_id: UUID, stack: StackModel
+        self,
+        user_id: UUID,
+        project_name_or_id: Union[str, UUID],
+        stack: StackModel
     ) -> StackModel:
         """Register a new stack.
 
         Args:
             stack: The stack to register.
             user_id: The user that is registering this stack
-            project_id: The project within which that stack is registered
+            project_name_or_id: The project within which that stack is
+                                registered
 
         Returns:
             The registered stack.
@@ -485,19 +476,23 @@ class BaseZenStore(BaseModel):
         metadata["store_type"] = self.type.value
         self._track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
         return self._register_stack(
-            stack=stack, user_id=user_id, project_id=project_id
+            stack=stack, user_id=user_id, project_name_or_id=project_name_or_id
         )
 
     @abstractmethod
     def _register_stack(
-        self, user_id: UUID, project_id: UUID, stack: StackModel
+        self,
+        user_id: UUID,
+        project_name_or_id: Union[str, UUID],
+        stack: StackModel
     ) -> StackModel:
         """Register a new stack.
 
         Args:
             stack: The stack to register.
             user_id: The user that is registering this stack
-            project_id: The project within which that stack is registered
+            project_name_or_id: The project within which that stack is
+                                registered
 
         Returns:
             The registered stack.
@@ -651,31 +646,39 @@ class BaseZenStore(BaseModel):
         """
 
     def register_stack_component(
-        self, user_id: UUID, project_id: UUID, component: ComponentModel
+        self,
+        user_id: UUID,
+        project_name_or_id: Union[str, UUID],
+        component: ComponentModel
     ) -> ComponentModel:
         """Create a stack component.
 
         Args:
             user_id: The user that created the stack component.
-            project_id: The project the stack component is created in.
+            project_name_or_id: The project the stack component is created in.
             component: The stack component to create.
 
         Returns:
             The created stack component.
         """
         return self._register_stack_component(
-            user_id=user_id, project_id=project_id, component=component
+            user_id=user_id,
+            project_name_or_id=project_name_or_id,
+            component=component
         )
 
     @abstractmethod
     def _register_stack_component(
-        self, user_id: UUID, project_id: UUID, component: ComponentModel
+        self,
+        user_id: UUID,
+        project_name_or_id: Union[str, UUID],
+        component: ComponentModel
     ) -> ComponentModel:
         """Create a stack component.
 
         Args:
             user_id: The user that created the stack component.
-            project_id: The project the stack component is created in.
+            project_name_or_id: The project the stack component is created in.
             component: The stack component to create.
 
         Returns:
@@ -892,9 +895,7 @@ class BaseZenStore(BaseModel):
             EntityExistsError: If a user with the given name already exists.
         """
 
-    def get_user(
-        self, user_name_or_id: str
-    ) -> UserModel:
+    def get_user(self, user_name_or_id: str) -> UserModel:
         """Gets a specific user.
 
         Args:
@@ -907,14 +908,10 @@ class BaseZenStore(BaseModel):
             KeyError: If no user with the given name or ID exists.
         """
         # No tracking events, here for consistency
-        return self._get_user(
-            user_name_or_id=user_name_or_id
-        )
+        return self._get_user(user_name_or_id=user_name_or_id)
 
     @abstractmethod
-    def _get_user(
-        self, user_name_or_id: str
-    ) -> UserModel:
+    def _get_user(self, user_name_or_id: str) -> UserModel:
         """Gets a specific user.
 
         Args:
@@ -1271,14 +1268,15 @@ class BaseZenStore(BaseModel):
     @abstractmethod
     def list_role_assignments(
         self,
-        project_id: Optional[str] = None,
+        project_name_or_id: Optional[Union[str, UUID]],
         team_id: Optional[str] = None,
         user_id: Optional[str] = None,
     ) -> List[RoleAssignmentModel]:
         """List all role assignments.
 
         Args:
-            project_id: If provided, only list assignments for the given project
+            project_name_or_id: If provided, only list assignments for the given
+                                project
             team_id: If provided, only list assignments for the given team
             user_id: If provided, only list assignments for the given user
 
@@ -1290,8 +1288,8 @@ class BaseZenStore(BaseModel):
         self,
         role_id: str,
         user_or_team_id: str,
+        project_name_or_id: Optional[Union[str, UUID]],
         is_user: bool = True,
-        project_id: Optional[str] = None,
     ) -> None:
         """Assigns a role to a user or team, scoped to a specific project.
 
@@ -1299,8 +1297,9 @@ class BaseZenStore(BaseModel):
             role_id: ID of the role to assign to the user.
             user_or_team_id: ID of the user or team to which to assign the role.
             is_user: Whether `user_or_team_id` refers to a user or a team.
-            project_id: Optional ID of a project in which to assign the role.
-                If this is not provided, the role will be assigned globally.
+            project_name_or_id: Optional Name or ID of a project in which to
+                                assign the role. If this is not provided, the
+                                role will be assigned globally.
 
         Raises:
             EntityExistsError: If the role assignment already exists.
@@ -1309,7 +1308,7 @@ class BaseZenStore(BaseModel):
             role_id=role_id,
             user_or_team_id=user_or_team_id,
             is_user=is_user,
-            project_id=project_id,
+            project_name_or_id=project_name_or_id,
         )
 
     @abstractmethod
@@ -1317,8 +1316,8 @@ class BaseZenStore(BaseModel):
         self,
         role_id: str,
         user_or_team_id: str,
+        project_name_or_id: Optional[Union[str, UUID]],
         is_user: bool = True,
-        project_id: Optional[str] = None,
     ) -> None:
         """Assigns a role to a user or team, scoped to a specific project.
 
@@ -1326,8 +1325,9 @@ class BaseZenStore(BaseModel):
             role_id: ID of the role to assign.
             user_or_team_id: ID of the user or team to which to assign the role.
             is_user: Whether `user_or_team_id` refers to a user or a team.
-            project_id: Optional ID of a project in which to assign the role.
-                If this is not provided, the role will be assigned globally.
+            project_name_or_id: Optional Name or ID of a project in which to
+                                assign the role. If this is not provided, the
+                                role will be assigned globally.
 
         Raises:
             EntityExistsError: If the role assignment already exists.
@@ -1338,7 +1338,7 @@ class BaseZenStore(BaseModel):
         role_id: str,
         user_or_team_id: str,
         is_user: bool = True,
-        project_id: Optional[str] = None,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> None:
         """Revokes a role from a user or team for a given project.
 
@@ -1347,8 +1347,9 @@ class BaseZenStore(BaseModel):
             user_or_team_id: ID of the user or team from which to revoke the
                 role.
             is_user: Whether `user_or_team_id` refers to a user or a team.
-            project_id: Optional ID of a project in which to revoke the role.
-                If this is not provided, the role will be revoked globally.
+            project_name_or_id: Optional ID of a project in which to revoke
+                                the role. If this is not provided, the role will
+                                be revoked globally.
 
         Raises:
             KeyError: If the role, user, team, or project does not exists.
@@ -1358,7 +1359,7 @@ class BaseZenStore(BaseModel):
             role_id=role_id,
             user_or_team_id=user_or_team_id,
             is_user=is_user,
-            project_id=project_id,
+            project_name_or_id=project_name_or_id,
         )
 
     @abstractmethod
@@ -1367,7 +1368,7 @@ class BaseZenStore(BaseModel):
         role_id: str,
         user_or_team_id: str,
         is_user: bool = True,
-        project_id: Optional[str] = None,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> None:
         """Revokes a role from a user or team for a given project.
 
@@ -1376,8 +1377,9 @@ class BaseZenStore(BaseModel):
             user_or_team_id: ID of the user or team from which to revoke the
                 role.
             is_user: Whether `user_or_team_id` refers to a user or a team.
-            project_id: Optional ID of a project in which to revoke the role.
-                If this is not provided, the role will be revoked globally.
+            project_name_or_id: Optional ID of a project in which to revoke
+                                the role. If this is not provided, the role will
+                                be revoked globally.
 
         Raises:
             KeyError: If the role, user, team, or project does not exists.
@@ -1386,15 +1388,6 @@ class BaseZenStore(BaseModel):
     #  .---------.
     # | PROJECTS |
     # '----------'
-
-    @property
-    def projects(self) -> List[ProjectModel]:
-        """All registered projects.
-
-        Returns:
-            A list of all registered projects.
-        """
-        return self.list_projects()
 
     # TODO: [ALEX] add filtering param(s)
     def list_projects(self) -> List[ProjectModel]:
@@ -1767,12 +1760,14 @@ class BaseZenStore(BaseModel):
     # | PIPELINES |
     # '-----------'
 
-    # TODO: [ALEX] add filtering param(s)
-    def list_pipelines(self, project_id: Optional[str]) -> List[PipelineModel]:
+    def list_pipelines(
+        self,
+        project_name_or_id: Optional[Union[str, UUID]],
+    ) -> List[PipelineModel]:
         """List all pipelines in the project.
 
         Args:
-            project_id: If provided, only list pipelines in this project.
+            project_name_or_id: If provided, only list pipelines in this project.
 
         Returns:
             A list of pipelines.
@@ -1780,14 +1775,17 @@ class BaseZenStore(BaseModel):
         Raises:
             KeyError: if the project does not exist.
         """
-        return self._list_pipelines(project_id)
+        return self._list_pipelines(project_name_or_id)
 
     @abstractmethod
-    def _list_pipelines(self, project_id: Optional[str]) -> List[PipelineModel]:
+    def _list_pipelines(
+        self,
+        project_name_or_id: Optional[Union[str, UUID]],
+    ) -> List[PipelineModel]:
         """List all pipelines in the project.
 
         Args:
-            project_id: If provided, only list pipelines in this project.
+            project_name_or_id: If provided, only list pipelines in this project.
 
         Returns:
             A list of pipelines.
@@ -1797,12 +1795,13 @@ class BaseZenStore(BaseModel):
         """
 
     def create_pipeline(
-        self, project_id: str, pipeline: PipelineModel
+        self, project_name_or_id: Union[str, UUID], pipeline: PipelineModel
     ) -> PipelineModel:
         """Creates a new pipeline in a project.
 
         Args:
-            project_id: ID of the project to create the pipeline in.
+            project_name_or_id: ID or name of the project to create the pipeline
+                                in.
             pipeline: The pipeline to create.
 
         Returns:
@@ -1813,16 +1812,16 @@ class BaseZenStore(BaseModel):
             EntityExistsError: If an identical pipeline already exists.
         """
         self._track_event(AnalyticsEvent.CREATE_PIPELINE)
-        return self._create_pipeline(project_id, pipeline)
+        return self._create_pipeline(project_name_or_id, pipeline)
 
     @abstractmethod
     def _create_pipeline(
-        self, project_id: str, pipeline: PipelineModel
+        self, project_name_or_id: Union[str, UUID], pipeline: PipelineModel
     ) -> PipelineModel:
         """Creates a new pipeline in a project.
 
         Args:
-            project_id: ID of the project to create the pipeline in.
+            project_name_or_id: ID of the project to create the pipeline in.
             pipeline: The pipeline to create.
 
         Returns:
@@ -1846,13 +1845,13 @@ class BaseZenStore(BaseModel):
 
     @abstractmethod
     def get_pipeline_in_project(
-        self, pipeline_name: str, project_id: str
+        self, pipeline_name: str, project_name_or_id: Union[str, UUID]
     ) -> Optional[PipelineModel]:
         """Get a pipeline with a given name in a project.
 
         Args:
             pipeline_name: Name of the pipeline.
-            project_id: ID of the project.
+            project_name_or_id: ID of the project.
 
         Returns:
             The pipeline, if found, None otherwise.
@@ -1977,7 +1976,7 @@ class BaseZenStore(BaseModel):
 
     def list_runs(
         self,
-        project_id: Optional[str] = None,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[str] = None,
         user_id: Optional[str] = None,
         pipeline_id: Optional[str] = None,
@@ -1986,7 +1985,7 @@ class BaseZenStore(BaseModel):
         """Gets all pipeline runs.
 
         Args:
-            project_id: If provided, only return runs for this project.
+            project_name_or_id: If provided, only return runs for this project.
             stack_id: If provided, only return runs for this stack.
             user_id: If provided, only return runs for this user.
             pipeline_id: If provided, only return runs for this pipeline.
@@ -1997,7 +1996,7 @@ class BaseZenStore(BaseModel):
             A list of all pipeline runs.
         """
         return self._list_runs(
-            project_id=project_id,
+            project_name_or_id=project_name_or_id,
             stack_id=stack_id,
             user_id=user_id,
             pipeline_id=pipeline_id,
@@ -2007,7 +2006,7 @@ class BaseZenStore(BaseModel):
     @abstractmethod
     def _list_runs(
         self,
-        project_id: Optional[str] = None,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[str] = None,
         user_id: Optional[str] = None,
         pipeline_id: Optional[str] = None,
@@ -2016,7 +2015,7 @@ class BaseZenStore(BaseModel):
         """Gets all pipeline runs.
 
         Args:
-            project_id: If provided, only return runs for this project.
+            project_name_or_id: If provided, only return runs for this project.
             stack_id: If provided, only return runs for this stack.
             user_id: If provided, only return runs for this user.
             pipeline_id: If provided, only return runs for this pipeline.
@@ -2085,13 +2084,13 @@ class BaseZenStore(BaseModel):
 
     @abstractmethod
     def get_run_in_project(
-        self, run_name: str, project_id: str
+        self, run_name: str, project_name_or_id: Union[str, UUID]
     ) -> Optional[PipelineModel]:
         """Get a pipeline run with a given name in a project.
 
         Args:
             run_name: Name of the pipeline run.
-            project_id: ID of the project.
+            project_name_or_id: ID or name of the project.
 
         Returns:
             The pipeline run, if found, None otherwise.
@@ -2338,12 +2337,7 @@ class BaseZenStore(BaseModel):
     # '----------'
 
     @abstractmethod
-    def get_metadata_config(
-        self,
-    ) -> Union[
-        metadata_store_pb2.ConnectionConfig,
-        metadata_store_pb2.MetadataStoreClientConfig,
-    ]:
+    def get_metadata_config(self) -> str:
         """Get the TFX metadata config of this ZenStore.
 
         Returns:

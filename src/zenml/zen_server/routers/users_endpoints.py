@@ -13,13 +13,12 @@
 #  permissions and limitations under the License.
 
 from typing import List
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
 from zenml.constants import INVITE_TOKEN, ROLES, USERS, VERSION_1
 from zenml.exceptions import EntityExistsError
-from zenml.models import RoleModel, UserModel, RoleAssignmentModel
+from zenml.models import RoleAssignmentModel, RoleModel, UserModel
 from zenml.zen_server.utils import (
     authorize,
     conflict,
@@ -193,7 +192,9 @@ async def delete_user(user_id: str) -> None:
     response_model=List[RoleModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_role_assignments_for_user(user_id: str) -> List[RoleAssignmentModel]:
+async def get_role_assignments_for_user(
+    user_id: str,
+) -> List[RoleAssignmentModel]:
     """Returns a list of all roles that are assigned to a user.
 
     Args:

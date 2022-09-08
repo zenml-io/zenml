@@ -11,16 +11,25 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""SQL Model Implementations for MLMD Databases."""
 
-import pandas as pd
-from pyspark.sql import DataFrame
+from uuid import UUID, uuid4
 
-from zenml.repository import Repository
-from zenml.steps import step
-
-step_operator = Repository().active_stack.step_operator
+from sqlmodel import Field, SQLModel
 
 
-@step(custom_step_operator=step_operator.name)
-def statistics_step(dataset: DataFrame) -> pd.DataFrame:
-    return dataset.describe().toPandas()  # noqa
+class MLMDSchema(SQLModel, table=True):
+    """SQL Model for MLMD."""
+
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    project_id: UUID = Field(foreign_key="projectschema.id")
+    type: str
+
+
+class MLMDPropertySchema(SQLModel, table=True):
+    """SQL Model for MLMD Properties."""
+
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    name: str
+    mlmd_id: UUID = Field(foreign_key="mlmdschema.id")
+    value: str

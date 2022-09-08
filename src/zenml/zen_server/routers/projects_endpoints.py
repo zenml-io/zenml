@@ -58,7 +58,7 @@ router = APIRouter(
     response_model=List[ProjectModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_projects() -> List[ProjectModel]:
+async def list_projects() -> List[ProjectModel]:
     """Lists all projects in the organization.
 
     Returns:
@@ -70,7 +70,7 @@ async def get_projects() -> List[ProjectModel]:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.projects
+        return zen_store.list_projects()
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:
@@ -136,7 +136,7 @@ async def get_project(project_name: str) -> ProjectModel:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.get_project(project_name)
+        return zen_store.get_project(project_name_or_id=project_name)
     except KeyError as error:
         raise not_found(error) from error
     except NotAuthorizedError as error:
@@ -176,12 +176,12 @@ async def update_project(
         return zen_store.update_project(project_name, project)
     except KeyError as error:
         raise not_found(error) from error
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    # except NotAuthorizedError as error:
+    #     raise HTTPException(status_code=401, detail=error_detail(error))
+    # except NotFoundError as error:
+    #     raise HTTPException(status_code=404, detail=error_detail(error))
+    # except ValidationError as error:
+    #     raise HTTPException(status_code=422, detail=error_detail(error))
 
 
 @router.delete(

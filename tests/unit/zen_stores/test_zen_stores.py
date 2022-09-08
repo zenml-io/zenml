@@ -341,14 +341,14 @@ def test_team_management(fresh_zen_store):
 def test_project_management(fresh_zen_store):
     """Tests project creation and deletion."""
     project = fresh_zen_store.create_project("secret_project")
-    assert len(fresh_zen_store.projects) == 1
-    assert fresh_zen_store.projects[0].name == "secret_project"
-    assert fresh_zen_store.projects[0].id == project.id
+    assert len(fresh_zen_store.list_projects()) == 1
+    assert fresh_zen_store.list_projects()[0].name == "secret_project"
+    assert fresh_zen_store.list_projects()[0].id == project.id
 
     with pytest.raises(EntityExistsError):
         # project names need to be unique
         fresh_zen_store.create_project("secret_project")
-    assert len(fresh_zen_store.projects) == 1
+    assert len(fresh_zen_store.list_projects()) == 1
 
     with pytest.raises(KeyError):
         fresh_zen_store.get_user("integrate_airflow")
@@ -357,7 +357,7 @@ def test_project_management(fresh_zen_store):
     assert retrieved.id == project.id
 
     fresh_zen_store.delete_project("secret_project")
-    assert len(fresh_zen_store.projects) == 0
+    assert len(fresh_zen_store.list_projects()) == 0
 
     with pytest.raises(KeyError):
         # can't delete non-existent project

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Utility functions for the CLI."""
 
-import base64
 import datetime
 import json
 import os
@@ -35,7 +34,6 @@ from typing import (
 )
 
 import click
-import yaml
 from dateutil import tz
 from pydantic import BaseModel
 from rich import box, table
@@ -441,7 +439,9 @@ def print_active_stack() -> None:
 
     repo = Repository()
     scope = "repository" if repo.uses_local_active_stack else "global"
-    declare(f"Running with active stack: '{repo.active_stack.name}' ({scope})")
+    declare(
+        f"Running with active stack: '{repo.active_stack_model.name}' ({scope})"
+    )
 
 
 def format_date(

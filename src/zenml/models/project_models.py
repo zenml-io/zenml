@@ -11,16 +11,26 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Project model implementation."""
 
-import pandas as pd
-from pyspark.sql import DataFrame
+from datetime import datetime
+from typing import Optional
+from uuid import UUID
 
-from zenml.repository import Repository
-from zenml.steps import step
-
-step_operator = Repository().active_stack.step_operator
+from pydantic import BaseModel
 
 
-@step(custom_step_operator=step_operator.name)
-def statistics_step(dataset: DataFrame) -> pd.DataFrame:
-    return dataset.describe().toPandas()  # noqa
+class ProjectModel(BaseModel):
+    """Pydantic object representing a project.
+
+    Attributes:
+        id: Id of the project.
+        created_at: Date when the project was created.
+        name: Name of the project.
+        description: Optional project description.
+    """
+
+    id: Optional[UUID] = None
+    name: str
+    description: Optional[str] = None
+    created_at: Optional[datetime] = None

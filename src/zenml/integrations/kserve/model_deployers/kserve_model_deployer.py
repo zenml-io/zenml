@@ -108,9 +108,9 @@ class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
         Raises:
             TypeError: if the KServe model deployer is not available.
         """
-        repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
-        active_stack = Stack.from_model(repo.active_stack)
-        model_deployer = active_stack.model_deployer
+        model_deployer = Repository(  # type: ignore [call-arg]
+            skip_repository_check=True
+        ).active_stack.model_deployer
         if not model_deployer or not isinstance(
             model_deployer, KServeModelDeployer
         ):
@@ -283,7 +283,7 @@ class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
 
         # Add telemetry with metadata that gets the stack metadata and
         # differentiates between pure model and custom code deployments
-        stack = Stack.from_model(Repository().active_stack)
+        stack = Repository().active_stack
         stack_metadata = {
             component_type.value: component.FLAVOR
             for component_type, component in stack.components.items()
@@ -508,9 +508,9 @@ class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
         """
         if self.secret:
 
-            repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
-            active_stack = Stack.from_model(repo.active_stack)
-            secret_manager = active_stack.secrets_manager
+            secret_manager = Repository(  # type: ignore [call-arg]
+                skip_repository_check=True
+            ).active_stack.secrets_manager
 
             if not secret_manager or not isinstance(
                 secret_manager, BaseSecretsManager

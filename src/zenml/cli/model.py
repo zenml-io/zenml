@@ -53,7 +53,7 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
             ctx: The click context.
         """
         repo = Repository()
-        model_deployer_model = repo.active_stack.components[
+        model_deployer_model = repo.active_stack_model.components[
             StackComponentType.MODEL_DEPLOYER
         ]
         if model_deployer_model is None:

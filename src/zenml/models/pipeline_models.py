@@ -65,11 +65,11 @@ class PipelineModel(BaseModel):
     id: Optional[UUID]
     name: str
 
-    project_id: Optional[UUID]  # TODO: make this required
-    owner: Optional[UUID]
+    project_id: UUID
+    owner: UUID
 
     docstring: Optional[str]
-    # configuration: str
+    configuration: Dict[str, str]
 
     created_at: Optional[datetime]
 
@@ -94,9 +94,9 @@ class PipelineRunModel(BaseModel):
     mlmd_id: Optional[int]  # ID in MLMD
     name: str
 
-    owner: Optional[UUID]
-    stack_id: Optional[UUID]
-    pipeline_id: Optional[UUID]
+    owner: Optional[UUID]  # might not be set for scheduled runs
+    stack_id: Optional[UUID]  # might not be set for scheduled runs
+    pipeline_id: Optional[UUID]  # might not be set for scheduled runs
 
     runtime_configuration: Optional[Dict[str, Any]]
 
@@ -113,6 +113,7 @@ class StepRunModel(BaseModel):
     pipeline_run_id: Optional[UUID]  # TODO: make required
     parent_step_ids: List[int]  # ID in MLMD
     docstring: Optional[str]
+    parameters: Dict[str, str]
     entrypoint_name: str
 
 

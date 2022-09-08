@@ -35,8 +35,7 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.models import ComponentModel, StackModel
-from zenml.models.user_management_models import ProjectModel, UserModel
+from zenml.models import ComponentModel, ProjectModel, StackModel, UserModel
 from zenml.repository import Repository
 from zenml.utils import yaml_utils
 from zenml.utils.io_utils import get_global_config_directory
