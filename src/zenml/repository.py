@@ -998,7 +998,7 @@ class Repository(metaclass=RepositoryMetaClass):
         """
         existing_pipeline = self.zen_store.get_pipeline_in_project(
             pipeline_name=pipeline_name,
-            project_name_or_id=self.active_project.id
+            project_name_or_id=self.active_project.id,
         )
 
         # Determine the pipeline ID (and potentially create a new pipeline)

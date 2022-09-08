@@ -417,7 +417,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             # Ensure that the repository active stack is still valid
             try:
                 self.zen_store.get_stack(stack_id=self.active_stack_id)
-                # TODO: this does not gurantee that the stack is actually active
+                # TODO: this does not guarantee that the stack is actually active
 
             except KeyError:
                 logger.warning(

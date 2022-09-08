@@ -27,11 +27,7 @@ from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.config.store_config import StoreConfiguration
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
-from zenml.exceptions import (
-    EntityExistsError,
-    StackComponentExistsError,
-    StackExistsError,
-)
+from zenml.exceptions import EntityExistsError, StackExistsError
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.metadata_stores.sqlite_metadata_store import SQLiteMetadataStore
@@ -377,7 +373,7 @@ class SqlZenStore(BaseZenStore):
         self,
         user_id: UUID,
         project_name_or_id: Union[str, UUID],
-        stack: StackModel
+        stack: StackModel,
     ) -> StackModel:
         """Register a new stack.
 
@@ -399,14 +395,14 @@ class SqlZenStore(BaseZenStore):
             else:
                 project_filter = ProjectSchema.id == project_name_or_id
             project = session.exec(
-                select(ProjectSchema)
-                .where(project_filter)
+                select(ProjectSchema).where(project_filter)
             ).first()
             if project is None:
-                raise KeyError(f"Project with ID {project_name_or_id} "
-                               f"not found.")
+                raise KeyError(
+                    f"Project with ID {project_name_or_id} " f"not found."
+                )
 
-            # Check if stack with the domain key (name, prj, owner) already
+            # Check if stack with the domain key (name, project, owner) already
             #  exists
             existing_stack = session.exec(
                 select(StackSchema)
@@ -455,7 +451,7 @@ class SqlZenStore(BaseZenStore):
             The updated stack.
         """
         with Session(self.engine) as session:
-            # Check if stack with the domain key (name, prj, owner) already
+            # Check if stack with the domain key (name, project, owner) already
             #  exists
             existing_stack = session.exec(
                 select(StackSchema).where(StackSchema.id == stack.id)
@@ -537,12 +533,12 @@ class SqlZenStore(BaseZenStore):
             else:
                 project_filter = ProjectSchema.id == project_name_or_id
             project = session.exec(
-                select(ProjectSchema)
-                .where(project_filter)
+                select(ProjectSchema).where(project_filter)
             ).first()
             if project is None:
-                raise KeyError(f"Project with ID {project_name_or_id} "
-                               f"not found.")
+                raise KeyError(
+                    f"Project with ID {project_name_or_id} " f"not found."
+                )
 
             # Get a list of all stacks
             query = select(StackComponentSchema).where(
@@ -588,7 +584,7 @@ class SqlZenStore(BaseZenStore):
         self,
         user_id: str,
         project_name_or_id: Union[str, UUID],
-        component: ComponentModel
+        component: ComponentModel,
     ) -> ComponentModel:
         """Create a stack component.
 
@@ -607,16 +603,16 @@ class SqlZenStore(BaseZenStore):
             else:
                 project_filter = ProjectSchema.id == project_name_or_id
             project = session.exec(
-                select(ProjectSchema)
-                .where(project_filter)
+                select(ProjectSchema).where(project_filter)
             ).first()
             if project is None:
-                raise KeyError(f"Project with ID {project_name_or_id} "
-                               f"not found.")
+                raise KeyError(
+                    f"Project with ID {project_name_or_id} " f"not found."
+                )
 
             # TODO: [server] verify that this logic is already handled at repo
             #                level
-            # # Check if component with the domain key (name, prj, owner) already
+            # # Check if component with the domain key (name, project, owner) already
             # #  exists
             # existing_component = session.exec(
             #     select(StackComponentSchema)
@@ -656,7 +652,7 @@ class SqlZenStore(BaseZenStore):
             The updated stack component.
         """
         with Session(self.engine) as session:
-            # Check if component with the domain key (name, prj, owner) already
+            # Check if component with the domain key (name, project, owner) already
             #  exists
             existing_component = session.exec(
                 select(StackComponentSchema).where(
@@ -1240,7 +1236,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             project_name_or_id: Name or Id of the Project for the role
-                                asssignment
+                                assignment
             team_id: If provided, only list assignments for the given team
             user_id: If provided, only list assignments for the given user
 
@@ -1256,8 +1252,7 @@ class SqlZenStore(BaseZenStore):
                 else:
                     project_filter = ProjectSchema.id == project_name_or_id
                 project = session.exec(
-                    select(ProjectSchema)
-                    .where(project_filter)
+                    select(ProjectSchema).where(project_filter)
                 ).first()
                 if project is None:
                     raise KeyError(f"Project with ID {project_name_or_id}"
@@ -1326,12 +1321,12 @@ class SqlZenStore(BaseZenStore):
                 else:
                     project_filter = ProjectSchema.id == project_name_or_id
                 project = session.exec(
-                    select(ProjectSchema)
-                    .where(project_filter)
+                    select(ProjectSchema).where(project_filter)
                 ).first()
                 if project is None:
-                    raise KeyError(f"Project with ID {project_name_or_id} "
-                                   f"not found.")
+                    raise KeyError(
+                        f"Project with ID {project_name_or_id} " f"not found."
+                    )
             else:
                 project = None
 
@@ -1402,12 +1397,12 @@ class SqlZenStore(BaseZenStore):
             else:
                 project_filter = ProjectSchema.id == project_name_or_id
             project = session.exec(
-                select(ProjectSchema)
-                .where(project_filter)
+                select(ProjectSchema).where(project_filter)
             ).first()
             if project is None:
-                raise KeyError(f"Project with ID {project_name_or_id} "
-                               f"not found.")
+                raise KeyError(
+                    f"Project with ID {project_name_or_id} " f"not found."
+                )
             if is_user:
                 role = session.exec(
                     select(UserRoleAssignmentSchema)
@@ -1778,8 +1773,8 @@ class SqlZenStore(BaseZenStore):
     # '-----------'
 
     def _list_pipelines(
-            self,
-            project_name_or_id: Optional[Union[str, UUID]] = None,
+        self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List[PipelineModel]:
         """List all pipelines in the project.
 
@@ -1802,12 +1797,12 @@ class SqlZenStore(BaseZenStore):
                 else:
                     project_filter = ProjectSchema.id == project_name_or_id
                 project = session.exec(
-                    select(ProjectSchema)
-                    .where(project_filter)
+                    select(ProjectSchema).where(project_filter)
                 ).first()
                 if project is None:
-                    raise KeyError(f"Project with ID {project_name_or_id} "
-                                   f"not found.")
+                    raise KeyError(
+                        f"Project with ID {project_name_or_id} " f"not found."
+                    )
                 query = query.where(PipelineSchema.project_id == project.id)
 
             # Get all pipelines in the project
@@ -1815,9 +1810,7 @@ class SqlZenStore(BaseZenStore):
             return [pipeline.to_model() for pipeline in pipelines]
 
     def _create_pipeline(
-        self,
-        project_name_or_id: Union[str, UUID],
-        pipeline: PipelineModel
+        self, project_name_or_id: Union[str, UUID], pipeline: PipelineModel
     ) -> PipelineModel:
         """Creates a new pipeline in a project.
 
@@ -1840,12 +1833,12 @@ class SqlZenStore(BaseZenStore):
             else:
                 project_filter = ProjectSchema.id == project_name_or_id
             project = session.exec(
-                select(ProjectSchema)
-                .where(project_filter)
+                select(ProjectSchema).where(project_filter)
             ).first()
             if project is None:
-                raise KeyError(f"Project with ID {project_name_or_id} "
-                               f"not found.")
+                raise KeyError(
+                    f"Project with ID {project_name_or_id} " f"not found."
+                )
 
             # Check if pipeline with the given name already exists
             existing_pipeline = session.exec(
@@ -1909,12 +1902,12 @@ class SqlZenStore(BaseZenStore):
             else:
                 project_filter = ProjectSchema.id == project_name_or_id
             project = session.exec(
-                select(ProjectSchema)
-                .where(project_filter)
+                select(ProjectSchema).where(project_filter)
             ).first()
             if project is None:
-                raise KeyError(f"Project with ID {project_name_or_id} "
-                               f"not found.")
+                raise KeyError(
+                    f"Project with ID {project_name_or_id} " f"not found."
+                )
             # Check if pipeline with the given name exists in the project
             pipeline = session.exec(
                 select(PipelineSchema).where(
@@ -2062,16 +2055,18 @@ class SqlZenStore(BaseZenStore):
             else:
                 project_filter = ProjectSchema.id == project_name_or_id
             project = session.exec(
-                select(ProjectSchema)
-                .where(project_filter)
+                select(ProjectSchema).where(project_filter)
             ).first()
             if project is None:
-                raise KeyError(f"Project with ID {project_name_or_id} "
-                               f"not found.")
+                raise KeyError(
+                    f"Project with ID {project_name_or_id} " f"not found."
+                )
 
-            query = select(PipelineRunSchema).where(
-                PipelineRunSchema.stack_id == StackSchema.id
-            ).where(StackSchema.project_id == project.id)
+            query = (
+                select(PipelineRunSchema)
+                .where(PipelineRunSchema.stack_id == StackSchema.id)
+                .where(StackSchema.project_id == project.id)
+            )
 
             if stack_id is not None:
                 query = query.where(PipelineRunSchema.stack_id == stack_id)
@@ -2185,12 +2180,12 @@ class SqlZenStore(BaseZenStore):
             else:
                 project_filter = ProjectSchema.id == project_name_or_id
             project = session.exec(
-                select(ProjectSchema)
-                .where(project_filter)
+                select(ProjectSchema).where(project_filter)
             ).first()
             if project is None:
-                raise KeyError(f"Project with ID {project_name_or_id} "
-                               f"not found.")
+                raise KeyError(
+                    f"Project with ID {project_name_or_id} " f"not found."
+                )
             # Check if pipeline run with the given name exists in the project
             run = session.exec(
                 select(PipelineRunSchema)

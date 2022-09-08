@@ -182,9 +182,7 @@ class RestZenStore(BaseZenStore):
         """
         return UserModel.parse_obj(self.post(USERS, body=user))
 
-    def _get_user(
-        self, user_name_or_id: str
-    ) -> UserModel:
+    def _get_user(self, user_name_or_id: str) -> UserModel:
         """Gets a specific user.
 
         Args:
@@ -211,8 +209,7 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If no user with the given name exists.
         """
-        return UserModel.parse_obj(self.put(f"{USERS}/{user_id}",
-                                            body=user))
+        return UserModel.parse_obj(self.put(f"{USERS}/{user_id}", body=user))
 
     def _delete_user(self, user_id: str) -> None:
         """Deletes a user.
