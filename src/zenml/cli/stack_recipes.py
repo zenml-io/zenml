@@ -626,7 +626,7 @@ class GitStackRecipesHandler(object):
         )
         shutil.rmtree(stack_recipes_directory)
 
-    def get_active_version(self) -> str:
+    def get_active_version(self) -> Optional[str]:
         """Returns the active version of the mlops-stacks repository.
 
         Returns:
@@ -810,7 +810,11 @@ if terraform_installed:  # noqa: C901
         Args:
             git_stack_recipes_handler: The GitStackRecipesHandler instance.
         """
-        cli_utils.declare(git_stack_recipes_handler.get_active_version())
+        active_version = git_stack_recipes_handler.get_active_version()
+        if active_version:
+            cli_utils.declare(active_version)
+        else:
+            cli_utils.warning("Unable to detect version.")
 
     @stack_recipe.command(
         help="Pull stack recipes straight into your current working directory."
