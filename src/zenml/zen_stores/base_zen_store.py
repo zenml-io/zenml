@@ -1447,7 +1447,7 @@ class BaseZenStore(BaseModel):
             EntityExistsError: If a project with the given name already exists.
         """
 
-    def get_project(self, project_name_or_id: UUID) -> ProjectModel:
+    def get_project(self, project_name_or_id: Union[UUID, str]) -> ProjectModel:
         """Get an existing project by name or ID.
 
         Args:
@@ -1463,7 +1463,9 @@ class BaseZenStore(BaseModel):
         return self._get_project(project_name_or_id)
 
     @abstractmethod
-    def _get_project(self, project_name_or_id: UUID) -> ProjectModel:
+    def _get_project(
+            self,
+            project_name_or_id: Union[UUID, str]) -> ProjectModel:
         """Get an existing project by name or ID.
 
         Args:

@@ -1005,7 +1005,8 @@ class Repository(metaclass=RepositoryMetaClass):
         """
         try:
             existing_pipeline = self.zen_store.get_pipeline_in_project(
-                pipeline_name=pipeline_name, project_id=self.active_project.id
+                pipeline_name=pipeline_name,
+                project_name_or_id=self.active_project.id
             )
 
         # A) If there is no pipeline with this name, register a new pipeline.
@@ -1017,7 +1018,7 @@ class Repository(metaclass=RepositoryMetaClass):
                 configuration=pipeline_configuration,
             )
             pipeline = self.zen_store.create_pipeline(
-                project_id=self.active_project.id, pipeline=pipeline
+                project_name_or_id=self.active_project.id, pipeline=pipeline
             )
             logger.info(f"Registered new pipeline with name {pipeline.name}.")
             return pipeline.id

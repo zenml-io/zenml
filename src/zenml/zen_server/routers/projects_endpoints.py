@@ -75,7 +75,7 @@ async def list_projects() -> List[ProjectModel]:
         return zen_store.list_projects()
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -178,7 +178,7 @@ async def update_project(
         raise not_found(error) from error
     # except NotAuthorizedError as error:
     #     raise HTTPException(status_code=401, detail=error_detail(error))
-    # except NotFoundError as error:
+    # except KeyError as error:
     #     raise HTTPException(status_code=404, detail=error_detail(error))
     # except ValidationError as error:
     #     raise HTTPException(status_code=422, detail=error_detail(error))
@@ -205,7 +205,7 @@ async def delete_project(project_name: str) -> None:
         raise not_found(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -235,11 +235,9 @@ async def get_project_stacks(project_name: str) -> List[StackModel]:
     """
     try:
         return zen_store.get_stacks(project_name=project_name)
-    except KeyError as error:
-        raise not_found(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -276,7 +274,7 @@ async def create_stack(project_name: str, stack: StackModel) -> StackModel:
         raise conflict(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -313,7 +311,7 @@ async def get_project_stack_components(
         raise not_found(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -352,7 +350,7 @@ async def get_project_stack_components_by_type(
         raise not_found(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -389,7 +387,7 @@ async def create_stack_component_by_type(
         raise conflict(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=409, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -425,7 +423,7 @@ async def get_project_pipelines(
         raise not_found(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -459,7 +457,7 @@ async def create_pipeline(
         raise conflict(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=409, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -495,7 +493,7 @@ async def get_default_stack(
         raise not_found(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -530,7 +528,7 @@ async def set_default_stack(project_name: str, stack_id: str) -> StackModel:
         raise not_found(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -566,7 +564,7 @@ async def get_project_repositories(
         raise not_found(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -602,7 +600,7 @@ async def connect_project_repository(
         raise not_found(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=409, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
