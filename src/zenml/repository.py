@@ -1109,4 +1109,4 @@ class Repository(metaclass=RepositoryMetaClass):
                 f"Project '{project_name_or_id}' cannot be deleted since it is "
                 "currently active. Please set another project as active first."
             )
-        Repository().zen_store.delete_project(project_id=project.id)
+        Repository().zen_store.delete_project(project_name=project.name)

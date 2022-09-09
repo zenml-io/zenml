@@ -1242,6 +1242,19 @@ class SqlZenStore(BaseZenStore):
                         "Unable to assign role to user with id "
                         f"'{user_or_team_id}': No user with this id found."
                     )
+                # Check if role assignment already exists
+                existing_role_assignment = session.exec(
+                    select(UserRoleAssignmentSchema).where(
+                        UserRoleAssignmentSchema.user_id == user_or_team_id,
+                        UserRoleAssignmentSchema.project_id == project.id,
+                        UserRoleAssignmentSchema.role_id == role_id,
+                    )
+                ).first()
+                if existing_role_assignment is not None:
+                    raise EntityExistsError(
+                        f"Unable to assign role '{role.name}' to user "
+                        f"'{user.name}': Role already assigned in this project."
+                    )
                 role_assignment = UserRoleAssignmentSchema(
                     role_id=role_id,
                     user_id=user_or_team_id,
@@ -1260,6 +1273,19 @@ class SqlZenStore(BaseZenStore):
                     raise KeyError(
                         "Unable to assign role to team with id "
                         f"'{user_or_team_id}': No team with this id found."
+                    )
+                # Check if role assignment already exists
+                existing_role_assignment = session.exec(
+                    select(TeamRoleAssignmentSchema).where(
+                        TeamRoleAssignmentSchema.team_id == user_or_team_id,
+                        TeamRoleAssignmentSchema.project_id == project.id,
+                        TeamRoleAssignmentSchema.role_id == role_id,
+                    )
+                ).first()
+                if existing_role_assignment is not None:
+                    raise EntityExistsError(
+                        f"Unable to assign role '{role.name}' to team "
+                        f"'{team.name}': Role already assigned in this project."
                     )
                 role_assignment = TeamRoleAssignmentSchema(
                     role_id=role_id,

@@ -22,7 +22,7 @@ from zenml.exceptions import (
     NotAuthorizedError,
     ValidationError,
 )
-from zenml.models import RoleAssignmentModel, RoleModel, UserModel
+from zenml.models import RoleAssignmentModel, UserModel
 from zenml.zen_server.utils import (
     authorize,
     conflict,
@@ -157,8 +157,6 @@ async def update_user(user_id: str, user: UserModel) -> UserModel:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
-    except KeyError as error:
-        raise not_found(error) from error
 
 
 @router.delete(
@@ -181,17 +179,15 @@ async def delete_user(user_id: str) -> None:
         zen_store.delete_user(user_id)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
     except KeyError as error:
         raise not_found(error) from error
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
 
 
 @router.get(
     "/{user_id}" + ROLES,
-    response_model=List[RoleModel],
+    response_model=List[RoleAssignmentModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def get_role_assignments_for_user(
@@ -216,8 +212,6 @@ async def get_role_assignments_for_user(
         raise not_found(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
 
@@ -255,10 +249,10 @@ async def assign_role(user_id: str, role_id: str, project_id: str) -> None:
         )
     except KeyError as error:
         raise not_found(error) from error
+    except EntityExistsError as error:
+        raise conflict(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=409, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
 
@@ -346,7 +340,5 @@ async def unassign_role(user_id: str, role_id: str, project_id: str) -> None:
         raise not_found(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
