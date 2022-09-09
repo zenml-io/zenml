@@ -244,7 +244,7 @@ token = get_kfp_token()
 cookies = 'authservice_session=' + token
 
 # 1: Set user namespace globally
-kfp.Client(cookies=cookies).set_user_namespace(NAMESPACE)
+kfp.Client(host=HOST, cookies=cookies).set_user_namespace(NAMESPACE)
 
 # 2: Set cookie globally in the kfp config file
 with open(KFP_CONFIG, 'r') as f:
