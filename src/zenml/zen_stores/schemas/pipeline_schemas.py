@@ -78,13 +78,15 @@ class PipelineRunSchema(SQLModel, table=True):
     name: str
 
     # project_id - redundant since stack has this
-    owner: UUID = Field(foreign_key="userschema.id")
-    stack_id: UUID = Field(foreign_key="stackschema.id")
+    owner: Optional[UUID] = Field(foreign_key="userschema.id", nullable=True)
+    stack_id: Optional[UUID] = Field(
+        foreign_key="stackschema.id", nullable=True
+    )
     pipeline_id: Optional[UUID] = Field(
         foreign_key="pipelineschema.id", nullable=True
     )
 
-    runtime_configuration: str
+    runtime_configuration: Optional[str] = Field(nullable=True)
     git_sha: Optional[str] = Field(nullable=True)
     zenml_version: str
 

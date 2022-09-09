@@ -16,9 +16,16 @@ from typing import Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 
-from zenml.constants import GRAPH, RUNS, RUNTIME_CONFIGURATION, STEPS, VERSION_1
+from zenml.constants import (
+    COMPONENT_SIDE_EFFECTS,
+    GRAPH,
+    RUNS,
+    RUNTIME_CONFIGURATION,
+    STEPS,
+    VERSION_1,
+)
 from zenml.exceptions import NotAuthorizedError, ValidationError
-from zenml.models.pipeline_models import PipelineRunModel
+from zenml.models.pipeline_models import PipelineRunModel, StepRunModel
 from zenml.zen_server.utils import (
     authorize,
     error_detail,
@@ -36,7 +43,7 @@ router = APIRouter(
 
 @router.get(
     "/",
-    response_model=PipelineRunModel,
+    response_model=List[PipelineRunModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def get_runs(
@@ -194,10 +201,10 @@ async def get_run_dag(run_id: str) -> str:  # TODO: use file type / image type
 
 @router.get(
     "/{run_id}" + STEPS,
-    response_model=List[Dict],
+    response_model=Dict[str, StepRunModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_run_steps(run_id: str) -> List[Dict]:
+async def get_run_steps(run_id: str) -> Dict[str, StepRunModel]:
     """Get all steps for a given pipeline run.
 
     Args:
@@ -212,7 +219,8 @@ async def get_run_steps(run_id: str) -> List[Dict]:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.list_run_steps(run_id)
+        run = zen_store.get_run(run_id)
+        return zen_store.list_run_steps(run.mlmd_id)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
@@ -252,7 +260,7 @@ async def get_run_runtime_configuration(run_id: str) -> Dict:
 
 
 @router.get(
-    "/{run_id}" + RUNTIME_CONFIGURATION,
+    "/{run_id}" + COMPONENT_SIDE_EFFECTS,
     response_model=Dict,
     responses={401: error_response, 404: error_response, 422: error_response},
 )

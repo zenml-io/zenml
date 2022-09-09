@@ -2283,14 +2283,14 @@ class BaseZenStore(BaseModel):
     # '-------'
 
     @abstractmethod
-    def list_run_steps(self, run_id: int) -> List[StepRunModel]:
+    def list_run_steps(self, run_id: int) -> Dict[str, StepRunModel]:
         """Gets all steps in a pipeline run.
 
         Args:
             run_id: The ID of the pipeline run for which to list runs.
 
         Returns:
-            A list of all steps in the pipeline run.
+            A mapping from step names to step models for all steps in the run.
         """
 
     @abstractmethod
