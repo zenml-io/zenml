@@ -53,7 +53,7 @@ command line argument. This Kubernetes context needs to point to the Kubernetes
 cluster where KServe model servers will be deployed. If the context is not
 explicitly supplied to the example, it defaults to using the locally active
 context. You can find more information about setup and usage of the Kubernetes
-cluster in the [ZenML Cloud Guide](../../cloud-guide/overview.md)
+cluster in the [ZenML Cloud Guide](../../stack-deployment-guide/overview.md)
 
 2. KServe needs to be preinstalled and running in the target Kubernetes
 cluster. Check out the [KServe Serverless installation Guide](https://kserve.github.io/website/0.9/admin/serverless/).

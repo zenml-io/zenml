@@ -66,7 +66,7 @@ to match your deployment scenario.
 {% hint style="info" %}
 Configuring a GCS Artifact Store in can be a complex and error prone process,
 especially if you plan on using it alongside other stack components running in
-the Google cloud. You might consider referring to the [ZenML Cloud Guide](../../cloud-guide/overview.md)
+the Google cloud. You might consider referring to the [ZenML Cloud Guide](../../stack-deployment-guide/overview.md)
 for a more holistic approach to configuring full GCP-based stacks for ZenML.
 {% endhint %}
 

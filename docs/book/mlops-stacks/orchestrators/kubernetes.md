@@ -20,7 +20,7 @@ on your Kubernetes cluster.
 The Kubernetes orchestrator requires a Kubernetes cluster in order to run.
 There are many ways to deploy a Kubernetes cluster using different cloud providers
 or on your custom infrastructure and we can't possibly cover all of them, 
-but you can check out our cloud guide [ZenML Cloud Guide](../../cloud-guide/overview.md)
+but you can check out our cloud guide [ZenML Cloud Guide](../../stack-deployment-guide/overview.md)
 for some complete stack deployments which use the Kubernetes orchestrator.
 
 ## How to use it
