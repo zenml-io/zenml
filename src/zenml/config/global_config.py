@@ -109,7 +109,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         version: Version of ZenML that was last used to create or update the
             global config.
         store: Store configuration.
-        active_stack_name: The name of the active stack.
+        active_stack_id: The ID of the active stack.
         active_project_name: The name of the active project.
         _config_path: Directory where the global config file is stored.
     """
@@ -372,9 +372,8 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     def _sanitize_config(self) -> None:
         """Sanitize and save the global configuration.
 
-        This method is called to ensure that the global configuration
-        doesn't contain outdated information, such as an active stack or project
-        that no longer exists.
+        This method is called to ensure that the active stack and project
+        are set to their default values, if possible.
         """
         active_project, active_stack = self.zen_store.validate_active_config(
             self.active_project_name, self.active_stack_id

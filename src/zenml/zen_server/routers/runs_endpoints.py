@@ -29,8 +29,8 @@ from zenml.constants import (
 from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.models.pipeline_models import PipelineRunModel, StepRunModel
 from zenml.utils.uuid_utils import parse_optional_name_or_uuid
+from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import (
-    authorize,
     error_detail,
     error_response,
     zen_store,

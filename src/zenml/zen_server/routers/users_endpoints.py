@@ -28,8 +28,8 @@ from zenml.utils.uuid_utils import (
     parse_name_or_uuid,
     parse_optional_name_or_uuid,
 )
+from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import (
-    authorize,
     conflict,
     error_detail,
     error_response,
@@ -62,7 +62,7 @@ async def list_users() -> List[UserModel]:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.list_users()
+        return [u.remove_credentials() for u in zen_store.list_users()]
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
@@ -127,7 +127,7 @@ async def get_user(user_name_or_id: str) -> UserModel:
     try:
         return zen_store.get_user(
             user_name_or_id=parse_name_or_uuid(user_name_or_id)
-        )
+        ).remove_credentials()
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:

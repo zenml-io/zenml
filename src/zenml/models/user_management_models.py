@@ -15,6 +15,7 @@
 
 from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional
+from passlib.context import CryptContext
 from uuid import UUID
 
 from pydantic import BaseModel, root_validator
@@ -39,6 +40,65 @@ class RoleModel(AnalyticsTrackedModelMixin):
     created_at: Optional[datetime] = None
 
 
+class UserCredentialsModel(BaseModel):
+    """Pydantic object representing a user credentials.
+
+    Attributes:
+        password: User password.
+    """
+
+    password: Optional[str] = None
+    hashed: bool = False
+
+    @classmethod
+    def _get_crypt_context(cls) -> CryptContext:
+        """Returns the password encryption context.
+
+        Returns:
+            The password encryption context.
+        """
+        return CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+    def verify_password(self, plain_password: str) -> bool:
+        """Verifies a given plain password against the stored password.
+
+        Args:
+            plain_password: Input password to be verified.
+
+        Returns:
+            True if the passwords match.
+        """
+        if self.password is None:
+            return False
+        if self.hashed:
+            pwd_context = self._get_crypt_context()
+            return pwd_context.verify(plain_password, self.password)
+        else:
+            return plain_password == self.password
+
+    @property
+    def hashed_password(self) -> Optional[str]:
+        """Get the hashed password value.
+
+        Returns:
+            The hashed password value.
+        """
+        if self.password is None:
+            return None
+
+        if self.hashed:
+            return self.password
+        pwd_context = self._get_crypt_context()
+        return pwd_context.hash(self.password)
+
+    def hash_password(self) -> None:
+        """Hashes the stored password and replaces it with the hashed value, if not already so."""
+        if self.password is None:
+            return
+        self.password = self.hashed_password
+        self.hashed = True
+
+
 class UserModel(AnalyticsTrackedModelMixin):
     """Pydantic object representing a user.
 
@@ -46,6 +106,7 @@ class UserModel(AnalyticsTrackedModelMixin):
         id: Id of the user.
         created_at: Date when the user was created.
         name: Name of the user.
+        credentials: User credentials.
     """
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["id"]
@@ -53,8 +114,26 @@ class UserModel(AnalyticsTrackedModelMixin):
     id: Optional[UUID] = None
     name: str
     created_at: Optional[datetime] = None
-    # email: str
-    # password: str
+    credentials: Optional[UserCredentialsModel] = None
+
+    def verify_password(self, plain_password: str) -> bool:
+        """Try to authenticate with a password.
+
+        Args:
+            plain_password: Input password to be verified.
+
+        Returns:
+            True if the credentials are valid.
+        """
+        if not self.credentials:
+            return False
+        return self.credentials.verify_password(plain_password)
+
+    def remove_credentials(self) -> "UserModel":
+        """Returns a copy of this user without the credentials."""
+        user_dict = self.dict()
+        user_dict.pop("credentials", None)
+        return UserModel(**user_dict)
 
 
 class TeamModel(AnalyticsTrackedModelMixin):

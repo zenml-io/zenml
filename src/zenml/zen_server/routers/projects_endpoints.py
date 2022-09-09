@@ -49,8 +49,8 @@ from zenml.zen_server.models.projects_models import (
     UpdateProjectModel,
 )
 from zenml.zen_server.models.stack_models import CreateStackModel
+from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import (
-    authorize,
     conflict,
     error_detail,
     error_response,

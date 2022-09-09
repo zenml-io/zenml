@@ -22,8 +22,8 @@ from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.models import PipelineRunModel
 from zenml.models.pipeline_models import HydratedPipelineModel, PipelineModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
+from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import (
-    authorize,
     conflict,
     error_detail,
     error_response,
