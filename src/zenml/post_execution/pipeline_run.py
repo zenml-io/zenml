@@ -42,7 +42,7 @@ def get_run(name: str) -> "PipelineRunView":
     repo = Repository()
     run = repo.zen_store.get_run_in_project(
         run_name=name,
-        project_id=repo.active_project.id,
+        project_name_or_id=repo.active_project.id,
     )
     return PipelineRunView(run)
 
@@ -57,7 +57,7 @@ def get_unlisted_runs() -> List["PipelineRunView"]:
     """
     repo = Repository()
     runs = repo.zen_store.list_runs(
-        project_id=repo.active_project.id,
+        project_name_or_id=repo.active_project.id,
         unlisted=True,
     )
     return [PipelineRunView(model) for model in runs]

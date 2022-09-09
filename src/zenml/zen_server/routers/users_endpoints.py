@@ -251,7 +251,7 @@ async def assign_role(user_id: str, role_id: str, project_id: str) -> None:
             role_id=role_id,
             user_or_team_id=user_id,
             is_user=True,
-            project_id=project_id,
+            project_name_or_id=project_id,
         )
     except KeyError as error:
         raise not_found(error) from error

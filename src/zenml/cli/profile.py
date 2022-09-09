@@ -562,7 +562,7 @@ def migrate_profiles(
                 try:
                     repo.zen_store.register_stack_component(
                         user_id=user.id,
-                        project_id=project.name,
+                        project_name_or_id=project.name,
                         component=component,
                     )
                     cli_utils.declare(

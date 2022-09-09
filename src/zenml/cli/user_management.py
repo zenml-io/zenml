@@ -412,7 +412,7 @@ def assign_role(
                 role_id=role.id,
                 user_or_team_id=user.id,
                 is_user=True,
-                project_id=project_id,
+                project_name_or_id=project_id,
             )
         except EntityExistsError as err:
             cli_utils.warning(str(err))
@@ -432,7 +432,7 @@ def assign_role(
                 role_id=role.id,
                 user_or_team_id=team.id,
                 is_user=False,
-                project_id=project_id,
+                project_name_or_id=project_id,
             )
         except EntityExistsError as err:
             cli_utils.warning(str(err))
@@ -487,7 +487,7 @@ def revoke_role(
                 role_id=role.id,
                 user_or_team_id=user.id,
                 is_user=True,
-                project_id=project_id,
+                project_name_or_id=project_id,
             )
         except KeyError as err:
             cli_utils.warning(str(err))
@@ -505,7 +505,7 @@ def revoke_role(
                 role_id=role.id,
                 user_or_team_id=team.id,
                 is_user=False,
-                project_id=project_id,
+                project_name_or_id=project_id,
             )
         except KeyError as err:
             cli_utils.warning(str(err))
