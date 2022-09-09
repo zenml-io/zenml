@@ -25,8 +25,8 @@ from zenml.zen_server.zen_server import ZenServer, ZenServerConfig
 from zenml.zen_stores import LocalZenStore
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 
+SERVER_START_STOP_TIMEOUT = 15
 
-TIMEOUT = 15
 
 @pytest.fixture
 def running_zen_server(tmp_path_factory: pytest.TempPathFactory) -> ZenServer:
@@ -47,10 +47,10 @@ def running_zen_server(tmp_path_factory: pytest.TempPathFactory) -> ZenServer:
         ZenServerConfig(port=port, profile_name=store_profile.name)
     )
 
-    zen_server.start(timeout=TIMEOUT)
+    zen_server.start(timeout=SERVER_START_STOP_TIMEOUT)
 
     yield zen_server
-    zen_server.stop(timeout=TIMEOUT)
+    zen_server.stop(timeout=SERVER_START_STOP_TIMEOUT)
 
     global_cfg.delete_profile(store_profile.name)
     assert zen_server.check_status()[0] == ServiceState.INACTIVE
@@ -110,10 +110,10 @@ def test_server_up_down():
     )
     endpoint = f"http://127.0.0.1:{port}/"
     try:
-        zen_server.start(timeout=TIMEOUT)
+        zen_server.start(timeout=SERVER_START_STOP_TIMEOUT)
         assert zen_server.check_status()[0] == ServiceState.ACTIVE
         assert zen_server.endpoint.status.uri == endpoint
         assert requests.head(endpoint + "health").status_code == 200
     finally:
-        zen_server.stop(timeout=TIMEOUT)
+        zen_server.stop(timeout=SERVER_START_STOP_TIMEOUT)
     assert zen_server.check_status()[0] == ServiceState.INACTIVE

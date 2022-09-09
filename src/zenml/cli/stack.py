@@ -1142,7 +1142,7 @@ def _import_stack_component(
 
 @stack.command("import", help="Import a stack from YAML.")
 @click.argument("stack_name", type=str, required=True)
-@click.argument("filename", type=str, required=False)
+@click.option("--filename", "-f", type=str, required=False)
 @click.option(
     "--ignore-version-mismatch",
     is_flag=True,
@@ -1150,8 +1150,7 @@ def _import_stack_component(
     "is different from the one specified in the stack YAML file",
 )
 @click.option(
-    "--decouple_stores",
-    "decouple_stores",
+    "--decouple-stores",
     is_flag=True,
     help="Decouple the given artifact/metadata store from prior associations.",
     type=click.BOOL,
