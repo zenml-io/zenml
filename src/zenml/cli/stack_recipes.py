@@ -627,7 +627,11 @@ class GitStackRecipesHandler(object):
         shutil.rmtree(stack_recipes_directory)
 
     def get_active_version(self) -> str:
-        """Returns the active version of the mlops-stacks repository."""
+        """Returns the active version of the mlops-stacks repository.
+
+        Returns:
+            The active version of the repository.
+        """
         self.stack_recipe_repo.checkout_latest_release()
         return self.stack_recipe_repo.active_version
 
