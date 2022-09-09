@@ -22,14 +22,12 @@ from typing import Any, List, Optional, cast
 
 import click
 from packaging.version import Version, parse
-from rich.markdown import Markdown
 from rich.text import Text
 
 import zenml
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup
 from zenml.cli.stack import import_stack, stack
-from zenml.console import console
 from zenml.exceptions import GitNotFoundError
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -629,7 +627,7 @@ class GitStackRecipesHandler(object):
         shutil.rmtree(stack_recipes_directory)
 
     def get_active_version(self) -> str:
-        """Returns the active version of the mlops-stacks repository"""
+        """Returns the active version of the mlops-stacks repository."""
         self.stack_recipe_repo.checkout_latest_release()
         return self.stack_recipe_repo.active_version
 
@@ -809,7 +807,7 @@ if terraform_installed:  # noqa: C901
             git_stack_recipes_handler: The GitStackRecipesHandler instance.
         """
         cli_utils.declare(git_stack_recipes_handler.get_active_version())
-    
+
     @stack_recipe.command(
         help="Pull stack recipes straight into your current working directory."
     )
@@ -1034,8 +1032,8 @@ if terraform_installed:  # noqa: C901
 
                 # warn that prerequisites should be met
                 metadata = yaml_utils.read_yaml(
-                file_path=os.path.join(
-                    local_stack_recipe.path, "metadata.yaml"
+                    file_path=os.path.join(
+                        local_stack_recipe.path, "metadata.yaml"
                     )
                 )
                 if not cli_utils.confirmation(
