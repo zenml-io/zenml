@@ -29,7 +29,7 @@ logger = get_logger(__name__)
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def pipeline() -> None:
-    """Run pipelines."""
+    """List, run, or delete pipelines."""
 
 
 @pipeline.command("run", help="Run a pipeline with the given configuration.")
@@ -56,7 +56,7 @@ def list_pipelines() -> None:
     """List all registered pipelines."""
     cli_utils.print_active_config()
     pipelines = Repository().zen_store.list_pipelines(
-        project_id=Repository().active_project.id
+        project_name_or_id=Repository().active_project.id
     )
     if not pipelines:
         cli_utils.declare("No piplines registered.")
@@ -81,7 +81,7 @@ def delete_pipeline(pipeline_name_or_id: str) -> None:
         else:
             pipeline = repo.zen_store.get_pipeline_in_project(
                 pipeline_name=pipeline_name_or_id,
-                project_id=repo.active_project.id,
+                project_name_or_id=repo.active_project.id,
             )
     except KeyError as err:
         cli_utils.error(str(err))

@@ -1464,8 +1464,8 @@ class BaseZenStore(BaseModel):
 
     @abstractmethod
     def _get_project(
-            self,
-            project_name_or_id: Union[UUID, str]) -> ProjectModel:
+        self, project_name_or_id: Union[UUID, str]
+    ) -> ProjectModel:
         """Get an existing project by name or ID.
 
         Args:
