@@ -44,7 +44,7 @@ service deployed in the cloud.
 Configuring and deploying a managed MySQL database cloud service to use with
 ZenML can be a complex and error prone process, especially if you plan on using
 it alongside other stack components running in the cloud. You might consider
-referring to the [ZenML Cloud Guide](../../cloud-guide/overview.md)
+referring to the [ZenML Cloud Guide](../../stack-deployment-guide/overview.md)
 for a more holistic approach to configuring full cloud stacks for ZenML.
 {% endhint %}
 
