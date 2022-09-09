@@ -24,7 +24,7 @@ ZenML 0.13.2 comes with a new local Docker orchestrator and many other improveme
 * Kubeflow workaround added by @htahir1 in https://github.com/zenml-io/zenml/pull/886
 
 
-**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.13.1...test
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.13.1...0.13.2
 
 # 0.13.1
 
