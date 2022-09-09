@@ -200,6 +200,47 @@ class LocalServerProvider(BaseServerProvider):
 
         return service
 
+    def _start_service(
+        self,
+        service: BaseService,
+        timeout: Optional[int] = None,
+    ) -> BaseService:
+        """Start the local ZenML server deployment service.
+
+        Args:
+            service: The service instance.
+            timeout: The timeout in seconds to wait until the service is
+                running.
+
+        Returns:
+            The updated service instance.
+        """
+        if timeout is None:
+            timeout = LOCAL_ZENML_SERVER_DEFAULT_TIMEOUT
+
+        service.start(timeout=timeout)
+        return service
+
+    def _stop_service(
+        self,
+        service: BaseService,
+        timeout: Optional[int] = None,
+    ) -> BaseService:
+        """Stop the local ZenML server deployment service.
+
+        Args:
+            service: The service instance.
+            timeout: The timeout in seconds to wait until the service is
+                stopped.
+        Returns:
+            The updated service instance.
+        """
+        if timeout is None:
+            timeout = LOCAL_ZENML_SERVER_DEFAULT_TIMEOUT
+
+        service.stop(timeout=timeout)
+        return service
+
     def _delete_service(
         self,
         service: BaseService,

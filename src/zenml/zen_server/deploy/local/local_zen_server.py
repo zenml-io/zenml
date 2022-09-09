@@ -186,6 +186,7 @@ class LocalZenServer(LocalDaemonService):
                 host=self.endpoint.config.ip_address,
                 port=self.endpoint.config.port,
                 log_level="info",
+                reload=True,
             )
         except KeyboardInterrupt:
             logger.info("ZenServer stopped. Resuming normal execution.")

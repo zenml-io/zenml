@@ -156,6 +156,7 @@ class BaseServerProvider(ABC):
                 f"The {config.name} ZenML server is already configured with "
                 f"the same parameters."
             )
+            service = self._start_service(service, timeout)
         else:
             logger.info(f"Updating the {config.name} ZenML server.")
             service = self._update_service(service, config, timeout)
@@ -275,7 +276,9 @@ class BaseServerProvider(ABC):
             assert service.endpoint is not None
 
             url = service.endpoint.status.uri
-        connected = url and gc.store and gc.store.url == url
+        connected = (
+            url is not None and gc.store is not None and gc.store.url == url
+        )
 
         return ServerDeploymentStatus(
             url=url,
@@ -351,6 +354,42 @@ class BaseServerProvider(ABC):
             config: The new server deployment configuration.
             timeout: The timeout in seconds to wait until the updated service is
                 running. If not supplied, a default timeout value specified
+                by the provider implementation should be used.
+
+        Returns:
+            The updated service instance.
+        """
+
+    @abstractmethod
+    def _start_service(
+        self,
+        service: BaseService,
+        timeout: Optional[int] = None,
+    ) -> BaseService:
+        """Start a service instance for a ZenML server deployment.
+
+        Args:
+            service: The service instance.
+            timeout: The timeout in seconds to wait until the service is
+                running. If not supplied, a default timeout value specified
+                by the provider implementation should be used.
+
+        Returns:
+            The updated service instance.
+        """
+
+    @abstractmethod
+    def _stop_service(
+        self,
+        service: BaseService,
+        timeout: Optional[int] = None,
+    ) -> BaseService:
+        """Stop a service instance for a ZenML server deployment.
+
+        Args:
+            service: The service instance.
+            timeout: The timeout in seconds to wait until the service is
+                stopped. If not supplied, a default timeout value specified
                 by the provider implementation should be used.
 
         Returns:
