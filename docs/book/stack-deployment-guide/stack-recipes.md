@@ -19,7 +19,7 @@ To use the stack recipe CLI commands, you will have to install some optional dep
 Run `pip install "zenml[stacks]"` to get started! 
 {% endhint %}
 
-Detailed steps are available in the READMEs of respective recipes but here's what a simple flow could look like:
+Detailed steps are available in the README of the respective recipe but here's what a simple flow could look like:
 
 1. 📃 List the available recipes in the repository.
 
