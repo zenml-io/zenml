@@ -56,7 +56,7 @@ async def get_step(step_id: str) -> StepRunModel:
     try:
         return zen_store.get_run_step(step_id)
     except KeyError as e:
-        raise not_found(error_detail(e)) from e
+        raise not_found(e) from e
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except NotFoundError as error:

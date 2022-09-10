@@ -13,13 +13,16 @@
 #  permissions and limitations under the License.
 """Analytics code for ZenML."""
 
+from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, Callable, Dict, Optional, Union
+from pydantic import BaseModel
+from typing import Any, Callable, ClassVar, Dict, List, Optional, Union
 
 from zenml import __version__
 from zenml.constants import IS_DEBUG_ENV, SEGMENT_KEY_DEV, SEGMENT_KEY_PROD
 from zenml.environment import Environment, get_environment
 from zenml.logger import get_logger
+from zenml.utils.enum_utils import StrEnum
 
 logger = get_logger(__name__)
 
@@ -48,6 +51,7 @@ class AnalyticsEvent(str, Enum):
     REGISTERED_STACK_COMPONENT = "Stack component registered"
     UPDATED_STACK_COMPONENT = "Stack component updated"
     COPIED_STACK_COMPONENT = "Stack component copied"
+    DELETED_STACK_COMPONENT = "Stack component copied"
 
     # Stack
     REGISTERED_STACK = "Stack registered"
@@ -57,6 +61,7 @@ class AnalyticsEvent(str, Enum):
     COPIED_STACK = "Stack copied"
     IMPORT_STACK = "Stack imported"
     EXPORT_STACK = "Stack exported"
+    DELETED_STACK = "Stack deleted"
 
     # Model Deployment
     MODEL_DEPLOYED = "Model deployed"
@@ -76,6 +81,7 @@ class AnalyticsEvent(str, Enum):
     # Users
     CREATED_USER = "User created"
     CREATED_DEFAULT_USER = "Default user created"
+    UPDATED_USER = "User updated"
     DELETED_USER = "User deleted"
 
     # Teams
@@ -85,6 +91,7 @@ class AnalyticsEvent(str, Enum):
     # Projects
     CREATED_PROJECT = "Project created"
     CREATED_DEFAULT_PROJECT = "Default project created"
+    UPDATED_PROJECT = "Project updated"
     DELETED_PROJECT = "Project deleted"
 
     # Role
@@ -281,12 +288,85 @@ def parametrized(
     return layer
 
 
+class AnalyticsTrackerMixin(ABC):
+    """Abstract base class for analytics trackers.
+
+    Use this as a mixin for classes that have methods decorated with
+    `@track` to add global control over how analytics are tracked. The decorator
+    will detect that the class has this mixin and will call the class
+    `track_event` method.
+    """
+
+    @abstractmethod
+    def track_event(
+        self,
+        event: Union[str, AnalyticsEvent],
+        metadata: Optional[Dict[str, Any]],
+    ) -> None:
+        """Track an event.
+
+        Args:
+            event: Event to track.
+            metadata: Metadata to track.
+        """
+
+
+class AnalyticsTrackedModelMixin(BaseModel):
+    """Mixin for models that are tracked through analytics events.
+
+    Classes that have information tracked in analytics events can inherit
+    from this mixin and implement the abstract methods. The `@track` decorator
+    will detect function arguments and return values that inherit from this
+    class and will include the `ANALYTICS_FIELDS` attributes as
+    tracking metadata.
+    """
+
+    ANALYTICS_FIELDS: ClassVar[List[str]]
+
+    def get_analytics_metadata(self) -> Dict[str, Any]:
+        """Get the analytics metadata for the model.
+
+        Returns:
+            Dict of analytics metadata.
+        """
+        metadata = {}
+        for field_name in self.ANALYTICS_FIELDS:
+            metadata[field_name] = getattr(self, field_name, None)
+        return metadata
+
+    def track_event(
+        self,
+        event: Union[str, AnalyticsEvent],
+        tracker: Optional[AnalyticsTrackerMixin] = None,
+    ) -> None:
+        """Track an event for the model.
+
+        Args:
+            event: Event to track.
+            tracker: Optional tracker to use for analytics.
+        """
+        metadata = self.get_analytics_metadata()
+        if tracker:
+            tracker.track_event(event, metadata)
+        else:
+            track_event(event, metadata)
+
+
 @parametrized
 def track(
     func: Callable[..., Any],
     event: Optional[Union[str, AnalyticsEvent]] = None,
 ) -> Callable[..., Any]:
     """Decorator to track event.
+
+    If the decorated function takes in a AnalyticsTrackedModelMixin object as an
+    argument or returns one, it will be called to track the event. The return
+    value takes precedence over the argument when determining which object is
+    called to track the event.
+
+    If the decorated function is a method of a class that inherits from
+    AnalyticsTrackerMixin, the parent object will be used to intermediate
+    tracking analytics.
 
     Args:
         func: Function that is decorated.
@@ -295,9 +375,6 @@ def track(
     Returns:
         Decorated function.
     """
-    # Need to redefine the name for the event here in order for mypy
-    # to recognize it's not an optional string anymore
-    # TODO [ENG-168]: open bug ticket and link here
     event_name = event or func.__name__  # default to name of function
     metadata: Dict[str, Any] = {}
 
@@ -311,8 +388,24 @@ def track(
         Returns:
             Result of the function.
         """
-        track_event(event_name, metadata=metadata)
         result = func(*args, **kwargs)
+        try:
+            tracker: Optional[AnalyticsTrackerMixin] = None
+            if len(args) and isinstance(args[0], AnalyticsTrackerMixin):
+                tracker = args[0]
+            for obj in [result] + list(args) + list(kwargs.values()):
+                if isinstance(obj, AnalyticsTrackedModelMixin):
+                    obj.track_event(event_name, tracker=tracker)
+                    break
+            else:
+                if tracker:
+                    tracker.track_event(event_name, metadata)
+                else:
+                    track_event(event_name, metadata)
+
+        except Exception as e:
+            logger.debug(f"Analytics tracking failure for {func}: {e}")
+
         return result
 
     return inner_func

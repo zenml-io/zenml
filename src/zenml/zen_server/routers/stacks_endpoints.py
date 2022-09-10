@@ -19,6 +19,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from zenml.constants import STACKS, VERSION_1
 from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.models import StackModel
+from zenml.utils.uuid_utils import (
+    parse_name_or_uuid,
+)
 from zenml.zen_server.utils import (
     authorize,
     error_detail,
@@ -40,13 +43,13 @@ router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def list_stacks(
-    project_name: str,
+    project_name_or_id: str,
     stack_name: Optional[str] = None,
 ) -> List[StackModel]:
     """Returns all stacks.
 
     Args:
-        project_name: Name of the project
+        project_name_or_id: Name or ID of the project
         stack_name: Optionally filter by stack name
 
     Returns:
@@ -59,7 +62,8 @@ async def list_stacks(
     """
     try:
         return zen_store.list_stacks(
-            project_name_or_id=project_name, name=stack_name
+            project_name_or_id=parse_name_or_uuid(project_name_or_id),
+            name=stack_name,
         )
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))

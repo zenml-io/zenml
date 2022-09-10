@@ -14,12 +14,13 @@
 """Pipeline models implementation."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, ClassVar, Dict, List, Optional, cast
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 from zenml import __version__ as current_zenml_version
+from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 from zenml.enums import ArtifactType
 
 
@@ -53,7 +54,7 @@ def get_git_sha(clean: bool = True) -> Optional[str]:
     return cast(str, repo.head.object.hexsha)
 
 
-class PipelineModel(BaseModel):
+class PipelineModel(AnalyticsTrackedModelMixin):
     """Pydantic object representing a pipeline.
 
     Attributes:
@@ -61,6 +62,8 @@ class PipelineModel(BaseModel):
         docstring: Docstring of the pipeline
         steps: List of steps in this pipeline
     """
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id", "project_id", "owner"]
 
     id: Optional[UUID]
     name: str

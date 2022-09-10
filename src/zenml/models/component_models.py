@@ -15,13 +15,14 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
+from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 if TYPE_CHECKING:
     from zenml.stack import StackComponent
@@ -29,7 +30,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class ComponentModel(BaseModel):
+class ComponentModel(AnalyticsTrackedModelMixin):
     """Network Serializable Model describing the StackComponent.
 
     name, type, flavor and config are specified explicitly by the user
@@ -39,6 +40,15 @@ class ComponentModel(BaseModel):
 
     id is set when the database entry is created
     """
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+        "id",
+        "type",
+        "flavor_name",
+        "project",
+        "owner",
+        "is_shared",
+    ]
 
     id: Optional[UUID] = Field(
         default=None,

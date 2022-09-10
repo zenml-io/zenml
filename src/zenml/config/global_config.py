@@ -25,6 +25,7 @@ from pydantic.main import ModelMetaclass
 
 from zenml import __version__
 from zenml.config.store_config import StoreConfiguration
+from zenml.exceptions import StackExistsError
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import io_utils, yaml_utils
@@ -388,52 +389,44 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                     "project to the default.",
                     self.active_project_name,
                 )
-                self.active_project_name = DEFAULT_PROJECT_NAME
+                self.active_project_name = None
         else:
             logger.warning(
                 "Global active project not set. Resetting it to the default."
             )
+
+        if self.active_project_name is None:
             self.active_project_name = DEFAULT_PROJECT_NAME
 
         # Sanitize the repository active stack
-        if not self.active_stack_id:
-            logger.warning(
-                "The global active stack is not set. Switching the global "
-                "active stack to 'default'"
-            )
-            default_stack = self.zen_store.list_stacks(
-                name=DEFAULT_STACK_NAME,
-                project_name_or_id=self.zen_store.get_project(
-                    self.active_project_name
-                ).id,
-                user_id=self.zen_store.default_user_id,
-            )[
-                0
-            ]  # TODO: [server] its not guaranteed that this stack exists
-            self.active_stack_id = default_stack.id
-
-        # Ensure that the current repository active stack is still valid
-        else:
+        if self.active_stack_id:
             # Ensure that the repository active stack is still valid
             try:
                 self.zen_store.get_stack(stack_id=self.active_stack_id)
-                # TODO: this does not guarantee that the stack is actually active
-
             except KeyError:
                 logger.warning(
-                    "Stack with id: '%s' not found. Switching the global active"
-                    " stack to 'default'",
+                    "Stack with id '%s' not found. Switching the global active "
+                    "stack to the default stack.",
                     self.active_stack_id,
                 )
-            default_stack = self.zen_store.list_stacks(
-                name=DEFAULT_STACK_NAME,
-                project_name_or_id=self.zen_store.get_project(
-                    self.active_project_name
-                ).id,
-                user_id=self.zen_store.default_user_id,
-            )[
-                0
-            ]  # TODO: [server] its not guaranteed that this stack exists
+            self.active_stack_id = None
+        else:
+            logger.warning(
+                "The global active stack is not set. Switching the global "
+                "active stack to the default stack."
+            )
+
+        if not self.active_stack_id and self.active_project_name:
+            try:
+                default_stack = self.zen_store.get_default_stack(
+                    project_name_or_id=self.active_project_name,
+                    user_name_or_id=self.zen_store.default_user_id,
+                )
+            except StackExistsError:
+                default_stack = self.zen_store.register_default_stack(
+                    project_name_or_id=self.active_project_name,
+                    user_name_or_id=self.zen_store.default_user_id,
+                )
             self.active_stack_id = default_stack.id
 
     @staticmethod

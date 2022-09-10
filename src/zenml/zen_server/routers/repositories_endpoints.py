@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 
 from zenml.constants import REPOSITORIES, VERSION_1
@@ -52,7 +53,7 @@ async def get_repository(repository_id: str) -> CodeRepositoryModel:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.get_repository(repository_id)
+        return zen_store.get_repository(repository_id=UUID(repository_id))
     except KeyError as error:
         raise not_found(error) from error
     except NotAuthorizedError as error:
@@ -87,7 +88,9 @@ async def update_repository(
         422 error: when unable to validate input
     """
     try:
-        return zen_store.update_repository(repository_id, repository)
+        return zen_store.update_repository(
+            repository_id=UUID(repository_id), repository=repository
+        )
     except KeyError as error:
         raise not_found(error) from error
     except NotAuthorizedError as error:
@@ -115,7 +118,7 @@ async def delete_repository(repository_id: str) -> None:
         422 error: when unable to validate input
     """
     try:
-        zen_store.delete_repository(repository_id)
+        zen_store.delete_repository(repository_id=UUID(repository_id))
     except KeyError as error:
         raise not_found(error) from error
     except NotAuthorizedError as error:

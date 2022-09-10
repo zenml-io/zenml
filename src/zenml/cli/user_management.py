@@ -23,6 +23,7 @@ from zenml.enums import CliCategories
 from zenml.exceptions import EntityExistsError, IllegalOperationError
 from zenml.models import ProjectModel, RoleModel, TeamModel, UserModel
 from zenml.repository import Repository
+from zenml.utils.uuid_utils import parse_name_or_uuid
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
@@ -115,8 +116,9 @@ def describe_team(team_name_or_id: str) -> None:
     """
     cli_utils.print_active_config()
     try:
-        team = Repository().zen_store.get_team(team_name_or_id)
-        users = Repository().zen_store.get_users_for_team(team_id=team.id)
+        users = Repository().zen_store.get_users_for_team(
+            team_name_or_id=parse_name_or_uuid(team_name_or_id)
+        )
     except KeyError as err:
         cli_utils.error(str(err))
     if not users:
@@ -154,8 +156,7 @@ def delete_team(team_name_or_id: str) -> None:
     """
     cli_utils.print_active_config()
     try:
-        team = Repository().zen_store.get_team(team_name_or_id)
-        Repository().zen_store.delete_team(team.id)
+        Repository().zen_store.delete_team(parse_name_or_uuid(team_name_or_id))
     except KeyError as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Deleted team '{team_name_or_id}'.")
@@ -176,11 +177,10 @@ def add_users(team_name_or_id: str, user_names_or_ids: Tuple[str]) -> None:
     cli_utils.print_active_config()
 
     try:
-        team = Repository().zen_store.get_team(team_name_or_id)
         for user_name_or_id in user_names_or_ids:
-            user = Repository().zen_store.get_user(user_name_or_id)
             Repository().zen_store.add_user_to_team(
-                user_id=user.id, team_id=team.id
+                user_name_or_id=parse_name_or_uuid(user_name_or_id),
+                team_name_or_id=parse_name_or_uuid(team_name_or_id),
             )
             cli_utils.declare(
                 f"Added user '{user_name_or_id}' to team '{team_name_or_id}'."
@@ -204,11 +204,10 @@ def remove_users(team_name_or_id: str, user_names_or_ids: Tuple[str]) -> None:
     cli_utils.print_active_config()
 
     try:
-        team = Repository().zen_store.get_team(team_name_or_id)
         for user_name_or_id in user_names_or_ids:
-            user = Repository().zen_store.get_user(user_name_or_id)
             Repository().zen_store.remove_user_from_team(
-                user_id=user.id, team_id=team.id
+                user_name_or_id=parse_name_or_uuid(user_name_or_id),
+                team_name_or_id=parse_name_or_uuid(team_name_or_id),
             )
             cli_utils.declare(
                 f"Removed user '{user_name_or_id}' from team '{team_name_or_id}'."
@@ -357,8 +356,9 @@ def delete_role(role_name_or_id: str) -> None:
     """
     cli_utils.print_active_config()
     try:
-        role = Repository().zen_store.get_role(role_name_or_id)
-        Repository().zen_store.delete_role(role.id)
+        Repository().zen_store.delete_role(
+            role_name_or_id=parse_name_or_uuid(role_name_or_id)
+        )
     except KeyError as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Deleted role '{role_name_or_id}'.")
@@ -390,30 +390,17 @@ def assign_role(
     """
     cli_utils.print_active_config()
 
-    # Get role and project
-    try:
-        role = Repository().zen_store.get_role(role_name_or_id)
-        if project_name_or_id:
-            project = Repository().zen_store.get_project(project_name_or_id)
-            project_id = project.id
-        else:
-            project_id = None
-    except KeyError as err:
-        cli_utils.error(str(err))
-
     # Assign the role to users
     for user_name_or_id in user_names_or_ids:
         try:
-            user = Repository().zen_store.get_user(user_name_or_id)
+            Repository().zen_store.assign_role(
+                role_name_or_id=role_name_or_id,
+                user_or_team_name_or_id=user_name_or_id,
+                is_user=True,
+                project_name_or_id=project_name_or_id,
+            )
         except KeyError as err:
             cli_utils.error(str(err))
-        try:
-            Repository().zen_store.assign_role(
-                role_id=role.id,
-                user_or_team_id=user.id,
-                is_user=True,
-                project_name_or_id=project_id,
-            )
         except EntityExistsError as err:
             cli_utils.warning(str(err))
         else:
@@ -424,16 +411,14 @@ def assign_role(
     # Assign the role to teams
     for team_name_or_id in team_names_or_ids:
         try:
-            team = Repository().zen_store.get_team(team_name_or_id)
+            Repository().zen_store.assign_role(
+                role_name_or_id=role_name_or_id,
+                user_or_team_name_or_id=team_name_or_id,
+                is_user=False,
+                project_name_or_id=project_name_or_id,
+            )
         except KeyError as err:
             cli_utils.error(str(err))
-        try:
-            Repository().zen_store.assign_role(
-                role_id=role.id,
-                user_or_team_id=team.id,
-                is_user=False,
-                project_name_or_id=project_id,
-            )
         except EntityExistsError as err:
             cli_utils.warning(str(err))
         else:
@@ -468,26 +453,14 @@ def revoke_role(
     """
     cli_utils.print_active_config()
 
-    # Get role and project
-    try:
-        role = Repository().zen_store.get_role(role_name_or_id)
-        if project_name_or_id:
-            project = Repository().zen_store.get_project(project_name_or_id)
-            project_id = project.id
-        else:
-            project_id = None
-    except KeyError as err:
-        cli_utils.error(str(err))
-
     # Revoke the role from users
     for user_name_or_id in user_names_or_ids:
         try:
-            user = Repository().zen_store.get_user(user_name_or_id)
             Repository().zen_store.revoke_role(
-                role_id=role.id,
-                user_or_team_id=user.id,
+                role_name_or_id=role_name_or_id,
+                user_or_team_name_or_id=user_name_or_id,
                 is_user=True,
-                project_name_or_id=project_id,
+                project_name_or_id=project_name_or_id,
             )
         except KeyError as err:
             cli_utils.warning(str(err))
@@ -502,10 +475,10 @@ def revoke_role(
         try:
             team = Repository().zen_store.get_team(team_name_or_id)
             Repository().zen_store.revoke_role(
-                role_id=role.id,
-                user_or_team_id=team.id,
+                role_name_or_id=role_name_or_id,
+                user_or_team_name_or_id=team.id,
                 is_user=False,
-                project_name_or_id=project_id,
+                project_name_or_id=project_name_or_id,
             )
         except KeyError as err:
             cli_utils.warning(str(err))

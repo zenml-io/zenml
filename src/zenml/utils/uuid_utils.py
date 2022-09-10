@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Utility functions for handling UUIDs."""
 
-from typing import Any
+from typing import Any, Optional, Union
 from uuid import UUID
 
 
@@ -36,3 +36,34 @@ def is_valid_uuid(value: Any, version: int = 4) -> bool:
         except ValueError:
             return False
     return False
+
+
+def parse_name_or_uuid(name_or_id: str) -> Union[str, UUID]:
+    """Convert a "name or id" string value to a string or UUID.
+
+    Args:
+        name_or_id: Name or id to convert.
+
+    Returns:
+        A UUID if name_or_id is a UUID, string otherwise.
+    """
+    try:
+        return UUID(name_or_id)
+    except ValueError:
+        return name_or_id
+
+
+def parse_optional_name_or_uuid(
+    name_or_id: Optional[str],
+) -> Optional[Union[str, UUID]]:
+    """Convert an optional "name or id" string value to an optional string or UUID.
+
+    Args:
+        name_or_id: Name or id to convert.
+
+    Returns:
+        A UUID if name_or_id is a UUID, string otherwise.
+    """
+    if name_or_id is None:
+        return None
+    return parse_name_or_uuid(name_or_id)

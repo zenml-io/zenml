@@ -280,40 +280,34 @@ class Repository(metaclass=RepositoryMetaClass):
                 )
                 self._config.active_project_name = DEFAULT_PROJECT_NAME
 
+        if not self._config.active_project_name:
+            self._config.active_project_name = DEFAULT_PROJECT_NAME
+
         # Auto-select the repository active stack
         if not self._config.active_stack_id:
             logger.warning(
                 "The repository active stack is not set. Switching the "
-                "repository active stack to 'default'"
+                "repository active stack to the default stack."
             )
-            default_stack = self.zen_store.list_stacks(
-                name=DEFAULT_STACK_NAME,
-                project_name_or_id=self.zen_store.default_project_id,
-                user_id=self.zen_store.default_user_id,
-            )[0]
-            # TODO: [server] its not guaranteed that this stack exists
+            default_stack = self.zen_store.get_default_stack(
+                project_name_or_id=self._config.active_project_name,
+                user_name_or_id=self.zen_store.default_user_id,
+            )
             self._config.active_stack_id = default_stack.id
         else:
             # Ensure that the repository active stack is still valid
             try:
                 self.zen_store.get_stack(stack_id=self._config.active_stack_id)
-                # TODO: this will return a list that is hopefully length 1 -
-                #  this would have to be validated, additionally this does not
-                #  guarantee that the stack is actually active
             except KeyError:
                 logger.warning(
-                    "Stack with id:'%s' not found. Switching the repository "
-                    "active stack "
-                    "to 'default'",
+                    "Stack with id '%s' not found. Switching the repository "
+                    "active stack to the default stack.",
                     self._config.active_stack_id,
                 )
-                default_stack = self.zen_store.list_stacks(
-                    name="default",
-                    project_name_or_id=self.zen_store.default_project_id,
-                    user_id=self.zen_store.default_user_id,
-                )[
-                    0
-                ]  # TODO: [server] its not guaranteed that this stack exists
+                default_stack = self.zen_store.get_default_stack(
+                    project_name_or_id=self._config.active_project_name,
+                    user_name_or_id=self.zen_store.default_user_id,
+                )
                 self._config.active_stack_id = default_stack.id
 
     def _load_config(self) -> Optional[RepositoryConfiguration]:
@@ -627,7 +621,7 @@ class Repository(metaclass=RepositoryMetaClass):
             # TODO: [server] access the user id in a more elegant way
             stacks = self.zen_store.list_stacks(
                 project_name_or_id=self.active_project.id,
-                user_id=self.zen_store.default_user_id,
+                user_name_or_id=self.zen_store.default_user_id,
                 # GlobalConfiguration().user_id,
                 name=name,
             )
@@ -654,7 +648,7 @@ class Repository(metaclass=RepositoryMetaClass):
         # TODO: [server] make sure the stack can be validated here
         if stack.is_valid:
             created_stack = self.zen_store.register_stack(
-                user_id=self.zen_store.default_user_id,
+                user_name_or_id=self.zen_store.default_user_id,
                 # TODO: [server] replace with active user
                 project_name_or_id=self.active_project.id,
                 stack=stack,
@@ -761,7 +755,7 @@ class Repository(metaclass=RepositoryMetaClass):
                 project_name_or_id=self.active_project.id,
                 name=name,
                 type=type,
-                user_id=self.zen_store.default_user_id,
+                user_name_or_id=self.zen_store.default_user_id,
             )
 
         # TODO: [server] this error handling could be improved
@@ -807,7 +801,7 @@ class Repository(metaclass=RepositoryMetaClass):
 
         self.zen_store.register_stack_component(
             project_name_or_id=self.active_project.id,
-            user_id=self.zen_store.default_user_id,  # TODO: Do this right
+            user_name_or_id=self.zen_store.default_user_id,  # TODO: Do this right
             component=ComponentModel.from_component(component),
         )
         if component.post_registration_message:
@@ -957,8 +951,9 @@ class Repository(metaclass=RepositoryMetaClass):
 
         try:
             # Try to find if there are any custom flavor implementations
-            flavor_wrapper = self.zen_store.get_flavor_by_name_and_type(
-                flavor_name=name,
+            flavor_wrapper = self.zen_store.list_flavors(
+                project_name_or_id=self.active_project_name,
+                name=name,
                 component_type=component_type,
             )
 
@@ -1025,7 +1020,7 @@ class Repository(metaclass=RepositoryMetaClass):
 
         # B) If a pipeline exists that has the same config, use that pipeline.
         if pipeline_configuration == existing_pipeline.configuration:
-            logger.debug(f"Did not register pipeline since it already exists.")
+            logger.debug("Did not register pipeline since it already exists.")
             return existing_pipeline.id
 
         # C) If a pipeline with different config exists, raise an error.
@@ -1095,7 +1090,7 @@ class Repository(metaclass=RepositoryMetaClass):
                 "You cannot delete yourself. If you wish to delete your active "
                 "user account, please contact your ZenML administrator."
             )
-        Repository().zen_store.delete_user(user_id=user.id)
+        Repository().zen_store.delete_user(user_name_or_id=user.id)
 
     def delete_project(self, project_name_or_id: str) -> None:
         """Delete a project.
@@ -1109,4 +1104,4 @@ class Repository(metaclass=RepositoryMetaClass):
                 f"Project '{project_name_or_id}' cannot be deleted since it is "
                 "currently active. Please set another project as active first."
             )
-        Repository().zen_store.delete_project(project_name=project.name)
+        Repository().zen_store.delete_project(project_name_or_id=project_name_or_id)

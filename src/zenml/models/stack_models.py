@@ -14,16 +14,17 @@
 """Stack wrapper implementation."""
 import json
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
 from zenml.models.component_models import ComponentModel
+from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 
-class StackModel(BaseModel):
+class StackModel(AnalyticsTrackedModelMixin):
     """Network Serializable Model describing the Stack.
 
     name, description, components and is_shared can be specified explicitly by
@@ -33,6 +34,13 @@ class StackModel(BaseModel):
 
     id is set when the database entry is created
     """
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+        "id",
+        "project",
+        "owner",
+        "is_shared",
+    ]
 
     id: Optional[UUID]
     name: str
@@ -75,6 +83,18 @@ class StackModel(BaseModel):
                 "created_at": "2022-08-12T07:12:45.931Z",
             }
         }
+
+    def get_analytics_metadata(self) -> Dict[str, Any]:
+        """Add the stack components to the stack analytics metadata.
+
+        Returns:
+            Dict of analytics metadata.
+        """
+        metadata = super().get_analytics_metadata()
+        metadata.update(
+            {ct: c.flavor_name for ct, c in self.components.items()}
+        )
+        return metadata
 
     @property
     def is_valid(self):

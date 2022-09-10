@@ -1,4 +1,5 @@
-from typing import Any, List
+from typing import Any, List, Union
+from uuid import UUID
 
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBasic, HTTPBasicCredentials

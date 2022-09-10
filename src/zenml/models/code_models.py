@@ -14,18 +14,20 @@
 """Code repository models implementation."""
 
 from datetime import datetime
-from typing import Optional
+from typing import ClassVar, List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel
+from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 
-class CodeRepositoryModel(BaseModel):
+class CodeRepositoryModel(AnalyticsTrackedModelMixin):
     """The representation of a code repository
 
     Attributes:
         name: Step name
     """
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id", "project_id"]
 
     id: Optional[UUID] = None
     name: str
