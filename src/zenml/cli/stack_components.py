@@ -560,8 +560,8 @@ def generate_stack_component_flavor_list_command(
             ).values()
         ]
 
-        # TODO [Baris]: fix this
         custom_flavors = Repository().zen_store.list_flavors(
+            project_name_or_id=Repository().active_project_name,
             component_type=component_type
         )
 

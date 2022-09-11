@@ -181,20 +181,10 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
 
     def _initialize_database(self) -> None:
         """Initialize the database on first use."""
-        default_project_id: UUID = (
-            self.default_project_id or self.create_default_project().id
-        )
-        default_user_id: UUID = (
-            self.default_user_id or self.create_default_user().id
-        )
-        if not self.list_stacks(
-            project_name_or_id=default_project_id,
-            user_name_or_id=default_user_id,
-        ):
-            self.register_default_stack(
-                project_name_or_id=default_project_id,
-                user_name_or_id=default_user_id,
-            )
+        if self.default_project_id is None:
+            self.create_default_project()
+        if self.default_user_id is None:
+            self.create_default_user()
 
     @property
     def url(self) -> str:

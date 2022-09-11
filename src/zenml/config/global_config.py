@@ -379,7 +379,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         """
         from zenml.zen_stores.base_zen_store import DEFAULT_PROJECT_NAME
 
-        # Ensure that the current repository active project is still valid
+        # Ensure that the current active project is still valid
         if self.active_project_name:
             try:
                 self.zen_store.get_project(self.active_project_name)
@@ -398,18 +398,30 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         if self.active_project_name is None:
             self.active_project_name = DEFAULT_PROJECT_NAME
 
-        # Sanitize the repository active stack
+        # Sanitize the active stack
         if self.active_stack_id:
-            # Ensure that the repository active stack is still valid
+            # Ensure that the active stack is still valid
             try:
-                self.zen_store.get_stack(stack_id=self.active_stack_id)
+                active_stack = self.zen_store.get_stack(
+                    stack_id=self.active_stack_id
+                )
             except KeyError:
                 logger.warning(
                     "Stack with id '%s' not found. Switching the global active "
-                    "stack to the default stack.",
+                    "stack to the default project stack.",
                     self.active_stack_id,
                 )
-            self.active_stack_id = None
+                self.active_stack_id = None
+            else:
+                if active_stack.project != self.active_project_name:
+                    logger.warning(
+                        "The stack with id '%s' is not in the '%s' project. "
+                        "Switching the global active stack to the default "
+                        "project stack.",
+                        self.active_stack_id,
+                        self.active_project_name,
+                    )
+                    self.active_stack_id = None
         else:
             logger.warning(
                 "The global active stack is not set. Switching the global "
@@ -417,12 +429,14 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             )
 
         if not self.active_stack_id and self.active_project_name:
+            # If no active stack is set, use the default stack in the project
+            # (create one if one is not yet created).
             try:
                 default_stack = self.zen_store.get_default_stack(
                     project_name_or_id=self.active_project_name,
                     user_name_or_id=self.zen_store.default_user_id,
                 )
-            except StackExistsError:
+            except KeyError:
                 default_stack = self.zen_store.register_default_stack(
                     project_name_or_id=self.active_project_name,
                     user_name_or_id=self.zen_store.default_user_id,

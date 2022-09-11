@@ -278,7 +278,7 @@ def print_stack_component_list(
             "UUID": component.id,
             **{
                 key.upper(): str(value)
-                for key, value in json.loads(component.configuration).items()
+                for key, value in component.configuration.items()
             },
         }
         configurations.append(component_config)

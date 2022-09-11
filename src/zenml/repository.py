@@ -949,24 +949,23 @@ class Repository(metaclass=RepositoryMetaClass):
             component_type=component_type
         )
 
-        try:
-            # Try to find if there are any custom flavor implementations
-            flavor_wrapper = self.zen_store.list_flavors(
-                project_name_or_id=self.active_project_name,
-                name=name,
-                component_type=component_type,
+        # Try to find if there are any custom flavor implementations
+        custom_flavors = self.zen_store.list_flavors(
+            project_name_or_id=self.active_project_name,
+            name=name,
+            component_type=component_type,
+        )
+
+        # If there is one, check whether the same flavor exists as a default
+        # flavor to give out a warning
+        if custom_flavors and name in zenml_flavors:
+            logger.warning(
+                f"There is a custom implementation for the flavor "
+                f"'{name}' of a {component_type}, which is currently "
+                f"overwriting the same flavor provided by ZenML."
             )
 
-            # If there is one, check whether the same flavor exists as a default
-            # flavor to give out a warning
-            if name in zenml_flavors:
-                logger.warning(
-                    f"There is a custom implementation for the flavor "
-                    f"'{name}' of a {component_type}, which is currently "
-                    f"overwriting the same flavor provided by ZenML."
-                )
-
-        except KeyError:
+        else:
             if name in zenml_flavors:
                 flavor_wrapper = zenml_flavors[name]
             else:
