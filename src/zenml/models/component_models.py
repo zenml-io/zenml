@@ -45,7 +45,7 @@ class ComponentModel(AnalyticsTrackedModelMixin):
         "id",
         "type",
         "flavor_name",
-        "project",
+        "project_id",
         "owner",
         "is_shared",
     ]
@@ -70,13 +70,13 @@ class ComponentModel(AnalyticsTrackedModelMixin):
     )
     owner: Optional[UUID] = Field(
         default=None,
-        title="The id of the user, that owns this component.",
+        title="The id of the user that owns this component.",
     )
     is_shared: bool = Field(
         default=False,
         title="Flag describing if this component is shared.",
     )
-    project: Optional[str] = Field(
+    project_id: Optional[UUID] = Field(
         default=None, title="The project that contains this component."
     )
     created_at: Optional[datetime] = Field(
@@ -90,10 +90,10 @@ class ComponentModel(AnalyticsTrackedModelMixin):
                 "id": "5e4286b5-51f4-4286-b1f8-b0143e9a27ce",
                 "name": "vertex_prd_orchestrator",
                 "type": "orchestrator",
-                "flavor": "vertex",
+                "flavor_name": "vertex",
                 "configuration": {"location": "europe-west3"},
                 "owner": "8d0acbc3-c51a-452c-bda3-e1b5469f79fd",
-                "created_by": "8d0acbc3-c51a-452c-bda3-e1b5469f79fd",
+                "project_id": "8d0acbc3-c51a-452c-bda3-e1b5469f79fd",
                 "created_at": "2022-08-12T07:12:44.931Z",
             }
         }

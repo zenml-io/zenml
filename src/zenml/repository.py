@@ -278,7 +278,11 @@ class Repository(metaclass=RepositoryMetaClass):
                     "project to the default.",
                     self._config.active_project_name,
                 )
-                self._config.active_project_name = DEFAULT_PROJECT_NAME
+                self._config.active_project_name = None
+        else:
+            logger.warning(
+                "Repository active project not set. Resetting it to the default."
+            )
 
         if not self._config.active_project_name:
             self._config.active_project_name = DEFAULT_PROJECT_NAME
@@ -525,7 +529,9 @@ class Repository(metaclass=RepositoryMetaClass):
             A dictionary containing the configuration of all stacks registered
             in this repository.
         """
-        stacks = self.zen_store.list_stacks(self.zen_store.default_project_id)
+        stacks = self.zen_store.list_stacks(
+            project_name_or_id=self.active_project_name
+        )
 
         dict_of_stacks = dict()
         for stack in stacks:
@@ -1103,4 +1109,6 @@ class Repository(metaclass=RepositoryMetaClass):
                 f"Project '{project_name_or_id}' cannot be deleted since it is "
                 "currently active. Please set another project as active first."
             )
-        Repository().zen_store.delete_project(project_name_or_id=project_name_or_id)
+        Repository().zen_store.delete_project(
+            project_name_or_id=project_name_or_id
+        )

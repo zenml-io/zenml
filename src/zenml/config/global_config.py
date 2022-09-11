@@ -413,7 +413,8 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 )
                 self.active_stack_id = None
             else:
-                if active_stack.project != self.active_project_name:
+                project = self.zen_store.get_project(self.active_project_name)
+                if active_stack.project_id != project.id:
                     logger.warning(
                         "The stack with id '%s' is not in the '%s' project. "
                         "Switching the global active stack to the default "

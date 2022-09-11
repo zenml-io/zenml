@@ -37,7 +37,7 @@ class StackModel(AnalyticsTrackedModelMixin):
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "id",
-        "project",
+        "project_id",
         "owner",
         "is_shared",
     ]
@@ -55,7 +55,7 @@ class StackModel(AnalyticsTrackedModelMixin):
         default=False,
         title="Flag describing if this stack is shared.",
     )
-    project: Optional[str] = Field(
+    project_id: Optional[UUID] = Field(
         default=None, title="The project that contains this stack."
     )
     owner: Optional[UUID] = Field(
@@ -78,7 +78,7 @@ class StackModel(AnalyticsTrackedModelMixin):
                     "orchestrator": "5e4286b5-51f4-4286-b1f8-b0143e9a27ce",
                 },
                 "is_shared": "True",
-                "project": "cat_project",
+                "project_id": "5e4286b5-51f4-4286-b1f8-b0143e9a27ce",
                 "owner": "8d0acbc3-c51a-452c-bda3-e1b5469f79fd",
                 "created_at": "2022-08-12T07:12:45.931Z",
             }
@@ -113,7 +113,7 @@ class StackModel(AnalyticsTrackedModelMixin):
         component_data = {}
         for component_type, component in self.components.items():
             component_dict = json.loads(component.json())
-            component_dict.pop("project")  # Not needed in the yaml repr
+            component_dict.pop("project_id")  # Not needed in the yaml repr
             component_dict.pop("created_at")  # Not needed in the yaml repr
             component_data[component_type.value] = component_dict
 

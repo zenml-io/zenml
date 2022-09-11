@@ -240,6 +240,10 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         """
         from zenml.config.global_config import GlobalConfiguration
 
+        project_name = self.get_project(
+            project_name_or_id=project_name_or_id
+        ).name
+        user_name = self.get_project(user_name_or_id=user_name_or_id).name
         try:
             self.get_default_stack(
                 project_name_or_id=project_name_or_id,
@@ -250,12 +254,12 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         else:
             raise StackExistsError(
                 f"Default stack already registered for user "
-                f"{str(user_name_or_id)} in project {str(project_name_or_id)}"
+                f"{user_name} in project {project_name}"
             )
 
         logger.info(
-            f"Creating default stack for user {str(user_name_or_id)} in project "
-            f"{str(project_name_or_id)}..."
+            f"Creating default stack for user {user_name} in project "
+            f"{project_name}..."
         )
 
         # Register the default orchestrator
@@ -292,7 +296,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         components = {c.type: c for c in [orchestrator, artifact_store]}
         # Register the default stack
         stack = StackModel(
-            name="default", components=components, is_shared=True
+            name="default", components=components, is_shared=False
         )
         return self.register_stack(
             user_name_or_id=user_name_or_id,
