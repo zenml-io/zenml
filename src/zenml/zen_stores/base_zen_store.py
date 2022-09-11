@@ -181,10 +181,24 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
 
     def _initialize_database(self) -> None:
         """Initialize the database on first use."""
-        if self.default_project_id is None:
-            self.create_default_project()
-        if self.default_user_id is None:
-            self.create_default_user()
+        try:
+            default_project = self._default_project
+        except KeyError:
+            default_project = self._create_default_project()
+        try:
+            default_user = self._default_user
+        except KeyError:
+            default_user = self._create_default_user()
+        try:
+            self._get_default_stack(
+                project_name_or_id=default_project.id,
+                user_name_or_id=default_user.id,
+            )
+        except KeyError:
+            self._register_default_stack(
+                project_name_or_id=default_project.id,
+                user_name_or_id=default_user.id,
+            )
 
     @property
     def url(self) -> str:
@@ -204,21 +218,96 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         """
         return self.TYPE
 
+    def validate_active_config(
+        self,
+        active_project_name_or_id: Optional[Union[str, UUID]] = None,
+        active_stack_id: Optional[UUID] = None,
+    ) -> Tuple[ProjectModel, StackModel]:
+        """Validate the active configuration.
+
+        Call this method to validate the supplied active project and active
+        stack values.
+
+        This method is guaranteed to return valid project ID and stack ID
+        values. If the supplied project and stack are not set or are not valid
+        (e.g. they do not exist or are not accessible), the default project and
+        default project stack will be returned in their stead.
+
+        Args:
+            active_project_name_or_id: The name or ID of the active project.
+            active_stack_id: The ID of the active stack.
+
+        Returns:
+            A tuple containing the active project and active stack.
+        """
+
+        active_project: ProjectModel
+
+        # Ensure that the current active project is still valid
+        if active_project_name_or_id:
+            try:
+                active_project = self.get_project(active_project_name_or_id)
+            except KeyError:
+                logger.warning(
+                    "Project '%s' not found. Resetting the active project to "
+                    "the default.",
+                    active_project_name_or_id,
+                )
+                active_project = self._default_project
+        else:
+            logger.warning("Active project not set. Setting it to the default.")
+            active_project = self._default_project
+
+        active_stack: Optional[StackModel] = None
+
+        # Sanitize the active stack
+        if active_stack_id:
+            # Ensure that the active stack is still valid
+            try:
+                active_stack = self.get_stack(stack_id=active_stack_id)
+            except KeyError:
+                logger.warning(
+                    "Stack with id '%s' not found. Setting the active "
+                    "stack to the default project stack.",
+                    active_stack_id,
+                )
+            else:
+                if active_stack.project_id != active_project.id:
+                    logger.warning(
+                        "The stack with id '%s' is not in the active project. "
+                        "Resetting the active stack to the default "
+                        "project stack.",
+                        active_stack_id,
+                    )
+                    active_stack = None
+        else:
+            logger.warning(
+                "The active stack is not set. Setting the "
+                "active stack to the default project stack."
+            )
+
+        if active_stack is None:
+            # If no active stack is set, use the default stack in the project
+            # (create one if one is not yet created).
+            try:
+                active_stack = self._get_default_stack(
+                    project_name_or_id=active_project.id,
+                    user_name_or_id=self.active_user.id,
+                )
+            except KeyError:
+                active_stack = self._register_default_stack(
+                    project_name_or_id=active_project.id,
+                    user_name_or_id=self.active_user.id,
+                )
+
+        return active_project, active_stack
+
     # ------
     # Stacks
     # ------
 
-    @property
-    def stacks(self) -> List[StackModel]:
-        """All stacks registered in this zen store.
-
-        Returns:
-            A list of all stacks registered in this zen store.
-        """
-        return self.list_stacks(project_name_or_id=self.default_project_id)
-
     @track(AnalyticsEvent.REGISTERED_DEFAULT_STACK)
-    def register_default_stack(
+    def _register_default_stack(
         self,
         project_name_or_id: Union[str, UUID],
         user_name_or_id: Union[str, UUID],
@@ -243,9 +332,9 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         project_name = self.get_project(
             project_name_or_id=project_name_or_id
         ).name
-        user_name = self.get_project(user_name_or_id=user_name_or_id).name
+        user_name = self.get_user(user_name_or_id=user_name_or_id).name
         try:
-            self.get_default_stack(
+            self._get_default_stack(
                 project_name_or_id=project_name_or_id,
                 user_name_or_id=user_name_or_id,
             )
@@ -304,7 +393,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             stack=stack,
         )
 
-    def get_default_stack(
+    def _get_default_stack(
         self,
         project_name_or_id: Union[str, UUID],
         user_name_or_id: Union[str, UUID],
@@ -348,7 +437,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         Returns:
             A list of all registered flavors.
         """
-        return self.list_flavors(project_name_or_id=self.default_project_id)
+        return self.list_flavors()
 
     # TODO [Baris]: clarify how core and integration flavors are shared and/or
     #   mixed with custom flavors. Shouldn't this be a Repository() method ?
@@ -401,15 +490,22 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         return self.list_users()
 
     @property
-    def default_user_id(self) -> Optional[UUID]:
-        """Get the ID of the default user, or None if it doesn't exist."""
+    def _default_user(self) -> UserModel:
+        """Get the default user.
+
+        Returns:
+            The default user.
+
+        Raises:
+            KeyError: If the default user doesn't exist.
+        """
         try:
-            return self.get_user(DEFAULT_USERNAME).id
+            return self.get_user(DEFAULT_USERNAME)
         except KeyError:
-            return None
+            raise KeyError("The default user is not configured")
 
     @track(AnalyticsEvent.CREATED_DEFAULT_USER)
-    def create_default_user(self) -> UserModel:
+    def _create_default_user(self) -> UserModel:
         """Creates a default user.
 
         Returns:
@@ -458,15 +554,22 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
     # --------
 
     @property
-    def default_project_id(self) -> Optional[UUID]:
-        """Get the ID of the default project, or None if it doesn't exist."""
+    def _default_project(self) -> ProjectModel:
+        """Get the default project.
+
+        Returns:
+            The default project.
+
+        Raises:
+            KeyError: if the default project doesn't exist.
+        """
         try:
-            return self.get_project(DEFAULT_PROJECT_NAME).id
+            return self.get_project(DEFAULT_PROJECT_NAME)
         except KeyError:
-            return None
+            raise KeyError("The default project is not configured")
 
     @track(AnalyticsEvent.CREATED_DEFAULT_PROJECT)
-    def create_default_project(self) -> ProjectModel:
+    def _create_default_project(self) -> ProjectModel:
         """Creates a default project.
 
         Returns:

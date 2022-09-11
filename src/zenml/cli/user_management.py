@@ -289,8 +289,7 @@ def set_project(project_name_or_id: str) -> None:
     """
     cli_utils.print_active_config()
     try:
-        project = Repository().zen_store.get_project(project_name_or_id)
-        Repository().set_active_project(project_name=project.name)
+        Repository().set_active_project(project_name_or_id=project_name_or_id)
     except KeyError as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Set active project '{project_name_or_id}'.")

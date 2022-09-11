@@ -16,7 +16,7 @@
 import os
 from abc import ABCMeta
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
 from uuid import UUID
 
 from zenml.config.global_config import GlobalConfiguration
@@ -268,51 +268,11 @@ class Repository(metaclass=RepositoryMetaClass):
         if not self._config:
             return
 
-        # Ensure that the current repository active project is still valid
-        if self._config.active_project_name:
-            try:
-                self.zen_store.get_project(self._config.active_project_name)
-            except KeyError:
-                logger.warning(
-                    "Project '%s' not found. Resetting the repository active "
-                    "project to the default.",
-                    self._config.active_project_name,
-                )
-                self._config.active_project_name = None
-        else:
-            logger.warning(
-                "Repository active project not set. Resetting it to the default."
-            )
-
-        if not self._config.active_project_name:
-            self._config.active_project_name = DEFAULT_PROJECT_NAME
-
-        # Auto-select the repository active stack
-        if not self._config.active_stack_id:
-            logger.warning(
-                "The repository active stack is not set. Switching the "
-                "repository active stack to the default stack."
-            )
-            default_stack = self.zen_store.get_default_stack(
-                project_name_or_id=self._config.active_project_name,
-                user_name_or_id=self.zen_store.default_user_id,
-            )
-            self._config.active_stack_id = default_stack.id
-        else:
-            # Ensure that the repository active stack is still valid
-            try:
-                self.zen_store.get_stack(stack_id=self._config.active_stack_id)
-            except KeyError:
-                logger.warning(
-                    "Stack with id '%s' not found. Switching the repository "
-                    "active stack to the default stack.",
-                    self._config.active_stack_id,
-                )
-                default_stack = self.zen_store.get_default_stack(
-                    project_name_or_id=self._config.active_project_name,
-                    user_name_or_id=self.zen_store.default_user_id,
-                )
-                self._config.active_stack_id = default_stack.id
+        active_project, active_stack = self.zen_store.validate_active_config(
+            self._config.active_project_name, self._config.active_stack_id
+        )
+        self._config.active_project_name = active_project.name
+        self._config.active_stack_id = active_stack.id
 
     def _load_config(self) -> Optional[RepositoryConfiguration]:
         """Loads the repository configuration from disk.
@@ -423,50 +383,42 @@ class Repository(metaclass=RepositoryMetaClass):
         """
         self._set_active_root(root)
 
-    @property
-    def uses_local_active_project(self) -> bool:
-        """Check if the repository is using a local active project setting.
-
-        Returns:
-            True if the repository is using a local active project setting,
-            False
-            otherwise.
-        """
-        return (
-            self._config is not None
-            and self._config.active_project_name is not None
-        )
-
-    def set_active_project(self, project_name: Optional[str] = None) -> None:
+    @track(event=AnalyticsEvent.SET_PROJECT)
+    def set_active_project(
+        self, project_name_or_id: Union[str, UUID]
+    ) -> "ProjectModel":
         """Set the project for the local repository.
-
-        If no object is passed, this will unset the active project.
 
         Args:
             project_name: The project name to set as active.
+
+        Returns:
+            The active project.
         """
-        if project_name:
-            self.zen_store.get_project(
-                project_name_or_id=project_name
-            )  # raises KeyError
+        project = self.zen_store.get_project(
+            project_name_or_id=project_name_or_id
+        )  # raises KeyError
         if self._config:
-            self._config.active_project_name = project_name
+            self._config.active_project_name = project.name
         else:
             # set the active project globally only if the repository doesn't use
             # a local configuration
-            GlobalConfiguration().active_project_name = project_name
+            GlobalConfiguration().active_project_name = project.name
+
+        return project
 
     @property
-    def active_project_name(self) -> Optional[str]:
+    def active_project_name(self) -> str:
         """The name of the active project for this repository.
 
         If no active project is configured locally for the repository, the
         active project in the global configuration is used instead.
 
         Returns:
-            The name of the active project or None, if an active project name is
-            set neither in the repository configuration nor in the global
-            configuration.
+            The name of the active project.
+
+        Raises:
+            RuntimeError: If the active project is not set.
         """
         project_name = None
         if self._config:
@@ -476,7 +428,7 @@ class Repository(metaclass=RepositoryMetaClass):
             project_name = GlobalConfiguration().active_project_name
 
         if not project_name:
-            logger.info(
+            raise RuntimeError(
                 "No active project is configured. Run "
                 "`zenml project set PROJECT_NAME` to set the active "
                 "project."
@@ -485,35 +437,62 @@ class Repository(metaclass=RepositoryMetaClass):
         return project_name
 
     @property
-    def active_project(self) -> Optional["ProjectModel"]:
+    def active_project(self) -> "ProjectModel":
         """Get the currently active project of the local repository.
 
         If no active project is configured locally for the repository, the
         active project in the global configuration is used instead.
 
         Returns:
-            The active project or None, if an active project name is
-            set neither in the repository configuration nor in the global
-            configuration.
+            The active project.
         """
         return self.zen_store.get_project(self.active_project_name)
 
     @property
-    def active_user(self) -> Optional["UserModel"]:
+    def active_user(self) -> "UserModel":
+        """Get the user that is currently in use.
+
+        Returns:
+            The active user.
+        """
         return self.zen_store.active_user
 
     @property
-    def stacks(self) -> List["StackModel"]:
-        """All stacks registered in this repository.
+    def stack_models(self) -> List["StackModel"]:
+        """All stack models available in the current project and owned by the current user.
+
+        This property is intended as a quick way to get information about the
+        components of the registered stacks without loading all installed
+        integrations. The contained stack configurations might be invalid if
+        they were modified by hand, to ensure you get valid stacks use
+        `repo.stacks()` instead.
 
         Returns:
-            A list of all stacks registered in this repository.
+            A list of all stacks available in the current project and owned by
+            the current user.
         """
-        return self.zen_store.stacks
+        return self.zen_store.list_stacks(
+            project_name_or_id=self.active_project_name,
+            user_name_or_id=self.active_user.id,
+        )
+
+    @property
+    def stacks(self) -> List["Stack"]:
+        """All stacks available in the current project and owned by the current user.
+
+        Returns:
+            A list of all stacks available in the current project and owned by
+            the current user.
+        """
+        from zenml.stack.stack import Stack
+
+        return [
+            Stack.from_model(stack_model) for stack_model in self.stack_models
+        ]
 
     @property
     def stack_configurations(self) -> Dict[str, Dict[str, str]]:
-        """Configuration dicts for all stacks registered in this repository.
+        """Configuration dicts for all stacks available in the current project and owned by the current user.
 
         This property is intended as a quick way to get information about the
         components of the registered stacks without loading all installed
@@ -526,11 +505,12 @@ class Repository(metaclass=RepositoryMetaClass):
         `repo.deregister_stack(...)` instead.
 
         Returns:
-            A dictionary containing the configuration of all stacks registered
-            in this repository.
+            A dictionary containing the configuration of all stacks available in
+            the current project and owned by the current user.
         """
         stacks = self.zen_store.list_stacks(
-            project_name_or_id=self.active_project_name
+            project_name_or_id=self.active_project_name,
+            user_name_or_id=self.active_user.id,
         )
 
         dict_of_stacks = dict()
@@ -550,6 +530,9 @@ class Repository(metaclass=RepositoryMetaClass):
 
         Returns:
             The model of the active stack for this repository.
+
+        Raise:
+            RuntimeError: If the active stack is not set.
         """
         stack_id = None
         if self._config:
@@ -577,19 +560,6 @@ class Repository(metaclass=RepositoryMetaClass):
 
         return Stack.from_model(self.active_stack_model)
 
-    @property
-    def uses_local_active_stack(self) -> bool:
-        """Check if the repository is using a local active stack setting.
-
-        Returns:
-            True if the repository is using a local active stack setting, False
-            otherwise.
-        """
-        return (
-            self._config is not None
-            and self._config.active_stack_id is not None
-        )
-
     @track(event=AnalyticsEvent.SET_STACK)
     def activate_stack(self, stack: "StackModel") -> None:
         """Activates the stack for the given name.
@@ -608,7 +578,7 @@ class Repository(metaclass=RepositoryMetaClass):
     def get_stack_by_name(
         self, name: str, is_shared: bool = False
     ) -> "StackModel":
-        """Fetches a stack by name within the active stack
+        """Fetches a stack by name within the active project
 
         Args:
             name: The name of the stack to fetch.
@@ -624,11 +594,9 @@ class Repository(metaclass=RepositoryMetaClass):
                 is_shared=True,
             )
         else:
-            # TODO: [server] access the user id in a more elegant way
             stacks = self.zen_store.list_stacks(
                 project_name_or_id=self.active_project.id,
-                user_name_or_id=self.zen_store.default_user_id,
-                # GlobalConfiguration().user_id,
+                user_name_or_id=self.zen_store.active_user.id,
                 name=name,
             )
 
@@ -654,8 +622,7 @@ class Repository(metaclass=RepositoryMetaClass):
         # TODO: [server] make sure the stack can be validated here
         if stack.is_valid:
             created_stack = self.zen_store.register_stack(
-                user_name_or_id=self.zen_store.default_user_id,
-                # TODO: [server] replace with active user
+                user_name_or_id=self.zen_store.active_user.id,
                 project_name_or_id=self.active_project.id,
                 stack=stack,
             )
@@ -756,12 +723,11 @@ class Repository(metaclass=RepositoryMetaClass):
                 is_shared=True,
             )
         else:
-            # TODO: [server] access the user id in a more elegant way
             components = self.zen_store.list_stack_components(
                 project_name_or_id=self.active_project.id,
                 name=name,
                 type=type,
-                user_name_or_id=self.zen_store.default_user_id,
+                user_name_or_id=self.zen_store.active_user.id,
             )
 
         # TODO: [server] this error handling could be improved
@@ -807,7 +773,7 @@ class Repository(metaclass=RepositoryMetaClass):
 
         self.zen_store.register_stack_component(
             project_name_or_id=self.active_project.id,
-            user_name_or_id=self.zen_store.default_user_id,  # TODO: Do this right
+            user_name_or_id=self.zen_store.active_user.id,
             component=ComponentModel.from_component(component),
         )
         if component.post_registration_message:

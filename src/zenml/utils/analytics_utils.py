@@ -93,6 +93,7 @@ class AnalyticsEvent(str, Enum):
     CREATED_DEFAULT_PROJECT = "Default project created"
     UPDATED_PROJECT = "Project updated"
     DELETED_PROJECT = "Project deleted"
+    SET_PROJECT = "Project set"
 
     # Role
     CREATED_ROLE = "Role created"

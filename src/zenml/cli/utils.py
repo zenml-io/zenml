@@ -427,7 +427,7 @@ def print_active_config() -> None:
     elif gc.store.type == StoreType.REST:
         declare(f"Connected to the ZenML server: {gc.store.url}")
         if gc.active_project_name:
-            scope = "repository" if repo.uses_local_active_project else "global"
+            scope = "repository" if repo.uses_local_configuration else "global"
             declare(
                 f"Running with active project: '{gc.active_project_name}' "
                 f"({scope})"
@@ -439,7 +439,7 @@ def print_active_stack() -> None:
     from zenml.repository import Repository
 
     repo = Repository()
-    scope = "repository" if repo.uses_local_active_stack else "global"
+    scope = "repository" if repo.uses_local_configuration else "global"
     declare(
         f"Running with active stack: '{repo.active_stack_model.name}' ({scope})"
     )

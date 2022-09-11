@@ -377,72 +377,11 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         doesn't contain outdated information, such as an active stack or project
         that no longer exists.
         """
-        from zenml.zen_stores.base_zen_store import DEFAULT_PROJECT_NAME
-
-        # Ensure that the current active project is still valid
-        if self.active_project_name:
-            try:
-                self.zen_store.get_project(self.active_project_name)
-            except KeyError:
-                logger.warning(
-                    "Project '%s' not found. Resetting the global active "
-                    "project to the default.",
-                    self.active_project_name,
-                )
-                self.active_project_name = None
-        else:
-            logger.warning(
-                "Global active project not set. Resetting it to the default."
-            )
-
-        if self.active_project_name is None:
-            self.active_project_name = DEFAULT_PROJECT_NAME
-
-        # Sanitize the active stack
-        if self.active_stack_id:
-            # Ensure that the active stack is still valid
-            try:
-                active_stack = self.zen_store.get_stack(
-                    stack_id=self.active_stack_id
-                )
-            except KeyError:
-                logger.warning(
-                    "Stack with id '%s' not found. Switching the global active "
-                    "stack to the default project stack.",
-                    self.active_stack_id,
-                )
-                self.active_stack_id = None
-            else:
-                project = self.zen_store.get_project(self.active_project_name)
-                if active_stack.project_id != project.id:
-                    logger.warning(
-                        "The stack with id '%s' is not in the '%s' project. "
-                        "Switching the global active stack to the default "
-                        "project stack.",
-                        self.active_stack_id,
-                        self.active_project_name,
-                    )
-                    self.active_stack_id = None
-        else:
-            logger.warning(
-                "The global active stack is not set. Switching the global "
-                "active stack to the default stack."
-            )
-
-        if not self.active_stack_id and self.active_project_name:
-            # If no active stack is set, use the default stack in the project
-            # (create one if one is not yet created).
-            try:
-                default_stack = self.zen_store.get_default_stack(
-                    project_name_or_id=self.active_project_name,
-                    user_name_or_id=self.zen_store.default_user_id,
-                )
-            except KeyError:
-                default_stack = self.zen_store.register_default_stack(
-                    project_name_or_id=self.active_project_name,
-                    user_name_or_id=self.zen_store.default_user_id,
-                )
-            self.active_stack_id = default_stack.id
+        active_project, active_stack = self.zen_store.validate_active_config(
+            self.active_project_name, self.active_stack_id
+        )
+        self.active_project_name = active_project.name
+        self.active_stack_id = active_stack.id
 
     @staticmethod
     def default_config_directory() -> str:
