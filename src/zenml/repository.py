@@ -589,14 +589,14 @@ class Repository(metaclass=RepositoryMetaClass):
         """
         if is_shared:
             stacks = self.zen_store.list_stacks(
-                project_name_or_id=self.active_project.id,
+                project_name_or_id=self.active_project.name,
                 name=name,
                 is_shared=True,
             )
         else:
             stacks = self.zen_store.list_stacks(
-                project_name_or_id=self.active_project.id,
-                user_name_or_id=self.zen_store.active_user.id,
+                project_name_or_id=self.active_project.name,
+                user_name_or_id=self.zen_store.active_user.name,
                 name=name,
             )
 
@@ -622,8 +622,8 @@ class Repository(metaclass=RepositoryMetaClass):
         # TODO: [server] make sure the stack can be validated here
         if stack.is_valid:
             created_stack = self.zen_store.register_stack(
-                user_name_or_id=self.zen_store.active_user.id,
-                project_name_or_id=self.active_project.id,
+                user_name_or_id=self.zen_store.active_user.name,
+                project_name_or_id=self.active_project.name,
                 stack=stack,
             )
             return created_stack
@@ -642,8 +642,6 @@ class Repository(metaclass=RepositoryMetaClass):
         """
         if stack.is_valid:
             self.zen_store.update_stack(stack=stack)
-            if self._config.active_stack_id == stack.id:
-                self.activate_stack(stack)
         else:
             raise RuntimeError(
                 "Stack configuration is invalid. A valid"
@@ -661,7 +659,9 @@ class Repository(metaclass=RepositoryMetaClass):
             ValueError: If the stack is the currently active stack for this
                 repository.
         """
-        if stack.id == self._config.active_stack_id:
+        assert stack.id is None
+
+        if stack.id == self.active_stack_model.id:
             raise ValueError(
                 f"Unable to deregister active stack " f"'{stack.name}'."
             )
@@ -685,7 +685,11 @@ class Repository(metaclass=RepositoryMetaClass):
         Args:
             component: The new component to update with.
         """
-        self.zen_store.update_stack_component(component=component)
+        assert component.id is None
+
+        self.zen_store.update_stack_component(
+            component_id=component.id, component=component
+        )
 
     def list_stack_components(
         self, component_type: "StackComponentType"
@@ -699,7 +703,7 @@ class Repository(metaclass=RepositoryMetaClass):
             A list of all registered stack components of the given type.
         """
         return self.zen_store.list_stack_components(
-            project_name_or_id=self.active_project.id, type=component_type
+            project_name_or_id=self.active_project.name, type=component_type
         )
 
     def get_stack_component_by_name_and_type(
@@ -717,17 +721,17 @@ class Repository(metaclass=RepositoryMetaClass):
         """
         if is_shared:
             components = self.zen_store.list_stack_components(
-                project_name_or_id=self.active_project.id,
+                project_name_or_id=self.active_project.name,
                 name=name,
                 type=type,
                 is_shared=True,
             )
         else:
             components = self.zen_store.list_stack_components(
-                project_name_or_id=self.active_project.id,
+                project_name_or_id=self.active_project.name,
                 name=name,
                 type=type,
-                user_name_or_id=self.zen_store.active_user.id,
+                user_name_or_id=self.zen_store.active_user.name,
             )
 
         # TODO: [server] this error handling could be improved
@@ -772,8 +776,8 @@ class Repository(metaclass=RepositoryMetaClass):
         from zenml.models import ComponentModel
 
         self.zen_store.register_stack_component(
-            project_name_or_id=self.active_project.id,
-            user_name_or_id=self.zen_store.active_user.id,
+            project_name_or_id=self.active_project.name,
+            user_name_or_id=self.zen_store.active_user.name,
             component=ComponentModel.from_component(component),
         )
         if component.post_registration_message:
@@ -972,7 +976,7 @@ class Repository(metaclass=RepositoryMetaClass):
         try:
             existing_pipeline = self.zen_store.get_pipeline_in_project(
                 pipeline_name=pipeline_name,
-                project_name_or_id=self.active_project.id,
+                project_name_or_id=self.active_project.name,
             )
 
         # A) If there is no pipeline with this name, register a new pipeline.
@@ -984,7 +988,7 @@ class Repository(metaclass=RepositoryMetaClass):
                 configuration=pipeline_configuration,
             )
             pipeline = self.zen_store.create_pipeline(
-                project_name_or_id=self.active_project.id, pipeline=pipeline
+                project_name_or_id=self.active_project.name, pipeline=pipeline
             )
             logger.info(f"Registered new pipeline with name {pipeline.name}.")
             return pipeline.id
@@ -1061,7 +1065,7 @@ class Repository(metaclass=RepositoryMetaClass):
                 "You cannot delete yourself. If you wish to delete your active "
                 "user account, please contact your ZenML administrator."
             )
-        Repository().zen_store.delete_user(user_name_or_id=user.id)
+        Repository().zen_store.delete_user(user_name_or_id=user.name)
 
     def delete_project(self, project_name_or_id: str) -> None:
         """Delete a project.
