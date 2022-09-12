@@ -28,7 +28,7 @@ from zenml.utils.source_utils import load_source_path_class
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
-    from zenml.stack import Stack, StackValidator, Flavor
+    from zenml.stack import Flavor, Stack, StackValidator
 
 logger = get_logger(__name__)
 
@@ -142,7 +142,9 @@ class StackComponent:
         )
 
         try:
-            flavor_class: "Flavor" = load_source_path_class(source=flavor_model.source) # noqa
+            flavor_class: "Flavor" = load_source_path_class(  # noqa
+                source=flavor_model.source
+            )
         except (ModuleNotFoundError, ImportError, NotImplementedError):
             raise ImportError(f"tmp")
 
