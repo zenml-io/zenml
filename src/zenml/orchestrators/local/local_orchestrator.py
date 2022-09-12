@@ -19,6 +19,7 @@ from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators.base_orchestrator import BaseOrchestratorFlavor
 from zenml.stack import Stack
 from zenml.steps import BaseStep
 
@@ -27,6 +28,16 @@ if TYPE_CHECKING:
     from zenml.runtime_configuration import RuntimeConfiguration
 
 logger = get_logger(__name__)
+
+
+class LocalOrchestratorFlavor(BaseOrchestratorFlavor):
+    @property
+    def name(self) -> str:
+        return "local"
+
+    @property
+    def implementation_class(self):
+        return LocalOrchestrator
 
 
 class LocalOrchestrator(BaseOrchestrator):

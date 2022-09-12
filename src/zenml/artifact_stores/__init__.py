@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""ZenML's artifact store stores artifacts in a file system.
+"""ZenML's artifact-store stores artifacts in a file system.
 
 In ZenML, the inputs and outputs which go through any step is treated as an
 artifact and as its name suggests, an `ArtifactStore` is a place where these
@@ -29,8 +29,20 @@ modules, such as the `GCPArtifactStore` in the `gcp` integration and the
 
 from zenml.artifact_stores.base_artifact_store import (
     BaseArtifactStore,
-    BaseArtifactStoreConfig
+    BaseArtifactStoreConfig,
+    BaseArtifactStoreFlavor,
 )
-from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
+from zenml.artifact_stores.local_artifact_store import (
+    LocalArtifactStore,
+    LocalArtifactStoreConfig,
+    LocalArtifactStoreFlavor,
+)
 
-__all__ = ["BaseArtifactStore", "BaseArtifactStoreConfig", "LocalArtifactStore"]
+__all__ = [
+    "BaseArtifactStore",
+    "BaseArtifactStoreConfig",
+    "BaseArtifactStoreFlavor",
+    "LocalArtifactStore",
+    "LocalArtifactStoreConfig",
+    "LocalArtifactStoreFlavor",
+]

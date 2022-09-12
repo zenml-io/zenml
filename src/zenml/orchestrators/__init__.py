@@ -25,7 +25,17 @@ orchestrator to handle the steps of your pipeline.
 from zenml.orchestrators.base_orchestrator import (
     BaseOrchestrator,
     BaseOrchestratorConfig,
+    BaseOrchestratorFlavor,
 )
-from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
+from zenml.orchestrators.local.local_orchestrator import (
+    LocalOrchestrator,
+    LocalOrchestratorFlavor,
+)
 
-__all__ = ["BaseOrchestrator", "BaseOrchestratorConfig", "LocalOrchestrator"]
+__all__ = [
+    "BaseOrchestrator",
+    "BaseOrchestratorConfig",
+    "BaseOrchestratorFlavor",
+    "LocalOrchestrator",
+    "LocalOrchestratorFlavor",
+]

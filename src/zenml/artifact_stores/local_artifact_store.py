@@ -44,13 +44,19 @@ from typing import (
     Optional,
     Set,
     Tuple,
+    Type,
     Union,
 )
 
 from pydantic import validator
 
-from zenml.artifact_stores import BaseArtifactStore, BaseArtifactStoreConfig
+from zenml.artifact_stores import (
+    BaseArtifactStore,
+    BaseArtifactStoreConfig,
+    BaseArtifactStoreFlavor,
+)
 from zenml.exceptions import ArtifactStoreInterfaceError
+from zenml.stack import StackComponent, StackComponentConfig
 
 PathType = Union[bytes, str]
 
@@ -255,6 +261,20 @@ class LocalArtifactStore(BaseArtifactStore):
             current directory and a list of files inside the current
             directory.
         """
-        yield from os.walk(top, topdown=topdown, onerror=onerror)  # type: ignore[type-var, misc]
+        yield from os.walk(
+            top, topdown=topdown, onerror=onerror
+        )  # type: ignore[type-var, misc]
 
 
+class LocalArtifactStoreFlavor(BaseArtifactStoreFlavor):
+    @property
+    def name(self) -> str:
+        return "local"
+
+    @property
+    def config_class(self) -> Type[StackComponentConfig]:
+        return LocalArtifactStoreConfig
+
+    @property
+    def implementation_class(self) -> Type[StackComponent]:
+        return LocalArtifactStore

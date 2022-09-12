@@ -25,7 +25,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""The `BaseArtifactStore` offers an interface for extending the ZenML artifact store."""
+"""The base interface to extend the ZenML artifact store."""
 import textwrap
 from abc import abstractmethod
 from typing import (
@@ -38,6 +38,7 @@ from typing import (
     Optional,
     Set,
     Tuple,
+    Type,
     Union,
 )
 
@@ -46,7 +47,7 @@ from tfx.dsl.io.fileio import NotFoundError
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import ArtifactStoreInterfaceError
-from zenml.stack import StackComponent, StackComponentConfig
+from zenml.stack import Flavor, StackComponent, StackComponentConfig
 from zenml.utils import io_utils
 
 PathType = Union[bytes, str]
@@ -423,3 +424,23 @@ class BaseArtifactStore(StackComponent):
 
     def config_class(self):
         return BaseArtifactStoreConfig
+
+
+class BaseArtifactStoreFlavor(Flavor):
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        """"""
+
+    @property
+    def type(self) -> StackComponentType:
+        return StackComponentType.ARTIFACT_STORE
+
+    @property
+    def config_class(self) -> Type[StackComponentConfig]:
+        return BaseArtifactStoreConfig
+
+    @property
+    @abstractmethod
+    def implementation_class(self) -> Type["BaseArtifactStore"]:
+        """"""
