@@ -14,9 +14,10 @@
 """Component wrapper implementation."""
 
 from datetime import datetime
-from pydantic import BaseModel, Field
 from typing import Any, Dict, Optional
 from uuid import UUID
+
+from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
