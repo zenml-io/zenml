@@ -65,13 +65,14 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.repository import Repository
-from zenml.stack import Stack, StackValidator
+from zenml.stack import StackValidator
 from zenml.utils import deprecation_utils, io_utils, networking_utils
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
+    from zenml.stack import Stack
     from zenml.steps import BaseStep, ResourceConfiguration
 
 
@@ -418,7 +419,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             ),
         }
 
-        stack = Stack.from_model(Repository().active_stack)
+        stack = Repository().active_stack
         global_cfg_dir = io_utils.get_global_config_directory()
 
         # go through all stack components and identify those that advertise
@@ -988,9 +989,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 "Please install 'k3d' and 'kubectl' and try again."
             )
 
-        repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
-        active_stack = Stack.from_model(repo.active_stack)
-        container_registry = active_stack.container_registry
+        container_registry = Repository().active_stack.container_registry
 
         # should not happen, because the stack validation takes care of this,
         # but just in case
@@ -1029,9 +1028,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 kubernetes_context=kubernetes_context
             )
 
-            repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
-            active_stack = Stack.from_model(repo.active_stack)
-            artifact_store = active_stack.artifact_store
+            artifact_store = Repository().active_stack.artifact_store
             if isinstance(artifact_store, LocalArtifactStore):
                 local_deployment_utils.add_hostpath_to_kubeflow_pipelines(
                     kubernetes_context=kubernetes_context,
@@ -1148,9 +1145,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             ProvisioningError: If the stack has no secrets manager.
         """
         environment_vars: Dict[str, str] = {}
-        repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
-        active_stack = Stack.from_model(repo.active_stack)
-        secret_manager = active_stack.secrets_manager
+        secret_manager = Repository().active_stack.secrets_manager
         if secrets and secret_manager:
             for secret in secrets:
                 secret_schema = secret_manager.get_secret(secret)

@@ -15,15 +15,16 @@
 
 from zenml.models.code_models import CodeRepositoryModel
 from zenml.models.component_model import ComponentModel
-from zenml.models.flavor_model import FlavorModel
+from zenml.models.flavor_models import FlavorModel
 from zenml.models.pipeline_models import (
+    ArtifactModel,
     PipelineModel,
     PipelineRunModel,
     StepRunModel,
 )
-from zenml.models.stack_model import StackModel
+from zenml.models.project_models import ProjectModel
+from zenml.models.stack_models import StackModel
 from zenml.models.user_management_models import (
-    ProjectModel,
     RoleAssignmentModel,
     RoleModel,
     TeamModel,
@@ -38,8 +39,10 @@ __all__ = [
     "PipelineRunModel",
     "FlavorModel",
     "StepRunModel",
+    "ArtifactModel",
     "UserModel",
-    "ProjectModel",
     "RoleModel",
     "TeamModel",
+    "ProjectModel",
+    "RoleAssignmentModel",
 ]

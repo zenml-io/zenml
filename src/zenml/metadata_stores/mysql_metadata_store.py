@@ -25,7 +25,6 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.io import fileio
 from zenml.metadata_stores import BaseMetadataStore
 from zenml.repository import Repository
-from zenml.stack.stack import Stack
 from zenml.utils.secret_utils import SecretField
 
 
@@ -172,8 +171,7 @@ class MySQLMetadataStore(BaseMetadataStore):
             RuntimeError: If you don't have a secrets manager as part of your stack.
         """
         if self.secret:
-            repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
-            active_stack = Stack.from_model(repo.active_stack)
+            active_stack = Repository(skip_repository_check=True).active_stack  # type: ignore[call-arg]
             secret_manager = active_stack.secrets_manager
             if secret_manager is None:
                 raise RuntimeError(

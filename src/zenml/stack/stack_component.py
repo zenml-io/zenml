@@ -206,9 +206,7 @@ class StackComponent:
                 "your active stack: `zenml stack set <STACK_NAME>`."
             )
 
-        repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
-        active_stack = Stack.from_model(repo.active_stack)
-        secrets_manager = active_stack.secrets_manager
+        secrets_manager = Repository().active_stack.secrets_manager
         if not secrets_manager:
             raise RuntimeError(
                 f"Failed to resolve secret reference for attribute {key} "

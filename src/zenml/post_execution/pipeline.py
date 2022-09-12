@@ -35,7 +35,9 @@ def get_pipelines() -> List["PipelineView"]:
     """
     # TODO: [server] handle the active stack correctly
     repo = Repository()
-    pipelines = repo.zen_store.list_pipelines(project_id=repo.active_project.id)
+    pipelines = repo.zen_store.list_pipelines(
+        project_name_or_id=repo.active_project.id
+    )
     return [PipelineView(model) for model in pipelines]
 
 
@@ -106,7 +108,7 @@ def get_pipeline(
     repo = Repository()
     pipeline = repo.zen_store.get_pipeline_in_project(
         pipeline_name=pipeline_name,
-        project_id=repo.active_project.id,
+        project_name_or_id=repo.active_project.id,
     )
     return PipelineView(pipeline)
 
@@ -153,7 +155,7 @@ class PipelineView:
         # Do not cache runs as new runs might appear during this objects
         # lifecycle
         runs = Repository().zen_store.list_runs(
-            project_id=self._model.project_id,
+            project_name_or_id=self._model.project_id,
             pipeline_id=self._model.id,
         )
         return [PipelineRunView(run) for run in runs]

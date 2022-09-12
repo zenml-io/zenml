@@ -15,26 +15,13 @@
 
 import re
 from pathlib import Path, PurePath
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union, cast
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
+from uuid import UUID
 
 import requests
-from ml_metadata.proto import metadata_store_pb2
 from pydantic import BaseModel
 
 from zenml.config.store_config import StoreConfiguration
-from zenml.constants import (
-    FLAVORS,
-    PIPELINE_RUNS,
-    PROJECTS,
-    ROLE_ASSIGNMENTS,
-    ROLES,
-    STACK_COMPONENTS,
-    STACK_CONFIGURATIONS,
-    STACKS,
-    STACKS_EMPTY,
-    TEAMS,
-    USERS,
-)
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.exceptions import (
     DoesNotExistException,
@@ -44,20 +31,20 @@ from zenml.exceptions import (
 )
 from zenml.logger import get_logger
 from zenml.models import (
+    ArtifactModel,
+    CodeRepositoryModel,
     ComponentModel,
     FlavorModel,
+    PipelineModel,
     PipelineRunModel,
     ProjectModel,
     RoleAssignmentModel,
     RoleModel,
     StackModel,
+    StepRunModel,
     TeamModel,
     UserModel,
 )
-from zenml.post_execution.artifact import ArtifactView
-from zenml.post_execution.pipeline import PipelineView
-from zenml.post_execution.pipeline_run import PipelineRunView
-from zenml.post_execution.step import StepView
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
@@ -95,18 +82,24 @@ class RestZenStore(BaseZenStore):
     TYPE: ClassVar[StoreType] = StoreType.REST
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]] = RestZenStoreConfiguration
 
+    def _initialize_database(self) -> None:
+        """Initialize the database."""
+        # don't do anything for a REST store
+
+    # ====================================
+    # ZenML Store interface implementation
+    # ====================================
+
+    # --------------------------------
+    # Initialization and configuration
+    # --------------------------------
+
     def _initialize(self) -> None:
         """Initialize the REST store."""
         # try to connect to the server to validate the configuration
         self._handle_response(
             requests.get(self.url + "/", auth=self._get_authentication())
         )
-
-    def _initialize_database(self) -> None:
-        """Initialize the database."""
-        # don't do anything for a REST store
-
-    # Static methods:
 
     @staticmethod
     def get_path_from_url(url: str) -> Optional[Path]:
@@ -187,263 +180,283 @@ class RestZenStore(BaseZenStore):
         # REST zen stores are not backed by local files
         return config
 
-    # Public Interface:
+    # ------------
+    # TFX Metadata
+    # ------------
 
-    @property
-    def stacks_empty(self) -> bool:
-        """Check if the store is empty (no stacks are configured).
-
-        The implementation of this method should check if the store is empty
-        without having to load all the stacks from the persistent storage.
-
-        Returns:
-            True, if the store is empty, False otherwise.
-
-        Raises:
-            ValueError: if the response is not a boolean.
-        """
-        empty = self.get(STACKS_EMPTY)
-        if not isinstance(empty, bool):
-            raise ValueError(
-                f"Bad API Response. Expected boolean, got:\n{empty}"
-            )
-        return empty
-
-    def get_stack_configuration(
-        self, name: str
-    ) -> Dict[StackComponentType, str]:
-        """Fetches a stack configuration by name.
-
-        Args:
-            name: The name of the stack to fetch.
-
-        Returns:
-            Dict[StackComponentType, str] for the requested stack name.
-        """
-        return self._parse_stack_configuration(
-            self.get(f"{STACK_CONFIGURATIONS}/{name}")
-        )
-
-    @property
-    def stack_configurations(self) -> Dict[str, Dict[StackComponentType, str]]:
-        """Configurations for all stacks registered in this stack store.
-
-        Returns:
-            Dictionary mapping stack names to Dict[StackComponentType, str]'s
-
-        Raises:
-            ValueError: If the API response is not a dict.
-        """
-        body = self.get(STACK_CONFIGURATIONS)
-        if not isinstance(body, dict):
-            raise ValueError(
-                f"Bad API Response. Expected dict, got {type(body)}"
-            )
-        return {
-            key: self._parse_stack_configuration(value)
-            for key, value in body.items()
-        }
-
-    def get_stack_component_types(self) -> List[str]:
-        """Fetches all available stack component types.
-
-        Returns:
-            List of available stack component types.
-        """
-        return NotImplementedError
-
-    @property
-    def stack_component_types(self) -> List[str]:
-        """List of stack component types.
-
-        Returns:
-            List of stack component types.
-        """
-        return NotImplementedError
-
-    # Private interface implementations:
-
-    def _get_tfx_metadata_config(
-        self,
-    ) -> Union[
-        metadata_store_pb2.ConnectionConfig,
-        metadata_store_pb2.MetadataStoreClientConfig,
-    ]:
+    def get_metadata_config(self) -> str:
         """Get the TFX metadata config of this ZenStore.
 
         Returns:
             The TFX metadata config of this ZenStore.
         """
-        pass  # TODO
 
-    def _register_stack_component(
+    # ------
+    # Stacks
+    # ------
+
+    def register_stack(
         self,
-        component: ComponentModel,
-    ) -> None:
-        """Register a stack component.
+        user_name_or_id: Union[str, UUID],
+        project_name_or_id: Union[str, UUID],
+        stack: StackModel,
+    ) -> StackModel:
+        """Register a new stack.
 
         Args:
-            component: The component to register.
-        """
-        self.post(STACK_COMPONENTS, body=component)
-
-    def _update_stack_component(
-        self,
-        name: str,
-        component_type: StackComponentType,
-        component: ComponentModel,
-    ) -> Dict[str, str]:
-        """Update a stack component.
-
-        Args:
-            name: The original name of the stack component.
-            component_type: The type of the stack component to update.
-            component: The new component to update with.
-
-        Returns:
-            The updated component.
-
-        Raises:
-            ValueError: in cases of a bad API response.
-        """
-        body = self.put(
-            f"{STACK_COMPONENTS}/{component_type}/{name}", body=component
-        )
-        if isinstance(body, dict):
-            return cast(Dict[str, str], body)
-        else:
-            raise ValueError(
-                f"Bad API Response. Expected dict, got {type(body)}"
-            )
-
-    def _deregister_stack(self, name: str) -> None:
-        """Delete a stack from storage.
-
-        Args:
-            name: The name of the stack to be deleted.
-        """
-        self.delete(f"{STACKS}/{name}")
-
-    def _save_stack(
-        self,
-        name: str,
-        stack_configuration: Dict[StackComponentType, str],
-    ) -> None:
-        """Add a stack to storage.
-
-        Args:
-            name: The name to save the stack as.
-            stack_configuration: Dict[StackComponentType, str] to persist.
-
-        Raises:
-            NotImplementedError: always.
-        """
-        raise NotImplementedError
-
-    # Custom implementations:
-
-    @property
-    def stacks(self) -> List[StackModel]:
-        """All stacks registered in this repository.
-
-        Returns:
-            List[StackModel] of all stacks registered in this repository.
-
-        Raises:
-            ValueError: If the API response is not a list of stacks.
-        """
-        body = self.get(STACKS)
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        return [StackModel.parse_obj(s) for s in body]
-
-    def get_stack(self, name: str) -> StackModel:
-        """Fetch a stack by name.
-
-        Args:
-            name: The name of the stack to retrieve.
-
-        Returns:
-            StackModel instance if the stack exists.
-        """
-        return StackModel.parse_obj(self.get(f"{STACKS}/{name}"))
-
-    def _register_stack(self, stack: StackModel) -> None:
-        """Register a stack and its components.
-
-        If any of the stacks' components aren't registered in the stack store
-        yet, this method will try to register them as well.
-
-        Args:
+            user_name_or_id: The stack owner.
+            project_name_or_id: The project that the stack belongs to.
             stack: The stack to register.
-        """
-        self.post(STACKS, stack)
-
-    def _update_stack(self, name: str, stack: StackModel) -> None:
-        """Update a stack and its components.
-
-        If any of the stack's components aren't registered in the stack store
-        yet, this method will try to register them as well.
-
-        Args:
-            name: The original name of the stack.
-            stack: The new stack to use in the update.
-        """
-        self.put(f"{STACKS}/{name}", body=stack)
-        if name != stack.name:
-            self.deregister_stack(name)
-
-    def get_stack_component(
-        self, component_type: StackComponentType, name: str
-    ) -> ComponentModel:
-        """Get a registered stack component.
-
-        Args:
-            component_type: The type of the component to retrieve.
-            name: The name of the component to retrieve.
 
         Returns:
-            ComponentWrapper instance if the component exists.
-        """
-        return ComponentModel.parse_obj(
-            self.get(f"{STACK_COMPONENTS}/{component_type}/{name}")
-        )
-
-    def get_stack_components(
-        self, component_type: StackComponentType
-    ) -> List[ComponentModel]:
-        """Fetches all registered stack components of the given type.
-
-        Args:
-            component_type: StackComponentType to list members of
-
-        Returns:
-            A list of StackComponentConfiguration instances.
+            The registered stack.
 
         Raises:
-            ValueError: If the API response is not a list of components.
+            StackExistsError: If a stack with the same name is already owned
+                by this user in this project.
         """
-        body = self.get(f"{STACK_COMPONENTS}/{component_type}")
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        return [ComponentModel.parse_obj(c) for c in body]
 
-    def deregister_stack_component(
-        self, component_type: StackComponentType, name: str
-    ) -> None:
-        """Deregisters a stack component.
+    def get_stack(self, stack_id: UUID) -> StackModel:
+        """Get a stack by its unique ID.
 
         Args:
-            component_type: The type of the component to deregister.
-            name: The name of the component to deregister.
-        """
-        self.delete(f"{STACK_COMPONENTS}/{component_type}/{name}")
+            stack_id: The ID of the stack to get.
 
-    # User, project and role management
+        Returns:
+            The stack with the given ID.
+
+        Raises:
+            KeyError: if the stack doesn't exist.
+        """
+
+    def list_stacks(
+        self,
+        project_name_or_id: Union[str, UUID],
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        name: Optional[str] = None,
+        is_shared: Optional[bool] = None,
+    ) -> List[StackModel]:
+        """List all stacks matching the given filter criteria.
+
+        Args:
+            project_name_or_id: Id or name of the Project containing the stack
+            user_name_or_id: Optionally filter stacks by their owner
+            name: Optionally filter stacks by their name
+            is_shared: Optionally filter out stacks by whether they are shared
+                or not
+
+
+        Returns:
+            A list of all stacks matching the filter criteria.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
+
+    def update_stack(
+        self,
+        stack: StackModel,
+    ) -> StackModel:
+        """Update a stack.
+
+        Args:
+            stack: The stack to use for the update.
+
+        Returns:
+            The updated stack.
+
+        Raises:
+            KeyError: if the stack doesn't exist.
+        """
+
+    def delete_stack(self, stack_id: UUID) -> None:
+        """Delete a stack.
+
+        Args:
+            stack_id: The ID of the stack to delete.
+
+        Raises:
+            KeyError: if the stack doesn't exist.
+        """
+
+    # ----------------
+    # Stack components
+    # ----------------
+
+    def register_stack_component(
+        self,
+        user_name_or_id: Union[str, UUID],
+        project_name_or_id: Union[str, UUID],
+        component: ComponentModel,
+    ) -> ComponentModel:
+        """Create a stack component.
+
+        Args:
+            user_name_or_id: The stack component owner.
+            project_name_or_id: The project the stack component is created in.
+            component: The stack component to create.
+
+        Returns:
+            The created stack component.
+
+        Raises:
+            StackComponentExistsError: If a stack component with the same name
+                and type is already owned by this user in this project.
+        """
+
+    def get_stack_component(self, component_id: UUID) -> ComponentModel:
+        """Get a stack component by ID.
+
+        Args:
+            component_id: The ID of the stack component to get.
+
+        Returns:
+            The stack component.
+
+        Raises:
+            KeyError: if the stack component doesn't exist.
+        """
+
+    def list_stack_components(
+        self,
+        project_name_or_id: Union[str, UUID],
+        type: Optional[str] = None,
+        flavor_name: Optional[str] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        name: Optional[str] = None,
+        is_shared: Optional[bool] = None,
+    ) -> List[ComponentModel]:
+        """List all stack components matching the given filter criteria.
+
+        Args:
+            project_name_or_id: The ID or name of the Project to which the stack
+                components belong
+            type: Optionally filter by type of stack component
+            flavor_name: Optionally filter by flavor
+            user_name_or_id: Optionally filter stack components by the owner
+            name: Optionally filter stack component by name
+            is_shared: Optionally filter out stack component by whether they are
+                shared or not
+
+        Returns:
+            A list of all stack components matching the filter criteria.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
+
+    def update_stack_component(
+        self,
+        component_id: UUID,
+        component: ComponentModel,
+    ) -> ComponentModel:
+        """Update an existing stack component.
+
+        Args:
+            component: The stack component to use for the update.
+
+        Returns:
+            The updated stack component.
+
+        Raises:
+            KeyError: if the stack component doesn't exist.
+        """
+
+    def delete_stack_component(self, component_id: UUID) -> None:
+        """Delete a stack component.
+
+        Args:
+            component_id: The ID of the stack component to delete.
+
+        Raises:
+            KeyError: if the stack component doesn't exist.
+        """
+
+    def get_stack_component_side_effects(
+        self,
+        component_id: UUID,
+        run_id: UUID,
+        pipeline_id: UUID,
+        stack_id: UUID,
+    ) -> Dict[Any, Any]:
+        """Get the side effects of a stack component.
+
+        Args:
+            component_id: The ID of the stack component to get side effects for.
+            run_id: The ID of the run to get side effects for.
+            pipeline_id: The ID of the pipeline to get side effects for.
+            stack_id: The ID of the stack to get side effects for.
+        """
+
+    # -----------------------
+    # Stack component flavors
+    # -----------------------
+
+    def create_flavor(
+        self,
+        user_name_or_id: Union[str, UUID],
+        project_name_or_id: Union[str, UUID],
+        flavor: FlavorModel,
+    ) -> FlavorModel:
+        """Creates a new stack component flavor.
+
+        Args:
+            user_name_or_id: The stack component flavor owner.
+            project_name_or_id: The project in which the stack component flavor
+                is created.
+            flavor: The stack component flavor to create.
+
+        Returns:
+            The newly created flavor.
+
+        Raises:
+            EntityExistsError: If a flavor with the same name and type
+                is already owned by this user in this project.
+        """
+
+    def get_flavor(self, flavor_id: UUID) -> FlavorModel:
+        """Get a stack component flavor by ID.
+
+        Args:
+            component_id: The ID of the stack component flavor to get.
+
+        Returns:
+            The stack component flavor.
+
+        Raises:
+            KeyError: if the stack component flavor doesn't exist.
+        """
+
+    def list_flavors(
+        self,
+        project_name_or_id: Union[str, UUID],
+        component_type: Optional[StackComponentType] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        name: Optional[str] = None,
+        is_shared: Optional[bool] = None,
+    ) -> List[FlavorModel]:
+        """List all stack component flavors matching the given filter criteria.
+
+        Args:
+            project_name_or_id: The ID or name of the Project to which the
+                component flavors belong
+            component_type: Optionally filter by type of stack component
+            flavor_name: Optionally filter by flavor name
+            user_name_or_id: Optionally filter by the owner
+            name: Optionally filter flavors by name
+            is_shared: Optionally filter out flavors by whether they are
+                shared or not
+
+        Returns:
+            List of all the stack component flavors matching the given criteria.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
+
+    # -----
+    # Users
+    # -----
 
     @property
     def active_user_name(self) -> str:
@@ -452,751 +465,728 @@ class RestZenStore(BaseZenStore):
         Returns:
             The active username.
         """
-        return self.config.username
 
-    @property
-    def users(self) -> List[UserModel]:
-        """All registered users.
-
-        Returns:
-            A list of all registered users.
-
-        Raises:
-            ValueError: In case of a bad API response.
-        """
-        body = self.get(USERS)
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        return [UserModel.parse_obj(user_dict) for user_dict in body]
-
-    def _get_user(self, user_name: str) -> UserModel:
-        """Get a specific user by name.
-
-        Args:
-            user_name: Name of the user to get.
-
-        Returns:
-            The requested user, if it was found.
-        """
-        return UserModel.parse_obj(self.get(f"{USERS}/{user_name}"))
-
-    def _create_user(self, user_name: str) -> UserModel:
+    def create_user(self, user: UserModel) -> UserModel:
         """Creates a new user.
 
         Args:
-            user_name: Unique username.
+            user: User to be created.
 
         Returns:
             The newly created user.
-        """
-        user = UserModel(name=user_name)
-        return UserModel.parse_obj(self.post(USERS, body=user))
 
-    def _delete_user(self, user_name: str) -> None:
+        Raises:
+            EntityExistsError: If a user with the given name already exists.
+        """
+
+    def get_user(self, user_name_or_id: Union[str, UUID]) -> UserModel:
+        """Gets a specific user.
+
+        Args:
+            user_name_or_id: The name or ID of the user to get.
+
+        Returns:
+            The requested user, if it was found.
+
+        Raises:
+            KeyError: If no user with the given name or ID exists.
+        """
+
+    # TODO: [ALEX] add filtering param(s)
+    def list_users(self) -> List[UserModel]:
+        """List all users.
+
+        Returns:
+            A list of all users.
+        """
+
+    def update_user(
+        self, user_name_or_id: Union[str, UUID], user: UserModel
+    ) -> UserModel:
+        """Updates an existing user.
+
+        Args:
+            user_name_or_id: The name or ID of the user to update.
+            user: The user model to use for the update.
+
+        Returns:
+            The updated user.
+
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
+
+    def delete_user(self, user_name_or_id: Union[str, UUID]) -> None:
         """Deletes a user.
 
         Args:
-            user_name: Name of the user to delete.
-        """
-        self.delete(f"{USERS}/{user_name}")
-
-    @property
-    def teams(self) -> List[TeamModel]:
-        """All registered teams.
-
-        Returns:
-            A list of all registered teams.
+            user_name_or_id: The name or ID of the user to delete.
 
         Raises:
-            ValueError: In case of a bad API response.
+            KeyError: If no user with the given ID exists.
         """
-        body = self.get(TEAMS)
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        return [TeamModel.parse_obj(team_dict) for team_dict in body]
 
-    def _get_team(self, team_name: str) -> TeamModel:
-        """Gets a specific team.
+    # -----
+    # Teams
+    # -----
 
-        Args:
-            team_name: Name of the team to get.
-
-        Returns:
-            The requested team.
-        """
-        return TeamModel.parse_obj(self.get(f"{TEAMS}/{team_name}"))
-
-    def _create_team(self, team_name: str) -> TeamModel:
+    def create_team(self, team: TeamModel) -> TeamModel:
         """Creates a new team.
 
         Args:
-            team_name: Unique team name.
+            team: The team model to create.
 
         Returns:
             The newly created team.
         """
-        team = TeamModel(name=team_name)
-        return TeamModel.parse_obj(self.post(TEAMS, body=team))
 
-    def _delete_team(self, team_name: str) -> None:
+    def get_team(self, team_name_or_id: Union[str, UUID]) -> TeamModel:
+        """Gets a specific team.
+
+        Args:
+            team_name_or_id: Name or ID of the team to get.
+
+        Returns:
+            The requested team.
+
+        Raises:
+            KeyError: If no team with the given name or ID exists.
+        """
+
+    def list_teams(self) -> List[TeamModel]:
+        """List all teams.
+
+        Returns:
+            A list of all teams.
+        """
+
+    def delete_team(self, team_name_or_id: Union[str, UUID]) -> None:
         """Deletes a team.
 
         Args:
-            team_name: Name of the team to delete.
-        """
-        self.delete(f"{TEAMS}/{team_name}")
-
-    def add_user_to_team(self, team_name: str, user_name: str) -> None:
-        """Adds a user to a team.
-
-        Args:
-            team_name: Name of the team.
-            user_name: Name of the user.
-        """
-        user = UserModel(name=user_name)
-        self.post(f"{TEAMS}/{team_name}/users", user)
-
-    def remove_user_from_team(self, team_name: str, user_name: str) -> None:
-        """Removes a user from a team.
-
-        Args:
-            team_name: Name of the team.
-            user_name: Name of the user.
-        """
-        self.delete(f"{TEAMS}/{team_name}/users/{user_name}")
-
-    @property
-    def projects(self) -> List[ProjectModel]:
-        """All registered projects.
-
-        Returns:
-            A list of all registered projects.
+            team_name_or_id: Name or ID of the team to delete.
 
         Raises:
-            ValueError: In case of a bad API response.
+            KeyError: If no team with the given ID exists.
         """
-        body = self.get(PROJECTS)
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        return [ProjectModel.parse_obj(project_dict) for project_dict in body]
 
-    def _get_project(self, project_name: str) -> ProjectModel:
-        """Get an existing project by name.
+    # ---------------
+    # Team membership
+    # ---------------
 
-        Args:
-            project_name: Name of the project to get.
-
-        Returns:
-            The requested project if one was found.
-        """
-        return ProjectModel.parse_obj(self.get(f"{PROJECTS}/{project_name}"))
-
-    def _create_project(
-        self, project_name: str, description: Optional[str] = None
-    ) -> ProjectModel:
-        """Creates a new project.
-
-        Args:
-            project_name: Unique project name.
-            description: Optional project description.
-
-        Returns:
-            The newly created project.
-        """
-        project = ProjectModel(name=project_name, description=description)
-        return ProjectModel.parse_obj(self.post(PROJECTS, body=project))
-
-    def _delete_project(self, project_name: str) -> None:
-        """Deletes a project.
-
-        Args:
-            project_name: Name of the project to delete.
-        """
-        self.delete(f"{PROJECTS}/{project_name}")
-
-    @property
-    def roles(self) -> List[RoleModel]:
-        """All registered roles.
-
-        Returns:
-            A list of all registered roles.
-
-        Raises:
-            ValueError: In case of a bad API response.
-        """
-        body = self.get(ROLES)
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        return [RoleModel.parse_obj(role_dict) for role_dict in body]
-
-    @property
-    def role_assignments(self) -> List[RoleAssignmentModel]:
-        """All registered role assignments.
-
-        Returns:
-            A list of all registered role assignments.
-
-        Raises:
-            ValueError: In case of a bad API response.
-        """
-        body = self.get(ROLE_ASSIGNMENTS)
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        return [
-            RoleAssignmentModel.parse_obj(assignment_dict)
-            for assignment_dict in body
-        ]
-
-    def _get_role(self, role_name: str) -> RoleModel:
-        """Gets a specific role.
-
-        Args:
-            role_name: Name of the role to get.
-
-        Returns:
-            The requested role.
-        """
-        return RoleModel.parse_obj(self.get(f"{ROLES}/{role_name}"))
-
-    def _create_role(self, role_name: str) -> RoleModel:
-        """Creates a new role.
-
-        Args:
-            role_name: Unique role name.
-
-        Returns:
-            The newly created role.
-        """
-        role = RoleModel(name=role_name)
-        return RoleModel.parse_obj(self.post(ROLES, body=role))
-
-    def _delete_role(self, role_name: str) -> None:
-        """Deletes a role.
-
-        Args:
-            role_name: Name of the role to delete.
-        """
-        self.delete(f"{ROLES}/{role_name}")
-
-    def assign_role(
-        self,
-        role_name: str,
-        entity_name: str,
-        project_name: Optional[str] = None,
-        is_user: bool = True,
-    ) -> None:
-        """Assigns a role to a user or team.
-
-        Args:
-            role_name: Name of the role to assign.
-            entity_name: User or team name.
-            project_name: Optional project name.
-            is_user: Boolean indicating whether the given `entity_name` refers
-                to a user.
-        """
-        data = {
-            "role_name": role_name,
-            "entity_name": entity_name,
-            "project_name": project_name,
-            "is_user": is_user,
-        }
-        self._handle_response(
-            requests.post(
-                self.url + ROLE_ASSIGNMENTS,
-                json=data,
-                auth=self._get_authentication(),
-            )
-        )
-
-    def revoke_role(
-        self,
-        role_name: str,
-        entity_name: str,
-        project_name: Optional[str] = None,
-        is_user: bool = True,
-    ) -> None:
-        """Revokes a role from a user or team.
-
-        Args:
-            role_name: Name of the role to revoke.
-            entity_name: User or team name.
-            project_name: Optional project name.
-            is_user: Boolean indicating whether the given `entity_name` refers
-                to a user.
-        """
-        data = {
-            "role_name": role_name,
-            "entity_name": entity_name,
-            "project_name": project_name,
-            "is_user": is_user,
-        }
-        self._handle_response(
-            requests.delete(
-                self.url + ROLE_ASSIGNMENTS,
-                json=data,
-                auth=self._get_authentication(),
-            )
-        )
-
-    def get_users_for_team(self, team_name: str) -> List[UserModel]:
+    def get_users_for_team(
+        self, team_name_or_id: Union[str, UUID]
+    ) -> List[UserModel]:
         """Fetches all users of a team.
 
         Args:
-            team_name: Name of the team.
+            team_id: The name or ID of the team for which to get users.
 
         Returns:
-            List of users that are part of the team.
+            A list of all users that are part of the team.
 
         Raises:
-            ValueError: In case of a bad API response.
+            KeyError: If no team with the given ID exists.
         """
-        body = self.get(f"{TEAMS}/{team_name}/users")
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        return [UserModel.parse_obj(user_dict) for user_dict in body]
 
-    def get_teams_for_user(self, user_name: str) -> List[TeamModel]:
+    def get_teams_for_user(
+        self, user_name_or_id: Union[str, UUID]
+    ) -> List[TeamModel]:
         """Fetches all teams for a user.
 
         Args:
-            user_name: Name of the user.
+            user_name_or_id: The name or ID of the user for which to get all
+                teams.
 
         Returns:
-            List of teams that the user is part of.
+            A list of all teams that the user is part of.
 
         Raises:
-            ValueError: In case of a bad API response.
+            KeyError: If no user with the given ID exists.
         """
-        body = self.get(f"{USERS}/{user_name}/teams")
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        return [TeamModel.parse_obj(team_dict) for team_dict in body]
 
-    def get_role_assignments_for_user(
+    def add_user_to_team(
         self,
-        user_name: str,
-        project_name: Optional[str] = None,
-        include_team_roles: bool = True,
-    ) -> List[RoleAssignmentModel]:
-        """Fetches all role assignments for a user.
+        user_name_or_id: Union[str, UUID],
+        team_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Adds a user to a team.
 
         Args:
-            user_name: Name of the user.
-            project_name: Optional filter to only return roles assigned for
-                this project.
-            include_team_roles: If `True`, includes roles for all teams that
-                the user is part of.
-
-        Returns:
-            List of role assignments for this user.
+            user_name_or_id: Name or ID of the user to add to the team.
+            team_name_or_id: Name or ID of the team to which to add the user to.
 
         Raises:
-            ValueError: In case of a bad API response.
+            KeyError: If the team or user does not exist.
         """
-        path = f"{USERS}/{user_name}/role_assignments"
-        if project_name:
-            path += f"?project_name={project_name}"
 
-        body = self.get(path)
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        assignments = [
-            RoleAssignmentModel.parse_obj(assignment_dict)
-            for assignment_dict in body
-        ]
-        if include_team_roles:
-            for team in self.get_teams_for_user(user_name):
-                assignments += self.get_role_assignments_for_team(
-                    team.name, project_name=project_name
-                )
-        return assignments
-
-    def get_role_assignments_for_team(
+    def remove_user_from_team(
         self,
-        team_name: str,
-        project_name: Optional[str] = None,
-    ) -> List[RoleAssignmentModel]:
-        """Fetches all role assignments for a team.
+        user_name_or_id: Union[str, UUID],
+        team_name_or_id: Union[str, UUID],
+    ) -> None:
+        """Removes a user from a team.
 
         Args:
-            team_name: Name of the user.
-            project_name: Optional filter to only return roles assigned for
-                this project.
-
-        Returns:
-            List of role assignments for this team.
+            user_name_or_id: Name or ID of the user to remove from the team.
+            team_name_or_id: Name or ID of the team from which to remove the user.
 
         Raises:
-            ValueError: In case of a bad API response.
+            KeyError: If the team or user does not exist.
         """
-        path = f"{TEAMS}/{team_name}/role_assignments"
-        if project_name:
-            path += f"?project_name={project_name}"
 
-        body = self.get(path)
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        return [
-            RoleAssignmentModel.parse_obj(assignment_dict)
-            for assignment_dict in body
-        ]
+    # -----
+    # Roles
+    # -----
 
-    # Pipelines and pipeline runs
+    # TODO: consider using team_id instead
+    def create_role(self, role: RoleModel) -> RoleModel:
+        """Creates a new role.
 
-    def get_pipeline(self, pipeline_name: str) -> Optional[PipelineView]:
-        """Returns a pipeline for the given name.
+        Args:
+            role: The role model to create.
+
+        Returns:
+            The newly created role.
+
+        Raises:
+            EntityExistsError: If a role with the given name already exists.
+        """
+
+    # TODO: consider using team_id instead
+    def get_role(self, role_name_or_id: Union[str, UUID]) -> RoleModel:
+        """Gets a specific role.
+
+        Args:
+            role_name_or_id: Name or ID of the role to get.
+
+        Returns:
+            The requested role.
+
+        Raises:
+            KeyError: If no role with the given name exists.
+        """
+
+    # TODO: [ALEX] add filtering param(s)
+    def list_roles(self) -> List[RoleModel]:
+        """List all roles.
+
+        Returns:
+            A list of all roles.
+        """
+
+    def delete_role(self, role_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a role.
+
+        Args:
+            role_name_or_id: Name or ID of the role to delete.
+
+        Raises:
+            KeyError: If no role with the given ID exists.
+        """
+
+    # ----------------
+    # Role assignments
+    # ----------------
+
+    def list_role_assignments(
+        self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        team_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+    ) -> List[RoleAssignmentModel]:
+        """List all role assignments.
+
+        Args:
+            project_name_or_id: If provided, only list assignments for the given
+                project
+            team_name_or_id: If provided, only list assignments for the given
+                team
+            user_name_or_id: If provided, only list assignments for the given
+                user
+
+        Returns:
+            A list of all role assignments.
+        """
+
+    def assign_role(
+        self,
+        role_name_or_id: Union[str, UUID],
+        user_or_team_name_or_id: Union[str, UUID],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        is_user: bool = True,
+    ) -> None:
+        """Assigns a role to a user or team, scoped to a specific project.
+
+        Args:
+            role_name_or_id: Name or ID of the role to assign.
+            user_or_team_name_or_id: Name or ID of the user or team to which to
+                assign the role.
+            is_user: Whether `user_or_team_id` refers to a user or a team.
+            project_name_or_id: Optional Name or ID of a project in which to
+                assign the role. If this is not provided, the role will be
+                assigned globally.
+
+        Raises:
+            EntityExistsError: If the role assignment already exists.
+        """
+
+    def revoke_role(
+        self,
+        role_name_or_id: Union[str, UUID],
+        user_or_team_name_or_id: Union[str, UUID],
+        is_user: bool = True,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+    ) -> None:
+        """Revokes a role from a user or team for a given project.
+
+        Args:
+            role_name_or_id: ID of the role to revoke.
+            user_or_team_name_or_id: Name or ID of the user or team from which
+                to revoke the role.
+            is_user: Whether `user_or_team_id` refers to a user or a team.
+            project_name_or_id: Optional ID of a project in which to revoke
+                the role. If this is not provided, the role will be revoked
+                globally.
+
+        Raises:
+            KeyError: If the role, user, team, or project does not exists.
+        """
+
+    # --------
+    # Projects
+    # --------
+
+    def create_project(self, project: ProjectModel) -> ProjectModel:
+        """Creates a new project.
+
+        Args:
+            project: The project to create.
+
+        Returns:
+            The newly created project.
+
+        Raises:
+            EntityExistsError: If a project with the given name already exists.
+        """
+
+    def get_project(self, project_name_or_id: Union[UUID, str]) -> ProjectModel:
+        """Get an existing project by name or ID.
+
+        Args:
+            project_name_or_id: Name or ID of the project to get.
+
+        Returns:
+            The requested project.
+
+        Raises:
+            KeyError: If there is no such project.
+        """
+
+    # TODO: [ALEX] add filtering param(s)
+    def list_projects(self) -> List[ProjectModel]:
+        """List all projects.
+
+        Returns:
+            A list of all projects.
+        """
+
+    def update_project(
+        self, project_name_or_id: Union[str, UUID], project: ProjectModel
+    ) -> ProjectModel:
+        """Update an existing project.
+
+        Args:
+            project_name_or_id: Name or ID of the project to update.
+            project: The project to use for the update.
+
+        Returns:
+            The updated project.
+
+        Raises:
+            KeyError: if the project does not exist.
+        """
+
+    def delete_project(self, project_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a project.
+
+        Args:
+            project_name_or_id: Name or ID of the project to delete.
+
+        Raises:
+            KeyError: If no project with the given name exists.
+        """
+
+    # ------------
+    # Repositories
+    # ------------
+
+    # TODO: create repository?
+
+    def connect_project_repository(
+        self,
+        project_name_or_id: Union[str, UUID],
+        repository: CodeRepositoryModel,
+    ) -> CodeRepositoryModel:
+        """Connects a repository to a project.
+
+        Args:
+            project_name_or_id: Name or ID of the project to connect the
+                repository to.
+            repository: The repository to connect.
+
+        Returns:
+            The connected repository.
+
+        Raises:
+            KeyError: if the project or repository doesn't exist.
+        """
+
+    def get_repository(self, repository_id: UUID) -> CodeRepositoryModel:
+        """Get a repository by ID.
+
+        Args:
+            repository_id: The ID of the repository to get.
+
+        Returns:
+            The repository.
+
+        Raises:
+            KeyError: if the repository doesn't exist.
+        """
+
+    def list_repositories(
+        self, project_name_or_id: Union[str, UUID]
+    ) -> List[CodeRepositoryModel]:
+        """Get all repositories in a given project.
+
+        Args:
+            project_name_or_id: The name or ID of the project.
+
+        Returns:
+            A list of all repositories in the project.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
+
+    def update_repository(
+        self, repository_id: UUID, repository: CodeRepositoryModel
+    ) -> CodeRepositoryModel:
+        """Update a repository.
+
+        Args:
+            repository_id: The ID of the repository to update.
+            repository: The repository to use for the update.
+
+        Returns:
+            The updated repository.
+
+        Raises:
+            KeyError: if the repository doesn't exist.
+        """
+
+    def delete_repository(self, repository_id: UUID) -> None:
+        """Delete a repository.
+
+        Args:
+            repository_id: The ID of the repository to delete.
+
+        Raises:
+            KeyError: if the repository doesn't exist.
+        """
+
+    # ---------
+    # Pipelines
+    # ---------
+
+    def create_pipeline(
+        self, project_name_or_id: Union[str, UUID], pipeline: PipelineModel
+    ) -> PipelineModel:
+        """Creates a new pipeline in a project.
+
+        Args:
+            project_name_or_id: ID of the project to create the pipeline in.
+            pipeline: The pipeline to create.
+
+        Returns:
+            The newly created pipeline.
+
+        Raises:
+            KeyError: if the project does not exist.
+            EntityExistsError: If an identical pipeline already exists.
+        """
+
+    def get_pipeline(self, pipeline_id: UUID) -> PipelineModel:
+        """Get a pipeline with a given ID.
+
+        Args:
+            pipeline_id: ID of the pipeline.
+
+        Returns:
+            The pipeline.
+
+        Raises:
+            KeyError: if the pipeline does not exist.
+        """
+
+    def get_pipeline_in_project(
+        self, pipeline_name: str, project_name_or_id: Union[str, UUID]
+    ) -> PipelineModel:
+        """Get a pipeline with a given name in a project.
 
         Args:
             pipeline_name: Name of the pipeline.
+            project_name_or_id: ID of the project.
 
         Returns:
-            PipelineView if found, None otherwise.
+            The pipeline.
+
+        Raises:
+            KeyError: if the pipeline does not exist.
         """
-        pass  # TODO
 
-    def get_pipelines(self) -> List[PipelineView]:
-        """Returns a list of all pipelines stored in this ZenStore.
-
-        Returns:
-            A list of all pipelines stored in this ZenStore.
-        """
-        pass  # TODO
-
-    def get_pipeline_run(
-        self, pipeline: PipelineView, run_name: str
-    ) -> Optional[PipelineRunView]:
-        """Gets a specific run for the given pipeline.
-
-        Args:
-            pipeline: The pipeline for which to get the run.
-            run_name: The name of the run to get.
-
-        Returns:
-            The pipeline run with the given name.
-        """
-        pass  # TODO
-
-    def get_pipeline_runs(
-        self, pipeline: PipelineView
-    ) -> Dict[str, PipelineRunView]:
-        """Gets all runs for the given pipeline.
-
-        Args:
-            pipeline: a Pipeline object for which you want the runs.
-
-        Returns:
-            A dictionary of pipeline run names to PipelineRunView.
-        """
-        pass  # TODO
-
-    def get_pipeline_run_wrapper(
+    def list_pipelines(
         self,
-        pipeline_name: str,
-        run_name: str,
-        project_name: Optional[str] = None,
-    ) -> PipelineRunModel:
+        project_name_or_id: Optional[Union[str, UUID]],
+    ) -> List[PipelineModel]:
+        """List all pipelines in the project.
+
+        Args:
+            project_name_or_id: If provided, only list pipelines in this project.
+
+        Returns:
+            A list of pipelines.
+
+        Raises:
+            KeyError: if the project does not exist.
+        """
+
+    def update_pipeline(
+        self, pipeline_id: UUID, pipeline: PipelineModel
+    ) -> PipelineModel:
+        """Updates a pipeline.
+
+        Args:
+            pipeline_id: The ID of the pipeline to update.
+            pipeline: The pipeline to use for the update.
+
+        Returns:
+            The updated pipeline.
+
+        Raises:
+            KeyError: if the pipeline doesn't exist.
+        """
+
+    def delete_pipeline(self, pipeline_id: UUID) -> None:
+        """Deletes a pipeline.
+
+        Args:
+            pipeline_id: The ID of the pipeline to delete.
+
+        Raises:
+            KeyError: if the pipeline doesn't exist.
+        """
+
+    # --------------
+    # Pipeline steps
+    # --------------
+
+    # TODO: change into an abstract method
+    # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
+    # TODO: Discuss whether we even need this, given that the endpoint is on
+    # pipeline runs
+    # TODO: [ALEX] add filtering param(s)
+    def list_steps(self, pipeline_id: UUID) -> List[StepRunModel]:
+        """List all steps.
+
+        Args:
+            pipeline_id: The ID of the pipeline to list steps for.
+
+        Returns:
+            A list of all steps.
+        """
+
+    # --------------
+    # Pipeline runs
+    # --------------
+
+    def create_run(self, pipeline_run: PipelineRunModel) -> PipelineRunModel:
+        """Creates a pipeline run.
+
+        Args:
+            pipeline_run: The pipeline run to create.
+
+        Returns:
+            The created pipeline run.
+
+        Raises:
+            EntityExistsError: If an identical pipeline run already exists.
+        """
+
+    def get_run(self, run_id: UUID) -> PipelineRunModel:
         """Gets a pipeline run.
 
         Args:
-            pipeline_name: Name of the pipeline for which to get the run.
-            run_name: Name of the pipeline run to get.
-            project_name: Optional name of the project from which to get the
-                pipeline run.
+            run_id: The ID of the pipeline run to get.
 
         Returns:
-            A pipeline run object.
-        """
-        path = f"{PIPELINE_RUNS}/{pipeline_name}/{run_name}"
-        if project_name:
-            path += f"?project_name={project_name}"
-
-        body = self.get(path)
-        return PipelineRunModel.parse_obj(body)
-
-    def get_pipeline_run_wrappers(
-        self, pipeline_name: str, project_name: Optional[str] = None
-    ) -> List[PipelineRunModel]:
-        """Gets pipeline runs.
-
-        Args:
-            pipeline_name: Name of the pipeline for which to get runs.
-            project_name: Optional name of the project from which to get the
-                pipeline runs.
-
-        Returns:
-            List of pipeline runs.
+            The pipeline run.
 
         Raises:
-            ValueError: In case of a bad API response.
+            KeyError: if the pipeline run doesn't exist.
         """
-        path = f"{PIPELINE_RUNS}/{pipeline_name}"
-        if project_name:
-            path += f"?project_name={project_name}"
 
-        body = self.get(path)
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        return [PipelineRunModel.parse_obj(dict_) for dict_ in body]
-
-    def get_pipeline_run_steps(
-        self, pipeline_run: PipelineRunView
-    ) -> Dict[str, StepView]:
-        """Gets all steps for the given pipeline run.
+    def get_run_in_project(
+        self, run_name: str, project_name_or_id: Union[str, UUID]
+    ) -> PipelineRunModel:
+        """Get a pipeline run with a given name in a project.
 
         Args:
-            pipeline_run: The pipeline run to get the steps for.
+            run_name: Name of the pipeline run.
+            project_name_or_id: ID or name of the project.
 
         Returns:
-            A dictionary of step names to step views.
-        """
-        pass  # TODO
+            The pipeline run.
 
-    def get_step_by_id(self, step_id: int) -> StepView:
-        """Gets a `StepView` by its ID.
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
+    # TODO: figure out args and output for this
+    def get_run_dag(self, run_id: UUID) -> str:
+        """Gets the DAG for a pipeline run.
 
         Args:
-            step_id (int): The ID of the step to get.
+            run_id: The ID of the pipeline run to get.
 
         Returns:
-            StepView: The `StepView` with the given ID.
-        """
-        pass  # TODO
+            The DAG for the pipeline run.
 
-    def get_step_status(self, step: StepView) -> ExecutionStatus:
-        """Gets the execution status of a single step.
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
+    # TODO: Figure out what exactly gets returned from this
+    def get_run_component_side_effects(
+        self,
+        run_id: UUID,
+        component_id: Optional[str] = None,
+        component_type: Optional[StackComponentType] = None,
+    ) -> Dict[str, Any]:
+        """Gets the side effects for a component in a pipeline run.
 
         Args:
-            step (StepView): The step to get the status for.
+            run_id: The ID of the pipeline run to get.
+            component_id: The ID of the component to get.
 
         Returns:
-            ExecutionStatus: The status of the step.
-        """
-        pass  # TODO
+            The side effects for the component in the pipeline run.
 
-    def get_step_artifacts(
-        self, step: StepView
-    ) -> Tuple[Dict[str, ArtifactView], Dict[str, ArtifactView]]:
-        """Returns input and output artifacts for the given step.
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
+    def list_runs(
+        self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        stack_id: Optional[UUID] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        pipeline_id: Optional[UUID] = None,
+        unlisted: bool = False,
+    ) -> List[PipelineRunModel]:
+        """Gets all pipeline runs.
 
         Args:
-            step: The step for which to get the artifacts.
+            project_name_or_id: If provided, only return runs for this project.
+            stack_id: If provided, only return runs for this stack.
+            user_name_or_id: If provided, only return runs for this user.
+            pipeline_id: If provided, only return runs for this pipeline.
+            unlisted: If True, only return unlisted runs that are not
+                associated with any pipeline (filter by `pipeline_id==None`).
+
+        Returns:
+            A list of all pipeline runs.
+        """
+
+    def update_run(
+        self, run_id: UUID, run: PipelineRunModel
+    ) -> PipelineRunModel:
+        """Updates a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to update.
+            run: The pipeline run to use for the update.
+
+        Returns:
+            The updated pipeline run.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
+    def delete_run(self, run_id: UUID) -> None:
+        """Deletes a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to delete.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
+    # ------------------
+    # Pipeline run steps
+    # ------------------
+
+    def get_run_step(self, step_id: int) -> StepRunModel:
+        """Get a pipeline run step by ID.
+
+        Args:
+            step_id: The ID of the step to get.
+
+        Returns:
+            The pipeline run step.
+        """
+
+    # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
+    def get_run_step_artifacts(
+        self, step: StepRunModel
+    ) -> Tuple[Dict[str, ArtifactModel], Dict[str, ArtifactModel]]:
+        """Returns input and output artifacts for the given pipeline run step.
+
+        Args:
+            step: The pipeline run step for which to get the artifacts.
 
         Returns:
             A tuple (inputs, outputs) where inputs and outputs
             are both Dicts mapping artifact names
             to the input and output artifacts respectively.
         """
-        pass  # TODO
 
-    def get_producer_step_from_artifact(self, artifact_id: int) -> StepView:
-        """Returns original StepView from an ArtifactView.
+    def get_run_step_status(self, step_id: int) -> ExecutionStatus:
+        """Gets the execution status of a single pipeline run  step.
 
         Args:
-            artifact_id: ID of the ArtifactView to be queried.
+            step_id: The ID of the pipeline run step to get the status for.
 
         Returns:
-            Original StepView that produced the artifact.
+            ExecutionStatus: The status of the pipeline run step.
         """
-        pass  # TODO
 
-    def register_pipeline_run(
-        self,
-        pipeline_run: PipelineRunModel,
-    ) -> None:
-        """Registers a pipeline run.
+    def list_run_steps(self, run_id: int) -> Dict[str, StepRunModel]:
+        """Gets all steps in a pipeline run.
 
         Args:
-            pipeline_run: The pipeline run to register.
-        """
-        self.post(PIPELINE_RUNS, body=pipeline_run)
-
-    # Private interface shall not be implemented for REST store, instead the
-    # API only provides all public methods, including the ones that would
-    # otherwise be inherited from the BaseZenStore in other implementations.
-    # Don't call these! ABC complains that they aren't implemented, but they
-    # aren't needed with the custom implementations of base methods.
-
-    def _create_stack(
-        self, name: str, stack_configuration: Dict[StackComponentType, str]
-    ) -> None:
-        """Add a stack to storage.
-
-        Args:
-            name: Name of the stack.
-            stack_configuration: Configuration of the stack.
-
-        Raises:
-            NotImplementedError: If this method is called.
-        """
-        raise NotImplementedError("Not to be accessed directly in client!")
-
-    def _get_component_flavor_and_config(
-        self, component_type: StackComponentType, name: str
-    ) -> Tuple[str, bytes]:
-        """Fetch the flavor and configuration for a stack component.
-
-        Args:
-            component_type: Type of the component.
-            name: Name of the component.
-
-        Raises:
-            NotImplementedError: If the component type is not supported.
-        """
-        raise NotImplementedError("Not to be accessed directly in client!")
-
-    def _get_stack_component_names(
-        self, component_type: StackComponentType
-    ) -> List[str]:
-        """Get names of all registered stack components of a given type.
-
-        Args:
-            component_type: Type of the components.
-
-        Raises:
-            NotImplementedError: always
-        """
-        raise NotImplementedError("Not to be accessed directly in client!")
-
-    def _delete_stack_component(
-        self, component_type: StackComponentType, name: str
-    ) -> None:
-        """Remove a StackComponent from storage.
-
-        Args:
-            component_type: Type of the component.
-            name: Name of the component.
-
-        Raises:
-            NotImplementedError: always.
-        """
-        raise NotImplementedError("Not to be accessed directly in client!")
-
-    # Handling stack component flavors
-
-    @property
-    def flavors(self) -> List[FlavorModel]:
-        """All registered flavors.
+            run_id: The ID of the pipeline run for which to list runs.
 
         Returns:
-            A list of all registered flavors.
-
-        Raises:
-            ValueError: If the API response is not a list.
+            A mapping from step names to step models for all steps in the run.
         """
-        body = self.get(FLAVORS)
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        return [FlavorModel.parse_obj(flavor_dict) for flavor_dict in body]
 
-    def _create_flavor(
-        self,
-        source: str,
-        name: str,
-        stack_component_type: StackComponentType,
-    ) -> FlavorModel:
-        """Creates a new flavor.
-
-        Args:
-            source: the source path to the implemented flavor.
-            name: the name of the flavor.
-            stack_component_type: the corresponding StackComponentType.
-
-        Returns:
-            The newly created flavor.
-        """
-        flavor = FlavorModel(
-            name=name,
-            source=source,
-            type=stack_component_type,
-        )
-        return FlavorModel.parse_obj(self.post(FLAVORS, body=flavor))
-
-    def get_flavors_by_type(
-        self, component_type: StackComponentType
-    ) -> List[FlavorModel]:
-        """Fetch all flavor defined for a specific stack component type.
-
-        Args:
-            component_type: The type of the stack component.
-
-        Returns:
-            List of all the flavors for the given stack component type.
-
-        Raises:
-            ValueError: If a list of flavors is not returned.
-        """
-        body = self.get(f"{FLAVORS}/{component_type}")
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        return [FlavorModel.parse_obj(flavor_dict) for flavor_dict in body]
-
-    def get_flavor_by_name_and_type(
-        self,
-        flavor_name: str,
-        component_type: StackComponentType,
-    ) -> FlavorModel:
-        """Fetch a flavor by a given name and type.
-
-        Args:
-            flavor_name: The name of the flavor.
-            component_type: Optional, the type of the component.
-
-        Returns:
-            Flavor instance if it exists
-        """
-        return FlavorModel.parse_obj(
-            self.get(f"{FLAVORS}/{component_type}/{flavor_name}")
-        )
-
-    # Implementation specific methods:
-
-    def _parse_stack_configuration(
-        self, to_parse: Json
-    ) -> Dict[StackComponentType, str]:
-        """Parse an API response into `Dict[StackComponentType, str]`.
-
-        Args:
-            to_parse: The response to parse.
-
-        Returns:
-            A dictionary mapping the component type to the path to the
-            configuration.
-
-        Raises:
-            ValueError: If the response is not a dictionary.
-        """
-        if not isinstance(to_parse, dict):
-            raise ValueError(
-                f"Bad API Response. Expected dict, got {type(to_parse)}."
-            )
-        return {
-            StackComponentType(typ): component_name
-            for typ, component_name in to_parse.items()
-        }
+    # =======================
+    # Internal helper methods
+    # =======================
 
     def _handle_response(self, response: requests.Response) -> Json:
         """Handle API response, translating http status codes to Exception.

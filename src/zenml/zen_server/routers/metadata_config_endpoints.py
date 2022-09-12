@@ -11,10 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Union
 
 from fastapi import APIRouter, Depends, HTTPException
-from ml_metadata.proto import metadata_store_pb2
 
 from zenml.constants import METADATA_CONFIG, VERSION_1
 from zenml.zen_server.utils import (
@@ -34,16 +32,10 @@ router = APIRouter(
 
 @router.get(
     "/",
-    response_model=Union[
-        metadata_store_pb2.ConnectionConfig,
-        metadata_store_pb2.MetadataStoreClientConfig,
-    ],
+    response_model=str,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_metadata_config() -> Union[
-    metadata_store_pb2.ConnectionConfig,
-    metadata_store_pb2.MetadataStoreClientConfig,
-]:
+async def get_metadata_config() -> str:
     """Gets the metadata config.
 
     Returns:

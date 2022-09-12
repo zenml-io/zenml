@@ -19,15 +19,20 @@ import requests
 from zenml.constants import STACK_CONFIGURATIONS, STACKS, USERS
 from zenml.services import ServiceState
 from zenml.utils.networking_utils import scan_for_available_port
-from zenml.zen_server.zen_server import ZenServer, ZenServerConfig
+from zenml.zen_server.deploy.local.local_zen_server import (
+    LocalZenServer,
+    LocalZenServerConfig,
+)
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 
 
 @pytest.fixture
-def running_zen_server(tmp_path_factory: pytest.TempPathFactory) -> ZenServer:
+def running_zen_server(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> LocalZenServer:
     """Spin up a ZenServer to do tests on."""
     port = scan_for_available_port(start=8003, stop=9000)
-    zen_server = ZenServer(ZenServerConfig(port=port))
+    zen_server = LocalZenServer(LocalZenServerConfig(port=port))
 
     zen_server.start(timeout=10)
 
@@ -41,7 +46,7 @@ def running_zen_server(tmp_path_factory: pytest.TempPathFactory) -> ZenServer:
     platform.system() == "Windows",
     reason="ZenServer not supported as daemon on Windows.",
 )
-def test_get_stack_endpoints(running_zen_server: ZenServer):
+def test_get_stack_endpoints(running_zen_server: LocalZenServer):
     """Test that the stack methods behave as they should."""
     endpoint = running_zen_server.endpoint.status.uri.strip("/")
     stacks_response = requests.get(
@@ -63,7 +68,7 @@ def test_get_stack_endpoints(running_zen_server: ZenServer):
     platform.system() == "Windows",
     reason="ZenServer not supported as daemon on Windows.",
 )
-def test_server_requires_auth(running_zen_server: ZenServer):
+def test_server_requires_auth(running_zen_server: LocalZenServer):
     """Test that most service methods require authorization."""
     endpoint = running_zen_server.endpoint.status.uri.strip("/")
     stacks_response = requests.get(endpoint + STACKS)
@@ -84,8 +89,8 @@ def test_server_requires_auth(running_zen_server: ZenServer):
 def test_server_up_down():
     """Test spinning up and shutting down ZenServer."""
     port = scan_for_available_port(start=8003, stop=9000)
-    zen_server = ZenServer(
-        ZenServerConfig(
+    zen_server = LocalZenServer(
+        LocalZenServerConfig(
             port=port,
         )
     )

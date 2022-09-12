@@ -11,13 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import List
+from typing import List, Optional
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from zenml.constants import STACK_COMPONENTS, STACKS, VERSION_1
-from zenml.enums import StackComponentType
+from zenml.constants import STACKS, VERSION_1
+from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.models import StackModel
+from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.utils import (
     authorize,
     error_detail,
@@ -38,8 +40,15 @@ router = APIRouter(
     response_model=List[StackModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_stacks(project_name: str) -> List[StackModel]:
+async def list_stacks(
+    project_name_or_id: str,
+    stack_name: Optional[str] = None,
+) -> List[StackModel]:
     """Returns all stacks.
+
+    Args:
+        project_name_or_id: Name or ID of the project
+        stack_name: Optionally filter by stack name
 
     Returns:
         All stacks.
@@ -50,10 +59,13 @@ async def get_stacks(project_name: str) -> List[StackModel]:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.get_stacks(project_name=project_name)
+        return zen_store.list_stacks(
+            project_name_or_id=parse_name_or_uuid(project_name_or_id),
+            name=stack_name,
+        )
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -79,10 +91,10 @@ async def get_stack(stack_id: str) -> StackModel:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.get_stack(stack_id)
+        return zen_store.get_stack(UUID(stack_id))
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -109,10 +121,11 @@ async def update_stack(stack_id: str, stack: StackModel) -> StackModel:
         422 error: when unable to validate input
     """
     try:
-        zen_store.update_stack(stack_id, stack)
+        stack.id = UUID(stack_id)
+        return zen_store.update_stack(stack)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -134,43 +147,46 @@ async def delete_stack(stack_id: str) -> None:
         422 error: when unable to validate input
     """
     try:
-        zen_store.delete_stack(stack_id)  # aka 'deregister_stack'
+        zen_store.delete_stack(UUID(stack_id))  # aka 'deregister_stack'
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
 
 
-@router.get(
-    "/{stack_id}" + STACK_COMPONENTS,
-    response_model=List[StackComponentType],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-async def get_stack_configuration(
-    stack_id: str,
-) -> List[StackComponentType]:
-    """Returns the configuration for the requested stack.
-
-    This comes in the form of a list of stack components within the stack.
-
-    Args:
-        name: Name of the stack.
-
-    Returns:
-        Configuration for the requested stack.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
-    """
-    try:
-        return zen_store.get_stack_configuration(stack_id)
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+# TODO: [server] this endpoint below might no longer be necessary as the
+#  full list of Component models can already be found on the StackModel
+#
+# @router.get(
+#     "/{stack_id}" + STACK_COMPONENTS,
+#     response_model=List[StackComponentType],
+#     responses={401: error_response, 404: error_response, 422: error_response},
+# )
+# async def get_stack_configuration(
+#     stack_id: str,
+# ) -> List[StackComponentType]:
+#     """Returns the configuration for the requested stack.
+#
+#     This comes in the form of a list of stack components within the stack.
+#
+#     Args:
+#         name: Name of the stack.
+#
+#     Returns:
+#         Configuration for the requested stack.
+#
+#     Raises:
+#         401 error: when not authorized to login
+#         404 error: when trigger does not exist
+#         422 error: when unable to validate input
+#     """
+#     try:
+#         return zen_store.get_stack_configuration(stack_id)
+#     except NotAuthorizedError as error:
+#         raise HTTPException(status_code=401, detail=error_detail(error))
+#     except KeyError as error:
+#         raise HTTPException(status_code=404, detail=error_detail(error))
+#     except ValidationError as error:
+#         raise HTTPException(status_code=422, detail=error_detail(error))

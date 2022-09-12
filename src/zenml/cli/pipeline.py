@@ -16,17 +16,20 @@
 
 import click
 
+from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
 from zenml.pipelines.run_pipeline import run_pipeline
+from zenml.repository import Repository
+from zenml.utils.uuid_utils import is_valid_uuid
 
 logger = get_logger(__name__)
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def pipeline() -> None:
-    """Run pipelines."""
+    """List, run, or delete pipelines."""
 
 
 @pipeline.command("run", help="Run a pipeline with the given configuration.")
@@ -46,3 +49,46 @@ def cli_pipeline_run(python_file: str, config_path: str) -> None:
         config_path: Path to configuration YAML file.
     """
     run_pipeline(python_file=python_file, config_path=config_path)
+
+
+@pipeline.command("list", help="List all registered pipelines.")
+def list_pipelines() -> None:
+    """List all registered pipelines."""
+    cli_utils.print_active_config()
+    pipelines = Repository().zen_store.list_pipelines(
+        project_name_or_id=Repository().active_project.id
+    )
+    if not pipelines:
+        cli_utils.declare("No piplines registered.")
+        return
+
+    cli_utils.print_pydantic_models(pipelines)
+
+
+@pipeline.command("delete")
+@click.argument("pipeline_name_or_id", type=str, required=True)
+def delete_pipeline(pipeline_name_or_id: str) -> None:
+    """Delete a pipeline.
+
+    Args:
+        pipeline_name_or_id: The name or ID of the pipeline to delete.
+    """
+    cli_utils.print_active_config()
+    try:
+        repo = Repository()
+        if is_valid_uuid(pipeline_name_or_id):
+            pipeline = repo.zen_store.get_pipeline(pipeline_name_or_id)
+        else:
+            pipeline = repo.zen_store.get_pipeline_in_project(
+                pipeline_name=pipeline_name_or_id,
+                project_name_or_id=repo.active_project.id,
+            )
+    except KeyError as err:
+        cli_utils.error(str(err))
+    cli_utils.confirmation(
+        f"Are you sure you want to delete pipeline `{pipeline_name_or_id}`? "
+        "This will change all existing runs of this pipeline to become "
+        "unlisted."
+    )
+    Repository().zen_store.delete_pipeline(pipeline_id=pipeline.id)
+    cli_utils.declare(f"Deleted pipeline '{pipeline_name_or_id}'.")

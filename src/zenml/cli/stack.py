@@ -432,7 +432,7 @@ def update_stack(
 
     repo = Repository()
 
-    active_stack_name = repo.active_stack.name
+    active_stack_name = repo.active_stack_model.name
     stack_name = stack_name or active_stack_name
 
     with console.status(f"Updating stack `{stack_name}`...\n"):
@@ -532,7 +532,7 @@ def update_stack(
             )
 
         if share:
-            # THis allows users to switch stacks from private to shared
+            # This allows users to switch stacks from private to shared
             #  the opposite switch is currently unsupported
             current_stack.is_shared = share
 
@@ -652,7 +652,7 @@ def remove_stack_component(
 
     repo = Repository()
 
-    stack_name = stack_name or repo.active_stack.name
+    stack_name = stack_name or repo.active_stack_model.name
 
     with console.status(f"Updating stack `{stack_name}`...\n"):
         repo = Repository()
@@ -751,12 +751,9 @@ def list_stacks() -> None:
 
     repo = Repository()
 
-    if len(repo.stacks) == 0:
-        cli_utils.error("No stacks registered!")
-
     stack_dicts = []
     for stack_name, stack_configuration in repo.stack_configurations.items():
-        is_active = stack_name == repo.active_stack.name
+        is_active = stack_name == repo.active_stack_model.name
         stack_config = {
             "ACTIVE": ":point_right:" if is_active else "",
             "STACK NAME": stack_name,
@@ -793,8 +790,8 @@ def describe_stack(stack_name: Optional[str]) -> None:
     if len(stack_configurations) == 0:
         cli_utils.error("No stacks registered.")
 
-    active_stack_name = repo.active_stack.name
-    stack_configuration = stack_configurations[repo.active_stack.name]
+    active_stack_name = repo.active_stack_model.name
+    stack_configuration = stack_configurations[active_stack_name]
 
     cli_utils.print_stack_configuration(
         stack_configuration,
@@ -845,7 +842,7 @@ def delete_stack(
                 f"by running 'zenml stack set --global STACK'."
             )
 
-        if repo.active_stack.name == stack_name:
+        if repo.active_stack_model.name == stack_name:
             cli_utils.error(
                 f"Stack {stack_name} cannot be deleted while it is "
                 f"active. Please choose a different active stack first by "
@@ -898,12 +895,14 @@ def get_active_stack() -> None:
     """Gets the active stack."""
     cli_utils.print_active_config()
 
-    scope = " repository" if Repository().uses_local_active_stack else " global"
+    scope = (
+        " repository" if Repository().uses_local_configuration else " global"
+    )
 
     with console.status("Getting the active stack..."):
         repo = Repository()
         cli_utils.declare(
-            f"The{scope} active stack is: '{repo.active_stack.name}'"
+            f"The{scope} active stack is: '{repo.active_stack_model.name}'"
         )
 
 
@@ -912,6 +911,7 @@ def up_stack() -> None:
     """Provisions resources for the active stack."""
     cli_utils.print_active_config()
 
+    # TODO[Server]: Make this call a function in repo
     stack_ = Repository().active_stack
     cli_utils.declare(
         f"Provisioning resources for active stack '{stack_.name}'."
@@ -957,6 +957,7 @@ def down_stack(force: bool = False, old_force: bool = False) -> None:
         )
     cli_utils.print_active_config()
 
+    # TODO[Server]: Make this call a function in repo
     stack_ = Repository().active_stack
 
     if force:
@@ -1242,6 +1243,7 @@ def register_secrets(
     """
     cli_utils.print_active_config()
 
+    # TODO[Server]: Make this call a function in repo
     if stack_name:
         try:
             stack_ = Repository().get_stack_by_name(stack_name)

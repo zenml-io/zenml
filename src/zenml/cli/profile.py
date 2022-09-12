@@ -35,8 +35,8 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.models import ComponentModel, StackModel
-from zenml.models.user_management_models import ProjectModel, UserModel
+from zenml.models import ComponentModel, ProjectModel, StackModel, UserModel
+from zenml.models.flavor_models import FlavorModel
 from zenml.repository import Repository
 from zenml.utils import yaml_utils
 from zenml.utils.io_utils import get_global_config_directory
@@ -235,10 +235,12 @@ class LocalStore(BaseModel):
                     StackComponentType.ORCHESTRATOR,
                 ]
             ):
+                zen_store = Repository().zen_store
                 # use the component in the active store
-                component = Repository().zen_store.get_default_stack(project)[
-                    StackComponentType(component_type)
-                ]
+                component = zen_store.get_default_stack(
+                    project_name_or_id=project,
+                    user_name_or_id=zen_store.active_user.id,
+                )[StackComponentType(component_type)]
             components[StackComponentType(component_type)] = component
 
         return StackModel(
@@ -512,12 +514,12 @@ def migrate_profiles(
                 )
             )
     else:
-        project = repo.active_project()
+        project = repo.active_project
 
     if not project:
         cli_utils.error("No active project found.")
 
-    user: UserModel = repo.zen_store.active_user()
+    user: UserModel = repo.zen_store.active_user
 
     if flavors:
         if not store.stack_component_flavors:
@@ -532,9 +534,11 @@ def migrate_profiles(
                 name = f"{prefix}{flavor.name}"
                 try:
                     repo.zen_store.create_flavor(
-                        source=flavor.source,
-                        name=name,
-                        stack_component_type=StackComponentType(flavor.type),
+                        FlavorModel(
+                            source=flavor.source,
+                            name=name,
+                            type=StackComponentType(flavor.type),
+                        )
                     )
                     cli_utils.declare(f"Migrated component flavor '{name}'.")
                 except EntityExistsError:
@@ -563,7 +567,7 @@ def migrate_profiles(
                 try:
                     repo.zen_store.register_stack_component(
                         user_id=user.id,
-                        project_id=project.name,
+                        project_name_or_id=project.name,
                         component=component,
                     )
                     cli_utils.declare(

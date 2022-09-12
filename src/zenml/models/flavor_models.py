@@ -13,19 +13,28 @@
 #  permissions and limitations under the License.
 
 from datetime import datetime
-from typing import Optional
+from typing import ClassVar, List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from zenml.enums import StackComponentType
+from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 
-class FlavorModel(BaseModel):
+class FlavorModel(AnalyticsTrackedModelMixin):
     """Network serializable wrapper.
 
     This represents the custom implementation of a stack component flavor.
     """
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+        "id",
+        "type",
+        "integration",
+        "project_id",
+        "user_id",
+    ]
 
     id: Optional[UUID] = Field(
         default=None,
@@ -47,7 +56,7 @@ class FlavorModel(BaseModel):
         default=None,
         title="The ID of the user, that created this Flavor.",
     )
-    project_id: Optional[str] = Field(
+    project_id: Optional[UUID] = Field(
         default=None, title="The project that contains this Flavor."
     )
     created_at: Optional[datetime] = Field(

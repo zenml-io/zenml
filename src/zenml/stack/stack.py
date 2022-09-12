@@ -15,7 +15,6 @@
 
 import os
 import time
-from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     AbstractSet,
@@ -33,10 +32,6 @@ from zenml.enums import SecretValidationLevel, StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.logger import get_logger
 from zenml.models import ComponentModel, StackModel
-from zenml.runtime_configuration import (
-    RUN_NAME_OPTION_KEY,
-    RuntimeConfiguration,
-)
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
@@ -52,6 +47,7 @@ if TYPE_CHECKING:
     from zenml.model_deployers import BaseModelDeployer
     from zenml.orchestrators import BaseOrchestrator
     from zenml.pipelines import BasePipeline
+    from zenml.runtime_configuration import RuntimeConfiguration
     from zenml.secrets_managers import BaseSecretsManager
     from zenml.stack import StackComponent
     from zenml.step_operators import BaseStepOperator
@@ -617,46 +613,15 @@ class Stack:
 
         self._validate_secrets(raise_exception=fail_if_secrets_missing)
 
-    # TODO: why is this here? this is not a stack method
-    def _register_pipeline_run(
-        self,
-        pipeline: "BasePipeline",
-        runtime_configuration: "RuntimeConfiguration",
-    ) -> None:
-        """Registers a pipeline run in the ZenStore.
+    def prepare_pipeline_run(self, pipeline, runtime_configuration):
+        """Prepares the stack for a pipeline run.
+
+        This method is called before a pipeline run is executed.
 
         Args:
-            pipeline: The pipeline that is being run.
-            runtime_configuration: The runtime configuration of the pipeline.
-        """
-        from zenml.models import PipelineRunModel
-        from zenml.repository import Repository
-
-        repo = Repository()
-        pipeline_run = PipelineRunModel(
-            name=runtime_configuration.run_name,
-            owner=repo.zen_store.active_user.id,
-            stack_id=self.id,
-            pipeline_id=None,  # TODO: check if pipeline exists etc. else pass None
-            runtime_configuration=runtime_configuration,
-        )
-
-        Repository().zen_store.create_run(pipeline_run)
-
-    def deploy_pipeline(
-        self,
-        pipeline: "BasePipeline",
-        runtime_configuration: RuntimeConfiguration,
-    ) -> Any:
-        """Deploys a pipeline on this stack.
-
-        Args:
-            pipeline: The pipeline to deploy.
+            pipeline: The pipeline to be executed.
             runtime_configuration: Contains all the runtime configuration
                 options specified for the pipeline run.
-
-        Returns:
-            The return value of the call to `orchestrator.run_pipeline(...)`.
 
         Raises:
             StackValidationError: If the stack configuration is not valid.
@@ -682,13 +647,21 @@ class Stack:
         for component in self.components.values():
             component.prepare_pipeline_run()
 
-        runtime_configuration[
-            RUN_NAME_OPTION_KEY
-        ] = runtime_configuration.run_name or (
-            f"{pipeline.name}-"
-            f'{datetime.now().strftime("%d_%h_%y-%H_%M_%S_%f")}'
-        )
+    def deploy_pipeline(
+        self,
+        pipeline: "BasePipeline",
+        runtime_configuration: "RuntimeConfiguration",
+    ) -> Any:
+        """Deploys a pipeline on this stack.
 
+        Args:
+            pipeline: The pipeline to deploy.
+            runtime_configuration: Contains all the runtime configuration
+                options specified for the pipeline run.
+
+        Returns:
+            The return value of the call to `orchestrator.run_pipeline(...)`.
+        """
         logger.info(
             "Using stack `%s` to run pipeline `%s`...",
             self.name,
@@ -705,10 +678,6 @@ class Stack:
                 runtime_configuration["enable_cache"],
             )
             pipeline.enable_cache = runtime_configuration.get("enable_cache")
-
-        self._register_pipeline_run(
-            pipeline=pipeline, runtime_configuration=runtime_configuration
-        )
 
         return_value = self.orchestrator.run(
             pipeline, stack=self, runtime_configuration=runtime_configuration

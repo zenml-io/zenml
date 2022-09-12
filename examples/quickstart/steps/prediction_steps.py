@@ -2,15 +2,14 @@ import pandas as pd
 
 from zenml.repository import Repository
 from zenml.services import BaseService
-from zenml.stack import Stack
 from zenml.steps import Output, step
 
 
 @step(enable_cache=False)
 def prediction_service_loader() -> BaseService:
     """Load the model service of our train_evaluate_deploy_pipeline."""
-    active_stack = Stack.from_model(Repository().active_stack)
-    model_deployer = active_stack.model_deployer
+    repo = Repository()
+    model_deployer = repo.active_stack.model_deployer
     services = model_deployer.find_model_server(
         pipeline_name="training_pipeline",
         pipeline_step_name="mlflow_model_deployer_step",

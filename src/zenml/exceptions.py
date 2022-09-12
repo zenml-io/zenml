@@ -206,19 +206,27 @@ class DuplicateRunNameError(RuntimeError):
         super().__init__(message)
 
 
-class StackExistsError(ZenMLBaseException):
-    """Raised when trying to register a stack with a name that already exists."""
+class NotAuthorizedError(ZenMLBaseException):
+    """Raised when the user does not have permission to perform an action"""
 
 
-class StackComponentExistsError(ZenMLBaseException):
-    """Raised when trying to register a stack component with a name that already exists."""
+class ValidationError(ZenMLBaseException):
+    """Raised when the Model passed to the ZenStore"""
 
 
 class EntityExistsError(ZenMLBaseException):
     """Raised when trying to register a user-management entity with a name that already exists."""
 
 
-class SecretExistsError(ZenMLBaseException):
+class StackExistsError(EntityExistsError):
+    """Raised when trying to register a stack with a name that already exists."""
+
+
+class StackComponentExistsError(EntityExistsError):
+    """Raised when trying to register a stack component with a name that already exists."""
+
+
+class SecretExistsError(EntityExistsError):
     """Raised when trying to register a secret with a name that already exists."""
 
 
@@ -236,3 +244,7 @@ class GitNotFoundError(ImportError):
 
 class DuplicatedConfigurationError(ZenMLBaseException):
     """Raised when a configuration parameter is set twice."""
+
+
+class IllegalOperationError(ZenMLBaseException):
+    """Raised when an illegal operation is attempted."""

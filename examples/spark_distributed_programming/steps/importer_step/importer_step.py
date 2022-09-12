@@ -15,11 +15,9 @@
 from pyspark.sql import DataFrame, SparkSession
 
 from zenml.repository import Repository
-from zenml.stack.stack import Stack
 from zenml.steps import BaseStepConfig, step
 
-active_stack = Stack.from_model(Repository().active_stack)
-step_operator = active_stack.step_operator
+step_operator = Repository().active_stack.step_operator
 
 
 class ImporterConfig(BaseStepConfig):

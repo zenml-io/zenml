@@ -16,7 +16,7 @@
 from abc import abstractmethod
 from typing import Type
 
-from zenml.models.flavor_model import FlavorModel
+from zenml.models import FlavorModel
 from zenml.stack.stack_component import (
     StackComponent,
     StackComponentConfig,

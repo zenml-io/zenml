@@ -190,8 +190,7 @@ class StepExecutorOperator(BaseExecutorOperator):
         assert execution_info.execution_output_uri
 
         step_name = execution_info.pipeline_node.node_info.id
-        repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
-        stack = Stack.from_model(repo.active_stack)
+        stack = Repository().active_stack
         step_operator = self._get_step_operator(
             stack=stack, execution_info=execution_info
         )

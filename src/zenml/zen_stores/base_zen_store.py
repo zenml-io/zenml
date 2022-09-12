@@ -13,34 +13,34 @@
 #  permissions and limitations under the License.
 """Base Zen Store implementation."""
 import os
-from abc import abstractmethod
-from pathlib import Path, PurePath
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
 from uuid import UUID
 
-from ml_metadata.proto import metadata_store_pb2
 from pydantic import BaseModel
 
 from zenml.config.store_config import StoreConfiguration
-from zenml.enums import ExecutionStatus, StackComponentType, StoreType
+from zenml.enums import StackComponentType, StoreType
+from zenml.exceptions import StackExistsError
 from zenml.logger import get_logger
-from zenml.models import ComponentModel, FlavorModel, StackModel
-from zenml.models.code_models import CodeRepositoryModel
-from zenml.models.pipeline_models import (
+from zenml.models import (
     ArtifactModel,
-    PipelineModel,
-    PipelineRunModel,
-    StepRunModel,
-)
-from zenml.models.user_management_models import (
+    ComponentModel,
     ProjectModel,
     RoleAssignmentModel,
     RoleModel,
+    StackModel,
+    StepRunModel,
     TeamModel,
     UserModel,
 )
 from zenml.utils import io_utils
-from zenml.utils.analytics_utils import AnalyticsEvent, track_event
+from zenml.utils.analytics_utils import (
+    AnalyticsEvent,
+    AnalyticsTrackerMixin,
+    track,
+    track_event,
+)
+from zenml.zen_stores.zen_store_interface import ZenStoreInterface
 
 logger = get_logger(__name__)
 
@@ -49,7 +49,7 @@ DEFAULT_PROJECT_NAME = "default"
 DEFAULT_STACK_NAME = "default"
 
 
-class BaseZenStore(BaseModel):
+class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
     """Base class for accessing and persisting ZenML core objects.
 
     Attributes:
@@ -62,6 +62,10 @@ class BaseZenStore(BaseModel):
 
     TYPE: ClassVar[StoreType]
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]]
+
+    # ---------------------------------
+    # Initialization and configuration
+    # ---------------------------------
 
     def __init__(
         self,
@@ -168,109 +172,24 @@ class BaseZenStore(BaseModel):
 
     def _initialize_database(self) -> None:
         """Initialize the database on first use."""
-        self.create_default_user()
-        self.create_default_project()
-        if self.stacks_empty:
-            logger.info("Initializing database...")
-            self.register_default_stack()
-
-    @property
-    def default_user_id(self) -> UUID:
-        """Get the ID of the default user, or None if it doesn't exist."""
         try:
-            return self.get_user(DEFAULT_USERNAME).id
+            default_project = self._default_project
         except KeyError:
-            return None
-
-    @property
-    def default_project_id(self) -> UUID:
-        """Get the ID of the default project, or None if it doesn't exist."""
+            default_project = self._create_default_project()
         try:
-            return self.get_project(DEFAULT_PROJECT_NAME).id
+            default_user = self._default_user
         except KeyError:
-            return None
-
-    def create_default_user(self) -> None:
-        """Creates a default user."""
-        if not self.default_user_id:
-            self._track_event(AnalyticsEvent.CREATED_DEFAULT_USER)
-            self._create_user(UserModel(name=DEFAULT_USERNAME))
-
-    def create_default_project(self) -> None:
-        """Creates a default project."""
-        if not self.default_project_id:
-            self._track_event(AnalyticsEvent.CREATED_DEFAULT_PROJECT)
-            self._create_project(ProjectModel(name=DEFAULT_PROJECT_NAME))
-
-    def register_default_stack(self) -> None:
-        """Populates the store with the default Stack.
-
-        The default stack contains a local orchestrator and a local artifact
-        store.
-        """
-        from zenml.config.global_config import GlobalConfiguration
-
-        # Register the default orchestrator
-        # try:
-        orchestrator = self.register_stack_component(
-            user_id=self.default_user_id,
-            project_id=self.default_project_id,
-            component=ComponentModel(
-                name="default",
-                type=StackComponentType.ORCHESTRATOR,
-                flavor_name="local",
-                configuration={},
-            ),
-        )
-        # except StackComponentExistsError:
-        #     logger.warning("Default Orchestrator exists already, "
-        #                    "skipping creation ...")
-
-        # Register the default artifact store
-        artifact_store_path = os.path.join(
-            GlobalConfiguration().config_directory,
-            "local_stores",
-            "default_local_store",
-        )
-        io_utils.create_dir_recursive_if_not_exists(artifact_store_path)
-
-        # try:
-        artifact_store = self.register_stack_component(
-            user_id=self.default_user_id,
-            project_id=self.default_project_id,
-            component=ComponentModel(
-                name="default",
-                type=StackComponentType.ARTIFACT_STORE,
-                flavor_name="local",
-                configuration={"path": artifact_store_path},
-            ),
-        )
-        # except StackComponentExistsError:
-        #     logger.warning("Default Artifact Store exists already, "
-        #                    "skipping creation ...")
-
-        components = {c.type: c for c in [orchestrator, artifact_store]}
-        # Register the default stack
-        stack = StackModel(
-            name="default", components=components, is_shared=True
-        )
-        self._register_stack(
-            user_id=self.default_user_id,
-            project_id=self.default_project_id,
-            stack=stack,
-        )
-        self._track_event(
-            AnalyticsEvent.REGISTERED_DEFAULT_STACK,
-        )
-
-    @property
-    def stacks(self) -> List[StackModel]:
-        """All stacks registered in this zen store.
-
-        Returns:
-            A list of all stacks registered in this zen store.
-        """
-        return self.list_stacks(project_id=self.default_project_id)
+            default_user = self._create_default_user()
+        try:
+            self._get_default_stack(
+                project_name_or_id=default_project.id,
+                user_name_or_id=default_user.id,
+            )
+        except KeyError:
+            self._register_default_stack(
+                project_name_or_id=default_project.id,
+                user_name_or_id=default_user.id,
+            )
 
     @property
     def url(self) -> str:
@@ -290,608 +209,213 @@ class BaseZenStore(BaseModel):
         """
         return self.TYPE
 
-    # Static methods:
-
-    @staticmethod
-    @abstractmethod
-    def get_path_from_url(url: str) -> Optional[Path]:
-        """Get the path from a URL, if it points or is backed by a local file.
-
-        Args:
-            url: The URL to get the path from.
-
-        Returns:
-            The local path backed by the URL, or None if the URL is not backed
-            by a local file or directory
-        """
-
-    @staticmethod
-    @abstractmethod
-    def get_local_url(path: str) -> str:
-        """Get a local URL for a given local path.
-
-        Args:
-            path: the path string to build a URL out of.
-
-        Returns:
-            Url pointing to the path for the store type.
-        """
-
-    @staticmethod
-    @abstractmethod
-    def validate_url(url: str) -> str:
-        """Check if the given url is valid.
-
-        The implementation should raise a ValueError if the url is invalid.
-
-        Args:
-            url: The url to check.
-
-        Returns:
-            The modified url, if it is valid.
-        """
-
-    @classmethod
-    @abstractmethod
-    def copy_local_store(
-        cls,
-        config: StoreConfiguration,
-        path: str,
-        load_config_path: Optional[PurePath] = None,
-    ) -> StoreConfiguration:
-        """Copy a local store to a new location.
-
-        Use this method to create a copy of a store database to a new location
-        and return a new store configuration pointing to the database copy. This
-        only applies to stores that use the local filesystem to store their
-        data. Calling this method for remote stores simply returns the input
-        store configuration unaltered.
-
-        Args:
-            config: The configuration of the store to copy.
-            path: The new local path where the store DB will be copied.
-            load_config_path: path that will be used to load the copied store
-                database. This can be set to a value different from `path`
-                if the local database copy will be loaded from a different
-                environment, e.g. when the database is copied to a container
-                image and loaded using a different absolute path. This will be
-                reflected in the paths and URLs encoded in the copied store
-                configuration.
-
-        Returns:
-            The store configuration of the copied store.
-        """
-
-    # Public Interface:
-
-    # .--------.
-    # | STACKS |
-    # '--------'
-
-    @property
-    @abstractmethod
-    def stacks_empty(self) -> bool:
-        """Check if the store is empty (no stacks are configured).
-
-        The implementation of this method should check if the store is empty
-        without having to load all the stacks from the persistent storage.
-
-        Returns:
-            True if the store is empty, False otherwise.
-        """
-
-    # TODO: [ALEX] add filtering param(s)
-    def list_stacks(
+    def validate_active_config(
         self,
-        project_id: UUID,
-        user_id: Optional[UUID] = None,
-        name: Optional[str] = None,
-        is_shared: Optional[bool] = None,
-    ) -> List[StackModel]:
-        """List all stacks within the filter.
+        active_project_name_or_id: Optional[Union[str, UUID]] = None,
+        active_stack_id: Optional[UUID] = None,
+    ) -> Tuple[ProjectModel, StackModel]:
+        """Validate the active configuration.
+
+        Call this method to validate the supplied active project and active
+        stack values.
+
+        This method is guaranteed to return valid project ID and stack ID
+        values. If the supplied project and stack are not set or are not valid
+        (e.g. they do not exist or are not accessible), the default project and
+        default project stack will be returned in their stead.
 
         Args:
-            project_id: ID of the Project containing the stack components
-            user_id: Optionally filter stack components by the owner
-            name: Optionally filter stack component by name
-            is_shared: Optionally filter out stack component by the `is_shared`
-                       flag
+            active_project_name_or_id: The name or ID of the active project.
+            active_stack_id: The ID of the active stack.
+
         Returns:
-            A list of all stacks.
-
-        Raises:
-            KeyError: if the project doesn't exist.
+            A tuple containing the active project and active stack.
         """
-        return self._list_stacks(project_id, user_id, name, is_shared)
 
-    @abstractmethod
-    def _list_stacks(
+        active_project: ProjectModel
+
+        # Ensure that the current active project is still valid
+        if active_project_name_or_id:
+            try:
+                active_project = self.get_project(active_project_name_or_id)
+            except KeyError:
+                logger.warning(
+                    "Project '%s' not found. Resetting the active project to "
+                    "the default.",
+                    active_project_name_or_id,
+                )
+                active_project = self._default_project
+        else:
+            logger.warning("Active project not set. Setting it to the default.")
+            active_project = self._default_project
+
+        active_stack: Optional[StackModel] = None
+
+        # Sanitize the active stack
+        if active_stack_id:
+            # Ensure that the active stack is still valid
+            try:
+                active_stack = self.get_stack(stack_id=active_stack_id)
+            except KeyError:
+                logger.warning(
+                    "Stack with id '%s' not found. Setting the active "
+                    "stack to the default project stack.",
+                    active_stack_id,
+                )
+            else:
+                if active_stack.project_id != active_project.id:
+                    logger.warning(
+                        "The stack with id '%s' is not in the active project. "
+                        "Resetting the active stack to the default "
+                        "project stack.",
+                        active_stack_id,
+                    )
+                    active_stack = None
+        else:
+            logger.warning(
+                "The active stack is not set. Setting the "
+                "active stack to the default project stack."
+            )
+
+        if active_stack is None:
+            # If no active stack is set, use the default stack in the project
+            # (create one if one is not yet created).
+            try:
+                active_stack = self._get_default_stack(
+                    project_name_or_id=active_project.id,
+                    user_name_or_id=self.active_user.id,
+                )
+            except KeyError:
+                active_stack = self._register_default_stack(
+                    project_name_or_id=active_project.id,
+                    user_name_or_id=self.active_user.id,
+                )
+
+        return active_project, active_stack
+
+    # ------
+    # Stacks
+    # ------
+
+    @track(AnalyticsEvent.REGISTERED_DEFAULT_STACK)
+    def _register_default_stack(
         self,
-        project_id: UUID,
-        owner: Optional[UUID] = None,
-        name: Optional[str] = None,
-        is_shared: Optional[bool] = None,
-    ) -> List[StackModel]:
-        """List all stacks within the filter.
-
-        Args:
-            project_id: Id of the Project containing the stack components
-            user_id: Optionally filter stack components by the owner
-            name: Optionally filter stack component by name
-            is_shared: Optionally filter out stack component by the `is_shared`
-                       flag
-        Returns:
-            A list of all stacks.
-        """
-
-    @abstractmethod
-    def _initialize(self) -> None:
-        """Initialize the store.
-
-        This method is called immediately after the store is created. It should
-        be used to set up the backend (database, connection etc.).
-        """
-
-    def get_stack(self, stack_id: UUID) -> StackModel:
-        """Get a stack by id.
-
-        Args:
-            stack_id: The id of the stack to get.
-
-        Returns:
-            The stack with the given id.
-
-        Raises:
-            KeyError: if the stack doesn't exist.
-        """
-        return self._get_stack(stack_id)
-
-    @abstractmethod
-    def _get_stack(self, stack_id: UUID) -> StackModel:
-        """Get a stack by ID.
-
-        Args:
-            stack_id: The ID of the stack to get.
-
-        Returns:
-            The stack.
-
-        Raises:
-            KeyError: if the stack doesn't exist.
-        """
-
-    def register_stack(
-        self, user_id: UUID, project_id: UUID, stack: StackModel
+        project_name_or_id: Union[str, UUID],
+        user_name_or_id: Union[str, UUID],
     ) -> StackModel:
-        """Register a new stack.
+        """Construct and register the default stack components and the stack
+        for a user in a project.
+
+        The default stack contains a local orchestrator and a local artifact
+        store.
 
         Args:
-            stack: The stack to register.
-            user_id: The user that is registering this stack
-            project_id: The project within which that stack is registered
-
-        Returns:
-            The registered stack.
+            project_name_or_id: Name or ID of the project to which the stack
+                belongs.
+            user_name_or_id: The name or ID of the user that owns the stack.
 
         Raises:
-            StackExistsError: In case a stack with that name is already owned
-                by this user on this project.
+            StackExistsError: If a default stack is already registered for the
+                user in the supplied project.
         """
-        metadata = {ct: c.flavor_name for ct, c in stack.components.items()}
-        metadata["store_type"] = self.type.value
-        self._track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
-        return self._register_stack(
-            stack=stack, user_id=user_id, project_id=project_id
+        from zenml.config.global_config import GlobalConfiguration
+
+        project_name = self.get_project(
+            project_name_or_id=project_name_or_id
+        ).name
+        user_name = self.get_user(user_name_or_id=user_name_or_id).name
+        try:
+            self._get_default_stack(
+                project_name_or_id=project_name_or_id,
+                user_name_or_id=user_name_or_id,
+            )
+        except KeyError:
+            pass
+        else:
+            raise StackExistsError(
+                f"Default stack already registered for user "
+                f"{user_name} in project {project_name}"
+            )
+
+        logger.info(
+            f"Creating default stack for user {user_name} in project "
+            f"{project_name}..."
         )
 
-    @abstractmethod
-    def _register_stack(
-        self, user_id: UUID, project_id: UUID, stack: StackModel
+        # Register the default orchestrator
+        orchestrator = self.register_stack_component(
+            user_name_or_id=user_name_or_id,
+            project_name_or_id=project_name_or_id,
+            component=ComponentModel(
+                name="default",
+                type=StackComponentType.ORCHESTRATOR,
+                flavor_name="local",
+                configuration={},
+            ),
+        )
+
+        # Register the default artifact store
+        artifact_store_path = os.path.join(
+            GlobalConfiguration().config_directory,
+            "local_stores",
+            "default_local_store",
+        )
+        io_utils.create_dir_recursive_if_not_exists(artifact_store_path)
+
+        artifact_store = self.register_stack_component(
+            user_name_or_id=user_name_or_id,
+            project_name_or_id=project_name_or_id,
+            component=ComponentModel(
+                name="default",
+                type=StackComponentType.ARTIFACT_STORE,
+                flavor_name="local",
+                configuration={"path": artifact_store_path},
+            ),
+        )
+
+        components = {c.type: c for c in [orchestrator, artifact_store]}
+        # Register the default stack
+        stack = StackModel(
+            name="default", components=components, is_shared=False
+        )
+        return self.register_stack(
+            user_name_or_id=user_name_or_id,
+            project_name_or_id=project_name_or_id,
+            stack=stack,
+        )
+
+    def _get_default_stack(
+        self,
+        project_name_or_id: Union[str, UUID],
+        user_name_or_id: Union[str, UUID],
     ) -> StackModel:
-        """Register a new stack.
+        """Get the default stack for a user in a project.
 
         Args:
-            stack: The stack to register.
-            user_id: The user that is registering this stack
-            project_id: The project within which that stack is registered
+            project_name_or_id: Name or ID of the project.
+            user_name_or_id: Name or ID of the user.
 
         Returns:
-            The registered stack.
+            The default stack in the project owned by the supplied user.
 
         Raises:
-            StackExistsError: In case a stack with that name is already owned
-                by this user on this project.
+            KeyError: if the project or default stack doesn't exist.
         """
-
-    # def _register_stack_and_stack_components(
-    #     self,
-    #     user_id: str,
-    #     project_id: str,
-    #     stack: StackModel
-    # ) -> StackModel:
-    #     """Register a new stack and all of its components.
-
-    #     Args:
-    #         stack: The stack to register.
-    #         user_id: The user that is registering this stack
-    #         project_id: The project within which that stack is registered
-
-    #     Returns:
-    #         The registered stack.
-
-    #     Raises:
-    #         StackExistsError: In case a stack with that name is already owned
-    #             by this user on this project.
-    #     """
-    #     for component in stack.components:
-    #         try:
-    #             self._register_stack_component(
-    #                 user_id=user_id,
-    #                 project_id=project_id,
-    #                 component=component
-    #             )
-    #         except StackComponentExistsError:
-    #             pass
-    #     return self._register_stack(
-    #         user_id=user_id,
-    #         project_id=project_id,
-    #         stack=stack
-    #     )
-
-    def update_stack(
-        self,
-        stack: StackModel,
-    ) -> StackModel:
-        """Update an existing stack.
-
-        Args:
-            stack: The stack to update.
-
-        Returns:
-            The updated stack.
-        """
-        metadata = {c.type: c.flavor_name for c in stack.components.values()}
-        metadata["store_type"] = self.type.value
-        track_event(AnalyticsEvent.UPDATED_STACK, metadata=metadata)
-        return self._update_stack(stack=stack)
-
-    @abstractmethod
-    def _update_stack(
-        self,
-        stack: StackModel,
-    ) -> StackModel:
-        """Update a stack.
-
-        Args:
-            stack_id: The ID of the stack to update.
-            stack: The stack to use for the update.
-
-        Returns:
-            The updated stack.
-
-        Raises:
-            KeyError: if the stack doesn't exist.
-        """
-
-    def delete_stack(self, stack_id: UUID) -> None:
-        """Delete a stack.
-
-        Args:
-            stack_id: The id of the stack to delete.
-        """
-        # No tracking events, here for consistency
-        self._delete_stack(stack_id)
-
-    @abstractmethod
-    def _delete_stack(self, stack_id: UUID) -> None:
-        """Delete a stack.
-
-        Args:
-            stack_id: The ID of the stack to delete.
-
-        Raises:
-            KeyError: if the stack doesn't exist.
-        """
-
-    # .------------.
-    # | COMPONENTS |
-    # '------------'
-
-    @property
-    def stack_components(self) -> List[ComponentModel]:
-        return self.list_stack_components(project_id=self.default_project_id)
-
-    def list_stack_components(
-        self,
-        project_id: UUID,
-        type: Optional[str] = None,
-        flavor_name: Optional[str] = None,
-        user_id: Optional[UUID] = None,
-        name: Optional[str] = None,
-        is_shared: Optional[bool] = None,
-    ) -> List[ComponentModel]:
-        """List all stack components within the filter.
-
-        Args:
-            project_id: ID of the Project containing the stack components
-            type: Optionally filter by type of stack component
-            flavor_name: Optionally filter by flavor
-            user_id: Optionally filter stack components by the owner
-            name: Optionally filter stack component by name
-            is_shared: Optionally filter out stack component by the `is_shared`
-                       flag
-
-        Returns:
-            All stack components currently registered.
-        """
-        return self._list_stack_components(
-            project_id=project_id,
-            type=type,
-            flavor_name=flavor_name,
-            user_id=user_id,
-            name=name,
-            is_shared=is_shared,
+        default_stacks = self.list_stacks(
+            project_name_or_id=project_name_or_id,
+            user_name_or_id=user_name_or_id,
+            name=DEFAULT_STACK_NAME,
         )
+        if len(default_stacks) == 0:
+            raise KeyError(
+                f"No default stack found for user {str(user_name_or_id)} in "
+                f"project {str(project_name_or_id)}"
+            )
+        return default_stacks[0]
 
-    @abstractmethod
-    def _list_stack_components(
-        self,
-        project_id: UUID,
-        type: Optional[str] = None,
-        flavor_name: Optional[str] = None,
-        user_id: Optional[UUID] = None,
-        name: Optional[str] = None,
-        is_shared: Optional[bool] = None,
-    ) -> List[ComponentModel]:
-        """List all stack components within the filter.
-
-        Args:
-            project_id: ID of the Project containing the stack components
-            type: Optionally filter by type of stack component
-            flavor_name: Optionally filter by flavor
-            user_id: Optionally filter stack components by the owner
-            name: Optionally filter stack component by name
-            is_shared: Optionally filter out stack component by the `is_shared`
-                       flag
-
-        Returns:
-            A list of all stack components.
-        """
-
-    def get_stack_component(self, component_id: UUID) -> ComponentModel:
-        """Get a stack component by ID.
-
-        Args:
-            component_id: The ID of the stack component to get.
-
-        Returns:
-            The stack component with the given id.
-        """
-        return self._get_stack_component(component_id=component_id)
-
-    @abstractmethod
-    def _get_stack_component(self, component_id: UUID) -> ComponentModel:
-        """Get a stack component by ID.
-
-        Args:
-            component_id: The ID of the stack component to get.
-
-        Returns:
-            The stack component.
-
-        Raises:
-            KeyError: if the stack component doesn't exist.
-        """
-
-    def register_stack_component(
-        self, user_id: UUID, project_id: UUID, component: ComponentModel
-    ) -> ComponentModel:
-        """Create a stack component.
-
-        Args:
-            user_id: The user that created the stack component.
-            project_id: The project the stack component is created in.
-            component: The stack component to create.
-
-        Returns:
-            The created stack component.
-        """
-        return self._register_stack_component(
-            user_id=user_id, project_id=project_id, component=component
-        )
-
-    @abstractmethod
-    def _register_stack_component(
-        self, user_id: UUID, project_id: UUID, component: ComponentModel
-    ) -> ComponentModel:
-        """Create a stack component.
-
-        Args:
-            user_id: The user that created the stack component.
-            project_id: The project the stack component is created in.
-            component: The stack component to create.
-
-        Returns:
-            The created stack component.
-        """
-
-    def update_stack_component(
-        self,
-        component: ComponentModel,
-    ) -> ComponentModel:
-        """Update an existing stack component.
-
-        Args:
-            component: The stack component to use for the update.
-
-        Returns:
-            The updated stack component.
-        """
-        analytics_metadata = {
-            "type": component.type.value,
-            "flavor": component.flavor_name,
-        }
-        self._track_event(
-            AnalyticsEvent.UPDATED_STACK_COMPONENT,
-            metadata=analytics_metadata,
-        )
-        return self._update_stack_component(component)
-
-    @abstractmethod
-    def _update_stack_component(
-        self,
-        component: ComponentModel,
-    ) -> ComponentModel:
-        """Update an existing stack component.
-
-        Args:
-            component: The stack component to use for the update.
-
-        Returns:
-            The updated stack component.
-
-        Raises:
-            KeyError: if the stack component doesn't exist.
-        """
-
-    def delete_stack_component(self, component_id: UUID) -> None:
-        """Delete a stack component.
-
-        Args:
-            component_id: The ID of the stack component to delete.
-
-        Raises:
-            KeyError: if the stack component doesn't exist.
-        """
-        self._delete_stack_component(component_id)
-
-    @abstractmethod
-    def _delete_stack_component(self, component_id: UUID) -> None:
-        """Delete a stack component.
-
-        Args:
-            component_id: The ID of the stack component to delete.
-
-        Raises:
-            KeyError: if the stack component doesn't exist.
-        """
-
-    def get_stack_component_side_effects(
-        self, component_id: str, run_id: str, pipeline_id: str, stack_id: str
-    ) -> Dict[Any, Any]:
-        """Get the side effects of a stack component.
-
-        Args:
-            component_id: The id of the stack component to get side effects for.
-            run_id: The id of the run to get side effects for.
-            pipeline_id: The id of the pipeline to get side effects for.
-            stack_id: The id of the stack to get side effects for.
-        """
-        return self._get_stack_component_side_effects(
-            component_id, run_id, pipeline_id, stack_id
-        )
-
-    @abstractmethod
-    def _get_stack_component_side_effects(
-        self, component_id: str, run_id: str, pipeline_id: str, stack_id: str
-    ) -> Dict[Any, Any]:
-        """Get the side effects of a stack component.
-
-        Args:
-            component_id: The ID of the stack component to get side effects for.
-            run_id: The ID of the run to get side effects for.
-            pipeline_id: The ID of the pipeline to get side effects for.
-            stack_id: The ID of the stack to get side effects for.
-        """
-
-    # .---------.
-    # | FLAVORS |
-    # '---------'
-
-    @property
-    @abstractmethod
-    def flavors(self) -> List[FlavorModel]:
-        """All registered flavors.
-
-        Returns:
-            A list of all registered flavors.
-        """
-        return self.list_flavors(self.default_project_id)
-
-    def create_flavor(
-        self,
-        user_id: UUID,
-        project_id: UUID,
-        flavor: FlavorModel,
-    ) -> FlavorModel:
-        """ """
-        analytics_metadata = {
-            "type": FlavorModel.type.value,
-        }
-        self._track_event(
-            AnalyticsEvent.CREATED_FLAVOR,
-            metadata=analytics_metadata,
-        )
-        return self._create_flavor(
-            user_id=user_id, project_id=project_id, flavor=flavor
-        )
-
-    @abstractmethod
-    def _create_flavor(
-        self,
-        user_id: UUID,
-        project_id: UUID,
-        flavor: FlavorModel,
-    ) -> FlavorModel:
-        """ """
-
-    def list_flavors(
-        self,
-        project_id: UUID,
-        type: Optional[StackComponentType] = None,
-        user_id: Optional[UUID] = None,
-        name: Optional[str] = None,
-    ) -> List[FlavorModel]:
-        return self._list_flavors(
-            project_id=project_id,
-            type=type,
-            user_id=user_id,
-            name=name,
-        )
-
-    @abstractmethod
-    def _list_flavors(
-        self,
-        project_id: UUID,
-        type: Optional[StackComponentType] = None,
-        user_id: Optional[UUID] = None,
-        name: Optional[str] = None,
-    ) -> List[FlavorModel]:
-        """"""
-
-    def get_flavor(self, flavor_id: UUID) -> FlavorModel:
-        return self._get_flavor(flavor_id)
-
-    @abstractmethod
-    def _get_flavor(self, flavor_id: UUID) -> FlavorModel:
-        """"""
-
-    def update_flavor(self, flavor: FlavorModel) -> None:
-        self._update_flavor(flavor)
-
-    @abstractmethod
-    def _update_flavor(self, flavor: FlavorModel) -> None:
-        """"""
-
-    def delete_flavor(self, flavor_id: UUID) -> None:
-        self._delete_flavor(flavor_id)
-
-    def _delete_flavor(self, flavor_id: UUID) -> None:
-        """"""
-
-    #  .------.
-    # | USERS |
-    # '-------'
+    # -----
+    # Users
+    # -----
 
     @property
     def active_user(self) -> UserModel:
@@ -903,15 +427,6 @@ class BaseZenStore(BaseModel):
         return self.get_user(self.active_user_name)
 
     @property
-    @abstractmethod
-    def active_user_name(self) -> str:
-        """Gets the active username.
-
-        Returns:
-            The active username.
-        """
-
-    @property
     def users(self) -> List[UserModel]:
         """All registered users.
 
@@ -920,173 +435,34 @@ class BaseZenStore(BaseModel):
         """
         return self.list_users()
 
-    # TODO: make the invite_token optional
-    # TODO: [ALEX] add filtering param(s)
-    def list_users(self, invite_token: str = None) -> List[UserModel]:
-        """List all users.
-
-        Args:
-            invite_token: Token to use for the invitation.
+    @property
+    def _default_user(self) -> UserModel:
+        """Get the default user.
 
         Returns:
-            A list of all users.
-        """
-        return self._list_users(invite_token=invite_token)
-
-    @abstractmethod
-    def _list_users(self, invite_token: str = None) -> List[UserModel]:
-        """List all users.
-
-        Args:
-            invite_token: The invite token to filter by.
-
-        Returns:
-            A list of all users.
-        """
-
-    def create_user(self, user: UserModel) -> UserModel:
-        """Creates a new user.
-
-        Args:
-            user: The user model to create.
-
-        Returns:
-            The newly created user.
+            The default user.
 
         Raises:
-            EntityExistsError: If a user with the given name already exists.
+            KeyError: If the default user doesn't exist.
         """
-        self._track_event(AnalyticsEvent.CREATED_USER)
-        return self._create_user(user)
+        try:
+            return self.get_user(DEFAULT_USERNAME)
+        except KeyError:
+            raise KeyError("The default user is not configured")
 
-    @abstractmethod
-    def _create_user(self, user: UserModel) -> UserModel:
-        """Creates a new user.
-
-        Args:
-            user: The user model to create.
+    @track(AnalyticsEvent.CREATED_DEFAULT_USER)
+    def _create_default_user(self) -> UserModel:
+        """Creates a default user.
 
         Returns:
-            The newly created user.
-
-        Raises:
-            EntityExistsError: If a user with the given name already exists.
+            The default user.
         """
+        logger.info("Creating default user...")
+        return self.create_user(UserModel(name=DEFAULT_USERNAME))
 
-    def get_user(
-        self, user_name_or_id: str, invite_token: str = None
-    ) -> UserModel:
-        """Gets a specific user.
-
-        Args:
-            user_name_or_id: The name or ID of the user to get.
-            invite_token: Token to use for the invitation.
-
-        Returns:
-            The requested user, if it was found.
-
-        Raises:
-            KeyError: If no user with the given name or ID exists.
-        """
-        # No tracking events, here for consistency
-        return self._get_user(
-            user_name_or_id=user_name_or_id, invite_token=invite_token
-        )
-
-    @abstractmethod
-    def _get_user(
-        self, user_name_or_id: str, invite_token: str = None
-    ) -> UserModel:
-        """Gets a specific user.
-
-        Args:
-            user_name_or_id: The name or ID of the user to get.
-            invite_token: Token to use for the invitation.
-
-        Returns:
-            The requested user, if it was found.
-
-        Raises:
-            KeyError: If no user with the given name or ID exists.
-        """
-
-    def update_user(self, user_id: str, user: UserModel) -> UserModel:
-        """Updates an existing user.
-
-        Args:
-            user_id: The ID of the user to update.
-            user: The user model to use for the update.
-
-        Returns:
-            The updated user.
-
-        Raises:
-            KeyError: If no user with the given name exists.
-        """
-        # No tracking events, here for consistency
-        return self._update_user(user_id, user)
-
-    @abstractmethod
-    def _update_user(self, user_id: str, user: UserModel) -> UserModel:
-        """Update the user.
-
-        Args:
-            user_id: The ID of the user to update.
-            user: The user model to use for the update.
-
-        Returns:
-            The updated user.
-
-        Raises:
-            KeyError: If no user with the given name exists.
-        """
-
-    def delete_user(self, user_id: str) -> None:
-        """Deletes a user.
-
-        Args:
-            user_id: The ID of the user to delete.
-
-        Raises:
-            KeyError: If no user with the given ID exists.
-        """
-        self._track_event(AnalyticsEvent.DELETED_USER)
-        return self._delete_user(user_id)
-
-    @abstractmethod
-    def _delete_user(self, user_id: str) -> None:
-        """Deletes a user.
-
-        Args:
-            user_id: The ID of the user to delete.
-
-        Raises:
-            KeyError: If no user with the given ID exists.
-        """
-
-    # TODO: Check whether this needs to be an abstract method or not (probably?)
-    @abstractmethod
-    def get_invite_token(self, user_id: str) -> str:
-        """Gets an invite token for a user.
-
-        Args:
-            user_id: ID of the user.
-
-        Returns:
-            The invite token for the specific user.
-        """
-
-    @abstractmethod
-    def invalidate_invite_token(self, user_id: str) -> None:
-        """Invalidates an invite token for a user.
-
-        Args:
-            user_id: ID of the user.
-        """
-
-    #  .------.
-    # | TEAMS |
-    # '-------'
+    # -----
+    # Teams
+    # -----
 
     @property
     def teams(self) -> List[TeamModel]:
@@ -1095,151 +471,11 @@ class BaseZenStore(BaseModel):
         Returns:
             A list of all teams.
         """
-        return self._list_teams()
+        return self.list_teams()
 
-    @abstractmethod
-    def _list_teams(self) -> List[TeamModel]:
-        """List all teams.
-
-        Returns:
-            A list of all teams.
-        """
-
-    def create_team(self, team: TeamModel) -> TeamModel:
-        """Creates a new team.
-
-        Args:
-            team: The team model to create.
-
-        Returns:
-            The newly created team.
-        """
-        self._track_event(AnalyticsEvent.CREATED_TEAM)
-        return self._create_team(team)
-
-    @abstractmethod
-    def _create_team(self, team: TeamModel) -> TeamModel:
-        """Creates a new team.
-
-        Args:
-            team: The team model to create.
-
-        Returns:
-            The newly created team.
-
-        Raises:
-            EntityExistsError: If a team with the given name already exists.
-        """
-
-    def get_team(self, team_name_or_id: str) -> TeamModel:
-        """Gets a specific team.
-
-        Args:
-            team_name_or_id: Name or ID of the team to get.
-
-        Returns:
-            The requested team.
-
-        Raises:
-            KeyError: If no team with the given name or ID exists.
-        """
-        # No tracking events, here for consistency
-        return self._get_team(team_name_or_id)
-
-    @abstractmethod
-    def _get_team(self, team_name_or_id: str) -> TeamModel:
-        """Gets a specific team.
-
-        Args:
-            team_name_or_id: Name or ID of the team to get.
-
-        Returns:
-            The requested team.
-
-        Raises:
-            KeyError: If no team with the given name or ID exists.
-        """
-
-    def delete_team(self, team_id: str) -> None:
-        """Deletes a team.
-
-        Args:
-            team_id: ID of the team to delete.
-
-        Raises:
-            KeyError: If no team with the given ID exists.
-        """
-        self._track_event(AnalyticsEvent.DELETED_TEAM)
-        return self._delete_team(team_id)
-
-    @abstractmethod
-    def _delete_team(self, team_id: str) -> None:
-        """Deletes a team.
-
-        Args:
-            team_id: ID of the team to delete.
-
-        Raises:
-            KeyError: If no team with the given ID exists.
-        """
-
-    @abstractmethod
-    def add_user_to_team(self, user_id: str, team_id: str) -> None:
-        """Adds a user to a team.
-
-        Args:
-            user_id: ID of the user to add to the team.
-            team_id: ID of the team to which to add the user to.
-
-        Raises:
-            KeyError: If the team or user does not exist.
-        """
-
-    @abstractmethod
-    def remove_user_from_team(self, user_id: str, team_id: str) -> None:
-        """Removes a user from a team.
-
-        Args:
-            user_id: ID of the user to remove from the team.
-            team_id: ID of the team from which to remove the user.
-
-        Raises:
-            KeyError: If the team or user does not exist.
-        """
-
-    @abstractmethod
-    def get_users_for_team(self, team_id: str) -> List[UserModel]:
-        """Fetches all users of a team.
-
-        Args:
-            team_id: The ID of the team for which to get users.
-
-        Returns:
-            A list of all users that are part of the team.
-
-        Raises:
-            KeyError: If no team with the given ID exists.
-        """
-
-    @abstractmethod
-    def get_teams_for_user(self, user_id: str) -> List[TeamModel]:
-        """Fetches all teams for a user.
-
-        Args:
-            user_id: The ID of the user for which to get all teams.
-
-        Returns:
-            A list of all teams that the user is part of.
-
-        Raises:
-            KeyError: If no user with the given ID exists.
-        """
-
-    #  .------.
-    # | ROLES |
-    # '-------'
-
-    # TODO: create & delete roles?
+    # -----
+    # Roles
+    # -----
 
     @property
     def roles(self) -> List[RoleModel]:
@@ -1248,99 +484,7 @@ class BaseZenStore(BaseModel):
         Returns:
             A list of all registered roles.
         """
-        return self._list_roles()
-
-    # TODO: [ALEX] add filtering param(s)
-    @abstractmethod
-    def _list_roles(self) -> List[RoleModel]:
-        """List all roles.
-
-        Returns:
-            A list of all roles.
-        """
-
-    # TODO: consider using team_id instead
-    def create_role(self, role: RoleModel) -> RoleModel:
-        """Creates a new role.
-
-        Args:
-            role: The role model to create.
-
-        Returns:
-            The newly created role.
-
-        Raises:
-            EntityExistsError: If a role with the given name already exists.
-        """
-        self._track_event(AnalyticsEvent.CREATED_ROLE)
-        return self._create_role(role)
-
-    @abstractmethod
-    def _create_role(self, role: RoleModel) -> RoleModel:
-        """Creates a new role.
-
-        Args:
-            role: The role model to create.
-
-        Returns:
-            The newly created role.
-
-        Raises:
-            EntityExistsError: If a role with the given name already exists.
-        """
-
-    # TODO: consider using team_id instead
-    def get_role(self, role_name_or_id: str) -> RoleModel:
-        """Gets a specific role.
-
-        Args:
-            role_name_or_id: Name or ID of the role to get.
-
-        Returns:
-            The requested role.
-
-        Raises:
-            KeyError: If no role with the given name exists.
-        """
-        # No tracking events, here for consistency
-        return self._get_role(role_name_or_id)
-
-    @abstractmethod
-    def _get_role(self, role_name_or_id: str) -> RoleModel:
-        """Gets a specific role.
-
-        Args:
-            role_name_or_id: Name or ID of the role to get.
-
-        Returns:
-            The requested role.
-
-        Raises:
-            KeyError: If no role with the given name exists.
-        """
-
-    def delete_role(self, role_id: str) -> None:
-        """Deletes a role.
-
-        Args:
-            role_id: ID of the role to delete.
-
-        Raises:
-            KeyError: If no role with the given ID exists.
-        """
-        self._track_event(AnalyticsEvent.DELETED_ROLE)
-        return self._delete_role(role_id)
-
-    @abstractmethod
-    def _delete_role(self, role_id: str) -> None:
-        """Deletes a role.
-
-        Args:
-            role_id: ID of the role to delete.
-
-        Raises:
-            KeyError: If no role with the given ID exists.
-        """
+        return self.list_roles()
 
     @property
     def role_assignments(self) -> List[RoleAssignmentModel]:
@@ -1351,655 +495,45 @@ class BaseZenStore(BaseModel):
         """
         return self.list_role_assignments()
 
-    @abstractmethod
-    def list_role_assignments(
-        self,
-        project_id: Optional[str] = None,
-        team_id: Optional[str] = None,
-        user_id: Optional[str] = None,
-    ) -> List[RoleAssignmentModel]:
-        """List all role assignments.
-
-        Args:
-            project_id: If provided, only list assignments for the given project
-            team_id: If provided, only list assignments for the given team
-            user_id: If provided, only list assignments for the given user
-
-        Returns:
-            A list of all role assignments.
-        """
-
-    def assign_role(
-        self,
-        role_id: str,
-        user_or_team_id: str,
-        is_user: bool = True,
-        project_id: Optional[str] = None,
-    ) -> None:
-        """Assigns a role to a user or team, scoped to a specific project.
-
-        Args:
-            role_id: ID of the role to assign to the user.
-            user_or_team_id: ID of the user or team to which to assign the role.
-            is_user: Whether `user_or_team_id` refers to a user or a team.
-            project_id: Optional ID of a project in which to assign the role.
-                If this is not provided, the role will be assigned globally.
-
-        Raises:
-            EntityExistsError: If the role assignment already exists.
-        """
-        return self._assign_role(
-            role_id=role_id,
-            user_or_team_id=user_or_team_id,
-            is_user=is_user,
-            project_id=project_id,
-        )
-
-    @abstractmethod
-    def _assign_role(
-        self,
-        role_id: str,
-        user_or_team_id: str,
-        is_user: bool = True,
-        project_id: Optional[str] = None,
-    ) -> None:
-        """Assigns a role to a user or team, scoped to a specific project.
-
-        Args:
-            role_id: ID of the role to assign.
-            user_or_team_id: ID of the user or team to which to assign the role.
-            is_user: Whether `user_or_team_id` refers to a user or a team.
-            project_id: Optional ID of a project in which to assign the role.
-                If this is not provided, the role will be assigned globally.
-
-        Raises:
-            EntityExistsError: If the role assignment already exists.
-        """
-
-    def revoke_role(
-        self,
-        role_id: str,
-        user_or_team_id: str,
-        is_user: bool = True,
-        project_id: Optional[str] = None,
-    ) -> None:
-        """Revokes a role from a user or team for a given project.
-
-        Args:
-            role_id: ID of the role to revoke.
-            user_or_team_id: ID of the user or team from which to revoke the
-                role.
-            is_user: Whether `user_or_team_id` refers to a user or a team.
-            project_id: Optional ID of a project in which to revoke the role.
-                If this is not provided, the role will be revoked globally.
-
-        Raises:
-            KeyError: If the role, user, team, or project does not exists.
-        """
-        self._track_event(AnalyticsEvent.DELETED_ROLE)
-        return self._revoke_role(
-            role_id=role_id,
-            user_or_team_id=user_or_team_id,
-            is_user=is_user,
-            project_id=project_id,
-        )
-
-    @abstractmethod
-    def _revoke_role(
-        self,
-        role_id: str,
-        user_or_team_id: str,
-        is_user: bool = True,
-        project_id: Optional[str] = None,
-    ) -> None:
-        """Revokes a role from a user or team for a given project.
-
-        Args:
-            role_id: ID of the role to revoke.
-            user_or_team_id: ID of the user or team from which to revoke the
-                role.
-            is_user: Whether `user_or_team_id` refers to a user or a team.
-            project_id: Optional ID of a project in which to revoke the role.
-                If this is not provided, the role will be revoked globally.
-
-        Raises:
-            KeyError: If the role, user, team, or project does not exists.
-        """
-
-    #  .---------.
-    # | PROJECTS |
-    # '----------'
+    # --------
+    # Projects
+    # --------
 
     @property
-    def projects(self) -> List[ProjectModel]:
-        """All registered projects.
+    def _default_project(self) -> ProjectModel:
+        """Get the default project.
 
         Returns:
-            A list of all registered projects.
-        """
-        return self.list_projects()
+            The default project.
 
-    # TODO: [ALEX] add filtering param(s)
-    def list_projects(self) -> List[ProjectModel]:
-        """List all projects.
+        Raises:
+            KeyError: if the default project doesn't exist.
+        """
+        try:
+            return self.get_project(DEFAULT_PROJECT_NAME)
+        except KeyError:
+            raise KeyError("The default project is not configured")
+
+    @track(AnalyticsEvent.CREATED_DEFAULT_PROJECT)
+    def _create_default_project(self) -> ProjectModel:
+        """Creates a default project.
 
         Returns:
-            A list of all projects.
+            The default project.
         """
-        return self._list_projects()
-
-    @abstractmethod
-    def _list_projects(self) -> List[ProjectModel]:
-        """List all projects.
-
-        Returns:
-            A list of all projects.
-        """
-
-    def create_project(self, project: ProjectModel) -> ProjectModel:
-        """Creates a new project.
-
-        Args:
-            project: The project to create.
-
-        Returns:
-            The newly created project.
-
-        Raises:
-            EntityExistsError: If a project with the given name already exists.
-        """
-        self._track_event(AnalyticsEvent.CREATED_PROJECT)
-        return self._create_project(project)
-
-    @abstractmethod
-    def _create_project(self, project: ProjectModel) -> ProjectModel:
-        """Creates a new project.
-
-        Args:
-            project: The project to create.
-
-        Returns:
-            The newly created project.
-
-        Raises:
-            EntityExistsError: If a project with the given name already exists.
-        """
-
-    def get_project(self, project_name_or_id: str) -> ProjectModel:
-        """Get an existing project by name or ID.
-
-        Args:
-            project_name_or_id: Name or ID of the project to get.
-
-        Returns:
-            The requested project if one was found.
-
-        Raises:
-            KeyError: If there is no such project.
-        """
-        # No tracking events, here for consistency
-        return self._get_project(project_name_or_id)
-
-    @abstractmethod
-    def _get_project(self, project_name_or_id: str) -> ProjectModel:
-        """Get an existing project by name or ID.
-
-        Args:
-            project_name_or_id: Name or ID of the project to get.
-
-        Returns:
-            The requested project if one was found.
-
-        Raises:
-            KeyError: If there is no such project.
-        """
-
-    def update_project(
-        self, project_name: str, project: ProjectModel
-    ) -> ProjectModel:
-        """Updates an existing project.
-
-        Args:
-            project_name: Name of the project to update.
-            project: The project to use for the update.
-
-        Returns:
-            The updated project.
-
-        Raises:
-            KeyError: if the project does not exist.
-        """
-        # No tracking events, here for consistency
-        return self._update_project(project_name, project)
-
-    @abstractmethod
-    def _update_project(
-        self, project_name: str, project: ProjectModel
-    ) -> ProjectModel:
-        """Update an existing project.
-
-        Args:
-            project_name: Name of the project to update.
-            project: The project to use for the update.
-
-        Returns:
-            The updated project.
-
-        Raises:
-            KeyError: if the project does not exist.
-        """
-
-    def delete_project(self, project_name: str) -> None:
-        """Deletes a project.
-
-        Args:
-            project_name: Name of the project to delete.
-
-        Raises:
-            KeyError: If the project does not exist.
-        """
-        self._track_event(AnalyticsEvent.DELETED_PROJECT)
-        return self._delete_project(project_name)
-
-    @abstractmethod
-    def _delete_project(self, project_name: str) -> None:
-        """Deletes a project.
-
-        Args:
-            project_name: Name of the project to delete.
-
-        Raises:
-            KeyError: If no project with the given name exists.
-        """
-
-    def get_default_stack(self, project_name: str) -> StackModel:
-        """Gets the default stack in a project.
-
-        Args:
-            project_name: Name of the project to get.
-
-        Returns:
-            The default stack in the project.
-
-        Raises:
-            KeyError: if the project doesn't exist.
-        """
-        return self._get_default_stack(project_name)
-
-    @abstractmethod
-    def _get_default_stack(self, project_name: str) -> StackModel:
-        """Gets the default stack in a project.
-
-        Args:
-            project_name: Name of the project to get.
-
-        Returns:
-            The default stack in the project.
-
-        Raises:
-            KeyError: if the project doesn't exist.
-        """
-
-    def set_default_stack(self, project_name: str, stack_id: str) -> StackModel:
-        """Sets the default stack in a project.
-
-        Args:
-            project_name: Name of the project to set.
-            stack_id: The ID of the stack to set as the default.
-
-        Raises:
-            KeyError: if the project or stack doesn't exist.
-        """
-        return self._set_default_stack(project_name, stack_id)
-
-    @abstractmethod
-    def _set_default_stack(
-        self, project_name: str, stack_id: str
-    ) -> StackModel:
-        """Sets the default stack in a project.
-
-        Args:
-            project_name: Name of the project to set.
-            stack_id: The ID of the stack to set as the default.
-
-        Raises:
-            KeyError: if the project or stack doesn't exist.
-        """
-
-    #  .-------------.
-    # | REPOSITORIES |
-    # '--------------'
-
-    # TODO: create repository?
-
-    # TODO: [ALEX] add filtering param(s)
-    def list_project_repositories(
-        self, project_name: str
-    ) -> List[CodeRepositoryModel]:
-        """Gets all repositories in a project.
-
-        Args:
-            project_name: The name of the project.
-
-        Returns:
-            A list of all repositories in the project.
-
-        Raises:
-            KeyError: if the project doesn't exist.
-        """
-        return self._list_project_repositories(project_name)
-
-    @abstractmethod
-    def _list_project_repositories(
-        self, project_name: str
-    ) -> List[CodeRepositoryModel]:
-        """Get all repositories in the project.
-
-        Args:
-            project_name: The name of the project.
-
-        Returns:
-            A list of all repositories in the project.
-
-        Raises:
-            KeyError: if the project doesn't exist.
-        """
-
-    def connect_project_repository(
-        self, project_name: str, repository: CodeRepositoryModel
-    ) -> CodeRepositoryModel:
-        """Connects a repository to a project.
-
-        Args:
-            project_name: Name of the project to connect the repository to.
-            repository: The repository to connect.
-
-        Returns:
-            The connected repository.
-
-        Raises:
-            KeyError: if the project or repository doesn't exist.
-        """
-        self._track_event(AnalyticsEvent.CONNECT_REPOSITORY)
-        return self._connect_project_repository(project_name, repository)
-
-    @abstractmethod
-    def _connect_project_repository(
-        self, project_name: str, repository: CodeRepositoryModel
-    ) -> CodeRepositoryModel:
-        """Connects a repository to a project.
-
-        Args:
-            project_name: Name of the project to connect the repository to.
-            repository: The repository to connect.
-
-        Returns:
-            The connected repository.
-
-        Raises:
-            KeyError: if the project or repository doesn't exist.
-        """
-
-    def get_repository(self, repository_id: str) -> CodeRepositoryModel:
-        """Gets a repository.
-
-        Args:
-            repository_id: The ID of the repository to get.
-
-        Returns:
-            The repository.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
-        return self._get_repository(repository_id)
-
-    @abstractmethod
-    def _get_repository(self, repository_id: str) -> CodeRepositoryModel:
-        """Get a repository by ID.
-
-        Args:
-            repository_id: The ID of the repository to get.
-
-        Returns:
-            The repository.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
-
-    def update_repository(
-        self, repository_id: str, repository: CodeRepositoryModel
-    ):
-        """Updates a repository.
-
-        Args:
-            repository_id: The ID of the repository to update.
-            repository: The repository to use for the update.
-
-        Returns:
-            The updated repository.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
-        self._track_event(AnalyticsEvent.UPDATE_REPOSITORY)
-        return self._update_repository(repository_id, repository)
-
-    @abstractmethod
-    def _update_repository(
-        self, repository_id: str, repository: CodeRepositoryModel
-    ) -> CodeRepositoryModel:
-        """Update a repository.
-
-        Args:
-            repository_id: The ID of the repository to update.
-            repository: The repository to use for the update.
-
-        Returns:
-            The updated repository.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
-
-    def delete_repository(self, repository_id: str):
-        """Deletes a repository.
-
-        Args:
-            repository_id: The ID of the repository to delete.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
-        self._track_event(AnalyticsEvent.DELETE_REPOSITORY)
-        return self._delete_repository(repository_id)
-
-    @abstractmethod
-    def _delete_repository(self, repository_id: str) -> None:
-        """Delete a repository.
-
-        Args:
-            repository_id: The ID of the repository to delete.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
-
-    #  .-----.
-    # | AUTH |
-    # '------'
-
-    def login(self) -> None:
-        """Logs in to the server."""
-        self._track_event(AnalyticsEvent.LOGIN)
-        self._login()
-
-    def _login(self) -> None:
-        """Logs in to the server."""
-
-    def logout(self) -> None:
-        """Logs out of the server."""
-        self._track_event(AnalyticsEvent.LOGOUT)
-        self._logout()
-
-    def _logout(self) -> None:
-        """Logs out of the server."""
-
-    #  .----------.
-    # | PIPELINES |
-    # '-----------'
-
-    # TODO: [ALEX] add filtering param(s)
-    def list_pipelines(self, project_id: Optional[str]) -> List[PipelineModel]:
-        """List all pipelines in the project.
-
-        Args:
-            project_id: If provided, only list pipelines in this project.
-
-        Returns:
-            A list of pipelines.
-
-        Raises:
-            KeyError: if the project does not exist.
-        """
-        return self._list_pipelines(project_id)
-
-    @abstractmethod
-    def _list_pipelines(self, project_id: Optional[str]) -> List[PipelineModel]:
-        """List all pipelines in the project.
-
-        Args:
-            project_id: If provided, only list pipelines in this project.
-
-        Returns:
-            A list of pipelines.
-
-        Raises:
-            KeyError: if the project does not exist.
-        """
-
-    def create_pipeline(
-        self, project_id: str, pipeline: PipelineModel
-    ) -> PipelineModel:
-        """Creates a new pipeline in a project.
-
-        Args:
-            project_id: ID of the project to create the pipeline in.
-            pipeline: The pipeline to create.
-
-        Returns:
-            The newly created pipeline.
-
-        Raises:
-            KeyError: if the project does not exist.
-            EntityExistsError: If an identical pipeline already exists.
-        """
-        self._track_event(AnalyticsEvent.CREATE_PIPELINE)
-        return self._create_pipeline(project_id, pipeline)
-
-    @abstractmethod
-    def _create_pipeline(
-        self, project_id: str, pipeline: PipelineModel
-    ) -> PipelineModel:
-        """Creates a new pipeline in a project.
-
-        Args:
-            project_id: ID of the project to create the pipeline in.
-            pipeline: The pipeline to create.
-
-        Returns:
-            The newly created pipeline.
-
-        Raises:
-            KeyError: if the project does not exist.
-            EntityExistsError: If an identical pipeline already exists.
-        """
-
-    @abstractmethod
-    def get_pipeline(self, pipeline_id: str) -> Optional[PipelineModel]:
-        """Returns a pipeline for the given name.
-
-        Args:
-            pipeline_id: ID of the pipeline.
-
-        Returns:
-            PipelineModel if found, None otherwise.
-        """
-
-    @abstractmethod
-    def get_pipeline_in_project(
-        self, pipeline_name: str, project_id: str
-    ) -> Optional[PipelineModel]:
-        """Get a pipeline with a given name in a project.
-
-        Args:
-            pipeline_name: Name of the pipeline.
-            project_id: ID of the project.
-
-        Returns:
-            The pipeline, if found, None otherwise.
-        """
-
-    def update_pipeline(
-        self, pipeline_id: str, pipeline: PipelineModel
-    ) -> PipelineModel:
-        """Updates a pipeline.
-
-        Args:
-            pipeline_id: The ID of the pipeline to update.
-            pipeline: The pipeline to use for the update.
-
-        Returns:
-            The updated pipeline.
-
-        Raises:
-            KeyError: if the pipeline doesn't exist.
-        """
-        self._track_event(AnalyticsEvent.UPDATE_PIPELINE)
-        return self._update_pipeline(pipeline_id, pipeline)
-
-    @abstractmethod
-    def _update_pipeline(
-        self, pipeline_id: str, pipeline: PipelineModel
-    ) -> PipelineModel:
-        """Updates a pipeline.
-
-        Args:
-            pipeline_id: The ID of the pipeline to update.
-            pipeline: The pipeline to use for the update.
-
-        Returns:
-            The updated pipeline.
-
-        Raises:
-            KeyError: if the pipeline doesn't exist.
-        """
-
-    def delete_pipeline(self, pipeline_id: str) -> None:
-        """Deletes a pipeline.
-
-        Args:
-            pipeline_id: The ID of the pipeline to delete.
-
-        Raises:
-            KeyError: if the pipeline doesn't exist.
-        """
-        self._track_event(AnalyticsEvent.DELETE_PIPELINE)
-        return self._delete_pipeline(pipeline_id)
-
-    @abstractmethod
-    def _delete_pipeline(self, pipeline_id: str) -> None:
-        """Deletes a pipeline.
-
-        Args:
-            pipeline_id: The ID of the pipeline to delete.
-
-        Raises:
-            KeyError: if the pipeline doesn't exist.
-        """
-
-    def get_pipeline_configuration(self, pipeline_id: str) -> Dict[Any, Any]:
+        logger.info("Creating default project...")
+        return self.create_project(ProjectModel(name=DEFAULT_PROJECT_NAME))
+
+    # ------------
+    # Repositories
+    # ------------
+
+    # ---------
+    # Pipelines
+    # ---------
+
+    # TODO: is this really needed ?
+    def get_pipeline_configuration(self, pipeline_id: UUID) -> Dict[str, str]:
         """Gets the pipeline configuration.
 
         Args:
@@ -2011,262 +545,16 @@ class BaseZenStore(BaseModel):
         Raises:
             KeyError: if the pipeline doesn't exist.
         """
-        return self._get_pipeline_configuration(pipeline_id)
+        return self.get_pipeline(pipeline_id).configuration
 
-    @abstractmethod
-    def _get_pipeline_configuration(self, pipeline_id: str) -> Dict[Any, Any]:
-        """Gets the pipeline configuration.
+    # -------------
+    # Pipeline runs
+    # -------------
 
-        Args:
-            pipeline_id: The ID of the pipeline to get.
-
-        Returns:
-            The pipeline configuration.
-
-        Raises:
-            KeyError: if the pipeline doesn't exist.
-        """
-
-    # TODO: change into an abstract method
-    # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
-    # TODO: Discuss whether we even need this, given that the endpoint is on
-    # pipeline RUNs
-    # TODO: [ALEX] add filtering param(s)
-    def list_steps(self, pipeline_id: str) -> List[StepRunModel]:
-        """List all steps for a specific pipeline.
-
-        Args:
-            pipeline_id: The id of the pipeline to get steps for.
-
-        Returns:
-            A list of all steps for the pipeline.
-        """
-        return self._list_steps(pipeline_id)
-
-    @abstractmethod
-    def _list_steps(self, pipeline_id: str) -> List[StepRunModel]:
-        """List all steps.
-
-        Args:
-            pipeline_id: The ID of the pipeline to list steps for.
-
-        Returns:
-            A list of all steps.
-        """
-
-    #  .-----.
-    # | RUNS |
-    # '------'
-
-    def list_runs(
-        self,
-        project_id: Optional[str] = None,
-        stack_id: Optional[str] = None,
-        user_id: Optional[str] = None,
-        pipeline_id: Optional[str] = None,
-        unlisted: bool = False,
-    ) -> List[PipelineRunModel]:
-        """Gets all pipeline runs.
-
-        Args:
-            project_id: If provided, only return runs for this project.
-            stack_id: If provided, only return runs for this stack.
-            user_id: If provided, only return runs for this user.
-            pipeline_id: If provided, only return runs for this pipeline.
-            unlisted: If True, only return unlisted runs that are not
-                associated with any pipeline (filter by `pipeline_id==None`).
-
-        Returns:
-            A list of all pipeline runs.
-        """
-        return self._list_runs(
-            project_id=project_id,
-            stack_id=stack_id,
-            user_id=user_id,
-            pipeline_id=pipeline_id,
-            unlisted=unlisted,
-        )
-
-    @abstractmethod
-    def _list_runs(
-        self,
-        project_id: Optional[str] = None,
-        stack_id: Optional[str] = None,
-        user_id: Optional[str] = None,
-        pipeline_id: Optional[str] = None,
-        unlisted: bool = False,
-    ) -> List[PipelineRunModel]:
-        """Gets all pipeline runs.
-
-        Args:
-            project_id: If provided, only return runs for this project.
-            stack_id: If provided, only return runs for this stack.
-            user_id: If provided, only return runs for this user.
-            pipeline_id: If provided, only return runs for this pipeline.
-            unlisted: If True, only return unlisted runs that are not
-                associated with any pipeline (filter by pipeline_id==None).
-
-        Returns:
-            A list of all pipeline runs.
-        """
-
-    def create_run(self, pipeline_run: PipelineRunModel) -> PipelineRunModel:
-        """Creates a pipeline run.
-
-        Args:
-            pipeline_run: The pipeline run to create.
-
-        Returns:
-            The created pipeline run.
-
-        Raises:
-            EntityExistsError: If an identical pipeline run already exists.
-        """
-        return self._create_run(pipeline_run)
-
-    @abstractmethod
-    def _create_run(self, pipeline_run: PipelineRunModel) -> PipelineRunModel:
-        """Creates a pipeline run.
-
-        Args:
-            pipeline_run: The pipeline run to create.
-
-        Returns:
-            The created pipeline run.
-
-        Raises:
-            EntityExistsError: If an identical pipeline run already exists.
-        """
-
-    def get_run(self, run_id: str) -> PipelineRunModel:
-        """Gets a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get.
-
-        Returns:
-            The pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-        return self._get_run(run_id)
-
-    @abstractmethod
-    def _get_run(self, run_id: str) -> PipelineRunModel:
-        """Gets a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get.
-
-        Returns:
-            The pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-
-    @abstractmethod
-    def get_run_in_project(
-        self, run_name: str, project_id: str
-    ) -> Optional[PipelineModel]:
-        """Get a pipeline run with a given name in a project.
-
-        Args:
-            run_name: Name of the pipeline run.
-            project_id: ID of the project.
-
-        Returns:
-            The pipeline run, if found, None otherwise.
-        """
-
-    def update_run(
-        self, run_id: str, run: PipelineRunModel
-    ) -> PipelineRunModel:
-        """Updates a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to update.
-            run: The pipeline run to use for the update.
-
-        Returns:
-            The updated pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-        return self._update_run(run_id, run)
-
-    @abstractmethod
-    def _update_run(
-        self, run_id: str, run: PipelineRunModel
-    ) -> PipelineRunModel:
-        """Updates a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to update.
-            run: The pipeline run to use for the update.
-
-        Returns:
-            The updated pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-
-    def delete_run(self, run_id: str) -> None:
-        """Deletes a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to delete.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-        return self._delete_run(run_id)
-
-    @abstractmethod
-    def _delete_run(self, run_id: str) -> None:
-        """Deletes a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to delete.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-
-    # TODO: figure out args and output for this
-    def get_run_dag(self, run_id: str) -> str:
-        """Gets the DAG for a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get.
-
-        Returns:
-            The DAG for the pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-        return self._get_run_dag(run_id)
-
-    # TODO: figure out args and output for this
-    @abstractmethod
-    def _get_run_dag(self, run_id: str) -> str:
-        """Gets the DAG for a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get.
-
-        Returns:
-            The DAG for the pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-
-    def get_run_runtime_configuration(self, run_id: str) -> Dict:
+    # TODO: is this really needed ?
+    def get_run_runtime_configuration(
+        self, run_id: UUID
+    ) -> Optional[Dict[str, Any]]:
         """Gets the runtime configuration for a pipeline run.
 
         Args:
@@ -2278,91 +566,14 @@ class BaseZenStore(BaseModel):
         Raises:
             KeyError: if the pipeline run doesn't exist.
         """
-        return self._get_run_runtime_configuration(run_id)
+        run = self.get_run(run_id)
+        return run.runtime_configuration
 
-    @abstractmethod
-    def _get_run_runtime_configuration(self, run_id: str) -> Dict:
-        """Gets the runtime configuration for a pipeline run.
+    # ------------------
+    # Pipeline run steps
+    # ------------------
 
-        Args:
-            run_id: The ID of the pipeline run to get.
-
-        Returns:
-            The runtime configuration for the pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-
-    # TODO: Figure out what exactly gets returned from this
-    def get_run_component_side_effects(
-        self,
-        run_id: str,
-        component_id: Optional[str] = None,
-        component_type: Optional[StackComponentType] = None,
-    ) -> Dict:
-        """Gets the side effects for a component in a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get.
-            component_id: The ID of the component to get.
-
-        Returns:
-            The side effects for the component in the pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-        return self._get_run_component_side_effects(
-            run_id, component_id=component_id, component_type=component_type
-        )
-
-    @abstractmethod
-    def _get_run_component_side_effects(
-        self,
-        run_id: str,
-        component_id: Optional[str] = None,
-        component_type: Optional[StackComponentType] = None,
-    ) -> Dict:
-        """Gets the side effects for a component in a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get.
-            component_id: The ID of the component to get.
-
-        Returns:
-            The side effects for the component in the pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-
-    #  .------.
-    # | STEPS |
-    # '-------'
-
-    @abstractmethod
-    def list_run_steps(self, run_id: int) -> List[StepRunModel]:
-        """Gets all steps in a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run for which to list runs.
-
-        Returns:
-            A list of all steps in the pipeline run.
-        """
-
-    @abstractmethod
-    def get_run_step(self, step_id: str) -> StepRunModel:
-        """Get a step by ID.
-
-        Args:
-            step_id: The ID of the step to get.
-
-        Returns:
-            The step.
-        """
-
+    # TODO: is this really needed ?
     def get_run_step_outputs(
         self, step: StepRunModel
     ) -> Dict[str, ArtifactModel]:
@@ -2376,7 +587,7 @@ class BaseZenStore(BaseModel):
         """
         return self.get_run_step_artifacts(step)[1]
 
-    # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
+    # TODO: is this really needed ?
     def get_run_step_inputs(
         self, step: StepRunModel
     ) -> Dict[str, ArtifactModel]:
@@ -2386,76 +597,28 @@ class BaseZenStore(BaseModel):
             step_id: The id of the step to get inputs for.
 
         Returns:
+
             A dict mapping artifact names to the input artifacts for the step.
         """
         return self.get_run_step_artifacts(step)[0]
 
-    @abstractmethod
-    def get_run_step_artifacts(
-        self, step: StepRunModel
-    ) -> Tuple[Dict[str, ArtifactModel], Dict[str, ArtifactModel]]:
-        """Returns input and output artifacts for the given step.
+    # ---------
+    # Analytics
+    # ---------
 
-        Args:
-            step: The step for which to get the artifacts.
-
-        Returns:
-            A tuple (inputs, outputs) where inputs and outputs
-            are both Dicts mapping artifact names
-            to the input and output artifacts respectively.
-        """
-
-    @abstractmethod
-    def get_run_step_status(self, step_id: int) -> ExecutionStatus:
-        """Gets the execution status of a single step.
-
-        Args:
-            step_id: The ID of the step to get the status for.
-
-        Returns:
-            ExecutionStatus: The status of the step.
-        """
-
-    #  .---------.
-    # | METADATA |
-    # '----------'
-
-    @abstractmethod
-    def get_metadata_config(
-        self,
-    ) -> Union[
-        metadata_store_pb2.ConnectionConfig,
-        metadata_store_pb2.MetadataStoreClientConfig,
-    ]:
-        """Get the TFX metadata config of this ZenStore.
-
-        Returns:
-            The TFX metadata config of this ZenStore.
-        """
-
-    # # Public facing APIs
-    # # TODO [ENG-894]: Refactor these with the proxy pattern, as noted in
-    # #  the [review comment](https://github.com/zenml-io/zenml/pull/589#discussion_r875003334)
-
-    # Common code (internal implementations, private):
-
-    def _track_event(
+    def track_event(
         self,
         event: Union[str, AnalyticsEvent],
         metadata: Optional[Dict[str, Any]] = None,
-    ) -> bool:
+    ) -> None:
         """Track an analytics event.
 
         Args:
             event: The event to track.
             metadata: Additional metadata to track with the event.
-
-        Returns:
-            True if the event was successfully tracked, False otherwise.
         """
         if self.track_analytics:
-            return track_event(event, metadata)
-        return False
+            track_event(event, metadata)
 
     class Config:
         """Pydantic configuration class."""

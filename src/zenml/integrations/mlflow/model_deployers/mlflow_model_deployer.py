@@ -37,7 +37,6 @@ from zenml.repository import Repository
 from zenml.services import ServiceRegistry
 from zenml.services.local.local_service import SERVICE_DAEMON_CONFIG_FILE_NAME
 from zenml.services.service import BaseService, ServiceConfig
-from zenml.stack.stack import Stack
 from zenml.utils.io_utils import (
     create_dir_recursive_if_not_exists,
     get_global_config_directory,
@@ -142,9 +141,9 @@ class MLFlowModelDeployer(BaseModelDeployer):
         Raises:
             TypeError: If the active stack does not contain an MLFlowModelDeployer component.
         """
-        repo = Repository(skip_repository_check=True)
-        active_stack = Stack.from_model(repo.active_stack)
-        model_deployer = active_stack.model_deployer
+        model_deployer = Repository(  # type: ignore[call-arg]
+            skip_repository_check=True
+        ).active_stack.model_deployer
 
         if not model_deployer or not isinstance(
             model_deployer, MLFlowModelDeployer

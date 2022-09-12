@@ -1,4 +1,3 @@
-import os
 from typing import Any, List
 
 from fastapi import Depends, HTTPException
@@ -6,33 +5,30 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
 from starlette import status
 
-from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import ENV_ZENML_PROFILE_NAME
-from zenml.enums import StoreType
 from zenml.repository import Repository
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
-profile_name = os.environ.get(ENV_ZENML_PROFILE_NAME)
-
-# Check if profile name was passed as env variable:
-if profile_name:
-    profile = (
-        GlobalConfiguration().get_profile(profile_name)
-        or Repository().active_profile
-    )
-# Fallback to what Repository thinks is the active profile
-else:
-    profile = Repository().active_profile
-
-if profile.store_type == StoreType.REST:
-    raise ValueError(
-        "Server cannot be started with REST store type. Make sure you "
-        "specify a profile with a non-networked persistence backend "
-        "when trying to start the ZenServer. (use command line flag "
-        "`--profile=$PROFILE_NAME` or set the env variable "
-        f"{ENV_ZENML_PROFILE_NAME} to specify the use of a profile "
-        "other than the currently active one)"
-    )
+# profile_name = os.environ.get(ENV_ZENML_PROFILE_NAME)
+#
+# # Check if profile name was passed as env variable:
+# if profile_name:
+#     profile = (
+#         GlobalConfiguration().get_profile(profile_name)
+#         or Repository().active_profile
+#     )
+# # Fallback to what Repository thinks is the active profile
+# else:
+#     profile = Repository().active_profile
+#
+# if profile.store_type == StoreType.REST:
+#     raise ValueError(
+#         "Server cannot be started with REST store type. Make sure you "
+#         "specify a profile with a non-networked persistence backend "
+#         "when trying to start the ZenServer. (use command line flag "
+#         "`--profile=$PROFILE_NAME` or set the env variable "
+#         f"{ENV_ZENML_PROFILE_NAME} to specify the use of a profile "
+#         "other than the currently active one)"
+#     )
 
 security = HTTPBasic()
 
@@ -103,11 +99,12 @@ def conflict(error: Exception) -> HTTPException:
     return HTTPException(status_code=409, detail=error_detail(error))
 
 
-# We initialize with track_analytics=False because we do not
-# want to track anything server side.
-zen_store: BaseZenStore = Repository.create_store(
-    profile,
-    skip_default_registrations=True,
-    track_analytics=False,
-    skip_migration=True,
-)
+zen_store: BaseZenStore = Repository().zen_store
+
+# # We initialize with track_analytics=False because we do not
+# # want to track anything server side.
+# zen_store: BaseZenStore = Repository.create_store(
+#     skip_default_registrations=True,
+#     track_analytics=False,
+#     skip_migration=True,
+# )

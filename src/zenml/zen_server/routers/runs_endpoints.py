@@ -11,18 +11,27 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Dict, List
+from typing import Dict, List, Optional
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 
-from zenml.constants import GRAPH, RUNS, RUNTIME_CONFIGURATION, STEPS, VERSION_1
-from zenml.models.pipeline_models import PipelineRunModel
+from zenml.constants import (
+    COMPONENT_SIDE_EFFECTS,
+    GRAPH,
+    RUNS,
+    RUNTIME_CONFIGURATION,
+    STEPS,
+    VERSION_1,
+)
+from zenml.exceptions import NotAuthorizedError, ValidationError
+from zenml.models.pipeline_models import PipelineRunModel, StepRunModel
+from zenml.utils.uuid_utils import parse_optional_name_or_uuid
 from zenml.zen_server.utils import (
     authorize,
     error_detail,
     error_response,
-    not_found,
     zen_store,
 )
 
@@ -36,16 +45,18 @@ router = APIRouter(
 
 @router.get(
     "/",
-    response_model=List[Dict],
+    response_model=List[PipelineRunModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def get_runs(
-    project_name: str, stack_id: str, pipeline_id: str, trigger_id: str
-) -> List[Dict]:
+    project_name_or_id: Optional[str] = None,
+    stack_id: Optional[str] = None,
+    pipeline_id: Optional[str] = None,
+) -> List[PipelineRunModel]:
     """Get pipeline runs according to query filters.
 
     Args:
-        project_name: Name of the project for which to filter runs.
+        project_name_or_id: Name or ID of the project for which to filter runs.
         stack_id: ID of the stack for which to filter runs.
         pipeline_id: ID of the pipeline for which to filter runs.
         trigger_id: ID of the trigger for which to filter runs.
@@ -61,16 +72,13 @@ async def get_runs(
     """
     try:
         return zen_store.list_runs(
-            project_id=project_name,
+            project_name_or_id=parse_optional_name_or_uuid(project_name_or_id),
             stack_id=stack_id,
             pipeline_id=pipeline_id,
-            trigger_id=trigger_id,
         )
-    except KeyError as e:
-        raise not_found(error_detail(e)) from e
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -97,12 +105,10 @@ async def get_run(run_id: str) -> PipelineRunModel:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.get_run(run_id)
-    except KeyError as e:
-        raise not_found(error_detail(e)) from e
+        return zen_store.get_run(run_id=UUID(run_id))
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -129,10 +135,10 @@ async def update_run(run_id: str, run: PipelineRunModel) -> PipelineRunModel:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.update_run(run_id, run)
+        return zen_store.update_run(run_id=UUID(run_id), run=run)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -154,10 +160,10 @@ async def delete_run(run_id: str) -> None:
         422 error: when unable to validate input
     """
     try:
-        zen_store.delete_run(run_id)
+        zen_store.delete_run(run_id=UUID(run_id))
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -184,12 +190,12 @@ async def get_run_dag(run_id: str) -> str:  # TODO: use file type / image type
     """
     try:
         image_object_path = zen_store.get_run_dag(
-            run_id
+            run_id=UUID(run_id)
         )  # TODO: ZenStore should return a path
         return FileResponse(image_object_path)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -197,10 +203,10 @@ async def get_run_dag(run_id: str) -> str:  # TODO: use file type / image type
 
 @router.get(
     "/{run_id}" + STEPS,
-    response_model=List[Dict],
+    response_model=Dict[str, StepRunModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_run_steps(run_id: str) -> List[Dict]:
+async def get_run_steps(run_id: str) -> Dict[str, StepRunModel]:
     """Get all steps for a given pipeline run.
 
     Args:
@@ -215,10 +221,11 @@ async def get_run_steps(run_id: str) -> List[Dict]:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.list_run_steps(run_id)
+        run = zen_store.get_run(run_id)
+        return zen_store.list_run_steps(run.mlmd_id)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
@@ -245,17 +252,17 @@ async def get_run_runtime_configuration(run_id: str) -> Dict:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.get_run_runtime_configuration(run_id)
+        return zen_store.get_run_runtime_configuration(run_id=UUID(run_id))
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
 
 
 @router.get(
-    "/{run_id}" + RUNTIME_CONFIGURATION,
+    "/{run_id}" + COMPONENT_SIDE_EFFECTS,
     response_model=Dict,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -281,13 +288,13 @@ async def get_run_component_side_effects(
     """
     try:
         return zen_store.get_run_component_side_effects(
-            run_id=run_id,
+            run_id=UUID(run_id),
             component_id=component_id,
             component_type=component_type,
         )
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except NotFoundError as error:
+    except KeyError as error:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))

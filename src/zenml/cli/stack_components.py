@@ -134,7 +134,7 @@ def generate_stack_component_get_command(
         cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
-        active_stack = Repository().active_stack
+        active_stack = Repository().active_stack_model
         component = active_stack.components.get(component_type, None)
         display_name = _component_display_name(component_type)
         if component:
@@ -220,7 +220,7 @@ def generate_stack_component_list_command(
         if len(components) == 0:
             cli_utils.warning(f"No {display_name} registered.")
             return
-        active_stack = repo.active_stack
+        active_stack = repo.active_stack_model
         active_component_name = None
         if component_type in active_stack.components.keys():
             active_component = active_stack.components[component_type]

@@ -14,13 +14,15 @@
 """User management models implementation."""
 
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, root_validator
 
+from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
-class RoleModel(BaseModel):
+
+class RoleModel(AnalyticsTrackedModelMixin):
     """Pydantic object representing a role.
 
     Attributes:
@@ -30,12 +32,14 @@ class RoleModel(BaseModel):
         permissions: Set of permissions allowed by this role.
     """
 
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id"]
+
     id: Optional[UUID] = None
     name: str
     created_at: Optional[datetime] = None
 
 
-class UserModel(BaseModel):
+class UserModel(AnalyticsTrackedModelMixin):
     """Pydantic object representing a user.
 
     Attributes:
@@ -44,6 +48,8 @@ class UserModel(BaseModel):
         name: Name of the user.
     """
 
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id"]
+
     id: Optional[UUID] = None
     name: str
     created_at: Optional[datetime] = None
@@ -51,7 +57,7 @@ class UserModel(BaseModel):
     # password: str
 
 
-class TeamModel(BaseModel):
+class TeamModel(AnalyticsTrackedModelMixin):
     """Pydantic object representing a team.
 
     Attributes:
@@ -60,24 +66,10 @@ class TeamModel(BaseModel):
         name: Name of the team.
     """
 
-    id: Optional[UUID] = None
-    name: str
-    created_at: Optional[datetime] = None
-
-
-class ProjectModel(BaseModel):
-    """Pydantic object representing a project.
-
-    Attributes:
-        id: Id of the project.
-        created_at: Date when the project was created.
-        name: Name of the project.
-        description: Optional project description.
-    """
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id"]
 
     id: Optional[UUID] = None
     name: str
-    description: Optional[str] = None
     created_at: Optional[datetime] = None
 
 

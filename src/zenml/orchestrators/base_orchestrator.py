@@ -37,6 +37,8 @@ import time
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, List, Optional, Type
 
+from google.protobuf.json_format import Parse
+from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
 from pydantic.json import pydantic_encoder
 from tfx.dsl.compiler.compiler import Compiler
 from tfx.dsl.compiler.constants import PIPELINE_RUN_ID_PARAMETER_NAME
@@ -342,9 +344,9 @@ class BaseOrchestrator(StackComponent, ABC):
 
         # Query the ZenStore for the metadata connection
         repo = Repository()
-        metadata_connection = metadata.Metadata(
-            Repository().zen_store.get_metadata_config()
-        )
+        metadata_config = Repository().zen_store.get_metadata_config()
+        metadata_config_pb = Parse(metadata_config, ConnectionConfig())
+        metadata_connection = metadata.Metadata(metadata_config_pb)
 
         custom_executor_operators = {
             executable_spec_pb2.PythonClassExecutableSpec: step.executor_operator
@@ -370,7 +372,7 @@ class BaseOrchestrator(StackComponent, ABC):
         # trackers) will run some code before and after the actual step run.
         # This is where the step actually gets executed using the
         # component_launcher
-        active_stack = Stack.from_model(repo.active_stack)
+        active_stack = repo.active_stack
         active_stack.prepare_step_run()
         execution_info = self._execute_step(component_launcher)
         active_stack.cleanup_step_run()

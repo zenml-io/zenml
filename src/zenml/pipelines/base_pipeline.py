@@ -15,6 +15,7 @@
 
 import inspect
 from abc import abstractmethod
+from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -44,7 +45,6 @@ from zenml.exceptions import (
     StackValidationError,
 )
 from zenml.logger import get_logger
-from zenml.pipelines.schedule import Schedule
 from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.stack import Stack
@@ -55,6 +55,7 @@ from zenml.utils import io_utils, yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 if TYPE_CHECKING:
+    from zenml.pipelines.schedule import Schedule
     from zenml.post_execution import PipelineRunView
 
 logger = get_logger(__name__)
@@ -369,7 +370,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self,
         *,
         run_name: Optional[str] = None,
-        schedule: Optional[Schedule] = None,
+        schedule: Optional["Schedule"] = None,
+        unlisted: bool = False,
         **additional_parameters: Any,
     ) -> Any:
         """Runs the pipeline on the active stack of the current repository.
@@ -377,6 +379,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
         Args:
             run_name: Name of the pipeline run.
             schedule: Optional schedule of the pipeline.
+            unlisted: Whether the pipeline run should be unlisted (not assigned
+                to any pipeline).
             additional_parameters: Additional parameters to pass to the
                 pipeline.
 
@@ -417,12 +421,15 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
             additional_parameters.setdefault("dag_filepath", dag_filepath)
 
+        default_run_name = (
+            f'{self.name}-{datetime.now().strftime("%d_%h_%y-%H_%M_%S_%f")}'
+        )
         runtime_configuration = RuntimeConfiguration(
-            run_name=run_name,
+            run_name=run_name or default_run_name,
             schedule=schedule,
             **additional_parameters,
         )
-        stack = Stack.from_model(Repository().active_stack)
+        stack = Repository().active_stack
 
         stack_metadata = {
             component_type.value: component.FLAVOR
@@ -440,6 +447,16 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         self._reset_steps()
         self.validate_stack(stack)
+        stack.prepare_pipeline_run(
+            pipeline=self, runtime_configuration=runtime_configuration
+        )
+        Repository().register_pipeline_run(
+            pipeline_name=self.name,
+            pipeline_configuration={},  # TODO[Server]: Add pipeline config
+            runtime_configuration=runtime_configuration,
+            stack_id=stack.id,
+            unlisted=unlisted,
+        )
 
         # Prevent execution of nested pipelines which might lead to unexpected
         # behavior
@@ -567,7 +584,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
             RuntimeError: In case the repository does not contain the view
                 of the current pipeline.
         """
-        pipeline_view = Repository().get_pipeline(cls)
+        from zenml.post_execution import get_pipeline
+
+        pipeline_view = get_pipeline(cls)
         if pipeline_view:
             return pipeline_view.runs  # type: ignore[no-any-return]
         else:

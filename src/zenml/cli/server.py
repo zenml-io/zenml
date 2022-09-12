@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,57 +11,63 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""CLI for manipulating ZenML local and global config file."""
+"""CLI for managing ZenML server deployments."""
 
 import ipaddress
-import os
-import shutil
-import textwrap
 from importlib import import_module
-from json import JSONDecodeError
-from typing import Union
+from typing import Any, Dict, Optional, Union
 
 import click
-from click_params import IP_ADDRESS  # type: ignore[import]
+from rich.errors import MarkupError
 from rich.markdown import Markdown
 
-import zenml
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.console import console
-from zenml.enums import CliCategories
+from zenml.enums import CliCategories, ServerProviderType
 from zenml.logger import get_logger
-from zenml.utils.io_utils import get_global_config_directory
+from zenml.zen_server.deploy.deployer import ServerDeployer
+from zenml.zen_server.deploy.deployment import (
+    ServerDeployment,
+    ServerDeploymentConfig,
+)
+from zenml.zen_server.deploy.exceptions import ServerDeploymentNotFoundError
 
 logger = get_logger(__name__)
-GLOBAL_ZENML_SERVER_CONFIG_PATH = os.path.join(
-    get_global_config_directory(),
-    "zen_server",
-)
-ZENML_SERVER_CONFIG_FILENAME = os.path.join(
-    GLOBAL_ZENML_SERVER_CONFIG_PATH, "service.json"
-)
 
 help_message = "Commands for managing the ZenServer."
 
-try:
-    # Make sure all ZenServer dependencies are installed
-    import fastapi  # noqa
 
-    from zenml.zen_server import ZenServer, ZenServerConfig  # noqa
+def get_one_server(server_name: Optional[str]) -> ServerDeployment:
+    """Get a single server deployment by name.
 
-    server_installed = True
-except ImportError:
-    # Unable to import the ZenServer dependencies. Include a help message in
-    # the `zenml server` CLI group and don't add any subcommands that would
-    # just fail.
-    server_installed = False
-    help_message += (
-        "\n\n**Note**: The ZenServer seems to be unavailable on your machine. "
-        "This is probably because ZenML was installed without the optional "
-        "ZenServer dependencies. To install the missing dependencies "
-        f"run `pip install zenml=={zenml.__version__}[server]`."
-    )
+    Call this function to retrieve a single server deployment. If no name is
+    provided and there is only one server deployment, that one will be returned,
+    otherwise an error will be raised.
+
+    Args:
+        server_name: Name of the server deployment.
+
+    Returns:
+        The server deployment.
+    """
+    deployer = ServerDeployer()
+    servers = deployer.list_servers(server_name=server_name)
+
+    if not servers:
+        if server_name:
+            cli_utils.error(
+                f"No ZenML server with the name '{server_name}' was found !"
+            )
+        else:
+            cli_utils.error("No ZenML servers were found !")
+    elif len(servers) > 1:
+        cli_utils.error(
+            "Found multiple ZenML servers running. You have to supply a "
+            "server name."
+        )
+
+    return servers[0]
 
 
 @cli.group(
@@ -73,117 +79,285 @@ def server() -> None:
     """Commands for managing the ZenServer."""
 
 
-if server_installed:
+@server.command("explain", help="Explain the ZenServer concept.")
+def explain_server() -> None:
+    """Explain the ZenServer concept."""
+    component_module = import_module("zenml.zen_server")
 
-    @server.command("explain", help="Explain the ZenServer concept.")
-    def explain_server() -> None:
-        """Explain the ZenServer concept."""
-        component_module = import_module("zenml.zen_server")
+    if component_module.__doc__ is not None:
+        md = Markdown(component_module.__doc__)
+        console.print(md)
 
-        if component_module.__doc__ is not None:
-            md = Markdown(component_module.__doc__)
-            console.print(md)
 
-    @server.command("up", help="Start a daemon service running the ZenServer.")
-    @click.option(
-        "--ip-address", type=IP_ADDRESS, default="127.0.0.1", show_default=True
+@server.command("up", help="Provision and start a ZenML server.")
+@click.option("--name", type=str, help="Name for the ZenML server deployment.")
+@click.option(
+    "--provider",
+    "-p",
+    type=click.Choice(
+        [p.value for p in ServerProviderType], case_sensitive=True
+    ),
+    help="Server deployment provider.",
+    default=ServerProviderType.LOCAL.value,
+)
+@click.option(
+    "--connect",
+    is_flag=True,
+    help="Connect the client to the ZenML server after it's deployed.",
+    type=click.BOOL,
+)
+@click.option("--port", type=int, default=None)
+@click.option(
+    "--username", type=str, default="default", show_default=True, help="The ."
+)
+@click.option("--password", type=str, default="", show_default=True)
+@click.option(
+    "--timeout",
+    "-t",
+    type=click.INT,
+    default=None,
+    help=(
+        "Time in seconds to wait for the server to start. Set to 0 to "
+        "return immediately after starting the server, without waiting for it "
+        "to be ready."
+    ),
+)
+def up_server(
+    provider: str,
+    connect: bool,
+    username: str,
+    password: str,
+    name: Optional[str],
+    ip_address: Union[
+        ipaddress.IPv4Address, ipaddress.IPv6Address, None
+    ] = None,
+    timeout: Optional[int] = None,
+    port: Optional[int] = None,
+) -> None:
+    """Provisions resources for a ZenML server.
+
+    Args:
+        name: Name for the ZenML server deployment.
+        provider: ZenML server provider name.
+        connect: Connecting the client to the ZenML server.
+        ip_address: The IP address to bind the server to.
+        port: The port to bind the server to.
+        username: The username to use for authentication.
+        password: The password to use for authentication.
+        timeout: Time in seconds to wait for the server to start.
+    """
+    name = name or provider
+    config_attrs: Dict[str, Any] = dict(
+        name=name,
+        provider=ServerProviderType(provider),
     )
-    @click.option("--port", type=int, default=8000, show_default=True)
-    def up_server(
-        ip_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address],
-        port: int,
-    ) -> None:
-        """Provisions resources for the ZenServer.
+    if port is not None:
+        config_attrs["port"] = port
+    if ip_address is not None:
+        config_attrs["ip_address"] = ip_address
 
-        Args:
-            ip_address: The IP address to bind the server to.
-            port: The port to bind the server to.
-        """
-        from zenml.services import ServiceRegistry
+    deployer = ServerDeployer()
+    server_config = ServerDeploymentConfig(**config_attrs)
 
-        service_config = ZenServerConfig(
-            root_runtime_path=GLOBAL_ZENML_SERVER_CONFIG_PATH,
-            singleton=True,
-            ip_address=str(ip_address),
-            port=port,
+    server = deployer.deploy_server(server_config, timeout=timeout)
+    if server.status and server.status.url:
+        cli_utils.declare(
+            f"ZenML server '{name}' running at '{server.status.url}'."
         )
-        try:
-            with open(ZENML_SERVER_CONFIG_FILENAME, "r") as f:
-                zen_server = ServiceRegistry().load_service_from_json(f.read())
-                cli_utils.declare(
-                    "An existing ZenServer local instance was found. To start a "
-                    "fresh instance, shut down the current one by running `zenml "
-                    "server down`. Reusing the existing ZenServer instance...",
-                )
-        except (
-            JSONDecodeError,
-            FileNotFoundError,
-            ModuleNotFoundError,
-            TypeError,
-        ):
-            zen_server = ZenServer(service_config)
-            cli_utils.declare("Starting a new ZenServer local instance.")
+    if connect:
+        deployer.connect_to_server(name, username, password)
 
-        zen_server.start(timeout=30)
 
-        # won't happen for ZenServer, but mypy complains otherwise
-        assert zen_server.endpoint is not None
+@server.command("down", help="Shut down and remove a ZenML server instance.")
+@click.option(
+    "--timeout",
+    "-t",
+    type=click.INT,
+    default=None,
+    help=(
+        "Time in seconds to wait for the server to stop. Set to 0 to "
+        "return immediately after stopping the server, without waiting for it "
+        "to shut down."
+    ),
+)
+@click.argument(
+    "server_name",
+    type=str,
+    required=False,
+)
+def down_server(
+    server_name: Optional[str], timeout: Optional[int] = None
+) -> None:
+    """Shut down a ZenML server instance.
 
-        if zen_server.endpoint.status.port != port:
-            cli_utils.warning(
-                textwrap.dedent(
-                    f"""
-                    You specified port={port}, but the current ZenServer is running
-                    at '{zen_server.endpoint.status.uri}'. This can happen in the
-                    case the specified port is in use or if the server was already
-                    running on port {zen_server.endpoint.status.port}.
-                    In case you want to change to port {port}, shut down the server
-                    with `zenml server down` and restart it with a free port of your
-                    choice.
-                    """
-                )
-            )
+    Args:
+        server_name: Name of the ZenML server deployment.
+        timeout: Time in seconds to wait for the server to stop.
+    """
+    server = get_one_server(server_name)
+    server_name = server.config.name
+    deployer = ServerDeployer()
+
+    try:
+        deployer.remove_server(server_name, timeout=timeout)
+    except ServerDeploymentNotFoundError as e:
+        cli_utils.error(f"Server not found: {e}")
+
+    cli_utils.declare(f"Removed the '{server_name}' ZenML server.")
+
+
+@server.command("status", help="Get the status of a ZenML server.")
+@click.argument(
+    "server_name",
+    type=str,
+    required=False,
+)
+def status_server(server_name: Optional[str] = None) -> None:
+    """Get the status of a ZenML server.
+
+    Args:
+        server_name: Name of the ZenML server deployment.
+    """
+    server = get_one_server(server_name)
+    server_name = server.config.name
+
+    cli_utils.print_server_deployment(server)
+
+
+@server.command("list", help="List the status of all ZenML servers.")
+@click.option(
+    "--provider",
+    "-p",
+    type=click.Choice(
+        [p.value for p in ServerProviderType], case_sensitive=True
+    ),
+    help="Server deployment provider.",
+    default=None,
+)
+def list_servers(
+    provider: Optional[str] = None,
+) -> None:
+    """List the status of all ZenML servers.
+
+    Args:
+        provider: Server deployment provider.
+    """
+    deployer = ServerDeployer()
+
+    if provider is not None:
+        servers = deployer.list_servers(
+            provider_type=ServerProviderType(provider)
+        )
+    else:
+        servers = deployer.list_servers()
+
+    cli_utils.print_server_deployment_list(servers)
+
+
+@server.command("connect", help="Connect to a ZenML server.")
+@click.argument(
+    "server_name",
+    type=str,
+    required=False,
+)
+@click.option("--username", type=str, default="default", show_default=True)
+@click.option("--password", type=str, default="", show_default=True)
+def connect_server(
+    username: str,
+    password: str,
+    server_name: Optional[str] = None,
+) -> None:
+    """Connect to a ZenML server.
+
+    Args:
+        username: The username to use for authentication.
+        password: The password to use for authentication.
+        server_name: Name of the ZenML server deployment.
+    """
+    server = get_one_server(server_name)
+    server_name = server.config.name
+    deployer = ServerDeployer()
+
+    try:
+        deployer.connect_to_server(server_name, username, password)
+    except ServerDeploymentNotFoundError as e:
+        cli_utils.error(f"Server not found: {e}")
+
+
+@server.command("disconnect", help="Disconnect from a ZenML server.")
+@click.argument(
+    "server_name",
+    type=str,
+    required=False,
+)
+def disconnect_server(server_name: Optional[str] = None) -> None:
+    """Disconnect from a ZenML server.
+
+    Args:
+        server_name: Name of the ZenML server deployment.
+    """
+    deployer = ServerDeployer()
+
+    try:
+        deployer.disconnect_from_server(server_name)
+    except ServerDeploymentNotFoundError as e:
+        cli_utils.error(f"Server not found: {e}")
+
+
+@server.command("logs", help="Show the logs for a ZenML server.")
+@click.argument(
+    "server_name",
+    type=click.STRING,
+    required=False,
+)
+@click.option(
+    "--follow",
+    "-f",
+    is_flag=True,
+    help="Continue to output new log data as it becomes available.",
+)
+@click.option(
+    "--tail",
+    "-t",
+    type=click.INT,
+    default=None,
+    help="Only show the last NUM lines of log output.",
+)
+@click.option(
+    "--raw",
+    "-r",
+    is_flag=True,
+    help="Show raw log contents (don't pretty-print logs).",
+)
+def get_server_logs(
+    follow: bool,
+    raw: bool,
+    tail: Optional[int] = None,
+    server_name: Optional[str] = None,
+) -> None:
+    """Display the logs for a ZenML server.
+
+    Args:
+        server_name: The name of the ZenML server instance.
+        follow: Continue to output new log data as it becomes available.
+        tail: Only show the last NUM lines of log output.
+        raw: Show raw log contents (don't pretty-print logs).
+    """
+    server = get_one_server(server_name)
+    server_name = server.config.name
+    deployer = ServerDeployer()
+
+    try:
+        logs = deployer.get_server_logs(server_name)
+    except ServerDeploymentNotFoundError as e:
+        cli_utils.error(f"Server not found: {e}")
+
+    for line in logs:
+        # don't pretty-print log lines that are already pretty-printed
+        if raw or line.startswith("\x1b["):
+            console.print(line, markup=False)
         else:
-            cli_utils.declare(
-                f"ZenServer running at '{zen_server.endpoint.status.uri}'."
-            )
-
-    @server.command("status")
-    def status_server() -> None:
-        """Get the status of the ZenServer."""
-        from zenml.services import ServiceRegistry, ServiceState
-
-        try:
-            with open(ZENML_SERVER_CONFIG_FILENAME, "r") as f:
-                zervice = ServiceRegistry().load_service_from_json(f.read())
-        except FileNotFoundError:
-            cli_utils.warning("No ZenServer instance found locally!")
-        else:
-            zen_server_status = zervice.check_status()
-
-            running = (
-                f" and running at {zervice.endpoint.status.uri}."
-                if zen_server_status[0] == ServiceState.ACTIVE
-                and zervice.endpoint
-                else ""
-            )
-
-            cli_utils.declare(
-                f"The ZenServer status is {zen_server_status[0]}{running}."
-            )
-
-    @server.command("down")
-    def down_server() -> None:
-        """Shut down the local ZenServer instance."""
-        from zenml.services import ServiceRegistry
-
-        try:
-            with open(ZENML_SERVER_CONFIG_FILENAME, "r") as f:
-                zervice = ServiceRegistry().load_service_from_json(f.read())
-        except FileNotFoundError:
-            cli_utils.error("No ZenServer instance found locally!")
-        else:
-            cli_utils.declare("Shutting down the local ZenService instance.")
-            zervice.stop()
-
-            shutil.rmtree(GLOBAL_ZENML_SERVER_CONFIG_PATH)
+            try:
+                console.print(line)
+            except MarkupError:
+                console.print(line, markup=False)

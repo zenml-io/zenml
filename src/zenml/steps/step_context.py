@@ -90,7 +90,7 @@ class StepContext:
             )
             for key in output_materializers.keys()
         }
-        self._stack = Stack.from_model(Repository().active_stack)
+        self._stack = Repository().active_stack
 
     def _get_output(
         self, output_name: Optional[str] = None
