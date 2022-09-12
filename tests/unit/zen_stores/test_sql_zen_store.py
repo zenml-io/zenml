@@ -20,9 +20,9 @@ from zenml.exceptions import EntityExistsError
 from zenml.models import ProjectModel, RoleModel, TeamModel, UserModel
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
-#  .---------.
-# | PROJECTS |
-# '----------'
+#  .--------
+# | PROJECTS
+# '---------
 
 
 def test_only_one_default_project(fresh_sql_zen_store: BaseZenStore):
@@ -86,9 +86,9 @@ def test_deleting_nonexistent_project_raises_error(
         fresh_sql_zen_store.delete_project("blupus_project")
 
 
-#  .------.
-# | TEAMS |
-# '-------'
+#  .-----
+# | TEAMS
+# '------
 
 
 def test_list_teams(fresh_sql_zen_store: BaseZenStore):
@@ -426,6 +426,11 @@ def test_assigning_role_to_team_succeeds(
         )
         == 0
     )
+
+
+def test_revoking_role_succeeds():
+    """Tests revoking a role."""
+    pass
 
 
 # TODO: add this back in when exception is raised in SQLZenStore
