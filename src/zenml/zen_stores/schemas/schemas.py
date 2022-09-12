@@ -22,7 +22,8 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.enums import StackComponentType
 from zenml.models.code_models import CodeRepositoryModel
-from zenml.models.component_models import ComponentModel
+from zenml.models.component_model import ComponentModel
+from zenml.models.flavor_model import FlavorModel
 from zenml.models.pipeline_models import PipelineModel, PipelineRunModel
 from zenml.models.stack_model import StackModel
 from zenml.models.user_management_models import (
@@ -235,25 +236,6 @@ class TeamRoleAssignmentSchema(SQLModel, table=True):
 # Stacks, Stack Components, Flavors
 
 
-class FlavorSchema(SQLModel, table=True):
-    """SQL Model for flavors."""
-
-    id: UUID = Field(primary_key=True, default_factory=uuid4)
-
-    name: str
-
-    # project_id - redundant since repository has this
-    repository_id: UUID = Field(foreign_key="coderepositoryschema.id")
-    created_by: UUID = Field(foreign_key="userschema.id")
-
-    type: StackComponentType
-    source: str
-    git_sha: str
-    integration: str
-
-    created_at: datetime = Field(default_factory=datetime.now)
-
-
 class StackCompositionSchema(SQLModel, table=True):
     """SQL Model for stack definitions.
 
@@ -416,6 +398,65 @@ class StackComponentSchema(SQLModel, table=True):
             configuration=json.loads(
                 base64.b64decode(self.configuration).decode()
             ),
+        )
+
+
+class FlavorSchema(SQLModel, table=True):
+    """SQL Model for flavors."""
+
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
+
+    name: str
+
+    type: StackComponentType
+    source: str
+    integration: str
+
+    project_id: UUID = Field(foreign_key="userschema.id")
+    user_id: UUID = Field(foreign_key="userschema.id")
+    created_at: datetime = Field(default_factory=datetime.now)
+
+    @classmethod
+    def from_create_model(
+        cls,
+        flavor: FlavorModel,
+        user_id: UUID,
+        project_id: UUID,
+    ):
+        return cls(
+            name=flavor.name,
+            type=flavor.type,
+            source=flavor.source,
+            integration=flavor.integration,
+            owner_id=user_id,
+            project_id=project_id,
+        )
+
+    def from_update_model(
+        self,
+        flavor: FlavorModel,
+    ):
+        return FlavorModel(
+            id=self.id,
+            name=self.name,
+            type=self.type,
+            source=flavor.source,
+            integration=self.integration,
+            user_id=self.user_id,
+            project_id=self.project_id,
+            created_at=self.created_at,
+        )
+
+    def to_model(self):
+        return FlavorModel(
+            id=self.id,
+            name=self.name,
+            type=self.type,
+            source=self.source,
+            integration=self.integration,
+            user_id=self.user_id,
+            project_id=self.project_id,
+            created_at=self.created_at,
         )
 
 
