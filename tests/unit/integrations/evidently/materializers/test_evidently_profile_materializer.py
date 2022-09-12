@@ -32,6 +32,6 @@ def test_evidently_profile_materializer(clean_repo):
             materializer=EvidentlyProfileMaterializer,
         )
 
-    last_run = clean_repo.get_pipeline("evidently_pipeline").runs[-1]
+    last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
     evidently_profile = last_run.steps[-1].output.read()
     assert isinstance(evidently_profile, Profile)
