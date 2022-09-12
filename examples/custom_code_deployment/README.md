@@ -172,7 +172,7 @@ The next sections cover how to setup the GCP Artifact Store credentials for the 
 Please look up the variables relevant to your use case in the
 [official KServe Storage Credentials](https://kserve.github.io/website/0.8/sdk_docs/docs/KServeClient/#parameters)
 and set them accordingly for your ZenML secrets schemas already built for each storage_type.
-You can find the relevant variables in the [Kserve integration secret schemas docs](https://apidocs.zenml.io/0.13.0/api_docs/integrations/#zenml.integrations.kserve.secret_schemas.secret_schemas).
+You can find the relevant variables in the [Kserve integration secret schemas docs](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.kserve.secret_schemas.secret_schemas).
 
 #### GCP Authentication with kserve_gs secret schema
 
@@ -389,7 +389,7 @@ The next sections cover how to set GCP Artifact Store credentials for the Seldon
 Please look up the variables relevant to your use case in the
 [official Seldon Core Storage Credentials](https://kserve.github.io/website/0.8/sdk_docs/docs/KServeClient/#parameters)
 and set them accordingly for your ZenML secrets schemas already built for each storage_type.
-You can find the relevant variables in the [Seldon Integration secret schema](https://apidocs.zenml.io/0.13.0/api_docs/integrations/#zenml.integrations.seldon.secret_schemas.secret_schemas).
+You can find the relevant variables in the [Seldon Integration secret schema](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.seldon.secret_schemas.secret_schemas).
 
 #### GCP Authentication with seldon_s3 secret schema
 
@@ -621,7 +621,7 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the custom model deployment can be found [here](https://docs.zenml.io/mlops-stacks/model-deployers/custom-pre-processing-and-post-processing).
+Our docs regarding the custom model deployment can be found [here](https://docs.zenml.io/mlops-stacks/model-deployers#custom-pre-processing-and-post-processing).
 
 If you want to learn more about the deployment in ZenML in general or about how to build your deployer steps in ZenML
 check out our [docs](https://docs.zenml.io/mlops-stacks/model-deployers/custom).
