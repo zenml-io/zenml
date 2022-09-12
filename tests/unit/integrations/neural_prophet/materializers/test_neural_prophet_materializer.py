@@ -36,7 +36,7 @@ def test_neural_prophet_booster_materializer(clean_repo):
                 "y": np.random.rand(10),
             }
         )
-        m = NeuralProphet(epochs=7, batch_size=37)
+        m = NeuralProphet(epochs=2, batch_size=37)
         m.fit(sample_df)
         return m
 
@@ -55,5 +55,5 @@ def test_neural_prophet_booster_materializer(clean_repo):
     last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
     forecaster = last_run.steps[-1].output.read()
     assert isinstance(forecaster, NeuralProphet)
-    assert forecaster.config_train.epochs == 7
+    assert forecaster.config_train.epochs == 2
     assert forecaster.config_train.batch_size == 37
