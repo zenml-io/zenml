@@ -11,9 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Optional
 
-from pydantic import BaseModel
+from datetime import datetime
+from typing import Optional
+from uuid import UUID
+
+from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
 
@@ -24,9 +27,30 @@ class FlavorModel(BaseModel):
     This represents the custom implementation of a stack component flavor.
     """
 
-    id: Optional[str]
-    name: str
-    type: StackComponentType
-    config_source: str
-    implementation_source: str
-    integration: Optional[str]
+    id: Optional[UUID] = Field(
+        default=None,
+        title="The ID of the Flavor.",
+    )
+    name: str = Field(
+        title="The name of the Flavor.",
+    )
+    type: StackComponentType = Field(
+        title="The type of the Flavor.",
+    )
+    source: str = Field(
+        title="The path to the module which contains this Flavor."
+    )
+    integration: Optional[str] = Field(
+        title="The name of the integration that the Flavor belongs to."
+    )
+    user_id: Optional[UUID] = Field(
+        default=None,
+        title="The ID of the user, that created this Flavor.",
+    )
+    project_id: Optional[str] = Field(
+        default=None, title="The project that contains this Flavor."
+    )
+    created_at: Optional[datetime] = Field(
+        default=None,
+        title="The time at which the component was registered.",
+    )

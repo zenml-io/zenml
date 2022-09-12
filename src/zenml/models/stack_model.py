@@ -20,7 +20,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
-from zenml.models.component_models import ComponentModel
+from zenml.models.component_model import ComponentModel
 
 
 class StackModel(BaseModel):

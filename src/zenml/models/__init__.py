@@ -14,7 +14,7 @@
 """Initialization for ZenML models submodule."""
 
 from zenml.models.code_models import CodeRepositoryModel
-from zenml.models.component_models import ComponentModel
+from zenml.models.component_model import ComponentModel
 from zenml.models.flavor_model import FlavorModel
 from zenml.models.pipeline_models import (
     PipelineModel,

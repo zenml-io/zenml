@@ -13,18 +13,13 @@
 #  permissions and limitations under the License.
 """Component wrapper implementation."""
 
-import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, Optional
-from uuid import UUID
-
 from pydantic import BaseModel, Field
+from typing import Any, Dict, Optional
+from uuid import UUID
 
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
-
-if TYPE_CHECKING:
-    from zenml.stack import StackComponent
 
 logger = get_logger(__name__)
 
@@ -87,38 +82,3 @@ class ComponentModel(BaseModel):
                 "created_at": "2022-08-12T07:12:44.931Z",
             }
         }
-
-    @classmethod
-    def from_component(cls, component: "StackComponent") -> "ComponentModel":
-        """Creates a ComponentModel from an instance of a Stack Component.
-
-        Args:
-            component: the instance of a StackComponent
-
-        Returns:
-            a ComponentModel
-        """
-        return cls(
-            type=component.TYPE,
-            flavor_name=component.FLAVOR,
-            name=component.name,
-            id=component.uuid,
-            configuration=json.loads(component.json()),
-        )
-
-    def to_component(self) -> "StackComponent":
-        """Converts the ComponentModel into an instance of a Stack Component.
-
-        Returns:
-            a StackComponent
-        """
-        from zenml.repository import Repository
-
-        flavor = Repository(skip_repository_check=True).get_flavor(  # type: ignore[call-arg]
-            name=self.flavor_name, component_type=self.type
-        )
-
-        config = self.configuration
-        config["uuid"] = self.id
-        config["name"] = self.name
-        return flavor.parse_obj(config)
