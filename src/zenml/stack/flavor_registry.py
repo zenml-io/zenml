@@ -14,7 +14,7 @@
 """Implementation of the ZenML flavor registry."""
 
 from collections import defaultdict
-from typing import DefaultDict, Dict
+from typing import DefaultDict, Dict, List
 
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
@@ -40,7 +40,8 @@ class FlavorRegistry:
 
     def register_default_flavors(self) -> None:
         """Registers the default built-in flavors."""
-        from zenml.artifact_stores import LocalArtifactStore
+        from zenml.artifact_stores import LocalArtifactStoreFlavor
+
         # from zenml.container_registries import (
         #     AzureContainerRegistry,
         #     DefaultContainerRegistry,
@@ -48,12 +49,13 @@ class FlavorRegistry:
         #     GCPContainerRegistry,
         #     GitHubContainerRegistry,
         # )
-        from zenml.orchestrators import LocalOrchestrator
+        from zenml.orchestrators import LocalOrchestratorFlavor
+
         # from zenml.secrets_managers import LocalSecretsManager
 
         default_flavors = [
-            LocalOrchestrator,
-            LocalArtifactStore,
+            LocalArtifactStoreFlavor,
+            LocalOrchestratorFlavor,
             # DefaultContainerRegistry,
             # AzureContainerRegistry,
             # DockerHubContainerRegistry,
@@ -62,19 +64,18 @@ class FlavorRegistry:
             # LocalSecretsManager,
         ]
         for flavor in default_flavors:
+            flavor_instance = flavor()
             self._register_flavor(
                 FlavorModel(
-                    name=flavor.FLAVOR,  # type: ignore[attr-defined]
-                    type=flavor.TYPE,  # type: ignore[attr-defined]
-                    implementation_source=flavor.__module__ + "." + flavor.__name__,
-                    config_source=flavor.config_class.__module__ + "." + flavor.config_class.__name__,
+                    name=flavor_instance.name,  # type: ignore[attr-defined]
+                    type=flavor_instance.type,  # type: ignore[attr-defined]
+                    source=flavor.__module__ + "." + flavor.__name__,
                     integration="built-in",
                 )
             )
 
     def register_integration_flavors(self) -> None:
         """Registers the flavors implemented by integrations."""
-        from zenml.integrations.registry import integration_registry
 
         # for integration in integration_registry.integrations.values():
         #     integrated_flavors = integration.flavors()
@@ -107,6 +108,14 @@ class FlavorRegistry:
             f"Registered flavor for '{flavor.name}' and type '{flavor.type}'.",
         )
 
+    @property
+    def flavors(self) -> List[FlavorModel]:
+        flavors = list()
+        for flavors_by_type in self._flavors.values():
+            for flavor in flavors_by_type.values():
+                flavors.append(flavor)
+        return flavors
+
     def get_flavors_by_type(
         self, component_type: StackComponentType
     ) -> Dict[str, FlavorModel]:
@@ -119,6 +128,11 @@ class FlavorRegistry:
             The list of flavors with the given type.
         """
         return self._flavors[component_type]
+
+    def get_flavor_by_name_and_type(
+        self, name: str, component_type: StackComponentType
+    ) -> FlavorModel:
+        return self._flavors[component_type][name]
 
 
 # Create the instance of the registry

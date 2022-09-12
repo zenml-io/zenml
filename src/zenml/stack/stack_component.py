@@ -12,31 +12,28 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the ZenML Stack Component class."""
-
 import textwrap
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Set, Type
-from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Extra, Field, root_validator
+from pydantic import BaseModel, Extra, root_validator
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackComponentInterfaceError
 from zenml.logger import get_logger
+from zenml.models import ComponentModel, FlavorModel
 from zenml.utils import secret_utils
-from zenml.models.flavor_model import FlavorModel
 from zenml.utils.source_utils import load_source_path_class
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
-    from zenml.stack import Stack, StackValidator
+    from zenml.stack import Stack, StackValidator, Flavor
 
 logger = get_logger(__name__)
 
 
 class StackComponentConfig(BaseModel, ABC):
-
     name: str
     id: Optional[str]
 
@@ -78,7 +75,7 @@ class StackComponentConfig(BaseModel, ABC):
                         f"attribute `{key}` for a `{self.__class__.__name__}` "
                         "stack component. This is currently only a warning, "
                         "but future versions of ZenML will require you to pass "
-                        "in senstive information as secrets. Check out the "
+                        "in sensitive information as secrets. Check out the "
                         "documentation on how to configure your stack "
                         "components with secrets here: "
                         "https://docs.zenml.io/developer-guide/advanced-usage/secret-references"
@@ -117,12 +114,12 @@ class StackComponentConfig(BaseModel, ABC):
 
 
 class StackComponent:
-    """Abstract StackComponent class for all components of a ZenML stack. """
+    """Abstract StackComponent class for all components of a ZenML stack."""
 
     TYPE: ClassVar[StackComponentType]
     FLAVOR: ClassVar[str]
 
-    def __init__(self, config: StackComponentConfig):
+    def __init__(self, config: StackComponentConfig, *args, **kwargs):
         self._config = config
 
     @property
@@ -132,6 +129,36 @@ class StackComponent:
     @property
     def config(self):
         return self.config_class(self._config)
+
+    @classmethod
+    def from_model(cls, component_model) -> "StackComponent":
+        from zenml.repository import Repository
+
+        flavor_model = Repository(
+            skip_repository_check=True
+        ).get_flavor_by_name_and_type(
+            name=component_model.flavor_name,
+            component_type=component_model.type,
+        )
+
+        try:
+            flavor_class: "Flavor" = load_source_path_class(source=flavor_model.source) # noqa
+        except (ModuleNotFoundError, ImportError, NotImplementedError):
+            raise ImportError(f"tmp")
+
+        configuration = flavor_class.config_class.parse_obj(
+            component_model.configuration
+        )
+
+        return flavor_class.implementation_class(configuration)
+
+    def to_model(self) -> "ComponentModel":
+        return ComponentModel(
+            type=self.TYPE,
+            flavor_name=self.FLAVOR,
+            name=self.config.name,
+            configuration=self.config.dict(),
+        )
 
     def __custom_getattribute__(self, key: str) -> Any:
         """Returns the (potentially resolved) attribute value for the given key.
