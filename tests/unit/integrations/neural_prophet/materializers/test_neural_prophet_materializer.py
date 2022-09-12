@@ -20,37 +20,27 @@ from neuralprophet import NeuralProphet
 from zenml.integrations.neural_prophet.materializers.neural_prophet_materializer import (
     NeuralProphetMaterializer,
 )
-from zenml.pipelines import pipeline
-from zenml.steps import step
+
+from ....test_general import _test_materializer
 
 
 def test_neural_prophet_booster_materializer(clean_repo):
-    """Tests whether the steps work for the Neural Prophet forecaster materializer."""
-
-    @step
-    def read_forecaster() -> NeuralProphet:
-        """Reads and materializes a Neural Prophet forecaster."""
-        sample_df = pd.DataFrame(
-            {
-                "ds": pd.date_range("2018-01-01", periods=10),
-                "y": np.random.rand(10),
-            }
-        )
-        m = NeuralProphet(epochs=2, batch_size=37)
-        m.fit(sample_df)
-        return m
-
-    @pipeline
-    def test_pipeline(read_forecaster) -> None:
-        """Tests the Neural Prophet forecaster materializer."""
-        read_forecaster()
+    """Tests whether the steps work for the Neural Prophet forecaster
+    materializer."""
+    sample_df = pd.DataFrame(
+        {
+            "ds": pd.date_range("2018-01-01", periods=10),
+            "y": np.random.rand(10),
+        }
+    )
+    model = NeuralProphet(epochs=2, batch_size=37)
+    model.fit(sample_df)
 
     with does_not_raise():
-        test_pipeline(
-            read_forecaster=read_forecaster().with_return_materializers(
-                NeuralProphetMaterializer
-            )
-        ).run()
+        _test_materializer(
+            step_output=model,
+            materializer=NeuralProphetMaterializer,
+        )
 
     last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
     forecaster = last_run.steps[-1].output.read()

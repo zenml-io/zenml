@@ -18,29 +18,17 @@ from torch.nn import Linear, Module
 from zenml.integrations.pytorch.materializers.pytorch_module_materializer import (
     PyTorchModuleMaterializer,
 )
-from zenml.pipelines import pipeline
-from zenml.steps import step
+
+from ....test_general import _test_materializer
 
 
 def test_pytorch_module_materializer(clean_repo):
     """Tests whether the steps work for the Sklearn materializer."""
-
-    @step
-    def read_module() -> Linear:
-        """Reads and materializes a PyTorch module."""
-        return Linear(20, 20)
-
-    @pipeline
-    def test_pipeline(read_module) -> None:
-        """Tests the PyTorch module materializer."""
-        read_module()
-
     with does_not_raise():
-        test_pipeline(
-            read_module=read_module().with_return_materializers(
-                PyTorchModuleMaterializer
-            )
-        ).run()
+        _test_materializer(
+            step_output=Linear(20, 20),
+            materializer=PyTorchModuleMaterializer,
+        )
 
     last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
     module = last_run.steps[-1].output.read()
