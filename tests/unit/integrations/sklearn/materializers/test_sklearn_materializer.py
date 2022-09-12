@@ -19,29 +19,18 @@ from sklearn.svm import SVC
 from zenml.integrations.sklearn.materializers.sklearn_materializer import (
     SklearnMaterializer,
 )
-from zenml.pipelines import pipeline
-from zenml.steps import step
+
+from ....test_general import _test_materializer
 
 
 def test_sklearn_materializer(clean_repo):
     """Tests whether the steps work for the Sklearn materializer."""
 
-    @step
-    def read_model() -> ClassifierMixin:
-        """Reads and materializes a Sklearn model."""
-        return SVC(gamma="auto")
-
-    @pipeline
-    def test_pipeline(read_model) -> None:
-        """Tests the Sklearn materializer."""
-        read_model()
-
     with does_not_raise():
-        test_pipeline(
-            read_model=read_model().with_return_materializers(
-                SklearnMaterializer
-            )
-        ).run()
+        _test_materializer(
+            step_output=SVC(gamma="auto"),
+            materializer=SklearnMaterializer,
+        )
 
     last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
     model = last_run.steps[-1].output.read()

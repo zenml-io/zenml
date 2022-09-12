@@ -18,29 +18,19 @@ import tensorflow as tf
 from zenml.integrations.tensorflow.materializers.tf_dataset_materializer import (
     TensorflowDatasetMaterializer,
 )
-from zenml.pipelines import pipeline
-from zenml.steps import step
+
+from ....test_general import _test_materializer
 
 
 def test_tensorflow_tf_dataset_materializer(clean_repo):
-    """Tests whether the steps work for the TensorFlow TF Dataset materializer."""
-
-    @step
-    def read_dataset() -> tf.data.Dataset:
-        """Reads and materializes a Keras model."""
-        return tf.data.Dataset.from_tensor_slices([1, 2, 3])
-
-    @pipeline
-    def test_pipeline(read_dataset) -> None:
-        """Tests the PillowImageMaterializer."""
-        read_dataset()
+    """Tests whether the steps work for the TensorFlow TF Dataset
+    materializer."""
 
     with does_not_raise():
-        test_pipeline(
-            read_dataset=read_dataset().with_return_materializers(
-                TensorflowDatasetMaterializer
-            )
-        ).run()
+        _test_materializer(
+            step_output=tf.data.Dataset.from_tensor_slices([1, 2, 3]),
+            materializer=TensorflowDatasetMaterializer,
+        )
 
     last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
     dataset = last_run.steps[-1].output.read()

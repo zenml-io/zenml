@@ -18,31 +18,22 @@ from tensorflow import keras
 from zenml.integrations.tensorflow.materializers.keras_materializer import (
     KerasMaterializer,
 )
-from zenml.pipelines import pipeline
-from zenml.steps import step
+
+from ....test_general import _test_materializer
 
 
 def test_tensorflow_keras_materializer(clean_repo):
     """Tests whether the steps work for the TensorFlow Keras materializer."""
-
-    @step
-    def read_model() -> keras.Model:
-        """Reads and materializes a Keras model."""
-        inputs = keras.Input(shape=(32,))
-        outputs = keras.layers.Dense(1)(inputs)
-        model = keras.Model(inputs, outputs)
-        model.compile(optimizer="adam", loss="mean_squared_error")
-        return model
-
-    @pipeline
-    def test_pipeline(read_model) -> None:
-        """Tests the PillowImageMaterializer."""
-        read_model()
+    inputs = keras.Input(shape=(32,))
+    outputs = keras.layers.Dense(1)(inputs)
+    model = keras.Model(inputs, outputs)
+    model.compile(optimizer="adam", loss="mean_squared_error")
 
     with does_not_raise():
-        test_pipeline(
-            read_model=read_model().with_return_materializers(KerasMaterializer)
-        ).run()
+        _test_materializer(
+            step_output=model,
+            materializer=KerasMaterializer,
+        )
 
     last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
     model = last_run.steps[-1].output.read()

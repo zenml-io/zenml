@@ -18,29 +18,19 @@ from scipy.sparse import coo_matrix, spmatrix
 from zenml.integrations.scipy.materializers.sparse_materializer import (
     SparseMaterializer,
 )
-from zenml.pipelines import pipeline
-from zenml.steps import step
+
+from ....test_general import _test_materializer
 
 
 def test_scipy_sparse_matrix_materializer(clean_repo):
     """Tests whether the steps work for the SciPy sparse matrix materializer."""
-
-    @step
-    def read_sparse_matrix() -> spmatrix:
-        """Reads and materializes a SciPy sparse matrix Booster."""
-        return coo_matrix(([1, 2, 3], ([0, 1, 2], [0, 1, 2])), shape=(3, 3))
-
-    @pipeline
-    def test_pipeline(read_sparse_matrix) -> None:
-        """Tests the SciPy sparse matrix materializer."""
-        read_sparse_matrix()
-
     with does_not_raise():
-        test_pipeline(
-            read_sparse_matrix=read_sparse_matrix().with_return_materializers(
-                SparseMaterializer
-            )
-        ).run()
+        _test_materializer(
+            step_output=coo_matrix(
+                ([1, 2, 3], ([0, 1, 2], [0, 1, 2])), shape=(3, 3)
+            ),
+            materializer=SparseMaterializer,
+        )
 
     last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
     sparse_matrix = last_run.steps[-1].output.read()
