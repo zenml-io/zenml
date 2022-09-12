@@ -14,6 +14,7 @@
 """Initialization for the post-execution artifact class."""
 
 from typing import TYPE_CHECKING, Any, Optional, Type
+from uuid import UUID
 
 from zenml.logger import get_logger
 from zenml.models.pipeline_models import ArtifactModel
@@ -52,13 +53,13 @@ class ArtifactView:
         self._model = model
 
     @property
-    def id(self) -> int:
+    def id(self) -> UUID:
         """Returns the artifact id.
 
         Returns:
             The artifact id.
         """
-        return self._model.mlmd_id
+        return self._model.id
 
     @property
     def type(self) -> str:

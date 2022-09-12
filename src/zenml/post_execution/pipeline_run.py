@@ -241,10 +241,8 @@ class PipelineRunView:
             # we already fetched the steps, no need to do anything
             return
 
-        steps = Repository().zen_store.list_run_steps(self._model.mlmd_id)
-        self._steps = {
-            step_name: StepView(step) for step_name, step in steps.items()
-        }
+        steps = Repository().zen_store.list_run_steps(self._model.id)
+        self._steps = {step.name: StepView(step) for step in steps}
 
     def __repr__(self) -> str:
         """Returns a string representation of this pipeline run.

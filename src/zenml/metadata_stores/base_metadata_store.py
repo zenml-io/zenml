@@ -203,11 +203,11 @@ class BaseMetadataStore(BaseModel, ABC):
 
         return StepRunModel(
             mlmd_id=execution.id,
-            parent_step_ids=list(parents_step_ids),
+            mlmd_parent_step_ids=list(parents_step_ids),
             entrypoint_name=impl_name,
             name=step_name,
             parameters=step_parameters,
-            # TODO: docstring, pipeline_run_id
+            # TODO[Server]: docstring
         )
 
     def get_pipelines(self) -> List[PipelineModel]:
@@ -360,7 +360,7 @@ class BaseMetadataStore(BaseModel, ABC):
             if event_proto.type == event_proto.INPUT:
                 # In the case that this is an input event, we actually need
                 # to resolve it via its parents outputs.
-                for parent_id in step.parent_step_ids:
+                for parent_id in step.mlmd_parent_step_ids:
                     parent_step = self.get_step_by_id(parent_id)
                     parent_outputs = self.get_step_artifacts(parent_step)[1]
                     for parent_output in parent_outputs.values():
@@ -376,8 +376,8 @@ class BaseMetadataStore(BaseModel, ABC):
                 uri=artifact_proto.uri,
                 materializer=materializer,
                 data_type=data_type,
-                parent_step_id=parent_step_id,
-                producer_step_id=producer_step_id,
+                mlmd_parent_step_id=parent_step_id,
+                mlmd_producer_step_id=producer_step_id,
                 is_cached=parent_step_id != producer_step_id,
             )
 

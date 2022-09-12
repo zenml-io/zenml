@@ -20,7 +20,9 @@ from uuid import UUID, uuid4
 
 from sqlmodel import Field, Relationship, SQLModel
 
+from zenml.enums import ArtifactType
 from zenml.models import PipelineModel, PipelineRunModel
+from zenml.models.pipeline_models import ArtifactModel, StepRunModel
 
 
 class PipelineSchema(SQLModel, table=True):
@@ -74,7 +76,6 @@ class PipelineRunSchema(SQLModel, table=True):
     """SQL Model for pipeline runs."""
 
     id: UUID = Field(primary_key=True, default_factory=uuid4)
-    mlmd_id: int = Field(default=None, nullable=True)
     name: str
 
     # project_id - redundant since stack has this
@@ -94,6 +95,8 @@ class PipelineRunSchema(SQLModel, table=True):
 
     pipeline: PipelineSchema = Relationship(back_populates="runs")
 
+    mlmd_id: int = Field(default=None, nullable=True)
+
     @classmethod
     def from_create_model(
         cls,
@@ -101,7 +104,6 @@ class PipelineRunSchema(SQLModel, table=True):
         pipeline: Optional[PipelineSchema] = None,
     ) -> "PipelineRunSchema":
         return cls(
-            mlmd_id=model.mlmd_id,
             name=model.name,
             stack_id=model.stack_id,
             owner=model.owner,
@@ -110,20 +112,20 @@ class PipelineRunSchema(SQLModel, table=True):
             git_sha=model.git_sha,
             zenml_version=model.zenml_version,
             pipeline=pipeline,
+            mlmd_id=model.mlmd_id,
         )
 
     def from_update_model(self, model: PipelineRunModel) -> "PipelineRunSchema":
-        self.mlmd_id = model.mlmd_id
         self.name = model.name
         self.runtime_configuration = json.dumps(model.runtime_configuration)
         self.git_sha = model.git_sha
         self.zenml_version = model.zenml_version
+        self.mlmd_id = model.mlmd_id
         return self
 
     def to_model(self) -> PipelineRunModel:
         return PipelineRunModel(
             id=self.id,
-            mlmd_id=self.mlmd_id,
             name=self.name,
             stack_id=self.stack_id,
             owner=self.owner,
@@ -132,4 +134,113 @@ class PipelineRunSchema(SQLModel, table=True):
             git_sha=self.git_sha,
             zenml_version=self.zenml_version,
             created_at=self.created_at,
+            mlmd_id=self.mlmd_id,
         )
+
+
+class StepRunSchema(SQLModel, table=True):
+    """SQL Model for steps of pipeline runs."""
+
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    name: str
+
+    pipeline_run_id: UUID = Field(foreign_key="pipelinerunschema.id")
+
+    docstring: Optional[str]
+    parameters: str
+    entrypoint_name: str
+
+    mlmd_id: int = Field(default=None, nullable=True)
+
+    @classmethod
+    def from_create_model(cls, model: StepRunModel) -> "StepRunSchema":
+        return cls(
+            name=model.name,
+            pipeline_run_id=model.pipeline_run_id,
+            docstring=model.docstring,
+            parameters=json.dumps(model.parameters),
+            entrypoint_name=model.entrypoint_name,
+            mlmd_id=model.mlmd_id,
+        )
+
+    def to_model(
+        self, parent_step_ids: List[UUID], mlmd_parent_step_ids: List[int]
+    ) -> StepRunModel:
+        return StepRunModel(
+            id=self.id,
+            name=self.name,
+            pipeline_run_id=self.pipeline_run_id,
+            parent_step_ids=parent_step_ids,
+            docstring=self.docstring,
+            parameters=json.loads(self.parameters),
+            entrypoint_name=self.entrypoint_name,
+            mlmd_id=self.mlmd_id,
+            mlmd_parent_step_ids=mlmd_parent_step_ids,
+        )
+
+
+class StepRunOrderSchema(SQLModel, table=True):
+    """SQL Model that defines the order of steps."""
+
+    parent_id: UUID = Field(foreign_key="steprunschema.id", primary_key=True)
+    child_id: UUID = Field(foreign_key="steprunschema.id", primary_key=True)
+
+
+class ArtifactSchema(SQLModel, table=True):
+    """SQL Model for artifacts of steps."""
+
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    name: str  # Name of the output in the parent step
+
+    parent_step_id: UUID = Field(foreign_key="steprunschema.id")
+    producer_step_id: UUID = Field(foreign_key="steprunschema.id")
+
+    type: ArtifactType
+    uri: str
+    materializer: str
+    data_type: str
+    is_cached: bool
+
+    mlmd_id: int = Field(default=None, nullable=True)
+    mlmd_parent_step_id: int = Field(default=None, nullable=True)
+    mlmd_producer_step_id: int = Field(default=None, nullable=True)
+
+    @classmethod
+    def from_create_model(cls, model: ArtifactModel) -> "ArtifactSchema":
+        return cls(
+            name=model.name,
+            parent_step_id=model.parent_step_id,
+            producer_step_id=model.producer_step_id,
+            type=model.type,
+            uri=model.uri,
+            materializer=model.materializer,
+            data_type=model.data_type,
+            is_cached=model.is_cached,
+            mlmd_id=model.mlmd_id,
+            mlmd_parent_step_id=model.mlmd_parent_step_id,
+            mlmd_producer_step_id=model.mlmd_producer_step_id,
+        )
+
+    def to_model(self) -> ArtifactModel:
+        return ArtifactModel(
+            id=self.id,
+            name=self.name,
+            parent_step_id=self.parent_step_id,
+            producer_step_id=self.producer_step_id,
+            type=self.type,
+            uri=self.uri,
+            materializer=self.materializer,
+            data_type=self.data_type,
+            is_cached=self.is_cached,
+            mlmd_id=self.mlmd_id,
+            mlmd_parent_step_id=self.mlmd_parent_step_id,
+            mlmd_producer_step_id=self.mlmd_producer_step_id,
+        )
+
+
+class StepInputArtifactSchema(SQLModel, table=True):
+    """SQL Model that defines which artifacts are inputs to which step."""
+
+    step_id: UUID = Field(foreign_key="steprunschema.id", primary_key=True)
+    artifact_id: UUID = Field(foreign_key="artifactschema.id", primary_key=True)
+    name: str  # Name of the input in the step

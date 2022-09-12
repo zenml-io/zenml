@@ -90,8 +90,7 @@ class PipelineRunModel(BaseModel):
         owner: Id of the user that ran this pipeline.
     """
 
-    id: Optional[UUID]  # ID in our DB
-    mlmd_id: Optional[int]  # ID in MLMD
+    id: Optional[UUID]
     name: str
 
     owner: Optional[UUID]  # might not be set for scheduled runs
@@ -104,27 +103,44 @@ class PipelineRunModel(BaseModel):
     git_sha: Optional[str] = Field(default_factory=get_git_sha)
     created_at: Optional[datetime]
 
+    # ID in MLMD - needed for some metadata store methods
+    mlmd_id: Optional[int]
+
 
 class StepRunModel(BaseModel):
     """Pydantic object representing a step of a pipeline run."""
 
-    mlmd_id: int  # ID in MLMD
+    id: Optional[UUID]
     name: str
-    pipeline_run_id: Optional[UUID]  # TODO: make required
-    parent_step_ids: List[int]  # ID in MLMD
+
+    pipeline_run_id: Optional[UUID]
+    parent_step_ids: Optional[List[UUID]]
+
     docstring: Optional[str]
     parameters: Dict[str, str]
     entrypoint_name: str
+
+    # IDs in MLMD - needed for some metadata store methods
+    mlmd_id: int
+    mlmd_parent_step_ids: List[int]
 
 
 class ArtifactModel(BaseModel):
     """Pydantic object representing an artifact."""
 
-    mlmd_id: int  # ID in MLMD
+    id: Optional[UUID]
+    name: Optional[str]  # Name of the output in the parent step
+
+    parent_step_id: Optional[UUID]
+    producer_step_id: Optional[UUID]
+
     type: ArtifactType
     uri: str
     materializer: str
     data_type: str
-    parent_step_id: int  # ID in MLMD
-    producer_step_id: int  # ID in MLMD
     is_cached: bool
+
+    # IDs in MLMD - needed for some metadata store methods
+    mlmd_id: int
+    mlmd_parent_step_id: int
+    mlmd_producer_step_id: int

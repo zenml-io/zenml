@@ -15,7 +15,7 @@
 import os
 from abc import abstractmethod
 from pathlib import Path, PurePath
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -2121,40 +2121,6 @@ class BaseZenStore(BaseModel):
             KeyError: if the pipeline run doesn't exist.
         """
 
-    def update_run(
-        self, run_id: UUID, run: PipelineRunModel
-    ) -> PipelineRunModel:
-        """Updates a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to update.
-            run: The pipeline run to use for the update.
-
-        Returns:
-            The updated pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-        return self._update_run(run_id, run)
-
-    @abstractmethod
-    def _update_run(
-        self, run_id: UUID, run: PipelineRunModel
-    ) -> PipelineRunModel:
-        """Updates a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to update.
-            run: The pipeline run to use for the update.
-
-        Returns:
-            The updated pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-
     def delete_run(self, run_id: UUID) -> None:
         """Deletes a pipeline run.
 
@@ -2283,7 +2249,7 @@ class BaseZenStore(BaseModel):
     # '-------'
 
     @abstractmethod
-    def list_run_steps(self, run_id: int) -> Dict[str, StepRunModel]:
+    def list_run_steps(self, run_id: UUID) -> List[StepRunModel]:
         """Gets all steps in a pipeline run.
 
         Args:
@@ -2294,7 +2260,7 @@ class BaseZenStore(BaseModel):
         """
 
     @abstractmethod
-    def get_run_step(self, step_id: int) -> StepRunModel:
+    def get_run_step(self, step_id: UUID) -> StepRunModel:
         """Get a step by ID.
 
         Args:
@@ -2302,11 +2268,13 @@ class BaseZenStore(BaseModel):
 
         Returns:
             The step.
+
+        Raises:
+            KeyError: if the step doesn't exist.
         """
 
-    def get_run_step_outputs(
-        self, step: StepRunModel
-    ) -> Dict[str, ArtifactModel]:
+    @abstractmethod
+    def get_run_step_outputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
         """Get a list of outputs for a specific step.
 
         Args:
@@ -2315,12 +2283,9 @@ class BaseZenStore(BaseModel):
         Returns:
             A dict mapping artifact names to the output artifacts for the step.
         """
-        return self.get_run_step_artifacts(step)[1]
 
-    # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
-    def get_run_step_inputs(
-        self, step: StepRunModel
-    ) -> Dict[str, ArtifactModel]:
+    @abstractmethod
+    def get_run_step_inputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
         """Get a list of inputs for a specific step.
 
         Args:
@@ -2329,25 +2294,9 @@ class BaseZenStore(BaseModel):
         Returns:
             A dict mapping artifact names to the input artifacts for the step.
         """
-        return self.get_run_step_artifacts(step)[0]
 
     @abstractmethod
-    def get_run_step_artifacts(
-        self, step: StepRunModel
-    ) -> Tuple[Dict[str, ArtifactModel], Dict[str, ArtifactModel]]:
-        """Returns input and output artifacts for the given step.
-
-        Args:
-            step: The step for which to get the artifacts.
-
-        Returns:
-            A tuple (inputs, outputs) where inputs and outputs
-            are both Dicts mapping artifact names
-            to the input and output artifacts respectively.
-        """
-
-    @abstractmethod
-    def get_run_step_status(self, step_id: int) -> ExecutionStatus:
+    def get_run_step_status(self, step_id: UUID) -> ExecutionStatus:
         """Gets the execution status of a single step.
 
         Args:
