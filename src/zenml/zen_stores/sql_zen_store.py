@@ -53,7 +53,6 @@ from zenml.models.pipeline_models import (
     PipelineModel,
     StepRunModel,
 )
-from zenml.stack.flavor_registry import flavor_registry
 from zenml.utils import io_utils, uuid_utils
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME, BaseZenStore
 
@@ -500,7 +499,7 @@ class SqlZenStore(BaseZenStore):
         """List all stack components within the filter.
 
         Args:
-            project_id: Id of the Project containing the stack components
+            project_id: ID of the Project containing the stack components
             type: Optionally filter by type of stack component
             flavor_name: Optionally filter by flavor
             user_id: Optionally filter stack components by the owner
@@ -664,39 +663,81 @@ class SqlZenStore(BaseZenStore):
         """
         # TODO: implement this
 
-    def _list_stack_component_types(self) -> List[str]:
-        """List all stack component types.
+    # .---------.
+    # | FLAVORS |
+    # '---------'
 
-        Returns:
-            A list of all stack component types.
-        """
-        # TODO: This does not belong in the Zen Store
-        return StackComponentType.values()
-
-    def _list_stack_component_flavors_by_type(
+    def _list_flavors(
         self,
-        component_type: StackComponentType,
+        project_id: UUID,
+        type: Optional[StackComponentType] = None,
+        user_id: Optional[UUID] = None,
+        name: Optional[str] = None,
     ) -> List[FlavorModel]:
-        """List all stack component flavors by type.
+        """"""
+        with Session(self.engine) as session:
 
-        Args:
-            component_type: The stack component for which to get flavors.
+            query = select(FlavorSchema).where(
+                FlavorSchema.project_id == project_id
+            )
 
-        Returns:
-            List of stack component flavors.
-        """
+            if type:
+                query = query.where(FlavorSchema.type == type)
+            if name:
+                query = query.where(FlavorSchema.name == name)
+            if user_id:
+                query = query.where(FlavorSchema.user_id == user_id)
 
-        # List all the flavors of the component type
-        zenml_flavors = [
-            f
-            for f in flavor_registry.get_flavors_by_type(
-                component_type=component_type
-            ).values()
-        ]
+            list_of_flavors_in_db = session.exec(query).all()
 
-        custom_flavors = self.get_flavors_by_type(component_type=component_type)
+        return [flavor.to_model() for flavor in list_of_flavors_in_db]
 
-        return zenml_flavors + custom_flavors
+    def _create_flavor(
+        self,
+        user_id: UUID,
+        project_id: UUID,
+        flavor: FlavorModel,
+    ) -> FlavorModel:
+        """ """
+        with Session(self.engine) as session:
+            flavor_in_db = FlavorSchema.from_create_model(
+                user_id=user_id, project_id=project_id, flavor=flavor
+            )
+            session.add(flavor_in_db)
+            session.commit()
+
+        return flavor_in_db.to_model()
+
+    def _get_flavor(self, flavor_id: UUID) -> FlavorModel:
+        with Session(self.engine) as session:
+            flavor_in_db = session.exec(
+                select(FlavorSchema).where(FlavorSchema.id == flavor_id)
+            ).first()
+
+        return flavor_in_db.to_model()
+
+    def _update_flavor(self, flavor: FlavorModel) -> None:
+        with Session(self.engine) as session:
+            existing_flavor = session.exec(
+                select(FlavorSchema).where(FlavorSchema.id == flavor.id)
+            ).first()
+            existing_flavor.from_update_model(flavor=flavor)
+            session.add(existing_flavor)
+            session.commit()
+
+        return existing_flavor.to_model()
+
+    def _delete_flavor(self, flavor_id: UUID) -> None:
+        with Session(self.engine) as session:
+            try:
+                flavor_in_db = session.exec(
+                    select(FlavorSchema).where(FlavorSchema.id == flavor_id)
+                ).one()
+                session.delete(flavor_in_db)
+            except NoResultFound as error:
+                raise KeyError from error
+
+            session.commit()
 
     #  .------.
     # | USERS |
@@ -2256,48 +2297,6 @@ class SqlZenStore(BaseZenStore):
                 FlavorModel(**flavor.dict())
                 for flavor in session.exec(select(FlavorSchema)).all()
             ]
-
-    def _create_flavor(
-        self,
-        source: str,
-        name: str,
-        stack_component_type: StackComponentType,
-    ) -> FlavorModel:
-        """Creates a new flavor.
-
-        Args:
-            source: the source path to the implemented flavor.
-            name: the name of the flavor.
-            stack_component_type: the corresponding StackComponentType.
-
-        Returns:
-            The newly created flavor.
-
-        Raises:
-            EntityExistsError: If a flavor with the given name and type
-                already exists.
-        """
-        with Session(self.engine) as session:
-            existing_flavor = session.exec(
-                select(FlavorSchema).where(
-                    FlavorSchema.name == name,
-                    FlavorSchema.type == stack_component_type,
-                )
-            ).first()
-            if existing_flavor:
-                raise EntityExistsError(
-                    f"A {stack_component_type} with '{name}' flavor already "
-                    f"exists."
-                )
-            sql_flavor = FlavorSchema(
-                name=name,
-                source=source,
-                type=stack_component_type,
-            )
-            flavor_wrapper = FlavorModel(**sql_flavor.dict())
-            session.add(sql_flavor)
-            session.commit()
-        return flavor_wrapper
 
     def get_flavors_by_type(
         self, component_type: StackComponentType

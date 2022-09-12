@@ -107,10 +107,11 @@ class BaseZenStore(BaseModel):
         """
         if store_type == StoreType.SQL:
             from zenml.zen_stores.sql_zen_store import SqlZenStore
+
             return SqlZenStore
         # elif store_type == StoreType.REST:
-            # from zenml.zen_stores.rest_zen_store import RestZenStore
-            # return RestZenStore
+        # from zenml.zen_stores.rest_zen_store import RestZenStore
+        # return RestZenStore
         else:
             raise TypeError(
                 f"No store implementation found for store type "
@@ -390,7 +391,7 @@ class BaseZenStore(BaseModel):
         """List all stacks within the filter.
 
         Args:
-            project_id: Id of the Project containing the stack components
+            project_id: ID of the Project containing the stack components
             user_id: Optionally filter stack components by the owner
             name: Optionally filter stack component by name
             is_shared: Optionally filter out stack component by the `is_shared`
@@ -592,11 +593,14 @@ class BaseZenStore(BaseModel):
             KeyError: if the stack doesn't exist.
         """
 
-    #  .-----------------.
-    # | STACK COMPONENTS |
-    # '------------------'
+    # .------------.
+    # | COMPONENTS |
+    # '------------'
 
-    # TODO: [ALEX] add filtering param(s)
+    @property
+    def stack_components(self) -> List[ComponentModel]:
+        return self.list_stack_components(project_id=self.default_project_id)
+
     def list_stack_components(
         self,
         project_id: UUID,
@@ -609,7 +613,7 @@ class BaseZenStore(BaseModel):
         """List all stack components within the filter.
 
         Args:
-            project_id: Id of the Project containing the stack components
+            project_id: ID of the Project containing the stack components
             type: Optionally filter by type of stack component
             flavor_name: Optionally filter by flavor
             user_id: Optionally filter stack components by the owner
@@ -642,10 +646,10 @@ class BaseZenStore(BaseModel):
         """List all stack components within the filter.
 
         Args:
-            project_id: Id of the Project containing the stack components
+            project_id: ID of the Project containing the stack components
             type: Optionally filter by type of stack component
             flavor_name: Optionally filter by flavor
-            owner: Optionally filter stack components by the owner
+            user_id: Optionally filter stack components by the owner
             name: Optionally filter stack component by name
             is_shared: Optionally filter out stack component by the `is_shared`
                        flag
@@ -655,15 +659,15 @@ class BaseZenStore(BaseModel):
         """
 
     def get_stack_component(self, component_id: UUID) -> ComponentModel:
-        """Get a stack component by id.
+        """Get a stack component by ID.
 
         Args:
-            component_id: The id of the stack component to get.
+            component_id: The ID of the stack component to get.
 
         Returns:
             The stack component with the given id.
         """
-        return self._get_stack_component(component_id)
+        return self._get_stack_component(component_id=component_id)
 
     @abstractmethod
     def _get_stack_component(self, component_id: UUID) -> ComponentModel:
@@ -754,7 +758,7 @@ class BaseZenStore(BaseModel):
         """Delete a stack component.
 
         Args:
-            component_id: The id of the stack component to delete.
+            component_id: The ID of the stack component to delete.
 
         Raises:
             KeyError: if the stack component doesn't exist.
@@ -800,48 +804,90 @@ class BaseZenStore(BaseModel):
             stack_id: The ID of the stack to get side effects for.
         """
 
-    def list_stack_component_types(self) -> List[StackComponentType]:
-        """List all stack component types.
+    # .---------.
+    # | FLAVORS |
+    # '---------'
 
-        Returns:
-            A list of all stack component types.
-        """
-        return self._list_stack_component_types()
-
+    @property
     @abstractmethod
-    def _list_stack_component_types(self) -> List[StackComponentType]:
-        """List all stack component types.
+    def flavors(self) -> List[FlavorModel]:
+        """All registered flavors.
 
         Returns:
-            A list of all stack component types.
+            A list of all registered flavors.
         """
+        return self.list_flavors(self.default_project_id)
 
-    def list_stack_component_flavors_by_type(
+    def create_flavor(
         self,
-        component_type: StackComponentType,
-    ) -> List[FlavorModel]:
-        """List all stack component flavors by type.
-
-        Args:
-            component_type: The stack component for which to get flavors.
-
-        Returns:
-            List of stack component flavors.
-        """
-        return self._list_stack_component_flavors_by_type(component_type)
+        user_id: UUID,
+        project_id: UUID,
+        flavor: FlavorModel,
+    ) -> FlavorModel:
+        """ """
+        analytics_metadata = {
+            "type": FlavorModel.type.value,
+        }
+        self._track_event(
+            AnalyticsEvent.CREATED_FLAVOR,
+            metadata=analytics_metadata,
+        )
+        return self._create_flavor(
+            user_id=user_id, project_id=project_id, flavor=flavor
+        )
 
     @abstractmethod
-    def _list_stack_component_flavors_by_type(
-        self, component_type: StackComponentType
+    def _create_flavor(
+        self,
+        user_id: UUID,
+        project_id: UUID,
+        flavor: FlavorModel,
+    ) -> FlavorModel:
+        """ """
+
+    def list_flavors(
+        self,
+        project_id: UUID,
+        type: Optional[StackComponentType] = None,
+        user_id: Optional[UUID] = None,
+        name: Optional[str] = None,
     ) -> List[FlavorModel]:
-        """List all stack component flavors by type.
+        return self._list_flavors(
+            project_id=project_id,
+            type=type,
+            user_id=user_id,
+            name=name,
+        )
 
-        Args:
-            component_type: The stack component for which to get flavors.
+    @abstractmethod
+    def _list_flavors(
+        self,
+        project_id: UUID,
+        type: Optional[StackComponentType] = None,
+        user_id: Optional[UUID] = None,
+        name: Optional[str] = None,
+    ) -> List[FlavorModel]:
+        """"""
 
-        Returns:
-            List of stack component flavors.
-        """
+    def get_flavor(self, flavor_id: UUID) -> FlavorModel:
+        return self._get_flavor(flavor_id)
+
+    @abstractmethod
+    def _get_flavor(self, flavor_id: UUID) -> FlavorModel:
+        """"""
+
+    def update_flavor(self, flavor: FlavorModel) -> None:
+        self._update_flavor(flavor)
+
+    @abstractmethod
+    def _update_flavor(self, flavor: FlavorModel) -> None:
+        """"""
+
+    def delete_flavor(self, flavor_id: UUID) -> None:
+        self._delete_flavor(flavor_id)
+
+    def _delete_flavor(self, flavor_id: UUID) -> None:
+        """"""
 
     #  .------.
     # | USERS |
@@ -2390,98 +2436,6 @@ class BaseZenStore(BaseModel):
     # # Public facing APIs
     # # TODO [ENG-894]: Refactor these with the proxy pattern, as noted in
     # #  the [review comment](https://github.com/zenml-io/zenml/pull/589#discussion_r875003334)
-
-    def create_flavor(
-        self,
-        source: str,
-        name: str,
-        stack_component_type: StackComponentType,
-    ) -> FlavorModel:
-        """Creates a new flavor.
-
-        Args:
-            source: the source path to the implemented flavor.
-            name: the name of the flavor.
-            stack_component_type: the corresponding StackComponentType.
-
-        Returns:
-            The newly created flavor.
-        """
-        analytics_metadata = {
-            "type": stack_component_type.value,
-        }
-        self._track_event(
-            AnalyticsEvent.CREATED_FLAVOR,
-            metadata=analytics_metadata,
-        )
-        return self._create_flavor(source, name, stack_component_type)
-
-    # LEGACY CODE FROM THE PREVIOUS VERSION OF BASEZENSTORE
-
-    # Stack component flavors
-    @property
-    @abstractmethod
-    def flavors(self) -> List[FlavorModel]:
-        """All registered flavors.
-
-        Returns:
-            A list of all registered flavors.
-        """
-
-    @abstractmethod
-    def _create_flavor(
-        self,
-        source: str,
-        name: str,
-        stack_component_type: StackComponentType,
-    ) -> FlavorModel:
-        """Creates a new flavor.
-
-        Args:
-            source: the source path to the implemented flavor.
-            name: the name of the flavor.
-            stack_component_type: the corresponding StackComponentType.
-
-        Returns:
-            The newly created flavor.
-
-        Raises:
-            EntityExistsError: If a flavor with the given name and type
-                already exists.
-        """
-
-    @abstractmethod
-    def get_flavors_by_type(
-        self, component_type: StackComponentType
-    ) -> List[FlavorModel]:
-        """Fetch all flavor defined for a specific stack component type.
-
-        Args:
-            component_type: The type of the stack component.
-
-        Returns:
-            List of all the flavors for the given stack component type.
-        """
-
-    @abstractmethod
-    def get_flavor_by_name_and_type(
-        self,
-        flavor_name: str,
-        component_type: StackComponentType,
-    ) -> FlavorModel:
-        """Fetch a flavor by a given name and type.
-
-        Args:
-            flavor_name: The name of the flavor.
-            component_type: Optional, the type of the component.
-
-        Returns:
-            Flavor instance if it exists
-
-        Raises:
-            KeyError: If no flavor exists with the given name and type
-                or there are more than one instances
-        """
 
     # Common code (internal implementations, private):
 
