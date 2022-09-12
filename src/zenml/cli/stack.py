@@ -22,15 +22,12 @@ import click
 import zenml
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.stack_components import (
-    _component_display_name,
-    _register_stack_component,
-)
+from zenml.cli.stack_components import _component_display_name
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import ProvisioningError
-from zenml.models import StackModel
+from zenml.models import ComponentModel, StackModel
 from zenml.repository import Repository
 from zenml.secret import ArbitrarySecretSchema
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
@@ -1081,11 +1078,14 @@ def _import_stack_component(
             type=str,
         )
 
-    _register_stack_component(
-        component_type=component_type,
-        component_name=component_name,
-        component_flavor=component_flavor,
-        **component_config,
+    repo = Repository()
+    repo.register_stack_component(
+        ComponentModel(
+            type=component_type,
+            name=component_name,
+            flavor_name=component_flavor,
+            confguration=component_config,
+        )
     )
     return component_name
 

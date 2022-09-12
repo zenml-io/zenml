@@ -15,18 +15,10 @@
 
 import time
 from importlib import import_module
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    Type,
-)
+from typing import TYPE_CHECKING, Callable, List, Optional, Sequence, Type
 
 import click
+from pydantic import ValidationError
 from rich.markdown import Markdown
 
 from zenml.cli import utils as cli_utils
@@ -42,16 +34,35 @@ from zenml.exceptions import EntityExistsError
 from zenml.io import fileio
 from zenml.models import ComponentModel
 from zenml.repository import Repository
-from zenml.stack import StackComponent
+from zenml.stack.flavor import Flavor
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.source_utils import validate_flavor_source
 
 if TYPE_CHECKING:
-    pass
+    from zenml.stack import StackComponentConfig
+
+
+def _get_available_attributes(
+    component_class: Type["StackComponentConfig"],
+) -> List[str]:
+    """Gets the available non-mandatory properties for a stack component.
+
+    Args:
+        component_class: Class of the component to get the available
+            properties for.
+
+    Returns:
+        A list of the available properties for the given component class.
+    """
+    return [
+        field_name
+        for field_name, _ in component_class.__fields__.items()
+        if field_name not in MANDATORY_COMPONENT_ATTRIBUTES
+    ]
 
 
 def _get_required_attributes(
-    component_class: Type[StackComponent],
+    component_class: Type["StackComponentConfig"],
 ) -> List[str]:
     """Gets the required properties for a stack component.
 
@@ -70,27 +81,8 @@ def _get_required_attributes(
     ]
 
 
-def _get_available_attributes(
-    component_class: Type[StackComponent],
-) -> List[str]:
-    """Gets the available non-mandatory properties for a stack component.
-
-    Args:
-        component_class: Class of the component to get the available
-            properties for.
-
-    Returns:
-        A list of the available properties for the given component class.
-    """
-    return [
-        field_name
-        for field_name, _ in component_class.__fields__.items()
-        if field_name not in MANDATORY_COMPONENT_ATTRIBUTES
-    ]
-
-
 def _get_optional_attributes(
-    component_class: Type[StackComponent],
+    component_class: Type["StackComponentConfig"],
 ) -> List[str]:
     """Gets the optional properties for a stack component.
 
@@ -110,7 +102,7 @@ def _get_optional_attributes(
 
 
 def _component_display_name(
-    component_type: StackComponentType, plural: bool = False
+    component_type: "StackComponentType", plural: bool = False
 ) -> str:
     """Human-readable name for a stack component.
 
@@ -123,57 +115,6 @@ def _component_display_name(
     """
     name = component_type.plural if plural else component_type.value
     return name.replace("_", " ")
-
-
-def _get_stack_component_model(
-    component_type: StackComponentType,
-    component_name: Optional[str] = None,
-) -> Tuple[Optional[ComponentModel], bool]:
-    """Gets a stack component for a given type and name.
-
-    Args:
-        component_type: Type of the component to get.
-        component_name: Name of the component to get. If `None`, the
-            component of the active stack gets returned.
-
-    Returns:
-        A stack component of the given type and name, or None, if no stack
-        component is registered for the given name and type, and a boolean
-        indicating whether the component is active or not.
-    """
-    singular_display_name = _component_display_name(component_type)
-    plural_display_name = _component_display_name(component_type, plural=True)
-
-    repo = Repository()
-
-    active_stack = repo.active_stack
-    active_component: Optional[ComponentModel] = None
-
-    if component_name:
-        try:
-            return (
-                repo.get_stack_component_by_name_and_type(
-                    component_type, name=component_name
-                ),
-                (
-                    active_component is not None
-                    and component_name == active_component.name
-                ),
-            )
-        except KeyError:
-            cli_utils.error(
-                f"No {singular_display_name} found for name '{component_name}'."
-            )
-    elif component_type in active_stack.components.keys():
-        active_component = active_stack.components[component_type]
-        cli_utils.declare(
-            f"No component name given; using `{active_component.name}` "
-            f"from active stack."
-        )
-        return active_component, True
-
-    else:
-        cli_utils.error(f"No {singular_display_name} in active stack.")
 
 
 def generate_stack_component_get_command(
@@ -233,15 +174,23 @@ def generate_stack_component_describe_command(
         cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
-        singular_display_name = _component_display_name(component_type)
-        component_model, is_active = _get_stack_component_model(
-            component_type, component_name=name
-        )
-        if component_model is None:
+        repo = Repository()
+
+        try:
+            component = repo.get_stack_component_by_name_and_type(
+                type=component_type,
+                name=name,
+            )
+        except KeyError as e:
+            cli_utils.error(e)  # noqa
             return
 
+        is_active = component.id == repo.active_stack.components.get(
+            component_type
+        )
+
         cli_utils.print_stack_component_configuration(
-            component_model, singular_display_name, is_active
+            component=component, active_status=is_active
         )
 
     return describe_stack_component_command
@@ -266,7 +215,7 @@ def generate_stack_component_list_command(
 
         repo = Repository()
 
-        components = repo.list_stack_components(component_type=component_type)
+        components = repo.get_stack_components_by_type(type=component_type)
         display_name = _component_display_name(component_type, plural=True)
         if len(components) == 0:
             cli_utils.warning(f"No {display_name} registered.")
@@ -282,28 +231,6 @@ def generate_stack_component_list_command(
         )
 
     return list_stack_components_command
-
-
-def _register_stack_component(
-    component_type: StackComponentType,
-    component_name: str,
-    component_flavor: str,
-    **kwargs: Any,
-) -> None:
-    """Register a stack component.
-
-    Args:
-        component_type: Type of the component to register.
-        component_name: Name of the component to register.
-        component_flavor: Flavor of the component to register.
-        **kwargs: Additional arguments to pass to the component.
-    """
-    repo = Repository()
-    flavor_class = repo.get_flavor(
-        name=component_flavor, component_type=component_type
-    )
-    component = flavor_class(name=component_name, **kwargs)
-    Repository().register_stack_component(component)
 
 
 def generate_stack_component_register_command(
@@ -393,180 +320,85 @@ def generate_stack_component_register_command(
             cli_utils.error(str(e))
             return
 
-        # try:
-        # with console.status(f"Registering {display_name} '{name}'...\n"):
-        _register_stack_component(
-            component_type=component_type,
-            component_name=name,
-            component_flavor=flavor,
-            **parsed_args,
-        )
-        # except ValidationError as e:
-        #     if not interactive:
-        #         cli_utils.error(
-        #             f"When you are registering a new {display_name} with the "
-        #             f"flavor `{flavor}`, make sure that you are utilizing "
-        #             f"the right attributes. Current problems:\n\n{e}"
-        #         )
-        #         return
-        #     else:
-        #         cli_utils.warning(
-        #             f"You did not set all required fields for a "
-        #             f"{flavor} {display_name}. You'll be guided through the "
-        #             f"missing fields now. You'll be able to skip optional "
-        #             f"fields by just pressing enter. To cancel simply interrupt"
-        #             f" with CTRL+C."
-        #         )
-        #
-        #         repo = Repository()
-        #         flavor_class = repo.get_flavor(
-        #             name=flavor, component_type=component_type
-        #         )
-        #         missing_fields = {
-        #             k: v.required
-        #             for k, v in flavor_class.__fields__.items()
-        #             if v.name not in ["name", "uuid", *parsed_args.keys()]
-        #         }
-        #
-        #         completed_fields = parsed_args.copy()
-        #         for field, field_req in missing_fields.items():
-        #             if field_req:
-        #                 user_input = click.prompt(f"{field}")
-        #             else:
-        #                 prompt = f"{field} (Optional)'"
-        #                 user_input = click.prompt(prompt, default="")
-        #             if user_input:
-        #                 completed_fields[field] = user_input
-        #
-        #         try:
-        #             with console.status(
-        #                 f"Registering {display_name} '{name}'" f"...\n"
-        #             ):
-        #
-        #                 _register_stack_component(
-        #                     component_type=component_type,
-        #                     component_name=name,
-        #                     component_flavor=flavor,
-        #                     **completed_fields,
-        #                 )
-        #         except Exception as e:
-        #             cli_utils.error(str(e))
-        #
-        # except Exception as e:
-        #     cli_utils.error(str(e))
+        repo = Repository()
+
+        try:
+            flavor_model = repo.get_flavor_by_name_and_type(
+                name=flavor, component_type=component_type
+            )
+        except KeyError:
+            cli_utils.error("can not find flavor")  # TODO
+            return
+
+        try:
+            flavor = Flavor.from_model(flavor_model)
+            config_class = flavor.config_class
+        except (ModuleNotFoundError, ImportError, NotImplementedError):
+            cli_utils.error("can not import config")  # TODO
+            return
+
+        try:
+            configuration = config_class(**parsed_args).dict()
+            repo.register_stack_component(
+                ComponentModel(
+                    name=name,
+                    type=component_type,
+                    flavor_name=flavor,
+                    configuration=configuration,
+                )
+            )
+        except ValidationError as e:
+            if not interactive:
+                cli_utils.error(
+                    f"When you are registering a new {display_name} with the "
+                    f"flavor `{flavor}`, make sure that you are utilizing "
+                    f"the right attributes. Current problems:\n\n{e}"
+                )
+                return
+            else:
+                cli_utils.warning(
+                    f"You did not set all required fields for a "
+                    f"{flavor} {display_name}. You'll be guided through the "
+                    f"missing fields now. You'll be able to skip optional "
+                    f"fields by just pressing enter. To cancel simply interrupt"
+                    f" with CTRL+C."
+                )
+
+                missing_fields = {
+                    k: v.required
+                    for k, v in config_class.__fields__.items()
+                    if v.name not in ["name", "id", *parsed_args.keys()]
+                }
+
+                completed_fields = parsed_args.copy()
+                for field, field_req in missing_fields.items():
+                    if field_req:
+                        user_input = click.prompt(f"{field}")
+                    else:
+                        prompt = f"{field} (Optional)'"
+                        user_input = click.prompt(prompt, default="")
+                    if user_input:
+                        completed_fields[field] = user_input
+
+                try:
+                    with console.status(
+                        f"Registering {display_name} '{name}'" f"...\n"
+                    ):
+
+                        repo.register_stack_component(
+                            ComponentModel(
+                                name=name,
+                                type=component_type,
+                                flavor_name=flavor,
+                                configuration=completed_fields,
+                            )
+                        )
+                except Exception as e:
+                    cli_utils.error(str(e))
 
         cli_utils.declare(f"Successfully registered {display_name} `{name}`.")
 
     return register_stack_component_command
-
-
-def generate_stack_component_flavor_register_command(
-    component_type: StackComponentType,
-) -> Callable[[str], None]:
-    """Generates a `register` command for the flavors of a stack component.
-
-    Args:
-        component_type: Type of the component to generate the command for.
-
-    Returns:
-        A function that can be used as a `click` command.
-    """
-
-    @click.argument(
-        "source",
-        type=str,
-        required=True,
-    )
-    def register_stack_component_flavor_command(source: str) -> None:
-        """Adds a flavor for a stack component type.
-
-        Args:
-            source: The source file to read the flavor from.
-        """
-        cli_utils.print_active_config()
-
-        # Check whether the module exists and is the right type
-        try:
-            component_class = validate_flavor_source(
-                source=source, component_type=component_type
-            )
-        except ValueError as e:
-            error_message = str(e) + "\n\n"
-            repo_root = Repository().root
-
-            if repo_root:
-                error_message += (
-                    "Please make sure your source is either importable from an "
-                    "installed package or specified relative to your ZenML "
-                    f"repository root '{repo_root}'."
-                )
-
-            else:
-                error_message += (
-                    "Please make sure your source is either importable from an "
-                    "installed package or create a ZenML repository by running "
-                    "`zenml init` and specify the source relative to the "
-                    "repository directory. Check out "
-                    "https://docs.zenml.io/developer-guide/stacks-profiles-repositories/repository "
-                    "for more information."
-                )
-
-            cli_utils.error(error_message)
-
-        # Register the flavor in the given source
-        try:
-            Repository().zen_store.create_flavor(
-                name=component_class.FLAVOR,
-                stack_component_type=component_class.TYPE,
-                source=source,
-            )
-        except EntityExistsError as e:
-            cli_utils.error(str(e))
-        else:
-            cli_utils.declare(
-                f"Successfully registered new flavor "
-                f"'{component_class.FLAVOR}' for stack component "
-                f"'{component_class.TYPE}'."
-            )
-
-    return register_stack_component_flavor_command
-
-
-def generate_stack_component_flavor_list_command(
-    component_type: StackComponentType,
-) -> Callable[[], None]:
-    """Generates a `list` command for the flavors of a stack component.
-
-    Args:
-        component_type: Type of the component to generate the command for.
-
-    Returns:
-        A function that can be used as a `click` command.
-    """
-
-    def list_stack_component_flavor_command() -> None:
-        """Adds a flavor for a stack component type."""
-        cli_utils.print_active_config()
-
-        from zenml.stack.flavor_registry import flavor_registry
-
-        # List all the flavors of the component type
-        zenml_flavors = [
-            f
-            for f in flavor_registry.get_flavors_by_type(
-                component_type=component_type
-            ).values()
-        ]
-
-        custom_flavors = Repository().zen_store.get_flavors_by_type(
-            component_type=component_type
-        )
-
-        cli_utils.print_flavor_list(
-            zenml_flavors + custom_flavors, component_type=component_type
-        )
-
-    return list_stack_component_flavor_command
 
 
 def generate_stack_component_update_command(
@@ -605,14 +437,6 @@ def generate_stack_component_update_command(
             kwargs.append(name)
             name = None
 
-        component_model, _ = _get_stack_component_model(
-            component_type, component_name=name
-        )
-
-        if component_model is None:
-            return
-        name = component_model.name
-        # with console.status(f"Updating {display_name} '{name}'...\n"):
         repo = Repository()
 
         try:
@@ -622,33 +446,54 @@ def generate_stack_component_update_command(
         except AssertionError as e:
             cli_utils.error(str(e))
             return
+
+        # Get the named component model
+        try:
+            component = repo.get_stack_component_by_name_and_type(
+                type=component_type, name=name
+            )
+        except KeyError:
+            cli_utils.error("Can not find model")
+            return
+
         for prop in MANDATORY_COMPONENT_ATTRIBUTES:
             if prop in parsed_args:
                 cli_utils.error(
                     f"Cannot update mandatory property '{prop}' of "
-                    f"'{name}' {component_model.type}. "
+                    f"'{name}' {component.type}. "
                 )
 
-        component_class = repo.get_flavor(
-            name=component_model.flavor_name,
-            component_type=component_type,
-        )
+        try:
+            flavor_model = repo.get_flavor_by_name_and_type(
+                name=component.flavor_name, component_type=component_type
+            )
+        except KeyError:
+            cli_utils.error("can not find flavor")  # TODO
+            return
 
-        available_properties = _get_available_attributes(component_class)
+        try:
+            flavor = Flavor.from_model(flavor_model)
+            config_class = flavor.config_class
+        except (ModuleNotFoundError, ImportError, NotImplementedError):
+            cli_utils.error("can not import config")  # TODO
+            return
+
+        available_properties = _get_available_attributes(config_class)
+
         for prop in parsed_args.keys():
             if (prop not in available_properties) and (
                 len(available_properties) > 0
             ):
                 cli_utils.error(
                     f"You cannot update the {display_name} "
-                    f"`{component_model.name}` with property "
+                    f"`{component.name}` with property "
                     f"'{prop}'. You can only update the following "
                     f"properties: {available_properties}."
                 )
             elif prop not in available_properties:
                 cli_utils.error(
                     f"You cannot update the {display_name} "
-                    f"`{component_model.name}` with property "
+                    f"`{component.name}` with property "
                     f"'{prop}' as this {display_name} has no optional "
                     f"properties that can be configured."
                 )
@@ -658,13 +503,18 @@ def generate_stack_component_update_command(
         # Initialize a new component object to make sure pydantic validation
         # is used
         new_attributes = {
-            **component_model.to_component().dict(),
+            **component.configuration,
             **parsed_args,
         }
-        updated_component = component_class(**new_attributes)
+        updated_configuration = config_class(**new_attributes)
 
         repo.update_stack_component(
-            component=ComponentModel.from_component(updated_component)
+            component=ComponentModel(
+                name=name,
+                type=component_type,
+                flavor_name=flavor,
+                configuration=updated_configuration,
+            )
         )
         cli_utils.declare(f"Successfully updated {display_name} `{name}`.")
 
@@ -701,12 +551,32 @@ def generate_stack_component_remove_attribute_command(
         """
         cli_utils.print_active_config()
         with console.status(f"Updating {display_name} '{name}'...\n"):
+
             repo = Repository()
-            current_component = repo.get_stack_component_by_name_and_type(
-                type=component_type, name=name
-            )
-            if current_component is None:
+
+            try:
+                current_component = repo.get_stack_component_by_name_and_type(
+                    type=component_type, name=name
+                )
+            except KeyError:
                 cli_utils.error(f"No {display_name} found for name '{name}'.")
+                return
+
+            try:
+                flavor_model = repo.get_flavor_by_name_and_type(
+                    name=current_component.flavor_name,
+                    component_type=component_type,
+                )
+            except KeyError:
+                cli_utils.error("can not find flavor")  # TODO
+                return
+
+            try:
+                flavor = Flavor.from_model(flavor_model)
+                config_class = flavor.config_class
+            except (ModuleNotFoundError, ImportError, NotImplementedError):
+                cli_utils.error("can not import config")  # TODO
+                return
 
             try:
                 parsed_args = cli_utils.parse_unknown_component_attributes(args)
@@ -715,10 +585,10 @@ def generate_stack_component_remove_attribute_command(
                 return
 
             optional_attributes = _get_optional_attributes(
-                current_component.__class__
+                config_class.__class__
             )
             required_attributes = _get_required_attributes(
-                current_component.__class__
+                config_class.__class__
             )
 
             for arg in parsed_args:
@@ -745,11 +615,11 @@ def generate_stack_component_remove_attribute_command(
                 **{arg: None for arg in parsed_args},
             }
 
-            updated_component = current_component.__class__(**new_attributes)
-
-            repo.update_stack_component(
-                name, updated_component.TYPE, updated_component
+            updated_component = current_component.copy(
+                update={"configuration": new_attributes}
             )
+            repo.update_stack_component(updated_component)
+
             cli_utils.declare(f"Successfully updated {display_name} `{name}`.")
 
     return remove_attribute_stack_component_command
@@ -796,7 +666,9 @@ def generate_stack_component_rename_command(
 
             registered_components = {
                 component.name
-                for component in repo.list_stack_components(component_type)
+                for component in repo.get_stack_components_by_type(
+                    component_type
+                )
             }
             if new_name in registered_components:
                 cli_utils.error(
@@ -842,11 +714,19 @@ def generate_stack_component_delete_command(
         """
         cli_utils.print_active_config()
 
-        with console.status(f"Deleting {display_name} '{name}'...\n"):
-            Repository().deregister_stack_component(
-                component_type=component_type,
+        repo = Repository()
+
+        try:
+            component = repo.get_stack_component_by_name_and_type(
+                type=component_type,
                 name=name,
             )
+        except KeyError as e:
+            cli_utils.error(e)  # noqa
+            return
+
+        with console.status(f"Deleting {display_name} '{name}'...\n"):
+            Repository().deregister_stack_component(component)
             cli_utils.declare(f"Deleted {display_name}: {name}")
 
     return delete_stack_component_command
@@ -893,11 +773,12 @@ def generate_stack_component_copy_command(
                     f"{display_name.capitalize()} `{source_component}` cannot "
                     "be copied as it does not exist."
                 )
+                return
 
             existing_component_names = {
                 model.name
-                for model in repo.list_stack_components(
-                    component_type=component_type
+                for model in repo.get_stack_components_by_type(
+                    type=component_type
                 )
             }
             if target_component in existing_component_names:
@@ -906,13 +787,14 @@ def generate_stack_component_copy_command(
                     f"'{target_component}' already exists."
                 )
 
-            # Copy the existing component but use the new name and generate a
-            # new UUID
-            component_config = component.dict(exclude={"uuid"})
-            component_config["name"] = target_component
-            copied_component = component.__class__.parse_obj(component_config)
-
-            repo.register_stack_component(copied_component)
+            repo.register_stack_component(
+                ComponentModel(
+                    name=target_component,
+                    type=component_type,
+                    flavor_name=component.flavor_name,
+                    configuration=component.configuration,
+                )
+            )
 
     return copy_stack_component_command
 
@@ -939,12 +821,19 @@ def generate_stack_component_up_command(
         cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
-        component_model, _ = _get_stack_component_model(
-            component_type, component_name=name
-        )
-        if component_model is None:
+        repo = Repository()
+
+        try:
+            component_model = repo.get_stack_component_by_name_and_type(
+                type=component_type, name=name
+            )
+        except KeyError as e:
+            cli_utils.error(e)  # noqa
             return
-        component = component_model.to_component()
+
+        from zenml.stack import StackComponent
+
+        component = StackComponent.from_model(component_model=component_model)
 
         display_name = _component_display_name(component_type)
 
@@ -1028,13 +917,19 @@ def generate_stack_component_down_command(
         cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
-        component_model, _ = _get_stack_component_model(
-            component_type, component_name=name
-        )
-        if component_model is None:
+        repo = Repository()
+        try:
+            component_model = repo.get_stack_component_by_name_and_type(
+                type=component_type, name=name
+            )
+        except KeyError as e:
+            cli_utils.error(e)  # noqa
             return
 
-        component = component_model.to_component()
+        from zenml.stack import StackComponent
+
+        component = StackComponent.from_model(component_model=component_model)
+
         display_name = _component_display_name(component_type)
 
         if not force:
@@ -1105,13 +1000,19 @@ def generate_stack_component_logs_command(
         cli_utils.print_active_config()
         cli_utils.print_active_stack()
 
-        component_model, _ = _get_stack_component_model(
-            component_type, component_name=name
-        )
-        if component_model is None:
+        repo = Repository()
+        try:
+            component_model = repo.get_stack_component_by_name_and_type(
+                type=component_type, name=name
+            )
+        except KeyError as e:
+            cli_utils.error(e)  # noqa
             return
 
-        component = component_model.to_component()
+        from zenml.stack import StackComponent
+
+        component = StackComponent.from_model(component_model=component_model)
+
         display_name = _component_display_name(component_type)
         log_file = component.log_file
 
@@ -1174,6 +1075,197 @@ def generate_stack_component_explain_command(
     return explain_stack_components_command
 
 
+def generate_stack_component_flavor_list_command(
+    component_type: StackComponentType,
+) -> Callable[[], None]:
+    """Generates a `list` command for the flavors of a stack component.
+
+    Args:
+        component_type: Type of the component to generate the command for.
+
+    Returns:
+        A function that can be used as a `click` command.
+    """
+
+    def list_stack_component_flavor_command() -> None:
+        """Adds a flavor for a stack component type."""
+        cli_utils.print_active_config()
+
+        cli_utils.print_flavor_list(
+            flavors=Repository().get_flavors(), component_type=component_type
+        )
+
+    return list_stack_component_flavor_command
+
+
+def generate_stack_component_flavor_register_command(
+    component_type: StackComponentType,
+) -> Callable[[str], None]:
+    """Generates a `register` command for the flavors of a stack component.
+
+    Args:
+        component_type: Type of the component to generate the command for.
+
+    Returns:
+        A function that can be used as a `click` command.
+    """
+
+    @click.argument(
+        "source",
+        type=str,
+        required=True,
+    )
+    def register_stack_component_flavor_command(source: str) -> None:
+        """Adds a flavor for a stack component type.
+
+        Args:
+            source: The source file to read the flavor from.
+        """
+        cli_utils.print_active_config()
+
+        # Check whether the module exists and is the right type
+        try:
+            flavor_class = validate_flavor_source(
+                source=source, component_type=component_type
+            )
+        except ValueError as e:
+            error_message = str(e) + "\n\n"
+            repo_root = Repository().root
+
+            if repo_root:
+                error_message += (
+                    "Please make sure your source is either importable from an "
+                    "installed package or specified relative to your ZenML "
+                    f"repository root '{repo_root}'."
+                )
+
+            else:
+                error_message += (
+                    "Please make sure your source is either importable from an "
+                    "installed package or create a ZenML repository by running "
+                    "`zenml init` and specify the source relative to the "
+                    "repository directory. Check out "
+                    "https://docs.zenml.io/developer-guide/stacks-profiles-repositories/repository "
+                    "for more information."
+                )
+
+            cli_utils.error(error_message)
+            return
+
+        # Register the flavor in the given source
+        try:
+            flavor_model = flavor_class().to_model()
+
+            Repository().create_flavor(flavor_model)
+        except EntityExistsError as e:
+            cli_utils.error(str(e))
+        else:
+            cli_utils.declare(
+                f"Successfully registered new flavor '{flavor_class.name}' "
+                f"for stack component '{flavor_class.type}'."
+            )
+
+    return register_stack_component_flavor_command
+
+
+def generate_stack_component_flavor_describe_command(
+    component_type: StackComponentType,
+) -> Callable[[str], None]:
+    """ """
+
+    @click.argument(
+        "name",
+        type=str,
+        required=True,
+    )
+    def describe_stack_component_flavor_command(name: str) -> None:
+        """ """
+        cli_utils.print_active_config()
+
+        repo = Repository()
+
+        try:
+            flavor_model = repo.get_flavor_by_name_and_type(
+                name=name, component_type=component_type
+            )
+        except KeyError as e:
+            cli_utils.error(e)  # noqa
+            return
+
+        try:
+            from zenml.stack import Flavor
+
+            flavor = Flavor.from_model(flavor_model=flavor_model)
+            print(flavor.config_class.schema())
+            # TODO: Implement a utility function here to display the schema
+        except (ModuleNotFoundError, ImportError, NotImplementedError):
+            cli_utils.error("")
+
+    return describe_stack_component_flavor_command
+
+
+def generate_stack_component_flavor_update_command(
+    component_type: StackComponentType,
+) -> Callable[[str, str], None]:
+    """ """
+
+    @click.argument(
+        "name",
+        type=str,
+        required=True,
+    )
+    @click.argument(
+        "source",
+        type=str,
+        required=True,
+    )
+    def update_stack_component_flavor_command(name: str, source: str) -> None:
+        """ """
+        cli_utils.print_active_config()
+
+        repo = Repository()
+        try:
+            flavor_model = repo.get_flavor_by_name_and_type(
+                name=name, component_type=component_type
+            )
+        except KeyError as e:
+            cli_utils.error(e)  # noqa
+            return
+
+        updated_model = flavor_model.copy(update={"source": source})
+        repo.update_flavor(updated_model)
+
+    return update_stack_component_flavor_command
+
+
+def generate_stack_component_flavor_delete_command(
+    component_type: StackComponentType,
+) -> Callable[[str], None]:
+    """ """
+
+    @click.argument(
+        "name",
+        type=str,
+        required=True,
+    )
+    def delete_stack_component_flavor_command(name: str) -> None:
+        """ """
+        cli_utils.print_active_config()
+
+        repo = Repository()
+        try:
+            flavor_model = repo.get_flavor_by_name_and_type(
+                name=name, component_type=component_type
+            )
+        except KeyError as e:
+            cli_utils.error(e)  # noqa
+            return
+
+        repo.delete_flavor(flavor_model)
+
+    return delete_stack_component_flavor_command
+
+
 def register_single_stack_component_cli_commands(
     component_type: StackComponentType, parent_group: click.Group
 ) -> None:
@@ -1223,31 +1315,6 @@ def register_single_stack_component_cli_commands(
         context_settings=context_settings,
         help=f"Register a new {singular_display_name}.",
     )(register_command)
-
-    # zenml stack-component flavor
-    @command_group.group(
-        "flavor", help=f"Commands to interact with {plural_display_name}."
-    )
-    def flavor_group() -> None:
-        """Group commands to handle flavors for a stack component type."""
-
-    # zenml stack-component flavor register
-    register_flavor_command = generate_stack_component_flavor_register_command(
-        component_type=component_type
-    )
-    flavor_group.command(
-        "register",
-        help=f"Identify a new flavor for {plural_display_name}.",
-    )(register_flavor_command)
-
-    # zenml stack-component flavor list
-    list_flavor_command = generate_stack_component_flavor_list_command(
-        component_type=component_type
-    )
-    flavor_group.command(
-        "list",
-        help=f"List all registered flavors for {plural_display_name}.",
-    )(list_flavor_command)
 
     # zenml stack-component update
     update_command = generate_stack_component_update_command(component_type)
@@ -1314,6 +1381,58 @@ def register_single_stack_component_cli_commands(
     command_group.command(
         "explain", help=f"Explaining the {plural_display_name}."
     )(explain_command)
+
+    # zenml stack-component flavor
+    @command_group.group(
+        "flavor", help=f"Commands to interact with {plural_display_name}."
+    )
+    def flavor_group() -> None:
+        """Group commands to handle flavors for a stack component type."""
+
+    # zenml stack-component flavor register
+    register_flavor_command = generate_stack_component_flavor_register_command(
+        component_type=component_type
+    )
+    flavor_group.command(
+        "register",
+        help=f"Identify a new flavor for {plural_display_name}.",
+    )(register_flavor_command)
+
+    # zenml stack-component flavor list
+    list_flavor_command = generate_stack_component_flavor_list_command(
+        component_type=component_type
+    )
+    flavor_group.command(
+        "list",
+        help=f"List all registered flavors for {plural_display_name}.",
+    )(list_flavor_command)
+
+    # zenml stack-component flavor describe
+    describe_flavor_command = generate_stack_component_flavor_describe_command(
+        component_type=component_type
+    )
+    flavor_group.command(
+        "describe",
+        help=f"Describe a {singular_display_name} flavor.",
+    )(describe_flavor_command)
+
+    # zenml stack-component flavor update
+    update_flavor_command = generate_stack_component_flavor_update_command(
+        component_type=component_type
+    )
+    flavor_group.command(
+        "update",
+        help=f"Update a {singular_display_name} flavor.",
+    )(update_flavor_command)
+
+    # zenml stack-component flavor delete
+    delete_flavor_command = generate_stack_component_flavor_delete_command(
+        component_type=component_type
+    )
+    flavor_group.command(
+        "delete",
+        help=f"Delete a {plural_display_name} flavor.",
+    )(delete_flavor_command)
 
 
 def register_all_stack_component_cli_commands() -> None:

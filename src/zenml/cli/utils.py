@@ -13,9 +13,7 @@
 #  permissions and limitations under the License.
 """Utility functions for the CLI."""
 
-import base64
 import datetime
-import json
 import os
 import subprocess
 import sys
@@ -35,7 +33,6 @@ from typing import (
 )
 
 import click
-import yaml
 from dateutil import tz
 from pydantic import BaseModel
 from rich import box, table
@@ -279,7 +276,7 @@ def print_stack_component_list(
             "UUID": component.id,
             **{
                 key.upper(): str(value)
-                for key, value in json.loads(component.configuration).items()
+                for key, value in component.configuration.items()
             },
         }
         configurations.append(component_config)
@@ -359,7 +356,8 @@ def print_flavor_list(
                 "FLAVOR": f.name,
                 "INTEGRATION": f.integration,
                 "READY-TO-USE": ":white_check_mark:" if reachable else "",
-                "SOURCE": f.source,
+                "IMPLEMENTATION": f.implementation_source,
+                "CONFIG": f.config_source,
             }
         )
 
@@ -377,7 +375,7 @@ def print_flavor_list(
 
 
 def print_stack_component_configuration(
-    component: "ComponentModel", display_name: str, active_status: bool
+    component: "ComponentModel", active_status: bool
 ) -> None:
     """Prints the configuration options of a stack component.
 
