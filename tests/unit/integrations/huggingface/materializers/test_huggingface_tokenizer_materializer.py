@@ -19,29 +19,18 @@ from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 from zenml.integrations.huggingface.materializers.huggingface_tokenizer_materializer import (
     HFTokenizerMaterializer,
 )
-from zenml.pipelines import pipeline
-from zenml.steps import step
+
+from ....test_general import _test_materializer
 
 
 def test_huggingface_tokenizer_materializer(clean_repo):
     """Tests whether the steps work for the Huggingface Tokenizer materializer."""
 
-    @step
-    def read_tokenizer() -> PreTrainedTokenizerBase:
-        """Reads and materializes a Huggingface Tokenizer."""
-        return AutoTokenizer.from_pretrained("bert-base-cased")
-
-    @pipeline
-    def test_pipeline(read_tokenizer) -> None:
-        """Tests the Huggingface Tokenizer materializer."""
-        read_tokenizer()
-
     with does_not_raise():
-        test_pipeline(
-            read_tokenizer=read_tokenizer().with_return_materializers(
-                HFTokenizerMaterializer
-            )
-        ).run()
+        _test_materializer(
+            step_output=AutoTokenizer.from_pretrained("bert-base-cased"),
+            materializer=HFTokenizerMaterializer,
+        )
 
     last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
     tokenizer = last_run.steps[-1].output.read()

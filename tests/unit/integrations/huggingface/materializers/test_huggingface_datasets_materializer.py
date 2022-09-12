@@ -19,30 +19,20 @@ from datasets import Dataset
 from zenml.integrations.huggingface.materializers.huggingface_datasets_materializer import (
     HFDatasetMaterializer,
 )
-from zenml.pipelines import pipeline
-from zenml.steps import step
+
+from ....test_general import _test_materializer
 
 
 def test_huggingface_datasets_materializer(clean_repo):
-    """Tests whether the steps work for the Huggingface Datasets materializer."""
-
-    @step
-    def read_dataset() -> Dataset:
-        """Reads and materializes a Huggingface Dataset."""
-        sample_dataframe = pd.DataFrame([1, 2, 3])
-        return Dataset.from_pandas(sample_dataframe)
-
-    @pipeline
-    def test_pipeline(read_dataset) -> None:
-        """Tests the Huggingface Datasets materializer."""
-        read_dataset()
-
+    """Tests whether the steps work for the Huggingface Datasets
+    materializer."""
+    sample_dataframe = pd.DataFrame([1, 2, 3])
+    dataset = Dataset.from_pandas(sample_dataframe)
     with does_not_raise():
-        test_pipeline(
-            read_dataset=read_dataset().with_return_materializers(
-                HFDatasetMaterializer
-            )
-        ).run()
+        _test_materializer(
+            step_output=dataset,
+            materializer=HFDatasetMaterializer,
+        )
 
     last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
     dataset = last_run.steps[-1].output.read()

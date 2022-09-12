@@ -18,31 +18,18 @@ from transformers import PreTrainedModel, RobertaConfig, RobertaModel
 from zenml.integrations.huggingface.materializers.huggingface_pt_model_materializer import (
     HFPTModelMaterializer,
 )
-from zenml.pipelines import pipeline
-from zenml.steps import step
+
+from ....test_general import _test_materializer
 
 
 def test_huggingface_pretrained_model_materializer(clean_repo):
-    """Tests whether the steps work for the Huggingface Pretrained Model materializer."""
-
-    @step
-    def read_model() -> PreTrainedModel:
-        """Reads and materializes a Huggingface Pretrained Model."""
-
-        config = RobertaConfig()
-        return RobertaModel(config)
-
-    @pipeline
-    def test_pipeline(read_model) -> None:
-        """Tests the Huggingface Pretrained Model materializer."""
-        read_model()
-
+    """Tests whether the steps work for the Huggingface Pretrained Model
+    materializer."""
     with does_not_raise():
-        test_pipeline(
-            read_model=read_model().with_return_materializers(
-                HFPTModelMaterializer
-            )
-        ).run()
+        _test_materializer(
+            step_output=RobertaModel(RobertaConfig()),
+            materializer=HFPTModelMaterializer,
+        )
 
     last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
     model = last_run.steps[-1].output.read()

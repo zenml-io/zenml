@@ -17,26 +17,20 @@ from contextlib import ExitStack as does_not_raise
 from evidently.model_profile import Profile
 from evidently.model_profile.sections import DataDriftProfileSection
 
-from zenml.pipelines import pipeline
-from zenml.steps import step
+from zenml.integrations.evidently.materializers.evidently_profile_materializer import (
+    EvidentlyProfileMaterializer,
+)
 
-
-@step
-def materialize_profile() -> Profile:
-    """Materialize the profile."""
-    return Profile(sections=[DataDriftProfileSection()])
-
-
-@pipeline
-def evidently_pipeline(materializer) -> None:
-    """Test pipeline for the Evidently profile materializer."""
-    materializer()
+from ....test_general import _test_materializer
 
 
 def test_evidently_profile_materializer(clean_repo):
     """Test the Evidently profile materializer."""
     with does_not_raise():
-        evidently_pipeline(materialize_profile()).run()
+        _test_materializer(
+            step_output=Profile(sections=[DataDriftProfileSection()]),
+            materializer=EvidentlyProfileMaterializer,
+        )
 
     last_run = clean_repo.get_pipeline("evidently_pipeline").runs[-1]
     evidently_profile = last_run.steps[-1].output.read()

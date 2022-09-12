@@ -18,31 +18,19 @@ from transformers import TFAutoModelForSequenceClassification, TFPreTrainedModel
 from zenml.integrations.huggingface.materializers.huggingface_tf_model_materializer import (
     HFTFModelMaterializer,
 )
-from zenml.pipelines import pipeline
-from zenml.steps import step
+
+from ....test_general import _test_materializer
 
 
 def test_huggingface_tf_pretrained_model_materializer(clean_repo):
     """Tests whether the steps work for the Huggingface Tensorflow Pretrained Model materializer."""
-
-    @step
-    def read_model() -> TFPreTrainedModel:
-        """Reads and materializes a Huggingface Tensorflow Pretrained Model."""
-        return TFAutoModelForSequenceClassification.from_pretrained(
-            "bert-base-cased", num_labels=5
-        )
-
-    @pipeline
-    def test_pipeline(read_model) -> None:
-        """Tests the Huggingface Tensorflow Pretrained Model materializer."""
-        read_model()
-
     with does_not_raise():
-        test_pipeline(
-            read_model=read_model().with_return_materializers(
-                HFTFModelMaterializer
-            )
-        ).run()
+        _test_materializer(
+            step_output=TFAutoModelForSequenceClassification.from_pretrained(
+                "bert-base-cased", num_labels=5
+            ),
+            materializer=HFTFModelMaterializer,
+        )
 
     last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
     model = last_run.steps[-1].output.read()

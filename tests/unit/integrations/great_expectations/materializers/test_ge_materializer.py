@@ -18,29 +18,17 @@ from great_expectations.core import ExpectationSuite
 from zenml.integrations.great_expectations.materializers.ge_materializer import (
     GreatExpectationsMaterializer,
 )
-from zenml.pipelines import pipeline
-from zenml.steps import step
+
+from ....test_general import _test_materializer
 
 
 def test_great_expectations_materializer(clean_repo):
     """Tests whether the steps work for the Great Expectations materializer."""
-
-    @step
-    def read_suite() -> ExpectationSuite:
-        """Reads and materializes a Sklearn model."""
-        return ExpectationSuite("arias_suite")
-
-    @pipeline
-    def test_pipeline(read_suite) -> None:
-        """Tests the Great Expectations materializer."""
-        read_suite()
-
     with does_not_raise():
-        test_pipeline(
-            read_suite=read_suite().with_return_materializers(
-                GreatExpectationsMaterializer
-            )
-        ).run()
+        _test_materializer(
+            step_output=ExpectationSuite("arias_suite"),
+            materializer=GreatExpectationsMaterializer,
+        )
 
     last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
     expectation_suite = last_run.steps[-1].output.read()
