@@ -14,12 +14,15 @@
 """SQL Model Implementations for Stacks."""
 
 from datetime import datetime
-from typing import List
+from typing import TYPE_CHECKING, List
 from uuid import UUID, uuid4
 
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.models import StackModel
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 
 
 class StackCompositionSchema(SQLModel, table=True):

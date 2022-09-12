@@ -14,13 +14,13 @@
 """Project model implementation."""
 
 from datetime import datetime
-from typing import Optional
+from typing import ClassVar, List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel
+from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 
-class ProjectModel(BaseModel):
+class ProjectModel(AnalyticsTrackedModelMixin):
     """Pydantic object representing a project.
 
     Attributes:
@@ -29,6 +29,10 @@ class ProjectModel(BaseModel):
         name: Name of the project.
         description: Optional project description.
     """
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+        "id",
+    ]
 
     id: Optional[UUID] = None
     name: str

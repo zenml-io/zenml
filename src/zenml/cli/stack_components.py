@@ -550,6 +550,7 @@ def generate_stack_component_flavor_list_command(
 
         from zenml.stack.flavor_registry import flavor_registry
 
+        # TODO [Baris]: shouldn't this logic be a Repository() method ?
         # List all the flavors of the component type
         zenml_flavors = [
             f
@@ -558,8 +559,9 @@ def generate_stack_component_flavor_list_command(
             ).values()
         ]
 
-        custom_flavors = Repository().zen_store.get_flavors_by_type(
-            component_type=component_type
+        custom_flavors = Repository().zen_store.list_flavors(
+            project_name_or_id=Repository().active_project_name,
+            component_type=component_type,
         )
 
         cli_utils.print_flavor_list(

@@ -15,13 +15,14 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
+from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 if TYPE_CHECKING:
     from zenml.stack import StackComponent
@@ -29,7 +30,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class ComponentModel(BaseModel):
+class ComponentModel(AnalyticsTrackedModelMixin):
     """Network Serializable Model describing the StackComponent.
 
     name, type, flavor and config are specified explicitly by the user
@@ -39,6 +40,15 @@ class ComponentModel(BaseModel):
 
     id is set when the database entry is created
     """
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+        "id",
+        "type",
+        "flavor_name",
+        "project_id",
+        "owner",
+        "is_shared",
+    ]
 
     id: Optional[UUID] = Field(
         default=None,
@@ -60,13 +70,13 @@ class ComponentModel(BaseModel):
     )
     owner: Optional[UUID] = Field(
         default=None,
-        title="The id of the user, that owns this component.",
+        title="The id of the user that owns this component.",
     )
     is_shared: bool = Field(
         default=False,
         title="Flag describing if this component is shared.",
     )
-    project: Optional[str] = Field(
+    project_id: Optional[UUID] = Field(
         default=None, title="The project that contains this component."
     )
     created_at: Optional[datetime] = Field(
@@ -80,10 +90,10 @@ class ComponentModel(BaseModel):
                 "id": "5e4286b5-51f4-4286-b1f8-b0143e9a27ce",
                 "name": "vertex_prd_orchestrator",
                 "type": "orchestrator",
-                "flavor": "vertex",
+                "flavor_name": "vertex",
                 "configuration": {"location": "europe-west3"},
                 "owner": "8d0acbc3-c51a-452c-bda3-e1b5469f79fd",
-                "created_by": "8d0acbc3-c51a-452c-bda3-e1b5469f79fd",
+                "project_id": "8d0acbc3-c51a-452c-bda3-e1b5469f79fd",
                 "created_at": "2022-08-12T07:12:44.931Z",
             }
         }

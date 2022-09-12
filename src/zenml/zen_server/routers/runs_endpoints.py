@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from typing import Dict, List, Optional
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
@@ -26,6 +27,7 @@ from zenml.constants import (
 )
 from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.models.pipeline_models import PipelineRunModel, StepRunModel
+from zenml.utils.uuid_utils import parse_optional_name_or_uuid
 from zenml.zen_server.utils import (
     authorize,
     error_detail,
@@ -47,14 +49,14 @@ router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def get_runs(
-    project_name: Optional[str] = None,
+    project_name_or_id: Optional[str] = None,
     stack_id: Optional[str] = None,
     pipeline_id: Optional[str] = None,
 ) -> List[PipelineRunModel]:
     """Get pipeline runs according to query filters.
 
     Args:
-        project_name: Name of the project for which to filter runs.
+        project_name_or_id: Name or ID of the project for which to filter runs.
         stack_id: ID of the stack for which to filter runs.
         pipeline_id: ID of the pipeline for which to filter runs.
         trigger_id: ID of the trigger for which to filter runs.
@@ -70,7 +72,7 @@ async def get_runs(
     """
     try:
         return zen_store.list_runs(
-            project_name_or_id=project_name,
+            project_name_or_id=parse_optional_name_or_uuid(project_name_or_id),
             stack_id=stack_id,
             pipeline_id=pipeline_id,
         )
@@ -103,7 +105,7 @@ async def get_run(run_id: str) -> PipelineRunModel:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.get_run(run_id)
+        return zen_store.get_run(run_id=UUID(run_id))
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
@@ -128,7 +130,7 @@ async def delete_run(run_id: str) -> None:
         422 error: when unable to validate input
     """
     try:
-        zen_store.delete_run(run_id)
+        zen_store.delete_run(run_id=UUID(run_id))
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
@@ -158,7 +160,7 @@ async def get_run_dag(run_id: str) -> str:  # TODO: use file type / image type
     """
     try:
         image_object_path = zen_store.get_run_dag(
-            run_id
+            run_id=UUID(run_id)
         )  # TODO: ZenStore should return a path
         return FileResponse(image_object_path)
     except NotAuthorizedError as error:
@@ -189,7 +191,7 @@ async def get_run_steps(run_id: str) -> List[StepRunModel]:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.list_run_steps(run_id)
+        return zen_store.list_run_steps(UUID(run_id))
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
@@ -219,7 +221,7 @@ async def get_run_runtime_configuration(run_id: str) -> Dict:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.get_run_runtime_configuration(run_id)
+        return zen_store.get_run_runtime_configuration(run_id=UUID(run_id))
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
@@ -255,7 +257,7 @@ async def get_run_component_side_effects(
     """
     try:
         return zen_store.get_run_component_side_effects(
-            run_id=run_id,
+            run_id=UUID(run_id),
             component_id=component_id,
             component_type=component_type,
         )

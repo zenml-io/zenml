@@ -754,9 +754,6 @@ def list_stacks() -> None:
 
     repo = Repository()
 
-    if len(repo.stacks) == 0:
-        cli_utils.error("No stacks registered!")
-
     stack_dicts = []
     for stack_name, stack_configuration in repo.stack_configurations.items():
         is_active = stack_name == repo.active_stack_model.name
@@ -901,7 +898,9 @@ def get_active_stack() -> None:
     """Gets the active stack."""
     cli_utils.print_active_config()
 
-    scope = " repository" if Repository().uses_local_active_stack else " global"
+    scope = (
+        " repository" if Repository().uses_local_configuration else " global"
+    )
 
     with console.status("Getting the active stack..."):
         repo = Repository()

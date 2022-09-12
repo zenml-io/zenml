@@ -14,16 +14,17 @@
 """Stack wrapper implementation."""
 import json
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from zenml.enums import StackComponentType
 from zenml.models.component_models import ComponentModel
+from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 
-class StackModel(BaseModel):
+class StackModel(AnalyticsTrackedModelMixin):
     """Network Serializable Model describing the Stack.
 
     name, description, components and is_shared can be specified explicitly by
@@ -33,6 +34,13 @@ class StackModel(BaseModel):
 
     id is set when the database entry is created
     """
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+        "id",
+        "project_id",
+        "owner",
+        "is_shared",
+    ]
 
     id: Optional[UUID]
     name: str
@@ -47,7 +55,7 @@ class StackModel(BaseModel):
         default=False,
         title="Flag describing if this stack is shared.",
     )
-    project: Optional[str] = Field(
+    project_id: Optional[UUID] = Field(
         default=None, title="The project that contains this stack."
     )
     owner: Optional[UUID] = Field(
@@ -70,11 +78,23 @@ class StackModel(BaseModel):
                     "orchestrator": "5e4286b5-51f4-4286-b1f8-b0143e9a27ce",
                 },
                 "is_shared": "True",
-                "project": "cat_project",
+                "project_id": "5e4286b5-51f4-4286-b1f8-b0143e9a27ce",
                 "owner": "8d0acbc3-c51a-452c-bda3-e1b5469f79fd",
                 "created_at": "2022-08-12T07:12:45.931Z",
             }
         }
+
+    def get_analytics_metadata(self) -> Dict[str, Any]:
+        """Add the stack components to the stack analytics metadata.
+
+        Returns:
+            Dict of analytics metadata.
+        """
+        metadata = super().get_analytics_metadata()
+        metadata.update(
+            {ct: c.flavor_name for ct, c in self.components.items()}
+        )
+        return metadata
 
     @property
     def is_valid(self):
@@ -93,7 +113,7 @@ class StackModel(BaseModel):
         component_data = {}
         for component_type, component in self.components.items():
             component_dict = json.loads(component.json())
-            component_dict.pop("project")  # Not needed in the yaml repr
+            component_dict.pop("project_id")  # Not needed in the yaml repr
             component_dict.pop("created_at")  # Not needed in the yaml repr
             component_data[component_type.value] = component_dict
 

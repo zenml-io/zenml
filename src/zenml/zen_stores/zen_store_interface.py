@@ -11,25 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""REST Zen Store implementation."""
-
-import re
+"""ZenML Store interface."""
+from abc import ABC, abstractmethod
 from pathlib import Path, PurePath
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
-import requests
-from pydantic import BaseModel
-
 from zenml.config.store_config import StoreConfiguration
-from zenml.enums import ExecutionStatus, StackComponentType, StoreType
-from zenml.exceptions import (
-    DoesNotExistException,
-    EntityExistsError,
-    StackComponentExistsError,
-    StackExistsError,
-)
-from zenml.logger import get_logger
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.models import (
     ArtifactModel,
     CodeRepositoryModel,
@@ -45,63 +34,86 @@ from zenml.models import (
     TeamModel,
     UserModel,
 )
-from zenml.zen_stores.base_zen_store import BaseZenStore
-
-logger = get_logger(__name__)
-
-# type alias for possible json payloads (the Anys are recursive Json instances)
-Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 
-class RestZenStoreConfiguration(StoreConfiguration):
-    """REST ZenML store configuration.
+class ZenStoreInterface(ABC):
+    """ZenML store interface.
 
-    Attributes:
-        username: The username to use to connect to the Zen server.
-        password: The password to use to connect to the Zen server.
+    All ZenML stores must implement the methods in this interface.
+
+    The methods in this interface are organized in the following way:
+
+     * they are grouped into categories based on the type of resource
+       that they operate on (e.g. stacks, stack components, etc.)
+
+     * each category has a set of CRUD methods (create, read, update, delete)
+       that operate on the resources in that category. The order of the methods
+       in each category should be:
+
+       * create/register methods - store a new resource. These methods
+         should fill in generated fields (e.g. UUIDs, creation timestamps) in
+         the resource and return the updated resource.
+       * get methods - retrieve a single existing resource identified by a
+         unique key or identifier from the store. These methods should always
+         return a resource and raise an exception if the resource does not exist.
+       * list methods - retrieve a list of resources from the store. These
+         methods should accept a set of filter parameters that can be used to
+         filter the list of resources retrieved from the store.
+       * update methods - update an existing resource in the store. These
+         methods should expect the updated resource to be correctly identified
+         by its unique key or identifier and raise an exception if the resource
+         does not exist.
+       * delete methods - delete an existing resource from the store. These
+         methods should expect the resource to be correctly identified by its
+         unique key or identifier. If the resource does not exist,
+         an exception should be raised.
+
+    Best practices for implementing and keeping this interface clean and easy to
+    maintain and extend:
+
+      * keep methods organized by resource type and ordered by CRUD operation
+      * for resources with multiple keys, don't implement multiple get or list
+      methods here if the same functionality can be achieved by a single get or
+      list method. Instead, implement them in the BaseZenStore class and have
+      them call the generic get or list method in this interface.
+      * keep the logic required to convert between ZenML domain Model classes
+      and internal store representations outside the ZenML domain Model classes
+      * methods for resources that have two or more unique keys (e.g. a Project
+      is uniquely identified by its name as well as its UUID) should reflect
+      that in the method variants and/or method arguments:
+        * methods that take in a resource identifier as argument should accept
+        all variants of the identifier (e.g. `project_name_or_uuid` for methods
+        that get/list/update/delete Projects)
+        * if a compound key is involved, separate get methods should be
+        implemented (e.g. `get_pipeline` to get a pipeline by ID and
+        `get_pipeline_in_project` to get a pipeline by its name and the ID of
+        the project it belongs to)
+      * methods for resources that are scoped as children of other resources
+      (e.g. a Stack is always owned by a Project) should reflect the
+      key(s) of the parent resource in the provided methods and method
+      arguments:
+        * create methods should take the parent resource UUID(s) as an argument
+        (e.g. `create_stack` takes in the project ID)
+        * get methods should be provided to retrieve a resource by the compound
+        key that includes the parent resource key(s)
+        * list methods should feature optional filter arguments that reflect
+        the parent resource key(s)
     """
 
-    type: StoreType = StoreType.REST
-    username: str
-    password: str = ""
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # Validate attributes when assigning them. We need to set this in order
-        # to have a mix of mutable and immutable attributes
-        validate_assignment = True
-        # Ignore extra attributes set in the class.
-        extra = "ignore"
-
-
-class RestZenStore(BaseZenStore):
-    """Store implementation for accessing data from a REST API."""
-
-    config: RestZenStoreConfiguration
-    TYPE: ClassVar[StoreType] = StoreType.REST
-    CONFIG_TYPE: ClassVar[Type[StoreConfiguration]] = RestZenStoreConfiguration
-
-    def _initialize_database(self) -> None:
-        """Initialize the database."""
-        # don't do anything for a REST store
-
-    # ====================================
-    # ZenML Store interface implementation
-    # ====================================
-
-    # --------------------------------
+    # ---------------------------------
     # Initialization and configuration
-    # --------------------------------
+    # ---------------------------------
 
+    @abstractmethod
     def _initialize(self) -> None:
-        """Initialize the REST store."""
-        # try to connect to the server to validate the configuration
-        self._handle_response(
-            requests.get(self.url + "/", auth=self._get_authentication())
-        )
+        """Initialize the store.
+
+        This method is called immediately after the store is created. It should
+        be used to set up the backend (database, connection etc.).
+        """
 
     @staticmethod
+    @abstractmethod
     def get_path_from_url(url: str) -> Optional[Path]:
         """Get the path from a URL, if it points or is backed by a local file.
 
@@ -109,46 +121,38 @@ class RestZenStore(BaseZenStore):
             url: The URL to get the path from.
 
         Returns:
-            None, because there are no local paths from REST URLs.
+            The local path backed by the URL, or None if the URL is not backed
+            by a local file or directory
         """
-        return None
 
     @staticmethod
+    @abstractmethod
     def get_local_url(path: str) -> str:
         """Get a local URL for a given local path.
 
         Args:
             path: the path string to build a URL out of.
 
-        Raises:
-            NotImplementedError: always
+        Returns:
+            Url pointing to the path for the store type.
         """
-        raise NotImplementedError("Cannot build a REST url from a path.")
 
     @staticmethod
+    @abstractmethod
     def validate_url(url: str) -> str:
-        """Check if the given url is a valid REST URL.
+        """Check if the given url is valid.
+
+        The implementation should raise a ValueError if the url is invalid.
 
         Args:
             url: The url to check.
 
         Returns:
-            The validated url.
-
-        Raises:
-            ValueError: If the url is not valid.
+            The modified url, if it is valid.
         """
-        url = url.rstrip("/")
-        scheme = re.search("^([a-z0-9]+://)", url)
-        if scheme is None or scheme.group() not in ("https://", "http://"):
-            raise ValueError(
-                "Invalid URL for REST store: {url}. Should be in the form "
-                "https://hostname[:port] or http://hostname[:port]."
-            )
-
-        return url
 
     @classmethod
+    @abstractmethod
     def copy_local_store(
         cls,
         config: StoreConfiguration,
@@ -177,13 +181,12 @@ class RestZenStore(BaseZenStore):
         Returns:
             The store configuration of the copied store.
         """
-        # REST zen stores are not backed by local files
-        return config
 
     # ------------
     # TFX Metadata
     # ------------
 
+    @abstractmethod
     def get_metadata_config(self) -> str:
         """Get the TFX metadata config of this ZenStore.
 
@@ -195,6 +198,7 @@ class RestZenStore(BaseZenStore):
     # Stacks
     # ------
 
+    @abstractmethod
     def register_stack(
         self,
         user_name_or_id: Union[str, UUID],
@@ -216,6 +220,7 @@ class RestZenStore(BaseZenStore):
                 by this user in this project.
         """
 
+    @abstractmethod
     def get_stack(self, stack_id: UUID) -> StackModel:
         """Get a stack by its unique ID.
 
@@ -229,6 +234,7 @@ class RestZenStore(BaseZenStore):
             KeyError: if the stack doesn't exist.
         """
 
+    @abstractmethod
     def list_stacks(
         self,
         project_name_or_id: Union[str, UUID],
@@ -253,6 +259,7 @@ class RestZenStore(BaseZenStore):
             KeyError: if the project doesn't exist.
         """
 
+    @abstractmethod
     def update_stack(
         self,
         stack: StackModel,
@@ -269,6 +276,7 @@ class RestZenStore(BaseZenStore):
             KeyError: if the stack doesn't exist.
         """
 
+    @abstractmethod
     def delete_stack(self, stack_id: UUID) -> None:
         """Delete a stack.
 
@@ -283,6 +291,7 @@ class RestZenStore(BaseZenStore):
     # Stack components
     # ----------------
 
+    @abstractmethod
     def register_stack_component(
         self,
         user_name_or_id: Union[str, UUID],
@@ -304,6 +313,7 @@ class RestZenStore(BaseZenStore):
                 and type is already owned by this user in this project.
         """
 
+    @abstractmethod
     def get_stack_component(self, component_id: UUID) -> ComponentModel:
         """Get a stack component by ID.
 
@@ -317,6 +327,7 @@ class RestZenStore(BaseZenStore):
             KeyError: if the stack component doesn't exist.
         """
 
+    @abstractmethod
     def list_stack_components(
         self,
         project_name_or_id: Union[str, UUID],
@@ -345,6 +356,7 @@ class RestZenStore(BaseZenStore):
             KeyError: if the project doesn't exist.
         """
 
+    @abstractmethod
     def update_stack_component(
         self,
         component_id: UUID,
@@ -362,6 +374,7 @@ class RestZenStore(BaseZenStore):
             KeyError: if the stack component doesn't exist.
         """
 
+    @abstractmethod
     def delete_stack_component(self, component_id: UUID) -> None:
         """Delete a stack component.
 
@@ -372,6 +385,7 @@ class RestZenStore(BaseZenStore):
             KeyError: if the stack component doesn't exist.
         """
 
+    @abstractmethod
     def get_stack_component_side_effects(
         self,
         component_id: UUID,
@@ -392,6 +406,7 @@ class RestZenStore(BaseZenStore):
     # Stack component flavors
     # -----------------------
 
+    @abstractmethod
     def create_flavor(
         self,
         user_name_or_id: Union[str, UUID],
@@ -414,6 +429,7 @@ class RestZenStore(BaseZenStore):
                 is already owned by this user in this project.
         """
 
+    @abstractmethod
     def get_flavor(self, flavor_id: UUID) -> FlavorModel:
         """Get a stack component flavor by ID.
 
@@ -427,6 +443,7 @@ class RestZenStore(BaseZenStore):
             KeyError: if the stack component flavor doesn't exist.
         """
 
+    @abstractmethod
     def list_flavors(
         self,
         project_name_or_id: Union[str, UUID],
@@ -459,6 +476,7 @@ class RestZenStore(BaseZenStore):
     # -----
 
     @property
+    @abstractmethod
     def active_user_name(self) -> str:
         """Gets the active username.
 
@@ -466,6 +484,7 @@ class RestZenStore(BaseZenStore):
             The active username.
         """
 
+    @abstractmethod
     def create_user(self, user: UserModel) -> UserModel:
         """Creates a new user.
 
@@ -479,6 +498,7 @@ class RestZenStore(BaseZenStore):
             EntityExistsError: If a user with the given name already exists.
         """
 
+    @abstractmethod
     def get_user(self, user_name_or_id: Union[str, UUID]) -> UserModel:
         """Gets a specific user.
 
@@ -493,6 +513,7 @@ class RestZenStore(BaseZenStore):
         """
 
     # TODO: [ALEX] add filtering param(s)
+    @abstractmethod
     def list_users(self) -> List[UserModel]:
         """List all users.
 
@@ -500,6 +521,7 @@ class RestZenStore(BaseZenStore):
             A list of all users.
         """
 
+    @abstractmethod
     def update_user(
         self, user_name_or_id: Union[str, UUID], user: UserModel
     ) -> UserModel:
@@ -516,6 +538,7 @@ class RestZenStore(BaseZenStore):
             KeyError: If no user with the given name exists.
         """
 
+    @abstractmethod
     def delete_user(self, user_name_or_id: Union[str, UUID]) -> None:
         """Deletes a user.
 
@@ -530,6 +553,7 @@ class RestZenStore(BaseZenStore):
     # Teams
     # -----
 
+    @abstractmethod
     def create_team(self, team: TeamModel) -> TeamModel:
         """Creates a new team.
 
@@ -540,6 +564,7 @@ class RestZenStore(BaseZenStore):
             The newly created team.
         """
 
+    @abstractmethod
     def get_team(self, team_name_or_id: Union[str, UUID]) -> TeamModel:
         """Gets a specific team.
 
@@ -553,6 +578,7 @@ class RestZenStore(BaseZenStore):
             KeyError: If no team with the given name or ID exists.
         """
 
+    @abstractmethod
     def list_teams(self) -> List[TeamModel]:
         """List all teams.
 
@@ -560,6 +586,7 @@ class RestZenStore(BaseZenStore):
             A list of all teams.
         """
 
+    @abstractmethod
     def delete_team(self, team_name_or_id: Union[str, UUID]) -> None:
         """Deletes a team.
 
@@ -574,6 +601,7 @@ class RestZenStore(BaseZenStore):
     # Team membership
     # ---------------
 
+    @abstractmethod
     def get_users_for_team(
         self, team_name_or_id: Union[str, UUID]
     ) -> List[UserModel]:
@@ -589,6 +617,7 @@ class RestZenStore(BaseZenStore):
             KeyError: If no team with the given ID exists.
         """
 
+    @abstractmethod
     def get_teams_for_user(
         self, user_name_or_id: Union[str, UUID]
     ) -> List[TeamModel]:
@@ -605,6 +634,7 @@ class RestZenStore(BaseZenStore):
             KeyError: If no user with the given ID exists.
         """
 
+    @abstractmethod
     def add_user_to_team(
         self,
         user_name_or_id: Union[str, UUID],
@@ -620,6 +650,7 @@ class RestZenStore(BaseZenStore):
             KeyError: If the team or user does not exist.
         """
 
+    @abstractmethod
     def remove_user_from_team(
         self,
         user_name_or_id: Union[str, UUID],
@@ -640,6 +671,7 @@ class RestZenStore(BaseZenStore):
     # -----
 
     # TODO: consider using team_id instead
+    @abstractmethod
     def create_role(self, role: RoleModel) -> RoleModel:
         """Creates a new role.
 
@@ -654,6 +686,7 @@ class RestZenStore(BaseZenStore):
         """
 
     # TODO: consider using team_id instead
+    @abstractmethod
     def get_role(self, role_name_or_id: Union[str, UUID]) -> RoleModel:
         """Gets a specific role.
 
@@ -668,6 +701,7 @@ class RestZenStore(BaseZenStore):
         """
 
     # TODO: [ALEX] add filtering param(s)
+    @abstractmethod
     def list_roles(self) -> List[RoleModel]:
         """List all roles.
 
@@ -675,6 +709,7 @@ class RestZenStore(BaseZenStore):
             A list of all roles.
         """
 
+    @abstractmethod
     def delete_role(self, role_name_or_id: Union[str, UUID]) -> None:
         """Deletes a role.
 
@@ -689,6 +724,7 @@ class RestZenStore(BaseZenStore):
     # Role assignments
     # ----------------
 
+    @abstractmethod
     def list_role_assignments(
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
@@ -709,6 +745,7 @@ class RestZenStore(BaseZenStore):
             A list of all role assignments.
         """
 
+    @abstractmethod
     def assign_role(
         self,
         role_name_or_id: Union[str, UUID],
@@ -731,6 +768,7 @@ class RestZenStore(BaseZenStore):
             EntityExistsError: If the role assignment already exists.
         """
 
+    @abstractmethod
     def revoke_role(
         self,
         role_name_or_id: Union[str, UUID],
@@ -757,6 +795,7 @@ class RestZenStore(BaseZenStore):
     # Projects
     # --------
 
+    @abstractmethod
     def create_project(self, project: ProjectModel) -> ProjectModel:
         """Creates a new project.
 
@@ -770,6 +809,7 @@ class RestZenStore(BaseZenStore):
             EntityExistsError: If a project with the given name already exists.
         """
 
+    @abstractmethod
     def get_project(self, project_name_or_id: Union[UUID, str]) -> ProjectModel:
         """Get an existing project by name or ID.
 
@@ -784,6 +824,7 @@ class RestZenStore(BaseZenStore):
         """
 
     # TODO: [ALEX] add filtering param(s)
+    @abstractmethod
     def list_projects(self) -> List[ProjectModel]:
         """List all projects.
 
@@ -791,6 +832,7 @@ class RestZenStore(BaseZenStore):
             A list of all projects.
         """
 
+    @abstractmethod
     def update_project(
         self, project_name_or_id: Union[str, UUID], project: ProjectModel
     ) -> ProjectModel:
@@ -807,6 +849,7 @@ class RestZenStore(BaseZenStore):
             KeyError: if the project does not exist.
         """
 
+    @abstractmethod
     def delete_project(self, project_name_or_id: Union[str, UUID]) -> None:
         """Deletes a project.
 
@@ -823,6 +866,7 @@ class RestZenStore(BaseZenStore):
 
     # TODO: create repository?
 
+    @abstractmethod
     def connect_project_repository(
         self,
         project_name_or_id: Union[str, UUID],
@@ -842,6 +886,7 @@ class RestZenStore(BaseZenStore):
             KeyError: if the project or repository doesn't exist.
         """
 
+    @abstractmethod
     def get_repository(self, repository_id: UUID) -> CodeRepositoryModel:
         """Get a repository by ID.
 
@@ -855,6 +900,7 @@ class RestZenStore(BaseZenStore):
             KeyError: if the repository doesn't exist.
         """
 
+    @abstractmethod
     def list_repositories(
         self, project_name_or_id: Union[str, UUID]
     ) -> List[CodeRepositoryModel]:
@@ -870,6 +916,7 @@ class RestZenStore(BaseZenStore):
             KeyError: if the project doesn't exist.
         """
 
+    @abstractmethod
     def update_repository(
         self, repository_id: UUID, repository: CodeRepositoryModel
     ) -> CodeRepositoryModel:
@@ -886,6 +933,7 @@ class RestZenStore(BaseZenStore):
             KeyError: if the repository doesn't exist.
         """
 
+    @abstractmethod
     def delete_repository(self, repository_id: UUID) -> None:
         """Delete a repository.
 
@@ -900,6 +948,7 @@ class RestZenStore(BaseZenStore):
     # Pipelines
     # ---------
 
+    @abstractmethod
     def create_pipeline(
         self, project_name_or_id: Union[str, UUID], pipeline: PipelineModel
     ) -> PipelineModel:
@@ -917,6 +966,7 @@ class RestZenStore(BaseZenStore):
             EntityExistsError: If an identical pipeline already exists.
         """
 
+    @abstractmethod
     def get_pipeline(self, pipeline_id: UUID) -> PipelineModel:
         """Get a pipeline with a given ID.
 
@@ -930,6 +980,7 @@ class RestZenStore(BaseZenStore):
             KeyError: if the pipeline does not exist.
         """
 
+    @abstractmethod
     def get_pipeline_in_project(
         self, pipeline_name: str, project_name_or_id: Union[str, UUID]
     ) -> PipelineModel:
@@ -946,6 +997,7 @@ class RestZenStore(BaseZenStore):
             KeyError: if the pipeline does not exist.
         """
 
+    @abstractmethod
     def list_pipelines(
         self,
         project_name_or_id: Optional[Union[str, UUID]],
@@ -962,6 +1014,7 @@ class RestZenStore(BaseZenStore):
             KeyError: if the project does not exist.
         """
 
+    @abstractmethod
     def update_pipeline(
         self, pipeline_id: UUID, pipeline: PipelineModel
     ) -> PipelineModel:
@@ -978,6 +1031,7 @@ class RestZenStore(BaseZenStore):
             KeyError: if the pipeline doesn't exist.
         """
 
+    @abstractmethod
     def delete_pipeline(self, pipeline_id: UUID) -> None:
         """Deletes a pipeline.
 
@@ -997,6 +1051,7 @@ class RestZenStore(BaseZenStore):
     # TODO: Discuss whether we even need this, given that the endpoint is on
     # pipeline runs
     # TODO: [ALEX] add filtering param(s)
+    @abstractmethod
     def list_steps(self, pipeline_id: UUID) -> List[StepRunModel]:
         """List all steps.
 
@@ -1011,6 +1066,7 @@ class RestZenStore(BaseZenStore):
     # Pipeline runs
     # --------------
 
+    @abstractmethod
     def create_run(self, pipeline_run: PipelineRunModel) -> PipelineRunModel:
         """Creates a pipeline run.
 
@@ -1024,6 +1080,7 @@ class RestZenStore(BaseZenStore):
             EntityExistsError: If an identical pipeline run already exists.
         """
 
+    @abstractmethod
     def get_run(self, run_id: UUID) -> PipelineRunModel:
         """Gets a pipeline run.
 
@@ -1037,6 +1094,7 @@ class RestZenStore(BaseZenStore):
             KeyError: if the pipeline run doesn't exist.
         """
 
+    @abstractmethod
     def get_run_in_project(
         self, run_name: str, project_name_or_id: Union[str, UUID]
     ) -> PipelineRunModel:
@@ -1054,6 +1112,7 @@ class RestZenStore(BaseZenStore):
         """
 
     # TODO: figure out args and output for this
+    @abstractmethod
     def get_run_dag(self, run_id: UUID) -> str:
         """Gets the DAG for a pipeline run.
 
@@ -1068,6 +1127,7 @@ class RestZenStore(BaseZenStore):
         """
 
     # TODO: Figure out what exactly gets returned from this
+    @abstractmethod
     def get_run_component_side_effects(
         self,
         run_id: UUID,
@@ -1087,6 +1147,7 @@ class RestZenStore(BaseZenStore):
             KeyError: if the pipeline run doesn't exist.
         """
 
+    @abstractmethod
     def list_runs(
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
@@ -1109,6 +1170,7 @@ class RestZenStore(BaseZenStore):
             A list of all pipeline runs.
         """
 
+    @abstractmethod
     def update_run(
         self, run_id: UUID, run: PipelineRunModel
     ) -> PipelineRunModel:
@@ -1125,6 +1187,7 @@ class RestZenStore(BaseZenStore):
             KeyError: if the pipeline run doesn't exist.
         """
 
+    @abstractmethod
     def delete_run(self, run_id: UUID) -> None:
         """Deletes a pipeline run.
 
@@ -1139,42 +1202,55 @@ class RestZenStore(BaseZenStore):
     # Pipeline run steps
     # ------------------
 
-    def get_run_step(self, step_id: int) -> StepRunModel:
-        """Get a pipeline run step by ID.
+    @abstractmethod
+    def get_run_step(self, step_id: UUID) -> StepRunModel:
+        """Get a step by ID.
 
         Args:
             step_id: The ID of the step to get.
 
         Returns:
-            The pipeline run step.
+            The step.
+
+        Raises:
+            KeyError: if the step doesn't exist.
         """
 
-    # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
-    def get_run_step_artifacts(
-        self, step: StepRunModel
-    ) -> Tuple[Dict[str, ArtifactModel], Dict[str, ArtifactModel]]:
-        """Returns input and output artifacts for the given pipeline run step.
+    @abstractmethod
+    def get_run_step_outputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
+        """Get a list of outputs for a specific step.
 
         Args:
-            step: The pipeline run step for which to get the artifacts.
+            step_id: The id of the step to get outputs for.
 
         Returns:
-            A tuple (inputs, outputs) where inputs and outputs
-            are both Dicts mapping artifact names
-            to the input and output artifacts respectively.
+            A dict mapping artifact names to the output artifacts for the step.
         """
 
-    def get_run_step_status(self, step_id: int) -> ExecutionStatus:
-        """Gets the execution status of a single pipeline run  step.
+    @abstractmethod
+    def get_run_step_inputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
+        """Get a list of inputs for a specific step.
 
         Args:
-            step_id: The ID of the pipeline run step to get the status for.
+            step_id: The id of the step to get inputs for.
 
         Returns:
-            ExecutionStatus: The status of the pipeline run step.
+            A dict mapping artifact names to the input artifacts for the step.
         """
 
-    def list_run_steps(self, run_id: int) -> Dict[str, StepRunModel]:
+    @abstractmethod
+    def get_run_step_status(self, step_id: UUID) -> ExecutionStatus:
+        """Gets the execution status of a single step.
+
+        Args:
+            step_id: The ID of the step to get the status for.
+
+        Returns:
+            ExecutionStatus: The status of the step.
+        """
+
+    @abstractmethod
+    def list_run_steps(self, run_id: UUID) -> List[StepRunModel]:
         """Gets all steps in a pipeline run.
 
         Args:
@@ -1183,147 +1259,3 @@ class RestZenStore(BaseZenStore):
         Returns:
             A mapping from step names to step models for all steps in the run.
         """
-
-    # =======================
-    # Internal helper methods
-    # =======================
-
-    def _handle_response(self, response: requests.Response) -> Json:
-        """Handle API response, translating http status codes to Exception.
-
-        Args:
-            response: The response to handle.
-
-        Returns:
-            The parsed response.
-
-        Raises:
-            DoesNotExistException: If the response indicates that the
-                requested entity does not exist.
-            EntityExistsError: If the response indicates that the requested
-                entity already exists.
-            HTTPError: If the response indicates that the requested entity
-                does not exist.
-            KeyError: If the response indicates that the requested entity
-                does not exist.
-            RuntimeError: If the response indicates that the requested entity
-                does not exist.
-            StackComponentExistsError: If the response indicates that the
-                requested entity already exists.
-            StackExistsError: If the response indicates that the requested
-                entity already exists.
-            ValueError: If the response indicates that the requested entity
-                does not exist.
-        """
-        if response.status_code >= 200 and response.status_code < 300:
-            try:
-                payload: Json = response.json()
-                return payload
-            except requests.exceptions.JSONDecodeError:
-                raise ValueError(
-                    "Bad response from API. Expected json, got\n"
-                    f"{response.text}"
-                )
-        elif response.status_code == 401:
-            raise requests.HTTPError(
-                f"{response.status_code} Client Error: Unauthorized request to URL {response.url}: {response.json().get('detail')}"
-            )
-        elif response.status_code == 404:
-            if "DoesNotExistException" not in response.text:
-                raise KeyError(*response.json().get("detail", (response.text,)))
-            message = ": ".join(response.json().get("detail", (response.text,)))
-            raise DoesNotExistException(message)
-        elif response.status_code == 409:
-            if "StackComponentExistsError" in response.text:
-                raise StackComponentExistsError(
-                    *response.json().get("detail", (response.text,))
-                )
-            elif "StackExistsError" in response.text:
-                raise StackExistsError(
-                    *response.json().get("detail", (response.text,))
-                )
-            elif "EntityExistsError" in response.text:
-                raise EntityExistsError(
-                    *response.json().get("detail", (response.text,))
-                )
-            else:
-                raise ValueError(
-                    *response.json().get("detail", (response.text,))
-                )
-        elif response.status_code == 422:
-            raise RuntimeError(*response.json().get("detail", (response.text,)))
-        elif response.status_code == 500:
-            raise KeyError(response.text)
-        else:
-            raise RuntimeError(
-                "Error retrieving from API. Got response "
-                f"{response.status_code} with body:\n{response.text}"
-            )
-
-    def _get_authentication(self) -> Tuple[str, str]:
-        """Gets HTTP basic auth credentials.
-
-        Returns:
-            A tuple of the username and password.
-        """
-        return self.config.username, self.config.password
-
-    def get(self, path: str) -> Json:
-        """Make a GET request to the given endpoint path.
-
-        Args:
-            path: The path to the endpoint.
-
-        Returns:
-            The response body.
-        """
-        return self._handle_response(
-            requests.get(self.url + path, auth=self._get_authentication())
-        )
-
-    def delete(self, path: str) -> Json:
-        """Make a DELETE request to the given endpoint path.
-
-        Args:
-            path: The path to the endpoint.
-
-        Returns:
-            The response body.
-        """
-        return self._handle_response(
-            requests.delete(self.url + path, auth=self._get_authentication())
-        )
-
-    def post(self, path: str, body: BaseModel) -> Json:
-        """Make a POST request to the given endpoint path.
-
-        Args:
-            path: The path to the endpoint.
-            body: The body to send.
-
-        Returns:
-            The response body.
-        """
-        endpoint = self.url + path
-        return self._handle_response(
-            requests.post(
-                endpoint, data=body.json(), auth=self._get_authentication()
-            )
-        )
-
-    def put(self, path: str, body: BaseModel) -> Json:
-        """Make a PUT request to the given endpoint path.
-
-        Args:
-            path: The path to the endpoint.
-            body: The body to send.
-
-        Returns:
-            The response body.
-        """
-        endpoint = self.url + path
-        return self._handle_response(
-            requests.put(
-                endpoint, data=body.json(), auth=self._get_authentication()
-            )
-        )

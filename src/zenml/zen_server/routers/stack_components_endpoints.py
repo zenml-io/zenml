@@ -20,6 +20,7 @@ from zenml.constants import FLAVORS, STACK_COMPONENTS, TYPES, VERSION_1
 from zenml.enums import StackComponentType
 from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.models import ComponentModel, FlavorModel
+from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.utils import (
     authorize,
     error_detail,
@@ -67,14 +68,14 @@ async def get_stack_component_types() -> List[str]:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def list_stack_components(
-    project_name: str,
+    project_name_or_id: str,
     component_type: Optional[str] = None,
     component_name: Optional[str] = None,
 ) -> List[ComponentModel]:
     """Get a list of all stack components for a specific type.
 
     Args:
-        project_name: Name of the project
+        project_name_or_id: Name or ID of the project
         component_name: Name of a component
         component_type: Type of component to filter for
 
@@ -90,7 +91,7 @@ async def list_stack_components(
         # TODO [server]: introduce other
         #  filters, specifically for type
         return zen_store.list_stack_components(
-            project_name_or_id=project_name,
+            project_name_or_id=parse_name_or_uuid(project_name_or_id),
             type=component_type,
             name=component_name,
         )
@@ -107,7 +108,7 @@ async def list_stack_components(
     response_model=List[FlavorModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_flavors_by_type(
+async def list_flavors(
     component_type: StackComponentType,
 ) -> List[FlavorModel]:
     """Returns all flavors of a given type.
@@ -125,7 +126,8 @@ async def get_flavors_by_type(
     """
 
     try:
-        return zen_store.get_flavors_by_type(component_type=component_type)
+        # TODO [Baris]: add project and more filters to this
+        return zen_store.list_flavors(component_type=component_type)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
@@ -214,7 +216,7 @@ async def deregister_stack_component(component_id: str) -> None:
         422 error: when unable to validate input
     """
     try:
-        zen_store.delete_stack_component(component_id)
+        zen_store.delete_stack_component(UUID(component_id))
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:

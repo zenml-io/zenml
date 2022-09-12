@@ -214,19 +214,19 @@ class ValidationError(ZenMLBaseException):
     """Raised when the Model passed to the ZenStore"""
 
 
-class StackExistsError(ZenMLBaseException):
-    """Raised when trying to register a stack with a name that already exists."""
-
-
-class StackComponentExistsError(ZenMLBaseException):
-    """Raised when trying to register a stack component with a name that already exists."""
-
-
 class EntityExistsError(ZenMLBaseException):
     """Raised when trying to register a user-management entity with a name that already exists."""
 
 
-class SecretExistsError(ZenMLBaseException):
+class StackExistsError(EntityExistsError):
+    """Raised when trying to register a stack with a name that already exists."""
+
+
+class StackComponentExistsError(EntityExistsError):
+    """Raised when trying to register a stack component with a name that already exists."""
+
+
+class SecretExistsError(EntityExistsError):
     """Raised when trying to register a secret with a name that already exists."""
 
 

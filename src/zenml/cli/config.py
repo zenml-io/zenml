@@ -150,7 +150,7 @@ def config() -> None:
 )
 @click.option(
     "--project",
-    help="The username that is used to authenticate with a ZenML server. This "
+    help="The project that is used to authenticate with a ZenML server. This "
     "is only required if you're connected to a ZenML server.",
     required=False,
     type=str,
@@ -208,7 +208,7 @@ def config_set_command(
         GlobalConfiguration().set_store(store_config)
         if project:
             try:
-                Repository().set_active_project(project)
+                Repository().set_active_project(project_name_or_id=project)
             except KeyError:
                 cli_utils.error(
                     f"The project {project} does not exist on the server "
@@ -227,7 +227,6 @@ def config_describe() -> None:
     repo = Repository()
 
     store_cfg = gc.store
-    active_project_name = repo.active_project_name
 
     if repo.root:
         cli_utils.declare(f"Active repository root: {repo.root}")
@@ -239,18 +238,13 @@ def config_describe() -> None:
         for key, value in store_cfg_dict.items():
             cli_utils.declare(f" - {key}: '{value}'")
 
-    stack_scope = "repository" if repo.uses_local_active_stack else "global"
+    scope = "repository" if repo.uses_local_configuration else "global"
     cli_utils.declare(
-        f"The active stack is: '{repo.active_stack_model.name}' ({stack_scope})"
+        f"The active project is: '{repo.active_project_name}' " f"({scope})"
     )
-    project_scope = "repository" if repo.uses_local_active_project else "global"
-    if not active_project_name:
-        cli_utils.declare("The active project is not set.")
-    else:
-        cli_utils.declare(
-            f"The active project is: '{repo.active_project_name}' "
-            f"({project_scope})"
-        )
+    cli_utils.declare(
+        f"The active stack is: '{repo.active_stack_model.name}' ({scope})"
+    )
 
 
 @config.command("explain")

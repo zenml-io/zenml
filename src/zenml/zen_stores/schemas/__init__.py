@@ -34,3 +34,19 @@ from zenml.zen_stores.schemas.user_management_schemas import (
     UserRoleAssignmentSchema,
     UserSchema,
 )
+
+__all__ = [
+    "CodeRepositorySchema",
+    "StackComponentSchema",
+    "FlavorSchema",
+    "PipelineRunSchema",
+    "PipelineSchema",
+    "ProjectSchema",
+    "StackSchema",
+    "RoleSchema",
+    "TeamAssignmentSchema",
+    "TeamRoleAssignmentSchema",
+    "TeamSchema",
+    "UserRoleAssignmentSchema",
+    "UserSchema",
+]
