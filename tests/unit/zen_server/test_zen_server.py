@@ -25,7 +25,6 @@ from zenml.zen_server.zen_server import ZenServer, ZenServerConfig
 from zenml.zen_stores import LocalZenStore
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 
-
 SERVER_START_STOP_TIMEOUT = 15
 
 
