@@ -444,7 +444,7 @@ class SqlZenStore(BaseZenStore):
             # Check if stack with the domain key (name, project, owner) already
             #  exists
             existing_stack = session.exec(
-                select(StackSchema).where(StackSchema.id == stack.id)
+                select(StackSchema).where(StackSchema.id == stack_id)
             ).first()
 
             if existing_stack is None:
