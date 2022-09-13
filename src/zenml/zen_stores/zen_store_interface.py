@@ -367,6 +367,7 @@ class ZenStoreInterface(ABC):
         """Update an existing stack component.
 
         Args:
+            component_id
             component: The stack component to use for the update.
 
         Returns:
