@@ -21,6 +21,7 @@ from zenml.exceptions import EntityExistsError, StackExistsError
 from zenml.models import ProjectModel, RoleModel, TeamModel, UserModel
 from zenml.models.stack_models import StackModel
 from zenml.zen_stores.base_zen_store import BaseZenStore
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 
 #  .--------
 # | PROJECTS
@@ -671,3 +672,29 @@ def test_tfx_metadata_succeeds(
         assert type(json_config) == dict
     except json.JSONDecodeError:
         assert False
+
+
+# =======================
+# Internal helper methods
+# =======================
+
+
+def test_get_schema_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting schema."""
+    schema = fresh_sql_zen_store._get_schema_by_name_or_id(
+        "default", ProjectSchema, "project"
+    )
+    assert schema is not None
+    assert type(schema) == ProjectSchema
+
+
+def test_get_schema_fails_for_nonexistent_object(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting schema fails for nonexistent object."""
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store._get_schema_by_name_or_id(
+            "arias_project", ProjectSchema, "project"
+        )
