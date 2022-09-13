@@ -20,10 +20,9 @@ from zenml.exceptions import StackValidationError
 from zenml.stack import Stack, StackValidator
 
 
-def test_validator_with_custom_stack_validation_function():
+def test_validator_with_custom_stack_validation_function(local_stack):
     """Tests that a validator fails when its custom validation function fails
     to validate the stack."""
-    stack = Stack.default_local_stack()
 
     def failing_validation_function(_: Stack):
         return False, "Custom error"
@@ -32,7 +31,7 @@ def test_validator_with_custom_stack_validation_function():
         custom_validation_function=failing_validation_function
     )
     with pytest.raises(StackValidationError):
-        failing_validator.validate(stack)
+        failing_validator.validate(local_stack)
 
     def successful_validation_function(_: Stack):
         return True, ""
@@ -41,20 +40,18 @@ def test_validator_with_custom_stack_validation_function():
         custom_validation_function=successful_validation_function
     )
     with does_not_raise():
-        successful_validator.validate(stack)
+        successful_validator.validate(local_stack)
 
 
-def test_validator_with_required_components():
+def test_validator_with_required_components(local_stack):
     """Tests that a validator fails when one of its required components is
     missing in the stack."""
-    stack = Stack.default_local_stack()
-
     failing_validator = StackValidator(
         required_components={StackComponentType.CONTAINER_REGISTRY}
     )
 
     with pytest.raises(StackValidationError):
-        failing_validator.validate(stack)
+        failing_validator.validate(local_stack)
 
     successful_validator = StackValidator(
         required_components={
@@ -62,4 +59,4 @@ def test_validator_with_required_components():
         }
     )
     with does_not_raise():
-        successful_validator.validate(stack)
+        successful_validator.validate(local_stack)

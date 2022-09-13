@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 from contextlib import ExitStack as does_not_raise
+from uuid import uuid4
 
 import pytest
 
@@ -73,6 +74,7 @@ def test_vertex_orchestrator_stack_validation() -> None:
     with pytest.raises(StackValidationError):
         # any stack component is local
         Stack(
+            id=uuid4(),
             name="",
             orchestrator=orchestrator,
             artifact_store=local_artifact_store,
@@ -82,6 +84,7 @@ def test_vertex_orchestrator_stack_validation() -> None:
     with pytest.raises(StackValidationError):
         # missing container registry
         Stack(
+            id=uuid4(),
             name="",
             orchestrator=orchestrator,
             artifact_store=gcp_artifact_store,
@@ -90,6 +93,7 @@ def test_vertex_orchestrator_stack_validation() -> None:
     with pytest.raises(StackValidationError):
         # container registry is local
         Stack(
+            id=uuid4(),
             name="",
             orchestrator=orchestrator,
             artifact_store=gcp_artifact_store,
@@ -99,6 +103,7 @@ def test_vertex_orchestrator_stack_validation() -> None:
     with pytest.raises(StackValidationError):
         # `pipeline_root` was not set and the artifact store is not a `GCPArtifactStore`
         Stack(
+            id=uuid4(),
             name="",
             orchestrator=orchestrator_no_pipeline_root,
             artifact_store=azure_artifact_store,
@@ -108,6 +113,7 @@ def test_vertex_orchestrator_stack_validation() -> None:
     with does_not_raise():
         # valid stack with container registry
         Stack(
+            id=uuid4(),
             name="",
             orchestrator=orchestrator,
             artifact_store=gcp_artifact_store,

@@ -613,7 +613,7 @@ class Stack:
 
         self._validate_secrets(raise_exception=fail_if_secrets_missing)
 
-    def prepare_pipeline_run(self, pipeline, runtime_configuration):
+    def prepare_pipeline_run(self, pipeline, runtime_configuration) -> None:
         """Prepares the stack for a pipeline run.
 
         This method is called before a pipeline run is executed.

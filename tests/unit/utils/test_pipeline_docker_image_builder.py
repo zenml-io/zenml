@@ -16,7 +16,6 @@ from pathlib import Path
 
 from zenml.config.docker_configuration import DockerConfiguration
 from zenml.integrations.sklearn import SKLEARN, SklearnIntegration
-from zenml.stack import Stack
 from zenml.utils.pipeline_docker_image_builder import (
     DOCKER_IMAGE_ZENML_CONFIG_DIR,
     PipelineDockerImageBuilder,
@@ -38,14 +37,13 @@ def test_including_global_config_in_build_context(tmp_path: Path):
     assert not config_path.exists()
 
 
-def test_requirements_file_generation(mocker, tmp_path: Path):
+def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
     """Tests that the requirements get included in the correct order and only
     when configured."""
     mocker.patch("subprocess.check_output", return_value=b"local_requirements")
 
-    stack = Stack.default_local_stack()
     mocker.patch.object(
-        stack, "requirements", return_value={"stack_requirements"}
+        local_stack, "requirements", return_value={"stack_requirements"}
     )
 
     # just local requirements
@@ -56,7 +54,7 @@ def test_requirements_file_generation(mocker, tmp_path: Path):
         replicate_local_python_environment="pip_freeze",
     )
     files = PipelineDockerImageBuilder._gather_requirements_files(
-        config, stack=stack
+        config, stack=local_stack
     )
     assert len(files) == 1
     assert files[0][1] == "local_requirements"
@@ -69,7 +67,7 @@ def test_requirements_file_generation(mocker, tmp_path: Path):
         replicate_local_python_environment=None,
     )
     files = PipelineDockerImageBuilder._gather_requirements_files(
-        config, stack=stack
+        config, stack=local_stack
     )
     assert len(files) == 1
     assert files[0][1] == "stack_requirements"
@@ -82,7 +80,7 @@ def test_requirements_file_generation(mocker, tmp_path: Path):
         replicate_local_python_environment=None,
     )
     files = PipelineDockerImageBuilder._gather_requirements_files(
-        config, stack=stack
+        config, stack=local_stack
     )
     assert len(files) == 1
     assert files[0][1] == "user_requirements"
@@ -97,7 +95,7 @@ def test_requirements_file_generation(mocker, tmp_path: Path):
         replicate_local_python_environment="pip_freeze",
     )
     files = PipelineDockerImageBuilder._gather_requirements_files(
-        config, stack=stack
+        config, stack=local_stack
     )
     assert len(files) == 3
     # first up the local python requirements

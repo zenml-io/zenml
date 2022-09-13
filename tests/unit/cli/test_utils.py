@@ -47,9 +47,9 @@ def test_parse_unknown_options_returns_a_dict_of_known_options() -> None:
 def test_stack_config_has_right_contents_for_printing() -> None:
     """Check that the stack config has the right components for printing"""
     repo = Repository()
-    active_stack_name = repo.active_stack_name
+    active_stack_name = repo.active_stack_model.name
     stack_config = repo.stack_configurations[active_stack_name]
-    items = [[typ.value, name] for typ, name in stack_config.items()]
+    items = [[typ, name] for typ, name in stack_config.items()]
     assert len(items) != 0
     assert items is not None
     for item in items:

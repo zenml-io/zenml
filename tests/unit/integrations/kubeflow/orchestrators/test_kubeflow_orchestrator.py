@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
+from uuid import uuid4
 
 import pytest
 
@@ -47,6 +48,7 @@ def test_kubeflow_orchestrator_stack_validation(mocker):
     with pytest.raises(StackValidationError):
         # missing container registry
         Stack(
+            id=uuid4(),
             name="",
             orchestrator=orchestrator,
             artifact_store=artifact_store,
@@ -55,6 +57,7 @@ def test_kubeflow_orchestrator_stack_validation(mocker):
     with does_not_raise():
         # valid stack with container registry
         Stack(
+            id=uuid4(),
             name="",
             orchestrator=orchestrator,
             artifact_store=artifact_store,

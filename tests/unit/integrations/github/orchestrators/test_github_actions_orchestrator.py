@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 from contextlib import ExitStack as does_not_raise
+from uuid import uuid4
 
 import pytest
 
@@ -53,6 +54,7 @@ def test_github_actions_orchestrator_stack_validation() -> None:
     with does_not_raise():
         # Stack with container registry and only remote components
         Stack(
+            id=uuid4(),
             name="",
             orchestrator=orchestrator,
             artifact_store=remote_artifact_store,
@@ -62,6 +64,7 @@ def test_github_actions_orchestrator_stack_validation() -> None:
     with pytest.raises(StackValidationError):
         # Stack without container registry
         Stack(
+            id=uuid4(),
             name="",
             orchestrator=orchestrator,
             artifact_store=remote_artifact_store,
@@ -70,6 +73,7 @@ def test_github_actions_orchestrator_stack_validation() -> None:
     with pytest.raises(StackValidationError):
         # Stack with local container registry
         Stack(
+            id=uuid4(),
             name="",
             orchestrator=orchestrator,
             artifact_store=remote_artifact_store,
@@ -79,6 +83,7 @@ def test_github_actions_orchestrator_stack_validation() -> None:
     with pytest.raises(StackValidationError):
         # Stack with container registry that requires authentication
         Stack(
+            id=uuid4(),
             name="",
             orchestrator=orchestrator,
             artifact_store=remote_artifact_store,
@@ -88,6 +93,7 @@ def test_github_actions_orchestrator_stack_validation() -> None:
     with pytest.raises(StackValidationError):
         # Stack with local components
         Stack(
+            id=uuid4(),
             name="",
             orchestrator=orchestrator,
             artifact_store=local_artifact_store,
