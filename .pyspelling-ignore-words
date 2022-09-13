@@ -16,6 +16,7 @@ AirflowDag
 AirflowOrchestrator
 Alerter
 Alerters
+AlreadyExistsError
 AmazonEC
 AmazonEKS
 AmazonEKSClusterPolicy

@@ -360,13 +360,13 @@ def track(
 ) -> Callable[..., Any]:
     """Decorator to track event.
 
-    If the decorated function takes in a AnalyticsTrackedModelMixin object as an
-    argument or returns one, it will be called to track the event. The return
+    If the decorated function takes in a `AnalyticsTrackedModelMixin` object as
+    an argument or returns one, it will be called to track the event. The return
     value takes precedence over the argument when determining which object is
     called to track the event.
 
     If the decorated function is a method of a class that inherits from
-    AnalyticsTrackerMixin, the parent object will be used to intermediate
+    `AnalyticsTrackerMixin`, the parent object will be used to intermediate
     tracking analytics.
 
     Args:
