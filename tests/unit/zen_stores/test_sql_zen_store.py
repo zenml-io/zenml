@@ -593,4 +593,24 @@ def test_updating_stack_succeeds(
     new_stack = StackModel(name="arias_stack", components={})
     fresh_sql_zen_store.update_stack(current_stack_id, new_stack)
     assert fresh_sql_zen_store.get_stack(current_stack_id) is not None
-    assert fresh_sql_zen_store.get_stack(current_stack_id).name == "arias_stack"
+    assert (
+        fresh_sql_zen_store.get_stack(current_stack_id).name == "arias_stack"
+    )
+
+
+def test_updating_nonexistent_stack_fails(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests updating nonexistent stack fails."""
+    new_stack = StackModel(name="arias_stack", components={})
+    non_existent_stack_id = uuid.uuid4()
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.update_stack(non_existent_stack_id, new_stack)
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.get_stack(non_existent_stack_id)
+    assert (
+        fresh_sql_zen_store.get_stack(
+            fresh_sql_zen_store.list_stacks(project_name_or_id="default")[0].id
+        ).name
+        != "arias_stack"
+    )
