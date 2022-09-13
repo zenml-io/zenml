@@ -19,6 +19,7 @@ from uuid import UUID
 
 from pydantic import Field
 
+from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StackComponentType
 from zenml.models.user_management_models import UserModel
 from zenml.models.project_models import ProjectModel
@@ -68,6 +69,26 @@ class StackModel(AnalyticsTrackedModelMixin):
         default=None,
         title="The time at which the stack was registered.",
     )
+
+    def to_hydrated_model(self) -> "HydratedStackModel":
+        zen_store = GlobalConfiguration().zen_store
+
+        components = {}
+        for comp_type, comp_id_list in self.components.items():
+            components[comp_type] = [zen_store.get_stack_component(c_id)
+                                     for c_id in comp_id_list]
+
+        project = zen_store.get_project(self.project)
+        user = zen_store.get_user(self.user)
+
+        return HydratedStackModel(id=self.id,
+                                  name=self.name,
+                                  description=self.description,
+                                  components=components,
+                                  project=project,
+                                  user=user,
+                                  is_shared=self.is_shared,
+                                  creation_date=self.creation_date)
 
     # def get_analytics_metadata(self) -> Dict[str, Any]:
     #     """Add the stack components to the stack analytics metadata.

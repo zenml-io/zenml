@@ -474,34 +474,10 @@ class Repository(metaclass=RepositoryMetaClass):
             A list of all stacks available in the current project and owned by
             the current user.
         """
-        return [self.hydrate_model(stack)
+        return [stack.to_hydrated_model()
                 for stack in self.zen_store.list_stacks(
                     project_name_or_id=self.active_project_name,
                     user_name_or_id=self.active_user.id)]
-
-    def hydrate_model(
-        self,
-        dehydrated_model: BaseModel
-    ) -> HydratedStackModel:
-        """Hydrate Model use ids of other models to get the actual model."""
-        if isinstance(dehydrated_model, StackModel):
-            components = {}
-            for comp_type, comp_id_list in dehydrated_model.components.items():
-                components[comp_type] = [self.zen_store
-                                         .get_stack_component(c_id)
-                                         for c_id in comp_id_list]
-
-            project = self.zen_store.get_project(dehydrated_model.project)
-            user = self.zen_store.get_user(dehydrated_model.user)
-
-            return HydratedStackModel(id=dehydrated_model.id,
-                                      name=dehydrated_model.name,
-                                      description=dehydrated_model.description,
-                                      components=components,
-                                      project=project,
-                                      user=user,
-                                      is_shared=dehydrated_model.is_shared,
-                                      creation_date=dehydrated_model.creation_date)
 
     @property
     def stacks(self) -> List["Stack"]:
@@ -543,7 +519,7 @@ class Repository(metaclass=RepositoryMetaClass):
         dict_of_stacks = dict()
         for stack in stacks:
             dict_of_stacks[stack.name] = {"shared": str(stack.is_shared)}
-            for comp_type, comp in self.hydrate_model(stack).components.items():
+            for comp_type, comp in stack.to_hydrated_model().components.items():
                 dict_of_stacks[stack.name][str(comp_type)] = comp[0].name
 
         return dict_of_stacks
@@ -574,7 +550,7 @@ class Repository(metaclass=RepositoryMetaClass):
                 "`zenml stack set STACK_NAME` to set the active stack."
             )
 
-        return self.hydrate_model(self.zen_store.get_stack(stack_id=stack_id))
+        return self.zen_store.get_stack(stack_id=stack_id).to_hydrated_model()
 
     @property
     def active_stack(self) -> "Stack":

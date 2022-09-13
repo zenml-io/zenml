@@ -281,7 +281,7 @@ async def create_stack(
             project_name_or_id=parse_name_or_uuid(project_name_or_id),
             stack=stack,
         )
-        return repo.hydrate_model(created_stack)
+        return created_stack.to_hydrated_model()
     except (
         StackExistsError,
         StackComponentExistsError,

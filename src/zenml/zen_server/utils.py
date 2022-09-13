@@ -99,8 +99,7 @@ def conflict(error: Exception) -> HTTPException:
     return HTTPException(status_code=409, detail=error_detail(error))
 
 
-repo: Repository = Repository()
-zen_store: BaseZenStore = repo.zen_store
+zen_store: BaseZenStore = Repository().zen_store
 
 # # We initialize with track_analytics=False because we do not
 # # want to track anything server side.

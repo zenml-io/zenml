@@ -1015,7 +1015,7 @@ def export_stack(stack_name: str, filename: Optional[str]) -> None:
         cli_utils.error(f"Stack '{stack_name}' does not exist.")
     else:
         # write zenml version and stack dict to YAML
-        yaml_data = repo.hydrate_model(stack).to_yaml()
+        yaml_data = stack.to_hydrated_model().to_yaml()
         yaml_data["zenml_version"] = zenml.__version__
 
         if filename is None:
