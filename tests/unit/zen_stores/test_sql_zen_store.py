@@ -22,6 +22,11 @@ from zenml.models import ProjectModel, RoleModel, TeamModel, UserModel
 from zenml.models.stack_models import StackModel
 from zenml.zen_stores.base_zen_store import BaseZenStore
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.user_management_schemas import (
+    RoleSchema,
+    TeamSchema,
+    UserSchema,
+)
 
 #  .--------
 # | PROJECTS
@@ -698,3 +703,43 @@ def test_get_schema_fails_for_nonexistent_object(
         fresh_sql_zen_store._get_schema_by_name_or_id(
             "arias_project", ProjectSchema, "project"
         )
+
+
+def test_get_project_schema_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting project schema."""
+    schema = fresh_sql_zen_store._get_project_schema("default")
+    assert schema is not None
+    assert type(schema) == ProjectSchema
+
+
+def test_get_user_schema_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting user schema."""
+    schema = fresh_sql_zen_store._get_user_schema("default")
+    assert schema is not None
+    assert type(schema) == UserSchema
+
+
+def test_get_team_schema_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting team schema."""
+    new_team = TeamModel(name="arias_team")
+    fresh_sql_zen_store.create_team(new_team)
+    schema = fresh_sql_zen_store._get_team_schema("arias_team")
+    assert schema is not None
+    assert type(schema) == TeamSchema
+
+
+def test_get_role_schema_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting role schema."""
+    new_role = RoleModel(name="aria_admin")
+    fresh_sql_zen_store.create_role(new_role)
+    schema = fresh_sql_zen_store._get_role_schema("aria_admin")
+    assert schema is not None
+    assert type(schema) == RoleSchema
