@@ -16,8 +16,9 @@ import uuid
 
 import pytest
 
-from zenml.exceptions import EntityExistsError
+from zenml.exceptions import EntityExistsError, StackExistsError
 from zenml.models import ProjectModel, RoleModel, TeamModel, UserModel
+from zenml.models.stack_models import StackModel
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 #  .--------
@@ -552,21 +553,32 @@ def test_get_stack_fails_with_nonexistent_stack_id(
 
 
 # TODO: continue on to cover register, update and delete stacks
-# def test_register_stack_succeeds(
-#     fresh_sql_zen_store: BaseZenStore,
-# ):
-#     """Tests registering stack."""
-#     new_stack = StackModel(name="arias_stack", components={})
-#     fresh_sql_zen_store.register_stack(
-#         fresh_sql_zen_store.default_user_id,
-#         fresh_sql_zen_store.default_project_id,
-#         new_stack,
-#     )
-#     assert (
-#         len(
-#             fresh_sql_zen_store.list_stacks(
-#                 fresh_sql_zen_store.default_project_id
-#             )
-#         )
-#         == 2
-#     )
+# REGISTER
+# UPDATE
+# DELETE
+def test_register_stack_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests registering stack."""
+    new_stack = StackModel(name="arias_stack", components={})
+    fresh_sql_zen_store.register_stack(
+        user_name_or_id="default",
+        project_name_or_id="default",
+        stack=new_stack,
+    )
+    stacks = fresh_sql_zen_store.list_stacks("default")
+    assert len(stacks) == 2
+    assert fresh_sql_zen_store.get_stack(stacks[0].id) is not None
+
+
+def test_register_stack_fails_when_stack_exists(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests registering stack fails when stack exists."""
+    new_stack = StackModel(name="default", components={})
+    with pytest.raises(StackExistsError):
+        fresh_sql_zen_store.register_stack(
+            user_name_or_id="default",
+            project_name_or_id="default",
+            stack=new_stack,
+        )
