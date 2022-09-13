@@ -89,7 +89,7 @@ class GreatExpectationsValidatorStep(BaseStep):
             action_list=config.action_list,
         )
 
-        if config.exit_on_error and not results.success():
+        if config.exit_on_error and not results.success:
             raise RuntimeError(
                 "The Great Expectations validation failed. Check "
                 "the logs or the Great Expectations data docs for more "
