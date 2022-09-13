@@ -640,7 +640,7 @@ class Repository(metaclass=RepositoryMetaClass):
             stack: The new stack to use as the updated version.
         """
         if stack.is_valid:
-            self.zen_store.update_stack(stack=stack)
+            self.zen_store.update_stack(stack_id=stack.id, stack=stack)
         else:
             raise RuntimeError(
                 "Stack configuration is invalid. A valid"
@@ -658,8 +658,6 @@ class Repository(metaclass=RepositoryMetaClass):
             ValueError: If the stack is the currently active stack for this
                 repository.
         """
-        assert stack.id is None
-
         if stack.id == self.active_stack_model.id:
             raise ValueError(
                 f"Unable to deregister active stack " f"'{stack.name}'."
@@ -684,8 +682,6 @@ class Repository(metaclass=RepositoryMetaClass):
         Args:
             component: The new component to update with.
         """
-        assert component.id is None
-
         self.zen_store.update_stack_component(
             component_id=component.id, component=component
         )

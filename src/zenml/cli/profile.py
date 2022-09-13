@@ -608,10 +608,10 @@ def migrate_profiles(
                     cli_utils.declare(f"Migrated stack '{stack.name}'.")
                 except StackExistsError:
                     if overwrite:
+                        stack.project_id = project.id
+                        stack.owner = user.id
                         repo.zen_store.update_stack(
-                            stack_id=stack.name,  # TODO: check if this correct
-                            user=user,
-                            project=project,
+                            stack_id=stack.id,  # TODO: check if this correct
                             stack=stack,
                         )
                         cli_utils.declare(f"Updated stack '{stack.name}'.")
