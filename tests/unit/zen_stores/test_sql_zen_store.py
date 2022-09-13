@@ -139,14 +139,15 @@ def test_nonexistent_team_raises_error(fresh_sql_zen_store: BaseZenStore):
 def test_adding_user_to_team(fresh_sql_zen_store: BaseZenStore):
     """Tests adding a user to a team."""
     assert len(fresh_sql_zen_store.teams) == 0
-    new_team = TeamModel(name="arias_team")
+    team_name = "arias_team"
+    new_team = TeamModel(name=team_name)
     fresh_sql_zen_store.create_team(new_team)
     current_user_id = fresh_sql_zen_store.active_user.id
-    new_team_id = fresh_sql_zen_store.get_team("arias_team").id
-    fresh_sql_zen_store.add_user_to_team(current_user_id, new_team_id)
-    breakpoint()
+    fresh_sql_zen_store.add_user_to_team(
+        user_name_or_id="default", team_name_or_id=team_name
+    )
     assert (
-        fresh_sql_zen_store.get_users_for_team(new_team_id)[0].id
+        fresh_sql_zen_store.get_users_for_team(team_name)[0].id
         == current_user_id
     )
 
@@ -186,7 +187,6 @@ def test_removing_user_from_team_succeeds(fresh_sql_zen_store: BaseZenStore):
     fresh_sql_zen_store.create_team(new_team)
     current_user_id = fresh_sql_zen_store.active_user.id
     new_team_id = fresh_sql_zen_store.get_team("arias_team").id
-    breakpoint()
     fresh_sql_zen_store.add_user_to_team(current_user_id, new_team_id)
     assert len(fresh_sql_zen_store.get_users_for_team(new_team_id)) == 1
     fresh_sql_zen_store.remove_user_from_team(current_user_id, new_team_id)
@@ -218,7 +218,6 @@ def test_getting_user_for_team(fresh_sql_zen_store: BaseZenStore):
     fresh_sql_zen_store.create_team(new_team)
     current_user_id = fresh_sql_zen_store.active_user.id
     new_team_id = fresh_sql_zen_store.get_team("arias_team").id
-    breakpoint()
     fresh_sql_zen_store.add_user_to_team(current_user_id, new_team_id)
     users_for_team = fresh_sql_zen_store.get_users_for_team(new_team_id)
     assert len(users_for_team) == 1
@@ -231,7 +230,6 @@ def test_getting_team_for_user(fresh_sql_zen_store: BaseZenStore):
     fresh_sql_zen_store.create_team(new_team)
     current_user_id = fresh_sql_zen_store.active_user.id
     new_team_id = fresh_sql_zen_store.get_team("arias_team").id
-    breakpoint()
     fresh_sql_zen_store.add_user_to_team(current_user_id, new_team_id)
     teams_for_user = fresh_sql_zen_store.get_teams_for_user(current_user_id)
     assert len(teams_for_user) == 1
@@ -428,7 +426,7 @@ def test_assigning_role_to_team_succeeds(
                 user_name_or_id=fresh_sql_store_with_team.active_user.id
             )
         )
-        == 0
+        == 1
     )
 
 
