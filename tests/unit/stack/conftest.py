@@ -15,9 +15,9 @@ from uuid import uuid4
 
 import pytest
 
-from zenml.artifact_stores import BaseArtifactStore, LocalArtifactStore
+from zenml.artifact_stores import BaseArtifactStore
 from zenml.enums import StackComponentType
-from zenml.orchestrators import BaseOrchestrator, LocalOrchestrator
+from zenml.orchestrators import BaseOrchestrator
 from zenml.stack import Stack, StackComponent, StackValidator
 
 MOCK_FLAVOR = "mock_flavor"
@@ -42,19 +42,6 @@ def stack_with_mock_components(mocker):
     return Stack(
         id=uuid4(),
         name="mock_stack",
-        orchestrator=orchestrator,
-        artifact_store=artifact_store,
-    )
-
-
-@pytest.fixture
-def local_stack():
-    """Returns a local stack with local orchestrator and artifact store."""
-    orchestrator = LocalOrchestrator(name="")
-    artifact_store = LocalArtifactStore(name="", path="")
-    return Stack(
-        id=uuid4(),
-        name="",
         orchestrator=orchestrator,
         artifact_store=artifact_store,
     )
