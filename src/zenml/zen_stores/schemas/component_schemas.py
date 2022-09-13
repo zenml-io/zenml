@@ -58,6 +58,10 @@ class StackComponentSchema(SQLModel, table=True):
     ) -> "StackComponentSchema":
         """Create a StackComponentSchema with `id` and `created_at` missing.
 
+        Args:
+            user_id: The ID of the user creating the component.
+            project_id: The ID of the project the component belongs to.
+            component: The component model from which to create the schema.
 
         Returns:
             A StackComponentSchema
@@ -79,6 +83,9 @@ class StackComponentSchema(SQLModel, table=True):
         component: ComponentModel,
     ) -> "StackComponentSchema":
         """Update the updatable fields on an existing StackSchema.
+
+        Args:
+            component: The component model from which to update the schema.
 
         Returns:
             A StackSchema

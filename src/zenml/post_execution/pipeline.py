@@ -71,6 +71,9 @@ def get_pipeline(
     Returns:
         A post-execution pipeline view for the given pipeline or `None` if
         it doesn't exist.
+
+    Raises:
+        RuntimeError: If the pipeline was not specified correctly.
     """
     if isinstance(pipeline, str):
         pipeline_name = pipeline
@@ -127,13 +130,17 @@ class PipelineView:
         `zenml.repository.Repository` instead.
 
         Args:
-            id_: The context id of this pipeline.
-            name: The name of this pipeline.
+            model: The model to initialize this pipeline view from.
         """
         self._model = model
 
     @property
     def id(self) -> UUID:
+        """Returns the ID of this pipeline.
+
+        Returns:
+            The ID of this pipeline.
+        """
         return self._model.id
 
     @property

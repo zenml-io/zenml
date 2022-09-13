@@ -35,9 +35,6 @@ def get_run(name: str) -> "PipelineRunView":
 
     Returns:
         The post-execution view of the run with the given name.
-
-    Raises:
-        KeyError: If there is no run with the given name in this project.
     """
     repo = Repository()
     run = repo.zen_store.get_run_in_project(
@@ -77,15 +74,18 @@ class PipelineRunView:
         but retrieved from a `PipelineView` object instead.
 
         Args:
-            id_: The context id of this pipeline run.
-            name: The name of this pipeline run.
-            executions: All executions associated with this pipeline run.
+            model: The model to initialize this object from.
         """
         self._model = model
         self._steps: Dict[str, StepView] = OrderedDict()
 
     @property
     def id(self) -> UUID:
+        """Returns the ID of this pipeline run.
+
+        Returns:
+            The ID of this pipeline run.
+        """
         return self._model.id
 
     @property

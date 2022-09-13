@@ -207,15 +207,15 @@ class DuplicateRunNameError(RuntimeError):
 
 
 class NotAuthorizedError(ZenMLBaseException):
-    """Raised when the user does not have permission to perform an action"""
+    """Raised when the user does not have permission to perform an action."""
 
 
 class ValidationError(ZenMLBaseException):
-    """Raised when the Model passed to the ZenStore"""
+    """Raised when the Model passed to the ZenStore."""
 
 
 class EntityExistsError(ZenMLBaseException):
-    """Raised when trying to register a user-management entity with a name that already exists."""
+    """Raised when trying to register an entity that already exists."""
 
 
 class StackExistsError(EntityExistsError):

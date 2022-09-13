@@ -408,12 +408,8 @@ class SqlZenStore(BaseZenStore):
             is_shared: Optionally filter out stacks by whether they are shared
                 or not
 
-
         Returns:
             A list of all stacks matching the filter criteria.
-
-        Raises:
-            KeyError: if the project doesn't exist.
         """
         with Session(self.engine) as session:
             project = self._get_project_schema(project_name_or_id)
@@ -608,9 +604,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             A list of all stack components matching the filter criteria.
-
-        Raises:
-            KeyError: if the project doesn't exist.
         """
         with Session(self.engine) as session:
             project = self._get_project_schema(project_name_or_id)
@@ -645,7 +638,8 @@ class SqlZenStore(BaseZenStore):
         """Update an existing stack component.
 
         Args:
-            component: The stack component to use for the update.
+            component_id: The ID of the stack component to update.
+            component: The stack component model to use for the update.
 
         Returns:
             The updated stack component.
@@ -712,8 +706,7 @@ class SqlZenStore(BaseZenStore):
             pipeline_id: The id of the pipeline to get side effects for.
             stack_id: The id of the stack to get side effects for.
         """
-        # TODO: implement this
-        raise NotImplementedError
+        pass  # TODO: implement this
 
     # -----------------------
     # Stack component flavors
@@ -892,9 +885,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The requested user, if it was found.
-
-        Raises:
-            KeyError: If no user with the given name or ID exists.
         """
         user = self._get_user_schema(user_name_or_id)
         return user.to_model()
@@ -922,9 +912,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated user.
-
-        Raises:
-            KeyError: If no user with the given name exists.
         """
         with Session(self.engine) as session:
             existing_user = self._get_user_schema(user_name_or_id)
@@ -938,10 +925,7 @@ class SqlZenStore(BaseZenStore):
         """Deletes a user.
 
         Args:
-            user_id: The ID of the user to delete.
-
-        Raises:
-            KeyError: If no user with the given name exists.
+            user_name_or_id: The name or ID of the user to delete.
         """
         with Session(self.engine) as session:
             user = self._get_user_schema(user_name_or_id)
@@ -994,9 +978,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The requested team.
-
-        Raises:
-            KeyError: If no team with the given name or ID exists.
         """
         team = self._get_team_schema(team_name_or_id)
         return team.to_model()
@@ -1017,9 +998,6 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             team_name_or_id: Name or ID of the team to delete.
-
-        Raises:
-            KeyError: If no team with the given ID exists.
         """
         with Session(self.engine) as session:
             team = self._get_team_schema(team_name_or_id)
@@ -1040,9 +1018,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             A list of all users that are part of the team.
-
-        Raises:
-            KeyError: If no team with the given ID exists.
         """
         team = self._get_team_schema(team_name_or_id)
         return [user.to_model() for user in team.users]
@@ -1057,9 +1032,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             A list of all teams that the user is part of.
-
-        Raises:
-            KeyError: If no user with the given ID exists.
         """
         user = self._get_user_schema(user_name_or_id)
         return [team.to_model() for team in user.teams]
@@ -1076,7 +1048,6 @@ class SqlZenStore(BaseZenStore):
             team_name_or_id: Name or ID of the team to which to add the user to.
 
         Raises:
-            KeyError: If the team or user does not exist.
             EntityExistsError: If the user is already a member of the team.
         """
         with Session(self.engine) as session:
@@ -1110,9 +1081,6 @@ class SqlZenStore(BaseZenStore):
         Args:
             user_name_or_id: Name or ID of the user to remove from the team.
             team_name_or_id: Name or ID of the team from which to remove the user.
-
-        Raises:
-            KeyError: If the team or user does not exist.
         """
         with Session(self.engine) as session:
             team = self._get_team_schema(team_name_or_id)
@@ -1164,9 +1132,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The requested role.
-
-        Raises:
-            KeyError: If no role with the given name exists.
         """
         role = self._get_role_schema(role_name_or_id)
         return role.to_model()
@@ -1188,9 +1153,6 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             role_name_or_id: Name or ID of the role to delete.
-
-        Raises:
-            KeyError: If no role with the given ID exists.
         """
         with Session(self.engine) as session:
             role = self._get_role_schema(role_name_or_id)
@@ -1461,9 +1423,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The requested project if one was found.
-
-        Raises:
-            KeyError: If there is no such project.
         """
         project = self._get_project_schema(project_name_or_id)
         return project.to_model()
@@ -1490,9 +1449,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated project.
-
-        Raises:
-            KeyError: if the project does not exist.
         """
         with Session(self.engine) as session:
             # Check if project with the given name already exists
@@ -1512,9 +1468,6 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             project_name_or_id: Name or ID of the project to delete.
-
-        Raises:
-            KeyError: If no project with the given name exists.
         """
         with Session(self.engine) as session:
             # Check if project with the given name exists
@@ -1608,9 +1561,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             A list of all repositories in the project.
-
-        Raises:
-            KeyError: if the project doesn't exist.
         """
         with Session(self.engine) as session:
             # Check if project with the given name already exists
@@ -1706,7 +1656,6 @@ class SqlZenStore(BaseZenStore):
             The newly created pipeline.
 
         Raises:
-            KeyError: if the project does not exist.
             EntityExistsError: If an identical pipeline already exists.
         """
         with Session(self.engine) as session:
@@ -1805,9 +1754,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             A list of pipelines.
-
-        Raises:
-            KeyError: if the project does not exist.
         """
         with Session(self.engine) as session:
             # Check if project with the given name exists
@@ -1909,6 +1855,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             EntityExistsError: If an identical pipeline run already exists.
+            KeyError: If the pipeline does not exist.
         """
         with Session(self.engine) as session:
             # Check if pipeline run already exists
@@ -2030,7 +1977,6 @@ class SqlZenStore(BaseZenStore):
         self,
         run_id: UUID,
         component_id: Optional[str] = None,
-        component_type: Optional[StackComponentType] = None,
     ) -> Dict[str, Any]:
         """Gets the side effects for a component in a pipeline run.
 
@@ -2181,6 +2127,9 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             A dict mapping artifact names to the output artifacts for the step.
+
+        Raises:
+            KeyError: if the step doesn't exist.
         """
         with Session(self.engine) as session:
             step = session.exec(
@@ -2208,6 +2157,9 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             A dict mapping artifact names to the input artifacts for the step.
+
+        Raises:
+            KeyError: if the step doesn't exist.
         """
         with Session(self.engine) as session:
             step = session.exec(
@@ -2313,9 +2265,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The project schema.
-
-        Raises:
-            KeyError: if the project doesn't exist.
         """
         return cast(
             ProjectSchema,
@@ -2337,9 +2286,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The user schema.
-
-        Raises:
-            KeyError: if the user doesn't exist.
         """
         return cast(
             UserSchema,
@@ -2361,9 +2307,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The team schema.
-
-        Raises:
-            KeyError: if the team doesn't exist.
         """
         return cast(
             TeamSchema,
@@ -2385,9 +2328,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The role schema.
-
-        Raises:
-            KeyError: if the role doesn't exist.
         """
         return cast(
             RoleSchema,
@@ -2408,6 +2348,9 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The ZenML step ID.
+
+        Raises:
+            KeyError: if the step couldn't be found.
         """
         with Session(self.engine) as session:
             step = session.exec(
@@ -2428,6 +2371,9 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The ZenML artifact ID.
+
+        Raises:
+            KeyError: if the artifact couldn't be found.
         """
         with Session(self.engine) as session:
             artifact = session.exec(
@@ -2474,6 +2420,9 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             run_id: The ID of the pipeline run to sync steps for.
+
+        Raises:
+            KeyError: if the run couldn't be found.
         """
         # Get all steps from ZenML.
         with Session(self.engine) as session:
@@ -2601,6 +2550,10 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The created step.
+
+        Raises:
+            EntityExistsError: if the step already exists.
+            KeyError: if the pipeline run doesn't exist.
         """
         with Session(self.engine) as session:
 
@@ -2655,8 +2608,8 @@ class SqlZenStore(BaseZenStore):
         """Sets the parent step for a step.
 
         Args:
-            child_step_id: The ID of the child step to set the parent for.
-            parent_step_id: The ID of the parent step to set.
+            child_id: The ID of the child step to set the parent for.
+            parent_id: The ID of the parent step to set a child for.
 
         Raises:
             KeyError: if the child step or parent step doesn't exist.
@@ -2701,6 +2654,9 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The created artifact.
+
+        Raises:
+            KeyError: if the step doesn't exist.
         """
         with Session(self.engine) as session:
 

@@ -232,6 +232,7 @@ class LocalServerProvider(BaseServerProvider):
             service: The service instance.
             timeout: The timeout in seconds to wait until the service is
                 stopped.
+
         Returns:
             The updated service instance.
         """

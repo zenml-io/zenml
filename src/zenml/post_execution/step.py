@@ -35,10 +35,7 @@ class StepView:
         but retrieved from a `PipelineRunView` object instead.
 
         Args:
-            id_: The execution id of this step.
-            parents_step_ids: The execution ids of the parents of this step.
-            entrypoint_name: The name of this step.
-            name: The name of this step within the pipeline
+            model: The model to initialize this object from.
         """
         self._model = model
         self._inputs: Dict[str, ArtifactView] = {}

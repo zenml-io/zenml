@@ -640,7 +640,7 @@ def remove_stack_component(
     Args:
         stack_name: Name of the stack to remove components from.
         container_registry_flag: To remove the container registry from this
-        stack.
+            stack.
         step_operator_flag: To remove the step operator from this stack.
         secrets_manager_flag: To remove the secrets manager from this stack.
         feature_store_flag: To remove the feature store from this stack.
@@ -1118,8 +1118,6 @@ def import_stack(
         ignore_version_mismatch: Import stack components even if
             the installed version of ZenML is different from the
             one specified in the stack YAML file.
-        decouple_stores: Resets the previous couplings of the given
-            artifact/metadata stores and creates a new one.
     """
     track_event(AnalyticsEvent.IMPORT_STACK)
 

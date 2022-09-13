@@ -66,10 +66,15 @@ class StackSchema(SQLModel, table=True):
     ) -> "StackSchema":
         """Create an incomplete StackSchema with `id` and `created_at` missing.
 
+        Args:
+            user_id: The ID of the user creating the stack.
+            project_id: The ID of the project the stack belongs to.
+            defined_components: The components that are part of the stack.
+            stack: The stack model to create the schema from.
+
         Returns:
             A StackSchema
         """
-
         return cls(
             name=stack.name,
             project_id=project_id,
@@ -84,6 +89,10 @@ class StackSchema(SQLModel, table=True):
         stack: StackModel,
     ) -> "StackSchema":
         """Update the updatable fields on an existing StackSchema.
+
+        Args:
+            defined_components: The components that are part of the stack.
+            stack: The stack model to create the schema from.
 
         Returns:
             A StackSchema
