@@ -580,9 +580,6 @@ def test_register_stack_fails_when_stack_exists(
         )
 
 
-# TODO: continue on to cover register, update and delete stacks
-# UPDATE
-# DELETE
 def test_updating_stack_succeeds(
     fresh_sql_zen_store: BaseZenStore,
 ):
@@ -593,9 +590,7 @@ def test_updating_stack_succeeds(
     new_stack = StackModel(name="arias_stack", components={})
     fresh_sql_zen_store.update_stack(current_stack_id, new_stack)
     assert fresh_sql_zen_store.get_stack(current_stack_id) is not None
-    assert (
-        fresh_sql_zen_store.get_stack(current_stack_id).name == "arias_stack"
-    )
+    assert fresh_sql_zen_store.get_stack(current_stack_id).name == "arias_stack"
 
 
 def test_updating_nonexistent_stack_fails(
@@ -614,3 +609,44 @@ def test_updating_nonexistent_stack_fails(
         ).name
         != "arias_stack"
     )
+
+
+# TODO: continue on to cover register, update and delete stacks
+# DELETE
+def test_deleting_default_stack_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests deleting stack."""
+    current_stack_id = fresh_sql_zen_store.list_stacks(
+        project_name_or_id="default"
+    )[0].id
+    fresh_sql_zen_store.delete_stack(current_stack_id)
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.get_stack(current_stack_id)
+
+
+def test_deleting_nonexistent_stack_fails(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests deleting nonexistent stack fails."""
+    non_existent_stack_id = uuid.uuid4()
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.delete_stack(non_existent_stack_id)
+
+
+def test_deleting_a_stack_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests deleting stack."""
+    new_stack = StackModel(name="arias_stack", components={})
+    fresh_sql_zen_store.register_stack(
+        user_name_or_id="default",
+        project_name_or_id="default",
+        stack=new_stack,
+    )
+    stacks = fresh_sql_zen_store.list_stacks(project_name_or_id="default")
+    assert len(stacks) == 2
+    new_stack = [stack for stack in stacks if stack.name == "arias_stack"][0]
+    fresh_sql_zen_store.delete_stack(new_stack.id)
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.get_stack(new_stack.id)
