@@ -36,28 +36,24 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.metadata_stores.sqlite_metadata_store import SQLiteMetadataStore
 from zenml.models import (
+    ArtifactModel,
     ComponentModel,
     FlavorModel,
+    PipelineModel,
     PipelineRunModel,
     ProjectModel,
     RoleAssignmentModel,
     RoleModel,
     StackModel,
+    StepRunModel,
     TeamModel,
     UserModel,
-)
-from zenml.models.code_models import CodeRepositoryModel
-from zenml.models.pipeline_models import (
-    ArtifactModel,
-    PipelineModel,
-    StepRunModel,
 )
 from zenml.utils import io_utils, uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME, BaseZenStore
 from zenml.zen_stores.schemas import (
     ArtifactSchema,
-    CodeRepositorySchema,
     FlavorSchema,
     PipelineRunSchema,
     PipelineSchema,
@@ -1491,163 +1487,6 @@ class SqlZenStore(BaseZenStore):
     # ------------
     # Repositories
     # ------------
-
-    # TODO: create repos?
-
-    @track(AnalyticsEvent.CONNECT_REPOSITORY)
-    def connect_project_repository(
-        self,
-        project_name_or_id: Union[str, UUID],
-        repository: CodeRepositoryModel,
-    ) -> CodeRepositoryModel:
-        """Connects a repository to a project.
-
-        Args:
-            project_name_or_id: Name or ID of the project to connect the
-                repository to.
-            repository: The repository to connect.
-
-        Returns:
-            The connected repository.
-
-        Raises:
-            KeyError: if the project or repository doesn't exist.
-        """
-        with Session(self.engine) as session:
-            # Check if project with the given name already exists
-            project = self._get_project_schema(project_name_or_id)
-
-            # Check if repository with the given name already exists
-            existing_repository = session.exec(
-                select(CodeRepositorySchema).where(
-                    CodeRepositorySchema.id == repository.id
-                )
-            ).first()
-            if existing_repository is None:
-                raise KeyError(
-                    f"Unable to connect repository with ID {repository.id} to "
-                    f"project '{project.name}': No repository with this ID found."
-                )
-
-            # Connect the repository to the project
-            existing_repository.project_id = project.id
-            session.add(existing_repository)
-            session.commit()
-
-            return existing_repository.to_model()
-
-    def get_repository(self, repository_id: UUID) -> CodeRepositoryModel:
-        """Get a repository by ID.
-
-        Args:
-            repository_id: The ID of the repository to get.
-
-        Returns:
-            The repository.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
-        with Session(self.engine) as session:
-            # Check if repository with the given ID exists
-            existing_repository = session.exec(
-                select(CodeRepositorySchema).where(
-                    CodeRepositorySchema.id == repository_id
-                )
-            ).first()
-            if existing_repository is None:
-                raise KeyError(
-                    f"Unable to get repository with ID {repository_id}: "
-                    "No repository with this ID found."
-                )
-
-            return existing_repository.to_model()
-
-    def list_repositories(
-        self, project_name_or_id: Union[str, UUID]
-    ) -> List[CodeRepositoryModel]:
-        """Get all repositories in the project.
-
-        Args:
-            project_name_or_id: The name or ID of the project.
-
-        Returns:
-            A list of all repositories in the project.
-        """
-        with Session(self.engine) as session:
-            # Check if project with the given name already exists
-            project = self._get_project_schema(project_name_or_id)
-
-            # Get all repositories in the project
-            repositories = session.exec(
-                select(CodeRepositorySchema).where(
-                    CodeRepositorySchema.project_id == project.id
-                )
-            ).all()
-
-        return [repository.to_model() for repository in repositories]
-
-    @track(AnalyticsEvent.UPDATE_REPOSITORY)
-    def update_repository(
-        self, repository_id: UUID, repository: CodeRepositoryModel
-    ) -> CodeRepositoryModel:
-        """Update a repository.
-
-        Args:
-            repository_id: The ID of the repository to update.
-            repository: The repository to use for the update.
-
-        Returns:
-            The updated repository.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
-        with Session(self.engine) as session:
-            # Check if repository with the given ID exists
-            existing_repository = session.exec(
-                select(CodeRepositorySchema).where(
-                    CodeRepositorySchema.id == repository_id
-                )
-            ).first()
-            if existing_repository is None:
-                raise KeyError(
-                    f"Unable to update repository with ID {repository_id}: "
-                    "No repository with this ID found."
-                )
-
-            # Update the repository
-            existing_repository.from_update_model(repository)
-            session.add(existing_repository)
-            session.commit()
-
-            return existing_repository.to_model()
-
-    @track(AnalyticsEvent.DELETE_REPOSITORY)
-    def delete_repository(self, repository_id: UUID) -> None:
-        """Delete a repository.
-
-        Args:
-            repository_id: The ID of the repository to delete.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
-        with Session(self.engine) as session:
-            # Check if repository with the given ID exists
-            existing_repository = session.exec(
-                select(CodeRepositorySchema).where(
-                    CodeRepositorySchema.id == repository_id
-                )
-            ).first()
-            if existing_repository is None:
-                raise KeyError(
-                    f"Unable to delete repository with ID {repository_id}: "
-                    "No repository with this ID found."
-                )
-
-            session.delete(existing_repository)  # TODO: handle dependencies
-            session.commit()
 
     # ---------
     # Pipelines

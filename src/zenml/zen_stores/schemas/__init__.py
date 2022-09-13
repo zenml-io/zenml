@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations."""
 
-from zenml.zen_stores.schemas.code_schemas import CodeRepositorySchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.flavor_schemas import FlavorSchema
 from zenml.zen_stores.schemas.pipeline_schemas import (
@@ -36,7 +35,6 @@ from zenml.zen_stores.schemas.user_management_schemas import (
 )
 
 __all__ = [
-    "CodeRepositorySchema",
     "StackComponentSchema",
     "FlavorSchema",
     "PipelineRunSchema",
