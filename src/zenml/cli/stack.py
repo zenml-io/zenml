@@ -792,6 +792,8 @@ def describe_stack(stack_name: Optional[str]) -> None:
     stack_configurations = repo.stack_configurations
     if len(stack_configurations) == 0:
         cli_utils.error("No stacks registered.")
+    if stack_name is not None and stack_name not in stack_configurations:
+        cli_utils.error(f"Stack `{stack_name}` does not exist.")
 
     active_stack_name = repo.active_stack_model.name
     stack_configuration = stack_configurations[active_stack_name]
