@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import json
 import uuid
 
 import pytest
@@ -650,3 +651,23 @@ def test_deleting_a_stack_succeeds(
     fresh_sql_zen_store.delete_stack(new_stack.id)
     with pytest.raises(KeyError):
         fresh_sql_zen_store.get_stack(new_stack.id)
+
+
+# ------------
+# TFX Metadata
+# ------------
+
+
+def test_tfx_metadata_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests tfx metadata."""
+    config = fresh_sql_zen_store.get_metadata_config()
+    assert config is not None
+    assert type(config) == str
+    try:
+        json_config = json.loads(config)
+        assert json_config is not None
+        assert type(json_config) == dict
+    except json.JSONDecodeError:
+        assert False
