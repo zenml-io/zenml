@@ -237,7 +237,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_stacks(
         self,
-        project_name_or_id: Union[str, UUID],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,

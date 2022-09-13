@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import List, Union
+from typing import List, Union, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -21,7 +21,7 @@ from zenml.constants import (
     REPOSITORIES,
     STACK_COMPONENTS,
     STACKS,
-    VERSION_1,
+    VERSION_1, FLAVORS,
 )
 from zenml.exceptions import (
     EntityExistsError,
@@ -35,7 +35,7 @@ from zenml.models import (
     ComponentModel,
     PipelineModel,
     ProjectModel,
-    StackModel,
+    StackModel, FlavorModel,
 )
 from zenml.models.stack_models import HydratedStackModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
@@ -221,16 +221,27 @@ async def delete_project(project_name_or_id: str) -> None:
 
 @router.get(
     "/{project_name_or_id}" + STACKS,
-    response_model=List[StackModel],
+    response_model=Union[List[HydratedStackModel], List[StackModel]],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_project_stacks(project_name_or_id: str) -> List[StackModel]:
+async def get_project_stacks(
+    project_name_or_id: str,
+    user_name_or_id: Optional[str] = None,
+    stack_name: Optional[str] = None,
+    is_shared: Optional[bool] = None,
+    hydrated: bool = True
+) -> Union[List[HydratedStackModel], List[StackModel]]:
     """Get stacks that are part of a specific project.
 
     # noqa: DAR401
 
     Args:
         project_name_or_id: Name or ID of the project.
+        user_name_or_id: Optionally filter by name or ID of the user.
+        stack_name: Optionally filter by stack name
+        is_shared: Optionally filter by shared status of the stack
+        hydrated: Defines if stack components, users and projects will be
+                  included by reference (FALSE) or as model (TRUE)
 
     Returns:
         All stacks part of the specified project.
@@ -242,9 +253,15 @@ async def get_project_stacks(project_name_or_id: str) -> List[StackModel]:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.list_stacks(
-            project_name_or_id=parse_name_or_uuid(project_name_or_id)
-        )
+        stacks_list = zen_store.list_stacks(
+            project_name_or_id=parse_name_or_uuid(project_name_or_id),
+            user_name_or_id=parse_name_or_uuid(user_name_or_id),
+            is_shared=is_shared,
+            name=stack_name)
+        if hydrated:
+            return [stack.to_hydrated_model() for stack in stacks_list]
+        else:
+            return stacks_list
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
@@ -382,7 +399,6 @@ async def list_project_stack_components_by_type(
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 async def create_stack_component(
-    component_type: str,
     project_name_or_id: str,
     component: ComponentModel,
 ) -> None:
@@ -403,6 +419,83 @@ async def create_stack_component(
             project_name_or_id=parse_name_or_uuid(project_name_or_id),
             component=component,
         )
+    except StackComponentExistsError as error:
+        raise conflict(error) from error
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except KeyError as error:
+        raise HTTPException(status_code=409, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@router.get(
+    "/{project_name_or_id}" + FLAVORS,
+    response_model=List[FlavorModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def list_project_flavors(
+    project_name_or_id: Optional[str] = None,
+    component_type: Optional[str] = None
+) -> List[FlavorModel]:
+    """List stack components flavors of a certain type that are part of a project.
+
+    # noqa: DAR401
+
+    Args:
+        component_type: Type of the component.
+        project_name_or_id: Name or ID of the project.
+
+    Returns:
+        All stack components of a certain type that are part of a project.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        flavors_list = zen_store.list_flavors(
+            project_name_or_id=parse_name_or_uuid(project_name_or_id),
+            component_type=component_type
+        )
+        return flavors_list
+    except KeyError as error:
+        raise not_found(error) from error
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@router.post(
+    "/{project_name_or_id}" + FLAVORS,
+    response_model=FlavorModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+async def create_flavor(
+    project_name_or_id: str,
+    flavor: FlavorModel,
+) -> FlavorModel:
+    """Creates a stack component flavor.
+
+    Args:
+        project_name_or_id: Name or ID of the project.
+        flavor: Stack component flavor to register.
+
+    Raises:
+        conflict: when the component already exists.
+        401 error: when not authorized to login
+        409 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        # TODO: [server] inject user here
+        created_flavor = zen_store.create_flavor(
+            project_name_or_id=parse_name_or_uuid(project_name_or_id),
+            flavor=flavor,
+        )
+        return created_flavor
     except StackComponentExistsError as error:
         raise conflict(error) from error
     except NotAuthorizedError as error:

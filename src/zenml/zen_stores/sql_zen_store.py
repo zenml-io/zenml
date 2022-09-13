@@ -395,7 +395,7 @@ class SqlZenStore(BaseZenStore):
 
     def list_stacks(
         self,
-        project_name_or_id: Union[str, UUID],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
@@ -417,13 +417,13 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the project doesn't exist.
         """
         with Session(self.engine) as session:
-            project = self._get_project_schema(project_name_or_id)
 
             # Get a list of all stacks
-            query = select(StackSchema).where(
-                StackSchema.project_id == project.id
-            )
+            query = select(StackSchema)
             # TODO: prettify
+            if project_name_or_id:
+                project = self._get_project_schema(project_name_or_id)
+                query = query.where(StackSchema.project_id == project.id)
             if user_name_or_id:
                 user = self._get_user_schema(user_name_or_id)
                 query = query.where(StackSchema.owner == user.id)

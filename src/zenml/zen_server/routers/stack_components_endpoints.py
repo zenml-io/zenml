@@ -104,39 +104,6 @@ async def list_stack_components(
 
 
 @router.get(
-    "/{component_type}" + FLAVORS,
-    response_model=List[FlavorModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-async def list_flavors(
-    component_type: StackComponentType,
-) -> List[FlavorModel]:
-    """Returns all flavors of a given type.
-
-    Args:
-        component_type: Type of the component.
-
-    Returns:
-        The requested flavors.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
-    """
-
-    try:
-        # TODO [Baris]: add project and more filters to this
-        return zen_store.list_flavors(component_type=component_type)
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
-
-
-@router.get(
     "/{component_id}",
     response_model=ComponentModel,
     responses={401: error_response, 404: error_response, 422: error_response},
