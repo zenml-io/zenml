@@ -102,8 +102,8 @@ class StackSchema(SQLModel, table=True):
         return StackModel(
             id=self.id,
             name=self.name,
-            owner=self.owner,
-            project_id=self.project_id,
+            user=self.owner,
+            project=self.project_id,
             is_shared=self.is_shared,
-            components={c.type: c.to_model() for c in self.components},
+            components={c.type: [c.id] for c in self.components},
         )

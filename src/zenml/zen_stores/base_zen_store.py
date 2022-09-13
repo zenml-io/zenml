@@ -266,7 +266,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
                     active_stack_id,
                 )
             else:
-                if active_stack.project_id != active_project.id:
+                if active_stack.project != active_project.id:
                     logger.warning(
                         "The stack with id '%s' is not in the active project. "
                         "Resetting the active stack to the default "
@@ -376,7 +376,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             ),
         )
 
-        components = {c.type: c for c in [orchestrator, artifact_store]}
+        components = {c.type: [c.id] for c in [orchestrator, artifact_store]}
         # Register the default stack
         stack = StackModel(
             name="default", components=components, is_shared=False

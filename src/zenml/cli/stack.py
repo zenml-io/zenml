@@ -194,89 +194,89 @@ def register_stack(
         repo = Repository()
 
         stack_components = {
-            StackComponentType.ARTIFACT_STORE: (
+            StackComponentType.ARTIFACT_STORE: [
                 repo.get_stack_component_by_name_and_type(
                     StackComponentType.ARTIFACT_STORE, name=artifact_store_name
-                )
-            ),
-            StackComponentType.ORCHESTRATOR: (
+                ).id
+            ],
+            StackComponentType.ORCHESTRATOR: [
                 repo.get_stack_component_by_name_and_type(
                     StackComponentType.ORCHESTRATOR, name=orchestrator_name
-                )
-            ),
+                ).id
+            ],
         }
 
         if container_registry_name:
             stack_components[
                 StackComponentType.CONTAINER_REGISTRY
-            ] = repo.get_stack_component_by_name_and_type(
+            ] = [repo.get_stack_component_by_name_and_type(
                 StackComponentType.CONTAINER_REGISTRY,
                 name=container_registry_name,
-            )
+            ).id]
 
         if step_operator_name:
             stack_components[
                 StackComponentType.STEP_OPERATOR
-            ] = repo.get_stack_component_by_name_and_type(
+            ] = [repo.get_stack_component_by_name_and_type(
                 StackComponentType.STEP_OPERATOR,
                 name=step_operator_name,
-            )
+            ).id]
 
         if secrets_manager_name:
             stack_components[
                 StackComponentType.SECRETS_MANAGER
-            ] = repo.get_stack_component_by_name_and_type(
+            ] = [repo.get_stack_component_by_name_and_type(
                 StackComponentType.SECRETS_MANAGER,
                 name=secrets_manager_name,
-            )
+            ).id]
 
         if feature_store_name:
             stack_components[
                 StackComponentType.FEATURE_STORE
-            ] = repo.get_stack_component_by_name_and_type(
+            ] = [repo.get_stack_component_by_name_and_type(
                 StackComponentType.FEATURE_STORE,
                 name=feature_store_name,
-            )
+            ).id]
 
         if model_deployer_name:
             stack_components[
                 StackComponentType.MODEL_DEPLOYER
-            ] = repo.get_stack_component_by_name_and_type(
+            ] = [repo.get_stack_component_by_name_and_type(
                 StackComponentType.MODEL_DEPLOYER,
                 name=model_deployer_name,
-            )
+            ).id]
 
         if experiment_tracker_name:
             stack_components[
                 StackComponentType.EXPERIMENT_TRACKER
-            ] = repo.get_stack_component_by_name_and_type(
+            ] = [repo.get_stack_component_by_name_and_type(
                 StackComponentType.EXPERIMENT_TRACKER,
                 name=experiment_tracker_name,
-            )
+            ).id]
 
         if alerter_name:
             stack_components[
                 StackComponentType.ALERTER
-            ] = repo.get_stack_component_by_name_and_type(
+            ] = [repo.get_stack_component_by_name_and_type(
                 StackComponentType.ALERTER,
                 name=alerter_name,
-            )
+            ).id]
 
         if annotator_name:
             stack_components[
                 StackComponentType.ANNOTATOR
-            ] = repo.get_stack_component_by_name_and_type(
+            ] = [repo.get_stack_component_by_name_and_type(
                 StackComponentType.ANNOTATOR,
                 name=annotator_name,
-            )
+            ).id]
 
         if data_validator_name:
             stack_components[
                 StackComponentType.DATA_VALIDATOR
-            ] = repo.get_stack_component_by_name_and_type(
+            ] = [repo.get_stack_component_by_name_and_type(
                 StackComponentType.DATA_VALIDATOR,
                 name=data_validator_name,
-            )
+            ).id]
 
         stack_ = StackModel(
             name=stack_name, components=stack_components, is_shared=share
@@ -384,13 +384,6 @@ def register_stack(
     required=False,
 )
 @click.option(
-    "--is-shared",
-    "is_shared",
-    is_flag=True,
-    help="Use this flag to share this stack with other users.",
-    type=click.BOOL,
-)
-@click.option(
     "--share",
     "share",
     is_flag=True,
@@ -451,88 +444,88 @@ def update_stack(
         if artifact_store_name:
             stack_components[
                 StackComponentType.ARTIFACT_STORE
-            ] = repo.get_stack_component_by_name_and_type(
+            ] = [repo.get_stack_component_by_name_and_type(
                 StackComponentType.ARTIFACT_STORE, name=artifact_store_name
-            )
+            ).id]
 
         if orchestrator_name:
             stack_components[
                 StackComponentType.ORCHESTRATOR
-            ] = repo.get_stack_component_by_name_and_type(
+            ] = [repo.get_stack_component_by_name_and_type(
                 StackComponentType.ORCHESTRATOR, name=orchestrator_name
-            )
+            ).id]
 
         if container_registry_name:
             stack_components[
                 StackComponentType.CONTAINER_REGISTRY
-            ] = repo.get_stack_component_by_name_and_type(
+            ] = [repo.get_stack_component_by_name_and_type(
                 StackComponentType.CONTAINER_REGISTRY,
                 name=container_registry_name,
-            )
+            ).id]
 
         if step_operator_name:
             stack_components[
                 StackComponentType.STEP_OPERATOR
-            ] = repo.get_stack_component_by_name_and_type(
+            ] = [repo.get_stack_component_by_name_and_type(
                 StackComponentType.STEP_OPERATOR,
                 name=step_operator_name,
-            )
+            ).id]
 
         if secrets_manager_name:
             stack_components[
                 StackComponentType.SECRETS_MANAGER
-            ] = repo.get_stack_component_by_name_and_type(
+            ] = [repo.get_stack_component_by_name_and_type(
                 StackComponentType.SECRETS_MANAGER,
                 name=secrets_manager_name,
-            )
+            ).id]
 
         if feature_store_name:
             stack_components[
                 StackComponentType.FEATURE_STORE
-            ] = repo.get_stack_component_by_name_and_type(
+            ] = [repo.get_stack_component_by_name_and_type(
                 StackComponentType.FEATURE_STORE,
                 name=feature_store_name,
-            )
+            ).id]
 
         if model_deployer_name:
             stack_components[
                 StackComponentType.MODEL_DEPLOYER
-            ] = repo.get_stack_component_by_name_and_type(
+            ] = [repo.get_stack_component_by_name_and_type(
                 StackComponentType.MODEL_DEPLOYER,
                 name=model_deployer_name,
-            )
+            ).id]
 
         if experiment_tracker_name:
             stack_components[
                 StackComponentType.EXPERIMENT_TRACKER
-            ] = repo.get_stack_component_by_name_and_type(
+            ] = [repo.get_stack_component_by_name_and_type(
                 StackComponentType.EXPERIMENT_TRACKER,
                 name=experiment_tracker_name,
-            )
+            ).id]
 
         if alerter_name:
             stack_components[
                 StackComponentType.ALERTER
-            ] = repo.get_stack_component_by_name_and_type(
+            ] = [repo.get_stack_component_by_name_and_type(
                 StackComponentType.ALERTER,
                 name=alerter_name,
-            )
+            ).id]
 
         if annotator_name:
             stack_components[
                 StackComponentType.ANNOTATOR
-            ] = repo.get_stack_component_by_name_and_type(
+            ] = [repo.get_stack_component_by_name_and_type(
                 StackComponentType.ANNOTATOR,
                 name=annotator_name,
-            )
+            ).id]
 
         if data_validator_name:
             stack_components[
                 StackComponentType.DATA_VALIDATOR
-            ] = repo.get_stack_component_by_name_and_type(
+            ] = [repo.get_stack_component_by_name_and_type(
                 StackComponentType.DATA_VALIDATOR,
                 name=data_validator_name,
-            )
+            ).id]
 
         if share:
             # This allows users to switch stacks from private to shared
@@ -1022,7 +1015,7 @@ def export_stack(stack_name: str, filename: Optional[str]) -> None:
         cli_utils.error(f"Stack '{stack_name}' does not exist.")
     else:
         # write zenml version and stack dict to YAML
-        yaml_data = stack.to_yaml()
+        yaml_data = repo.hydrate_model(stack).to_yaml()
         yaml_data["zenml_version"] = zenml.__version__
 
         if filename is None:

@@ -351,8 +351,9 @@ class SqlZenStore(BaseZenStore):
 
             # Get the Schemas of all components mentioned
             filters = [
-                (StackComponentSchema.id == c.id)
-                for c in stack.components.values()
+                (StackComponentSchema.id == component_id)
+                for list_of_component_ids in stack.components.values()
+                for component_id in list_of_component_ids
             ]
 
             defined_components = session.exec(
@@ -368,7 +369,7 @@ class SqlZenStore(BaseZenStore):
             )
             session.add(stack_in_db)
             session.commit()
-
+            print(stack_in_db)
             return stack_in_db.to_model()
 
     def get_stack(self, stack_id: UUID) -> StackModel:
@@ -464,8 +465,9 @@ class SqlZenStore(BaseZenStore):
 
             # Get the Schemas of all components mentioned
             filters = [
-                (StackComponentSchema.id == c.id)
-                for c in stack.components.values()
+                (StackComponentSchema.id == component_id)
+                for list_of_component_ids in stack.components.values()
+                for component_id in list_of_component_ids
             ]
 
             defined_components = session.exec(

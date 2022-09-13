@@ -32,6 +32,7 @@ from zenml.enums import SecretValidationLevel, StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.logger import get_logger
 from zenml.models import ComponentModel, StackModel
+from zenml.models.stack_models import HydratedStackModel
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
@@ -135,7 +136,7 @@ class Stack:
         )
 
     @classmethod
-    def from_model(cls, stack_model) -> "Stack":
+    def from_model(cls, stack_model: HydratedStackModel) -> "Stack":
         """Creates the corresponding Stack instance from the StackModel.
 
         Args:
@@ -144,7 +145,7 @@ class Stack:
             the corresponding Stack instance
         """
         stack_components = {
-            type_: model.to_component()
+            type_: model[0].to_component()
             for type_, model in stack_model.components.items()
         }
         return Stack.from_components(

@@ -19,6 +19,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
 from uuid import UUID
 
+from pydantic import BaseModel
+
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
@@ -35,9 +37,11 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models.pipeline_models import PipelineModel, PipelineRunModel
+from zenml.models.stack_models import HydratedStackModel
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
+from zenml.models import StackModel
 
 if TYPE_CHECKING:
     from zenml.enums import StackComponentType
@@ -457,7 +461,7 @@ class Repository(metaclass=RepositoryMetaClass):
         return self.zen_store.active_user
 
     @property
-    def stack_models(self) -> List["StackModel"]:
+    def stack_models(self) -> List["HydratedStackModel"]:
         """All stack models available in the current project and owned by the current user.
 
         This property is intended as a quick way to get information about the
@@ -470,10 +474,34 @@ class Repository(metaclass=RepositoryMetaClass):
             A list of all stacks available in the current project and owned by
             the current user.
         """
-        return self.zen_store.list_stacks(
-            project_name_or_id=self.active_project_name,
-            user_name_or_id=self.active_user.id,
-        )
+        return [self.hydrate_model(stack)
+                for stack in self.zen_store.list_stacks(
+                    project_name_or_id=self.active_project_name,
+                    user_name_or_id=self.active_user.id)]
+
+    def hydrate_model(
+        self,
+        dehydrated_model: BaseModel
+    ) -> HydratedStackModel:
+        """Hydrate Model use ids of other models to get the actual model."""
+        if isinstance(dehydrated_model, StackModel):
+            components = {}
+            for comp_type, comp_id_list in dehydrated_model.components.items():
+                components[comp_type] = [self.zen_store
+                                         .get_stack_component(c_id)
+                                         for c_id in comp_id_list]
+
+            project = self.zen_store.get_project(dehydrated_model.project)
+            user = self.zen_store.get_user(dehydrated_model.user)
+
+            return HydratedStackModel(id=dehydrated_model.id,
+                                      name=dehydrated_model.name,
+                                      description=dehydrated_model.description,
+                                      components=components,
+                                      project=project,
+                                      user=user,
+                                      is_shared=dehydrated_model.is_shared,
+                                      creation_date=dehydrated_model.creation_date)
 
     @property
     def stacks(self) -> List["Stack"]:
@@ -515,13 +543,13 @@ class Repository(metaclass=RepositoryMetaClass):
         dict_of_stacks = dict()
         for stack in stacks:
             dict_of_stacks[stack.name] = {"shared": str(stack.is_shared)}
-            for component_type, component in stack.components.items():
-                dict_of_stacks[stack.name][str(component_type)] = component.name
+            for comp_type, comp in self.hydrate_model(stack).components.items():
+                dict_of_stacks[stack.name][str(comp_type)] = comp[0].name
 
         return dict_of_stacks
 
     @property
-    def active_stack_model(self) -> "StackModel":
+    def active_stack_model(self) -> "HydratedStackModel":
         """The model of the active stack for this repository.
 
         If no active stack is configured locally for the repository, the active
@@ -546,7 +574,7 @@ class Repository(metaclass=RepositoryMetaClass):
                 "`zenml stack set STACK_NAME` to set the active stack."
             )
 
-        return self.zen_store.get_stack(stack_id=stack_id)
+        return self.hydrate_model(self.zen_store.get_stack(stack_id=stack_id))
 
     @property
     def active_stack(self) -> "Stack":
@@ -751,6 +779,7 @@ class Repository(metaclass=RepositoryMetaClass):
         Returns:
             The registered stack component.
         """
+        # TODO: [server] this returns the implementation rather than the model
         logger.debug(
             "Fetching stack component with id '%s'.",
             id,
@@ -769,6 +798,7 @@ class Repository(metaclass=RepositoryMetaClass):
             component: The component to register.
         """
         from zenml.models import ComponentModel
+        # TODO: [server] this uses the implementation rather than the model
 
         self.zen_store.register_stack_component(
             project_name_or_id=self.active_project.name,

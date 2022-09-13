@@ -37,6 +37,7 @@ from zenml.models import (
     ProjectModel,
     StackModel,
 )
+from zenml.models.stack_models import HydratedStackModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.utils import (
     authorize,
@@ -44,7 +45,7 @@ from zenml.zen_server.utils import (
     error_detail,
     error_response,
     not_found,
-    zen_store,
+    zen_store, repo,
 )
 
 router = APIRouter(
@@ -254,12 +255,12 @@ async def get_project_stacks(project_name_or_id: str) -> List[StackModel]:
 
 @router.post(
     "/{project_name_or_id}" + STACKS,
-    response_model=StackModel,
+    response_model=HydratedStackModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 async def create_stack(
     project_name_or_id: str, stack: StackModel
-) -> StackModel:
+) -> HydratedStackModel:
     """Creates a stack for a particular project.
 
     Args:
@@ -276,10 +277,11 @@ async def create_stack(
         422 error: when unable to validate input
     """
     try:
-        return zen_store.register_stack(
+        created_stack = zen_store.register_stack(
             project_name_or_id=parse_name_or_uuid(project_name_or_id),
             stack=stack,
         )
+        return repo.hydrate_model(created_stack)
     except (
         StackExistsError,
         StackComponentExistsError,

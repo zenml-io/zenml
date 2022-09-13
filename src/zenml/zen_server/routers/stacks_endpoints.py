@@ -19,11 +19,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from zenml.constants import STACKS, VERSION_1
 from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.models import StackModel
+from zenml.models.stack_models import HydratedStackModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.utils import (
     authorize,
     error_detail,
     error_response,
+    repo,
     zen_store,
 )
 
@@ -37,13 +39,13 @@ router = APIRouter(
 
 @router.get(
     "/",
-    response_model=List[StackModel],
+    response_model=List[HydratedStackModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def list_stacks(
     project_name_or_id: str,
     stack_name: Optional[str] = None,
-) -> List[StackModel]:
+) -> List[HydratedStackModel]:
     """Returns all stacks.
 
     Args:
@@ -59,10 +61,10 @@ async def list_stacks(
         422 error: when unable to validate input
     """
     try:
-        return zen_store.list_stacks(
+        stacks_list = zen_store.list_stacks(
             project_name_or_id=parse_name_or_uuid(project_name_or_id),
-            name=stack_name,
-        )
+            name=stack_name)
+        return [repo.hydrate_model(stack) for stack in stacks_list]
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
@@ -73,10 +75,10 @@ async def list_stacks(
 
 @router.get(
     "/{stack_id}",
-    response_model=StackModel,
+    response_model=HydratedStackModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_stack(stack_id: str) -> StackModel:
+async def get_stack(stack_id: str) -> HydratedStackModel:
     """Returns the requested stack.
 
     Args:
@@ -91,7 +93,7 @@ async def get_stack(stack_id: str) -> StackModel:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.get_stack(UUID(stack_id))
+        return repo.hydrate_model(zen_store.get_stack(UUID(stack_id)))
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
@@ -102,10 +104,10 @@ async def get_stack(stack_id: str) -> StackModel:
 
 @router.put(
     "/{stack_id}",
-    response_model=StackModel,
+    response_model=HydratedStackModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def update_stack(stack_id: str, stack: StackModel) -> StackModel:
+async def update_stack(stack_id: str, stack: StackModel) -> HydratedStackModel:
     """Updates a stack.
 
     Args:
@@ -121,7 +123,9 @@ async def update_stack(stack_id: str, stack: StackModel) -> StackModel:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.update_stack(stack_id=UUID(stack_id), stack=stack)
+        updated_stack = zen_store.update_stack(stack_id=UUID(stack_id),
+                                               stack=stack)
+        return repo.hydrate_model(updated_stack)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
