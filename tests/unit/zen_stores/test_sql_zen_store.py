@@ -531,15 +531,6 @@ def test_list_stacks_succeeds(
     assert len(fresh_sql_zen_store.list_stacks(current_project_id)) == 1
 
 
-def test_stack_names_property(
-    fresh_sql_zen_store: BaseZenStore,
-):
-    """Tests stack names property."""
-    stack_names = fresh_sql_zen_store.stack_names
-    assert len(stack_names) == 1
-    assert "default" in stack_names
-
-
 def test_list_stacks_fails_with_nonexistent_project(
     fresh_sql_zen_store: BaseZenStore,
 ):
