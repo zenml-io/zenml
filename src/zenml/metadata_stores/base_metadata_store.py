@@ -105,7 +105,7 @@ class BaseMetadataStore(BaseModel, ABC):
 
         Args:
             executions: List of executions.
-            pipeline_id: The ID of the ipeline to check.
+            pipeline_id: The ID of the pipeline to check.
 
         Returns:
             `True` if the executions are associated with the pipeline context.

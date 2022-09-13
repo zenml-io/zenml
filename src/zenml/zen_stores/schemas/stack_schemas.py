@@ -88,14 +88,14 @@ class StackSchema(SQLModel, table=True):
         defined_components: List["StackComponentSchema"],
         stack: StackModel,
     ) -> "StackSchema":
-        """Update the updatable fields on an existing StackSchema.
+        """Update the updatable fields on an existing `StackSchema`.
 
         Args:
             defined_components: The components that are part of the stack.
             stack: The stack model to create the schema from.
 
         Returns:
-            A StackSchema
+            A `StackSchema`
         """
         self.name = stack.name
         self.is_shared = stack.is_shared
@@ -103,10 +103,10 @@ class StackSchema(SQLModel, table=True):
         return self
 
     def to_model(self) -> "StackModel":
-        """Creates a ComponentModel from an instance of a StackSchema.
+        """Creates a `ComponentModel` from an instance of a `StackSchema`.
 
         Returns:
-            a StackModel
+            a `StackModel`
         """
         return StackModel(
             id=self.id,

@@ -45,34 +45,34 @@ class ProjectSchema(SQLModel, table=True):
 
     @classmethod
     def from_create_model(cls, model: ProjectModel) -> "ProjectSchema":
-        """Create a ProjectSchema from a ProjectModel.
+        """Create a `ProjectSchema` from a `ProjectModel`.
 
         Args:
-            model: The ProjectModel from which to create the schema.
+            model: The `ProjectModel` from which to create the schema.
 
         Returns:
-            The created ProjectSchema.
+            The created `ProjectSchema`.
         """
         return cls(name=model.name, description=model.description)
 
     def from_update_model(self, model: ProjectModel) -> "ProjectSchema":
-        """Update a ProjectSchema from a ProjectModel.
+        """Update a `ProjectSchema` from a `ProjectModel`.
 
         Args:
-            model: The ProjectModel from which to update the schema.
+            model: The `ProjectModel` from which to update the schema.
 
         Returns:
-            The updated ProjectSchema.
+            The updated `ProjectSchema`.
         """
         self.name = model.name
         self.description = model.description
         return self
 
     def to_model(self) -> ProjectModel:
-        """Convert a ProjectSchema to a ProjectModel.
+        """Convert a `ProjectSchema` to a `ProjectModel`.
 
         Returns:
-            The converted ProjectModel.
+            The converted `ProjectModel`.
         """
         return ProjectModel(
             id=self.id,
