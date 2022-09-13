@@ -109,10 +109,11 @@ async def get_stack(
         422 error: when unable to validate input
     """
     try:
+        stack = zen_store.get_stack(UUID(stack_id))
         if hydrated:
-            return zen_store.get_stack(UUID(stack_id)).to_hydrated_model()
+            return stack.to_hydrated_model()
         else:
-            return zen_store.get_stack(UUID(stack_id))
+            return stack
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:

@@ -142,8 +142,17 @@ class HydratedStackModel(StackModel):
                     "orchestrator": [{}],
                 },
                 "is_shared": "True",
-                "project": {},
-                "user": {},
+                "project": {
+                    "id": "da63ad01-9117-4082-8a99-557ca5a7d324",
+                    "name": "default",
+                    "description": "Best project.",
+                    "creation_date": "2022-09-13T16:03:52.317039"
+                },
+                "user": {
+                    "id": "43d73159-04fe-418b-b604-b769dd5b771b",
+                    "name": "default",
+                    "creation_date": "2022-09-13T16:03:52.329928"
+                },
                 "creation_date": "2022-08-12T07:12:45.931Z",
             }
         }
@@ -153,8 +162,8 @@ class HydratedStackModel(StackModel):
         component_data = {}
         for component_type, components_list in self.components.items():
             component_dict = json.loads(components_list[0].json())
-            component_dict.pop("project_id")  # Not needed in the yaml repr
-            component_dict.pop("created_at")  # Not needed in the yaml repr
+            component_dict.pop("project")  # Not needed in the yaml repr
+            component_dict.pop("creation_date")  # Not needed in the yaml repr
             component_data[component_type.value] = component_dict
 
         # write zenml version and stack dict to YAML

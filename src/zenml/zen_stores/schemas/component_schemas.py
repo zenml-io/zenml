@@ -68,7 +68,7 @@ class StackComponentSchema(SQLModel, table=True):
             owner=user_id,
             is_shared=component.is_shared,
             type=component.type,
-            flavor_name=component.flavor_name,
+            flavor_name=component.flavor,
             configuration=base64.b64encode(
                 json.dumps(component.configuration).encode("utf-8")
             ),
@@ -100,11 +100,12 @@ class StackComponentSchema(SQLModel, table=True):
             id=self.id,
             name=self.name,
             type=self.type,
-            flavor_name=self.flavor_name,
-            owner=self.owner,
-            project_id=self.project_id,
+            flavor=self.flavor_name,
+            user=self.owner,
+            project=self.project_id,
             is_shared=self.is_shared,
             configuration=json.loads(
                 base64.b64decode(self.configuration).decode()
             ),
+            creation_date=self.created_at
         )

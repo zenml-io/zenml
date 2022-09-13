@@ -37,6 +37,7 @@ from zenml.models import (
     ProjectModel,
     StackModel, FlavorModel,
 )
+from zenml.models.component_models import HydratedComponentModel
 from zenml.models.stack_models import HydratedStackModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.utils import (
@@ -322,18 +323,29 @@ async def create_stack(
 
 @router.get(
     "/{project_name_or_id}" + STACK_COMPONENTS,
-    response_model=List[ComponentModel],
+    response_model=Union[List[ComponentModel], List[HydratedComponentModel]],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def list_project_stack_components(
     project_name_or_id: str,
-) -> List[ComponentModel]:
+    user_name_or_id: Optional[str] = None,
+    component_type: Optional[str] = None,
+    component_name: Optional[str] = None,
+    is_shared: Optional[bool] = None,
+    hydrated: bool = True
+) -> Union[List[ComponentModel], List[HydratedComponentModel]]:
     """List stack components that are part of a specific project.
 
     # noqa: DAR401
 
     Args:
         project_name_or_id: Name or ID of the project.
+        user_name_or_id: Optionally filter by name or ID of the user.
+        component_name: Optionally filter by component name
+        component_type: Optionally filter by component type
+        is_shared: Optionally filter by shared status of the component
+        hydrated: Defines if users and projects will be
+                  included by reference (FALSE) or as model (TRUE)
 
     Returns:
         All stack components part of the specified project.
@@ -344,47 +356,17 @@ async def list_project_stack_components(
         422 error: when unable to validate input
     """
     try:
-        return zen_store.list_stack_components(
-            project_name_or_id=parse_name_or_uuid(project_name_or_id)
-        )
-    except KeyError as error:
-        raise not_found(error) from error
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
-
-
-@router.get(
-    "/{project_name_or_id}" + STACK_COMPONENTS + "/{component_type}",
-    response_model=List[ComponentModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-async def list_project_stack_components_by_type(
-    component_type: str,
-    project_name_or_id: str,
-) -> List[ComponentModel]:
-    """List stack components of a certain type that are part of a project.
-
-    # noqa: DAR401
-
-    Args:
-        component_type: Type of the component.
-        project_name_or_id: Name or ID of the project.
-
-    Returns:
-        All stack components of a certain type that are part of a project.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
-    """
-    try:
-        return zen_store.list_stack_components(
-            type=component_type,
+        components_list = zen_store.list_stack_components(
             project_name_or_id=parse_name_or_uuid(project_name_or_id),
+            user_name_or_id=parse_name_or_uuid(user_name_or_id),
+            type=component_type,
+            is_shared=is_shared,
+            name=component_name,
         )
+        if hydrated:
+            return [comp.to_hydrated_model() for comp in components_list]
+        else:
+            return components_list
     except KeyError as error:
         raise not_found(error) from error
     except NotAuthorizedError as error:
@@ -395,18 +377,21 @@ async def list_project_stack_components_by_type(
 
 @router.post(
     "/{project_name_or_id}" + STACK_COMPONENTS,
-    response_model=ComponentModel,
+    response_model=Union[ComponentModel, HydratedComponentModel],
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 async def create_stack_component(
     project_name_or_id: str,
     component: ComponentModel,
-) -> None:
+    hydrated: bool = True
+) -> Union[ComponentModel, HydratedComponentModel]:
     """Creates a stack component.
 
     Args:
         project_name_or_id: Name or ID of the project.
         component: Stack component to register.
+        hydrated: Defines if stack components, users and projects will be
+                  included by reference (FALSE) or as model (TRUE)
 
     Raises:
         conflict: when the component already exists.
@@ -415,10 +400,15 @@ async def create_stack_component(
         422 error: when unable to validate input
     """
     try:
-        zen_store.register_stack_component(
+        # TODO: [server] include the active user here
+        updated_component = zen_store.register_stack_component(
             project_name_or_id=parse_name_or_uuid(project_name_or_id),
-            component=component,
+            component=component
         )
+        if hydrated:
+            return updated_component.to_hydrated_model()
+        else:
+            return updated_component
     except StackComponentExistsError as error:
         raise conflict(error) from error
     except NotAuthorizedError as error:

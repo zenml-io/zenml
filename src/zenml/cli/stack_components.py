@@ -632,7 +632,7 @@ def generate_stack_component_update_command(
                 )
 
         component_class = repo.get_flavor(
-            name=component_model.flavor_name,
+            name=component_model.flavor,
             component_type=component_type,
         )
 

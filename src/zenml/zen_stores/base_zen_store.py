@@ -352,7 +352,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             component=ComponentModel(
                 name="default",
                 type=StackComponentType.ORCHESTRATOR,
-                flavor_name="local",
+                flavor="local",
                 configuration={},
             ),
         )
@@ -371,7 +371,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             component=ComponentModel(
                 name="default",
                 type=StackComponentType.ARTIFACT_STORE,
-                flavor_name="local",
+                flavor="local",
                 configuration={"path": artifact_store_path},
             ),
         )

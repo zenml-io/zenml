@@ -20,8 +20,11 @@ from uuid import UUID
 
 from pydantic import Field
 
+from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
+from zenml.models.user_management_models import UserModel
+from zenml.models.project_models import ProjectModel
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 if TYPE_CHECKING:
@@ -44,9 +47,9 @@ class ComponentModel(AnalyticsTrackedModelMixin):
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "id",
         "type",
-        "flavor_name",
-        "project_id",
-        "owner",
+        "flavor",
+        "project",
+        "user",
         "is_shared",
     ]
 
@@ -60,7 +63,7 @@ class ComponentModel(AnalyticsTrackedModelMixin):
     type: StackComponentType = Field(
         title="The type of the Stack Component.",
     )
-    flavor_name: Optional[str] = Field(
+    flavor: Optional[str] = Field(
         title="The flavor of the Stack Component.",
     )
     configuration: Dict[
@@ -68,7 +71,7 @@ class ComponentModel(AnalyticsTrackedModelMixin):
     ] = Field(  # Json representation of the configuration
         title="The id of the Stack Component.",
     )
-    owner: Optional[UUID] = Field(
+    user: Optional[UUID] = Field(
         default=None,
         title="The id of the user that owns this component.",
     )
@@ -76,27 +79,28 @@ class ComponentModel(AnalyticsTrackedModelMixin):
         default=False,
         title="Flag describing if this component is shared.",
     )
-    project_id: Optional[UUID] = Field(
+    project: Optional[UUID] = Field(
         default=None, title="The project that contains this component."
     )
-    created_at: Optional[datetime] = Field(
+    creation_date: Optional[datetime] = Field(
         default=None,
         title="The time at which the component was registered.",
     )
+    def to_hydrated_model(self) -> "HydratedComponentModel":
+        zen_store = GlobalConfiguration().zen_store
 
-    class Config:
-        schema_extra = {
-            "example": {
-                "id": "5e4286b5-51f4-4286-b1f8-b0143e9a27ce",
-                "name": "vertex_prd_orchestrator",
-                "type": "orchestrator",
-                "flavor_name": "vertex",
-                "configuration": {"location": "europe-west3"},
-                "owner": "8d0acbc3-c51a-452c-bda3-e1b5469f79fd",
-                "project_id": "8d0acbc3-c51a-452c-bda3-e1b5469f79fd",
-                "created_at": "2022-08-12T07:12:44.931Z",
-            }
-        }
+        project = zen_store.get_project(self.project)
+        user = zen_store.get_user(self.user)
+
+        return HydratedComponentModel(id=self.id,
+                                      name=self.name,
+                                      type=self.type,
+                                      flavor=self.flavor,
+                                      configuration=self.configuration,
+                                      project=project,
+                                      user=user,
+                                      is_shared=self.is_shared,
+                                      creation_date=self.creation_date)
 
     @classmethod
     def from_component(cls, component: "StackComponent") -> "ComponentModel":
@@ -110,7 +114,7 @@ class ComponentModel(AnalyticsTrackedModelMixin):
         """
         return cls(
             type=component.TYPE,
-            flavor_name=component.FLAVOR,
+            flavor=component.FLAVOR,
             name=component.name,
             id=component.uuid,
             configuration=json.loads(component.json()),
@@ -125,10 +129,48 @@ class ComponentModel(AnalyticsTrackedModelMixin):
         from zenml.repository import Repository
 
         flavor = Repository(skip_repository_check=True).get_flavor(  # type: ignore[call-arg]
-            name=self.flavor_name, component_type=self.type
+            name=self.flavor, component_type=self.type
         )
 
         config = self.configuration
         config["uuid"] = self.id
         config["name"] = self.name
         return flavor.parse_obj(config)
+
+
+class HydratedComponentModel(ComponentModel):
+    """Network Serializable Model describing the Component with User and Project
+     fully hydrated.
+    """
+    project: ProjectModel = Field(
+        default=None, title="The project that contains this stack."
+    )
+    user: UserModel = Field(
+        default=None,
+        title="The id of the user, that created this stack.",
+    )
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "id": "5e4286b5-51f4-4286-b1f8-b0143e9a27ce",
+                "name": "vertex_prd_orchestrator",
+                "type": "orchestrator",
+                "flavor": "vertex",
+                "configuration": {
+                    "location": "europe-west3"
+                },
+                "project": {
+                    "id": "da63ad01-9117-4082-8a99-557ca5a7d324",
+                    "name": "default",
+                    "description": "Best project.",
+                    "creation_date": "2022-09-13T16:03:52.317039"
+                },
+                "user": {
+                    "id": "43d73159-04fe-418b-b604-b769dd5b771b",
+                    "name": "default",
+                    "creation_date": "2022-09-13T16:03:52.329928"
+                },
+                "created_at": "2022-08-12T07:12:44.931Z",
+            }
+        }

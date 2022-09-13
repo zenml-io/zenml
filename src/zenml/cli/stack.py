@@ -989,7 +989,7 @@ def _get_component_as_dict(
         for key, value in json.loads(component.json()).items()
         if key != "uuid" and value is not None
     }
-    component_dict["flavor_name"] = component.flavor_name
+    component_dict["flavor"] = component.flavor
     return component_dict
 
 
@@ -1039,8 +1039,9 @@ def _import_stack_component(
         The name of the imported component.
     """
     component_type = StackComponentType(component_type)
+    print(component_config)
     component_name = component_config.pop("name")
-    component_flavor = component_config.pop("flavor_name")
+    component_flavor = component_config.pop("flavor")
 
     # make sure component can be registered, otherwise ask for new name
     while True:

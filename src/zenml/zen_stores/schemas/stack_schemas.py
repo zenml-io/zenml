@@ -106,4 +106,5 @@ class StackSchema(SQLModel, table=True):
             project=self.project_id,
             is_shared=self.is_shared,
             components={c.type: [c.id] for c in self.components},
+            creation_date=self.created_at
         )
