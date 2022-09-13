@@ -2110,11 +2110,6 @@ class SqlZenStore(BaseZenStore):
         if schema is None:
             raise KeyError(error_msg)
         return schema
-        # with session:
-        #     schema = session.exec(select(schema_class).where(filter)).first()
-        #     if schema is None:
-        #         raise KeyError(error_msg)
-        #     return schema
 
     def _get_project_schema(
         self,
