@@ -552,10 +552,6 @@ def test_get_stack_fails_with_nonexistent_stack_id(
         fresh_sql_zen_store.get_stack(uuid.uuid4())
 
 
-# TODO: continue on to cover register, update and delete stacks
-# REGISTER
-# UPDATE
-# DELETE
 def test_register_stack_succeeds(
     fresh_sql_zen_store: BaseZenStore,
 ):
@@ -582,3 +578,19 @@ def test_register_stack_fails_when_stack_exists(
             project_name_or_id="default",
             stack=new_stack,
         )
+
+
+# TODO: continue on to cover register, update and delete stacks
+# UPDATE
+# DELETE
+def test_updating_stack_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests updating stack."""
+    current_stack_id = fresh_sql_zen_store.list_stacks(
+        project_name_or_id="default"
+    )[0].id
+    new_stack = StackModel(name="arias_stack", components={})
+    fresh_sql_zen_store.update_stack(current_stack_id, new_stack)
+    assert fresh_sql_zen_store.get_stack(current_stack_id) is not None
+    assert fresh_sql_zen_store.get_stack(current_stack_id).name == "arias_stack"
