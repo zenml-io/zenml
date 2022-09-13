@@ -28,8 +28,7 @@ class FlavorSchema(SQLModel, table=True):
 
     name: str
 
-    # project_id - redundant since repository has this
-    repository_id: UUID = Field(foreign_key="coderepositoryschema.id")
+    project_id: UUID = Field(foreign_key="projectschema.id")
     created_by: UUID = Field(foreign_key="userschema.id")
 
     type: StackComponentType
