@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import List
+from typing import List, Union
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -45,7 +45,7 @@ from zenml.zen_server.utils import (
     error_detail,
     error_response,
     not_found,
-    zen_store, repo,
+    zen_store
 )
 
 router = APIRouter(
@@ -255,17 +255,21 @@ async def get_project_stacks(project_name_or_id: str) -> List[StackModel]:
 
 @router.post(
     "/{project_name_or_id}" + STACKS,
-    response_model=HydratedStackModel,
+    response_model=Union[HydratedStackModel, StackModel],
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 async def create_stack(
-    project_name_or_id: str, stack: StackModel
-) -> HydratedStackModel:
+    project_name_or_id: str,
+    stack: StackModel,
+    hydrated: bool = True
+) -> Union[HydratedStackModel, StackModel]:
     """Creates a stack for a particular project.
 
     Args:
         project_name_or_id: Name or ID of the project.
         stack: Stack to register.
+        hydrated: Defines if stack components, users and projects will be
+                  included by reference (FALSE) or as model (TRUE)
 
     Returns:
         The created stack.
@@ -281,7 +285,10 @@ async def create_stack(
             project_name_or_id=parse_name_or_uuid(project_name_or_id),
             stack=stack,
         )
-        return created_stack.to_hydrated_model()
+        if hydrated:
+            return created_stack.to_hydrated_model()
+        else:
+            return created_stack
     except (
         StackExistsError,
         StackComponentExistsError,
