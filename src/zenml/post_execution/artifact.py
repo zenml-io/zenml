@@ -51,6 +51,7 @@ class ArtifactView:
         Returns:
             The artifact id.
         """
+        assert self._model.id
         return self._model.id
 
     @property
@@ -90,7 +91,7 @@ class ArtifactView:
         return self._model.materializer
 
     @property
-    def parent_step_id(self) -> int:
+    def parent_step_id(self) -> UUID:
         """Returns the ID of the parent step.
 
         This need not be equivalent to the ID of the producer step.
@@ -98,15 +99,17 @@ class ArtifactView:
         Returns:
             The ID of the parent step.
         """
+        assert self._model.parent_step_id
         return self._model.parent_step_id
 
     @property
-    def producer_step_id(self) -> int:
+    def producer_step_id(self) -> UUID:
         """Returns the ID of the original step that produced the artifact.
 
         Returns:
             The ID of the original step that produced the artifact.
         """
+        assert self._model.producer_step_id
         return self._model.producer_step_id
 
     @property

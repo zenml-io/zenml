@@ -33,7 +33,6 @@ class PipelineSchema(SQLModel, table=True):
     name: str
 
     project_id: UUID = Field(foreign_key="projectschema.id")
-    # repository_id: UUID = Field(foreign_key="coderepositoryschema.id")
     owner: UUID = Field(foreign_key="userschema.id")
 
     docstring: Optional[str] = Field(nullable=True)
@@ -157,7 +156,9 @@ class PipelineRunSchema(SQLModel, table=True):
         self.name = model.name
         self.runtime_configuration = json.dumps(model.runtime_configuration)
         self.git_sha = model.git_sha
+        assert model.zenml_version is not None
         self.zenml_version = model.zenml_version
+        assert model.mlmd_id is not None
         self.mlmd_id = model.mlmd_id
         return self
 
@@ -167,13 +168,16 @@ class PipelineRunSchema(SQLModel, table=True):
         Returns:
             The created `PipelineRunModel`.
         """
+        config = self.runtime_configuration
+        if config is not None:
+            config = json.loads(config)
         return PipelineRunModel(
             id=self.id,
             name=self.name,
             stack_id=self.stack_id,
             owner=self.owner,
             pipeline_id=self.pipeline_id,
-            runtime_configuration=json.loads(self.runtime_configuration),
+            runtime_configuration=config,
             git_sha=self.git_sha,
             zenml_version=self.zenml_version,
             created_at=self.created_at,

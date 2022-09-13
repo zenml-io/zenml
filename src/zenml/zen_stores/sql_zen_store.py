@@ -1163,27 +1163,23 @@ class SqlZenStore(BaseZenStore):
     # Role assignments
     # ----------------
 
-    def list_role_assignments(
+    def _list_user_role_assignments(
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
-        team_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List[RoleAssignmentModel]:
-        """List all role assignments.
+        """List all user role assignments.
 
         Args:
-            project_name_or_id: Name or Id of the Project for the role
-                                assignment
-            team_name_or_id: If provided, only list assignments for the given team
-            user_name_or_id: If provided, only list assignments for the given user
+            project_name_or_id: If provided, only return role assignments for
+                this project.
+            user_name_or_id: If provided, only list assignments for this user.
 
         Returns:
-            A list of all role assignments.
+            A list of user role assignments.
         """
         with Session(self.engine) as session:
-            # Get user role assignments
             query = select(UserRoleAssignmentSchema)
-
             if project_name_or_id is not None:
                 project = self._get_project_schema(project_name_or_id)
                 query = query.where(
@@ -1192,9 +1188,25 @@ class SqlZenStore(BaseZenStore):
             if user_name_or_id is not None:
                 user = self._get_user_schema(user_name_or_id)
                 query = query.where(UserRoleAssignmentSchema.user_id == user.id)
-            user_role_assignments = session.exec(query).all()
+            assignments = session.exec(query).all()
+            return [assignment.to_model() for assignment in assignments]
 
-            # Get team role assignments
+    def _list_team_role_assignments(
+        self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        team_name_or_id: Optional[Union[str, UUID]] = None,
+    ) -> List[RoleAssignmentModel]:
+        """List all team role assignments.
+
+        Args:
+            project_name_or_id: If provided, only return role assignments for
+                this project.
+            team_name_or_id: If provided, only list assignments for this team.
+
+        Returns:
+            A list of team role assignments.
+        """
+        with Session(self.engine) as session:
             query = select(TeamRoleAssignmentSchema)
             if project_name_or_id is not None:
                 project = self._get_project_schema(project_name_or_id)
@@ -1204,12 +1216,137 @@ class SqlZenStore(BaseZenStore):
             if team_name_or_id is not None:
                 team = self._get_team_schema(team_name_or_id, session=session)
                 query = query.where(TeamRoleAssignmentSchema.team_id == team.id)
-            team_role_assignments = session.exec(query).all()
+            assignments = session.exec(query).all()
+            return [assignment.to_model() for assignment in assignments]
 
-        return [
-            role_assignment.to_model()
-            for role_assignment in user_role_assignments + team_role_assignments
-        ]
+    def list_role_assignments(
+        self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        team_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+    ) -> List[RoleAssignmentModel]:
+        """List all role assignments.
+
+        Args:
+            project_name_or_id: If provided, only return role assignments for
+                this project.
+            team_name_or_id: If provided, only list assignments for this team.
+            user_name_or_id: If provided, only list assignments for this user.
+
+        Returns:
+            A list of all role assignments.
+        """
+        user_role_assignments = self._list_user_role_assignments(
+            project_name_or_id=project_name_or_id,
+            user_name_or_id=user_name_or_id,
+        )
+        team_role_assignments = self._list_team_role_assignments(
+            project_name_or_id=project_name_or_id,
+            team_name_or_id=team_name_or_id,
+        )
+        return user_role_assignments + team_role_assignments
+
+    def _assign_role_to_user(
+        self,
+        role_name_or_id: Union[str, UUID],
+        user_name_or_id: Union[str, UUID],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+    ) -> None:
+        """Assigns a role to a user, potentially scoped to a specific project.
+
+        Args:
+            project_name_or_id: Optional ID of a project in which to assign the
+                role. If this is not provided, the role will be assigned
+                globally.
+            role_name_or_id: Name or ID of the role to assign.
+            user_name_or_id: Name or ID of the user to which to assign the role.
+
+        Raises:
+            EntityExistsError: If the role assignment already exists.
+        """
+        with Session(self.engine) as session:
+            role = self._get_role_schema(role_name_or_id, session=session)
+            project: Optional[ProjectSchema] = None
+            if project_name_or_id:
+                project = self._get_project_schema(
+                    project_name_or_id, session=session
+                )
+            user = self._get_user_schema(user_name_or_id, session=session)
+            query = select(UserRoleAssignmentSchema).where(
+                UserRoleAssignmentSchema.user_id == user.id,
+                UserRoleAssignmentSchema.role_id == role.id,
+            )
+            if project is not None:
+                query = query.where(
+                    UserRoleAssignmentSchema.project_id == project.id
+                )
+            existing_role_assignment = session.exec(query).first()
+            if existing_role_assignment is not None:
+                raise EntityExistsError(
+                    f"Unable to assign role '{role.name}' to user "
+                    f"'{user.name}': Role already assigned in this project."
+                )
+            role_assignment = UserRoleAssignmentSchema(
+                role_id=role.id,
+                user_id=user.id,
+                project_id=project.id if project else None,
+                role=role,
+                user=user,
+                project=project,
+            )
+            session.add(role_assignment)
+            session.commit()
+
+    def _assign_role_to_team(
+        self,
+        role_name_or_id: Union[str, UUID],
+        team_name_or_id: Union[str, UUID],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+    ) -> None:
+        """Assigns a role to a team, potentially scoped to a specific project.
+
+        Args:
+            project_name_or_id: Optional ID of a project in which to assign the
+                role. If this is not provided, the role will be assigned
+                globally.
+            role_name_or_id: Name or ID of the role to assign.
+            team_name_or_id: Name or ID of the team to which to assign the role.
+
+        Raises:
+            EntityExistsError: If the role assignment already exists.
+        """
+        with Session(self.engine) as session:
+            role = self._get_role_schema(role_name_or_id, session=session)
+            project: Optional[ProjectSchema] = None
+            if project_name_or_id:
+                project = self._get_project_schema(
+                    project_name_or_id, session=session
+                )
+            team = self._get_team_schema(team_name_or_id, session=session)
+            query = select(TeamRoleAssignmentSchema).where(
+                TeamRoleAssignmentSchema.team_id == team.id,
+                TeamRoleAssignmentSchema.role_id == role.id,
+            )
+            if project is not None:
+                query = query.where(
+                    TeamRoleAssignmentSchema.project_id == project.id
+                )
+            existing_role_assignment = session.exec(query).first()
+            if existing_role_assignment is not None:
+                raise EntityExistsError(
+                    f"Unable to assign role '{role.name}' to team "
+                    f"'{team.name}': Role already assigned in this project."
+                )
+            role_assignment = TeamRoleAssignmentSchema(
+                role_id=role.id,
+                team_id=team.id,
+                project_id=project.id if project else None,
+                role=role,
+                team=team,
+                project=project,
+            )
+            session.add(role_assignment)
+            session.commit()
 
     def assign_role(
         self,
@@ -1229,85 +1366,19 @@ class SqlZenStore(BaseZenStore):
                 assign the role.
             is_user: Whether `user_or_team_name_or_id` refers to a user or a
                 team.
-
-        Raises:
-            EntityExistsError: If the role assignment already exists.
         """
-        # TODO: Check if the role assignment already exists + raise error
-        with Session(self.engine) as session:
-            role = self._get_role_schema(role_name_or_id, session=session)
-            project: Optional[ProjectSchema] = None
-            if project_name_or_id:
-                project = self._get_project_schema(
-                    project_name_or_id, session=session
-                )
-
-            role_assignment: SQLModel
-
-            # Assign role to user
-            if is_user:
-                user = self._get_user_schema(
-                    user_or_team_name_or_id, session=session
-                )
-
-                # Check if role assignment already exists
-                query = select(UserRoleAssignmentSchema).where(
-                    UserRoleAssignmentSchema.user_id == user.id,
-                    UserRoleAssignmentSchema.role_id == role.id,
-                )
-                if project is not None:
-                    query = query.where(
-                        UserRoleAssignmentSchema.project_id == project.id
-                    )
-
-                existing_role_assignment = session.exec(query).first()
-                if existing_role_assignment is not None:
-                    raise EntityExistsError(
-                        f"Unable to assign role '{role.name}' to user "
-                        f"'{user.name}': Role already assigned in this project."
-                    )
-                role_assignment = UserRoleAssignmentSchema(
-                    role_id=role.id,
-                    user_id=user.id,
-                    project_id=project.id if project else None,
-                    role=role,
-                    user=user,
-                    project=project,
-                )
-
-            # Assign role to team
-            else:
-                team = self._get_team_schema(
-                    user_or_team_name_or_id, session=session
-                )
-
-                # Check if role assignment already exists
-                query = select(TeamRoleAssignmentSchema).where(
-                    TeamRoleAssignmentSchema.team_id == team.id,
-                    TeamRoleAssignmentSchema.role_id == role.id,
-                )
-                if project is not None:
-                    query = query.where(
-                        TeamRoleAssignmentSchema.project_id == project.id
-                    )
-
-                existing_role_assignment = session.exec(query).first()
-                if existing_role_assignment is not None:
-                    raise EntityExistsError(
-                        f"Unable to assign role '{role.name}' to team "
-                        f"'{team.name}': Role already assigned in this project."
-                    )
-                role_assignment = TeamRoleAssignmentSchema(
-                    role_id=role.id,
-                    team_id=team.id,
-                    project_id=project.id if project else None,
-                    role=role,
-                    team=team,
-                    project=project,
-                )
-
-            session.add(role_assignment)
-            session.commit()
+        if is_user:
+            self._assign_role_to_user(
+                role_name_or_id=role_name_or_id,
+                user_name_or_id=user_or_team_name_or_id,
+                project_name_or_id=project_name_or_id,
+            )
+        else:
+            self._assign_role_to_team(
+                role_name_or_id=role_name_or_id,
+                team_name_or_id=user_or_team_name_or_id,
+                project_name_or_id=project_name_or_id,
+            )
 
     def revoke_role(
         self,
@@ -2272,8 +2343,8 @@ class SqlZenStore(BaseZenStore):
         """Sync runs from the database with those registered in MLMD."""
         # Get all runs from ZenML.
         with Session(self.engine) as session:
-            zenml_runs = session.exec(select(PipelineRunSchema)).all()
-        zenml_runs = {run.name: run.to_model() for run in zenml_runs}
+            zenml_runs_list = session.exec(select(PipelineRunSchema)).all()
+        zenml_runs = {run.name: run.to_model() for run in zenml_runs_list}
 
         # Get all runs from MLMD.
         mlmd_runs = self.metadata_store.get_all_runs()
@@ -2283,7 +2354,8 @@ class SqlZenStore(BaseZenStore):
             # If the run is in MLMD but not in ZenML, we create it
             if run_name not in zenml_runs:
                 new_run = PipelineRunModel(name=run_name, mlmd_id=mlmd_id)
-                new_run = self._create_run(new_run)
+                new_run = self.create_run(new_run)
+                assert new_run.id is not None
                 self._sync_run_steps(new_run.id)
                 continue
 
@@ -2291,6 +2363,7 @@ class SqlZenStore(BaseZenStore):
             existing_run = zenml_runs[run_name]
             if not existing_run.mlmd_id:
                 existing_run.mlmd_id = mlmd_id
+                assert existing_run.id is not None
                 self._update_run(run_id=existing_run.id, run=existing_run)
                 self._sync_run_steps(existing_run.id)
 
@@ -2316,13 +2389,13 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to sync run steps for run with ID {run_id}: "
                     f"No run with this ID found."
                 )
-            zenml_steps = session.exec(
+            zenml_steps_list = session.exec(
                 select(StepRunSchema).where(
                     StepRunSchema.pipeline_run_id == run_id
                 )
             ).all()
         zenml_steps = {
-            step.name: self.get_run_step(step.id) for step in zenml_steps
+            step.name: self.get_run_step(step.id) for step in zenml_steps_list
         }
 
         # Get all steps from MLMD.
@@ -2341,6 +2414,8 @@ class SqlZenStore(BaseZenStore):
 
         # Save parent step IDs into the database.
         for step in zenml_steps.values():
+            assert step.id is not None
+            assert step.parent_step_ids is not None
             for parent_step_id in step.parent_step_ids:
                 self._set_parent_step(
                     child_id=step.id, parent_id=parent_step_id
@@ -2348,9 +2423,10 @@ class SqlZenStore(BaseZenStore):
 
         # Sync Artifacts
         for step in zenml_steps.values():
+            assert step.id is not None
             self._sync_run_step_artifacts(step.id)
 
-    def _sync_run_step_artifacts(self, run_step_id: UUID):
+    def _sync_run_step_artifacts(self, run_step_id: UUID) -> None:
         """Sync run step artifacts from MLMD into the database.
 
         Since we do not allow to create artifacts in the database directly, this
@@ -2481,6 +2557,7 @@ class SqlZenStore(BaseZenStore):
             session.add(step_schema)
             session.commit()
 
+            assert step.parent_step_ids is not None
             return step_schema.to_model(
                 parent_step_ids=step.parent_step_ids,
                 mlmd_parent_step_ids=step.mlmd_parent_step_ids,

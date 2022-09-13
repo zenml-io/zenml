@@ -48,15 +48,17 @@ class StepView:
         Returns:
             The step id.
         """
+        assert self._model.id
         return self._model.id
 
     @property
-    def parent_step_ids(self) -> List[int]:
+    def parent_step_ids(self) -> List[UUID]:
         """Returns a list of IDs of all parents of this step.
 
         Returns:
             A list of IDs of all parents of this step.
         """
+        assert self._model.parent_step_ids
         return self._model.parent_step_ids
 
     @property

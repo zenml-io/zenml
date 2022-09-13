@@ -136,7 +136,7 @@ class Stack:
         )
 
     @classmethod
-    def from_model(cls, stack_model) -> "Stack":
+    def from_model(cls, stack_model: StackModel) -> "Stack":
         """Creates a Stack instance from a StackModel.
 
         Args:
@@ -312,7 +312,7 @@ class Stack:
         }
 
     @property
-    def id(self) -> str:
+    def id(self) -> UUID:
         """The ID of the stack.
 
         Returns:
@@ -610,7 +610,11 @@ class Stack:
 
         self._validate_secrets(raise_exception=fail_if_secrets_missing)
 
-    def prepare_pipeline_run(self, pipeline, runtime_configuration) -> None:
+    def prepare_pipeline_run(
+        self,
+        pipeline: "BasePipeline",
+        runtime_configuration: "RuntimeConfiguration",
+    ) -> None:
         """Prepares the stack for a pipeline run.
 
         This method is called before a pipeline run is executed.

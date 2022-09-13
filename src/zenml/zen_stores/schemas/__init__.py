@@ -47,4 +47,8 @@ __all__ = [
     "TeamSchema",
     "UserRoleAssignmentSchema",
     "UserSchema",
+    "ArtifactSchema",
+    "StepInputArtifactSchema",
+    "StepRunOrderSchema",
+    "StepRunSchema",
 ]

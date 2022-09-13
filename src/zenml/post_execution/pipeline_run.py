@@ -37,9 +37,11 @@ def get_run(name: str) -> "PipelineRunView":
         The post-execution view of the run with the given name.
     """
     repo = Repository()
+    active_project_id = repo.active_project.id
+    assert active_project_id is not None
     run = repo.zen_store.get_run_in_project(
         run_name=name,
-        project_name_or_id=repo.active_project.id,
+        project_name_or_id=active_project_id,
     )
     return PipelineRunView(run)
 
@@ -86,6 +88,7 @@ class PipelineRunView:
         Returns:
             The ID of this pipeline run.
         """
+        assert self._model.id is not None
         return self._model.id
 
     @property
@@ -127,6 +130,8 @@ class PipelineRunView:
         Returns:
             The runtime configuration that was used for this pipeline run.
         """
+        if self._model.runtime_configuration is None:
+            return None
         return RuntimeConfiguration(**self._model.runtime_configuration)
 
     @property
@@ -241,6 +246,7 @@ class PipelineRunView:
             # we already fetched the steps, no need to do anything
             return
 
+        assert self._model.id is not None
         steps = Repository().zen_store.list_run_steps(self._model.id)
         self._steps = {step.name: StepView(step) for step in steps}
 
