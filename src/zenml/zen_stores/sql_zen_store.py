@@ -914,7 +914,9 @@ class SqlZenStore(BaseZenStore):
             The updated user.
         """
         with Session(self.engine) as session:
-            existing_user = self._get_user_schema(user_name_or_id)
+            existing_user = self._get_user_schema(
+                user_name_or_id, session=session
+            )
             existing_user.from_update_model(user)
             session.add(existing_user)
             session.commit()
@@ -928,7 +930,7 @@ class SqlZenStore(BaseZenStore):
             user_name_or_id: The name or ID of the user to delete.
         """
         with Session(self.engine) as session:
-            user = self._get_user_schema(user_name_or_id)
+            user = self._get_user_schema(user_name_or_id, session=session)
             session.delete(user)
             session.commit()
 
@@ -1000,7 +1002,7 @@ class SqlZenStore(BaseZenStore):
             team_name_or_id: Name or ID of the team to delete.
         """
         with Session(self.engine) as session:
-            team = self._get_team_schema(team_name_or_id)
+            team = self._get_team_schema(team_name_or_id, session=session)
             session.delete(team)
             session.commit()
 
@@ -1051,8 +1053,8 @@ class SqlZenStore(BaseZenStore):
             EntityExistsError: If the user is already a member of the team.
         """
         with Session(self.engine) as session:
-            team = self._get_team_schema(team_name_or_id)
-            user = self._get_user_schema(user_name_or_id)
+            team = self._get_team_schema(team_name_or_id, session=session)
+            user = self._get_user_schema(user_name_or_id, session=session)
 
             # Check if user is already in the team
             existing_user_in_team = session.exec(
@@ -1083,8 +1085,8 @@ class SqlZenStore(BaseZenStore):
             team_name_or_id: Name or ID of the team from which to remove the user.
         """
         with Session(self.engine) as session:
-            team = self._get_team_schema(team_name_or_id)
-            user = self._get_user_schema(user_name_or_id)
+            team = self._get_team_schema(team_name_or_id, session=session)
+            user = self._get_user_schema(user_name_or_id, session=session)
 
             # Remove user from team
             team.users = [user_ for user_ in team.users if user_.id != user.id]
@@ -1155,7 +1157,7 @@ class SqlZenStore(BaseZenStore):
             role_name_or_id: Name or ID of the role to delete.
         """
         with Session(self.engine) as session:
-            role = self._get_role_schema(role_name_or_id)
+            role = self._get_role_schema(role_name_or_id, session=session)
 
             # Delete role
             session.delete(role)
@@ -1204,7 +1206,7 @@ class SqlZenStore(BaseZenStore):
                     TeamRoleAssignmentSchema.project_id == project.id
                 )
             if team_name_or_id is not None:
-                team = self._get_team_schema(team_name_or_id)
+                team = self._get_team_schema(team_name_or_id, session=session)
                 query = query.where(TeamRoleAssignmentSchema.team_id == team.id)
             team_role_assignments = session.exec(query).all()
 
@@ -1237,16 +1239,20 @@ class SqlZenStore(BaseZenStore):
         """
         # TODO: Check if the role assignment already exists + raise error
         with Session(self.engine) as session:
-            role = self._get_role_schema(role_name_or_id)
+            role = self._get_role_schema(role_name_or_id, session=session)
             project: Optional[ProjectSchema] = None
             if project_name_or_id:
-                project = self._get_project_schema(project_name_or_id)
+                project = self._get_project_schema(
+                    project_name_or_id, session=session
+                )
 
             role_assignment: SQLModel
 
             # Assign role to user
             if is_user:
-                user = self._get_user_schema(user_or_team_name_or_id)
+                user = self._get_user_schema(
+                    user_or_team_name_or_id, session=session
+                )
 
                 # Check if role assignment already exists
                 query = select(UserRoleAssignmentSchema).where(
@@ -1275,7 +1281,9 @@ class SqlZenStore(BaseZenStore):
 
             # Assign role to team
             else:
-                team = self._get_team_schema(user_or_team_name_or_id)
+                team = self._get_team_schema(
+                    user_or_team_name_or_id, session=session
+                )
 
                 # Check if role assignment already exists
                 query = select(TeamRoleAssignmentSchema).where(
@@ -1452,7 +1460,9 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             # Check if project with the given name already exists
-            existing_project = self._get_project_schema(project_name_or_id)
+            existing_project = self._get_project_schema(
+                project_name_or_id, session=session
+            )
 
             # Update the project
             existing_project.from_update_model(project)
@@ -1471,7 +1481,9 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             # Check if project with the given name exists
-            project = self._get_project_schema(project_name_or_id)
+            project = self._get_project_schema(
+                project_name_or_id, session=session
+            )
 
             session.delete(project)  # TODO: cascade delete
             session.commit()
@@ -2218,6 +2230,7 @@ class SqlZenStore(BaseZenStore):
         object_name_or_id: Union[str, UUID],
         schema_class: Type[SQLModel],
         schema_name: str,
+        session: Optional[Session] = None,
     ) -> SQLModel:
         """Query a schema by its 'name' or 'id' field.
 
@@ -2246,14 +2259,28 @@ class SqlZenStore(BaseZenStore):
                 f"'{object_name_or_id}': '{object_name_or_id}' is not a valid "
                 f" UUID and no {schema_name} with this name exists."
             )
-        with Session(self.engine) as session:
+        session = session or Session(self.engine)
+        if session is None:
+            with Session(self.engine):
+                schema = session.exec(
+                    select(schema_class).where(filter)
+                ).first()
+        else:
             schema = session.exec(select(schema_class).where(filter)).first()
-            if schema is None:
-                raise KeyError(error_msg)
-            return schema
+
+        if schema is None:
+            raise KeyError(error_msg)
+        return schema
+        # with session:
+        #     schema = session.exec(select(schema_class).where(filter)).first()
+        #     if schema is None:
+        #         raise KeyError(error_msg)
+        #     return schema
 
     def _get_project_schema(
-        self, project_name_or_id: Union[str, UUID]
+        self,
+        project_name_or_id: Union[str, UUID],
+        session: Optional[Session] = None,
     ) -> ProjectSchema:
         """Gets a project schema by name or ID.
 
@@ -2272,10 +2299,15 @@ class SqlZenStore(BaseZenStore):
                 object_name_or_id=project_name_or_id,
                 schema_class=ProjectSchema,
                 schema_name="project",
+                session=session,
             ),
         )
 
-    def _get_user_schema(self, user_name_or_id: Union[str, UUID]) -> UserSchema:
+    def _get_user_schema(
+        self,
+        user_name_or_id: Union[str, UUID],
+        session: Optional[Session] = None,
+    ) -> UserSchema:
         """Gets a user schema by name or ID.
 
         This is a helper method that is used in various places to find the
@@ -2293,10 +2325,15 @@ class SqlZenStore(BaseZenStore):
                 object_name_or_id=user_name_or_id,
                 schema_class=UserSchema,
                 schema_name="user",
+                session=session,
             ),
         )
 
-    def _get_team_schema(self, team_name_or_id: Union[str, UUID]) -> TeamSchema:
+    def _get_team_schema(
+        self,
+        team_name_or_id: Union[str, UUID],
+        session: Optional[Session] = None,
+    ) -> TeamSchema:
         """Gets a team schema by name or ID.
 
         This is a helper method that is used in various places to find a team
@@ -2314,10 +2351,15 @@ class SqlZenStore(BaseZenStore):
                 object_name_or_id=team_name_or_id,
                 schema_class=TeamSchema,
                 schema_name="team",
+                session=session,
             ),
         )
 
-    def _get_role_schema(self, role_name_or_id: Union[str, UUID]) -> RoleSchema:
+    def _get_role_schema(
+        self,
+        role_name_or_id: Union[str, UUID],
+        session: Optional[Session] = None,
+    ) -> RoleSchema:
         """Gets a role schema by name or ID.
 
         This is a helper method that is used in various places to find a role
@@ -2335,6 +2377,7 @@ class SqlZenStore(BaseZenStore):
                 object_name_or_id=role_name_or_id,
                 schema_class=RoleSchema,
                 schema_name="role",
+                session=session,
             ),
         )
 
