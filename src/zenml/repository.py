@@ -640,7 +640,7 @@ class Repository(metaclass=RepositoryMetaClass):
             stack: The new stack to use as the updated version.
         """
         if stack.is_valid:
-            self.zen_store.update_stack(stack=stack)
+            self.zen_store.update_stack(stack_id=stack.id, stack=stack)
         else:
             raise RuntimeError(
                 "Stack configuration is invalid. A valid"
@@ -684,7 +684,7 @@ class Repository(metaclass=RepositoryMetaClass):
         Args:
             component: The new component to update with.
         """
-        assert component.id is None
+        assert component.id is not None
 
         self.zen_store.update_stack_component(
             component_id=component.id, component=component

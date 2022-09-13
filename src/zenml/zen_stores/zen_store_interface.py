@@ -262,11 +262,13 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def update_stack(
         self,
+        stack_id: UUID,
         stack: StackModel,
     ) -> StackModel:
         """Update a stack.
 
         Args:
+            stack_id: The id of the stack that is to be updated.
             stack: The stack to use for the update.
 
         Returns:

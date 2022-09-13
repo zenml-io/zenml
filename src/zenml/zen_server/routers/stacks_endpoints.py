@@ -121,8 +121,7 @@ async def update_stack(stack_id: str, stack: StackModel) -> StackModel:
         422 error: when unable to validate input
     """
     try:
-        stack.id = UUID(stack_id)
-        return zen_store.update_stack(stack)
+        return zen_store.update_stack(stack_id=UUID(stack_id), stack=stack)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
