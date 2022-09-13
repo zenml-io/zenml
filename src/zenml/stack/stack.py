@@ -89,6 +89,7 @@ class Stack:
         # noqa: DAR402
 
         Args:
+            id: Unique ID of the stack.
             name: Name of the stack.
             orchestrator: Orchestrator component of the stack.
             artifact_store: Artifact store component of the stack.
@@ -136,12 +137,13 @@ class Stack:
 
     @classmethod
     def from_model(cls, stack_model) -> "Stack":
-        """Creates the corresponding Stack instance from the StackModel.
+        """Creates a Stack instance from a StackModel.
 
         Args:
-            stack_model: An instance of a StackModel
+            stack_model: The StackModel to create the Stack from.
+
         Returns:
-            the corresponding Stack instance
+            The created Stack instance.
         """
         stack_components = {
             type_: model.to_component()
@@ -165,6 +167,7 @@ class Stack:
         # noqa: DAR402
 
         Args:
+            id: Unique ID of the stack.
             name: The name of the stack.
             components: The components of the stack.
 
@@ -594,18 +597,12 @@ class Stack:
         be met:
         - the `StackValidator` of each stack component has to validate the
             stack to make sure all the components are compatible with each other
-        - the stack must either have a properly associated artifact/metadata
-            store pair or reset the association.
         - the required secrets of all components need to exist
 
         Args:
             fail_if_secrets_missing: If this is `True`, an error will be raised
                 if a secret for a component is missing. Otherwise, only a
                 warning will be logged.
-
-        Raises:
-            StackValidationError: If the artifact store and the metadata store
-                are not properly associated.
         """
         for component in self.components.values():
             if component.validator:

@@ -1072,7 +1072,6 @@ class RestZenStore(BaseZenStore):
         self,
         run_id: UUID,
         component_id: Optional[str] = None,
-        component_type: Optional[StackComponentType] = None,
     ) -> Dict[str, Any]:
         """Gets the side effects for a component in a pipeline run.
 

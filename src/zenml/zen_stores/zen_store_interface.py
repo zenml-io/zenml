@@ -367,7 +367,7 @@ class ZenStoreInterface(ABC):
         """Update an existing stack component.
 
         Args:
-            component_id
+            component_id: The ID of the stack component to update.
             component: The stack component to use for the update.
 
         Returns:
@@ -611,7 +611,7 @@ class ZenStoreInterface(ABC):
         """Fetches all users of a team.
 
         Args:
-            team_id: The name or ID of the team for which to get users.
+            team_name_or_id: The name or ID of the team for which to get users.
 
         Returns:
             A list of all users that are part of the team.
@@ -1135,7 +1135,6 @@ class ZenStoreInterface(ABC):
         self,
         run_id: UUID,
         component_id: Optional[str] = None,
-        component_type: Optional[StackComponentType] = None,
     ) -> Dict[str, Any]:
         """Gets the side effects for a component in a pipeline run.
 

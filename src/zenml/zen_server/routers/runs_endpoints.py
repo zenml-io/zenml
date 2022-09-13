@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Endpoint definitions for pipeline runs."""
 from typing import Dict, List, Optional
 from uuid import UUID
 
@@ -236,15 +237,13 @@ async def get_run_runtime_configuration(run_id: str) -> Dict:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def get_run_component_side_effects(
-    run_id: str, component_id: str, component_type: str
+    run_id: str, component_id: str
 ) -> Dict:
     """Get the component side-effects for a given pipeline run.
 
     Args:
         run_id: ID of the pipeline run to use to get the component side-effects.
         component_id: ID of the component to use to get the component
-            side-effects.
-        component_type: Type of the component to use to get the component
             side-effects.
 
     Returns:
@@ -259,7 +258,6 @@ async def get_run_component_side_effects(
         return zen_store.get_run_component_side_effects(
             run_id=UUID(run_id),
             component_id=component_id,
-            component_type=component_type,
         )
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))

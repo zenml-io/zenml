@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Code repository models implementation."""
+"""Model definitions for code repositories."""
 
 from datetime import datetime
 from typing import ClassVar, List, Optional
@@ -21,7 +21,7 @@ from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 
 class CodeRepositoryModel(AnalyticsTrackedModelMixin):
-    """The representation of a code repository
+    """The representation of a code repository.
 
     Attributes:
         name: Step name
