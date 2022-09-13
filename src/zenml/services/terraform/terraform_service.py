@@ -1,0 +1,366 @@
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Implementation of a Terraform ZenML service."""
+
+import os
+import pathlib
+import python_terraform
+import tempfile
+import time
+from abc import abstractmethod
+from typing import Any, Dict, Generator, List, Optional, Tuple
+
+import docker.errors as docker_errors
+from docker.client import DockerClient
+from docker.models.containers import Container
+from pydantic import Field
+
+import zenml
+from zenml.constants import ENV_ZENML_CONFIG_PATH
+from zenml.io import fileio
+from zenml.logger import get_logger
+from zenml.services.container.container_service_endpoint import (
+    ContainerServiceEndpoint,
+)
+from zenml.services.container.entrypoint import (
+    SERVICE_CONTAINER_PATH,
+    SERVICE_LOG_FILE_NAME,
+)
+from zenml.services.service import BaseService, ServiceConfig
+from zenml.services.service_status import ServiceState, ServiceStatus
+from zenml.utils.io_utils import (
+    create_dir_recursive_if_not_exists,
+    get_global_config_directory,
+)
+
+logger = get_logger(__name__)
+
+
+SERVICE_CONFIG_FILE_NAME = "service.json"
+SERVICE_CONTAINER_GLOBAL_CONFIG_DIR = "zenconfig"
+SERVICE_CONTAINER_GLOBAL_CONFIG_PATH = os.path.join(
+    "/", SERVICE_CONTAINER_GLOBAL_CONFIG_DIR
+)
+DOCKER_ZENML_SERVER_DEFAULT_IMAGE = "zenmldocker/zenml"
+ENV_ZENML_SERVICE_CONTAINER = "ZENML_SERVICE_CONTAINER"
+
+
+class TerraformServiceConfig(ServiceConfig):
+    """containerized service configuration.
+
+    Attributes:
+        directory_path: the path to the directory that hosts all the HCL files.
+        log_level: the log level to set the terraform client to. Choose one of
+            TRACE, DEBUG, INFO, WARN or ERROR (case insensitive).
+        variables_file_path: the path to the file that stores all variable values.
+    """
+
+    directory_path: str
+    log_level: str = "ERROR"
+    variables_file_path: str = "values.tfvars.json" 
+
+
+class TerraformServiceStatus(ServiceStatus):
+    """containerized service status.
+
+    Attributes:
+        runtime_path: the path where the service files (e.g. the configuration
+            file used to start the service daemon and the logfile) are located
+    """
+
+    runtime_path: Optional[str] = None
+
+    @property
+    def config_file(self) -> Optional[str]:
+        """Get the path to the service configuration file.
+
+        Returns:
+            The path to the configuration file, or None, if the
+            service has never been started before.
+        """
+        if not self.runtime_path:
+            return None
+        return os.path.join(self.runtime_path, SERVICE_CONFIG_FILE_NAME)
+
+    @property
+    def log_file(self) -> Optional[str]:
+        """Get the path to the log file where the service output is/has been logged.
+
+        Returns:
+            The path to the log file, or None, if the service has never been
+            started before.
+        """
+        if not self.runtime_path:
+            return None
+        return os.path.join(self.runtime_path, SERVICE_LOG_FILE_NAME)
+
+
+class TerraformService(BaseService):
+    """A service represented by a containerized process.
+
+    This class extends the base service class with functionality concerning
+    the life-cycle management and tracking of external services implemented as
+    docker containers.
+
+    To define a containerized service, subclass this class and implement the
+    `run` method. Upon `start`, the service will spawn a container that
+    ends up calling the `run` method.
+
+    Example:
+
+    ```python
+
+    from zenml.services import ServiceType, ContainerService, ContainerServiceConfig
+    import time
+
+    class SleepingServiceConfig(ContainerServiceConfig):
+
+        wake_up_after: int
+
+    class SleepingService(ContainerService):
+
+        SERVICE_TYPE = ServiceType(
+            name="sleeper",
+            description="Sleeping container",
+            type="container",
+            flavor="sleeping",
+        )
+        config: SleepingServiceConfig
+
+        def run(self) -> None:
+            time.sleep(self.config.wake_up_after)
+
+    service = SleepingService(config=SleepingServiceConfig(wake_up_after=10))
+    service.start()
+    ```
+
+    NOTE: the `SleepingService` class and its parent module have to be
+    discoverable as part of a ZenML `Integration`, otherwise the daemon will
+    fail with the following error:
+
+    ```
+    TypeError: Cannot load service with unregistered service type:
+    name='sleeper' type='container' flavor='sleeping' description='Sleeping container'
+    ```
+
+    Attributes:
+        config: service configuration
+        status: service status
+        endpoint: optional service endpoint
+
+
+
+    - start/apply
+    - destroy
+    - status
+    """
+
+    config: TerraformServiceConfig = Field(
+        default_factory=TerraformServiceConfig
+    )
+    status: TerraformServiceStatus = Field(
+        default_factory=TerraformServiceStatus
+    )
+
+    _terraform_client: Optional[python_terraform.Terraform] = None
+
+    @property
+    def terraform_client(self) -> python_terraform.Terraform:
+        """Initialize and/or return the terraform client.
+
+        Returns:
+            The terraform client.
+        """
+        if self._terraform_client is None:
+            self.terraform_client = python_terraform.Terraform(
+                working_dir=str(self.config.directory_path)
+            )
+        return self._terraform_client
+
+    def get_service_status_message(self) -> str:
+        """Get a message about the current operational state of the service.
+
+        Returns:
+            A message providing information about the current operational
+            state of the service.
+        """
+        msg = super().get_service_status_message()
+        msg += f"  Container ID: `{self.container_id}`\n"
+        if self.status.log_file:
+            msg += (
+                f"For more information on the service status, please see the "
+                f"following log file: {self.status.log_file}\n"
+            )
+        return msg
+
+    def check_status(self) -> Tuple[ServiceState, str]:
+        """Check the the current operational state of the docker container.
+
+        Returns:
+            The operational state of the docker container and a message
+            providing additional information about that state (e.g. a
+            description of the error, if one is encountered).
+        """
+        container: Optional[Container] = None
+        try:
+            container = self.docker_client.containers.get(self.container_id)
+        except docker_errors.NotFound:
+            # container doesn't exist yet or was removed
+            pass
+
+        if container is None:
+            return ServiceState.INACTIVE, "Docker container is not present"
+        elif container.status == "running":
+            return ServiceState.ACTIVE, "Docker container is running"
+        elif container.status == "exited":
+            return (
+                ServiceState.ERROR,
+                "Docker container has exited.",
+            )
+        else:
+            return (
+                ServiceState.INACTIVE,
+                f"Docker container is {container.status}",
+            )
+
+
+    def _init_and_apply(self) -> None:
+        """Function to call terraform init and terraform apply.
+        
+        The init call is not repeated if any successful execution has
+        happened already, to save time.
+        """
+        # this directory gets created after a successful init
+        previous_run_dir = os.path.join(self.terraform_client.working_dir, ".ignoreme")
+        if fileio.exists(previous_run_dir):
+            logger.info(
+                "Terraform already initialized, "
+                "terraform init will not be executed."
+            )
+        else:
+            ret_code, _, _ = self.terraform_client.init(capture_output=False)
+            if ret_code != 0:
+                raise RuntimeError("The command 'terraform init' failed.")
+            fileio.mkdir(previous_run_dir)
+
+        # get variables from the recipe as a python dictionary
+        vars = self._get_vars(self.terraform_client.working_dir)
+
+        # once init is successful, call terraform apply
+        self.terraform_client.apply(
+            var=vars,
+            input=False,
+            capture_output=False,
+            raise_on_error=True,
+        )
+
+    def _get_vars(self, path: str) -> Any:
+        """Get variables as a dictionary from values.tfvars.json.
+        Args:
+            path: the path to the stack recipe.
+        Returns:
+            A dictionary of variables to use for the stack recipes
+            derived from the tfvars.json file.
+        Raises:
+            FileNotFoundError: if the values.tfvars.json file is not
+                found in the stack recipe.
+        """
+        import json
+
+        variables_file_path = os.path.join(path, self.config.variables_file_path)
+        if not fileio.exists(variables_file_path):
+            raise FileNotFoundError(
+                "The file values.tfvars.json was not found in the "
+                f"recipe's directory at {variables_file_path}. Please "
+                "verify if it exists."
+            )
+
+        # read values into a dict and return
+        with fileio.open(variables_file_path, "r") as f:
+            variables = json.load(f)
+        return variables
+
+
+    def _destroy(self) -> None:
+        """Function to call terraform destroy on the given path."""
+
+        self.terraform_client.destroy(
+            capture_output=False,
+            raise_on_error=True,
+            force=python_terraform.IsNotFlagged,
+        )
+
+    def provision(self) -> None:
+        """Provision the service."""
+        self.check_installation()
+        self._set_log_level()
+        self._init_and_apply()
+
+    def deprovision(self) -> None:
+        """Deprovision the service.
+
+        """
+        self.check_installation()
+        self._set_log_level()
+        self._destroy()
+
+    def get_logs(
+        self, follow: bool = False, tail: Optional[int] = None
+    ) -> Generator[str, bool, None]:
+        """Retrieve the service logs.
+
+        Args:
+            follow: if True, the logs will be streamed as they are written
+            tail: only retrieve the last NUM lines of log output.
+
+        Yields:
+            A generator that can be accessed to get the service logs.
+        """
+        pass
+
+    def check_installation(self) -> None:
+        """Checks if necessary tools are installed on the host system.
+        
+        Raises:
+            RuntimeError: if any required tool is not installed.
+        """
+        if not self._is_terraform_installed():
+            raise RuntimeError(
+                "Terraform is required for stack recipes to run and was not "
+                "found installed on your machine or not available on  "
+                "your $PATH. Please visit "
+                "https://learn.hashicorp.com/tutorials/terraform/install-cli "
+                "to install it."
+            )
+    
+    def _is_terraform_installed(self) -> bool:
+        """Checks if terraform is installed on the host system.
+        Returns:
+            True if terraform is installed, false otherwise.
+        """
+        # check terraform version to verify installation.
+        try:
+            self.terraform_client.cmd("-version")
+        except FileNotFoundError:
+            return False
+
+        return True
+
+    def _set_log_level(self) -> None:
+        """Set TF_LOG env var to the log_level provided by the user.
+        Args:
+            log_level: One of TRACE, DEBUG, INFO, WARN or ERROR to set
+                as the log level for terraform CLI.
+        """
+        os.environ["TF_LOG"] = self.config.log_level
