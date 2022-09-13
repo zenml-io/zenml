@@ -38,6 +38,7 @@ from zenml.models import (
     StackModel, FlavorModel,
 )
 from zenml.models.component_models import HydratedComponentModel
+from zenml.models.pipeline_models import HydratedPipelineModel
 from zenml.models.stack_models import HydratedStackModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.utils import (
@@ -498,18 +499,23 @@ async def create_flavor(
 
 @router.get(
     "/{project_name_or_id}" + PIPELINES,
-    response_model=List[PipelineModel],
+    response_model=Union[List[PipelineModel], List[HydratedPipelineModel]],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def get_project_pipelines(
-    project_name_or_id: str,
-) -> List[PipelineModel]:
+    project_name_or_id: Optional[str] = None,
+    user_name_or_id: Optional[str] = None,
+    hydrated: bool = True
+) -> Union[List[PipelineModel], List[HydratedPipelineModel]]:
     """Gets pipelines defined for a specific project.
 
     # noqa: DAR401
 
     Args:
-        project_name_or_id: Name or ID of the project.
+        project_name_or_id: Name or ID of the project to get pipelines for.
+        user_name_or_id: Optionally filter by name or ID of the user.
+        hydrated: Defines if stack components, users and projects will be
+                  included by reference (FALSE) or as model (TRUE)
 
     Returns:
         All pipelines within the project.
@@ -521,9 +527,14 @@ async def get_project_pipelines(
         422 error: when unable to validate input
     """
     try:
-        return zen_store.list_pipelines(
-            project_name_or_id=parse_name_or_uuid(project_name_or_id)
+        pipelines_list = zen_store.list_pipelines(
+            project_name_or_id=parse_name_or_uuid(project_name_or_id),
+            user_name_or_id=parse_name_or_uuid(user_name_or_id)
         )
+        if hydrated:
+            return [pipeline.to_hydrated_model() for pipeline in pipelines_list]
+        else:
+            return pipelines_list
     except KeyError as error:
         raise not_found(error) from error
     except NotAuthorizedError as error:
@@ -534,17 +545,21 @@ async def get_project_pipelines(
 
 @router.post(
     "/{project_name_or_id}" + PIPELINES,
-    response_model=PipelineModel,
+    response_model=Union[PipelineModel, HydratedPipelineModel],
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 async def create_pipeline(
-    project_name_or_id: str, pipeline: PipelineModel
-) -> PipelineModel:
+    project_name_or_id: str,
+    pipeline: PipelineModel,
+    hydrated: bool = True
+) -> Union[PipelineModel, HydratedPipelineModel]:
     """Creates a pipeline.
 
     Args:
         project_name_or_id: Name or ID of the project.
         pipeline: Pipeline to create.
+        hydrated: Defines if stack components, users and projects will be
+                  included by reference (FALSE) or as model (TRUE)
 
     Raises:
         conflict: when the pipeline already exists.
@@ -553,12 +568,15 @@ async def create_pipeline(
         422 error: when unable to validate input
     """
     try:
-        return zen_store.create_pipeline(
+        # TODO: [server] Inject user here
+        pipeline = zen_store.create_pipeline(
             project_name_or_id=parse_name_or_uuid(project_name_or_id),
             pipeline=pipeline,
         )
-    except (StackExistsError, StackComponentExistsError) as error:
-        raise conflict(error) from error
+        if hydrated:
+            return pipeline.to_hydrated_model()
+        else:
+            return pipeline
     except PipelineExistsError as error:
         raise conflict(error) from error
     except NotAuthorizedError as error:

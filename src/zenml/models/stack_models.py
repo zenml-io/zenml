@@ -125,7 +125,8 @@ class HydratedStackModel(StackModel):
         "instances of components of this type."
     )
     project: ProjectModel = Field(
-        default=None, title="The project that contains this stack."
+        default=None,
+        title="The project that contains this stack."
     )
     user: UserModel = Field(
         default=None,

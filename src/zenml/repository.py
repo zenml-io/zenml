@@ -984,12 +984,12 @@ class Repository(metaclass=RepositoryMetaClass):
         except KeyError:
             pipeline = PipelineModel(
                 name=pipeline_name,
-                owner=self.active_user.id,
-                project_id=self.active_project.id,
                 configuration=pipeline_configuration,
             )
             pipeline = self.zen_store.create_pipeline(
-                project_name_or_id=self.active_project.name, pipeline=pipeline
+                project_name_or_id=self.active_project.name,
+                user_name_or_id=self.active_user.id,
+                pipeline=pipeline
             )
             logger.info(f"Registered new pipeline with name {pipeline.name}.")
             return pipeline.id

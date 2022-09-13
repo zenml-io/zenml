@@ -46,29 +46,35 @@ class PipelineSchema(SQLModel, table=True):
     )
 
     @classmethod
-    def from_create_model(cls, model: PipelineModel) -> "PipelineSchema":
+    def from_create_model(
+        cls,
+        user_id: UUID,
+        project_id: UUID,
+        pipeline: PipelineModel
+    ) -> "PipelineSchema":
         return cls(
-            name=model.name,
-            project_id=model.project_id,
-            owner=model.owner,
-            docstring=model.docstring,
-            configuration=json.dumps(model.configuration),
+            name=pipeline.name,
+            project_id=project_id,
+            owner=user_id,
+            docstring=pipeline.docstring,
+            configuration=json.dumps(pipeline.configuration),
         )
 
     def from_update_model(self, model: PipelineModel) -> "PipelineSchema":
         self.name = model.name
         self.docstring = model.docstring
+        # TODO: [server] verify that the
         return self
 
     def to_model(self) -> "PipelineModel":
         return PipelineModel(
             id=self.id,
             name=self.name,
-            project_id=self.project_id,
-            owner=self.owner,
+            project=self.project_id,
+            user=self.owner,
             docstring=self.docstring,
             configuration=json.loads(self.configuration),
-            created_at=self.created_at,
+            creation_date=self.created_at,
         )
 
 

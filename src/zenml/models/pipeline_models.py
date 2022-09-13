@@ -20,7 +20,10 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from zenml import __version__ as current_zenml_version
+from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import ArtifactType
+from zenml.models.project_models import ProjectModel
+from zenml.models.user_management_models import UserModel
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 
@@ -63,18 +66,54 @@ class PipelineModel(AnalyticsTrackedModelMixin):
         steps: List of steps in this pipeline
     """
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id", "project_id", "owner"]
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id", "project", "user"]
 
     id: Optional[UUID]
     name: str
 
-    project_id: UUID
-    owner: UUID
+    project: Optional[UUID] = Field(
+        default=None,
+        title="The project that contains this component."
+    )
+    user: Optional[UUID] = Field(
+        default=None,
+        title="The id of the user that owns this component.",
+    )
 
     docstring: Optional[str]
     configuration: Dict[str, str]
 
-    created_at: Optional[datetime]
+    creation_date: Optional[datetime] = Field(
+        default=None,
+        title="The time at which the component was registered.",
+    )
+
+    def to_hydrated_model(self) -> "HydratedPipelineModel":
+        zen_store = GlobalConfiguration().zen_store
+
+        project = zen_store.get_project(self.project)
+        user = zen_store.get_user(self.user)
+
+        return HydratedPipelineModel(id=self.id,
+                                     name=self.name,
+                                     project=project,
+                                     user=user,
+                                     docstring=self.docstring,
+                                     configuration=self.configuration,
+                                     creation_date=self.creation_date)
+
+
+class HydratedPipelineModel(PipelineModel):
+    """Network Serializable Model describing the Component with User and Project
+     fully hydrated.
+    """
+    project: ProjectModel = Field(
+        default=None, title="The project that contains this stack."
+    )
+    user: UserModel = Field(
+        default=None,
+        title="The id of the user, that created this stack.",
+    )
 
 
 class PipelineRunModel(BaseModel):

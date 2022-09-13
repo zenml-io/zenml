@@ -1039,7 +1039,6 @@ def _import_stack_component(
         The name of the imported component.
     """
     component_type = StackComponentType(component_type)
-    print(component_config)
     component_name = component_config.pop("name")
     component_flavor = component_config.pop("flavor")
 

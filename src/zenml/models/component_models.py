@@ -86,6 +86,7 @@ class ComponentModel(AnalyticsTrackedModelMixin):
         default=None,
         title="The time at which the component was registered.",
     )
+
     def to_hydrated_model(self) -> "HydratedComponentModel":
         zen_store = GlobalConfiguration().zen_store
 

@@ -950,15 +950,18 @@ class ZenStoreInterface(ABC):
     # ---------
     # Pipelines
     # ---------
-
     @abstractmethod
     def create_pipeline(
-        self, project_name_or_id: Union[str, UUID], pipeline: PipelineModel
+        self,
+        project_name_or_id: Union[str, UUID],
+        user_name_or_id: Union[str, UUID],
+        pipeline: PipelineModel
     ) -> PipelineModel:
         """Creates a new pipeline in a project.
 
         Args:
             project_name_or_id: ID of the project to create the pipeline in.
+            user_name_or_id: ID of the user that created the pipeline.
             pipeline: The pipeline to create.
 
         Returns:
@@ -1004,11 +1007,13 @@ class ZenStoreInterface(ABC):
     def list_pipelines(
         self,
         project_name_or_id: Optional[Union[str, UUID]],
+        user_name_or_id: Optional[Union[str, UUID]],
     ) -> List[PipelineModel]:
         """List all pipelines in the project.
 
         Args:
             project_name_or_id: If provided, only list pipelines in this project.
+            user_name_or_id: If provided, only list pipelines from this user.
 
         Returns:
             A list of pipelines.

@@ -1695,13 +1695,17 @@ class SqlZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.CREATE_PIPELINE)
     def create_pipeline(
-        self, project_name_or_id: Union[str, UUID], pipeline: PipelineModel
+        self,
+        project_name_or_id: Union[str, UUID],
+        user_name_or_id: Union[str, UUID],
+        pipeline: PipelineModel
     ) -> PipelineModel:
         """Creates a new pipeline in a project.
 
         Args:
             project_name_or_id: ID or name of the project to create the pipeline
                 in.
+            user_name_or_id: ID of the user that created the pipeline.
             pipeline: The pipeline to create.
 
         Returns:
@@ -1714,6 +1718,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if project with the given name exists
             project = self._get_project_schema(project_name_or_id)
+            user = self._get_user_schema(user_name_or_id)
 
             # Check if pipeline with the given name already exists
             existing_pipeline = session.exec(
@@ -1728,7 +1733,11 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Create the pipeline
-            new_pipeline = PipelineSchema.from_create_model(pipeline)
+            new_pipeline = PipelineSchema.from_create_model(
+                project_id=project.id,
+                user_id=user.id,
+                pipeline=pipeline
+            )
             session.add(new_pipeline)
             session.commit()
 
@@ -1798,12 +1807,14 @@ class SqlZenStore(BaseZenStore):
     def list_pipelines(
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List[PipelineModel]:
         """List all pipelines in the project.
 
         Args:
             project_name_or_id: If provided, only list pipelines in this
                 project.
+            user_name_or_id: If provided, only list pipelines from this user.
 
         Returns:
             A list of pipelines.
@@ -1817,6 +1828,10 @@ class SqlZenStore(BaseZenStore):
             if project_name_or_id is not None:
                 project = self._get_project_schema(project_name_or_id)
                 query = query.where(PipelineSchema.project_id == project.id)
+
+            if user_name_or_id is not None:
+                user = self._get_user_schema(user_name_or_id)
+                query = query.where(PipelineSchema.owner == user.id)
 
             # Get all pipelines in the project
             pipelines = session.exec(query).all()

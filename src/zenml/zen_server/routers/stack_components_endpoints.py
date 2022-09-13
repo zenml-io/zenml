@@ -38,32 +38,6 @@ router = APIRouter(
 
 
 @router.get(
-    TYPES,
-    response_model=List[StackComponentType],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-async def get_stack_component_types() -> List[str]:
-    """Get a list of all stack component types.
-
-    Returns:
-        List of stack components.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
-    """
-    try:
-        return StackComponentType.values()
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
-
-
-@router.get(
     "/",
     response_model=Union[List[ComponentModel], List[HydratedComponentModel]],
     responses={401: error_response, 404: error_response, 422: error_response},
@@ -212,6 +186,32 @@ async def deregister_stack_component(component_id: str) -> None:
     """
     try:
         zen_store.delete_stack_component(UUID(component_id))
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@router.get(
+    TYPES,
+    response_model=List[StackComponentType],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def get_stack_component_types() -> List[str]:
+    """Get a list of all stack component types.
+
+    Returns:
+        List of stack components.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return StackComponentType.values()
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
