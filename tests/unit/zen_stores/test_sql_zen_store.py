@@ -144,6 +144,7 @@ def test_adding_user_to_team(fresh_sql_zen_store: BaseZenStore):
     current_user_id = fresh_sql_zen_store.active_user.id
     new_team_id = fresh_sql_zen_store.get_team("arias_team").id
     fresh_sql_zen_store.add_user_to_team(current_user_id, new_team_id)
+    breakpoint()
     assert (
         fresh_sql_zen_store.get_users_for_team(new_team_id)[0].id
         == current_user_id
@@ -185,6 +186,7 @@ def test_removing_user_from_team_succeeds(fresh_sql_zen_store: BaseZenStore):
     fresh_sql_zen_store.create_team(new_team)
     current_user_id = fresh_sql_zen_store.active_user.id
     new_team_id = fresh_sql_zen_store.get_team("arias_team").id
+    breakpoint()
     fresh_sql_zen_store.add_user_to_team(current_user_id, new_team_id)
     assert len(fresh_sql_zen_store.get_users_for_team(new_team_id)) == 1
     fresh_sql_zen_store.remove_user_from_team(current_user_id, new_team_id)
@@ -216,6 +218,7 @@ def test_getting_user_for_team(fresh_sql_zen_store: BaseZenStore):
     fresh_sql_zen_store.create_team(new_team)
     current_user_id = fresh_sql_zen_store.active_user.id
     new_team_id = fresh_sql_zen_store.get_team("arias_team").id
+    breakpoint()
     fresh_sql_zen_store.add_user_to_team(current_user_id, new_team_id)
     users_for_team = fresh_sql_zen_store.get_users_for_team(new_team_id)
     assert len(users_for_team) == 1
@@ -228,6 +231,7 @@ def test_getting_team_for_user(fresh_sql_zen_store: BaseZenStore):
     fresh_sql_zen_store.create_team(new_team)
     current_user_id = fresh_sql_zen_store.active_user.id
     new_team_id = fresh_sql_zen_store.get_team("arias_team").id
+    breakpoint()
     fresh_sql_zen_store.add_user_to_team(current_user_id, new_team_id)
     teams_for_user = fresh_sql_zen_store.get_teams_for_user(current_user_id)
     assert len(teams_for_user) == 1
@@ -413,7 +417,7 @@ def test_assigning_role_to_team_succeeds(
     team_id = str(fresh_sql_store_with_team.get_team("arias_team").id)
     new_role = RoleModel(name="blupus_friend")
     fresh_sql_store_with_team.create_role(new_role)
-    new_role_id = str(fresh_sql_store_with_team.get_role("blupus_friend").id)
+    new_role_id = fresh_sql_store_with_team.get_role("blupus_friend").id
     fresh_sql_store_with_team.assign_role(new_role_id, team_id, is_user=False)
 
     assert len(fresh_sql_store_with_team.roles) == 1
@@ -421,7 +425,7 @@ def test_assigning_role_to_team_succeeds(
     assert (
         len(
             fresh_sql_store_with_team.list_role_assignments(
-                fresh_sql_store_with_team.active_user.id
+                user_name_or_id=fresh_sql_store_with_team.active_user.id
             )
         )
         == 0
@@ -430,7 +434,6 @@ def test_assigning_role_to_team_succeeds(
 
 def test_revoking_role_succeeds():
     """Tests revoking a role."""
-    pass
 
 
 # TODO: add this back in when exception is raised in SQLZenStore
@@ -545,16 +548,13 @@ def test_list_stacks_fails_with_nonexistent_project(
         fresh_sql_zen_store.list_stacks(uuid.uuid4())
 
 
-def test_stacks_property(fresh_sql_zen_store: BaseZenStore):
-    """Tests stacks property."""
-    assert len(fresh_sql_zen_store.stacks) == 1
-
-
 def test_get_stack_succeeds(
     fresh_sql_zen_store: BaseZenStore,
 ):
     """Tests getting stack."""
-    current_stack_id = fresh_sql_zen_store.stacks[0].id
+    current_stack_id = fresh_sql_zen_store.list_stacks(
+        project_name_or_id="default"
+    )[0].id
     stack = fresh_sql_zen_store.get_stack(current_stack_id)
     assert stack is not None
 
