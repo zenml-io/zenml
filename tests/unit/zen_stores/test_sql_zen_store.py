@@ -430,25 +430,20 @@ def test_assigning_role_to_team_succeeds(
     )
 
 
-def test_revoking_role_succeeds():
-    """Tests revoking a role."""
+def test_assigning_role_if_assignment_already_exists(
+    fresh_sql_store_with_team: BaseZenStore,
+):
+    """Tests assigning a role to a user if the assignment already exists."""
+    new_role = RoleModel(name="aria_feeder")
+    current_user_id = str(fresh_sql_store_with_team.active_user.id)
+    fresh_sql_store_with_team.create_role(new_role)
+    new_role_id = str(fresh_sql_store_with_team.get_role("aria_feeder").id)
+    fresh_sql_store_with_team.assign_role(new_role_id, current_user_id)
+    with pytest.raises(EntityExistsError):
+        fresh_sql_store_with_team.assign_role(new_role_id, current_user_id)
 
-
-# TODO: add this back in when exception is raised in SQLZenStore
-# def test_assigning_role_if_assignment_already_exists(
-#     fresh_sql_store_with_team: BaseZenStore,
-# ):
-#     """Tests assigning a role to a user if the assignment already exists."""
-#     new_role = RoleModel(name="aria_feeder")
-#     current_user_id = str(fresh_sql_store_with_team.active_user.id)
-#     fresh_sql_store_with_team.create_role(new_role)
-#     new_role_id = str(fresh_sql_store_with_team.get_role("aria_feeder").id)
-#     fresh_sql_store_with_team.assign_role(new_role_id, current_user_id)
-#     with pytest.raises(EntityExistsError):
-#         fresh_sql_store_with_team.assign_role(new_role_id, current_user_id)
-
-#     assert len(fresh_sql_store_with_team.roles) == 1
-#     assert len(fresh_sql_store_with_team.role_assignments) == 1
+    assert len(fresh_sql_store_with_team.roles) == 1
+    assert len(fresh_sql_store_with_team.role_assignments) == 1
 
 
 def test_revoking_role_for_user_succeeds(
