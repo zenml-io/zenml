@@ -106,11 +106,14 @@ def get_pipeline(
         )
 
     repo = Repository()
-    pipeline = repo.zen_store.get_pipeline_in_project(
-        pipeline_name=pipeline_name,
-        project_name_or_id=repo.active_project.id,
-    )
-    return PipelineView(pipeline)
+    try:
+        pipeline = repo.zen_store.get_pipeline_in_project(
+            pipeline_name=pipeline_name,
+            project_name_or_id=repo.active_project.id,
+        )
+        return PipelineView(pipeline)
+    except KeyError:
+        return None
 
 
 class PipelineView:
