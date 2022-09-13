@@ -11,37 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import os
 from contextlib import ExitStack as does_not_raise
+from uuid import uuid4
 
 import pytest
 
 from zenml.artifact_stores import LocalArtifactStore
-from zenml.config.global_config import GlobalConfiguration
 from zenml.container_registries import DefaultContainerRegistry
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.orchestrators import LocalOrchestrator
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.stack import Stack
-
-
-def test_default_local_stack():
-    """Tests that the default_local_stack method returns a stack with local
-    components."""
-    stack = Stack.default_local_stack()
-
-    assert isinstance(stack.orchestrator, LocalOrchestrator)
-    assert isinstance(stack.artifact_store, LocalArtifactStore)
-    assert stack.container_registry is None
-
-    expected_artifact_store_path = os.path.join(
-        GlobalConfiguration().config_directory,
-        "local_stores",
-        str(stack.artifact_store.uuid),
-    )
-
-    assert stack.artifact_store.path == expected_artifact_store_path
 
 
 def test_initializing_a_stack_from_components():
@@ -54,7 +35,7 @@ def test_initializing_a_stack_from_components():
         StackComponentType.ARTIFACT_STORE: artifact_store,
     }
 
-    stack = Stack.from_components(name="", components=components)
+    stack = Stack.from_components(id=uuid4(), name="", components=components)
 
     assert stack.orchestrator is orchestrator
     assert stack.artifact_store is artifact_store
@@ -64,7 +45,7 @@ def test_initializing_a_stack_from_components():
     container_registry = DefaultContainerRegistry(name="", uri="")
     components[StackComponentType.CONTAINER_REGISTRY] = container_registry
 
-    stack = Stack.from_components(name="", components=components)
+    stack = Stack.from_components(id=uuid4(), name="", components=components)
     assert stack.container_registry is container_registry
 
 
@@ -94,6 +75,7 @@ def test_stack_returns_all_its_components():
     orchestrator = LocalOrchestrator(name="")
     artifact_store = LocalArtifactStore(name="", path="")
     stack = Stack(
+        id=uuid4(),
         name="",
         orchestrator=orchestrator,
         artifact_store=artifact_store,
@@ -108,6 +90,7 @@ def test_stack_returns_all_its_components():
     # check that it also works with optional container registry
     container_registry = DefaultContainerRegistry(name="", uri="")
     stack = Stack(
+        id=uuid4(),
         name="",
         orchestrator=orchestrator,
         artifact_store=artifact_store,
@@ -184,15 +167,29 @@ def test_stack_validation_succeeds_if_no_component_validator_fails(
         stack_with_mock_components.validate()
 
 
-def test_stack_deployment(
-    stack_with_mock_components, one_step_pipeline, empty_step, mocker
+def test_stack_prepare_pipeline_run(
+    stack_with_mock_components, one_step_pipeline, empty_step
 ):
-    """Tests that when a pipeline is deployed on a stack, the stack calls
-    preparation/cleanup methods on all of its components and calls the
-    orchestrator to run the pipeline."""
+    """Tests that the stack prepares a pipeline run by calling the prepare
+    methods of all its components."""
+    pipeline = one_step_pipeline(empty_step())
+    run_name = "some_unique_pipeline_run_name"
+    runtime_config = RuntimeConfiguration(run_name=run_name)
+    stack_with_mock_components.prepare_pipeline_run(pipeline, runtime_config)
+    for component in stack_with_mock_components.components.values():
+        component.prepare_pipeline_deployment.assert_called_once()
+        component.prepare_pipeline_run.assert_called_once()
+
+
+def test_stack_deployment(
+    stack_with_mock_components, one_step_pipeline, empty_step
+):
+    """Tests that when a pipeline is deployed on a stack, the stack calls the
+    orchestrator to run the pipeline and calls cleanup methods on all of its
+    components.
+    """
     # Mock the pipeline run registering which tries (and fails) to serialize
     # our mock objects
-    mocker.patch.object(stack_with_mock_components, "_register_pipeline_run")
     pipeline_run_return_value = object()
     stack_with_mock_components.orchestrator.run.return_value = (
         pipeline_run_return_value
@@ -206,8 +203,6 @@ def test_stack_deployment(
     )
 
     for component in stack_with_mock_components.components.values():
-        component.prepare_pipeline_deployment.assert_called_once()
-        component.prepare_pipeline_run.assert_called_once()
         component.cleanup_pipeline_run.assert_called_once()
 
     stack_with_mock_components.orchestrator.run.assert_called_once_with(
