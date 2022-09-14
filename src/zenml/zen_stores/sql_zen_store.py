@@ -546,7 +546,9 @@ class SqlZenStore(BaseZenStore):
 
             # Create the component
             component_in_db = StackComponentSchema.from_create_model(
-                user_id=user.id, project_id=project.id, component=component
+                user_id=user.id,
+                project_id=project.id,
+                component=component
             )
 
             session.add(component_in_db)
@@ -635,7 +637,7 @@ class SqlZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.UPDATED_STACK_COMPONENT)
     def update_stack_component(
-        self, component_id: UUID, component: ComponentModel
+        self, component: ComponentModel
     ) -> ComponentModel:
         """Update an existing stack component.
 
@@ -651,7 +653,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             existing_component = session.exec(
                 select(StackComponentSchema).where(
-                    StackComponentSchema.id == component_id
+                    StackComponentSchema.id == component.id
                 )
             ).first()
 
@@ -737,43 +739,42 @@ class SqlZenStore(BaseZenStore):
                 is already owned by this user in this project.
         """
         with Session(self.engine) as session:
-            # TODO [Baris]: handle the domain key (name+type+owner+project) correctly
+
+            project = self._get_project_schema(project_name_or_id)
+            user = self._get_user_schema(user_name_or_id)
+
+            # Check if component with the same domain key (name, type, project,
+            # owner) already exists
             existing_flavor = session.exec(
-                select(FlavorSchema).where(
-                    FlavorSchema.name == flavor.name,
-                    FlavorSchema.type == flavor.type,
-                )
+                select(FlavorSchema)
+                .where(FlavorSchema.name == flavor.name)
+                .where(FlavorSchema.type == flavor.type)
+                .where(FlavorSchema.project_id == project.id)
+                .where(FlavorSchema.user_id == user.id)
             ).first()
-            if existing_flavor:
+
+            if existing_flavor is not None:
                 raise EntityExistsError(
-                    f"A {flavor.type} with '{flavor.name}' flavor already "
-                    f"exists."
+                    f"Unable to register '{flavor.type.value}' flavor "
+                    f"with name '{flavor.name}': Found an existing "
+                    f"flavor with the same name and type in the same "
+                    f"'{project.name}' project owned by the same "
+                    f"'{user.name}' user."
                 )
-            # TODO: add logic to convert from model in schema
-            sql_flavor = FlavorSchema(
-                name=flavor.name,
-                source=flavor.source,
-                type=flavor.type,
+            flavor_in_db = FlavorSchema.from_create_model(
+                flavor=flavor, user_id=user.id, project_id=project.id
             )
-            flavor_model = FlavorModel(**sql_flavor.dict())
-            session.add(sql_flavor)
+
+            session.add(component_in_db)
             session.commit()
 
-        # with Session(self.engine) as session:
-        #     flavor_in_db = FlavorSchema.from_create_model(
-        #         user_id=user_id, project_id=project_id, flavor=flavor
-        #     )
-        #     session.add(flavor_in_db)
-        #     session.commit()
-        #
-        # return flavor_in_db.to_model()
-        return flavor_model
+        return flavor_in_db.to_model()
 
     def get_flavor(self, flavor_id: UUID) -> FlavorModel:
-        """Get a stack component flavor by ID.
+        """Get a flavor by ID.
 
         Args:
-            component_id: The ID of the stack component flavor to get.
+            flavor_id: The ID of the flavor to fetch.
 
         Returns:
             The stack component flavor.
@@ -781,14 +782,13 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the stack component flavor doesn't exist.
         """
-        # TODO[Baris]: implement this
-
-        # with Session(self.engine) as session:
-        #     flavor_in_db = session.exec(
-        #         select(FlavorSchema).where(FlavorSchema.id == flavor_id)
-        #     ).first()
-        #
-        # return flavor_in_db.to_model()
+        with Session(self.engine) as session:
+            flavor_in_db = session.exec(
+                select(FlavorSchema).where(FlavorSchema.id == flavor_id)
+            ).first()
+        if flavor_in_db is None:
+            raise KeyError(f"Flavor with ID {flavor_id} not found.")
+        return flavor_in_db.to_model()
 
     def list_flavors(
         self,
@@ -803,9 +803,8 @@ class SqlZenStore(BaseZenStore):
         Args:
             project_name_or_id: The ID or name of the Project to which the
                 component flavors belong
-            component_type: Optionally filter by type of stack component
-            flavor_name: Optionally filter by flavor name
             user_name_or_id: Optionally filter by the owner
+            component_type: Optionally filter by type of stack component
             name: Optionally filter flavors by name
             is_shared: Optionally filter out flavors by whether they are
                 shared or not
@@ -814,81 +813,70 @@ class SqlZenStore(BaseZenStore):
             List of all the stack component flavors matching the given criteria.
 
         Raises:
-            KeyError: if the project doesn't exist.
+            KeyError: if the flavor doesn't exist.
         """
         with Session(self.engine) as session:
-            self._get_project_schema(project_name_or_id)
-
-            # TODO [Baris]: implement filtering by component type, name, project etc.
-
+            project = self._get_project_schema(project_name_or_id)
             # Get a list of all flavors
-            query = select(
-                FlavorSchema
-            )  # .where(FlavorSchema.project_id == project.id)
+            query = select(FlavorSchema).where(FlavorSchema.project_id == project.id)
+
             if component_type:
                 query = query.where(FlavorSchema.type == component_type)
             if name:
                 query = query.where(FlavorSchema.name == name)
-
-            # TODO: implement this
-            # if user_name_or_id:
-            #     user = self._get_user_schema(user_name_or_id)
-            #     query = query.where(FlavorSchema.owner == user.id)
-            # if name:
-            #     query = query.where(FlavorSchema.name == name)
-            # if is_shared is not None:
-            #     query = query.where(FlavorSchema.is_shared == is_shared)
+            if user_name_or_id:
+                user = self._get_user_schema(user_name_or_id)
+                query = query.where(FlavorSchema.user_id == user.id)
 
             list_of_flavors_in_db = session.exec(query).all()
 
-        # TODO: add logic to convert to model in schema
-        # return [flavor.to_model() for flavor in list_of_flavors_in_db]
-
-        # BARIS CODE
-        # with Session(self.engine) as session:
-        #
-        #     query = select(FlavorSchema).where(
-        #         FlavorSchema.project_id == project_id
-        #     )
-        #
-        #     if type:
-        #         query = query.where(FlavorSchema.type == type)
-        #     if name:
-        #         query = query.where(FlavorSchema.name == name)
-        #     if user_id:
-        #         query = query.where(FlavorSchema.user_id == user_id)
-        #
-        #     list_of_flavors_in_db = session.exec(query).all()
-        #
-        # return [flavor.to_model() for flavor in list_of_flavors_in_db]
-        return [
-            FlavorModel(**flavor.dict()) for flavor in list_of_flavors_in_db
-        ]
+        return [flavor.to_model() for flavor in list_of_flavors_in_db]
 
     def update_flavor(self, flavor: FlavorModel) -> None:
-        """"""
-        # with Session(self.engine) as session:
-        #     existing_flavor = session.exec(
-        #         select(FlavorSchema).where(FlavorSchema.id == flavor.id)
-        #     ).first()
-        #     existing_flavor.from_update_model(flavor=flavor)
-        #     session.add(existing_flavor)
-        #     session.commit()
-        #
-        # return existing_flavor.to_model()
+        """Update a flavor.
+
+        Args:
+            flavor: The model of the flavor to update.
+
+        Raises:
+            KeyError: if the flavor doesn't exist.
+        """
+        with Session(self.engine) as session:
+            existing_flavor = session.exec(
+                select(FlavorSchema).where(FlavorSchema.id == flavor.id)
+            ).first()
+
+            if existing_flavor is None:
+                raise KeyError(
+                    f"Unable to update flavor with id '{flavor.id}': Found no"
+                    f"existing component with this id."
+                )
+
+            existing_flavor.from_update_model(flavor=flavor)
+            session.add(existing_flavor)
+            session.commit()
+
+        return existing_flavor.to_model()
 
     def delete_flavor(self, flavor_id: UUID) -> None:
-        """"""
-        # with Session(self.engine) as session:
-        #     try:
-        #         flavor_in_db = session.exec(
-        #             select(FlavorSchema).where(FlavorSchema.id == flavor_id)
-        #         ).one()
-        #         session.delete(flavor_in_db)
-        #     except NoResultFound as error:
-        #         raise KeyError from error
-        #
-        #     session.commit()
+        """Delete a flavor.
+
+        Args:
+            flavor_id: The id of the flavor to delete.
+
+        Raises:
+            KeyError: if the flavor doesn't exist.
+        """
+        with Session(self.engine) as session:
+            try:
+                flavor_in_db = session.exec(
+                    select(FlavorSchema).where(FlavorSchema.id == flavor_id)
+                ).one()
+                session.delete(flavor_in_db)
+            except NoResultFound as error:
+                raise KeyError from error
+
+            session.commit()
 
     # -----
     # Users
@@ -991,7 +979,7 @@ class SqlZenStore(BaseZenStore):
         """Deletes a user.
 
         Args:
-            user_id: The ID of the user to delete.
+            user_name_or_id: The name or the ID of the user to delete.
 
         Raises:
             KeyError: If no user with the given name exists.
@@ -1106,7 +1094,8 @@ class SqlZenStore(BaseZenStore):
         """Fetches all teams for a user.
 
         Args:
-            user_name_or_id: The name or ID of the user for which to get all teams.
+            user_name_or_id: The name or ID of the user for which to get all
+                teams.
 
         Returns:
             A list of all teams that the user is part of.
@@ -1162,7 +1151,8 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             user_name_or_id: Name or ID of the user to remove from the team.
-            team_name_or_id: Name or ID of the team from which to remove the user.
+            team_name_or_id: Name or ID of the team from which to remove the
+                user.
 
         Raises:
             KeyError: If the team or user does not exist.
@@ -1265,10 +1255,12 @@ class SqlZenStore(BaseZenStore):
         """List all role assignments.
 
         Args:
-            project_name_or_id: Name or Id of the Project for the role
-                                assignment
-            team_name_or_id: If provided, only list assignments for the given team
-            user_name_or_id: If provided, only list assignments for the given user
+            project_name_or_id: Name or ID of the Project for the role
+                assignment
+            team_name_or_id: If provided, only list assignments for the given
+                team
+            user_name_or_id: If provided, only list assignments for the given
+                user
 
         Returns:
             A list of all role assignments.

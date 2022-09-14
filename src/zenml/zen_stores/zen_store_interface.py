@@ -359,7 +359,6 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def update_stack_component(
         self,
-        component_id: UUID,
         component: ComponentModel,
     ) -> ComponentModel:
         """Update an existing stack component.
@@ -462,7 +461,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def update_flavor(self, flavor: FlavorModel) -> None:
+    def update_flavor(self, flavor: FlavorModel) -> "FlavorModel":
         """"""
 
     @abstractmethod
