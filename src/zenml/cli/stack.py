@@ -1094,7 +1094,7 @@ def _import_stack_component(
 
 @stack.command("import", help="Import a stack from YAML.")
 @click.argument("stack_name", type=str, required=True)
-@click.argument("filename", type=str, required=False)
+@click.option("--filename", "-f", type=str, required=False)
 @click.option(
     "--ignore-version-mismatch",
     is_flag=True,

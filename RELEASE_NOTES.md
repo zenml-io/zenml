@@ -1,4 +1,60 @@
 <!-- markdown-link-check-disable -->
+
+# 0.13.2
+
+ZenML 0.13.2 comes with a new local Docker orchestrator and many other improvements and fixes:
+* You can now run your pipelines locally in isolated Docker containers per step
+* @gabrielmbmb updated our MLFlow experiment tracker to work with Databricks deployments 🎉
+* Documentation updates for cloud deployments and multi-tenancy Kubeflow support
+
+## What's Changed
+* Update GitHub Actions by @fa9r in https://github.com/zenml-io/zenml/pull/864
+* Raise zenml exception when cyclic graph is detected by @schustmi in https://github.com/zenml-io/zenml/pull/866
+* Add source to segment identify call by @htahir1 in https://github.com/zenml-io/zenml/pull/868
+* Use default local paths/URIs for the local artifact and metadata stores by @stefannica in https://github.com/zenml-io/zenml/pull/873
+* Implement local docker orchestrator by @schustmi in https://github.com/zenml-io/zenml/pull/862
+* Update cheat sheet with latest CLI commands from 0.13.0 by @dnth in https://github.com/zenml-io/zenml/pull/867
+* Add a note about importing proper DockerConfiguration module by @jsuchome in https://github.com/zenml-io/zenml/pull/877
+* Bugfix/misc by @schustmi in https://github.com/zenml-io/zenml/pull/878
+* Fixed bug in tfx by @htahir1 in https://github.com/zenml-io/zenml/pull/883
+* Mlflow Databricks connection by @gabrielmbmb in https://github.com/zenml-io/zenml/pull/882
+* Refactor cloud guide to stack deployment guide by @wjayesh in https://github.com/zenml-io/zenml/pull/861
+* Add cookie consent by @strickvl in https://github.com/zenml-io/zenml/pull/871
+* Stack recipe CLI improvements by @wjayesh in https://github.com/zenml-io/zenml/pull/872
+* Kubeflow workaround added by @htahir1 in https://github.com/zenml-io/zenml/pull/886
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.13.1...0.13.2
+
+# 0.13.1
+
+ZenML 0.13.1 is here and it comes with several quality of life improvements:
+
+* You can now specify the exact order in which your pipelines steps should be
+executed, e.g., via `step_b.after(step_a)`
+* TensorBoard was moved to a separate integration so you can use it with Pytorch
+and other modeling frameworks
+* You can now configure the Evidently integration to ignore specific columns in 
+your datasets. 
+
+This release also contains a lot of documentation on how to deploy
+custom code (like preprocessing and postprocessing code) with our KServe and
+Seldon integrations.
+
+## What's Changed
+* Fix flag info on recipes in docs by @wjayesh in https://github.com/zenml-io/zenml/pull/854
+* Fix some materializer issues by @schustmi in https://github.com/zenml-io/zenml/pull/852
+* Add ignore columns for evidently drift detection by @SangamSwadiK in https://github.com/zenml-io/zenml/pull/851
+* TensorBoard Integration by @fa9r in https://github.com/zenml-io/zenml/pull/850
+* Add option to specify task dependencies by @schustmi in https://github.com/zenml-io/zenml/pull/858
+* Custom code readme and docs by @safoinme in https://github.com/zenml-io/zenml/pull/853
+
+## New Contributors
+* @SangamSwadiK made their first contribution in https://github.com/zenml-io/zenml/pull/851
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.13.0...0.13.1
+
+
 # 0.13.0
 
 ZenML version 0.13.0 is chock-full with exciting features. 

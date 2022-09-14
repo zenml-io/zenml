@@ -45,11 +45,13 @@ from zenml.models.pipeline_models import HydratedPipelineModel
 from zenml.models.stack_models import HydratedStackModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.models import CreatePipelineModel
-from zenml.zen_server.models.projects_models import CreateProjectModel, \
+from zenml.zen_server.models.projects_models import (
+    CreateProjectModel,
     UpdateProjectModel
+)
 from zenml.zen_server.models.stack_models import CreateStackModel
+from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import (
-    authorize,
     conflict,
     error_detail,
     error_response,
@@ -165,8 +167,7 @@ async def get_project(project_name_or_id: str) -> ProjectModel:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def update_project(
-    project_name_or_id: str,
-    project_update: UpdateProjectModel
+    project_name_or_id: str, project_update: UpdateProjectModel
 ) -> ProjectModel:
     """Get a project for given name.
 
@@ -187,7 +188,8 @@ async def update_project(
     """
     try:
         project_in_db = zen_store.get_project(
-            parse_name_or_uuid(project_name_or_id))
+            parse_name_or_uuid(project_name_or_id)
+        )
 
         return zen_store.update_project(
             project=project_update.apply_to_model(project_in_db),
@@ -289,7 +291,10 @@ async def get_project_stacks(
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 async def create_stack(
-    project_name_or_id: str, stack: CreateStackModel, hydrated: bool = True
+    project_name_or_id: str,
+    stack: CreateStackModel,
+    hydrated: bool = True,
+    auth_context: AuthContext = Depends(authorize),
 ) -> Union[HydratedStackModel, StackModel]:
     """Creates a stack for a particular project.
 
@@ -309,10 +314,10 @@ async def create_stack(
         422 error: when unable to validate input
     """
     try:
-        # TODO: [server] insert user from context here
+        project = zen_store.get_project(parse_name_or_uuid(project_name_or_id))
         full_stack = stack.to_model(
-            project=parse_name_or_uuid(project_name_or_id),
-            user=parse_name_or_uuid(),
+            project=project.id,
+            user=auth_context.user.id,
         )
 
         created_stack = zen_store.register_stack(stack=full_stack)

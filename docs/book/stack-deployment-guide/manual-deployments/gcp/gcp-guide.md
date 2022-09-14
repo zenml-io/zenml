@@ -430,7 +430,7 @@ appropriate rights after the first run fails.
 At the end of the logs you should be seeing a link to the Vertex AI dashboard. 
 It should look something like this:
 
-![Finished Run](../../assets/VertexAiRun.png)
+![Finished Run](../../../assets/VertexAiRun.png)
 
 In case you get an error message like this:
 ```shell
@@ -473,8 +473,8 @@ Now rerun your pipeline, it should work now.
 
 Within this guide you have set up and used a stack on GCP using the Vertex AI
 orchestrator. For more guides on different cloud set-ups, check out the 
-[Kubeflow](../../mlops-stacks/orchestrators/kubeflow.md) and 
-[Kubernetes](../../mlops-stacks/orchestrators/kubernetes.md) orchestrators 
+[Kubeflow](../../../mlops-stacks/orchestrators/kubeflow.md) and 
+[Kubernetes](../../../mlops-stacks/orchestrators/kubernetes.md) orchestrators 
 respectively and find out if these are a better fit for you.
 
 

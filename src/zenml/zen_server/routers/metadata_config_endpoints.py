@@ -16,8 +16,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from zenml.constants import METADATA_CONFIG, VERSION_1
+from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import (
-    authorize,
     error_detail,
     error_response,
     zen_store,

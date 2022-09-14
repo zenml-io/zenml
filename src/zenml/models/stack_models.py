@@ -38,17 +38,10 @@ class StackModel(AnalyticsTrackedModelMixin):
         "is_shared",
     ]
 
-    id: UUID = Field(
-        default_factory=uuid4,
-        title="The unique id of the stack."
-    )
-    name: str = Field(
-        title="The name of the stack."
-    )
+    id: UUID = Field(default_factory=uuid4, title="The unique id of the stack.")
+    name: str = Field(title="The name of the stack.")
     description: Optional[str] = Field(
-        default=None,
-        title="The description of the stack",
-        max_length=300
+        default=None, title="The description of the stack", max_length=300
     )
     components: Dict[StackComponentType, List[UUID]] = Field(
         title="A mapping of stack component types to the id's of"
@@ -58,9 +51,7 @@ class StackModel(AnalyticsTrackedModelMixin):
         default=False,
         title="Flag describing if this stack is shared.",
     )
-    project: UUID = Field(
-        title="The project that contains this stack."
-    )
+    project: UUID = Field(title="The project that contains this stack.")
     user: UUID = Field(
         title="The id of the user, that created this stack.",
     )

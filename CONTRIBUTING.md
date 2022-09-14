@@ -135,13 +135,13 @@ Warning: This might take a while for both (~ 15 mins each, depending on your mac
 time, please run it as it will make the
 next commands error-free.
 
-It is easy to run the following scripts via Poetry to ensure code formatting and
-linting is in order:
+You can now run the following scripts via Poetry to automatically format your
+code and to check whether the code formatting, linting, docstrings, and
+spelling is in order:
 
 ```
 poetry run bash scripts/format.sh
-poetry run bash scripts/lint.sh
-poetry run bash scripts/check-spelling.sh
+poetry run bash scripts/run-ci-checks.sh
 ```
 
 If the spell checker catches errors, you will have to add the words to `.pyspelling-ignore-words`. (Note that if you wish to run the spellchecks manually on your local machine, first install `aspell` (using `brew` or `apt-get` or whatever package manager Windows uses).)

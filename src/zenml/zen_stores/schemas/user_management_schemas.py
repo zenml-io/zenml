@@ -20,7 +20,12 @@ from uuid import UUID, uuid4
 
 from sqlmodel import Field, Relationship, SQLModel
 
-from zenml.models import RoleAssignmentModel, RoleModel, TeamModel, UserModel
+from zenml.models import (
+    RoleAssignmentModel,
+    RoleModel,
+    TeamModel,
+    UserModel,
+)
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.project_schemas import ProjectSchema
@@ -36,9 +41,15 @@ class TeamAssignmentSchema(SQLModel, table=True):
 class UserSchema(SQLModel, table=True):
     """SQL Model for users."""
 
-    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    id: UUID = Field(primary_key=True)
     name: str
-    creation_date: datetime = Field(default_factory=datetime.now)
+    full_name: str
+    email: str
+    active: bool
+    password: Optional[str] = Field(nullable=True)
+    invite_token: Optional[str] = Field(nullable=True)
+    creation_date: datetime
+    updated_date: datetime
 
     teams: List["TeamSchema"] = Relationship(
         back_populates="users", link_model=TeamAssignmentSchema
@@ -57,7 +68,17 @@ class UserSchema(SQLModel, table=True):
         Returns:
             The created `UserSchema`.
         """
-        return cls(name=model.name)
+        return cls(
+            id=model.id,
+            name=model.name,
+            full_name=model.full_name,
+            email=model.email,
+            active=model.active,
+            password=model.get_password(),
+            invite_token=model.get_invite_token(),
+            creation_date=model.created_at,
+            updated_date=model.created_at,
+        )
 
     def from_update_model(self, model: UserModel) -> "UserSchema":
         """Update a `UserSchema` from a `UserModel`.
@@ -69,6 +90,12 @@ class UserSchema(SQLModel, table=True):
             The updated `UserSchema`.
         """
         self.name = model.name
+        self.full_name = model.full_name
+        self.email = model.email
+        self.active = model.active
+        self.password = model.get_password()
+        self.invite_token = model.get_invite_token()
+        self.updated_date = model.updated_at
         return self
 
     def to_model(self) -> UserModel:
@@ -78,7 +105,15 @@ class UserSchema(SQLModel, table=True):
             The converted `UserModel`.
         """
         return UserModel(
-            id=self.id, name=self.name, created_at=self.creation_date
+            id=self.id,
+            name=self.name,
+            full_name=self.full_name,
+            email=self.email,
+            active=self.active,
+            password=self.password,
+            invite_token=self.invite_token,
+            created_at=self.creation_date,
+            updated_at=self.updated_date,
         )
 
 

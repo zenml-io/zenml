@@ -13,31 +13,31 @@ Azure Kubernetes Service (AKS) is a managed Kubernetes service with hardened sec
 
 
 * An AKS cluster can be used to run multiple **orchestrators**.
-    * [A Kubernetes-native orchestrator.](../../mlops-stacks/orchestrators/kubernetes.md)
-    * [A Kubeflow orchestrator.](../../mlops-stacks/orchestrators/kubeflow.md)
+    * [A Kubernetes-native orchestrator.](../../../mlops-stacks/orchestrators/kubernetes.md)
+    * [A Kubeflow orchestrator.](../../../mlops-stacks/orchestrators/kubeflow.md)
 * You can host **model deployers** on the cluster.
-    * [A Seldon model deployer.](../../mlops-stacks/model-deployers/seldon.md)
-    * [An MLflow model deployer.](../../mlops-stacks/model-deployers/mlflow.md)
+    * [A Seldon model deployer.](../../../mlops-stacks/model-deployers/seldon.md)
+    * [An MLflow model deployer.](../../../mlops-stacks/model-deployers/mlflow.md)
 * Experiment trackers can also be hosted on the cluster.
-    * [An MLflow experiment tracker](../../mlops-stacks/model-deployers/mlflow.md)
+    * [An MLflow experiment tracker](../../../mlops-stacks/model-deployers/mlflow.md)
 
 ## Azure Blob Storage
 
 Azure Blob storage is Microsoft's object storage solution for the cloud. Blob storage is optimized for storing massive amounts of unstructured data. Blob storage offers three types of resources: the storage account, a container in the storage account and a blob in a container. [Learn more here](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction).
 
-* You can use an [Azure Blob Storage Container as an artifact store](../../mlops-stacks/artifact-stores/azure-blob-storage.md) to hold files from our pipeline runs like models, data and more. 
+* You can use an [Azure Blob Storage Container as an artifact store](../../../mlops-stacks/artifact-stores/azure-blob-storage.md) to hold files from our pipeline runs like models, data and more. 
 
 ## Azure Container Registry
 
 Azure Container Registry is a managed registry service based on the open-source Docker Registry 2.0. Create and maintain Azure container registries to store and manage your container images and related artifacts. [Learn more here](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-intro).
 
-* An [Azure container registry can be used as a ZenML container registry](../../mlops-stacks/container-registries/azure.md) stack component to host images of your pipelines. 
+* An [Azure container registry can be used as a ZenML container registry](../../../mlops-stacks/container-registries/azure.md) stack component to host images of your pipelines. 
 
 ## AzureML
 
 Azure Machine Learning is a cloud service for accelerating and managing the machine learning project lifecycle. Machine learning professionals, data scientists, and engineers can use it in their day-to-day workflows to train and deploy models, and manage MLOps. [Learn more here](https://docs.microsoft.com/en-us/azure/machine-learning/overview-what-is-azure-machine-learning).
 
-* You can use [AzureML compute as a step operator](../../mlops-stacks/step-operators/azureml.md) to run specific steps from your pipeline using it as the backend.
+* You can use [AzureML compute as a step operator](../../../mlops-stacks/step-operators/azureml.md) to run specific steps from your pipeline using it as the backend.
 
 ## Azure SQL server
 
