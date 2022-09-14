@@ -46,16 +46,16 @@ class UserCreateRequest(BaseModel):
 class UserCreateResponse(UserModel):
     """Pydantic object representing a user create response.
 
-    The invite token is included in the response.
+    The activation token is included in the response.
     """
 
-    invite_token: Optional[str] = None
+    activation_token: Optional[str] = None
 
     @classmethod
     def from_model(cls, user: UserModel) -> "UserCreateResponse":
         """Convert from a user model."""
         response = cls(**user.dict())
-        response.invite_token = user.get_invite_token()
+        response.activation_token = user.get_activation_token()
         return response
 
 
@@ -91,20 +91,36 @@ class UserActivateRequest(BaseModel):
         full_name: Full name for the user account.
         email: Email address for the user account.
         password: Password for the user account.
-        invite_token: Invite token for the user account.
+        activation_token: Activation token for the user account.
     """
 
     name: Optional[str] = None
     full_name: Optional[str] = None
     email: Optional[str] = None
     password: SecretStr
-    invite_token: SecretStr
+    activation_token: SecretStr
 
     def to_model(self, user: UserModel) -> UserModel:
         """Convert to a user model."""
         for k, v in self.dict(exclude_none=True).items():
-            if k in ["invite_token", "password"]:
+            if k in ["activation_token", "password"]:
                 continue
             setattr(user, k, v)
         user.password = self.password.get_secret_value()
         return user
+
+
+class UserActivationTokenResponse(BaseModel):
+    """Pydantic object representing a user activation token.
+
+    Attributes:
+        activation_token: Activation token for the user account.
+    """
+
+    activation_token: str
+
+    @classmethod
+    def from_model(cls, user: UserModel) -> "UserActivationTokenResponse":
+        """Convert from a user model."""
+        response = cls(activation_token=user.get_activation_token())
+        return response

@@ -182,7 +182,7 @@ TYPES = "/types"
 COMPONENT_SIDE_EFFECTS = "/component-side-effects"
 METADATA_CONFIG = "/metadata-config"
 REPOSITORIES = "/repositories"
-INVITE_TOKEN = "/invite-token"
+DEACTIVATE = "/deactivate"
 ACTIVATE = "/activate"
 VERSION_1 = "/v1"
 

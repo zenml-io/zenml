@@ -22,6 +22,8 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field, SecretStr, root_validator
+from secrets import token_hex
+
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ENV_ZENML_JWT_SECRET_KEY
 from zenml.exceptions import AuthorizationException
@@ -54,7 +56,7 @@ class JWTTokenType(StrEnum):
     """The type of JWT token."""
 
     ACCESS_TOKEN = "access_token"
-    INVITE_TOKEN = "invite_token"
+    ACTIVATION_TOKEN = "activation_token"
 
 
 class JWTToken(BaseModel):
@@ -150,7 +152,7 @@ class UserModel(AnalyticsTrackedModelMixin):
         active: Whether the user account is active.
         created_at: Date when the user was created.
         password: Password for the user account.
-        invite_token: Invite token for the user account.
+        activation_token: Activation token for the user account.
     """
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
@@ -167,7 +169,7 @@ class UserModel(AnalyticsTrackedModelMixin):
     email: str = ""
     active: bool = False
     password: Optional[SecretStr] = Field(None, exclude=True)
-    invite_token: Optional[SecretStr] = Field(None, exclude=True)
+    activation_token: Optional[SecretStr] = Field(None, exclude=True)
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 
@@ -247,43 +249,42 @@ class UserModel(AnalyticsTrackedModelMixin):
             token_type=JWTTokenType.ACCESS_TOKEN, user_id=self.id
         ).encode()
 
-    def get_invite_token(self) -> Optional[str]:
-        """Get the invite token.
+    def get_activation_token(self) -> Optional[str]:
+        """Get the activation token.
 
         Returns:
-            The invite token as a plain string, if it exists.
+            The activation token as a plain string, if it exists.
         """
-        if self.invite_token is None:
+        if self.activation_token is None:
             return None
-        return self.invite_token.get_secret_value()
+        return self.activation_token.get_secret_value()
 
-    def verify_invite_token(self, invite_token: str) -> None:
-        """Verifies a given invite token against the stored invite token.
+    def verify_activation_token(self, activation_token: str) -> None:
+        """Verifies a given activation token against the stored activation token.
 
         Args:
-            invite_token: Input invite token to be verified.
+            activation_token: Input activation token to be verified.
 
         Raises:
-            AuthorizationException: If the invite token is invalid.
+            AuthorizationException: If the activation token is invalid.
         """
         if (
             self.active
-            or self.invite_token is None
-            or invite_token != self.invite_token
+            or self.activation_token is None
+            or activation_token != self.activation_token
         ):
             raise AuthorizationException(
-                f"Invalid invite token for user {self.name}"
+                f"Invalid activation token for user {self.name}"
             )
 
-    def generate_invite_token(self) -> str:
-        """Generates and stores a new invite token.
+    def generate_activation_token(self) -> str:
+        """Generates and stores a new activation token.
 
         Returns:
-            The generated invite token.
+            The generated activation token.
         """
-        token = JWTToken(token_type=JWTTokenType.INVITE_TOKEN, user_id=self.id)
-        self.invite_token = token.encode()
-        return self.invite_token
+        self.activation_token = token_hex(32)
+        return self.activation_token
 
     class Config:
         """Pydantic configuration class."""
