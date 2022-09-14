@@ -12,8 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for stack components."""
-
-from typing import List, Optional
+from typing import List, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -22,6 +21,7 @@ from zenml.constants import FLAVORS, STACK_COMPONENTS, TYPES, VERSION_1
 from zenml.enums import StackComponentType
 from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.models import ComponentModel, FlavorModel
+from zenml.models.component_models import HydratedComponentModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.utils import (
     authorize,
@@ -39,47 +39,28 @@ router = APIRouter(
 
 
 @router.get(
-    TYPES,
-    response_model=List[StackComponentType],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-async def get_stack_component_types() -> List[str]:
-    """Get a list of all stack component types.
-
-    Returns:
-        List of stack components.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
-    """
-    try:
-        return StackComponentType.values()
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
-
-
-@router.get(
     "/",
-    response_model=List[ComponentModel],
+    response_model=Union[List[ComponentModel], List[HydratedComponentModel]],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def list_stack_components(
-    project_name_or_id: str,
+    project_name_or_id: Optional[str] = None,
+    user_name_or_id: Optional[str] = None,
     component_type: Optional[str] = None,
     component_name: Optional[str] = None,
-) -> List[ComponentModel]:
+    is_shared: Optional[bool] = None,
+    hydrated: bool = True
+) -> Union[List[ComponentModel], List[HydratedComponentModel]]:
     """Get a list of all stack components for a specific type.
 
     Args:
         project_name_or_id: Name or ID of the project
-        component_name: Name of a component
-        component_type: Type of component to filter for
+        user_name_or_id: Optionally filter by name or ID of the user.
+        component_name: Optionally filter by component name
+        component_type: Optionally filter by component type
+        is_shared: Optionally filter by shared status of the component
+        hydrated: Defines if users and projects will be
+                  included by reference (FALSE) or as model (TRUE)
 
     Returns:
         List of stack components for a specific type.
@@ -90,45 +71,17 @@ async def list_stack_components(
         422 error: when unable to validate input
     """
     try:
-        # TODO [server]: introduce other
-        #  filters, specifically for type
-        return zen_store.list_stack_components(
+        components_list = zen_store.list_stack_components(
             project_name_or_id=parse_name_or_uuid(project_name_or_id),
+            user_name_or_id=parse_name_or_uuid(user_name_or_id),
             type=component_type,
+            is_shared=is_shared,
             name=component_name,
         )
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
-
-
-@router.get(
-    "/{component_type}" + FLAVORS,
-    response_model=List[FlavorModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-async def list_flavors(
-    component_type: StackComponentType,
-) -> List[FlavorModel]:
-    """Returns all flavors of a given type.
-
-    Args:
-        component_type: Type of the component.
-
-    Returns:
-        The requested flavors.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
-    """
-    try:
-        # TODO [Baris]: add project and more filters to this
-        return zen_store.list_flavors(component_type=component_type)
+        if hydrated:
+            return [comp.to_hydrated_model() for comp in components_list]
+        else:
+            return components_list
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
@@ -139,14 +92,19 @@ async def list_flavors(
 
 @router.get(
     "/{component_id}",
-    response_model=ComponentModel,
+    response_model=Union[ComponentModel, HydratedComponentModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_stack_component(component_id: str) -> ComponentModel:
+async def get_stack_component(
+    component_id: str,
+    hydrated: bool = True
+) -> Union[ComponentModel, HydratedComponentModel]:
     """Returns the requested stack component.
 
     Args:
         component_id: ID of the stack component.
+        hydrated: Defines if stack components, users and projects will be
+                  included by reference (FALSE) or as model (TRUE)
 
     Returns:
         The requested stack component.
@@ -157,7 +115,11 @@ async def get_stack_component(component_id: str) -> ComponentModel:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.get_stack_component(UUID(component_id))
+        component = zen_store.get_stack_component(UUID(component_id))
+        if hydrated:
+            return component.to_hydrated_model()
+        else:
+            return component
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
@@ -168,18 +130,21 @@ async def get_stack_component(component_id: str) -> ComponentModel:
 
 @router.put(
     "/{component_id}",
-    response_model=ComponentModel,
+    response_model=Union[ComponentModel, HydratedComponentModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def update_stack_component(
     component_id: str,
     component: ComponentModel,
-) -> ComponentModel:
+    hydrated: bool = True
+) -> Union[ComponentModel, HydratedComponentModel]:
     """Updates a stack component.
 
     Args:
         component_id: ID of the stack component.
         component: Stack component to use to update.
+        hydrated: Defines if stack components, users and projects will be
+                  included by reference (FALSE) or as model (TRUE)
 
     Returns:
         Updated stack component.
@@ -190,9 +155,13 @@ async def update_stack_component(
         422 error: when unable to validate input
     """
     try:
-        return zen_store.update_stack_component(
+        updated_component = zen_store.update_stack_component(
             component_id=UUID(component_id), component=component
         )
+        if hydrated:
+            return updated_component.to_hydrated_model()
+        else:
+            return updated_component
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
@@ -226,50 +195,27 @@ async def deregister_stack_component(component_id: str) -> None:
         raise HTTPException(status_code=422, detail=error_detail(error))
 
 
-# @router.get(
-#     "/{component_id}" + COMPONENT_SIDE_EFFECTS,
-#     response_model=Dict,
-#     responses={401: error_response, 404: error_response, 422: error_response},
-# )
-# async def get_stack_component_side_effects(
-#     component_id: str, run_id: str, pipeline_id: str, stack_id: str
-# ) -> Dict:
-#     """Returns the side-effects for a requested stack component.
-#
-#     Args:
-#         component_id: ID of the stack component.
-#
-#     Returns:
-#         The requested stack component side-effects.
-#
-#     Raises:
-#         401 error: when not authorized to login
-#         404 error: when trigger does not exist
-#         422 error: when unable to validate input
-#     """
-#     try:
-#         return zen_store.get_stack_component_side_effects(
-#             component_id,
-#             run_id=run_id,
-#             pipeline_id=pipeline_id,
-#             stack_id=stack_id,
-#         )
-#     except NotAuthorizedError as error:
-#         raise HTTPException(status_code=401, detail=error_detail(error))
-#     except KeyError as error:
-#         raise HTTPException(status_code=404, detail=error_detail(error))
-#     except ValidationError as error:
-#         raise HTTPException(status_code=422, detail=error_detail(error))
+@router.get(
+    TYPES,
+    response_model=List[StackComponentType],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def get_stack_component_types() -> List[str]:
+    """Get a list of all stack component types.
 
+    Returns:
+        List of stack components.
 
-# @router.get(
-#     STACK_CONFIGURATIONS,
-#     response_model=Dict[str, Dict[StackComponentType, str]],
-# )
-# async def stack_configurations() -> Dict[str, Dict[StackComponentType, str]]:
-#     """Returns configurations for all stacks.
-
-#     Returns:
-#         Configurations for all stacks.
-#     """
-#     return zen_store.stack_configurations
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        return StackComponentType.values()
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))

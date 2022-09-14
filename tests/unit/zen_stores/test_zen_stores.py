@@ -648,6 +648,8 @@ def test_rename_core_stack_component_succeeds(
         assert fresh_zen_store.get_stack_component(
             StackComponentType.ORCHESTRATOR, old_name
         )
+    # TODO: [server] here the stack is called by name when it should be called
+    #  by id
     stack_components = fresh_zen_store.get_stack("default").components
     stack_orchestrators = [
         component

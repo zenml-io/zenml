@@ -566,9 +566,8 @@ def test_register_stack_succeeds(
 ):
     """Tests registering stack."""
     new_stack = StackModel(name="arias_stack", components={})
+    # TODO: [server] inject user and project into stack as well
     fresh_sql_zen_store.register_stack(
-        user_name_or_id="default",
-        project_name_or_id="default",
         stack=new_stack,
     )
     stacks = fresh_sql_zen_store.list_stacks("default")
@@ -582,9 +581,8 @@ def test_register_stack_fails_when_stack_exists(
     """Tests registering stack fails when stack exists."""
     new_stack = StackModel(name="default", components={})
     with pytest.raises(StackExistsError):
+        # TODO: [server] inject user and project into stack as well
         fresh_sql_zen_store.register_stack(
-            user_name_or_id="default",
-            project_name_or_id="default",
             stack=new_stack,
         )
 
@@ -596,8 +594,12 @@ def test_updating_stack_succeeds(
     current_stack_id = fresh_sql_zen_store.list_stacks(
         project_name_or_id="default"
     )[0].id
-    new_stack = StackModel(name="arias_stack", components={})
-    fresh_sql_zen_store.update_stack(current_stack_id, new_stack)
+    new_stack = StackModel(
+        id=current_stack_id,
+        name="arias_stack",
+        components={}
+    )
+    fresh_sql_zen_store.update_stack(new_stack)
     assert fresh_sql_zen_store.get_stack(current_stack_id) is not None
     assert fresh_sql_zen_store.get_stack(current_stack_id).name == "arias_stack"
 
@@ -609,7 +611,8 @@ def test_updating_nonexistent_stack_fails(
     new_stack = StackModel(name="arias_stack", components={})
     non_existent_stack_id = uuid.uuid4()
     with pytest.raises(KeyError):
-        fresh_sql_zen_store.update_stack(non_existent_stack_id, new_stack)
+        new_stack.id = non_existent_stack_id
+        fresh_sql_zen_store.update_stack(new_stack)
     with pytest.raises(KeyError):
         fresh_sql_zen_store.get_stack(non_existent_stack_id)
     assert (
@@ -647,10 +650,9 @@ def test_deleting_a_stack_succeeds(
     fresh_sql_zen_store: BaseZenStore,
 ):
     """Tests deleting stack."""
+    # TODO: [server] inject user and project into stack as well
     new_stack = StackModel(name="arias_stack", components={})
     fresh_sql_zen_store.register_stack(
-        user_name_or_id="default",
-        project_name_or_id="default",
         stack=new_stack,
     )
     stacks = fresh_sql_zen_store.list_stacks(project_name_or_id="default")

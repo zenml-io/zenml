@@ -200,15 +200,11 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def register_stack(
         self,
-        user_name_or_id: Union[str, UUID],
-        project_name_or_id: Union[str, UUID],
         stack: StackModel,
     ) -> StackModel:
         """Register a new stack.
 
         Args:
-            user_name_or_id: The stack owner.
-            project_name_or_id: The project that the stack belongs to.
             stack: The stack to register.
 
         Returns:
@@ -236,7 +232,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_stacks(
         self,
-        project_name_or_id: Union[str, UUID],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
@@ -261,13 +257,11 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def update_stack(
         self,
-        stack_id: UUID,
         stack: StackModel,
     ) -> StackModel:
         """Update a stack.
 
         Args:
-            stack_id: The id of the stack that is to be updated.
             stack: The stack to use for the update.
 
         Returns:
@@ -869,15 +863,18 @@ class ZenStoreInterface(ABC):
     # ---------
     # Pipelines
     # ---------
-
     @abstractmethod
     def create_pipeline(
-        self, project_name_or_id: Union[str, UUID], pipeline: PipelineModel
+        self,
+        project_name_or_id: Union[str, UUID],
+        user_name_or_id: Union[str, UUID],
+        pipeline: PipelineModel
     ) -> PipelineModel:
         """Creates a new pipeline in a project.
 
         Args:
             project_name_or_id: ID of the project to create the pipeline in.
+            user_name_or_id: ID of the user that created the pipeline.
             pipeline: The pipeline to create.
 
         Returns:
@@ -923,11 +920,13 @@ class ZenStoreInterface(ABC):
     def list_pipelines(
         self,
         project_name_or_id: Optional[Union[str, UUID]],
+        user_name_or_id: Optional[Union[str, UUID]],
     ) -> List[PipelineModel]:
         """List all pipelines in the project.
 
         Args:
             project_name_or_id: If provided, only list pipelines in this project.
+            user_name_or_id: If provided, only list pipelines from this user.
 
         Returns:
             A list of pipelines.

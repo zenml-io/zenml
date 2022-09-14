@@ -237,10 +237,13 @@ class LocalStore(BaseModel):
             ):
                 zen_store = Repository().zen_store
                 # use the component in the active store
-                component = zen_store.get_default_stack(
+                # TODO: [server] make sure this is the intended use of _get_default_stack
+                component = (zen_store._get_default_stack(
                     project_name_or_id=project,
-                    user_name_or_id=zen_store.active_user.id,
-                )[StackComponentType(component_type)]
+                    user_name_or_id=zen_store.active_user.id,)
+                    .to_hydrated_model()
+                    .components[StackComponentType(component_type)][0])
+
             components[StackComponentType(component_type)] = component
 
         return StackModel(
@@ -606,11 +609,9 @@ def migrate_profiles(
             cli_utils.declare(f"Migrating stacks from {store.config_file}...")
             for stack in store.get_stacks(prefix=prefix, project=project.name):
                 try:
-                    repo.zen_store.register_stack(
-                        user_name_or_id=user.id,
-                        project_name_or_id=project.name,
-                        stack=stack,
-                    )
+                    stack.project = project.id
+                    stack.user = user.id
+                    repo.zen_store.register_stack(stack)
                     cli_utils.declare(f"Migrated stack '{stack.name}'.")
                 except StackExistsError:
                     if overwrite:
@@ -618,7 +619,6 @@ def migrate_profiles(
                         stack.project_id = project.id
                         stack.owner = user.id
                         repo.zen_store.update_stack(
-                            stack_id=stack.id,  # TODO: check if this correct
                             stack=stack,
                         )
                         cli_utils.declare(f"Updated stack '{stack.name}'.")

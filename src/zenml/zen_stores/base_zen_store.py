@@ -267,7 +267,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
                     active_stack_id,
                 )
             else:
-                if active_stack.project_id != active_project.id:
+                if active_stack.project != active_project.id:
                     logger.warning(
                         "The stack with id '%s' is not in the active project. "
                         "Resetting the active stack to the default "
@@ -328,10 +328,10 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         """
         from zenml.config.global_config import GlobalConfiguration
 
-        project_name = self.get_project(
+        project = self.get_project(
             project_name_or_id=project_name_or_id
-        ).name
-        user_name = self.get_user(user_name_or_id=user_name_or_id).name
+        )
+        user = self.get_user(user_name_or_id=user_name_or_id)
         try:
             self._get_default_stack(
                 project_name_or_id=project_name_or_id,
@@ -342,22 +342,22 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         else:
             raise StackExistsError(
                 f"Default stack already registered for user "
-                f"{user_name} in project {project_name}"
+                f"{user.name} in project {project.name}"
             )
 
         logger.info(
-            f"Creating default stack for user {user_name} in project "
-            f"{project_name}..."
+            f"Creating default stack for user {user.name} in project "
+            f"{project.name}..."
         )
 
         # Register the default orchestrator
         orchestrator = self.register_stack_component(
-            user_name_or_id=user_name_or_id,
-            project_name_or_id=project_name_or_id,
+            user_name_or_id=user.name,
+            project_name_or_id=project.name,
             component=ComponentModel(
                 name="default",
                 type=StackComponentType.ORCHESTRATOR,
-                flavor_name="local",
+                flavor="local",
                 configuration={},
             ),
         )
@@ -371,26 +371,26 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         io_utils.create_dir_recursive_if_not_exists(artifact_store_path)
 
         artifact_store = self.register_stack_component(
-            user_name_or_id=user_name_or_id,
-            project_name_or_id=project_name_or_id,
+            user_name_or_id=user.name,
+            project_name_or_id=project.name,
             component=ComponentModel(
                 name="default",
                 type=StackComponentType.ARTIFACT_STORE,
-                flavor_name="local",
+                flavor="local",
                 configuration={"path": artifact_store_path},
             ),
         )
 
-        components = {c.type: c for c in [orchestrator, artifact_store]}
+        components = {c.type: [c.id] for c in [orchestrator, artifact_store]}
         # Register the default stack
         stack = StackModel(
-            name="default", components=components, is_shared=False
+            name="default",
+            components=components,
+            is_shared=False,
+            project=project.id,
+            user=user.id
         )
-        return self.register_stack(
-            user_name_or_id=user_name_or_id,
-            project_name_or_id=project_name_or_id,
-            stack=stack,
-        )
+        return self.register_stack(stack=stack)
 
     def _get_default_stack(
         self,
