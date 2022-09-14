@@ -19,7 +19,7 @@ from uuid import UUID, uuid4
 
 from sqlmodel import Field, Relationship, SQLModel
 
-from zenml.models import StackModel
+from zenml.models import FullStackModel, BaseStackModel
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
@@ -62,7 +62,7 @@ class StackSchema(SQLModel, table=True):
         user_id: UUID,
         project_id: UUID,
         defined_components: List["StackComponentSchema"],
-        stack: StackModel,
+        stack: BaseStackModel,
     ) -> "StackSchema":
         """Create an incomplete StackSchema with `id` and `created_at` missing.
 
@@ -81,7 +81,7 @@ class StackSchema(SQLModel, table=True):
     def from_update_model(
         self,
         defined_components: List["StackComponentSchema"],
-        stack: StackModel,
+        stack: BaseStackModel,
     ) -> "StackSchema":
         """Update the updatable fields on an existing StackSchema.
 
@@ -93,13 +93,13 @@ class StackSchema(SQLModel, table=True):
         self.components = defined_components
         return self
 
-    def to_model(self) -> "StackModel":
+    def to_model(self) -> "FullStackModel":
         """Creates a ComponentModel from an instance of a StackSchema.
 
         Returns:
             a StackModel
         """
-        return StackModel(
+        return FullStackModel(
             id=self.id,
             name=self.name,
             user=self.user,

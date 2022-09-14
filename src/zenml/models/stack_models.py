@@ -27,7 +27,39 @@ from zenml.models.component_models import ComponentModel
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 
-class StackModel(AnalyticsTrackedModelMixin):
+class BaseStackModel(AnalyticsTrackedModelMixin):
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+        "is_shared",
+    ]
+
+    name: str
+    description: Optional[str] = Field(
+        default=None, title="The description of the stack", max_length=300
+    )
+    components: Dict[StackComponentType, List[UUID]] = Field(
+        title="A mapping of stack component types to the id's of"
+        "instances of components of this type."
+    )
+    is_shared: bool = Field(
+        default=False,
+        title="Flag describing if this stack is shared.",
+    )
+
+    @property
+    def is_valid(self):
+        # TODO: [server] the Model should validate if the stack configuration
+        #  is valid in theory
+        if (
+            StackComponentType.ARTIFACT_STORE
+            and StackComponentType.ORCHESTRATOR in self.components.keys()
+        ):
+            return True
+        else:
+            return False
+
+
+class FullStackModel(BaseStackModel):
     """Network Serializable Model describing the Stack.
 
     name, description, components and is_shared can be specified explicitly by
@@ -45,28 +77,15 @@ class StackModel(AnalyticsTrackedModelMixin):
         "is_shared",
     ]
 
-    id: Optional[UUID]
-    name: str
-    description: Optional[str] = Field(
-        default=None, title="The description of the stack", max_length=300
+    id: UUID
+
+    project: UUID = Field(
+        title="The project that contains this stack."
     )
-    components: Dict[StackComponentType, List[UUID]] = Field(
-        title="A mapping of stack component types to the id's of"
-        "instances of components of this type."
-    )
-    is_shared: bool = Field(
-        default=False,
-        title="Flag describing if this stack is shared.",
-    )
-    project: Optional[UUID] = Field(
-        default=None, title="The project that contains this stack."
-    )
-    user: Optional[UUID] = Field(
-        default=None,
+    user: UUID = Field(
         title="The id of the user, that created this stack.",
     )
-    creation_date: Optional[datetime] = Field(
-        default=None,
+    creation_date: datetime = Field(
         title="The time at which the stack was registered.",
     )
 
@@ -90,32 +109,8 @@ class StackModel(AnalyticsTrackedModelMixin):
                                   is_shared=self.is_shared,
                                   creation_date=self.creation_date)
 
-    # def get_analytics_metadata(self) -> Dict[str, Any]:
-    #     """Add the stack components to the stack analytics metadata.
-    #
-    #     Returns:
-    #         Dict of analytics metadata.
-    #     """
-    #     metadata = super().get_analytics_metadata()
-    #     metadata.update(
-    #         {ct: c.flavor_name for ct, c in self.components.items()}
-    #     )
-    #     return metadata
 
-    @property
-    def is_valid(self):
-        # TODO: [server] the Model should validate if the stack configuration
-        #  is valid in theory
-        if (
-            StackComponentType.ARTIFACT_STORE
-            and StackComponentType.ORCHESTRATOR in self.components.keys()
-        ):
-            return True
-        else:
-            return False
-
-
-class HydratedStackModel(StackModel):
+class HydratedStackModel(FullStackModel):
     """Network Serializable Model describing the Stack with Components,
     User and Project fully hydrated.
     """
@@ -132,6 +127,7 @@ class HydratedStackModel(StackModel):
         default=None,
         title="The id of the user, that created this stack.",
     )
+
     class Config:
         schema_extra = {
             "example": {
@@ -174,4 +170,16 @@ class HydratedStackModel(StackModel):
         }
 
         return yaml_data
+
+    def get_analytics_metadata(self) -> Dict[str, Any]:
+        """Add the stack components to the stack analytics metadata.
+
+        Returns:
+            Dict of analytics metadata.
+        """
+        metadata = super().get_analytics_metadata()
+        metadata.update(
+            {ct: c[0].flavor for ct, c in self.components.items()}
+        )
+        return metadata
 

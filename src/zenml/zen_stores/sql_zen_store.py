@@ -42,9 +42,9 @@ from zenml.models import (
     ProjectModel,
     RoleAssignmentModel,
     RoleModel,
-    StackModel,
+    FullStackModel,
     TeamModel,
-    UserModel,
+    UserModel, BaseStackModel,
 )
 from zenml.models.code_models import CodeRepositoryModel
 from zenml.models.pipeline_models import (
@@ -313,8 +313,8 @@ class SqlZenStore(BaseZenStore):
         self,
         user_name_or_id: Union[str, UUID],
         project_name_or_id: Union[str, UUID],
-        stack: StackModel,
-    ) -> StackModel:
+        stack: BaseStackModel,
+    ) -> FullStackModel:
         """Register a new stack.
 
         Args:
@@ -372,7 +372,7 @@ class SqlZenStore(BaseZenStore):
 
             return stack_in_db.to_model()
 
-    def get_stack(self, stack_id: UUID) -> StackModel:
+    def get_stack(self, stack_id: UUID) -> FullStackModel:
         """Get a stack by its unique ID.
 
         Args:
@@ -399,7 +399,7 @@ class SqlZenStore(BaseZenStore):
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-    ) -> List[StackModel]:
+    ) -> List[FullStackModel]:
         """List all stacks matching the given filter criteria.
 
         Args:
@@ -436,7 +436,11 @@ class SqlZenStore(BaseZenStore):
             return [stack.to_model() for stack in stacks]
 
     @track(AnalyticsEvent.UPDATED_STACK)
-    def update_stack(self, stack_id: UUID, stack: StackModel) -> StackModel:
+    def update_stack(
+        self,
+        stack_id: UUID,
+        stack: BaseStackModel
+    ) -> FullStackModel:
         """Update a stack.
 
         Args:
@@ -453,13 +457,13 @@ class SqlZenStore(BaseZenStore):
             # Check if stack with the domain key (name, project, owner) already
             #  exists
             existing_stack = session.exec(
-                select(StackSchema).where(StackSchema.id == stack.id)
+                select(StackSchema).where(StackSchema.id == stack_id)
             ).first()
 
             if existing_stack is None:
                 raise KeyError(
                     f"Unable to update stack with id "
-                    f"'{stack.id}': Found no"
+                    f"'{stack_id}': Found no"
                     f"existing stack with this id."
                 )
 

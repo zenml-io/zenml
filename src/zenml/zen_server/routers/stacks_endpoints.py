@@ -18,8 +18,8 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from zenml.constants import STACKS, VERSION_1
 from zenml.exceptions import NotAuthorizedError, ValidationError
-from zenml.models import StackModel
-from zenml.models.stack_models import HydratedStackModel
+from zenml.models import FullStackModel
+from zenml.models.stack_models import HydratedStackModel, BaseStackModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.utils import (
     authorize,
@@ -38,7 +38,7 @@ router = APIRouter(
 
 @router.get(
     "/",
-    response_model=Union[List[HydratedStackModel], List[StackModel]],
+    response_model=Union[List[HydratedStackModel], List[FullStackModel]],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def list_stacks(
@@ -47,7 +47,7 @@ async def list_stacks(
     stack_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
     hydrated: bool = True
-) -> Union[List[HydratedStackModel], List[StackModel]]:
+) -> Union[List[HydratedStackModel], List[FullStackModel]]:
     """Returns all stacks.
 
     Args:
@@ -86,13 +86,13 @@ async def list_stacks(
 
 @router.get(
     "/{stack_id}",
-    response_model=Union[HydratedStackModel, StackModel],
+    response_model=Union[HydratedStackModel, FullStackModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def get_stack(
     stack_id: str,
     hydrated: bool = True
-) -> Union[HydratedStackModel, StackModel]:
+) -> Union[HydratedStackModel, FullStackModel]:
     """Returns the requested stack.
 
     Args:
@@ -124,14 +124,14 @@ async def get_stack(
 
 @router.put(
     "/{stack_id}",
-    response_model=Union[HydratedStackModel, StackModel],
+    response_model=Union[HydratedStackModel, FullStackModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def update_stack(
     stack_id: str,
-    stack: StackModel,
+    stack: BaseStackModel,
     hydrated: bool = True
-) -> Union[HydratedStackModel, StackModel]:
+) -> Union[HydratedStackModel, FullStackModel]:
     """Updates a stack.
 
     Args:

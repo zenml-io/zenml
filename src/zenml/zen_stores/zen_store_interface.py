@@ -29,11 +29,12 @@ from zenml.models import (
     ProjectModel,
     RoleAssignmentModel,
     RoleModel,
-    StackModel,
+    FullStackModel,
     StepRunModel,
     TeamModel,
     UserModel,
 )
+from zenml.models.stack_models import BaseStackModel
 
 
 class ZenStoreInterface(ABC):
@@ -203,8 +204,8 @@ class ZenStoreInterface(ABC):
         self,
         user_name_or_id: Union[str, UUID],
         project_name_or_id: Union[str, UUID],
-        stack: StackModel,
-    ) -> StackModel:
+        stack: BaseStackModel,
+    ) -> FullStackModel:
         """Register a new stack.
 
         Args:
@@ -221,7 +222,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_stack(self, stack_id: UUID) -> StackModel:
+    def get_stack(self, stack_id: UUID) -> FullStackModel:
         """Get a stack by its unique ID.
 
         Args:
@@ -241,7 +242,7 @@ class ZenStoreInterface(ABC):
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-    ) -> List[StackModel]:
+    ) -> List[FullStackModel]:
         """List all stacks matching the given filter criteria.
 
         Args:
@@ -263,8 +264,8 @@ class ZenStoreInterface(ABC):
     def update_stack(
         self,
         stack_id: UUID,
-        stack: StackModel,
-    ) -> StackModel:
+        stack: BaseStackModel,
+    ) -> FullStackModel:
         """Update a stack.
 
         Args:

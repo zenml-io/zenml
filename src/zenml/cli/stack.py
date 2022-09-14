@@ -30,7 +30,7 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import ProvisioningError
-from zenml.models import StackModel
+from zenml.models.stack_models import BaseStackModel
 from zenml.repository import Repository
 from zenml.secret import ArbitrarySecretSchema
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
@@ -278,7 +278,7 @@ def register_stack(
                 name=data_validator_name,
             ).id]
 
-        stack_ = StackModel(
+        stack_ = BaseStackModel(
             name=stack_name, components=stack_components, is_shared=share
         )
 

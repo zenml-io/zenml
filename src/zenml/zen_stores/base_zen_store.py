@@ -28,9 +28,9 @@ from zenml.models import (
     ProjectModel,
     RoleAssignmentModel,
     RoleModel,
-    StackModel,
+    FullStackModel,
     TeamModel,
-    UserModel,
+    UserModel, BaseStackModel,
 )
 from zenml.stack.flavor_registry import flavor_registry
 from zenml.utils import io_utils
@@ -216,7 +216,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         self,
         active_project_name_or_id: Optional[Union[str, UUID]] = None,
         active_stack_id: Optional[UUID] = None,
-    ) -> Tuple[ProjectModel, StackModel]:
+    ) -> Tuple[ProjectModel, FullStackModel]:
         """Validate the active configuration.
 
         Call this method to validate the supplied active project and active
@@ -252,7 +252,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             logger.warning("Active project not set. Setting it to the default.")
             active_project = self._default_project
 
-        active_stack: Optional[StackModel] = None
+        active_stack: Optional[FullStackModel] = None
 
         # Sanitize the active stack
         if active_stack_id:
@@ -305,7 +305,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         self,
         project_name_or_id: Union[str, UUID],
         user_name_or_id: Union[str, UUID],
-    ) -> StackModel:
+    ) -> FullStackModel:
         """Construct and register the default stack components and the stack
         for a user in a project.
 
@@ -378,7 +378,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
 
         components = {c.type: [c.id] for c in [orchestrator, artifact_store]}
         # Register the default stack
-        stack = StackModel(
+        stack = BaseStackModel(
             name="default", components=components, is_shared=False
         )
         return self.register_stack(
@@ -391,7 +391,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         self,
         project_name_or_id: Union[str, UUID],
         user_name_or_id: Union[str, UUID],
-    ) -> StackModel:
+    ) -> FullStackModel:
         """Get the default stack for a user in a project.
 
         Args:

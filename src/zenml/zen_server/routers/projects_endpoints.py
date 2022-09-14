@@ -35,11 +35,11 @@ from zenml.models import (
     ComponentModel,
     PipelineModel,
     ProjectModel,
-    StackModel, FlavorModel,
+    FullStackModel, FlavorModel,
 )
 from zenml.models.component_models import HydratedComponentModel
 from zenml.models.pipeline_models import HydratedPipelineModel
-from zenml.models.stack_models import HydratedStackModel
+from zenml.models.stack_models import HydratedStackModel, BaseStackModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.utils import (
     authorize,
@@ -223,7 +223,7 @@ async def delete_project(project_name_or_id: str) -> None:
 
 @router.get(
     "/{project_name_or_id}" + STACKS,
-    response_model=Union[List[HydratedStackModel], List[StackModel]],
+    response_model=Union[List[HydratedStackModel], List[FullStackModel]],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def get_project_stacks(
@@ -232,7 +232,7 @@ async def get_project_stacks(
     stack_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
     hydrated: bool = True
-) -> Union[List[HydratedStackModel], List[StackModel]]:
+) -> Union[List[HydratedStackModel], List[FullStackModel]]:
     """Get stacks that are part of a specific project.
 
     # noqa: DAR401
@@ -274,14 +274,14 @@ async def get_project_stacks(
 
 @router.post(
     "/{project_name_or_id}" + STACKS,
-    response_model=Union[HydratedStackModel, StackModel],
+    response_model=Union[HydratedStackModel, FullStackModel],
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 async def create_stack(
     project_name_or_id: str,
-    stack: StackModel,
+    stack: BaseStackModel,
     hydrated: bool = True
-) -> Union[HydratedStackModel, StackModel]:
+) -> Union[HydratedStackModel, FullStackModel]:
     """Creates a stack for a particular project.
 
     Args:
@@ -300,6 +300,7 @@ async def create_stack(
         422 error: when unable to validate input
     """
     try:
+        # TODO: [server] inject user here
         created_stack = zen_store.register_stack(
             project_name_or_id=parse_name_or_uuid(project_name_or_id),
             stack=stack,

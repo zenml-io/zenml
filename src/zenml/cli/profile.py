@@ -35,7 +35,7 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.models import ComponentModel, ProjectModel, StackModel, UserModel
+from zenml.models import ComponentModel, ProjectModel, FullStackModel, UserModel
 from zenml.models.flavor_models import FlavorModel
 from zenml.repository import Repository
 from zenml.utils import yaml_utils
@@ -193,7 +193,7 @@ class LocalStore(BaseModel):
 
     def get_stack(
         self, name: str, prefix: str = "", project: Optional[str] = None
-    ) -> StackModel:
+    ) -> FullStackModel:
         """Fetch the configuration for a stack.
 
         For default stack components, the default component in the current
@@ -237,13 +237,16 @@ class LocalStore(BaseModel):
             ):
                 zen_store = Repository().zen_store
                 # use the component in the active store
-                component = zen_store.get_default_stack(
+                # TODO: [server] make sure this is the intended use of _get_default_stack
+                component = (zen_store._get_default_stack(
                     project_name_or_id=project,
-                    user_name_or_id=zen_store.active_user.id,
-                )[StackComponentType(component_type)]
+                    user_name_or_id=zen_store.active_user.id,)
+                    .to_hydrated_model()
+                    .components[StackComponentType(component_type)][0])
+
             components[StackComponentType(component_type)] = component
 
-        return StackModel(
+        return FullStackModel(
             name=prefix + name,
             components=components,
             project=project,
@@ -251,7 +254,7 @@ class LocalStore(BaseModel):
 
     def get_stacks(
         self, prefix: str = "", project: Optional[str] = None
-    ) -> List[StackModel]:
+    ) -> List[FullStackModel]:
         """Fetch all stacks.
 
         The default stack is expressly excluded from this list.

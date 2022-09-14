@@ -37,15 +37,16 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models.pipeline_models import PipelineModel, PipelineRunModel
-from zenml.models.stack_models import HydratedStackModel
+from zenml.models.stack_models import HydratedStackModel, BaseStackModel
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
-from zenml.models import StackModel
 
 if TYPE_CHECKING:
     from zenml.enums import StackComponentType
-    from zenml.models import ComponentModel, ProjectModel, StackModel, UserModel
+    from zenml.models import (
+        ComponentModel, ProjectModel, FullStackModel, UserModel
+    )
     from zenml.runtime_configuration import RuntimeConfiguration
     from zenml.stack import Stack, StackComponent
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -564,8 +565,8 @@ class Repository(metaclass=RepositoryMetaClass):
         return Stack.from_model(self.active_stack_model)
 
     @track(event=AnalyticsEvent.SET_STACK)
-    def activate_stack(self, stack: "StackModel") -> None:
-        """Activates the stack for the given name.
+    def activate_stack(self, stack: "FullStackModel") -> None:
+        """Sets the stack as active.
 
         Args:
             stack: Model of the stack to activate.
@@ -580,7 +581,7 @@ class Repository(metaclass=RepositoryMetaClass):
 
     def get_stack_by_name(
         self, name: str, is_shared: bool = False
-    ) -> "StackModel":
+    ) -> "FullStackModel":
         """Fetches a stack by name within the active project
 
         Args:
@@ -613,7 +614,7 @@ class Repository(metaclass=RepositoryMetaClass):
 
         return stacks[0]
 
-    def register_stack(self, stack: "StackModel") -> "StackModel":
+    def register_stack(self, stack: "BaseStackModel") -> "FullStackModel":
         """Registers a stack and its components.
 
         If any of the stack's components aren't registered in the repository
@@ -637,7 +638,7 @@ class Repository(metaclass=RepositoryMetaClass):
                 "an Orchestrator."
             )
 
-    def update_stack(self, stack: "StackModel") -> None:
+    def update_stack(self, stack: "FullStackModel") -> None:
         """Updates a stack and its components.
 
         Args:
@@ -652,7 +653,7 @@ class Repository(metaclass=RepositoryMetaClass):
                 "an Orchestrator."
             )
 
-    def deregister_stack(self, stack: "StackModel") -> None:
+    def deregister_stack(self, stack: "FullStackModel") -> None:
         """Deregisters a stack.
 
         Args:
