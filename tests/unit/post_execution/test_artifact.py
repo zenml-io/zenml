@@ -12,21 +12,29 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
+from uuid import uuid4
 
 import pytest
 
+from zenml.enums import ArtifactType
+from zenml.models.pipeline_models import ArtifactModel
 from zenml.post_execution.artifact import ArtifactView
 
 
 def _create_artifact_view(materializer: str, data_type: str) -> ArtifactView:
     """Creates an artifact view with the given materializer and data type."""
     return ArtifactView(
-        id_=0,
-        type_="",
-        uri="",
-        materializer=materializer,
-        data_type=data_type,
-        parent_step_id=0,
+        ArtifactModel(
+            id=uuid4(),
+            type=ArtifactType.DATA,
+            uri="",
+            materializer=materializer,
+            data_type=data_type,
+            is_cached=False,
+            mlmd_id=0,
+            mlmd_parent_step_id=0,
+            mlmd_producer_step_id=0,
+        )
     )
 
 

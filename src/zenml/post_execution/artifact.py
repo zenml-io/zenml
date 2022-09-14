@@ -14,6 +14,7 @@
 """Initialization for the post-execution artifact class."""
 
 from typing import TYPE_CHECKING, Any, Optional, Type
+from uuid import UUID
 
 from zenml.logger import get_logger
 from zenml.models.pipeline_models import ArtifactModel
@@ -39,26 +40,19 @@ class ArtifactView:
         retrieved from a `StepView` via the `inputs` or `outputs` properties.
 
         Args:
-            id_: The artifact id.
-            type_: The type of this artifact.
-            uri: Specifies where the artifact data is stored.
-            materializer: Information needed to restore the materializer
-                that was used to write this artifact.
-            data_type: The type of data that was passed to the materializer
-                when writing that artifact. Will be used as a default type
-                to read the artifact.
-            parent_step_id: The ID of the parent step.
+            model: The model to initialize this object from.
         """
         self._model = model
 
     @property
-    def id(self) -> int:
+    def id(self) -> UUID:
         """Returns the artifact id.
 
         Returns:
             The artifact id.
         """
-        return self._model.mlmd_id
+        assert self._model.id
+        return self._model.id
 
     @property
     def type(self) -> str:
@@ -89,10 +83,15 @@ class ArtifactView:
 
     @property
     def materializer(self) -> str:
+        """Returns the materializer that was used to write this artifact.
+
+        Returns:
+            The materializer that was used to write this artifact.
+        """
         return self._model.materializer
 
     @property
-    def parent_step_id(self) -> int:
+    def parent_step_id(self) -> UUID:
         """Returns the ID of the parent step.
 
         This need not be equivalent to the ID of the producer step.
@@ -100,15 +99,17 @@ class ArtifactView:
         Returns:
             The ID of the parent step.
         """
+        assert self._model.parent_step_id
         return self._model.parent_step_id
 
     @property
-    def producer_step_id(self) -> int:
+    def producer_step_id(self) -> UUID:
         """Returns the ID of the original step that produced the artifact.
 
         Returns:
             The ID of the original step that produced the artifact.
         """
+        assert self._model.producer_step_id
         return self._model.producer_step_id
 
     @property

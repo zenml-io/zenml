@@ -16,6 +16,7 @@ import random
 import string
 from contextlib import ExitStack as does_not_raise
 from typing import Optional
+from uuid import uuid4
 
 import pytest
 
@@ -27,9 +28,7 @@ from zenml.exceptions import (
     StackExistsError,
 )
 from zenml.io import fileio
-from zenml.metadata_stores import SQLiteMetadataStore
 from zenml.orchestrators import LocalOrchestrator
-from zenml.pipelines import pipeline
 from zenml.repository import Repository
 from zenml.stack import Stack
 from zenml.utils import io_utils
@@ -53,6 +52,7 @@ def _create_local_stack(
     artifact_store = LocalArtifactStore(name=artifact_store_name, path="stack")
 
     return Stack(
+        id=uuid4(),
         name=stack_name,
         orchestrator=orchestrator,
         artifact_store=artifact_store,
@@ -262,6 +262,7 @@ def test_updating_a_stack_with_new_components(clean_repo):
     old_orchestrator = current_stack.orchestrator
     new_orchestrator = LocalOrchestrator(name="new_orchestrator")
     updated_stack = Stack(
+        id=current_stack.id,
         name=current_stack.name,
         orchestrator=new_orchestrator,
         artifact_store=current_stack.artifact_store,
@@ -279,6 +280,7 @@ def test_renaming_stack_with_update_method_succeeds(clean_repo):
     current_stack = clean_repo.active_stack
     new_stack_name = "new_stack_name"
     updated_stack = Stack(
+        id=uuid4(),
         name=new_stack_name,
         orchestrator=current_stack.orchestrator,
         artifact_store=current_stack.artifact_store,
@@ -296,6 +298,7 @@ def test_registering_a_stack_registers_unregistered_components(clean_repo):
 
     new_orchestrator = LocalOrchestrator(name="new_orchestrator_name")
     new_stack = Stack(
+        id=uuid4(),
         name="new_stack_name",
         orchestrator=new_orchestrator,
         artifact_store=registered_stack.artifact_store,
@@ -313,6 +316,7 @@ def test_registering_a_stack_registers_unregistered_components(clean_repo):
     # not the exact registered component then the stack registration should fail
     another_new_orchestrator = LocalOrchestrator(name=new_orchestrator.name)
     another_new_stack = Stack(
+        id=uuid4(),
         name="another_new_stack_name",
         orchestrator=another_new_orchestrator,
         artifact_store=registered_stack.artifact_store,
@@ -416,65 +420,3 @@ def test_deregistering_a_stack_component_that_is_part_of_a_registered_stack(
         clean_repo.deregister_stack_component(
             component_type=component.TYPE, name=component.name
         )
-
-
-def test_get_pipelines_forwards_to_metadata_store(clean_repo, mocker):
-    """Tests that getting post-execution pipelines forwards calls to the
-    metadata store of the ZenStore."""
-    mocker.patch.object(SQLiteMetadataStore, "get_pipelines", return_value=[])
-    mocker.patch.object(SQLiteMetadataStore, "get_pipeline", return_value=None)
-
-    # calling without a stack name calls the metadata store of the active stack
-    clean_repo.get_pipelines()
-    clean_repo.get_pipeline(pipeline_name="whatever")
-    SQLiteMetadataStore.get_pipelines.assert_called_once()
-    SQLiteMetadataStore.get_pipeline.assert_called_once()
-
-
-def test_get_pipeline_forwards_to_metadata_store(clean_repo, mocker):
-    """Tests that getting post-execution pipelines forwards calls to the
-    metadata store of the (active) stack."""
-    # register a stack with a mysql metadata store
-
-    mocker.patch.object(SQLiteMetadataStore, "get_pipeline", return_value=None)
-
-    @pipeline
-    def some_pipeline():
-        pass
-
-    input_args = [
-        {"pipeline": "some_pipeline"},  # calling by name
-        {"pipeline": some_pipeline},  # calling by pipeline class
-        {"pipeline": some_pipeline()},  # calling by pipeline instance
-        {"pipeline_name": "some_pipeline"},
-    ]  # calling with deprecated kwarg
-
-    for input_arg in input_args:
-        SQLiteMetadataStore.get_pipeline.reset_mock()
-        clean_repo.get_pipeline(**input_arg)
-        SQLiteMetadataStore.get_pipeline.assert_called_once_with(
-            "some_pipeline"
-        )
-
-
-def test_get_pipeline_raises_exception(clean_repo, mocker):
-    """Tests that get_pipeline raises a runtime error."""
-    # register a stack with a mysql metadata store
-
-    mocker.patch.object(SQLiteMetadataStore, "get_pipeline", return_value=None)
-
-    class NonPipeline:
-        pass
-
-    input_args = [
-        {"pipeline": NonPipeline},  # calling with wrong class
-        {"pipeline": NonPipeline()},  # calling with wrong class instance
-        {"useless_arg": "some_pipeline"},  # calling with wrong kwarg
-        {"pipeline_name": 1234},
-    ]  # calling kwarg with wrong data type
-
-    for input_arg in input_args:
-        SQLiteMetadataStore.get_pipeline.reset_mock()
-        with pytest.raises(RuntimeError):
-            clean_repo.get_pipeline(**input_arg)
-        assert SQLiteMetadataStore.get_pipeline.call_count == 0

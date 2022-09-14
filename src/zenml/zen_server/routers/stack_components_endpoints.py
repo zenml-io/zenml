@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Endpoint definitions for stack components."""
+
 from typing import List, Optional
 from uuid import UUID
 
@@ -124,7 +126,6 @@ async def list_flavors(
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-
     try:
         # TODO [Baris]: add project and more filters to this
         return zen_store.list_flavors(component_type=component_type)
@@ -190,7 +191,7 @@ async def update_stack_component(
     """
     try:
         return zen_store.update_stack_component(
-            component_id=UUID(component_id), component=component
+            component=component
         )
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))

@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from uuid import uuid4
+
 import pytest
 
 from zenml.artifact_stores import BaseArtifactStore
@@ -35,10 +37,10 @@ def stack_with_mock_components(mocker):
         flavor=MOCK_FLAVOR,
     )
     orchestrator.required_secrets = set()
-    metadata_store.required_secrets = set()
     artifact_store.required_secrets = set()
 
     return Stack(
+        id=uuid4(),
         name="mock_stack",
         orchestrator=orchestrator,
         artifact_store=artifact_store,

@@ -55,81 +55,6 @@ logger = get_logger(__name__)
 DEFAULT_STACK_NAME = "default"
 
 
-def _get_available_attributes(
-    component_class: Type["StackComponentConfig"],
-) -> List[str]:
-    """Gets the available non-mandatory properties for a stack component.
-
-    Args:
-        component_class: Class of the component to get the available
-            properties for.
-
-    Returns:
-        A list of the available properties for the given component class.
-    """
-    return [
-        field_name
-        for field_name, _ in component_class.__fields__.items()
-        if field_name not in MANDATORY_COMPONENT_ATTRIBUTES
-    ]
-
-
-def _get_required_attributes(
-    component_class: Type["StackComponentConfig"],
-) -> List[str]:
-    """Gets the required properties for a stack component.
-
-    Args:
-        component_class: Class of the component to get the required properties
-            for.
-
-    Returns:
-        A list of the required properties for the given component class.
-    """
-    return [
-        field_name
-        for field_name, field in component_class.__fields__.items()
-        if (field.required is True)
-           and field_name not in MANDATORY_COMPONENT_ATTRIBUTES
-    ]
-
-
-def _get_optional_attributes(
-    component_class: Type["StackComponentConfig"],
-) -> List[str]:
-    """Gets the optional properties for a stack component.
-
-    Args:
-        component_class: Class of the component to get the optional properties
-            for.
-
-    Returns:
-        A list of the optional properties for the given component class.
-    """
-    return [
-        field_name
-        for field_name, field in component_class.__fields__.items()
-        if field.required is False
-           and field_name not in MANDATORY_COMPONENT_ATTRIBUTES
-    ]
-
-
-def _component_display_name(
-    component_type: "StackComponentType", plural: bool = False
-) -> str:
-    """Human-readable name for a stack component.
-
-    Args:
-        component_type: Type of the component to get the display name for.
-        plural: Whether the display name should be plural or not.
-
-    Returns:
-        A human-readable name for the given stack component type.
-    """
-    name = component_type.plural if plural else component_type.value
-    return name.replace("_", " ")
-
-
 class RepositoryConfiguration(FileSyncModel):
     """Pydantic object used for serializing repository configuration options.
 
@@ -557,10 +482,10 @@ class Repository(metaclass=RepositoryMetaClass):
         """Set the project for the local repository.
 
         Args:
-            project_name: The project name to set as active.
+            project_name_or_id: The name or ID of the project to set active.
 
         Returns:
-            The active project.
+            The model of the active project.
         """
         project = self.zen_store.get_project(
             project_name_or_id=project_name_or_id
@@ -626,7 +551,7 @@ class Repository(metaclass=RepositoryMetaClass):
 
     @property
     def stack_models(self) -> List["StackModel"]:
-        """All stack models available in the current project and owned by the current user.
+        """All stack models in the current project, owned by the current user.
 
         This property is intended as a quick way to get information about the
         components of the registered stacks without loading all installed
@@ -645,7 +570,7 @@ class Repository(metaclass=RepositoryMetaClass):
 
     @property
     def stacks(self) -> List["Stack"]:
-        """All stacks available in the current project and owned by the current user.
+        """All stacks in the current project, owned by the current user.
 
         Returns:
             A list of all stacks available in the current project and owned by
@@ -659,7 +584,7 @@ class Repository(metaclass=RepositoryMetaClass):
 
     @property
     def stack_configurations(self) -> Dict[str, Dict[str, str]]:
-        """Configuration dicts for all stacks available in the current project and owned by the current user.
+        """Configuration stack dicts in the current project, owned by the user.
 
         This property is intended as a quick way to get information about the
         components of the registered stacks without loading all installed
@@ -698,7 +623,7 @@ class Repository(metaclass=RepositoryMetaClass):
         Returns:
             The model of the active stack for this repository.
 
-        Raise:
+        Raises:
             RuntimeError: If the active stack is not set.
         """
         stack_id = None
@@ -745,7 +670,7 @@ class Repository(metaclass=RepositoryMetaClass):
     def get_stack_by_name(
         self, name: str, is_shared: bool = False
     ) -> "StackModel":
-        """Fetches a stack by name within the active project
+        """Fetches a stack by name within the active project.
 
         Args:
             name: The name of the stack to fetch.
@@ -753,17 +678,21 @@ class Repository(metaclass=RepositoryMetaClass):
 
         Returns:
             The stack with the given name.
+
+        Raises:
+            KeyError: If no stack with the given name exists.
+            RuntimeError: If multiple stacks with the given name exist.
         """
         if is_shared:
             stacks = self.zen_store.list_stacks(
-                project_name_or_id=self.active_project.id,
+                project_name_or_id=self.active_project.name,
                 name=name,
                 is_shared=True,
             )
         else:
             stacks = self.zen_store.list_stacks(
-                project_name_or_id=self.active_project.id,
-                user_name_or_id=self.zen_store.active_user.id,
+                project_name_or_id=self.active_project.name,
+                user_name_or_id=self.active_user.name,
                 name=name,
             )
 
@@ -785,12 +714,18 @@ class Repository(metaclass=RepositoryMetaClass):
 
         Args:
             stack: The stack to register.
+
+        Returns:
+            The model of the registered stack.
+
+        Raises:
+            RuntimeError: If the stack configuration is invalid.
         """
         # TODO: [server] make sure the stack can be validated here
         if stack.is_valid:
             created_stack = self.zen_store.register_stack(
-                user_name_or_id=self.zen_store.active_user.id,
-                project_name_or_id=self.active_project.id,
+                user_name_or_id=self.active_user.name,
+                project_name_or_id=self.active_project.name,
                 stack=stack,
             )
             return created_stack
@@ -806,11 +741,13 @@ class Repository(metaclass=RepositoryMetaClass):
 
         Args:
             stack: The new stack to use as the updated version.
+
+        Raises:
+            RuntimeError: If the stack configuration is invalid.
         """
         if stack.is_valid:
-            self.zen_store.update_stack(stack=stack)
-            if self._config.active_stack_id == stack.id:
-                self.activate_stack(stack)
+            assert stack.id is not None
+            self.zen_store.update_stack(stack_id=stack.id, stack=stack)
         else:
             raise RuntimeError(
                 "Stack configuration is invalid. A valid"
@@ -828,12 +765,13 @@ class Repository(metaclass=RepositoryMetaClass):
             ValueError: If the stack is the currently active stack for this
                 repository.
         """
-        if stack.id == self._config.active_stack_id:
+        if stack.id == self.active_stack_model.id:
             raise ValueError(
                 f"Unable to deregister active stack " f"'{stack.name}'."
             )
 
         try:
+            assert stack.id is not None
             self.zen_store.delete_stack(stack_id=stack.id)
             logger.info("Deregistered stack with name '%s'.", stack.name)
         except KeyError:
@@ -914,7 +852,7 @@ class Repository(metaclass=RepositoryMetaClass):
                 **existing_component_model.configuration,
                 **component.configuration
             }
-            ).dict()
+        ).dict()
 
         # Create an updated component
         updated_component = existing_component_model.copy(
@@ -988,17 +926,17 @@ class Repository(metaclass=RepositoryMetaClass):
 
         if is_shared:
             components = self.zen_store.list_stack_components(
-                project_name_or_id=self.active_project.id,
+                project_name_or_id=self.active_project.name,
                 name=name,
                 type=type,
                 is_shared=True,
             )
         else:
             components = self.zen_store.list_stack_components(
-                project_name_or_id=self.active_project.id,
+                project_name_or_id=self.active_project.name,
                 name=name,
                 type=type,
-                user_name_or_id=self.zen_store.active_user.id,
+                user_name_or_id=self.active_user.name,
             )
 
         if not components:
@@ -1020,12 +958,7 @@ class Repository(metaclass=RepositoryMetaClass):
     @property
     def flavors(self) -> List[FlavorModel]:
         """Fetches all the flavor models."""
-        from zenml.stack.flavor_registry import flavor_registry
-
-        zenml_flavors = flavor_registry.flavors
-        custom_flavors = self.zen_store.flavors
-
-        return custom_flavors + zenml_flavors
+        return self.get_flavors()
 
     def create_flavor(self, flavor: "FlavorModel") -> "FlavorModel":
         from zenml.utils.source_utils import validate_flavor_source
@@ -1148,7 +1081,7 @@ class Repository(metaclass=RepositoryMetaClass):
                 raise KeyError("")
 
     def _register_pipeline(
-        self, pipeline_name: str, pipeline_configuration: str
+        self, pipeline_name: str, pipeline_configuration: Dict[str, str]
     ) -> UUID:
         """Registers a pipeline in the ZenStore within the active project.
 
@@ -1165,13 +1098,13 @@ class Repository(metaclass=RepositoryMetaClass):
             The id of the existing or newly registered pipeline.
 
         Raises:
-            AlreadyExistsError: If there is an existing pipeline in the project
-                with the same name but a different configuration.
+            AlreadyExistsException: If there is an existing pipeline in the
+                project with the same name but a different configuration.
         """
         try:
             existing_pipeline = self.zen_store.get_pipeline_in_project(
                 pipeline_name=pipeline_name,
-                project_name_or_id=self.active_project.id,
+                project_name_or_id=self.active_project.name,
             )
 
         # A) If there is no pipeline with this name, register a new pipeline.
@@ -1183,14 +1116,16 @@ class Repository(metaclass=RepositoryMetaClass):
                 configuration=pipeline_configuration,
             )
             pipeline = self.zen_store.create_pipeline(
-                project_name_or_id=self.active_project.id, pipeline=pipeline
+                project_name_or_id=self.active_project.name, pipeline=pipeline
             )
             logger.info(f"Registered new pipeline with name {pipeline.name}.")
+            assert pipeline.id is not None
             return pipeline.id
 
         # B) If a pipeline exists that has the same config, use that pipeline.
         if pipeline_configuration == existing_pipeline.configuration:
             logger.debug("Did not register pipeline since it already exists.")
+            assert existing_pipeline.id is not None
             return existing_pipeline.id
 
         # C) If a pipeline with different config exists, raise an error.
@@ -1253,6 +1188,9 @@ class Repository(metaclass=RepositoryMetaClass):
 
         Args:
             user_name_or_id: The name or ID of the user to delete.
+
+        Raises:
+            IllegalOperationError: If the user to delete is the active user.
         """
         user = self.zen_store.get_user(user_name_or_id)
         if self.zen_store.active_user_name == user.name:
@@ -1260,13 +1198,17 @@ class Repository(metaclass=RepositoryMetaClass):
                 "You cannot delete yourself. If you wish to delete your active "
                 "user account, please contact your ZenML administrator."
             )
-        Repository().zen_store.delete_user(user_name_or_id=user.id)
+        Repository().zen_store.delete_user(user_name_or_id=user.name)
 
     def delete_project(self, project_name_or_id: str) -> None:
         """Delete a project.
 
         Args:
             project_name_or_id: The name or ID of the project to delete.
+
+        Raises:
+            IllegalOperationError: If the project to delete is the active
+                project.
         """
         project = self.zen_store.get_project(project_name_or_id)
         if self.active_project_name == project.name:

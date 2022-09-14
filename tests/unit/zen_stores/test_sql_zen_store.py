@@ -12,17 +12,27 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import json
 import uuid
+from contextlib import ExitStack as does_not_raise
 
 import pytest
 
-from zenml.exceptions import EntityExistsError
+from zenml.exceptions import EntityExistsError, StackExistsError
 from zenml.models import ProjectModel, RoleModel, TeamModel, UserModel
+from zenml.models.pipeline_models import PipelineModel
+from zenml.models.stack_models import StackModel
 from zenml.zen_stores.base_zen_store import BaseZenStore
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.user_management_schemas import (
+    RoleSchema,
+    TeamSchema,
+    UserSchema,
+)
 
-#  .---------.
-# | PROJECTS |
-# '----------'
+#  .--------
+# | PROJECTS
+# '---------
 
 
 def test_only_one_default_project(fresh_sql_zen_store: BaseZenStore):
@@ -86,9 +96,9 @@ def test_deleting_nonexistent_project_raises_error(
         fresh_sql_zen_store.delete_project("blupus_project")
 
 
-#  .------.
-# | TEAMS |
-# '-------'
+#  .-----
+# | TEAMS
+# '------
 
 
 def test_list_teams(fresh_sql_zen_store: BaseZenStore):
@@ -139,13 +149,15 @@ def test_nonexistent_team_raises_error(fresh_sql_zen_store: BaseZenStore):
 def test_adding_user_to_team(fresh_sql_zen_store: BaseZenStore):
     """Tests adding a user to a team."""
     assert len(fresh_sql_zen_store.teams) == 0
-    new_team = TeamModel(name="arias_team")
+    team_name = "arias_team"
+    new_team = TeamModel(name=team_name)
     fresh_sql_zen_store.create_team(new_team)
     current_user_id = fresh_sql_zen_store.active_user.id
-    new_team_id = fresh_sql_zen_store.get_team("arias_team").id
-    fresh_sql_zen_store.add_user_to_team(current_user_id, new_team_id)
+    fresh_sql_zen_store.add_user_to_team(
+        user_name_or_id="default", team_name_or_id=team_name
+    )
     assert (
-        fresh_sql_zen_store.get_users_for_team(new_team_id)[0].id
+        fresh_sql_zen_store.get_users_for_team(team_name)[0].id
         == current_user_id
     )
 
@@ -413,7 +425,7 @@ def test_assigning_role_to_team_succeeds(
     team_id = str(fresh_sql_store_with_team.get_team("arias_team").id)
     new_role = RoleModel(name="blupus_friend")
     fresh_sql_store_with_team.create_role(new_role)
-    new_role_id = str(fresh_sql_store_with_team.get_role("blupus_friend").id)
+    new_role_id = fresh_sql_store_with_team.get_role("blupus_friend").id
     fresh_sql_store_with_team.assign_role(new_role_id, team_id, is_user=False)
 
     assert len(fresh_sql_store_with_team.roles) == 1
@@ -421,28 +433,27 @@ def test_assigning_role_to_team_succeeds(
     assert (
         len(
             fresh_sql_store_with_team.list_role_assignments(
-                fresh_sql_store_with_team.active_user.id
+                user_name_or_id=fresh_sql_store_with_team.active_user.id
             )
         )
-        == 0
+        == 1
     )
 
 
-# TODO: add this back in when exception is raised in SQLZenStore
-# def test_assigning_role_if_assignment_already_exists(
-#     fresh_sql_store_with_team: BaseZenStore,
-# ):
-#     """Tests assigning a role to a user if the assignment already exists."""
-#     new_role = RoleModel(name="aria_feeder")
-#     current_user_id = str(fresh_sql_store_with_team.active_user.id)
-#     fresh_sql_store_with_team.create_role(new_role)
-#     new_role_id = str(fresh_sql_store_with_team.get_role("aria_feeder").id)
-#     fresh_sql_store_with_team.assign_role(new_role_id, current_user_id)
-#     with pytest.raises(EntityExistsError):
-#         fresh_sql_store_with_team.assign_role(new_role_id, current_user_id)
+def test_assigning_role_if_assignment_already_exists(
+    fresh_sql_store_with_team: BaseZenStore,
+):
+    """Tests assigning a role to a user if the assignment already exists."""
+    new_role = RoleModel(name="aria_feeder")
+    current_user_id = str(fresh_sql_store_with_team.active_user.id)
+    fresh_sql_store_with_team.create_role(new_role)
+    new_role_id = str(fresh_sql_store_with_team.get_role("aria_feeder").id)
+    fresh_sql_store_with_team.assign_role(new_role_id, current_user_id)
+    with pytest.raises(EntityExistsError):
+        fresh_sql_store_with_team.assign_role(new_role_id, current_user_id)
 
-#     assert len(fresh_sql_store_with_team.roles) == 1
-#     assert len(fresh_sql_store_with_team.role_assignments) == 1
+    assert len(fresh_sql_store_with_team.roles) == 1
+    assert len(fresh_sql_store_with_team.role_assignments) == 1
 
 
 def test_revoking_role_for_user_succeeds(
@@ -523,15 +534,6 @@ def test_list_stacks_succeeds(
     assert len(fresh_sql_zen_store.list_stacks(current_project_id)) == 1
 
 
-def test_stack_names_property(
-    fresh_sql_zen_store: BaseZenStore,
-):
-    """Tests stack names property."""
-    stack_names = fresh_sql_zen_store.stack_names
-    assert len(stack_names) == 1
-    assert "default" in stack_names
-
-
 def test_list_stacks_fails_with_nonexistent_project(
     fresh_sql_zen_store: BaseZenStore,
 ):
@@ -540,16 +542,13 @@ def test_list_stacks_fails_with_nonexistent_project(
         fresh_sql_zen_store.list_stacks(uuid.uuid4())
 
 
-def test_stacks_property(fresh_sql_zen_store: BaseZenStore):
-    """Tests stacks property."""
-    assert len(fresh_sql_zen_store.stacks) == 1
-
-
 def test_get_stack_succeeds(
     fresh_sql_zen_store: BaseZenStore,
 ):
     """Tests getting stack."""
-    current_stack_id = fresh_sql_zen_store.stacks[0].id
+    current_stack_id = fresh_sql_zen_store.list_stacks(
+        project_name_or_id="default"
+    )[0].id
     stack = fresh_sql_zen_store.get_stack(current_stack_id)
     assert stack is not None
 
@@ -562,22 +561,397 @@ def test_get_stack_fails_with_nonexistent_stack_id(
         fresh_sql_zen_store.get_stack(uuid.uuid4())
 
 
+def test_register_stack_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests registering stack."""
+    new_stack = StackModel(name="arias_stack", components={})
+    fresh_sql_zen_store.register_stack(
+        user_name_or_id="default",
+        project_name_or_id="default",
+        stack=new_stack,
+    )
+    stacks = fresh_sql_zen_store.list_stacks("default")
+    assert len(stacks) == 2
+    assert fresh_sql_zen_store.get_stack(stacks[0].id) is not None
+
+
+def test_register_stack_fails_when_stack_exists(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests registering stack fails when stack exists."""
+    new_stack = StackModel(name="default", components={})
+    with pytest.raises(StackExistsError):
+        fresh_sql_zen_store.register_stack(
+            user_name_or_id="default",
+            project_name_or_id="default",
+            stack=new_stack,
+        )
+
+
+def test_updating_stack_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests updating stack."""
+    current_stack_id = fresh_sql_zen_store.list_stacks(
+        project_name_or_id="default"
+    )[0].id
+    new_stack = StackModel(name="arias_stack", components={})
+    fresh_sql_zen_store.update_stack(current_stack_id, new_stack)
+    assert fresh_sql_zen_store.get_stack(current_stack_id) is not None
+    assert fresh_sql_zen_store.get_stack(current_stack_id).name == "arias_stack"
+
+
+def test_updating_nonexistent_stack_fails(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests updating nonexistent stack fails."""
+    new_stack = StackModel(name="arias_stack", components={})
+    non_existent_stack_id = uuid.uuid4()
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.update_stack(non_existent_stack_id, new_stack)
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.get_stack(non_existent_stack_id)
+    assert (
+        fresh_sql_zen_store.get_stack(
+            fresh_sql_zen_store.list_stacks(project_name_or_id="default")[0].id
+        ).name
+        != "arias_stack"
+    )
+
+
 # TODO: continue on to cover register, update and delete stacks
-# def test_register_stack_succeeds(
-#     fresh_sql_zen_store: BaseZenStore,
-# ):
-#     """Tests registering stack."""
-#     new_stack = StackModel(name="arias_stack", components={})
-#     fresh_sql_zen_store.register_stack(
-#         fresh_sql_zen_store.default_user_id,
-#         fresh_sql_zen_store.default_project_id,
-#         new_stack,
-#     )
-#     assert (
-#         len(
-#             fresh_sql_zen_store.list_stacks(
-#                 fresh_sql_zen_store.default_project_id
-#             )
-#         )
-#         == 2
-#     )
+# DELETE
+def test_deleting_default_stack_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests deleting stack."""
+    current_stack_id = fresh_sql_zen_store.list_stacks(
+        project_name_or_id="default"
+    )[0].id
+    fresh_sql_zen_store.delete_stack(current_stack_id)
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.get_stack(current_stack_id)
+
+
+def test_deleting_nonexistent_stack_fails(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests deleting nonexistent stack fails."""
+    non_existent_stack_id = uuid.uuid4()
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.delete_stack(non_existent_stack_id)
+
+
+def test_deleting_a_stack_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests deleting stack."""
+    new_stack = StackModel(name="arias_stack", components={})
+    fresh_sql_zen_store.register_stack(
+        user_name_or_id="default",
+        project_name_or_id="default",
+        stack=new_stack,
+    )
+    stacks = fresh_sql_zen_store.list_stacks(project_name_or_id="default")
+    assert len(stacks) == 2
+    new_stack = [stack for stack in stacks if stack.name == "arias_stack"][0]
+    fresh_sql_zen_store.delete_stack(new_stack.id)
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.get_stack(new_stack.id)
+
+
+# ------------
+# TFX Metadata
+# ------------
+
+
+def test_tfx_metadata_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests tfx metadata."""
+    config = fresh_sql_zen_store.get_metadata_config()
+    assert config is not None
+    assert type(config) == str
+    try:
+        json_config = json.loads(config)
+        assert json_config is not None
+        assert type(json_config) == dict
+    except json.JSONDecodeError:
+        assert False
+
+
+# =======================
+# Internal helper methods
+# =======================
+
+
+def test_get_schema_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting schema."""
+    schema = fresh_sql_zen_store._get_schema_by_name_or_id(
+        "default", ProjectSchema, "project"
+    )
+    assert schema is not None
+    assert type(schema) == ProjectSchema
+
+
+def test_get_schema_fails_for_nonexistent_object(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting schema fails for nonexistent object."""
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store._get_schema_by_name_or_id(
+            "arias_project", ProjectSchema, "project"
+        )
+
+
+def test_get_project_schema_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting project schema."""
+    schema = fresh_sql_zen_store._get_project_schema("default")
+    assert schema is not None
+    assert type(schema) == ProjectSchema
+
+
+def test_get_user_schema_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting user schema."""
+    schema = fresh_sql_zen_store._get_user_schema("default")
+    assert schema is not None
+    assert type(schema) == UserSchema
+
+
+def test_get_team_schema_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting team schema."""
+    new_team = TeamModel(name="arias_team")
+    fresh_sql_zen_store.create_team(new_team)
+    schema = fresh_sql_zen_store._get_team_schema("arias_team")
+    assert schema is not None
+    assert type(schema) == TeamSchema
+
+
+def test_get_role_schema_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting role schema."""
+    new_role = RoleModel(name="aria_admin")
+    fresh_sql_zen_store.create_role(new_role)
+    schema = fresh_sql_zen_store._get_role_schema("aria_admin")
+    assert schema is not None
+    assert type(schema) == RoleSchema
+
+
+# ---------
+# Pipelines
+# ---------
+
+
+def test_create_pipeline_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests creating pipeline."""
+    project_id = fresh_sql_zen_store.get_project("default").id
+    owner_id = fresh_sql_zen_store.get_user("default").id
+    new_pipeline = PipelineModel(
+        name="arias_pipeline",
+        project_id=project_id,
+        owner=owner_id,
+        configuration={},
+    )
+    fresh_sql_zen_store.create_pipeline(
+        project_name_or_id=project_id, pipeline=new_pipeline
+    )
+    pipelines = fresh_sql_zen_store.list_pipelines()
+    assert len(pipelines) == 1
+    assert pipelines[0].name == "arias_pipeline"
+
+
+def test_creating_identical_pipeline_fails(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests creating identical pipeline fails."""
+    project_id = fresh_sql_zen_store.get_project("default").id
+    owner_id = fresh_sql_zen_store.get_user("default").id
+    new_pipeline = PipelineModel(
+        name="arias_pipeline",
+        project_id=project_id,
+        owner=owner_id,
+        configuration={},
+    )
+    fresh_sql_zen_store.create_pipeline(
+        project_name_or_id=project_id, pipeline=new_pipeline
+    )
+    with pytest.raises(EntityExistsError):
+        fresh_sql_zen_store.create_pipeline(
+            project_name_or_id=project_id, pipeline=new_pipeline
+        )
+    pipelines = fresh_sql_zen_store.list_pipelines()
+    assert len(pipelines) == 1
+
+
+def test_get_pipeline_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting pipeline."""
+    project_id = fresh_sql_zen_store.get_project("default").id
+    owner_id = fresh_sql_zen_store.get_user("default").id
+    new_pipeline = PipelineModel(
+        name="arias_pipeline",
+        project_id=project_id,
+        owner=owner_id,
+        configuration={},
+    )
+    fresh_sql_zen_store.create_pipeline(
+        project_name_or_id=project_id, pipeline=new_pipeline
+    )
+    pipeline_id = fresh_sql_zen_store.list_pipelines()[0].id
+    pipeline = fresh_sql_zen_store.get_pipeline(pipeline_id)
+    assert pipeline is not None
+    assert pipeline.name == "arias_pipeline"
+
+
+def test_get_pipeline_fails_for_nonexistent_pipeline(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting pipeline fails for nonexistent pipeline."""
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.get_pipeline(uuid.uuid4())
+
+
+def test_get_pipeline_in_project_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting pipeline in project."""
+    project_id = fresh_sql_zen_store.get_project("default").id
+    owner_id = fresh_sql_zen_store.get_user("default").id
+    new_pipeline = PipelineModel(
+        name="arias_pipeline",
+        project_id=project_id,
+        owner=owner_id,
+        configuration={},
+    )
+    fresh_sql_zen_store.create_pipeline(
+        project_name_or_id=project_id, pipeline=new_pipeline
+    )
+    pipeline = fresh_sql_zen_store.get_pipeline_in_project(
+        project_name_or_id=project_id, pipeline_name="arias_pipeline"
+    )
+    assert pipeline is not None
+    assert pipeline.name == "arias_pipeline"
+
+
+def test_get_pipeline_in_project_fails_when_pipeline_nonexistent(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting pipeline in project fails when pipeline nonexistent."""
+    project_id = fresh_sql_zen_store.get_project("default").id
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.get_pipeline_in_project(
+            project_name_or_id=project_id, pipeline_name="blupus_ka_pipeline"
+        )
+
+
+def test_list_pipelines_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests listing pipelines."""
+    project_id = fresh_sql_zen_store.get_project("default").id
+    owner_id = fresh_sql_zen_store.get_user("default").id
+    new_pipeline = PipelineModel(
+        name="arias_pipeline",
+        project_id=project_id,
+        owner=owner_id,
+        configuration={},
+    )
+    fresh_sql_zen_store.create_pipeline(
+        project_name_or_id=project_id, pipeline=new_pipeline
+    )
+    with does_not_raise():
+        pipelines = fresh_sql_zen_store.list_pipelines()
+        assert len(pipelines) == 1
+
+
+def test_update_pipeline_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests updating pipeline."""
+    project_id = fresh_sql_zen_store.get_project("default").id
+    owner_id = fresh_sql_zen_store.get_user("default").id
+    new_pipeline = PipelineModel(
+        name="arias_pipeline",
+        project_id=project_id,
+        owner=owner_id,
+        configuration={},
+    )
+    fresh_sql_zen_store.create_pipeline(
+        project_name_or_id=project_id, pipeline=new_pipeline
+    )
+    pipeline_id = fresh_sql_zen_store.list_pipelines()[0].id
+    updated_pipeline = PipelineModel(
+        name="blupus_ka_pipeline",
+        project_id=project_id,
+        owner=owner_id,
+        configuration={},
+    )
+    fresh_sql_zen_store.update_pipeline(
+        pipeline_id=pipeline_id,
+        pipeline=updated_pipeline,
+    )
+    pipeline = fresh_sql_zen_store.get_pipeline(pipeline_id)
+    assert pipeline is not None
+    assert pipeline.name == "blupus_ka_pipeline"
+
+
+def test_updating_nonexistent_pipeline_fails(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests updating nonexistent pipeline fails."""
+    project_id = fresh_sql_zen_store.get_project("default").id
+    owner_id = fresh_sql_zen_store.get_user("default").id
+    updated_pipeline = PipelineModel(
+        name="blupus_ka_pipeline",
+        project_id=project_id,
+        owner=owner_id,
+        configuration={},
+    )
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.update_pipeline(
+            pipeline_id=uuid.uuid4(),
+            pipeline=updated_pipeline,
+        )
+
+
+def test_deleting_pipeline_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests deleting pipeline."""
+    project_id = fresh_sql_zen_store.get_project("default").id
+    owner_id = fresh_sql_zen_store.get_user("default").id
+    new_pipeline = PipelineModel(
+        name="arias_pipeline",
+        project_id=project_id,
+        owner=owner_id,
+        configuration={},
+    )
+    fresh_sql_zen_store.create_pipeline(
+        project_name_or_id=project_id, pipeline=new_pipeline
+    )
+    pipeline_id = fresh_sql_zen_store.list_pipelines()[0].id
+    fresh_sql_zen_store.delete_pipeline(pipeline_id)
+    assert len(fresh_sql_zen_store.list_pipelines()) == 0
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.get_pipeline(pipeline_id)
+
+
+def test_deleting_nonexistent_pipeline_fails(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests deleting nonexistent pipeline fails."""
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.delete_pipeline(uuid.uuid4())

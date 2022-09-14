@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Endpoint definitions for stacks."""
+
 from typing import List, Optional
 from uuid import UUID
 
@@ -121,8 +123,7 @@ async def update_stack(stack_id: str, stack: StackModel) -> StackModel:
         422 error: when unable to validate input
     """
     try:
-        stack.id = UUID(stack_id)
-        return zen_store.update_stack(stack)
+        return zen_store.update_stack(stack_id=UUID(stack_id), stack=stack)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:

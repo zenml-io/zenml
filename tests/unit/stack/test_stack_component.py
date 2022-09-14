@@ -140,7 +140,7 @@ def test_stack_component_secret_reference_resolving(
     stack = clean_repo.active_stack
     stack._orchestrator = component
 
-    clean_repo.update_stack(name=stack.name, stack=stack)
+    clean_repo.update_stack(stack=stack)
 
     with pytest.raises(RuntimeError):
         # no secret manager in stack
@@ -150,7 +150,7 @@ def test_stack_component_secret_reference_resolving(
 
     secrets_manager = LocalSecretsManager(name="")
     stack._secrets_manager = secrets_manager
-    clean_repo.update_stack(name=stack.name, stack=stack)
+    clean_repo.update_stack(stack=stack)
 
     with pytest.raises(KeyError):
         # secret doesn't exist

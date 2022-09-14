@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Stack wrapper implementation."""
+"""Model definitions for stack."""
+
 import json
 from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional
@@ -68,6 +69,8 @@ class StackModel(AnalyticsTrackedModelMixin):
     )
 
     class Config:
+        """Pydantic config."""
+
         schema_extra = {
             "example": {
                 "id": "8d0acbc3-c51a-452c-bda3-e1b5469f79fd",
@@ -97,7 +100,12 @@ class StackModel(AnalyticsTrackedModelMixin):
         return metadata
 
     @property
-    def is_valid(self):
+    def is_valid(self) -> bool:
+        """Check if the stack is valid.
+
+        Returns:
+            True if the stack is valid, False otherwise.
+        """
         # TODO: [server] the Model should validate if the stack configuration
         #  is valid in theory
         if (
@@ -108,8 +116,12 @@ class StackModel(AnalyticsTrackedModelMixin):
         else:
             return False
 
-    def to_yaml(self):
-        """Create yaml representation of the Stack Model."""
+    def to_yaml(self) -> Dict[str, Any]:
+        """Create yaml representation of the Stack Model.
+
+        Returns:
+            The yaml representation of the Stack Model.
+        """
         component_data = {}
         for component_type, component in self.components.items():
             component_dict = json.loads(component.json())

@@ -14,14 +14,13 @@
 """ZenML Store interface."""
 from abc import ABC, abstractmethod
 from pathlib import Path, PurePath
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
 from zenml.config.store_config import StoreConfiguration
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.models import (
     ArtifactModel,
-    CodeRepositoryModel,
     ComponentModel,
     FlavorModel,
     PipelineModel,
@@ -262,11 +261,13 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def update_stack(
         self,
+        stack_id: UUID,
         stack: StackModel,
     ) -> StackModel:
         """Update a stack.
 
         Args:
+            stack_id: The id of the stack that is to be updated.
             stack: The stack to use for the update.
 
         Returns:
@@ -364,6 +365,7 @@ class ZenStoreInterface(ABC):
         """Update an existing stack component.
 
         Args:
+            component_id: The ID of the stack component to update.
             component: The stack component to use for the update.
 
         Returns:
@@ -430,7 +432,18 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def get_flavor(self, flavor_id: UUID) -> FlavorModel:
-        """ """
+
+        """Get a stack component flavor by ID.
+
+        Args:
+            flavor_id: The ID of the stack component flavor to get.
+
+        Returns:
+            The stack component flavor.
+
+        Raises:
+            KeyError: if the stack component flavor doesn't exist.
+        """
 
     @abstractmethod
     def list_flavors(
@@ -605,7 +618,7 @@ class ZenStoreInterface(ABC):
         """Fetches all users of a team.
 
         Args:
-            team_id: The name or ID of the team for which to get users.
+            team_name_or_id: The name or ID of the team for which to get users.
 
         Returns:
             A list of all users that are part of the team.
@@ -857,90 +870,6 @@ class ZenStoreInterface(ABC):
             KeyError: If no project with the given name exists.
         """
 
-    # ------------
-    # Repositories
-    # ------------
-
-    # TODO: create repository?
-
-    @abstractmethod
-    def connect_project_repository(
-        self,
-        project_name_or_id: Union[str, UUID],
-        repository: CodeRepositoryModel,
-    ) -> CodeRepositoryModel:
-        """Connects a repository to a project.
-
-        Args:
-            project_name_or_id: Name or ID of the project to connect the
-                repository to.
-            repository: The repository to connect.
-
-        Returns:
-            The connected repository.
-
-        Raises:
-            KeyError: if the project or repository doesn't exist.
-        """
-
-    @abstractmethod
-    def get_repository(self, repository_id: UUID) -> CodeRepositoryModel:
-        """Get a repository by ID.
-
-        Args:
-            repository_id: The ID of the repository to get.
-
-        Returns:
-            The repository.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
-
-    @abstractmethod
-    def list_repositories(
-        self, project_name_or_id: Union[str, UUID]
-    ) -> List[CodeRepositoryModel]:
-        """Get all repositories in a given project.
-
-        Args:
-            project_name_or_id: The name or ID of the project.
-
-        Returns:
-            A list of all repositories in the project.
-
-        Raises:
-            KeyError: if the project doesn't exist.
-        """
-
-    @abstractmethod
-    def update_repository(
-        self, repository_id: UUID, repository: CodeRepositoryModel
-    ) -> CodeRepositoryModel:
-        """Update a repository.
-
-        Args:
-            repository_id: The ID of the repository to update.
-            repository: The repository to use for the update.
-
-        Returns:
-            The updated repository.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
-
-    @abstractmethod
-    def delete_repository(self, repository_id: UUID) -> None:
-        """Delete a repository.
-
-        Args:
-            repository_id: The ID of the repository to delete.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
-
     # ---------
     # Pipelines
     # ---------
@@ -1129,7 +1058,6 @@ class ZenStoreInterface(ABC):
         self,
         run_id: UUID,
         component_id: Optional[str] = None,
-        component_type: Optional[StackComponentType] = None,
     ) -> Dict[str, Any]:
         """Gets the side effects for a component in a pipeline run.
 
@@ -1200,45 +1128,54 @@ class ZenStoreInterface(ABC):
     # ------------------
 
     @abstractmethod
-    def get_run_step(self, step_id: int) -> StepRunModel:
-        """Get a pipeline run step by ID.
+    def get_run_step(self, step_id: UUID) -> StepRunModel:
+        """Get a step by ID.
 
         Args:
             step_id: The ID of the step to get.
 
         Returns:
-            The pipeline run step.
+            The step.
+
+        Raises:
+            KeyError: if the step doesn't exist.
         """
 
-    # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
     @abstractmethod
-    def get_run_step_artifacts(
-        self, step: StepRunModel
-    ) -> Tuple[Dict[str, ArtifactModel], Dict[str, ArtifactModel]]:
-        """Returns input and output artifacts for the given pipeline run step.
+    def get_run_step_outputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
+        """Get a list of outputs for a specific step.
 
         Args:
-            step: The pipeline run step for which to get the artifacts.
+            step_id: The id of the step to get outputs for.
 
         Returns:
-            A tuple (inputs, outputs) where inputs and outputs
-            are both Dicts mapping artifact names
-            to the input and output artifacts respectively.
+            A dict mapping artifact names to the output artifacts for the step.
         """
 
     @abstractmethod
-    def get_run_step_status(self, step_id: int) -> ExecutionStatus:
-        """Gets the execution status of a single pipeline run  step.
+    def get_run_step_inputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
+        """Get a list of inputs for a specific step.
 
         Args:
-            step_id: The ID of the pipeline run step to get the status for.
+            step_id: The id of the step to get inputs for.
 
         Returns:
-            ExecutionStatus: The status of the pipeline run step.
+            A dict mapping artifact names to the input artifacts for the step.
         """
 
     @abstractmethod
-    def list_run_steps(self, run_id: int) -> Dict[str, StepRunModel]:
+    def get_run_step_status(self, step_id: UUID) -> ExecutionStatus:
+        """Gets the execution status of a single step.
+
+        Args:
+            step_id: The ID of the step to get the status for.
+
+        Returns:
+            ExecutionStatus: The status of the step.
+        """
+
+    @abstractmethod
+    def list_run_steps(self, run_id: UUID) -> List[StepRunModel]:
         """Gets all steps in a pipeline run.
 
         Args:

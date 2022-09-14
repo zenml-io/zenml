@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Endpoint definitions for login and logout."""
 from fastapi import APIRouter, Depends, HTTPException
 
 from zenml.constants import LOGIN, LOGOUT, VERSION_1

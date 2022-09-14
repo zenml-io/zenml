@@ -49,13 +49,34 @@ class UserSchema(SQLModel, table=True):
 
     @classmethod
     def from_create_model(cls, model: UserModel) -> "UserSchema":
+        """Create a `UserSchema` from a `UserModel`.
+
+        Args:
+            model: The `UserModel` from which to create the schema.
+
+        Returns:
+            The created `UserSchema`.
+        """
         return cls(name=model.name)
 
     def from_update_model(self, model: UserModel) -> "UserSchema":
+        """Update a `UserSchema` from a `UserModel`.
+
+        Args:
+            model: The `UserModel` from which to update the schema.
+
+        Returns:
+            The updated `UserSchema`.
+        """
         self.name = model.name
         return self
 
     def to_model(self) -> UserModel:
+        """Convert a `UserSchema` to a `UserModel`.
+
+        Returns:
+            The converted `UserModel`.
+        """
         return UserModel(id=self.id, name=self.name, created_at=self.created_at)
 
 
@@ -75,9 +96,22 @@ class TeamSchema(SQLModel, table=True):
 
     @classmethod
     def from_create_model(cls, model: TeamModel) -> "TeamSchema":
+        """Create a `TeamSchema` from a `TeamModel`.
+
+        Args:
+            model: The `TeamModel` from which to create the schema.
+
+        Returns:
+            The created `TeamSchema`.
+        """
         return cls(name=model.name)
 
     def to_model(self) -> TeamModel:
+        """Convert a `TeamSchema` to a `TeamModel`.
+
+        Returns:
+            The converted `TeamModel`.
+        """
         return TeamModel(id=self.id, name=self.name, created_at=self.created_at)
 
 
@@ -97,9 +131,22 @@ class RoleSchema(SQLModel, table=True):
 
     @classmethod
     def from_create_model(cls, model: RoleModel) -> "RoleSchema":
+        """Create a `RoleSchema` from a `RoleModel`.
+
+        Args:
+            model: The `RoleModel` from which to create the schema.
+
+        Returns:
+            The created `RoleSchema`.
+        """
         return cls(name=model.name)
 
     def to_model(self) -> RoleModel:
+        """Convert a `RoleSchema` to a `RoleModel`.
+
+        Returns:
+            The converted `RoleModel`.
+        """
         return RoleModel(id=self.id, name=self.name, created_at=self.created_at)
 
 
@@ -121,6 +168,11 @@ class UserRoleAssignmentSchema(SQLModel, table=True):
     )
 
     def to_model(self) -> RoleAssignmentModel:
+        """Convert a `UserRoleAssignmentSchema` to a `RoleAssignmentModel`.
+
+        Returns:
+            The converted `RoleAssignmentModel`.
+        """
         return RoleAssignmentModel(
             id=self.id,
             role_id=self.role_id,
@@ -148,6 +200,11 @@ class TeamRoleAssignmentSchema(SQLModel, table=True):
     )
 
     def to_model(self) -> RoleAssignmentModel:
+        """Convert a `TeamRoleAssignmentSchema` to a `RoleAssignmentModel`.
+
+        Returns:
+            The converted `RoleAssignmentModel`.
+        """
         return RoleAssignmentModel(
             id=self.id,
             role_id=self.role_id,

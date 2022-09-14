@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Component wrapper implementation."""
+"""Model definition for stack components."""
 
 from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional
@@ -81,6 +81,8 @@ class ComponentModel(AnalyticsTrackedModelMixin):
     )
 
     class Config:
+        """Pydantic config."""
+
         schema_extra = {
             "example": {
                 "id": "5e4286b5-51f4-4286-b1f8-b0143e9a27ce",

@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Endpoint definitions for pipeline runs."""
 from typing import Dict, List, Optional
 from uuid import UUID
 
@@ -114,36 +115,6 @@ async def get_run(run_id: str) -> PipelineRunModel:
         raise HTTPException(status_code=422, detail=error_detail(error))
 
 
-@router.put(
-    "/{run_id}",
-    response_model=PipelineRunModel,
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-async def update_run(run_id: str, run: PipelineRunModel) -> PipelineRunModel:
-    """Update the attributes on a specific pipeline run using its ID.
-
-    Args:
-        run_id: ID of the pipeline run to get.
-        run: The pipeline run to use for the update.
-
-    Returns:
-        The updated pipeline run.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
-    """
-    try:
-        return zen_store.update_run(run_id=UUID(run_id), run=run)
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
-
-
 @router.delete(
     "/{run_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
@@ -203,10 +174,10 @@ async def get_run_dag(run_id: str) -> str:  # TODO: use file type / image type
 
 @router.get(
     "/{run_id}" + STEPS,
-    response_model=Dict[str, StepRunModel],
+    response_model=List[StepRunModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_run_steps(run_id: str) -> Dict[str, StepRunModel]:
+async def get_run_steps(run_id: str) -> List[StepRunModel]:
     """Get all steps for a given pipeline run.
 
     Args:
@@ -221,8 +192,7 @@ async def get_run_steps(run_id: str) -> Dict[str, StepRunModel]:
         422 error: when unable to validate input
     """
     try:
-        run = zen_store.get_run(run_id)
-        return zen_store.list_run_steps(run.mlmd_id)
+        return zen_store.list_run_steps(UUID(run_id))
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
@@ -267,15 +237,13 @@ async def get_run_runtime_configuration(run_id: str) -> Dict:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def get_run_component_side_effects(
-    run_id: str, component_id: str, component_type: str
+    run_id: str, component_id: str
 ) -> Dict:
     """Get the component side-effects for a given pipeline run.
 
     Args:
         run_id: ID of the pipeline run to use to get the component side-effects.
         component_id: ID of the component to use to get the component
-            side-effects.
-        component_type: Type of the component to use to get the component
             side-effects.
 
     Returns:
@@ -290,7 +258,6 @@ async def get_run_component_side_effects(
         return zen_store.get_run_component_side_effects(
             run_id=UUID(run_id),
             component_id=component_id,
-            component_type=component_type,
         )
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
