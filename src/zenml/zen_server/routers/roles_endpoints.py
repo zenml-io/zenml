@@ -26,7 +26,6 @@ from zenml.models import RoleModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import (
-    authorize,
     conflict,
     error_detail,
     error_response,

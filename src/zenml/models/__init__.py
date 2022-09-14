@@ -28,7 +28,6 @@ from zenml.models.user_management_models import (
     RoleAssignmentModel,
     RoleModel,
     TeamModel,
-    UserCredentialsModel,
     UserModel,
 )
 
@@ -41,7 +40,6 @@ __all__ = [
     "PipelineRunModel",
     "StepRunModel",
     "ArtifactModel",
-    "UserCredentialsModel",
     "UserModel",
     "RoleModel",
     "TeamModel",

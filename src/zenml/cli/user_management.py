@@ -25,7 +25,6 @@ from zenml.models import (
     ProjectModel,
     RoleModel,
     TeamModel,
-    UserCredentialsModel,
     UserModel,
 )
 from zenml.repository import Repository
@@ -89,10 +88,10 @@ def create_user(user_name: str, password: Optional[str] = None) -> None:
 
     cli_utils.print_active_config()
     user = UserModel(
-        name=user_name, credentials=UserCredentialsModel(password=password)
+        name=user_name, password=password
     )
     try:
-        Repository().zen_store.create_user(user)
+        Repository().zen_store.create_user(user.hash_password())
     except EntityExistsError as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Created user '{user_name}'.")

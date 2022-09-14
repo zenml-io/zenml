@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 from packaging import version
 from pydantic import BaseModel, Field, ValidationError, validator
 from pydantic.main import ModelMetaclass
+from secrets import token_hex
 
 from zenml import __version__
 from zenml.config.store_config import StoreConfiguration
@@ -35,12 +36,15 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-
-LEGACY_CONFIG_FILE_NAME = ".zenglobal.json"
 CONFIG_ENV_VAR_PREFIX = "ZENML_"
-DEFAULT_STACK_NAME = "default"
-# TODO: [server] this is defined in the BaseZenStore already, unsure if that
-#  should be imported here
+
+
+def generate_jwt_secret_key() -> str:
+    """Generate a random JWT secret key.
+
+    This key is used to sign and verify generated JWT tokens.
+    """
+    return token_hex(32)
 
 
 class GlobalConfigMetaClass(ModelMetaclass):
@@ -111,6 +115,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         store: Store configuration.
         active_stack_id: The ID of the active stack.
         active_project_name: The name of the active project.
+        jwt_secret_key: The secret key used to sign and verify JWT tokens.
         _config_path: Directory where the global config file is stored.
     """
 
@@ -121,6 +126,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     store: Optional[StoreConfiguration]
     active_stack_id: Optional[uuid.UUID]
     active_project_name: Optional[str]
+    jwt_secret_key: str = Field(default_factory=generate_jwt_secret_key)
 
     _config_path: str
     _zen_store: Optional["BaseZenStore"] = None

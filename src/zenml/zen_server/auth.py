@@ -14,19 +14,34 @@
 
 from datetime import datetime, timedelta
 import os
-from typing import Dict, Optional
+from typing import Any, Callable, Dict, Optional, Union
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
 from jose import JWTError, jwt
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import (
+    OAuth2PasswordBearer,
+    HTTPBasic,
+    HTTPBasicCredentials,
+)
+from fastapi.security.base import SecurityBase
+
 from pydantic import BaseModel
+from starlette.requests import Request
 
 from zenml.constants import LOGIN, VERSION_1
+from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
+from zenml.models.user_management_models import (
+    JWTToken,
+    JWTTokenType,
+    UserModel,
+)
+from zenml.utils.enum_utils import StrEnum
 from zenml.zen_server.utils import (
     zen_store,
 )
+from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 
 logger = get_logger(__name__)
 
@@ -37,92 +52,103 @@ JWT_SECRET_KEY = os.environ.get(
 JWT_ALGORITHM = "HS256"
 JWT_ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
+ENV_ZENML_AUTH_TYPE = "ZENML_AUTH_TYPE"
 
-# the 'tokenUrl' path is the endpoint where the client is redirected to
-# to authenticate with username/password and get a token
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=VERSION_1 + LOGIN)
+
+class AuthScheme(StrEnum):
+    """The authentication scheme."""
+
+    NO_AUTH = "NoAuth"
+    HTTP_BASIC = "HTTPBasic"
+    OAUTH2_PASSWORD_BEARER = "OAuth2PasswordBearer"
 
 
 class AuthContext(BaseModel):
-    user_id: UUID
-    username: str
+    user: UserModel
+
+
+def authentication_scheme() -> AuthScheme:
+    """Returns the authentication type."""
+    auth_scheme = AuthScheme(
+        os.environ.get(ENV_ZENML_AUTH_TYPE, AuthScheme.OAUTH2_PASSWORD_BEARER)
+    )
+    return auth_scheme
+
+
+def validate_user(user_name_or_id: Union[str, UUID]) -> Optional[AuthContext]:
+    """Verify if a username is valid.
+
+    Args:
+        user_name_or_id: The username or user ID.
+
+    Returns:
+        The authenticated account details, if the username is valid, otherwise
+        None.
+    """
+    try:
+        user = zen_store.get_user(user_name_or_id)
+    except KeyError:
+        return None
+
+    return AuthContext(user=user)
 
 
 def authenticate_user(
-    username: str, password: Optional[str] = None
+    user_name_or_id: str,
+    password: str,
 ) -> Optional[AuthContext]:
     """Verify if authentication credentials are valid.
 
     Args:
-        username: The username.
-        password: The password. If not provided, only the username is
-            verified.
+        user_name_or_id: The username or user ID.
+        password: The password.
 
     Returns:
         The authenticated account details, if the account is valid, otherwise
         None.
     """
-    logger.info(
-        f"Authenticating user {username} with password supplied: {bool(password)}"
-    )
     try:
-        user = zen_store.get_user(username)
+        user = zen_store.get_user(user_name_or_id)
     except KeyError:
         return None
-    if password and not user.verify_password(password):
+    if not user.verify_password(password):
         return None
 
-    return AuthContext(user_id=user.id, username=user.name)
+    return AuthContext(user=user)
 
 
-def decode_token(token: Dict[str, str]) -> Optional[AuthContext]:
-    """Decodes a JWT token and returns the authentication context.
+def http_authentication(
+    credentials: HTTPBasicCredentials = Depends(HTTPBasic()),
+) -> None:
+    """Authenticates any request to the ZenServer with basic HTTP authentication.
 
     Args:
-        token: The JWT token to be decoded.
+        credentials: HTTP basic auth credentials passed to the request.
 
-    Returns:
-        The authentication context reflecting the information in the token, or
-        None if the token is invalid or could not be authenticated.
+    Raises:
+        HTTPException: If the user credentials could not be authenticated.
     """
-    subject: str = token.get("sub")
-    if subject is None:
-        return None
-    subject_parts = subject.split(":")
-    if len(subject_parts) != 2 or subject_parts[0] != "username":
-        return None
-    username = subject_parts[1]
-    return authenticate_user(username=username)
+    auth_context = authenticate_user(credentials.username, credentials.password)
+    if auth_context is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+        )
 
 
-def create_access_token(auth_context: AuthContext) -> str:
-    """Creates an access token for the given authentication context.
-
-    Args:
-        auth_context: The authentication context.
-
-    Returns:
-        The generated access token.
-    """
-    expire = datetime.utcnow() + timedelta(
-        minutes=JWT_ACCESS_TOKEN_EXPIRE_MINUTES
-    )
-    token_data = {
-        "sub": f"username:{auth_context.username}",
-        "exp": expire,
-    }
-    token = jwt.encode(token_data, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
-    return token
-
-
-async def authorize(token: str = Depends(oauth2_scheme)) -> AuthContext:
-    """Authorizes any request to the ZenML server with JWT.
+async def oauth2_password_bearer_authentication(
+    token: str = Depends(OAuth2PasswordBearer(tokenUrl=VERSION_1 + LOGIN)),
+) -> AuthContext:
+    """Authenticates any request to the ZenML server with OAuth2 password bearer JWT tokens.
 
     Args:
         token: The JWT bearer token to be authenticated.
 
     Returns:
         The authentication context reflecting the authenticated user.
+
+    Raises:
+        HTTPException: If the JWT token could not be authorized.
     """
     # We have to return an additional WWW-Authenticate header here with the
     # value Bearer to be compliant with the OAuth2 spec.
@@ -132,11 +158,53 @@ async def authorize(token: str = Depends(oauth2_scheme)) -> AuthContext:
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
-    except JWTError:
+        token = JWTToken.decode(
+            token_type=JWTTokenType.ACCESS_TOKEN, token=token
+        )
+    except AuthorizationException:
+        logger.exception("JWT authorization exception")
         raise credentials_exception
-    auth_context = decode_token(payload)
+
+    auth_context = validate_user(token.user_id)
     if auth_context is None:
+        logger.error("JWT authorization exception")
+        raise credentials_exception
+
+    try:
+        auth_context.user.verify_access_token(token)
+    except AuthorizationException:
+        logger.exception("Could not verify JWT access token")
         raise credentials_exception
 
     return auth_context
+
+
+def no_authentication() -> AuthContext:
+    """Doesn't authenticate requests to the ZenML server.
+
+    Raises:
+        HTTPException: If the default user is not available.
+    """
+    auth_context = validate_user(DEFAULT_USERNAME)
+
+    if auth_context is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+        )
+
+
+def authentication_provider() -> Callable[[], AuthContext]:
+    """Returns the authentication provider."""
+    auth_scheme = authentication_scheme()
+    if auth_scheme == AuthScheme.NO_AUTH:
+        return no_authentication
+    elif auth_scheme == AuthScheme.HTTP_BASIC:
+        return http_authentication
+    elif auth_scheme == AuthScheme.OAUTH2_PASSWORD_BEARER:
+        return oauth2_password_bearer_authentication
+    else:
+        raise ValueError(f"Unknown authentication scheme: {auth_scheme}")
+
+
+authorize = authentication_provider()

@@ -22,7 +22,7 @@ import requests
 from pydantic import BaseModel
 
 from zenml.config.store_config import StoreConfiguration
-from zenml.constants import LOGIN, USERS, VERSION_1
+from zenml.constants import LOGIN, PROJECTS, STACKS, USERS, VERSION_1
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.exceptions import (
     AuthorizationException,
@@ -117,9 +117,7 @@ class RestZenStore(BaseZenStore):
     def _initialize(self) -> None:
         """Initialize the REST store."""
         # try to connect to the server to validate the configuration
-        print("Connecting to server")
-
-        self.get(VERSION_1 + USERS)
+        self.active_user
 
     @staticmethod
     def get_path_from_url(url: str) -> Optional[Path]:
@@ -248,6 +246,8 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the stack doesn't exist.
         """
+        body = self.get(f"{STACKS}/{str(stack_id)}")
+        return StackModel.parse_obj(body)
 
     def list_stacks(
         self,
@@ -272,6 +272,12 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the project doesn't exist.
         """
+        body = self.get(STACKS)
+        if not isinstance(body, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+        return [StackModel.parse_obj(s) for s in body]
 
     def update_stack(
         self,
@@ -485,6 +491,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The active username.
         """
+        return self.config.username
 
     def create_user(self, user: UserModel) -> UserModel:
         """Creates a new user.
@@ -511,6 +518,7 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If no user with the given name or ID exists.
         """
+        return UserModel.parse_obj(self.get(f"{USERS}/{str(user_name_or_id)}"))
 
     # TODO: [ALEX] add filtering param(s)
     def list_users(self) -> List[UserModel]:
@@ -802,6 +810,8 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If there is no such project.
         """
+        body = self.get(f"{PROJECTS}/{str(project_name_or_id)}")
+        return ProjectModel.parse_obj(body)
 
     # TODO: [ALEX] add filtering param(s)
     def list_projects(self) -> List[ProjectModel]:
@@ -1213,13 +1223,13 @@ class RestZenStore(BaseZenStore):
         if self._api_token is None:
             self._api_token = self._handle_response(
                 requests.post(
-                    self.url + LOGIN,
+                    self.url + VERSION_1 + LOGIN,
                     data={
                         "username": self.config.username,
                         "password": self.config.password,
                     },
                 )
-            )["token"]
+            )["access_token"]
         return self._api_token
 
     @property
@@ -1333,7 +1343,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The response body.
         """
-        return self._request("GET", self.url + path)
+        return self._request("GET", self.url + VERSION_1 + path)
 
     def delete(self, path: str) -> Json:
         """Make a DELETE request to the given endpoint path.
@@ -1344,7 +1354,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The response body.
         """
-        return self._request("DELETE", self.url + path)
+        return self._request("DELETE", self.url + VERSION_1 + path)
 
     def post(self, path: str, body: BaseModel) -> Json:
         """Make a POST request to the given endpoint path.
@@ -1356,7 +1366,9 @@ class RestZenStore(BaseZenStore):
         Returns:
             The response body.
         """
-        return self._request("POST", self.url + path, data=body.json())
+        return self._request(
+            "POST", self.url + VERSION_1 + path, data=body.json()
+        )
 
     def put(self, path: str, body: BaseModel) -> Json:
         """Make a PUT request to the given endpoint path.
@@ -1368,4 +1380,6 @@ class RestZenStore(BaseZenStore):
         Returns:
             The response body.
         """
-        return self._request("PUT", self.url + path, data=body.json())
+        return self._request(
+            "PUT", self.url + VERSION_1 + path, data=body.json()
+        )
