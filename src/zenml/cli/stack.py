@@ -279,7 +279,11 @@ def register_stack(
             ).id]
 
         stack_ = StackModel(
-            name=stack_name, components=stack_components, is_shared=share
+            name=stack_name,
+            components=stack_components,
+            is_shared=share,
+            project=repo.active_project.id,
+            user=repo.active_user.id
         )
 
         created_stack = repo.register_stack(stack_)
