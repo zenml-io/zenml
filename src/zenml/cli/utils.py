@@ -128,18 +128,6 @@ def warning(
     console.print(text, style=style)
 
 
-def pretty_print(obj: Any) -> None:
-    """Pretty print an object on the CLI using `rich.print`.
-
-    Args:
-        obj: Any object with a __str__ method defined.
-
-    # TODO: [LOW] check whether this needs to be converted to a string first
-    # TODO: [LOW] use rich prettyprint for this instead
-    """
-    console.print(obj)
-
-
 def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
     """Prints the list of dicts in a table format.
 
@@ -317,62 +305,23 @@ def print_stack_configuration(
     console.print(rich_table)
 
 
-def print_flavor_list(
-    flavors: List["FlavorModel"],
-    component_type: "StackComponentType",
-) -> None:
+def print_flavor_list(flavors: List["FlavorModel"]) -> None:
     """Prints the list of flavors.
 
     Args:
         flavors: List of flavors to print.
-        component_type: Type of component the flavors belong to.
     """
-    from zenml.integrations.registry import integration_registry
-    from zenml.utils.source_utils import validate_flavor_source
-
     flavor_table = []
     for f in flavors:
-        reachable = False
-
-        if f.integration:
-            if f.integration == "built-in":
-                reachable = True
-            else:
-                reachable = integration_registry.is_installed(f.integration)
-
-        else:
-            try:
-                validate_flavor_source(f.source, component_type=component_type)
-                reachable = True
-            except (
-                AssertionError,
-                ModuleNotFoundError,
-                ImportError,
-                ValueError,
-            ):
-                pass
-
         flavor_table.append(
             {
                 "FLAVOR": f.name,
                 "INTEGRATION": f.integration,
-                "READY-TO-USE": ":white_check_mark:" if reachable else "",
-                "IMPLEMENTATION": f.implementation_source,
-                "CONFIG": f.config_source,
+                "SOURCE": f.source,
             }
         )
 
     print_table(flavor_table)
-    warning(
-        "The flag 'READY-TO-USE' indicates whether you can directly "
-        "create/use/manage a stack component with that specific flavor. "
-        "You can bring a flavor to a state where it is 'READY-TO-USE' in two "
-        "different ways. If the flavor belongs to a ZenML integration, "
-        "you can use `zenml integration install <name-of-the-integration>` and "
-        "if it doesn't, you can make sure that you are using ZenML in an "
-        "environment where ZenML can import the flavor through its source "
-        "path (also shown in the list)."
-    )
 
 
 def print_stack_component_configuration(
@@ -536,6 +485,7 @@ def parse_unknown_options(
     Returns:
         Dict of parsed args.
     """
+    # TODO: Should we add the cli_utils.error here?
     warning_message = (
         "Please provide args with a proper "
         "identifier as the key and the following structure: "
