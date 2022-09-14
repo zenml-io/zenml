@@ -28,12 +28,11 @@ from zenml.models import (
     ProjectModel,
     RoleAssignmentModel,
     RoleModel,
-    FullStackModel,
+    StackModel,
     StepRunModel,
     TeamModel,
     UserModel,
 )
-from zenml.models.stack_models import BaseStackModel
 
 
 class ZenStoreInterface(ABC):
@@ -201,15 +200,11 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def register_stack(
         self,
-        user_name_or_id: Union[str, UUID],
-        project_name_or_id: Union[str, UUID],
-        stack: BaseStackModel,
-    ) -> FullStackModel:
+        stack: StackModel,
+    ) -> StackModel:
         """Register a new stack.
 
         Args:
-            user_name_or_id: The stack owner.
-            project_name_or_id: The project that the stack belongs to.
             stack: The stack to register.
 
         Returns:
@@ -221,7 +216,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_stack(self, stack_id: UUID) -> FullStackModel:
+    def get_stack(self, stack_id: UUID) -> StackModel:
         """Get a stack by its unique ID.
 
         Args:
@@ -241,7 +236,7 @@ class ZenStoreInterface(ABC):
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-    ) -> List[FullStackModel]:
+    ) -> List[StackModel]:
         """List all stacks matching the given filter criteria.
 
         Args:
@@ -262,13 +257,11 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def update_stack(
         self,
-        stack_id: UUID,
-        stack: BaseStackModel,
-    ) -> FullStackModel:
+        stack: StackModel,
+    ) -> StackModel:
         """Update a stack.
 
         Args:
-            stack_id: The id of the stack that is to be updated.
             stack: The stack to use for the update.
 
         Returns:

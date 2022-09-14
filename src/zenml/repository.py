@@ -37,7 +37,6 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models.pipeline_models import PipelineModel, PipelineRunModel
-from zenml.models.stack_models import HydratedStackModel, BaseStackModel
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
@@ -45,7 +44,11 @@ from zenml.utils.filesync_model import FileSyncModel
 if TYPE_CHECKING:
     from zenml.enums import StackComponentType
     from zenml.models import (
-        ComponentModel, ProjectModel, FullStackModel, UserModel
+        ComponentModel,
+        ProjectModel,
+        StackModel,
+        HydratedStackModel,
+        UserModel
     )
     from zenml.runtime_configuration import RuntimeConfiguration
     from zenml.stack import Stack, StackComponent
@@ -564,7 +567,7 @@ class Repository(metaclass=RepositoryMetaClass):
         return Stack.from_model(self.active_stack_model)
 
     @track(event=AnalyticsEvent.SET_STACK)
-    def activate_stack(self, stack: "FullStackModel") -> None:
+    def activate_stack(self, stack: "StackModel") -> None:
         """Sets the stack as active.
 
         Args:
@@ -580,7 +583,7 @@ class Repository(metaclass=RepositoryMetaClass):
 
     def get_stack_by_name(
         self, name: str, is_shared: bool = False
-    ) -> "FullStackModel":
+    ) -> "StackModel":
         """Fetches a stack by name within the active project.
 
         Args:
@@ -617,7 +620,7 @@ class Repository(metaclass=RepositoryMetaClass):
 
         return stacks[0]
 
-    def register_stack(self, stack: "BaseStackModel") -> "FullStackModel":
+    def register_stack(self, stack: "StackModel") -> "StackModel":
         """Registers a stack and its components.
 
         If any of the stack's components aren't registered in the repository
@@ -632,11 +635,8 @@ class Repository(metaclass=RepositoryMetaClass):
         Raises:
             RuntimeError: If the stack configuration is invalid.
         """
-        # TODO: [server] make sure the stack can be validated here
         if stack.is_valid:
             created_stack = self.zen_store.register_stack(
-                user_name_or_id=self.zen_store.active_user.name,
-                project_name_or_id=self.active_project.name,
                 stack=stack,
             )
             return created_stack
@@ -647,7 +647,7 @@ class Repository(metaclass=RepositoryMetaClass):
                 "an Orchestrator."
             )
 
-    def update_stack(self, stack: "FullStackModel") -> None:
+    def update_stack(self, stack: "StackModel") -> None:
         """Updates a stack and its components.
 
         Args:
@@ -658,7 +658,7 @@ class Repository(metaclass=RepositoryMetaClass):
         """
         if stack.is_valid:
             assert stack.id is not None
-            self.zen_store.update_stack(stack_id=stack.id, stack=stack)
+            self.zen_store.update_stack(stack=stack)
         else:
             raise RuntimeError(
                 "Stack configuration is invalid. A valid"
@@ -666,7 +666,7 @@ class Repository(metaclass=RepositoryMetaClass):
                 "an Orchestrator."
             )
 
-    def deregister_stack(self, stack: "FullStackModel") -> None:
+    def deregister_stack(self, stack: "StackModel") -> None:
         """Deregisters a stack.
 
         Args:

@@ -28,9 +28,9 @@ from zenml.models import (
     ProjectModel,
     RoleAssignmentModel,
     RoleModel,
-    FullStackModel,
+    StackModel,
     TeamModel,
-    UserModel, BaseStackModel,
+    UserModel,
 )
 from zenml.stack.flavor_registry import flavor_registry
 from zenml.utils import io_utils
@@ -218,7 +218,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         self,
         active_project_name_or_id: Optional[Union[str, UUID]] = None,
         active_stack_id: Optional[UUID] = None,
-    ) -> Tuple[ProjectModel, FullStackModel]:
+    ) -> Tuple[ProjectModel, StackModel]:
         """Validate the active configuration.
 
         Call this method to validate the supplied active project and active
@@ -253,7 +253,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             logger.warning("Active project not set. Setting it to the default.")
             active_project = self._default_project
 
-        active_stack: Optional[FullStackModel] = None
+        active_stack: Optional[StackModel] = None
 
         # Sanitize the active stack
         if active_stack_id:
@@ -308,7 +308,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         self,
         project_name_or_id: Union[str, UUID],
         user_name_or_id: Union[str, UUID],
-    ) -> FullStackModel:
+    ) -> StackModel:
         """Construct and register the default stack components and stack.
 
         The default stack contains a local orchestrator and a local artifact
@@ -328,10 +328,10 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         """
         from zenml.config.global_config import GlobalConfiguration
 
-        project_name = self.get_project(
+        project = self.get_project(
             project_name_or_id=project_name_or_id
-        ).name
-        user_name = self.get_user(user_name_or_id=user_name_or_id).name
+        )
+        user = self.get_user(user_name_or_id=user_name_or_id)
         try:
             self._get_default_stack(
                 project_name_or_id=project_name_or_id,
@@ -342,18 +342,18 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         else:
             raise StackExistsError(
                 f"Default stack already registered for user "
-                f"{user_name} in project {project_name}"
+                f"{user.name} in project {project.name}"
             )
 
         logger.info(
-            f"Creating default stack for user {user_name} in project "
-            f"{project_name}..."
+            f"Creating default stack for user {user.name} in project "
+            f"{project.name}..."
         )
 
         # Register the default orchestrator
         orchestrator = self.register_stack_component(
-            user_name_or_id=user_name_or_id,
-            project_name_or_id=project_name_or_id,
+            user_name_or_id=user.name,
+            project_name_or_id=project.name,
             component=ComponentModel(
                 name="default",
                 type=StackComponentType.ORCHESTRATOR,
@@ -371,8 +371,8 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         io_utils.create_dir_recursive_if_not_exists(artifact_store_path)
 
         artifact_store = self.register_stack_component(
-            user_name_or_id=user_name_or_id,
-            project_name_or_id=project_name_or_id,
+            user_name_or_id=user.name,
+            project_name_or_id=project.name,
             component=ComponentModel(
                 name="default",
                 type=StackComponentType.ARTIFACT_STORE,
@@ -383,20 +383,20 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
 
         components = {c.type: [c.id] for c in [orchestrator, artifact_store]}
         # Register the default stack
-        stack = BaseStackModel(
-            name="default", components=components, is_shared=False
+        stack = StackModel(
+            name="default",
+            components=components,
+            is_shared=False,
+            project=project.id,
+            user=user.id
         )
-        return self.register_stack(
-            user_name_or_id=user_name_or_id,
-            project_name_or_id=project_name_or_id,
-            stack=stack,
-        )
+        return self.register_stack(stack=stack)
 
     def _get_default_stack(
         self,
         project_name_or_id: Union[str, UUID],
         user_name_or_id: Union[str, UUID],
-    ) -> FullStackModel:
+    ) -> StackModel:
         """Get the default stack for a user in a project.
 
         Args:

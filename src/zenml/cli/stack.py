@@ -30,7 +30,7 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import ProvisioningError
-from zenml.models.stack_models import BaseStackModel
+from zenml.models.stack_models import StackModel
 from zenml.repository import Repository
 from zenml.secret import ArbitrarySecretSchema
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
@@ -278,7 +278,7 @@ def register_stack(
                 name=data_validator_name,
             ).id]
 
-        stack_ = BaseStackModel(
+        stack_ = StackModel(
             name=stack_name, components=stack_components, is_shared=share
         )
 
@@ -1194,7 +1194,7 @@ def copy_stack(
 
     with console.status(f"Copying stack `{source_stack}`...\n"):
         try:
-            stack_model = repo.get_stack_by_name(name=source_stack)
+            stack_model = (repo.get_stack_by_name(name=source_stack))
         except KeyError:
             cli_utils.error(
                 f"Stack `{source_stack}` cannot be copied as it does not exist."
@@ -1206,7 +1206,12 @@ def copy_stack(
                 "already exists."
             )
         stack_model.name = target_stack
-        repo.register_stack(stack_model)
+
+        copied_stack = StackModel.parse_obj(
+            stack_model.dict(exclude={'id', 'creation_date'}))
+        # TODO: [server] an actually new instance needs to be created hiere to
+        #  to ensure a new stack id is created
+        repo.register_stack(copied_stack)
 
 
 @stack.command(

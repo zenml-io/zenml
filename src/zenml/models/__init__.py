@@ -23,7 +23,7 @@ from zenml.models.pipeline_models import (
     StepRunModel,
 )
 from zenml.models.project_models import ProjectModel
-from zenml.models.stack_models import FullStackModel, BaseStackModel, \
+from zenml.models.stack_models import StackModel, \
     HydratedStackModel
 from zenml.models.user_management_models import (
     RoleAssignmentModel,
@@ -35,8 +35,7 @@ from zenml.models.user_management_models import (
 __all__ = [
     "ComponentModel",
     "CodeRepositoryModel",
-    "BaseStackModel",
-    "FullStackModel",
+    "StackModel",
     "HydratedStackModel",
     "PipelineModel",
     "PipelineRunModel",

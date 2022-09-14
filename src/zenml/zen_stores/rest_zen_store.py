@@ -40,10 +40,10 @@ from zenml.models import (
     ProjectModel,
     RoleAssignmentModel,
     RoleModel,
-    FullStackModel,
+    StackModel,
     StepRunModel,
     TeamModel,
-    UserModel, BaseStackModel,
+    UserModel,
 )
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -199,8 +199,8 @@ class RestZenStore(BaseZenStore):
         self,
         user_name_or_id: Union[str, UUID],
         project_name_or_id: Union[str, UUID],
-        stack: BaseStackModel,
-    ) -> FullStackModel:
+        stack: StackModel,
+    ) -> StackModel:
         """Register a new stack.
 
         Args:
@@ -216,7 +216,7 @@ class RestZenStore(BaseZenStore):
                 by this user in this project.
         """
 
-    def get_stack(self, stack_id: UUID) -> FullStackModel:
+    def get_stack(self, stack_id: UUID) -> StackModel:
         """Get a stack by its unique ID.
 
         Args:
@@ -235,7 +235,7 @@ class RestZenStore(BaseZenStore):
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-    ) -> List[FullStackModel]:
+    ) -> List[StackModel]:
         """List all stacks matching the given filter criteria.
 
         Args:
@@ -256,8 +256,8 @@ class RestZenStore(BaseZenStore):
     def update_stack(
         self,
         stack_id: UUID,
-        stack: BaseStackModel,
-    ) -> FullStackModel:
+        stack: StackModel,
+    ) -> StackModel:
         """Update a stack.
 
         Args:

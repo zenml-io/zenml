@@ -16,7 +16,7 @@
 import json
 from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from pydantic import Field
 
@@ -28,42 +28,7 @@ from zenml.models.component_models import ComponentModel
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 
-class BaseStackModel(AnalyticsTrackedModelMixin):
-
-    ANALYTICS_FIELDS: ClassVar[List[str]] = [
-        "is_shared",
-    ]
-
-    name: str
-    description: Optional[str] = Field(
-        default=None, title="The description of the stack", max_length=300
-    )
-    components: Dict[StackComponentType, List[UUID]] = Field(
-        title="A mapping of stack component types to the id's of"
-        "instances of components of this type."
-    )
-    is_shared: bool = Field(
-        default=False,
-        title="Flag describing if this stack is shared.",
-    )
-
-    @property
-    def is_valid(self):
-        """Check if the stack is valid.
-
-        Returns:
-            True if the stack is valid, False otherwise.
-        """
-        if (
-            StackComponentType.ARTIFACT_STORE
-            and StackComponentType.ORCHESTRATOR in self.components.keys()
-        ):
-            return True
-        else:
-            return False
-
-
-class FullStackModel(BaseStackModel):
+class StackModel(AnalyticsTrackedModelMixin):
     """Network Serializable Model describing the Stack.
 
     name, description, components and is_shared can be specified explicitly by
@@ -81,8 +46,19 @@ class FullStackModel(BaseStackModel):
         "is_shared",
     ]
 
-    id: UUID
-
+    id: UUID = Field(default_factory=uuid4)
+    name: str
+    description: Optional[str] = Field(
+        default=None, title="The description of the stack", max_length=300
+    )
+    components: Dict[StackComponentType, List[UUID]] = Field(
+        title="A mapping of stack component types to the id's of"
+        "instances of components of this type."
+    )
+    is_shared: bool = Field(
+        default=False,
+        title="Flag describing if this stack is shared.",
+    )
     project: UUID = Field(
         title="The project that contains this stack."
     )
@@ -90,8 +66,24 @@ class FullStackModel(BaseStackModel):
         title="The id of the user, that created this stack.",
     )
     creation_date: datetime = Field(
+        default_factory=datetime.now,
         title="The time at which the stack was registered.",
     )
+
+    @property
+    def is_valid(self):
+        """Check if the stack is valid.
+
+        Returns:
+            True if the stack is valid, False otherwise.
+        """
+        if (
+            StackComponentType.ARTIFACT_STORE
+            and StackComponentType.ORCHESTRATOR in self.components.keys()
+        ):
+            return True
+        else:
+            return False
 
     def to_hydrated_model(self) -> "HydratedStackModel":
         zen_store = GlobalConfiguration().zen_store
@@ -114,7 +106,7 @@ class FullStackModel(BaseStackModel):
                                   creation_date=self.creation_date)
 
 
-class HydratedStackModel(FullStackModel):
+class HydratedStackModel(StackModel):
     """Network Serializable Model describing the Stack with Components,
     User and Project fully hydrated.
     """

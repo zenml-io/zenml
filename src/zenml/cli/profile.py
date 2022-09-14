@@ -35,7 +35,7 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.models import ComponentModel, ProjectModel, FullStackModel, UserModel
+from zenml.models import ComponentModel, ProjectModel, StackModel, UserModel
 from zenml.models.flavor_models import FlavorModel
 from zenml.repository import Repository
 from zenml.utils import yaml_utils
@@ -193,7 +193,7 @@ class LocalStore(BaseModel):
 
     def get_stack(
         self, name: str, prefix: str = "", project: Optional[str] = None
-    ) -> FullStackModel:
+    ) -> StackModel:
         """Fetch the configuration for a stack.
 
         For default stack components, the default component in the current
@@ -246,7 +246,7 @@ class LocalStore(BaseModel):
 
             components[StackComponentType(component_type)] = component
 
-        return FullStackModel(
+        return StackModel(
             name=prefix + name,
             components=components,
             project=project,
@@ -254,7 +254,7 @@ class LocalStore(BaseModel):
 
     def get_stacks(
         self, prefix: str = "", project: Optional[str] = None
-    ) -> List[FullStackModel]:
+    ) -> List[StackModel]:
         """Fetch all stacks.
 
         The default stack is expressly excluded from this list.
@@ -607,14 +607,15 @@ def migrate_profiles(
             cli_utils.declare(f"Migrating stacks from {store.config_file}...")
             for stack in store.get_stacks(prefix=prefix, project=project.name):
                 try:
-                    repo.zen_store.register_stack(user.id, project.name, stack)
+                    stack.project = project.id
+                    stack.user = user.id
+                    repo.zen_store.register_stack(stack)
                     cli_utils.declare(f"Migrated stack '{stack.name}'.")
                 except StackExistsError:
                     if overwrite:
                         stack.project_id = project.id
                         stack.owner = user.id
                         repo.zen_store.update_stack(
-                            stack_id=stack.id,  # TODO: check if this correct
                             stack=stack,
                         )
                         cli_utils.declare(f"Updated stack '{stack.name}'.")

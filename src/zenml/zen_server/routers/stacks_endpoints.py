@@ -20,9 +20,10 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from zenml.constants import STACKS, VERSION_1
 from zenml.exceptions import NotAuthorizedError, ValidationError
-from zenml.models import FullStackModel
-from zenml.models.stack_models import HydratedStackModel, BaseStackModel
+from zenml.models import StackModel
+from zenml.models.stack_models import HydratedStackModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
+from zenml.zen_server.models.stack_models import UpdateStackModel
 from zenml.zen_server.utils import (
     authorize,
     error_detail,
@@ -40,7 +41,7 @@ router = APIRouter(
 
 @router.get(
     "/",
-    response_model=Union[List[HydratedStackModel], List[FullStackModel]],
+    response_model=Union[List[HydratedStackModel], List[StackModel]],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def list_stacks(
@@ -49,7 +50,7 @@ async def list_stacks(
     stack_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
     hydrated: bool = True
-) -> Union[List[HydratedStackModel], List[FullStackModel]]:
+) -> Union[List[HydratedStackModel], List[StackModel]]:
     """Returns all stacks.
 
     Args:
@@ -88,13 +89,13 @@ async def list_stacks(
 
 @router.get(
     "/{stack_id}",
-    response_model=Union[HydratedStackModel, FullStackModel],
+    response_model=Union[HydratedStackModel, StackModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def get_stack(
     stack_id: str,
     hydrated: bool = True
-) -> Union[HydratedStackModel, FullStackModel]:
+) -> Union[HydratedStackModel, StackModel]:
     """Returns the requested stack.
 
     Args:
@@ -126,19 +127,19 @@ async def get_stack(
 
 @router.put(
     "/{stack_id}",
-    response_model=Union[HydratedStackModel, FullStackModel],
+    response_model=Union[HydratedStackModel, StackModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def update_stack(
     stack_id: str,
-    stack: BaseStackModel,
+    stack_update: UpdateStackModel,
     hydrated: bool = True
-) -> Union[HydratedStackModel, FullStackModel]:
+) -> Union[HydratedStackModel, StackModel]:
     """Updates a stack.
 
     Args:
         stack_id: Name of the stack.
-        stack: Stack to use for the update.
+        stack_update: Stack to use for the update.
         hydrated: Defines if stack components, users and projects will be
                   included by reference (FALSE) or as model (TRUE)
 
@@ -151,8 +152,9 @@ async def update_stack(
         422 error: when unable to validate input
     """
     try:
-        updated_stack = zen_store.update_stack(stack_id=UUID(stack_id),
-                                               stack=stack)
+        stack_in_db = zen_store.get_stack(parse_name_or_uuid(stack_id))
+        updated_stack = zen_store.update_stack(
+            stack=stack_update.apply_to_model(stack_in_db))
         if hydrated:
             return updated_stack.to_hydrated_model()
         else:

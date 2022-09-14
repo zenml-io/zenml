@@ -44,10 +44,10 @@ from zenml.models import (
     ProjectModel,
     RoleAssignmentModel,
     RoleModel,
-    FullStackModel,
+    StackModel,
     StepRunModel,
     TeamModel,
-    UserModel, BaseStackModel,
+    UserModel,
 )
 from zenml.utils import io_utils, uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -307,15 +307,11 @@ class SqlZenStore(BaseZenStore):
     @track(AnalyticsEvent.REGISTERED_STACK)
     def register_stack(
         self,
-        user_name_or_id: Union[str, UUID],
-        project_name_or_id: Union[str, UUID],
-        stack: BaseStackModel,
-    ) -> FullStackModel:
+        stack: StackModel,
+    ) -> StackModel:
         """Register a new stack.
 
         Args:
-            user_name_or_id: The stack owner.
-            project_name_or_id: The project that the stack belongs to.
             stack: The stack to register.
 
         Returns:
@@ -326,18 +322,24 @@ class SqlZenStore(BaseZenStore):
                 by this user in this project.
         """
         with Session(self.engine) as session:
-            project = self._get_project_schema(project_name_or_id)
-            user = self._get_user_schema(user_name_or_id)
+            project = self._get_project_schema(stack.project)
+            user = self._get_user_schema(stack.user)
             # Check if stack with the domain key (name, project, owner) already
             #  exists
-            existing_stack = session.exec(
+            existing_domain_stack = session.exec(
                 select(StackSchema)
                 .where(StackSchema.name == stack.name)
-                .where(StackSchema.project == project.id)
-                .where(StackSchema.user == user.id)
+                .where(StackSchema.project == stack.project)
+                .where(StackSchema.user == stack.user)
             ).first()
-            # TODO: verify if is_shared status needs to be checked here
-            if existing_stack is not None:
+            existing_id_stack = session.exec(
+                select(StackSchema)
+                .where(StackSchema.id == stack.id)
+            ).first()
+            # TODO: [server] This is ugly, make it prettier by combining into
+            #  one single query
+            if existing_domain_stack is not None \
+                    or existing_id_stack is not None:
                 raise StackExistsError(
                     f"Unable to register stack with name "
                     f"'{stack.name}': Found an existing stack with the same "
@@ -358,8 +360,6 @@ class SqlZenStore(BaseZenStore):
 
             # Create the stack
             stack_in_db = StackSchema.from_create_model(
-                project_id=project.id,
-                user_id=user.id,
                 defined_components=defined_components,
                 stack=stack,
             )
@@ -368,7 +368,7 @@ class SqlZenStore(BaseZenStore):
 
             return stack_in_db.to_model()
 
-    def get_stack(self, stack_id: UUID) -> FullStackModel:
+    def get_stack(self, stack_id: UUID) -> StackModel:
         """Get a stack by its unique ID.
 
         Args:
@@ -395,7 +395,7 @@ class SqlZenStore(BaseZenStore):
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
-    ) -> List[FullStackModel]:
+    ) -> List[StackModel]:
         """List all stacks matching the given filter criteria.
 
         Args:
@@ -430,13 +430,11 @@ class SqlZenStore(BaseZenStore):
     @track(AnalyticsEvent.UPDATED_STACK)
     def update_stack(
         self,
-        stack_id: UUID,
-        stack: BaseStackModel
-    ) -> FullStackModel:
+        stack: StackModel
+    ) -> StackModel:
         """Update a stack.
 
         Args:
-            stack_id: The id of the stack that is to be updated.
             stack: The stack to use for the update.
 
         Returns:
@@ -449,13 +447,13 @@ class SqlZenStore(BaseZenStore):
             # Check if stack with the domain key (name, project, owner) already
             #  exists
             existing_stack = session.exec(
-                select(StackSchema).where(StackSchema.id == stack_id)
+                select(StackSchema).where(StackSchema.id == stack.id)
             ).first()
 
             if existing_stack is None:
                 raise KeyError(
                     f"Unable to update stack with id "
-                    f"'{stack_id}': Found no"
+                    f"'{stack.id}': Found no"
                     f"existing stack with this id."
                 )
 

@@ -15,11 +15,11 @@
 
 from datetime import datetime
 from typing import TYPE_CHECKING, List
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from sqlmodel import Field, Relationship, SQLModel
 
-from zenml.models import FullStackModel, BaseStackModel
+from zenml.models import StackModel
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
@@ -40,8 +40,8 @@ class StackCompositionSchema(SQLModel, table=True):
 class StackSchema(SQLModel, table=True):
     """SQL Model for stacks."""
 
-    id: UUID = Field(primary_key=True, default_factory=uuid4)
-    creation_date: datetime = Field(default_factory=datetime.now)
+    id: UUID = Field(primary_key=True)
+    creation_date: datetime
 
     name: str
     is_shared: bool
@@ -59,16 +59,12 @@ class StackSchema(SQLModel, table=True):
     @classmethod
     def from_create_model(
         cls,
-        user_id: UUID,
-        project_id: UUID,
         defined_components: List["StackComponentSchema"],
-        stack: BaseStackModel,
+        stack: StackModel,
     ) -> "StackSchema":
         """Create an incomplete StackSchema with `id` and `created_at` missing.
 
         Args:
-            user_id: The ID of the user creating the stack.
-            project_id: The ID of the project the stack belongs to.
             defined_components: The components that are part of the stack.
             stack: The stack model to create the schema from.
 
@@ -76,9 +72,11 @@ class StackSchema(SQLModel, table=True):
             A StackSchema
         """
         return cls(
+            id=stack.id,
+            creation_date=stack.creation_date,
             name=stack.name,
-            project=project_id,
-            user=user_id,
+            project=stack.project,
+            user=stack.user,
             is_shared=stack.is_shared,
             components=defined_components,
         )
@@ -86,7 +84,7 @@ class StackSchema(SQLModel, table=True):
     def from_update_model(
         self,
         defined_components: List["StackComponentSchema"],
-        stack: BaseStackModel,
+        stack: StackModel,
     ) -> "StackSchema":
         """Update the updatable fields on an existing `StackSchema`.
 
@@ -102,13 +100,13 @@ class StackSchema(SQLModel, table=True):
         self.components = defined_components
         return self
 
-    def to_model(self) -> "FullStackModel":
+    def to_model(self) -> "StackModel":
         """Creates a `ComponentModel` from an instance of a `StackSchema`.
 
         Returns:
             a `FullStackModel`
         """
-        return FullStackModel(
+        return StackModel(
             id=self.id,
             name=self.name,
             user=self.user,
