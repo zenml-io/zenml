@@ -44,6 +44,8 @@ from zenml.models.component_models import HydratedComponentModel
 from zenml.models.pipeline_models import HydratedPipelineModel
 from zenml.models.stack_models import HydratedStackModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
+from zenml.zen_server.models.projects_models import CreateProjectModel, \
+    UpdateProjectModel
 from zenml.zen_server.models.stack_models import CreateStackModel
 from zenml.zen_server.utils import (
     authorize,
@@ -93,7 +95,7 @@ async def list_projects() -> List[ProjectModel]:
     response_model=ProjectModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-async def create_project(project: ProjectModel) -> ProjectModel:
+async def create_project(project: CreateProjectModel) -> ProjectModel:
     """Creates a project based on the requestBody.
 
     # noqa: DAR401
@@ -111,7 +113,7 @@ async def create_project(project: ProjectModel) -> ProjectModel:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.create_project(project=project)
+        return zen_store.create_project(project=project.to_model())
     except EntityExistsError as error:
         raise conflict(error) from error
     except NotAuthorizedError as error:
@@ -162,7 +164,8 @@ async def get_project(project_name_or_id: str) -> ProjectModel:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def update_project(
-    project_name_or_id: str, project: ProjectModel
+    project_name_or_id: str,
+    project_update: UpdateProjectModel
 ) -> ProjectModel:
     """Get a project for given name.
 
@@ -170,7 +173,7 @@ async def update_project(
 
     Args:
         project_name_or_id: Name or ID of the project to update.
-        project: the project to use to update
+        project_update: the project to use to update
 
     Returns:
         The updated project.
@@ -182,9 +185,11 @@ async def update_project(
         422 error: when unable to validate input
     """
     try:
+        project_in_db = zen_store.get_project(
+            parse_name_or_uuid(project_name_or_id))
+
         return zen_store.update_project(
-            project_name_or_id=parse_name_or_uuid(project_name_or_id),
-            project=project,
+            project=project_update.apply_to_model(project_in_db),
         )
     except KeyError as error:
         raise not_found(error) from error

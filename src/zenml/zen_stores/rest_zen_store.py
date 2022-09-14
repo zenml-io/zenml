@@ -255,7 +255,6 @@ class RestZenStore(BaseZenStore):
 
     def update_stack(
         self,
-        stack_id: UUID,
         stack: StackModel,
     ) -> StackModel:
         """Update a stack.
@@ -793,12 +792,11 @@ class RestZenStore(BaseZenStore):
         """
 
     def update_project(
-        self, project_name_or_id: Union[str, UUID], project: ProjectModel
+        self, project: ProjectModel
     ) -> ProjectModel:
         """Update an existing project.
 
         Args:
-            project_name_or_id: Name or ID of the project to update.
             project: The project to use for the update.
 
         Returns:

@@ -830,12 +830,11 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_project(
-        self, project_name_or_id: Union[str, UUID], project: ProjectModel
+        self, project: ProjectModel
     ) -> ProjectModel:
         """Update an existing project.
 
         Args:
-            project_name_or_id: Name or ID of the project to update.
             project: The project to use for the update.
 
         Returns:

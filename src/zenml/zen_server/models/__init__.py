@@ -12,3 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Models for the API endpoint definitions."""
+
+
+from zenml.zen_server.models.stack_models import (
+    CreateStackModel,
+    UpdateStackModel
+)
+
+__all__ = [
+    "CreateStackModel",
+    "UpdateStackModel"
+]
