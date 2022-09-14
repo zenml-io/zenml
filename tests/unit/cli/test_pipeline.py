@@ -18,6 +18,7 @@ import sys
 import click
 
 from zenml.enums import ExecutionStatus
+from zenml.post_execution.pipeline import get_pipeline
 from zenml.repository import Repository
 
 PIPELINE_NAME = "some_pipe"
@@ -51,7 +52,7 @@ def test_pipeline_run_single_file(
     )
 
     # Assert that the pipeline ran successfully
-    historic_pipeline = Repository().get_pipeline(pipeline_name=PIPELINE_NAME)
+    historic_pipeline = get_pipeline(pipeline_name=PIPELINE_NAME)
 
     assert len(historic_pipeline.runs) == 1
 
@@ -104,7 +105,7 @@ def test_pipeline_run_multifile(clean_repo: Repository, files_dir: str) -> None:
     )
 
     # Assert that pipeline completed successfully
-    historic_pipeline = Repository().get_pipeline(pipeline_name=PIPELINE_NAME)
+    historic_pipeline = get_pipeline(pipeline_name=PIPELINE_NAME)
 
     assert len(historic_pipeline.runs) == 1
 

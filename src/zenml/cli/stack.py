@@ -633,7 +633,7 @@ def remove_stack_component(
     Args:
         stack_name: Name of the stack to remove components from.
         container_registry_flag: To remove the container registry from this
-        stack.
+            stack.
         step_operator_flag: To remove the step operator from this stack.
         secrets_manager_flag: To remove the secrets manager from this stack.
         feature_store_flag: To remove the feature store from this stack.
@@ -785,6 +785,8 @@ def describe_stack(stack_name: Optional[str]) -> None:
     stack_configurations = repo.stack_configurations
     if len(stack_configurations) == 0:
         cli_utils.error("No stacks registered.")
+    if stack_name is not None and stack_name not in stack_configurations:
+        cli_utils.error(f"Stack `{stack_name}` does not exist.")
 
     active_stack_name = repo.active_stack_model.name
     stack_configuration = stack_configurations[active_stack_name]
@@ -1109,8 +1111,6 @@ def import_stack(
         ignore_version_mismatch: Import stack components even if
             the installed version of ZenML is different from the
             one specified in the stack YAML file.
-        decouple_stores: Resets the previous couplings of the given
-            artifact/metadata stores and creates a new one.
     """
     track_event(AnalyticsEvent.IMPORT_STACK)
 

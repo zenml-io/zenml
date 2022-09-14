@@ -21,7 +21,6 @@ from zenml.config.store_config import StoreConfiguration
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.models import (
     ArtifactModel,
-    CodeRepositoryModel,
     ComponentModel,
     FlavorModel,
     PipelineModel,
@@ -368,7 +367,7 @@ class ZenStoreInterface(ABC):
         """Update an existing stack component.
 
         Args:
-            component_id
+            component_id: The ID of the stack component to update.
             component: The stack component to use for the update.
 
         Returns:
@@ -612,7 +611,7 @@ class ZenStoreInterface(ABC):
         """Fetches all users of a team.
 
         Args:
-            team_id: The name or ID of the team for which to get users.
+            team_name_or_id: The name or ID of the team for which to get users.
 
         Returns:
             A list of all users that are part of the team.
@@ -868,86 +867,6 @@ class ZenStoreInterface(ABC):
     # Repositories
     # ------------
 
-    # TODO: create repository?
-
-    @abstractmethod
-    def connect_project_repository(
-        self,
-        project_name_or_id: Union[str, UUID],
-        repository: CodeRepositoryModel,
-    ) -> CodeRepositoryModel:
-        """Connects a repository to a project.
-
-        Args:
-            project_name_or_id: Name or ID of the project to connect the
-                repository to.
-            repository: The repository to connect.
-
-        Returns:
-            The connected repository.
-
-        Raises:
-            KeyError: if the project or repository doesn't exist.
-        """
-
-    @abstractmethod
-    def get_repository(self, repository_id: UUID) -> CodeRepositoryModel:
-        """Get a repository by ID.
-
-        Args:
-            repository_id: The ID of the repository to get.
-
-        Returns:
-            The repository.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
-
-    @abstractmethod
-    def list_repositories(
-        self, project_name_or_id: Union[str, UUID]
-    ) -> List[CodeRepositoryModel]:
-        """Get all repositories in a given project.
-
-        Args:
-            project_name_or_id: The name or ID of the project.
-
-        Returns:
-            A list of all repositories in the project.
-
-        Raises:
-            KeyError: if the project doesn't exist.
-        """
-
-    @abstractmethod
-    def update_repository(
-        self, repository_id: UUID, repository: CodeRepositoryModel
-    ) -> CodeRepositoryModel:
-        """Update a repository.
-
-        Args:
-            repository_id: The ID of the repository to update.
-            repository: The repository to use for the update.
-
-        Returns:
-            The updated repository.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
-
-    @abstractmethod
-    def delete_repository(self, repository_id: UUID) -> None:
-        """Delete a repository.
-
-        Args:
-            repository_id: The ID of the repository to delete.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
-
     # ---------
     # Pipelines
     # ---------
@@ -1141,7 +1060,6 @@ class ZenStoreInterface(ABC):
         self,
         run_id: UUID,
         component_id: Optional[str] = None,
-        component_type: Optional[StackComponentType] = None,
     ) -> Dict[str, Any]:
         """Gets the side effects for a component in a pipeline run.
 

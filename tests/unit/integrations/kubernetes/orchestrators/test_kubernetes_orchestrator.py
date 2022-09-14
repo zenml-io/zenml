@@ -14,6 +14,7 @@
 
 
 from contextlib import ExitStack as does_not_raise
+from uuid import uuid4
 
 import pytest
 
@@ -42,6 +43,7 @@ def test_kubernetes_orchestrator_remote_stack() -> None:
     remote_artifact_store = GCPArtifactStore(name="", path="gs://bucket")
     with does_not_raise():
         Stack(
+            id=uuid4(),
             name="",
             orchestrator=orchestrator,
             artifact_store=remote_artifact_store,
@@ -58,6 +60,7 @@ def test_kubernetes_orchestrator_local_stack() -> None:
     local_artifact_store = LocalArtifactStore(name="", path="artifacts/")
     with pytest.raises(StackValidationError):
         Stack(
+            id=uuid4(),
             name="",
             orchestrator=orchestrator,
             artifact_store=local_artifact_store,

@@ -16,6 +16,7 @@ AirflowDag
 AirflowOrchestrator
 Alerter
 Alerters
+AlreadyExistsException
 AmazonEC
 AmazonEKS
 AmazonEKSClusterPolicy
@@ -238,6 +239,7 @@ IAM
 IOError
 IPython
 ISTIO
+IllegalOperationError
 ImageClassifier
 ImportError
 IndexError

@@ -36,28 +36,24 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.metadata_stores.sqlite_metadata_store import SQLiteMetadataStore
 from zenml.models import (
+    ArtifactModel,
     ComponentModel,
     FlavorModel,
+    PipelineModel,
     PipelineRunModel,
     ProjectModel,
     RoleAssignmentModel,
     RoleModel,
     FullStackModel,
+    StepRunModel,
     TeamModel,
     UserModel, BaseStackModel,
-)
-from zenml.models.code_models import CodeRepositoryModel
-from zenml.models.pipeline_models import (
-    ArtifactModel,
-    PipelineModel,
-    StepRunModel,
 )
 from zenml.utils import io_utils, uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME, BaseZenStore
 from zenml.zen_stores.schemas import (
     ArtifactSchema,
-    CodeRepositorySchema,
     FlavorSchema,
     PipelineRunSchema,
     PipelineSchema,
@@ -409,12 +405,8 @@ class SqlZenStore(BaseZenStore):
             is_shared: Optionally filter out stacks by whether they are shared
                 or not
 
-
         Returns:
             A list of all stacks matching the filter criteria.
-
-        Raises:
-            KeyError: if the project doesn't exist.
         """
         with Session(self.engine) as session:
 
@@ -614,9 +606,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             A list of all stack components matching the filter criteria.
-
-        Raises:
-            KeyError: if the project doesn't exist.
         """
         with Session(self.engine) as session:
             project = self._get_project_schema(project_name_or_id)
@@ -651,7 +640,8 @@ class SqlZenStore(BaseZenStore):
         """Update an existing stack component.
 
         Args:
-            component: The stack component to use for the update.
+            component_id: The ID of the stack component to update.
+            component: The stack component model to use for the update.
 
         Returns:
             The updated stack component.
@@ -718,8 +708,7 @@ class SqlZenStore(BaseZenStore):
             pipeline_id: The id of the pipeline to get side effects for.
             stack_id: The id of the stack to get side effects for.
         """
-        # TODO: implement this
-        raise NotImplementedError
+        pass  # TODO: implement this
 
     # -----------------------
     # Stack component flavors
@@ -898,9 +887,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The requested user, if it was found.
-
-        Raises:
-            KeyError: If no user with the given name or ID exists.
         """
         user = self._get_user_schema(user_name_or_id)
         return user.to_model()
@@ -928,12 +914,11 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated user.
-
-        Raises:
-            KeyError: If no user with the given name exists.
         """
         with Session(self.engine) as session:
-            existing_user = self._get_user_schema(user_name_or_id)
+            existing_user = self._get_user_schema(
+                user_name_or_id, session=session
+            )
             existing_user.from_update_model(user)
             session.add(existing_user)
             session.commit()
@@ -944,13 +929,10 @@ class SqlZenStore(BaseZenStore):
         """Deletes a user.
 
         Args:
-            user_id: The ID of the user to delete.
-
-        Raises:
-            KeyError: If no user with the given name exists.
+            user_name_or_id: The name or ID of the user to delete.
         """
         with Session(self.engine) as session:
-            user = self._get_user_schema(user_name_or_id)
+            user = self._get_user_schema(user_name_or_id, session=session)
             session.delete(user)
             session.commit()
 
@@ -1000,9 +982,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The requested team.
-
-        Raises:
-            KeyError: If no team with the given name or ID exists.
         """
         team = self._get_team_schema(team_name_or_id)
         return team.to_model()
@@ -1023,12 +1002,9 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             team_name_or_id: Name or ID of the team to delete.
-
-        Raises:
-            KeyError: If no team with the given ID exists.
         """
         with Session(self.engine) as session:
-            team = self._get_team_schema(team_name_or_id)
+            team = self._get_team_schema(team_name_or_id, session=session)
             session.delete(team)
             session.commit()
 
@@ -1046,9 +1022,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             A list of all users that are part of the team.
-
-        Raises:
-            KeyError: If no team with the given ID exists.
         """
         team = self._get_team_schema(team_name_or_id)
         return [user.to_model() for user in team.users]
@@ -1063,9 +1036,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             A list of all teams that the user is part of.
-
-        Raises:
-            KeyError: If no user with the given ID exists.
         """
         user = self._get_user_schema(user_name_or_id)
         return [team.to_model() for team in user.teams]
@@ -1082,12 +1052,11 @@ class SqlZenStore(BaseZenStore):
             team_name_or_id: Name or ID of the team to which to add the user to.
 
         Raises:
-            KeyError: If the team or user does not exist.
             EntityExistsError: If the user is already a member of the team.
         """
         with Session(self.engine) as session:
-            team = self._get_team_schema(team_name_or_id)
-            user = self._get_user_schema(user_name_or_id)
+            team = self._get_team_schema(team_name_or_id, session=session)
+            user = self._get_user_schema(user_name_or_id, session=session)
 
             # Check if user is already in the team
             existing_user_in_team = session.exec(
@@ -1116,13 +1085,10 @@ class SqlZenStore(BaseZenStore):
         Args:
             user_name_or_id: Name or ID of the user to remove from the team.
             team_name_or_id: Name or ID of the team from which to remove the user.
-
-        Raises:
-            KeyError: If the team or user does not exist.
         """
         with Session(self.engine) as session:
-            team = self._get_team_schema(team_name_or_id)
-            user = self._get_user_schema(user_name_or_id)
+            team = self._get_team_schema(team_name_or_id, session=session)
+            user = self._get_user_schema(user_name_or_id, session=session)
 
             # Remove user from team
             team.users = [user_ for user_ in team.users if user_.id != user.id]
@@ -1170,9 +1136,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The requested role.
-
-        Raises:
-            KeyError: If no role with the given name exists.
         """
         role = self._get_role_schema(role_name_or_id)
         return role.to_model()
@@ -1194,12 +1157,9 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             role_name_or_id: Name or ID of the role to delete.
-
-        Raises:
-            KeyError: If no role with the given ID exists.
         """
         with Session(self.engine) as session:
-            role = self._get_role_schema(role_name_or_id)
+            role = self._get_role_schema(role_name_or_id, session=session)
 
             # Delete role
             session.delete(role)
@@ -1208,6 +1168,62 @@ class SqlZenStore(BaseZenStore):
     # ----------------
     # Role assignments
     # ----------------
+
+    def _list_user_role_assignments(
+        self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+    ) -> List[RoleAssignmentModel]:
+        """List all user role assignments.
+
+        Args:
+            project_name_or_id: If provided, only return role assignments for
+                this project.
+            user_name_or_id: If provided, only list assignments for this user.
+
+        Returns:
+            A list of user role assignments.
+        """
+        with Session(self.engine) as session:
+            query = select(UserRoleAssignmentSchema)
+            if project_name_or_id is not None:
+                project = self._get_project_schema(project_name_or_id)
+                query = query.where(
+                    UserRoleAssignmentSchema.project_id == project.id
+                )
+            if user_name_or_id is not None:
+                user = self._get_user_schema(user_name_or_id)
+                query = query.where(UserRoleAssignmentSchema.user_id == user.id)
+            assignments = session.exec(query).all()
+            return [assignment.to_model() for assignment in assignments]
+
+    def _list_team_role_assignments(
+        self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        team_name_or_id: Optional[Union[str, UUID]] = None,
+    ) -> List[RoleAssignmentModel]:
+        """List all team role assignments.
+
+        Args:
+            project_name_or_id: If provided, only return role assignments for
+                this project.
+            team_name_or_id: If provided, only list assignments for this team.
+
+        Returns:
+            A list of team role assignments.
+        """
+        with Session(self.engine) as session:
+            query = select(TeamRoleAssignmentSchema)
+            if project_name_or_id is not None:
+                project = self._get_project_schema(project_name_or_id)
+                query = query.where(
+                    TeamRoleAssignmentSchema.project_id == project.id
+                )
+            if team_name_or_id is not None:
+                team = self._get_team_schema(team_name_or_id, session=session)
+                query = query.where(TeamRoleAssignmentSchema.team_id == team.id)
+            assignments = session.exec(query).all()
+            return [assignment.to_model() for assignment in assignments]
 
     def list_role_assignments(
         self,
@@ -1218,44 +1234,125 @@ class SqlZenStore(BaseZenStore):
         """List all role assignments.
 
         Args:
-            project_name_or_id: Name or Id of the Project for the role
-                                assignment
-            team_name_or_id: If provided, only list assignments for the given team
-            user_name_or_id: If provided, only list assignments for the given user
+            project_name_or_id: If provided, only return role assignments for
+                this project.
+            team_name_or_id: If provided, only list assignments for this team.
+            user_name_or_id: If provided, only list assignments for this user.
 
         Returns:
             A list of all role assignments.
         """
-        with Session(self.engine) as session:
-            # Get user role assignments
-            query = select(UserRoleAssignmentSchema)
+        user_role_assignments = self._list_user_role_assignments(
+            project_name_or_id=project_name_or_id,
+            user_name_or_id=user_name_or_id,
+        )
+        team_role_assignments = self._list_team_role_assignments(
+            project_name_or_id=project_name_or_id,
+            team_name_or_id=team_name_or_id,
+        )
+        return user_role_assignments + team_role_assignments
 
-            if project_name_or_id is not None:
-                project = self._get_project_schema(project_name_or_id)
+    def _assign_role_to_user(
+        self,
+        role_name_or_id: Union[str, UUID],
+        user_name_or_id: Union[str, UUID],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+    ) -> None:
+        """Assigns a role to a user, potentially scoped to a specific project.
+
+        Args:
+            project_name_or_id: Optional ID of a project in which to assign the
+                role. If this is not provided, the role will be assigned
+                globally.
+            role_name_or_id: Name or ID of the role to assign.
+            user_name_or_id: Name or ID of the user to which to assign the role.
+
+        Raises:
+            EntityExistsError: If the role assignment already exists.
+        """
+        with Session(self.engine) as session:
+            role = self._get_role_schema(role_name_or_id, session=session)
+            project: Optional[ProjectSchema] = None
+            if project_name_or_id:
+                project = self._get_project_schema(
+                    project_name_or_id, session=session
+                )
+            user = self._get_user_schema(user_name_or_id, session=session)
+            query = select(UserRoleAssignmentSchema).where(
+                UserRoleAssignmentSchema.user_id == user.id,
+                UserRoleAssignmentSchema.role_id == role.id,
+            )
+            if project is not None:
                 query = query.where(
                     UserRoleAssignmentSchema.project_id == project.id
                 )
-            if user_name_or_id is not None:
-                user = self._get_user_schema(user_name_or_id)
-                query = query.where(UserRoleAssignmentSchema.user_id == user.id)
-            user_role_assignments = session.exec(query).all()
+            existing_role_assignment = session.exec(query).first()
+            if existing_role_assignment is not None:
+                raise EntityExistsError(
+                    f"Unable to assign role '{role.name}' to user "
+                    f"'{user.name}': Role already assigned in this project."
+                )
+            role_assignment = UserRoleAssignmentSchema(
+                role_id=role.id,
+                user_id=user.id,
+                project_id=project.id if project else None,
+                role=role,
+                user=user,
+                project=project,
+            )
+            session.add(role_assignment)
+            session.commit()
 
-            # Get team role assignments
-            query = select(TeamRoleAssignmentSchema)
-            if project_name_or_id is not None:
-                project = self._get_project_schema(project_name_or_id)
+    def _assign_role_to_team(
+        self,
+        role_name_or_id: Union[str, UUID],
+        team_name_or_id: Union[str, UUID],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+    ) -> None:
+        """Assigns a role to a team, potentially scoped to a specific project.
+
+        Args:
+            project_name_or_id: Optional ID of a project in which to assign the
+                role. If this is not provided, the role will be assigned
+                globally.
+            role_name_or_id: Name or ID of the role to assign.
+            team_name_or_id: Name or ID of the team to which to assign the role.
+
+        Raises:
+            EntityExistsError: If the role assignment already exists.
+        """
+        with Session(self.engine) as session:
+            role = self._get_role_schema(role_name_or_id, session=session)
+            project: Optional[ProjectSchema] = None
+            if project_name_or_id:
+                project = self._get_project_schema(
+                    project_name_or_id, session=session
+                )
+            team = self._get_team_schema(team_name_or_id, session=session)
+            query = select(TeamRoleAssignmentSchema).where(
+                TeamRoleAssignmentSchema.team_id == team.id,
+                TeamRoleAssignmentSchema.role_id == role.id,
+            )
+            if project is not None:
                 query = query.where(
                     TeamRoleAssignmentSchema.project_id == project.id
                 )
-            if team_name_or_id is not None:
-                team = self._get_team_schema(team_name_or_id)
-                query = query.where(TeamRoleAssignmentSchema.team_id == team.id)
-            team_role_assignments = session.exec(query).all()
-
-        return [
-            role_assignment.to_model()
-            for role_assignment in user_role_assignments + team_role_assignments
-        ]
+            existing_role_assignment = session.exec(query).first()
+            if existing_role_assignment is not None:
+                raise EntityExistsError(
+                    f"Unable to assign role '{role.name}' to team "
+                    f"'{team.name}': Role already assigned in this project."
+                )
+            role_assignment = TeamRoleAssignmentSchema(
+                role_id=role.id,
+                team_id=team.id,
+                project_id=project.id if project else None,
+                role=role,
+                team=team,
+                project=project,
+            )
+            session.add(role_assignment)
+            session.commit()
 
     def assign_role(
         self,
@@ -1275,79 +1372,19 @@ class SqlZenStore(BaseZenStore):
                 assign the role.
             is_user: Whether `user_or_team_name_or_id` refers to a user or a
                 team.
-
-        Raises:
-            EntityExistsError: If the role assignment already exists.
         """
-        # TODO: Check if the role assignment already exists + raise error
-        with Session(self.engine) as session:
-            role = self._get_role_schema(role_name_or_id)
-            project: Optional[ProjectSchema] = None
-            if project_name_or_id:
-                project = self._get_project_schema(project_name_or_id)
-
-            role_assignment: SQLModel
-
-            # Assign role to user
-            if is_user:
-                user = self._get_user_schema(user_or_team_name_or_id)
-
-                # Check if role assignment already exists
-                query = select(UserRoleAssignmentSchema).where(
-                    UserRoleAssignmentSchema.user_id == user.id,
-                    UserRoleAssignmentSchema.role_id == role.id,
-                )
-                if project is not None:
-                    query = query.where(
-                        UserRoleAssignmentSchema.project_id == project.id
-                    )
-
-                existing_role_assignment = session.exec(query).first()
-                if existing_role_assignment is not None:
-                    raise EntityExistsError(
-                        f"Unable to assign role '{role.name}' to user "
-                        f"'{user.name}': Role already assigned in this project."
-                    )
-                role_assignment = UserRoleAssignmentSchema(
-                    role_id=role.id,
-                    user_id=user.id,
-                    project_id=project.id if project else None,
-                    role=role,
-                    user=user,
-                    project=project,
-                )
-
-            # Assign role to team
-            else:
-                team = self._get_team_schema(user_or_team_name_or_id)
-
-                # Check if role assignment already exists
-                query = select(TeamRoleAssignmentSchema).where(
-                    TeamRoleAssignmentSchema.team_id == team.id,
-                    TeamRoleAssignmentSchema.role_id == role.id,
-                )
-                if project is not None:
-                    query = query.where(
-                        TeamRoleAssignmentSchema.project_id == project.id
-                    )
-
-                existing_role_assignment = session.exec(query).first()
-                if existing_role_assignment is not None:
-                    raise EntityExistsError(
-                        f"Unable to assign role '{role.name}' to team "
-                        f"'{team.name}': Role already assigned in this project."
-                    )
-                role_assignment = TeamRoleAssignmentSchema(
-                    role_id=role.id,
-                    team_id=team.id,
-                    project_id=project.id if project else None,
-                    role=role,
-                    team=team,
-                    project=project,
-                )
-
-            session.add(role_assignment)
-            session.commit()
+        if is_user:
+            self._assign_role_to_user(
+                role_name_or_id=role_name_or_id,
+                user_name_or_id=user_or_team_name_or_id,
+                project_name_or_id=project_name_or_id,
+            )
+        else:
+            self._assign_role_to_team(
+                role_name_or_id=role_name_or_id,
+                team_name_or_id=user_or_team_name_or_id,
+                project_name_or_id=project_name_or_id,
+            )
 
     def revoke_role(
         self,
@@ -1467,9 +1504,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The requested project if one was found.
-
-        Raises:
-            KeyError: If there is no such project.
         """
         project = self._get_project_schema(project_name_or_id)
         return project.to_model()
@@ -1496,13 +1530,12 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated project.
-
-        Raises:
-            KeyError: if the project does not exist.
         """
         with Session(self.engine) as session:
             # Check if project with the given name already exists
-            existing_project = self._get_project_schema(project_name_or_id)
+            existing_project = self._get_project_schema(
+                project_name_or_id, session=session
+            )
 
             # Update the project
             existing_project.from_update_model(project)
@@ -1518,13 +1551,12 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             project_name_or_id: Name or ID of the project to delete.
-
-        Raises:
-            KeyError: If no project with the given name exists.
         """
         with Session(self.engine) as session:
             # Check if project with the given name exists
-            project = self._get_project_schema(project_name_or_id)
+            project = self._get_project_schema(
+                project_name_or_id, session=session
+            )
 
             session.delete(project)  # TODO: cascade delete
             session.commit()
@@ -1532,166 +1564,6 @@ class SqlZenStore(BaseZenStore):
     # ------------
     # Repositories
     # ------------
-
-    # TODO: create repos?
-
-    @track(AnalyticsEvent.CONNECT_REPOSITORY)
-    def connect_project_repository(
-        self,
-        project_name_or_id: Union[str, UUID],
-        repository: CodeRepositoryModel,
-    ) -> CodeRepositoryModel:
-        """Connects a repository to a project.
-
-        Args:
-            project_name_or_id: Name or ID of the project to connect the
-                repository to.
-            repository: The repository to connect.
-
-        Returns:
-            The connected repository.
-
-        Raises:
-            KeyError: if the project or repository doesn't exist.
-        """
-        with Session(self.engine) as session:
-            # Check if project with the given name already exists
-            project = self._get_project_schema(project_name_or_id)
-
-            # Check if repository with the given name already exists
-            existing_repository = session.exec(
-                select(CodeRepositorySchema).where(
-                    CodeRepositorySchema.id == repository.id
-                )
-            ).first()
-            if existing_repository is None:
-                raise KeyError(
-                    f"Unable to connect repository with ID {repository.id} to "
-                    f"project '{project.name}': No repository with this ID found."
-                )
-
-            # Connect the repository to the project
-            existing_repository.project = project.id
-            session.add(existing_repository)
-            session.commit()
-
-            return existing_repository.to_model()
-
-    def get_repository(self, repository_id: UUID) -> CodeRepositoryModel:
-        """Get a repository by ID.
-
-        Args:
-            repository_id: The ID of the repository to get.
-
-        Returns:
-            The repository.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
-        with Session(self.engine) as session:
-            # Check if repository with the given ID exists
-            existing_repository = session.exec(
-                select(CodeRepositorySchema).where(
-                    CodeRepositorySchema.id == repository_id
-                )
-            ).first()
-            if existing_repository is None:
-                raise KeyError(
-                    f"Unable to get repository with ID {repository_id}: "
-                    "No repository with this ID found."
-                )
-
-            return existing_repository.to_model()
-
-    def list_repositories(
-        self, project_name_or_id: Union[str, UUID]
-    ) -> List[CodeRepositoryModel]:
-        """Get all repositories in the project.
-
-        Args:
-            project_name_or_id: The name or ID of the project.
-
-        Returns:
-            A list of all repositories in the project.
-
-        Raises:
-            KeyError: if the project doesn't exist.
-        """
-        with Session(self.engine) as session:
-            # Check if project with the given name already exists
-            project = self._get_project_schema(project_name_or_id)
-
-            # Get all repositories in the project
-            repositories = session.exec(
-                select(CodeRepositorySchema).where(
-                    CodeRepositorySchema.project == project.id
-                )
-            ).all()
-
-        return [repository.to_model() for repository in repositories]
-
-    @track(AnalyticsEvent.UPDATE_REPOSITORY)
-    def update_repository(
-        self, repository_id: UUID, repository: CodeRepositoryModel
-    ) -> CodeRepositoryModel:
-        """Update a repository.
-
-        Args:
-            repository_id: The ID of the repository to update.
-            repository: The repository to use for the update.
-
-        Returns:
-            The updated repository.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
-        with Session(self.engine) as session:
-            # Check if repository with the given ID exists
-            existing_repository = session.exec(
-                select(CodeRepositorySchema).where(
-                    CodeRepositorySchema.id == repository_id
-                )
-            ).first()
-            if existing_repository is None:
-                raise KeyError(
-                    f"Unable to update repository with ID {repository_id}: "
-                    "No repository with this ID found."
-                )
-
-            # Update the repository
-            existing_repository.from_update_model(repository)
-            session.add(existing_repository)
-            session.commit()
-
-            return existing_repository.to_model()
-
-    @track(AnalyticsEvent.DELETE_REPOSITORY)
-    def delete_repository(self, repository_id: UUID) -> None:
-        """Delete a repository.
-
-        Args:
-            repository_id: The ID of the repository to delete.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
-        with Session(self.engine) as session:
-            # Check if repository with the given ID exists
-            existing_repository = session.exec(
-                select(CodeRepositorySchema).where(
-                    CodeRepositorySchema.id == repository_id
-                )
-            ).first()
-            if existing_repository is None:
-                raise KeyError(
-                    f"Unable to delete repository with ID {repository_id}: "
-                    "No repository with this ID found."
-                )
-
-            session.delete(existing_repository)  # TODO: handle dependencies
-            session.commit()
 
     # ---------
     # Pipelines
@@ -1716,7 +1588,6 @@ class SqlZenStore(BaseZenStore):
             The newly created pipeline.
 
         Raises:
-            KeyError: if the project does not exist.
             EntityExistsError: If an identical pipeline already exists.
         """
         with Session(self.engine) as session:
@@ -1822,9 +1693,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             A list of pipelines.
-
-        Raises:
-            KeyError: if the project does not exist.
         """
         with Session(self.engine) as session:
             # Check if project with the given name exists
@@ -1930,6 +1798,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             EntityExistsError: If an identical pipeline run already exists.
+            KeyError: If the pipeline does not exist.
         """
         with Session(self.engine) as session:
             # Check if pipeline run already exists
@@ -2051,7 +1920,6 @@ class SqlZenStore(BaseZenStore):
         self,
         run_id: UUID,
         component_id: Optional[str] = None,
-        component_type: Optional[StackComponentType] = None,
     ) -> Dict[str, Any]:
         """Gets the side effects for a component in a pipeline run.
 
@@ -2202,6 +2070,9 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             A dict mapping artifact names to the output artifacts for the step.
+
+        Raises:
+            KeyError: if the step doesn't exist.
         """
         with Session(self.engine) as session:
             step = session.exec(
@@ -2229,6 +2100,9 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             A dict mapping artifact names to the input artifacts for the step.
+
+        Raises:
+            KeyError: if the step doesn't exist.
         """
         with Session(self.engine) as session:
             step = session.exec(
@@ -2287,6 +2161,7 @@ class SqlZenStore(BaseZenStore):
         object_name_or_id: Union[str, UUID],
         schema_class: Type[SQLModel],
         schema_name: str,
+        session: Optional[Session] = None,
     ) -> SQLModel:
         """Query a schema by its 'name' or 'id' field.
 
@@ -2315,14 +2190,23 @@ class SqlZenStore(BaseZenStore):
                 f"'{object_name_or_id}': '{object_name_or_id}' is not a valid "
                 f" UUID and no {schema_name} with this name exists."
             )
-        with Session(self.engine) as session:
+        session = session or Session(self.engine)
+        if session is None:
+            with Session(self.engine):
+                schema = session.exec(
+                    select(schema_class).where(filter)
+                ).first()
+        else:
             schema = session.exec(select(schema_class).where(filter)).first()
-            if schema is None:
-                raise KeyError(error_msg)
-            return schema
+
+        if schema is None:
+            raise KeyError(error_msg)
+        return schema
 
     def _get_project_schema(
-        self, project_name_or_id: Union[str, UUID]
+        self,
+        project_name_or_id: Union[str, UUID],
+        session: Optional[Session] = None,
     ) -> ProjectSchema:
         """Gets a project schema by name or ID.
 
@@ -2334,9 +2218,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The project schema.
-
-        Raises:
-            KeyError: if the project doesn't exist.
         """
         return cast(
             ProjectSchema,
@@ -2344,10 +2225,15 @@ class SqlZenStore(BaseZenStore):
                 object_name_or_id=project_name_or_id,
                 schema_class=ProjectSchema,
                 schema_name="project",
+                session=session,
             ),
         )
 
-    def _get_user_schema(self, user_name_or_id: Union[str, UUID]) -> UserSchema:
+    def _get_user_schema(
+        self,
+        user_name_or_id: Union[str, UUID],
+        session: Optional[Session] = None,
+    ) -> UserSchema:
         """Gets a user schema by name or ID.
 
         This is a helper method that is used in various places to find the
@@ -2358,9 +2244,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The user schema.
-
-        Raises:
-            KeyError: if the user doesn't exist.
         """
         return cast(
             UserSchema,
@@ -2368,10 +2251,15 @@ class SqlZenStore(BaseZenStore):
                 object_name_or_id=user_name_or_id,
                 schema_class=UserSchema,
                 schema_name="user",
+                session=session,
             ),
         )
 
-    def _get_team_schema(self, team_name_or_id: Union[str, UUID]) -> TeamSchema:
+    def _get_team_schema(
+        self,
+        team_name_or_id: Union[str, UUID],
+        session: Optional[Session] = None,
+    ) -> TeamSchema:
         """Gets a team schema by name or ID.
 
         This is a helper method that is used in various places to find a team
@@ -2382,9 +2270,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The team schema.
-
-        Raises:
-            KeyError: if the team doesn't exist.
         """
         return cast(
             TeamSchema,
@@ -2392,10 +2277,15 @@ class SqlZenStore(BaseZenStore):
                 object_name_or_id=team_name_or_id,
                 schema_class=TeamSchema,
                 schema_name="team",
+                session=session,
             ),
         )
 
-    def _get_role_schema(self, role_name_or_id: Union[str, UUID]) -> RoleSchema:
+    def _get_role_schema(
+        self,
+        role_name_or_id: Union[str, UUID],
+        session: Optional[Session] = None,
+    ) -> RoleSchema:
         """Gets a role schema by name or ID.
 
         This is a helper method that is used in various places to find a role
@@ -2406,9 +2296,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The role schema.
-
-        Raises:
-            KeyError: if the role doesn't exist.
         """
         return cast(
             RoleSchema,
@@ -2416,6 +2303,7 @@ class SqlZenStore(BaseZenStore):
                 object_name_or_id=role_name_or_id,
                 schema_class=RoleSchema,
                 schema_name="role",
+                session=session,
             ),
         )
 
@@ -2429,6 +2317,9 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The ZenML step ID.
+
+        Raises:
+            KeyError: if the step couldn't be found.
         """
         with Session(self.engine) as session:
             step = session.exec(
@@ -2449,6 +2340,9 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The ZenML artifact ID.
+
+        Raises:
+            KeyError: if the artifact couldn't be found.
         """
         with Session(self.engine) as session:
             artifact = session.exec(
@@ -2465,8 +2359,8 @@ class SqlZenStore(BaseZenStore):
         """Sync runs from the database with those registered in MLMD."""
         # Get all runs from ZenML.
         with Session(self.engine) as session:
-            zenml_runs = session.exec(select(PipelineRunSchema)).all()
-        zenml_runs = {run.name: run.to_model() for run in zenml_runs}
+            zenml_runs_list = session.exec(select(PipelineRunSchema)).all()
+        zenml_runs = {run.name: run.to_model() for run in zenml_runs_list}
 
         # Get all runs from MLMD.
         mlmd_runs = self.metadata_store.get_all_runs()
@@ -2476,7 +2370,8 @@ class SqlZenStore(BaseZenStore):
             # If the run is in MLMD but not in ZenML, we create it
             if run_name not in zenml_runs:
                 new_run = PipelineRunModel(name=run_name, mlmd_id=mlmd_id)
-                new_run = self._create_run(new_run)
+                new_run = self.create_run(new_run)
+                assert new_run.id is not None
                 self._sync_run_steps(new_run.id)
                 continue
 
@@ -2484,6 +2379,7 @@ class SqlZenStore(BaseZenStore):
             existing_run = zenml_runs[run_name]
             if not existing_run.mlmd_id:
                 existing_run.mlmd_id = mlmd_id
+                assert existing_run.id is not None
                 self._update_run(run_id=existing_run.id, run=existing_run)
                 self._sync_run_steps(existing_run.id)
 
@@ -2495,6 +2391,9 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             run_id: The ID of the pipeline run to sync steps for.
+
+        Raises:
+            KeyError: if the run couldn't be found.
         """
         # Get all steps from ZenML.
         with Session(self.engine) as session:
@@ -2506,13 +2405,13 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to sync run steps for run with ID {run_id}: "
                     f"No run with this ID found."
                 )
-            zenml_steps = session.exec(
+            zenml_steps_list = session.exec(
                 select(StepRunSchema).where(
                     StepRunSchema.pipeline_run_id == run_id
                 )
             ).all()
         zenml_steps = {
-            step.name: self.get_run_step(step.id) for step in zenml_steps
+            step.name: self.get_run_step(step.id) for step in zenml_steps_list
         }
 
         # Get all steps from MLMD.
@@ -2531,6 +2430,8 @@ class SqlZenStore(BaseZenStore):
 
         # Save parent step IDs into the database.
         for step in zenml_steps.values():
+            assert step.id is not None
+            assert step.parent_step_ids is not None
             for parent_step_id in step.parent_step_ids:
                 self._set_parent_step(
                     child_id=step.id, parent_id=parent_step_id
@@ -2538,9 +2439,10 @@ class SqlZenStore(BaseZenStore):
 
         # Sync Artifacts
         for step in zenml_steps.values():
+            assert step.id is not None
             self._sync_run_step_artifacts(step.id)
 
-    def _sync_run_step_artifacts(self, run_step_id: UUID):
+    def _sync_run_step_artifacts(self, run_step_id: UUID) -> None:
         """Sync run step artifacts from MLMD into the database.
 
         Since we do not allow to create artifacts in the database directly, this
@@ -2622,6 +2524,10 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The created step.
+
+        Raises:
+            EntityExistsError: if the step already exists.
+            KeyError: if the pipeline run doesn't exist.
         """
         with Session(self.engine) as session:
 
@@ -2667,6 +2573,7 @@ class SqlZenStore(BaseZenStore):
             session.add(step_schema)
             session.commit()
 
+            assert step.parent_step_ids is not None
             return step_schema.to_model(
                 parent_step_ids=step.parent_step_ids,
                 mlmd_parent_step_ids=step.mlmd_parent_step_ids,
@@ -2676,8 +2583,8 @@ class SqlZenStore(BaseZenStore):
         """Sets the parent step for a step.
 
         Args:
-            child_step_id: The ID of the child step to set the parent for.
-            parent_step_id: The ID of the parent step to set.
+            child_id: The ID of the child step to set the parent for.
+            parent_id: The ID of the parent step to set a child for.
 
         Raises:
             KeyError: if the child step or parent step doesn't exist.
@@ -2722,6 +2629,9 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The created artifact.
+
+        Raises:
+            KeyError: if the step doesn't exist.
         """
         with Session(self.engine) as session:
 

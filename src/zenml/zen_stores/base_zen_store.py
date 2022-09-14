@@ -184,6 +184,8 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         except KeyError:
             default_user = self._create_default_user()
         try:
+            assert default_project.id is not None
+            assert default_user.id is not None
             self._get_default_stack(
                 project_name_or_id=default_project.id,
                 user_name_or_id=default_user.id,
@@ -234,7 +236,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         Returns:
             A tuple containing the active project and active stack.
         """
-
         active_project: ProjectModel
 
         # Ensure that the current active project is still valid
@@ -284,6 +285,8 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             # If no active stack is set, use the default stack in the project
             # (create one if one is not yet created).
             try:
+                assert active_project.id is not None
+                assert self.active_user.id is not None
                 active_stack = self._get_default_stack(
                     project_name_or_id=active_project.id,
                     user_name_or_id=self.active_user.id,
@@ -306,8 +309,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         project_name_or_id: Union[str, UUID],
         user_name_or_id: Union[str, UUID],
     ) -> FullStackModel:
-        """Construct and register the default stack components and the stack
-        for a user in a project.
+        """Construct and register the default stack components and stack.
 
         The default stack contains a local orchestrator and a local artifact
         store.
@@ -316,6 +318,9 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             project_name_or_id: Name or ID of the project to which the stack
                 belongs.
             user_name_or_id: The name or ID of the user that owns the stack.
+
+        Returns:
+            The model of the registered default stack.
 
         Raises:
             StackExistsError: If a default stack is already registered for the
@@ -447,7 +452,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         Returns:
             List of stack component flavors.
         """
-
         # List all the flavors of the component type
         zenml_flavors = [
             f
@@ -589,9 +593,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
 
         Returns:
             The pipeline configuration.
-
-        Raises:
-            KeyError: if the pipeline doesn't exist.
         """
         return self.get_pipeline(pipeline_id).configuration
 
@@ -610,9 +611,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
 
         Returns:
             The runtime configuration for the pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
         """
         run = self.get_run(run_id)
         return run.runtime_configuration

@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""User management models implementation."""
+"""Model definitions for users, teams, and roles."""
 
 from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional

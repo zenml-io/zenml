@@ -14,6 +14,8 @@
 """CLI functionality to interact with pipelines."""
 
 
+from uuid import UUID
+
 import click
 
 from zenml.cli import utils as cli_utils
@@ -74,14 +76,16 @@ def delete_pipeline(pipeline_name_or_id: str) -> None:
         pipeline_name_or_id: The name or ID of the pipeline to delete.
     """
     cli_utils.print_active_config()
+    active_project_id = Repository().active_project.id
+    assert active_project_id is not None
     try:
         repo = Repository()
         if is_valid_uuid(pipeline_name_or_id):
-            pipeline = repo.zen_store.get_pipeline(pipeline_name_or_id)
+            pipeline = repo.zen_store.get_pipeline(UUID(pipeline_name_or_id))
         else:
             pipeline = repo.zen_store.get_pipeline_in_project(
                 pipeline_name=pipeline_name_or_id,
-                project_name_or_id=repo.active_project.id,
+                project_name_or_id=active_project_id,
             )
     except KeyError as err:
         cli_utils.error(str(err))
@@ -90,5 +94,6 @@ def delete_pipeline(pipeline_name_or_id: str) -> None:
         "This will change all existing runs of this pipeline to become "
         "unlisted."
     )
+    assert pipeline.id is not None
     Repository().zen_store.delete_pipeline(pipeline_id=pipeline.id)
     cli_utils.declare(f"Deleted pipeline '{pipeline_name_or_id}'.")

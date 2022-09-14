@@ -89,6 +89,7 @@ class Stack:
         # noqa: DAR402
 
         Args:
+            id: Unique ID of the stack.
             name: Name of the stack.
             orchestrator: Orchestrator component of the stack.
             artifact_store: Artifact store component of the stack.
@@ -121,12 +122,13 @@ class Stack:
 
     @classmethod
     def from_model(cls, stack_model: HydratedStackModel) -> "Stack":
-        """Creates the corresponding Stack instance from the StackModel.
+        """Creates a Stack instance from a StackModel.
 
         Args:
-            stack_model: An instance of a StackModel
+            stack_model: The StackModel to create the Stack from.
+
         Returns:
-            the corresponding Stack instance
+            The created Stack instance.
         """
         stack_components = {
             type_: model[0].to_component()
@@ -150,6 +152,7 @@ class Stack:
         # noqa: DAR402
 
         Args:
+            id: Unique ID of the stack.
             name: The name of the stack.
             components: The components of the stack.
 
@@ -294,7 +297,7 @@ class Stack:
         }
 
     @property
-    def id(self) -> str:
+    def id(self) -> UUID:
         """The ID of the stack.
 
         Returns:
@@ -579,18 +582,12 @@ class Stack:
         be met:
         - the `StackValidator` of each stack component has to validate the
             stack to make sure all the components are compatible with each other
-        - the stack must either have a properly associated artifact/metadata
-            store pair or reset the association.
         - the required secrets of all components need to exist
 
         Args:
             fail_if_secrets_missing: If this is `True`, an error will be raised
                 if a secret for a component is missing. Otherwise, only a
                 warning will be logged.
-
-        Raises:
-            StackValidationError: If the artifact store and the metadata store
-                are not properly associated.
         """
         for component in self.components.values():
             if component.validator:
@@ -598,7 +595,11 @@ class Stack:
 
         self._validate_secrets(raise_exception=fail_if_secrets_missing)
 
-    def prepare_pipeline_run(self, pipeline, runtime_configuration):
+    def prepare_pipeline_run(
+        self,
+        pipeline: "BasePipeline",
+        runtime_configuration: "RuntimeConfiguration",
+    ) -> None:
         """Prepares the stack for a pipeline run.
 
         This method is called before a pipeline run is executed.

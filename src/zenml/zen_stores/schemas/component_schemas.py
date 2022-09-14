@@ -56,11 +56,15 @@ class StackComponentSchema(SQLModel, table=True):
     def from_create_model(
         cls, user_id: UUID, project_id: UUID, component: ComponentModel
     ) -> "StackComponentSchema":
-        """Create a StackComponentSchema with `id` and `created_at` missing.
+        """Create a `StackComponentSchema` with `id` and `created_at` missing.
 
+        Args:
+            user_id: The ID of the user creating the component.
+            project_id: The ID of the project the component belongs to.
+            component: The component model from which to create the schema.
 
         Returns:
-            A StackComponentSchema
+            The created `StackComponentSchema`.
         """
         return cls(
             name=component.name,
@@ -78,10 +82,13 @@ class StackComponentSchema(SQLModel, table=True):
         self,
         component: ComponentModel,
     ) -> "StackComponentSchema":
-        """Update the updatable fields on an existing StackSchema.
+        """Update the updatable fields on an existing `StackSchema`.
+
+        Args:
+            component: The component model from which to update the schema.
 
         Returns:
-            A StackSchema
+            A `StackSchema`
         """
         self.name = component.name
         self.is_shared = component.is_shared
@@ -91,10 +98,10 @@ class StackComponentSchema(SQLModel, table=True):
         return self
 
     def to_model(self) -> "ComponentModel":
-        """Creates a ComponentModel from an instance of a StackSchema.
+        """Creates a `ComponentModel` from an instance of a `StackSchema`.
 
         Returns:
-            A ComponentModel
+            A `ComponentModel`
         """
         return ComponentModel(
             id=self.id,

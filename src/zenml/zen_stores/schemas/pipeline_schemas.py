@@ -33,7 +33,6 @@ class PipelineSchema(SQLModel, table=True):
     name: str
 
     project: UUID = Field(foreign_key="projectschema.id")
-    # repository_id: UUID = Field(foreign_key="coderepositoryschema.id")
     user: UUID = Field(foreign_key="userschema.id")
 
     docstring: Optional[str] = Field(nullable=True)
@@ -52,6 +51,14 @@ class PipelineSchema(SQLModel, table=True):
         project_id: UUID,
         pipeline: PipelineModel
     ) -> "PipelineSchema":
+        """Create a `PipelineSchema` from a `PipelineModel`.
+
+        Args:
+            model: The `PipelineModel` to create the schema from.
+
+        Returns:
+            The created `PipelineSchema`.
+        """
         return cls(
             name=pipeline.name,
             project_id=project_id,
@@ -61,12 +68,25 @@ class PipelineSchema(SQLModel, table=True):
         )
 
     def from_update_model(self, model: PipelineModel) -> "PipelineSchema":
+        """Update a `PipelineSchema` from a PipelineModel.
+
+        Args:
+            model: The `PipelineModel` to update the schema from.
+
+        Returns:
+            The updated `PipelineSchema`.
+        """
         self.name = model.name
         self.docstring = model.docstring
         # TODO: [server] verify that the
         return self
 
     def to_model(self) -> "PipelineModel":
+        """Convert a `PipelineSchema` to a `PipelineModel`.
+
+        Returns:
+            The created PipelineModel.
+        """
         return PipelineModel(
             id=self.id,
             name=self.name,
@@ -109,6 +129,15 @@ class PipelineRunSchema(SQLModel, table=True):
         model: PipelineRunModel,
         pipeline: Optional[PipelineSchema] = None,
     ) -> "PipelineRunSchema":
+        """Create a `PipelineRunSchema` from a `PipelineRunModel`.
+
+        Args:
+            model: The `PipelineRunModel` to create the schema from.
+            pipeline: The `PipelineSchema` to link to the run.
+
+        Returns:
+            The created `PipelineRunSchema`.
+        """
         return cls(
             name=model.name,
             stack_id=model.stack_id,
@@ -122,21 +151,39 @@ class PipelineRunSchema(SQLModel, table=True):
         )
 
     def from_update_model(self, model: PipelineRunModel) -> "PipelineRunSchema":
+        """Update a `PipelineRunSchema` from a `PipelineRunModel`.
+
+        Args:
+            model: The `PipelineRunModel` to update the schema from.
+
+        Returns:
+            The updated `PipelineRunSchema`.
+        """
         self.name = model.name
         self.runtime_configuration = json.dumps(model.runtime_configuration)
         self.git_sha = model.git_sha
+        assert model.zenml_version is not None
         self.zenml_version = model.zenml_version
+        assert model.mlmd_id is not None
         self.mlmd_id = model.mlmd_id
         return self
 
     def to_model(self) -> PipelineRunModel:
+        """Convert a `PipelineRunSchema` to a `PipelineRunModel`.
+
+        Returns:
+            The created `PipelineRunModel`.
+        """
+        config = self.runtime_configuration
+        if config is not None:
+            config = json.loads(config)
         return PipelineRunModel(
             id=self.id,
             name=self.name,
             stack_id=self.stack_id,
             owner=self.user,
             pipeline_id=self.pipeline_id,
-            runtime_configuration=json.loads(self.runtime_configuration),
+            runtime_configuration=config,
             git_sha=self.git_sha,
             zenml_version=self.zenml_version,
             created_at=self.creation_date,
@@ -160,6 +207,15 @@ class StepRunSchema(SQLModel, table=True):
 
     @classmethod
     def from_create_model(cls, model: StepRunModel) -> "StepRunSchema":
+        """Create a `StepRunSchema` from a `StepRunModel`.
+
+        Args:
+            model: The `StepRunModel` to create the schema from.
+
+        Returns:
+            The created `StepRunSchema`.
+
+        """
         return cls(
             name=model.name,
             pipeline_run_id=model.pipeline_run_id,
@@ -172,6 +228,15 @@ class StepRunSchema(SQLModel, table=True):
     def to_model(
         self, parent_step_ids: List[UUID], mlmd_parent_step_ids: List[int]
     ) -> StepRunModel:
+        """Convert a `StepRunSchema` to a `StepRunModel`.
+
+        Args:
+            parent_step_ids: The parent step ids to link to the step.
+            mlmd_parent_step_ids: The parent step ids in MLMD.
+
+        Returns:
+            The created StepRunModel.
+        """
         return StepRunModel(
             id=self.id,
             name=self.name,
@@ -213,6 +278,14 @@ class ArtifactSchema(SQLModel, table=True):
 
     @classmethod
     def from_create_model(cls, model: ArtifactModel) -> "ArtifactSchema":
+        """Create an `ArtifactSchema` from an `ArtifactModel`.
+
+        Args:
+            model: The `ArtifactModel` to create the schema from.
+
+        Returns:
+            The created `ArtifactSchema`.
+        """
         return cls(
             name=model.name,
             parent_step_id=model.parent_step_id,
@@ -228,6 +301,11 @@ class ArtifactSchema(SQLModel, table=True):
         )
 
     def to_model(self) -> ArtifactModel:
+        """Convert an `ArtifactSchema` to an `ArtifactModel`.
+
+        Returns:
+            The created `ArtifactModel`.
+        """
         return ArtifactModel(
             id=self.id,
             name=self.name,

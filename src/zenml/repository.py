@@ -268,7 +268,6 @@ class Repository(metaclass=RepositoryMetaClass):
         doesn't contain outdated information, such as an active stack or
         project that no longer exists.
         """
-
         if not self._config:
             return
 
@@ -394,10 +393,10 @@ class Repository(metaclass=RepositoryMetaClass):
         """Set the project for the local repository.
 
         Args:
-            project_name: The project name to set as active.
+            project_name_or_id: The name or ID of the project to set active.
 
         Returns:
-            The active project.
+            The model of the active project.
         """
         project = self.zen_store.get_project(
             project_name_or_id=project_name_or_id
@@ -535,7 +534,7 @@ class Repository(metaclass=RepositoryMetaClass):
         Returns:
             The model of the active stack for this repository.
 
-        Raise:
+        Raises:
             RuntimeError: If the active stack is not set.
         """
         stack_id = None
@@ -582,7 +581,7 @@ class Repository(metaclass=RepositoryMetaClass):
     def get_stack_by_name(
         self, name: str, is_shared: bool = False
     ) -> "FullStackModel":
-        """Fetches a stack by name within the active project
+        """Fetches a stack by name within the active project.
 
         Args:
             name: The name of the stack to fetch.
@@ -590,6 +589,10 @@ class Repository(metaclass=RepositoryMetaClass):
 
         Returns:
             The stack with the given name.
+
+        Raises:
+            KeyError: If no stack with the given name exists.
+            RuntimeError: If multiple stacks with the given name exist.
         """
         if is_shared:
             stacks = self.zen_store.list_stacks(
@@ -622,6 +625,12 @@ class Repository(metaclass=RepositoryMetaClass):
 
         Args:
             stack: The stack to register.
+
+        Returns:
+            The model of the registered stack.
+
+        Raises:
+            RuntimeError: If the stack configuration is invalid.
         """
         # TODO: [server] make sure the stack can be validated here
         if stack.is_valid:
@@ -643,8 +652,12 @@ class Repository(metaclass=RepositoryMetaClass):
 
         Args:
             stack: The new stack to use as the updated version.
+
+        Raises:
+            RuntimeError: If the stack configuration is invalid.
         """
         if stack.is_valid:
+            assert stack.id is not None
             self.zen_store.update_stack(stack_id=stack.id, stack=stack)
         else:
             raise RuntimeError(
@@ -669,6 +682,7 @@ class Repository(metaclass=RepositoryMetaClass):
             )
 
         try:
+            assert stack.id is not None
             self.zen_store.delete_stack(stack_id=stack.id)
             logger.info("Deregistered stack with name '%s'.", stack.name)
         except KeyError:
@@ -687,6 +701,7 @@ class Repository(metaclass=RepositoryMetaClass):
         Args:
             component: The new component to update with.
         """
+        assert component.id is not None
         self.zen_store.update_stack_component(
             component_id=component.id, component=component
         )
@@ -709,7 +724,7 @@ class Repository(metaclass=RepositoryMetaClass):
     def get_stack_component_by_name_and_type(
         self, type: "StackComponentType", name: str, is_shared: bool = False
     ) -> "ComponentModel":
-        """Fetches a stack by name within the active stack
+        """Fetches a stack component by name and type within the active stack.
 
         Args:
             type: The type of the stack component
@@ -717,7 +732,12 @@ class Repository(metaclass=RepositoryMetaClass):
             is_shared: Boolean whether to get a shared stack or a private stack
 
         Returns:
-            The stack with the given name.
+            The stack component with the given name and type.
+
+        Raises:
+            KeyError: If no stack component with the given name and type exists.
+            RuntimeError: If multiple stack components with the given name and
+                type exist.
         """
         if is_shared:
             components = self.zen_store.list_stack_components(
@@ -791,9 +811,10 @@ class Repository(metaclass=RepositoryMetaClass):
         """Deregisters a stack component.
 
         Args:
-            id: The id of the component to deregister.
+            stack_component: The component to deregister.
         """
         try:
+            assert stack_component.id is not None
             self.zen_store.delete_stack_component(
                 component_id=stack_component.id
             )
@@ -874,8 +895,7 @@ class Repository(metaclass=RepositoryMetaClass):
             )
 
         def _find_repo_helper(path_: Path) -> Optional[Path]:
-            """Helper function to recursively search parent directories for a
-            ZenML repository.
+            """Recursively search parent directories for a ZenML repository.
 
             Args:
                 path_: The path to search.
@@ -955,7 +975,7 @@ class Repository(metaclass=RepositoryMetaClass):
         return flavor_wrapper.to_flavor()
 
     def _register_pipeline(
-        self, pipeline_name: str, pipeline_configuration: str
+        self, pipeline_name: str, pipeline_configuration: Dict[str, str]
     ) -> UUID:
         """Registers a pipeline in the ZenStore within the active project.
 
@@ -972,8 +992,8 @@ class Repository(metaclass=RepositoryMetaClass):
             The id of the existing or newly registered pipeline.
 
         Raises:
-            AlreadyExistsError: If there is an existing pipeline in the project
-                with the same name but a different configuration.
+            AlreadyExistsException: If there is an existing pipeline in the
+                project with the same name but a different configuration.
         """
         try:
             existing_pipeline = self.zen_store.get_pipeline_in_project(
@@ -993,11 +1013,13 @@ class Repository(metaclass=RepositoryMetaClass):
                 pipeline=pipeline
             )
             logger.info(f"Registered new pipeline with name {pipeline.name}.")
+            assert pipeline.id is not None
             return pipeline.id
 
         # B) If a pipeline exists that has the same config, use that pipeline.
         if pipeline_configuration == existing_pipeline.configuration:
             logger.debug("Did not register pipeline since it already exists.")
+            assert existing_pipeline.id is not None
             return existing_pipeline.id
 
         # C) If a pipeline with different config exists, raise an error.
@@ -1060,6 +1082,9 @@ class Repository(metaclass=RepositoryMetaClass):
 
         Args:
             user_name_or_id: The name or ID of the user to delete.
+
+        Raises:
+            IllegalOperationError: If the user to delete is the active user.
         """
         user = self.zen_store.get_user(user_name_or_id)
         if self.zen_store.active_user_name == user.name:
@@ -1074,6 +1099,10 @@ class Repository(metaclass=RepositoryMetaClass):
 
         Args:
             project_name_or_id: The name or ID of the project to delete.
+
+        Raises:
+            IllegalOperationError: If the project to delete is the active
+                project.
         """
         project = self.zen_store.get_project(project_name_or_id)
         if self.active_project_name == project.name:

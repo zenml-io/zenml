@@ -472,10 +472,9 @@ def revoke_role(
     # Revoke the role from teams
     for team_name_or_id in team_names_or_ids:
         try:
-            team = Repository().zen_store.get_team(team_name_or_id)
             Repository().zen_store.revoke_role(
                 role_name_or_id=role_name_or_id,
-                user_or_team_name_or_id=team.id,
+                user_or_team_name_or_id=team_name_or_id,
                 is_user=False,
                 project_name_or_id=project_name_or_id,
             )
