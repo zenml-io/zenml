@@ -21,7 +21,7 @@ from pydantic import BaseModel, SecretStr
 from zenml.models.user_management_models import UserModel
 
 
-class UserCreateRequest(BaseModel):
+class CreateUserModel(BaseModel):
     """Pydantic object representing a user create request.
 
     Attributes:
@@ -43,7 +43,7 @@ class UserCreateRequest(BaseModel):
         )
 
 
-class UserCreateResponse(UserModel):
+class CreateUserResponse(UserModel):
     """Pydantic object representing a user create response.
 
     The activation token is included in the response.
@@ -52,14 +52,14 @@ class UserCreateResponse(UserModel):
     activation_token: Optional[str] = None
 
     @classmethod
-    def from_model(cls, user: UserModel) -> "UserCreateResponse":
+    def from_model(cls, user: UserModel) -> "CreateUserResponse":
         """Convert from a user model."""
         response = cls(**user.dict())
         response.activation_token = user.get_activation_token()
         return response
 
 
-class UserUpdateRequest(BaseModel):
+class UpdateUserRequest(BaseModel):
     """Pydantic object representing a user update request.
 
     Attributes:
@@ -83,7 +83,7 @@ class UserUpdateRequest(BaseModel):
         return user
 
 
-class UserActivateRequest(BaseModel):
+class ActivateUserRequest(BaseModel):
     """Pydantic object representing a user activation request.
 
     Attributes:
@@ -110,8 +110,8 @@ class UserActivateRequest(BaseModel):
         return user
 
 
-class UserActivationTokenResponse(BaseModel):
-    """Pydantic object representing a user activation token.
+class DeactivateUserResponse(BaseModel):
+    """Pydantic object representing a user deactivation response.
 
     Attributes:
         activation_token: Activation token for the user account.
@@ -120,7 +120,7 @@ class UserActivationTokenResponse(BaseModel):
     activation_token: str
 
     @classmethod
-    def from_model(cls, user: UserModel) -> "UserActivationTokenResponse":
+    def from_model(cls, user: UserModel) -> "DeactivateUserResponse":
         """Convert from a user model."""
         response = cls(activation_token=user.get_activation_token())
         return response

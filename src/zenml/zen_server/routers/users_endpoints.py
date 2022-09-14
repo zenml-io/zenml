@@ -31,11 +31,11 @@ from zenml.utils.uuid_utils import (
 )
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.models.user_management_models import (
-    UserActivateRequest,
-    UserActivationTokenResponse,
-    UserCreateRequest,
-    UserCreateResponse,
-    UserUpdateRequest,
+    ActivateUserRequest,
+    DeactivateUserResponse,
+    CreateUserModel,
+    CreateUserResponse,
+    UpdateUserRequest,
 )
 from zenml.zen_server.utils import (
     conflict,
@@ -90,10 +90,10 @@ async def list_users() -> List[UserModel]:
 
 @router.post(
     "/",
-    response_model=UserCreateResponse,
+    response_model=CreateUserResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-async def create_user(user: UserCreateRequest) -> UserCreateResponse:
+async def create_user(user: CreateUserModel) -> CreateUserResponse:
     """Creates a user.
 
     # noqa: DAR401
@@ -122,7 +122,7 @@ async def create_user(user: UserCreateRequest) -> UserCreateResponse:
         else:
             user_model.active = True
             user_model.hash_password()
-        return UserCreateResponse.from_model(zen_store.create_user(user_model))
+        return CreateUserResponse.from_model(zen_store.create_user(user_model))
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
@@ -171,7 +171,7 @@ async def get_user(user_name_or_id: str) -> UserModel:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def update_user(
-    user_name_or_id: str, user: UserUpdateRequest
+    user_name_or_id: str, user: UpdateUserRequest
 ) -> UserModel:
     """Updates a specific user.
 
@@ -210,7 +210,7 @@ async def update_user(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def activate_user(
-    user_name_or_id: str, user: UserActivateRequest
+    user_name_or_id: str, user: ActivateUserRequest
 ) -> UserModel:
     """Activates a specific user.
 
@@ -246,12 +246,10 @@ async def activate_user(
 
 @router.put(
     "/{user_name_or_id}" + DEACTIVATE,
-    response_model=UserActivationTokenResponse,
+    response_model=DeactivateUserResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def deactivate_user(
-    user_name_or_id: str
-) -> UserModel:
+async def deactivate_user(user_name_or_id: str) -> UserModel:
     """Deactivates a user and generates a new activation token for it.
 
     Args:
@@ -272,7 +270,7 @@ async def deactivate_user(
         user = zen_store.update_user(
             user_name_or_id=parse_name_or_uuid(user_name_or_id), user=user
         )
-        return UserActivationTokenResponse.from_model(user)
+        return DeactivateUserResponse.from_model(user)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
@@ -340,6 +338,7 @@ async def get_role_assignments_for_user(
         raise HTTPException(status_code=401, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
+
 
 @router.post(
     "/{user_name_or_id}" + ROLES,
