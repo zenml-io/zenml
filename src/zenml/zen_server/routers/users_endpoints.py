@@ -15,7 +15,7 @@
 
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from zenml.constants import ACTIVATE, DEACTIVATE, ROLES, USERS, VERSION_1
 from zenml.exceptions import (
@@ -29,7 +29,7 @@ from zenml.utils.uuid_utils import (
     parse_name_or_uuid,
     parse_optional_name_or_uuid,
 )
-from zenml.zen_server.auth import authorize
+from zenml.zen_server.auth import authenticate_credentials, authorize
 from zenml.zen_server.models.user_management_models import (
     ActivateUserRequest,
     DeactivateUserResponse,
@@ -113,16 +113,22 @@ async def create_user(user: CreateUserModel) -> CreateUserResponse:
         # Two ways of creating a new user:
         # 1. Create a new user with a password and have it immediately active
         # 2. Create a new user without a password and have it activated at a
-        # time with an activation token
+        # later time with an activation token
 
         user_model = user.to_model()
+        token: Optional[str] = None
         if user.password is None:
             user_model.active = False
-            user_model.generate_activation_token()
+            token = user_model.generate_activation_token()
+            user_model.hash_activation_token()
         else:
             user_model.active = True
             user_model.hash_password()
-        return CreateUserResponse.from_model(zen_store.create_user(user_model))
+        new_user = zen_store.create_user(user_model)
+        # add back the original un-hashed activation token, if generated, to
+        # send it back to the client
+        new_user.activation_token = token
+        return CreateUserResponse.from_model(new_user)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
@@ -227,10 +233,17 @@ async def activate_user(
         422 error: when unable to validate input
     """
     try:
-        existing_user = zen_store.get_user(parse_name_or_uuid(user_name_or_id))
-        user_model = user.to_model(user=existing_user)
+        auth_context = authenticate_credentials(
+            user_name_or_id=parse_name_or_uuid(user_name_or_id),
+            activation_token=user.activation_token.get_secret_value(),
+        )
+        if auth_context is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication credentials",
+            )
+        user_model = user.to_model(user=auth_context.user)
         user_model.hash_password()
-        user_model.verify_activation_token(user.activation_token)
         user_model.active = True
         user_model.activation_token = None
         return zen_store.update_user(
@@ -266,10 +279,14 @@ async def deactivate_user(user_name_or_id: str) -> UserModel:
     try:
         user = zen_store.get_user(parse_name_or_uuid(user_name_or_id))
         user.active = False
-        user.generate_activation_token()
+        token = user.generate_activation_token()
+        user.hash_activation_token()
         user = zen_store.update_user(
             user_name_or_id=parse_name_or_uuid(user_name_or_id), user=user
         )
+        # add back the original un-hashed activation token, if generated, to
+        # send it back to the client
+        user.activation_token = token
         return DeactivateUserResponse.from_model(user)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))

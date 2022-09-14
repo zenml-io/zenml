@@ -23,8 +23,11 @@ from secrets import token_hex
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.exceptions import AuthorizationException
+from zenml.logger import get_logger
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 from zenml.utils.enum_utils import StrEnum
+
+logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     from passlib.context import CryptContext
@@ -51,7 +54,6 @@ class JWTTokenType(StrEnum):
     """The type of JWT token."""
 
     ACCESS_TOKEN = "access_token"
-    ACTIVATION_TOKEN = "activation_token"
 
 
 class JWTToken(BaseModel):
@@ -179,23 +181,27 @@ class UserModel(AnalyticsTrackedModelMixin):
 
         return CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-    def verify_password(self, plain_password: str) -> bool:
+    @classmethod
+    def verify_password(
+        cls, plain_password: str, user: Optional["UserModel"] = None
+    ) -> bool:
         """Verifies a given plain password against the stored password.
 
         Args:
             plain_password: Input password to be verified.
+            user: User for which the password is to be verified.
 
         Returns:
             True if the passwords match.
         """
-        if self.password is None:
-            return False
-        if not self.active:
-            return False
-        pwd_context = self._get_crypt_context()
-        return pwd_context.verify(
-            plain_password, self.password.get_secret_value()
-        )
+        # even when the user or password is not set, we still want to execute
+        # the password hash verification to protect against response discrepancy
+        # attacks (https://cwe.mitre.org/data/definitions/204.html)
+        hash: Optional[str] = None
+        if user is not None and user.password is not None and user.active:
+            hash = user.password.get_secret_value()
+        pwd_context = cls._get_crypt_context()
+        return pwd_context.verify(plain_password, hash)
 
     def get_password(self) -> Optional[str]:
         """Get the password.
@@ -219,21 +225,36 @@ class UserModel(AnalyticsTrackedModelMixin):
         self.password = pwd_context.hash(self.password.get_secret_value())
         return self
 
-    def verify_access_token(self, token: JWTToken) -> None:
+    @classmethod
+    def verify_access_token(cls, token: str) -> Optional["UserModel"]:
         """Verifies an access token.
 
-        Verifies an access token and returns True if the token is valid
-        and False otherwise.
+        Verifies an access token and returns the user that was used to generate
+        it if the token is valid and None otherwise.
 
         Args:
-            encoded_token: The access token to verify.
+            token: The access token to verify.
+
+        Returns:
+            The user that generated the token if valid, None otherwise.
         """
-        if (
-            token.token_type != JWTTokenType.ACCESS_TOKEN
-            or token.user_id != self.id
-            or not self.active
-        ):
-            raise AuthorizationException("Invalid access token")
+        try:
+            access_token = JWTToken.decode(
+                token_type=JWTTokenType.ACCESS_TOKEN, token=token
+            )
+        except AuthorizationException:
+            return None
+
+        zen_store = GlobalConfiguration().zen_store
+        try:
+            user = zen_store.get_user(user_name_or_id=access_token.user_id)
+        except KeyError:
+            return None
+
+        if access_token.user_id == user.id and user.active:
+            return user
+
+        return None
 
     def generate_access_token(self) -> str:
         """Generates an access token.
@@ -254,23 +275,45 @@ class UserModel(AnalyticsTrackedModelMixin):
             return None
         return self.activation_token.get_secret_value()
 
-    def verify_activation_token(self, activation_token: str) -> None:
+    def hash_activation_token(self) -> "UserModel":
+        """Hashes the activation token and replaces it with the hashed value.
+
+        Returns:
+            The user model, as a convenience.
+        """
+        if self.activation_token is None:
+            return
+        pwd_context = self._get_crypt_context()
+        self.activation_token = pwd_context.hash(
+            self.activation_token.get_secret_value()
+        )
+        return self
+
+    @classmethod
+    def verify_activation_token(
+        cls, activation_token: str, user: Optional["UserModel"] = None
+    ) -> bool:
         """Verifies a given activation token against the stored activation token.
 
         Args:
             activation_token: Input activation token to be verified.
+            user: User for which the activation token is to be verified.
 
-        Raises:
-            AuthorizationException: If the activation token is invalid.
+        Returns:
+            True if the token is valid.
         """
+        # even when the user or token is not set, we still want to execute the
+        # token hash verification to protect against response discrepancy
+        # attacks (https://cwe.mitre.org/data/definitions/204.html)
+        hash: Optional[str] = None
         if (
-            self.active
-            or self.activation_token is None
-            or activation_token != self.activation_token
+            user is not None
+            and user.activation_token is not None
+            and not user.active
         ):
-            raise AuthorizationException(
-                f"Invalid activation token for user {self.name}"
-            )
+            hash = user.activation_token.get_secret_value()
+        pwd_context = cls._get_crypt_context()
+        return pwd_context.verify(activation_token, hash)
 
     def generate_activation_token(self) -> str:
         """Generates and stores a new activation token.

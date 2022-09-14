@@ -216,8 +216,11 @@ def print_pydantic_models(
             else {key: str(model.dict()[key]) for key in columns}
         )
         # prepend an active marker if a function to mark active was passed
+        marker = "active"
+        if marker in items:
+            marker = "current"
         return (
-            dict(active=":point_right:" if is_active(model) else "", **items)
+            {marker: ":point_right:" if is_active(model) else "", **items}
             if is_active is not None
             else items
         )

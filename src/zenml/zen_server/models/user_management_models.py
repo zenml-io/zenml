@@ -54,8 +54,9 @@ class CreateUserResponse(UserModel):
     @classmethod
     def from_model(cls, user: UserModel) -> "CreateUserResponse":
         """Convert from a user model."""
-        response = cls(**user.dict())
-        response.activation_token = user.get_activation_token()
+        response = cls(
+            **user.dict(), activation_token=user.get_activation_token()
+        )
         return response
 
 
@@ -110,7 +111,7 @@ class ActivateUserRequest(BaseModel):
         return user
 
 
-class DeactivateUserResponse(BaseModel):
+class DeactivateUserResponse(UserModel):
     """Pydantic object representing a user deactivation response.
 
     Attributes:
@@ -122,5 +123,7 @@ class DeactivateUserResponse(BaseModel):
     @classmethod
     def from_model(cls, user: UserModel) -> "DeactivateUserResponse":
         """Convert from a user model."""
-        response = cls(activation_token=user.get_activation_token())
+        response = cls(
+            **user.dict(), activation_token=user.get_activation_token()
+        )
         return response

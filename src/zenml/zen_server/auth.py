@@ -24,36 +24,22 @@ from fastapi.security import (
 )
 from pydantic import BaseModel
 
-from zenml.constants import LOGIN, VERSION_1
-from zenml.exceptions import AuthorizationException
+from zenml.constants import ENV_ZENML_AUTH_TYPE, LOGIN, VERSION_1
 from zenml.logger import get_logger
-from zenml.models.user_management_models import (
-    JWTToken,
-    JWTTokenType,
-    UserModel,
-)
+from zenml.models.user_management_models import UserModel
 from zenml.utils.enum_utils import StrEnum
 from zenml.zen_server.utils import zen_store
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 
 logger = get_logger(__name__)
 
-JWT_SECRET_KEY = os.environ.get(
-    "ZENML_JWT_SECRET_KEY",
-    "d38d1a44ae024c21534021d4b208323a8af0f844360a2dc96322056aeab286ff",
-)
-JWT_ALGORITHM = "HS256"
-JWT_ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-ENV_ZENML_AUTH_TYPE = "ZENML_AUTH_TYPE"
-
 
 class AuthScheme(StrEnum):
     """The authentication scheme."""
 
-    NO_AUTH = "NoAuth"
-    HTTP_BASIC = "HTTPBasic"
-    OAUTH2_PASSWORD_BEARER = "OAuth2PasswordBearer"
+    NO_AUTH = "NO_AUTH"
+    HTTP_BASIC = "HTTP_BASIC"
+    OAUTH2_PASSWORD_BEARER = "OAUTH2_PASSWORD_BEARER"
 
 
 class AuthContext(BaseModel):
@@ -68,46 +54,53 @@ def authentication_scheme() -> AuthScheme:
     return auth_scheme
 
 
-def validate_user(user_name_or_id: Union[str, UUID]) -> Optional[AuthContext]:
-    """Verify if a username is valid.
-
-    Args:
-        user_name_or_id: The username or user ID.
-
-    Returns:
-        The authenticated account details, if the username is valid, otherwise
-        None.
-    """
-    try:
-        user = zen_store.get_user(user_name_or_id)
-    except KeyError:
-        return None
-
-    return AuthContext(user=user)
-
-
-def authenticate_user(
-    user_name_or_id: str,
-    password: str,
+def authenticate_credentials(
+    user_name_or_id: Optional[Union[str, UUID]] = None,
+    password: Optional[str] = None,
+    access_token: Optional[str] = None,
+    activation_token: Optional[str] = None,
 ) -> Optional[AuthContext]:
-    """Verify if authentication credentials are valid.
+    """Verify if user authentication credentials are valid.
+
+    This function can be used to validate all of the supplied
+    user credentials to cover a range of possibilities:
+
+     * username+password
+     * access token (with embedded user id)
+     * username+activation token
 
     Args:
         user_name_or_id: The username or user ID.
         password: The password.
+        access_token: The access token.
 
     Returns:
         The authenticated account details, if the account is valid, otherwise
         None.
     """
-    try:
-        user = zen_store.get_user(user_name_or_id)
-    except KeyError:
-        return None
-    if not user.verify_password(password):
-        return None
-
-    return AuthContext(user=user)
+    user: Optional[UserModel] = None
+    auth_context: Optional[AuthContext] = None
+    if user_name_or_id:
+        try:
+            user = zen_store.get_user(user_name_or_id)
+            auth_context = AuthContext(user=user)
+        except KeyError:
+            # even when the user does not exist, we still want to execute the
+            # password/token verification to protect against response discrepancy
+            # attacks (https://cwe.mitre.org/data/definitions/204.html)
+            pass
+    if password is not None:
+        if not UserModel.verify_password(password, user):
+            return None
+    elif access_token is not None:
+        user = UserModel.verify_access_token(access_token)
+        if not user:
+            return None
+        auth_context = AuthContext(user=user)
+    elif activation_token is not None:
+        if not UserModel.verify_activation_token(activation_token, user):
+            return None
+    return auth_context
 
 
 def http_authentication(
@@ -121,7 +114,9 @@ def http_authentication(
     Raises:
         HTTPException: If the user credentials could not be authenticated.
     """
-    auth_context = authenticate_user(credentials.username, credentials.password)
+    auth_context = authenticate_credentials(
+        user_name_or_id=credentials.username, password=credentials.password
+    )
     if auth_context is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -143,31 +138,15 @@ async def oauth2_password_bearer_authentication(
     Raises:
         HTTPException: If the JWT token could not be authorized.
     """
-    # We have to return an additional WWW-Authenticate header here with the
-    # value Bearer to be compliant with the OAuth2 spec.
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid authentication credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        token = JWTToken.decode(
-            token_type=JWTTokenType.ACCESS_TOKEN, token=token
-        )
-    except AuthorizationException:
-        logger.exception("JWT authorization exception")
-        raise credentials_exception
-
-    auth_context = validate_user(token.user_id)
+    auth_context = authenticate_credentials(access_token=token)
     if auth_context is None:
-        logger.error("JWT authorization exception")
-        raise credentials_exception
-
-    try:
-        auth_context.user.verify_access_token(token)
-    except AuthorizationException:
-        logger.exception("Could not verify JWT access token")
-        raise credentials_exception
+        # We have to return an additional WWW-Authenticate header here with the
+        # value Bearer to be compliant with the OAuth2 spec.
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     return auth_context
 
@@ -178,7 +157,7 @@ def no_authentication() -> AuthContext:
     Raises:
         HTTPException: If the default user is not available.
     """
-    auth_context = validate_user(DEFAULT_USERNAME)
+    auth_context = authenticate_credentials(user_name_or_id=DEFAULT_USERNAME)
 
     if auth_context is None:
         raise HTTPException(

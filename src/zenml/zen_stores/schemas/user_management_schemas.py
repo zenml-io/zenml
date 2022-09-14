@@ -71,8 +71,8 @@ class UserSchema(SQLModel, table=True):
             active=model.active,
             password=model.get_password(),
             activation_token=model.get_activation_token(),
-            creation_date=model.created_at,
-            updated_date=model.created_at,
+            creation_date=datetime.now(),
+            updated_date=datetime.now(),
         )
 
     def from_update_model(self, model: UserModel) -> "UserSchema":
@@ -90,7 +90,7 @@ class UserSchema(SQLModel, table=True):
         self.active = model.active
         self.password = model.get_password()
         self.activation_token = model.get_activation_token()
-        self.updated_date = model.updated_at
+        self.updated_date = datetime.now()
         return self
 
     def to_model(self) -> UserModel:
