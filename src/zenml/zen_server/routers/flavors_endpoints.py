@@ -21,11 +21,7 @@ from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.models import FlavorModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import authorize
-from zenml.zen_server.utils import (
-    error_detail,
-    error_response,
-    zen_store,
-)
+from zenml.zen_server.utils import error_detail, error_response, zen_store
 
 router = APIRouter(
     prefix=VERSION_1 + FLAVORS,

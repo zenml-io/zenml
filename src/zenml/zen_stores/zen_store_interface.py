@@ -929,10 +929,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def update_pipeline(
-        self,
-        pipeline: PipelineModel
-    ) -> PipelineModel:
+    def update_pipeline(self, pipeline: PipelineModel) -> PipelineModel:
         """Updates a pipeline.
 
         Args:

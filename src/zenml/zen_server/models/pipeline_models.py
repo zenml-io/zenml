@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Project Models for the API endpoint definitions."""
-from typing import Optional, Dict
+from typing import Dict, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -22,9 +22,8 @@ from zenml.models import PipelineModel
 
 class CreatePipelineModel(BaseModel):
     """Model used for all update operations on stacks."""
-    name: str = Field(
-        title="The name of the pipeline."
-    )
+
+    name: str = Field(title="The name of the pipeline.")
 
     docstring: Optional[str]
     configuration: Dict[str, str]
@@ -41,9 +40,8 @@ class CreatePipelineModel(BaseModel):
 
 class UpdatePipelineModel(BaseModel):
     """Model used for all update operations on stacks."""
-    name: Optional[str] = Field(
-        title="The name of the pipeline."
-    )
+
+    name: Optional[str] = Field(title="The name of the pipeline.")
 
     docstring: Optional[str]
     # TODO: [server] have another look at this to figure out if adding a

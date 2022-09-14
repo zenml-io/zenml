@@ -45,10 +45,7 @@ class PipelineSchema(SQLModel, table=True):
     )
 
     @classmethod
-    def from_create_model(
-        cls,
-        pipeline: PipelineModel
-    ) -> "PipelineSchema":
+    def from_create_model(cls, pipeline: PipelineModel) -> "PipelineSchema":
         """Create a `PipelineSchema` from a `PipelineModel`.
 
         Args:

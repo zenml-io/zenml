@@ -32,10 +32,7 @@ from zenml.enums import SecretValidationLevel, StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.logger import get_logger
 from zenml.models.stack_models import HydratedStackModel
-from zenml.runtime_configuration import (
-    RuntimeConfiguration,
-)
-
+from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:

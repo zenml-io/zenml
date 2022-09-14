@@ -13,19 +13,15 @@
 #  permissions and limitations under the License.
 """Model definitions for users, teams, and roles."""
 
-import base64
 from datetime import datetime, timedelta
-import os
-from jose import JWTError, jwt
-
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 from uuid import UUID, uuid4
 
+from jose import JWTError, jwt
 from pydantic import BaseModel, Field, SecretStr, root_validator
-from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import ENV_ZENML_JWT_SECRET_KEY
-from zenml.exceptions import AuthorizationException
 
+from zenml.config.global_config import GlobalConfiguration
+from zenml.exceptions import AuthorizationException
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 from zenml.utils.enum_utils import StrEnum
 
