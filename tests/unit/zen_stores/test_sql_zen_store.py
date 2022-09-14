@@ -19,6 +19,7 @@ import pytest
 
 from zenml.exceptions import EntityExistsError, StackExistsError
 from zenml.models import ProjectModel, RoleModel, TeamModel, UserModel
+from zenml.models.pipeline_models import PipelineModel
 from zenml.models.stack_models import StackModel
 from zenml.zen_stores.base_zen_store import BaseZenStore
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
@@ -743,3 +744,51 @@ def test_get_role_schema_succeeds(
     schema = fresh_sql_zen_store._get_role_schema("aria_admin")
     assert schema is not None
     assert type(schema) == RoleSchema
+
+
+# ---------
+# Pipelines
+# ---------
+
+
+def test_create_pipeline_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests creating pipeline."""
+    project_id = fresh_sql_zen_store.get_project("default").id
+    owner_id = fresh_sql_zen_store.get_user("default").id
+    new_pipeline = PipelineModel(
+        name="arias_pipeline",
+        project_id=project_id,
+        owner=owner_id,
+        configuration={},
+    )
+    fresh_sql_zen_store.create_pipeline(
+        project_name_or_id=project_id, pipeline=new_pipeline
+    )
+    pipelines = fresh_sql_zen_store.list_pipelines()
+    assert len(pipelines) == 1
+    assert pipelines[0].name == "arias_pipeline"
+
+
+def test_creating_identical_pipeline_fails(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests creating identical pipeline fails."""
+    project_id = fresh_sql_zen_store.get_project("default").id
+    owner_id = fresh_sql_zen_store.get_user("default").id
+    new_pipeline = PipelineModel(
+        name="arias_pipeline",
+        project_id=project_id,
+        owner=owner_id,
+        configuration={},
+    )
+    fresh_sql_zen_store.create_pipeline(
+        project_name_or_id=project_id, pipeline=new_pipeline
+    )
+    with pytest.raises(EntityExistsError):
+        fresh_sql_zen_store.create_pipeline(
+            project_name_or_id=project_id, pipeline=new_pipeline
+        )
+    pipelines = fresh_sql_zen_store.list_pipelines()
+    assert len(pipelines) == 1
