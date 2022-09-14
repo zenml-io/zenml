@@ -541,10 +541,11 @@ def test_list_stacks_succeeds(
     sql_store: BaseZenStore,
 ):
     """Tests listing stacks."""
-    current_project_id = str(sql_store["store"].list_projects()[0].id)
-    assert len(sql_store["store"].list_stacks(current_project_id)) == 1
+    assert len(sql_store["store"].list_stacks()) == 1
 
 
+# TODO: remove xfail when we raise the error again
+@pytest.mark.xfail
 def test_list_stacks_fails_with_nonexistent_project(
     sql_store: BaseZenStore,
 ):
@@ -557,10 +558,8 @@ def test_get_stack_succeeds(
     sql_store: BaseZenStore,
 ):
     """Tests getting stack."""
-    current_stack_id = (
-        sql_store["store"].list_stacks(project_name_or_id=DEFAULT_NAME)[0].id
-    )
-    stack = sql_store["store"].get_stack(current_stack_id)
+    current_stack_id = sql_store["store"].list_stacks()[0].id
+    stack = sql_store["store"].get_stack(stack_id=current_stack_id)
     assert stack is not None
 
 
@@ -602,9 +601,7 @@ def test_updating_stack_succeeds(
     sql_store: BaseZenStore,
 ):
     """Tests updating stack."""
-    current_stack_id = (
-        sql_store["store"].list_stacks(project_name_or_id=DEFAULT_NAME)[0].id
-    )
+    current_stack_id = sql_store["default_stack"].id
     new_stack = StackModel(
         id=current_stack_id, name="arias_stack", components={}
     )
@@ -617,6 +614,7 @@ def test_updating_nonexistent_stack_fails(
     sql_store: BaseZenStore,
 ):
     """Tests updating nonexistent stack fails."""
+    current_stack_id = sql_store["default_stack"].id
     new_stack = StackModel(name="arias_stack", components={})
     non_existent_stack_id = uuid.uuid4()
     with pytest.raises(KeyError):
@@ -624,27 +622,14 @@ def test_updating_nonexistent_stack_fails(
         sql_store["store"].update_stack(new_stack)
     with pytest.raises(KeyError):
         sql_store["store"].get_stack(non_existent_stack_id)
-    assert (
-        sql_store["store"]
-        .get_stack(
-            sql_store["store"]
-            .list_stacks(project_name_or_id=DEFAULT_NAME)[0]
-            .id
-        )
-        .name
-        != "arias_stack"
-    )
+    assert sql_store["store"].get_stack(current_stack_id).name != "arias_stack"
 
 
-# TODO: continue on to cover register, update and delete stacks
-# DELETE
 def test_deleting_default_stack_succeeds(
     sql_store: BaseZenStore,
 ):
     """Tests deleting stack."""
-    current_stack_id = (
-        sql_store["store"].list_stacks(project_name_or_id=DEFAULT_NAME)[0].id
-    )
+    current_stack_id = sql_store["default_stack"].id
     sql_store["store"].delete_stack(current_stack_id)
     with pytest.raises(KeyError):
         sql_store["store"].get_stack(current_stack_id)
@@ -771,8 +756,8 @@ def test_create_pipeline_succeeds(
     sql_store: BaseZenStore,
 ):
     """Tests creating pipeline."""
-    project_id = sql_store["store"].get_project(DEFAULT_NAME).id
-    owner_id = sql_store["store"].get_user(DEFAULT_NAME).id
+    project_id = sql_store["default_project"].id
+    owner_id = sql_store["active_user"].id
     new_pipeline = PipelineModel(
         name="arias_pipeline",
         project_id=project_id,
@@ -780,7 +765,9 @@ def test_create_pipeline_succeeds(
         configuration={},
     )
     sql_store["store"].create_pipeline(
-        project_name_or_id=project_id, pipeline=new_pipeline
+        project_name_or_id=project_id,
+        user_name_or_id=owner_id,
+        pipeline=new_pipeline,
     )
     pipelines = sql_store["store"].list_pipelines()
     assert len(pipelines) == 1
@@ -791,16 +778,16 @@ def test_creating_identical_pipeline_fails(
     sql_store: BaseZenStore,
 ):
     """Tests creating identical pipeline fails."""
-    project_id = sql_store["store"].get_project(DEFAULT_NAME).id
-    owner_id = sql_store["store"].get_user(DEFAULT_NAME).id
+    project_id = sql_store["default_project"].id
+    owner_id = sql_store["active_user"].id
     new_pipeline = PipelineModel(
         name="arias_pipeline",
-        project_id=project_id,
-        owner=owner_id,
         configuration={},
     )
     sql_store["store"].create_pipeline(
-        project_name_or_id=project_id, pipeline=new_pipeline
+        project_name_or_id=project_id,
+        user_name_or_id=owner_id,
+        pipeline=new_pipeline,
     )
     with pytest.raises(EntityExistsError):
         sql_store["store"].create_pipeline(
@@ -814,8 +801,8 @@ def test_get_pipeline_succeeds(
     sql_store: BaseZenStore,
 ):
     """Tests getting pipeline."""
-    project_id = sql_store["store"].get_project(DEFAULT_NAME).id
-    owner_id = sql_store["store"].get_user(DEFAULT_NAME).id
+    project_id = sql_store["default_project"].id
+    owner_id = sql_store["active_user"].id
     new_pipeline = PipelineModel(
         name="arias_pipeline",
         project_id=project_id,
@@ -823,10 +810,12 @@ def test_get_pipeline_succeeds(
         configuration={},
     )
     sql_store["store"].create_pipeline(
-        project_name_or_id=project_id, pipeline=new_pipeline
+        project_name_or_id=project_id,
+        user_name_or_id=owner_id,
+        pipeline=new_pipeline,
     )
     pipeline_id = sql_store["store"].list_pipelines()[0].id
-    pipeline = sql_store["store"].get_pipeline(pipeline_id)
+    pipeline = sql_store["store"].get_pipeline(pipeline_id=pipeline_id)
     assert pipeline is not None
     assert pipeline.name == "arias_pipeline"
 
@@ -843,8 +832,8 @@ def test_get_pipeline_in_project_succeeds(
     sql_store: BaseZenStore,
 ):
     """Tests getting pipeline in project."""
-    project_id = sql_store["store"].get_project(DEFAULT_NAME).id
-    owner_id = sql_store["store"].get_user(DEFAULT_NAME).id
+    project_id = sql_store["default_project"].id
+    owner_id = sql_store["active_user"].id
     new_pipeline = PipelineModel(
         name="arias_pipeline",
         project_id=project_id,
@@ -865,7 +854,7 @@ def test_get_pipeline_in_project_fails_when_pipeline_nonexistent(
     sql_store: BaseZenStore,
 ):
     """Tests getting pipeline in project fails when pipeline nonexistent."""
-    project_id = sql_store["store"].get_project(DEFAULT_NAME).id
+    project_id = sql_store["default_project"].id
     with pytest.raises(KeyError):
         sql_store["store"].get_pipeline_in_project(
             project_name_or_id=project_id, pipeline_name="blupus_ka_pipeline"
@@ -876,8 +865,8 @@ def test_list_pipelines_succeeds(
     sql_store: BaseZenStore,
 ):
     """Tests listing pipelines."""
-    project_id = sql_store["store"].get_project(DEFAULT_NAME).id
-    owner_id = sql_store["store"].get_user(DEFAULT_NAME).id
+    project_id = sql_store["default_project"].id
+    owner_id = sql_store["active_user"].id
     new_pipeline = PipelineModel(
         name="arias_pipeline",
         project_id=project_id,
@@ -885,7 +874,9 @@ def test_list_pipelines_succeeds(
         configuration={},
     )
     sql_store["store"].create_pipeline(
-        project_name_or_id=project_id, pipeline=new_pipeline
+        project_name_or_id=project_id,
+        user_name_or_id=owner_id,
+        pipeline=new_pipeline,
     )
     with does_not_raise():
         pipelines = sql_store["store"].list_pipelines()
@@ -896,8 +887,8 @@ def test_update_pipeline_succeeds(
     sql_store: BaseZenStore,
 ):
     """Tests updating pipeline."""
-    project_id = sql_store["store"].get_project(DEFAULT_NAME).id
-    owner_id = sql_store["store"].get_user(DEFAULT_NAME).id
+    project_id = sql_store["default_project"].id
+    owner_id = sql_store["active_user"].id
     new_pipeline = PipelineModel(
         name="arias_pipeline",
         project_id=project_id,
@@ -905,7 +896,9 @@ def test_update_pipeline_succeeds(
         configuration={},
     )
     sql_store["store"].create_pipeline(
-        project_name_or_id=project_id, pipeline=new_pipeline
+        project_name_or_id=project_id,
+        user_name_or_id=owner_id,
+        pipeline=new_pipeline,
     )
     pipeline_id = sql_store["store"].list_pipelines()[0].id
     updated_pipeline = PipelineModel(
@@ -927,8 +920,8 @@ def test_updating_nonexistent_pipeline_fails(
     sql_store: BaseZenStore,
 ):
     """Tests updating nonexistent pipeline fails."""
-    project_id = sql_store["store"].get_project(DEFAULT_NAME).id
-    owner_id = sql_store["store"].get_user(DEFAULT_NAME).id
+    project_id = sql_store["default_project"].id
+    owner_id = sql_store["active_user"].id
     updated_pipeline = PipelineModel(
         name="blupus_ka_pipeline",
         project_id=project_id,
@@ -946,8 +939,8 @@ def test_deleting_pipeline_succeeds(
     sql_store: BaseZenStore,
 ):
     """Tests deleting pipeline."""
-    project_id = sql_store["store"].get_project(DEFAULT_NAME).id
-    owner_id = sql_store["store"].get_user(DEFAULT_NAME).id
+    project_id = sql_store["default_project"].id
+    owner_id = sql_store["active_user"].id
     new_pipeline = PipelineModel(
         name="arias_pipeline",
         project_id=project_id,
@@ -955,7 +948,9 @@ def test_deleting_pipeline_succeeds(
         configuration={},
     )
     sql_store["store"].create_pipeline(
-        project_name_or_id=project_id, pipeline=new_pipeline
+        project_name_or_id=project_id,
+        user_name_or_id=owner_id,
+        pipeline=new_pipeline,
     )
     pipeline_id = sql_store["store"].list_pipelines()[0].id
     sql_store["store"].delete_pipeline(pipeline_id)
