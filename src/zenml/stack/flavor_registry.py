@@ -65,14 +65,7 @@ class FlavorRegistry:
         ]
         for flavor in default_flavors:
             flavor_instance = flavor()
-            self._register_flavor(
-                FlavorModel(
-                    name=flavor_instance.name,  # type: ignore[attr-defined]
-                    type=flavor_instance.type,  # type: ignore[attr-defined]
-                    source=flavor.__module__ + "." + flavor.__name__,
-                    integration="built-in",
-                )
-            )
+            self._register_flavor(flavor_instance.to_model())
 
     def register_integration_flavors(self) -> None:
         """Registers the flavors implemented by integrations."""
@@ -118,7 +111,7 @@ class FlavorRegistry:
 
     def get_flavors_by_type(
         self, component_type: StackComponentType
-    ) -> Dict[str, FlavorModel]:
+    ) -> List[FlavorModel]:
         """Return the list of flavors with given type.
 
         Args:
@@ -127,7 +120,7 @@ class FlavorRegistry:
         Returns:
             The list of flavors with the given type.
         """
-        return self._flavors[component_type]
+        return list(self._flavors[component_type].values())
 
     def get_flavor_by_name_and_type(
         self, name: str, component_type: StackComponentType

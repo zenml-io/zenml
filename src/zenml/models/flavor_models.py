@@ -40,11 +40,14 @@ class FlavorModel(AnalyticsTrackedModelMixin):
         default=None,
         title="The ID of the Flavor.",
     )
-    name: str = Field(
+    name: Optional[str] = Field(
         title="The name of the Flavor.",
     )
-    type: StackComponentType = Field(
+    type: Optional[StackComponentType] = Field(
         title="The type of the Flavor.",
+    )
+    config_schema: Optional[str] = Field(
+        title="The JSON schema of this flavor's corresponding configuration."
     )
     source: str = Field(
         title="The path to the module which contains this Flavor."

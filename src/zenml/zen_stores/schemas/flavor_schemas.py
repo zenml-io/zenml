@@ -33,7 +33,9 @@ class FlavorSchema(SQLModel, table=True):
     source: str
     integration: str
 
-    project_id: UUID = Field(foreign_key="userschema.id")
+    config_schema: str
+
+    project_id: UUID = Field(foreign_key="projectschema.id")
     user_id: UUID = Field(foreign_key="userschema.id")
     created_at: datetime = Field(default_factory=datetime.now)
 
@@ -48,8 +50,9 @@ class FlavorSchema(SQLModel, table=True):
             name=flavor.name,
             type=flavor.type,
             source=flavor.source,
+            config_schema=flavor.config_schema,
             integration=flavor.integration,
-            owner_id=user_id,
+            user_id=user_id,
             project_id=project_id,
         )
 
@@ -57,16 +60,7 @@ class FlavorSchema(SQLModel, table=True):
         self,
         flavor: FlavorModel,
     ):
-        return FlavorModel(
-            id=self.id,
-            name=self.name,
-            type=self.type,
-            source=flavor.source,
-            integration=self.integration,
-            user_id=self.user_id,
-            project_id=self.project_id,
-            created_at=self.created_at,
-        )
+        return flavor
 
     def to_model(self):
         return FlavorModel(
@@ -74,6 +68,7 @@ class FlavorSchema(SQLModel, table=True):
             name=self.name,
             type=self.type,
             source=self.source,
+            config_schema=self.config_schema,
             integration=self.integration,
             user_id=self.user_id,
             project_id=self.project_id,

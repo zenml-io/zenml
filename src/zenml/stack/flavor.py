@@ -46,6 +46,11 @@ class Flavor:
     def config_class(self) -> Type[StackComponentConfig]:
         """"""
 
+    @property
+    def config_schema(self) -> str:
+        """"""
+        return self.config_class.schema_json()
+
     @classmethod
     def from_model(cls, flavor_model: FlavorModel) -> "Flavor":
         return load_source_path_class(flavor_model.source)  # noqa
@@ -54,5 +59,6 @@ class Flavor:
         return FlavorModel(
             name=self.implementation_class.FLAVOR,
             type=self.implementation_class.TYPE,
-            source=resolve_class(self),  # noqa
+            source=resolve_class(self.__class__),  # noqa
+            config_schema=self.config_schema,
         )
