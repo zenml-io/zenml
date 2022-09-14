@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Project Models for the API endpoint definitions."""
-from typing import Optional, Dict
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -21,13 +21,10 @@ from zenml.models import ProjectModel
 
 class CreateProjectModel(BaseModel):
     """Model used for all update operations on stacks."""
-    name: str = Field(
-        title="The unique name of the stack."
-    )
+
+    name: str = Field(title="The unique name of the stack.")
     description: Optional[str] = Field(
-        default=None,
-        title="The description of the project.",
-        max_length=300
+        default=None, title="The description of the project.", max_length=300
     )
 
     def to_model(self) -> "ProjectModel":
@@ -37,14 +34,12 @@ class CreateProjectModel(BaseModel):
 
 class UpdateProjectModel(BaseModel):
     """Model used for all update operations on stacks."""
+
     name: Optional[str] = Field(
-        default=None,
-        title="The unique name of the stack."
+        default=None, title="The unique name of the stack."
     )
     description: Optional[str] = Field(
-        default=None,
-        title="The description of the project.",
-        max_length=300
+        default=None, title="The description of the project.", max_length=300
     )
 
     def apply_to_model(self, project: "ProjectModel") -> "ProjectModel":

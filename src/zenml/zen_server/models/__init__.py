@@ -16,10 +16,7 @@
 
 from zenml.zen_server.models.stack_models import (
     CreateStackModel,
-    UpdateStackModel
+    UpdateStackModel,
 )
 
-__all__ = [
-    "CreateStackModel",
-    "UpdateStackModel"
-]
+__all__ = ["CreateStackModel", "UpdateStackModel"]

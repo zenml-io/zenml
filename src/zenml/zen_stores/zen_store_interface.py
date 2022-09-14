@@ -829,9 +829,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def update_project(
-        self, project: ProjectModel
-    ) -> ProjectModel:
+    def update_project(self, project: ProjectModel) -> ProjectModel:
         """Update an existing project.
 
         Args:

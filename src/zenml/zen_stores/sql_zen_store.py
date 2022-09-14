@@ -927,6 +927,7 @@ class SqlZenStore(BaseZenStore):
         Args:
             user_name_or_id: The name or ID of the user to delete.
         """
+        # TODO: raise KeyError if the user doesn't exist (+ add test)
         with Session(self.engine) as session:
             user = self._get_user_schema(user_name_or_id, session=session)
             session.delete(user)
@@ -1518,9 +1519,7 @@ class SqlZenStore(BaseZenStore):
             return [project.to_model() for project in projects]
 
     @track(AnalyticsEvent.UPDATED_PROJECT)
-    def update_project(
-        self, project: ProjectModel
-    ) -> ProjectModel:
+    def update_project(self, project: ProjectModel) -> ProjectModel:
         """Update an existing project.
 
         Args:

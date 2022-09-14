@@ -791,9 +791,7 @@ class RestZenStore(BaseZenStore):
             A list of all projects.
         """
 
-    def update_project(
-        self, project: ProjectModel
-    ) -> ProjectModel:
+    def update_project(self, project: ProjectModel) -> ProjectModel:
         """Update an existing project.
 
         Args:

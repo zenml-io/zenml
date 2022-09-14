@@ -44,8 +44,10 @@ from zenml.models.component_models import HydratedComponentModel
 from zenml.models.pipeline_models import HydratedPipelineModel
 from zenml.models.stack_models import HydratedStackModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
-from zenml.zen_server.models.projects_models import CreateProjectModel, \
-    UpdateProjectModel
+from zenml.zen_server.models.projects_models import (
+    CreateProjectModel,
+    UpdateProjectModel,
+)
 from zenml.zen_server.models.stack_models import CreateStackModel
 from zenml.zen_server.utils import (
     authorize,
@@ -164,8 +166,7 @@ async def get_project(project_name_or_id: str) -> ProjectModel:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def update_project(
-    project_name_or_id: str,
-    project_update: UpdateProjectModel
+    project_name_or_id: str, project_update: UpdateProjectModel
 ) -> ProjectModel:
     """Get a project for given name.
 
@@ -186,7 +187,8 @@ async def update_project(
     """
     try:
         project_in_db = zen_store.get_project(
-            parse_name_or_uuid(project_name_or_id))
+            parse_name_or_uuid(project_name_or_id)
+        )
 
         return zen_store.update_project(
             project=project_update.apply_to_model(project_in_db),
