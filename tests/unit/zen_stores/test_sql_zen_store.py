@@ -757,16 +757,14 @@ def test_create_pipeline_succeeds(
 ):
     """Tests creating pipeline."""
     project_id = fresh_sql_zen_store.get_project("default").id
-    owner_id = fresh_sql_zen_store.get_user("default").id
+    user_id = fresh_sql_zen_store.get_user("default").id
     new_pipeline = PipelineModel(
         name="arias_pipeline",
-        project_id=project_id,
-        owner=owner_id,
+        project=project_id,
+        user=user_id,
         configuration={},
     )
-    fresh_sql_zen_store.create_pipeline(
-        project_name_or_id=project_id, pipeline=new_pipeline
-    )
+    fresh_sql_zen_store.create_pipeline(pipeline=new_pipeline)
     pipelines = fresh_sql_zen_store.list_pipelines()
     assert len(pipelines) == 1
     assert pipelines[0].name == "arias_pipeline"
@@ -777,20 +775,16 @@ def test_creating_identical_pipeline_fails(
 ):
     """Tests creating identical pipeline fails."""
     project_id = fresh_sql_zen_store.get_project("default").id
-    owner_id = fresh_sql_zen_store.get_user("default").id
+    user_id = fresh_sql_zen_store.get_user("default").id
     new_pipeline = PipelineModel(
         name="arias_pipeline",
-        project_id=project_id,
-        owner=owner_id,
+        project=project_id,
+        user=user_id,
         configuration={},
     )
-    fresh_sql_zen_store.create_pipeline(
-        project_name_or_id=project_id, pipeline=new_pipeline
-    )
+    fresh_sql_zen_store.create_pipeline(pipeline=new_pipeline)
     with pytest.raises(EntityExistsError):
-        fresh_sql_zen_store.create_pipeline(
-            project_name_or_id=project_id, pipeline=new_pipeline
-        )
+        fresh_sql_zen_store.create_pipeline(pipeline=new_pipeline)
     pipelines = fresh_sql_zen_store.list_pipelines()
     assert len(pipelines) == 1
 
@@ -800,16 +794,14 @@ def test_get_pipeline_succeeds(
 ):
     """Tests getting pipeline."""
     project_id = fresh_sql_zen_store.get_project("default").id
-    owner_id = fresh_sql_zen_store.get_user("default").id
+    user_id = fresh_sql_zen_store.get_user("default").id
     new_pipeline = PipelineModel(
         name="arias_pipeline",
-        project_id=project_id,
-        owner=owner_id,
+        project=project_id,
+        user=user_id,
         configuration={},
     )
-    fresh_sql_zen_store.create_pipeline(
-        project_name_or_id=project_id, pipeline=new_pipeline
-    )
+    fresh_sql_zen_store.create_pipeline(pipeline=new_pipeline)
     pipeline_id = fresh_sql_zen_store.list_pipelines()[0].id
     pipeline = fresh_sql_zen_store.get_pipeline(pipeline_id)
     assert pipeline is not None
@@ -829,16 +821,14 @@ def test_get_pipeline_in_project_succeeds(
 ):
     """Tests getting pipeline in project."""
     project_id = fresh_sql_zen_store.get_project("default").id
-    owner_id = fresh_sql_zen_store.get_user("default").id
+    user_id = fresh_sql_zen_store.get_user("default").id
     new_pipeline = PipelineModel(
         name="arias_pipeline",
-        project_id=project_id,
-        owner=owner_id,
+        project=project_id,
+        user=user_id,
         configuration={},
     )
-    fresh_sql_zen_store.create_pipeline(
-        project_name_or_id=project_id, pipeline=new_pipeline
-    )
+    fresh_sql_zen_store.create_pipeline(pipeline=new_pipeline)
     pipeline = fresh_sql_zen_store.get_pipeline_in_project(
         project_name_or_id=project_id, pipeline_name="arias_pipeline"
     )
@@ -862,16 +852,14 @@ def test_list_pipelines_succeeds(
 ):
     """Tests listing pipelines."""
     project_id = fresh_sql_zen_store.get_project("default").id
-    owner_id = fresh_sql_zen_store.get_user("default").id
+    user_id = fresh_sql_zen_store.get_user("default").id
     new_pipeline = PipelineModel(
         name="arias_pipeline",
-        project_id=project_id,
-        owner=owner_id,
+        project=project_id,
+        user=user_id,
         configuration={},
     )
-    fresh_sql_zen_store.create_pipeline(
-        project_name_or_id=project_id, pipeline=new_pipeline
-    )
+    fresh_sql_zen_store.create_pipeline(pipeline=new_pipeline)
     with does_not_raise():
         pipelines = fresh_sql_zen_store.list_pipelines()
         assert len(pipelines) == 1
@@ -882,21 +870,19 @@ def test_update_pipeline_succeeds(
 ):
     """Tests updating pipeline."""
     project_id = fresh_sql_zen_store.get_project("default").id
-    owner_id = fresh_sql_zen_store.get_user("default").id
+    user_id = fresh_sql_zen_store.get_user("default").id
     new_pipeline = PipelineModel(
         name="arias_pipeline",
-        project_id=project_id,
-        owner=owner_id,
+        project=project_id,
+        user=user_id,
         configuration={},
     )
-    fresh_sql_zen_store.create_pipeline(
-        project_name_or_id=project_id, pipeline=new_pipeline
-    )
+    fresh_sql_zen_store.create_pipeline(pipeline=new_pipeline)
     pipeline_id = fresh_sql_zen_store.list_pipelines()[0].id
     updated_pipeline = PipelineModel(
         name="blupus_ka_pipeline",
-        project_id=project_id,
-        owner=owner_id,
+        project=project_id,
+        user=user_id,
         configuration={},
     )
     fresh_sql_zen_store.update_pipeline(
@@ -932,16 +918,14 @@ def test_deleting_pipeline_succeeds(
 ):
     """Tests deleting pipeline."""
     project_id = fresh_sql_zen_store.get_project("default").id
-    owner_id = fresh_sql_zen_store.get_user("default").id
+    user_id = fresh_sql_zen_store.get_user("default").id
     new_pipeline = PipelineModel(
         name="arias_pipeline",
-        project_id=project_id,
-        owner=owner_id,
+        project=project_id,
+        user=user_id,
         configuration={},
     )
-    fresh_sql_zen_store.create_pipeline(
-        project_name_or_id=project_id, pipeline=new_pipeline
-    )
+    fresh_sql_zen_store.create_pipeline(pipeline=new_pipeline)
     pipeline_id = fresh_sql_zen_store.list_pipelines()[0].id
     fresh_sql_zen_store.delete_pipeline(pipeline_id)
     assert len(fresh_sql_zen_store.list_pipelines()) == 0

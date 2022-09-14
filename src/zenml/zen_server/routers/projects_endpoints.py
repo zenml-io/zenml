@@ -44,6 +44,7 @@ from zenml.models.component_models import HydratedComponentModel
 from zenml.models.pipeline_models import HydratedPipelineModel
 from zenml.models.stack_models import HydratedStackModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
+from zenml.zen_server.models import CreatePipelineModel
 from zenml.zen_server.models.projects_models import CreateProjectModel, \
     UpdateProjectModel
 from zenml.zen_server.models.stack_models import CreateStackModel
@@ -558,7 +559,9 @@ async def get_project_pipelines(
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 async def create_pipeline(
-    project_name_or_id: str, pipeline: PipelineModel, hydrated: bool = True
+    project_name_or_id: str,
+    pipeline: CreatePipelineModel,
+    hydrated: bool = True
 ) -> Union[PipelineModel, HydratedPipelineModel]:
     """Creates a pipeline.
 
@@ -575,15 +578,16 @@ async def create_pipeline(
         422 error: when unable to validate input
     """
     try:
-        # TODO: [server] Inject user here
-        pipeline = zen_store.create_pipeline(
-            project_name_or_id=parse_name_or_uuid(project_name_or_id),
-            pipeline=pipeline,
+        # TODO: [server] insert user from context here
+        pipeline = pipeline.to_model(
+            project=parse_name_or_uuid(project_name_or_id),
+            user=parse_name_or_uuid(),
         )
+        created_pipeline = zen_store.create_pipeline(pipeline=pipeline)
         if hydrated:
-            return pipeline.to_hydrated_model()
+            return created_pipeline.to_hydrated_model()
         else:
-            return pipeline
+            return created_pipeline
     except PipelineExistsError as error:
         raise conflict(error) from error
     except NotAuthorizedError as error:

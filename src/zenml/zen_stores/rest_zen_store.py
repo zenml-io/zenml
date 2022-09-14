@@ -962,12 +962,12 @@ class RestZenStore(BaseZenStore):
         """
 
     def update_pipeline(
-        self, pipeline_id: UUID, pipeline: PipelineModel
+        self,
+        pipeline: PipelineModel
     ) -> PipelineModel:
         """Updates a pipeline.
 
         Args:
-            pipeline_id: The ID of the pipeline to update.
             pipeline: The pipeline to use for the update.
 
         Returns:

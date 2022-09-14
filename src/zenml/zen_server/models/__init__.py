@@ -12,8 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Models for the API endpoint definitions."""
-
-
+from zenml.zen_server.models.pipeline_models import (
+    CreatePipelineModel,
+    UpdatePipelineModel
+)
+from zenml.zen_server.models.projects_models import (
+    CreateProjectModel,
+    UpdateProjectModel
+)
 from zenml.zen_server.models.stack_models import (
     CreateStackModel,
     UpdateStackModel
@@ -21,5 +27,9 @@ from zenml.zen_server.models.stack_models import (
 
 __all__ = [
     "CreateStackModel",
-    "UpdateStackModel"
+    "UpdateStackModel",
+    "CreateProjectModel",
+    "UpdateProjectModel",
+    "CreatePipelineModel",
+    "UpdatePipelineModel"
 ]
