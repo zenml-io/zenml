@@ -232,7 +232,7 @@ def list_projects() -> None:
         active_project_id = active_project.id if active_project else None
         cli_utils.print_pydantic_models(
             projects,
-            columns=("name", "description", "created_at"),
+            columns=("name", "description", "creation_date"),
             is_active=(lambda p: p.id == active_project_id),
         )
     else:

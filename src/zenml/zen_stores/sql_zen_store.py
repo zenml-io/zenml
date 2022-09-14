@@ -1487,6 +1487,9 @@ class SqlZenStore(BaseZenStore):
             session.add(new_project)
             session.commit()
 
+            # Explicitly refresh the new_project schema
+            session.refresh(new_project)
+
             # After committing the model, sqlmodel takes care of updating the
             # object with id, created_at, etc ...
 
@@ -1516,26 +1519,31 @@ class SqlZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.UPDATED_PROJECT)
     def update_project(
-        self, project_name_or_id: Union[str, UUID], project: ProjectModel
+        self, project: ProjectModel
     ) -> ProjectModel:
         """Update an existing project.
 
         Args:
-            project_name_or_id: Name or ID of the project to update.
             project: The project to use for the update.
 
         Returns:
             The updated project.
         """
         with Session(self.engine) as session:
-            # Check if project with the given name already exists
-            existing_project = self._get_project_schema(
-                project_name_or_id, session=session
-            )
+            existing_project = session.exec(
+                select(ProjectSchema).where(ProjectSchema.id == project.id)
+            ).first()
+
+            if existing_project is None:
+                raise KeyError(
+                    f"Unable to update project with id "
+                    f"'{project.id}': Found no"
+                    f"existing stack with this id."
+                )
 
             # Update the project
             existing_project.from_update_model(project)
-            # other fields are not updatable
+
             session.add(existing_project)
             session.commit()
 
