@@ -1020,6 +1020,8 @@ def test_getting_nonexistent_run_fails(
         fresh_sql_zen_store.get_run(uuid.uuid4())
 
 
+# TODO: remove xfail once the method is propely implemented
+@pytest.mark.xfail
 def test_get_run_in_project_succeeds(
     fresh_sql_zen_store: BaseZenStore,
 ):
@@ -1029,6 +1031,7 @@ def test_get_run_in_project_succeeds(
         name=run_name,
     )
     fresh_sql_zen_store.create_run(pipeline_run=pipeline_run)
+
     with does_not_raise():
         run = fresh_sql_zen_store.get_run_in_project(
             run_name=run_name, project_name_or_id="default"

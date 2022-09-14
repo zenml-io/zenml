@@ -1779,6 +1779,7 @@ class SqlZenStore(BaseZenStore):
             EntityExistsError: If an identical pipeline run already exists.
             KeyError: If the pipeline does not exist.
         """
+        # TODO: fix for when creating without associating to a project
         with Session(self.engine) as session:
             # Check if pipeline run already exists
             existing_run = session.exec(
@@ -1862,6 +1863,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the pipeline run doesn't exist.
         """
+        # TODO: fix when creating run without a project
         self._sync_runs()  # Sync with MLMD
         with Session(self.engine) as session:
             project = self._get_project_schema(project_name_or_id)
@@ -1869,6 +1871,7 @@ class SqlZenStore(BaseZenStore):
             run = session.exec(
                 select(PipelineRunSchema)
                 .where(PipelineRunSchema.name == run_name)
+                .where(PipelineRunSchema.stack_id == StackSchema.id)
                 .where(StackSchema.project_id == project.id)
             ).first()
             if run is None:
