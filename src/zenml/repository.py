@@ -19,6 +19,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
 from uuid import UUID
 
+from pydantic import BaseModel
+
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
@@ -41,7 +43,13 @@ from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
     from zenml.enums import StackComponentType
-    from zenml.models import ComponentModel, ProjectModel, StackModel, UserModel
+    from zenml.models import (
+        ComponentModel,
+        ProjectModel,
+        StackModel,
+        HydratedStackModel,
+        UserModel
+    )
     from zenml.runtime_configuration import RuntimeConfiguration
     from zenml.stack import Stack, StackComponent
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -456,7 +464,7 @@ class Repository(metaclass=RepositoryMetaClass):
         return self.zen_store.active_user
 
     @property
-    def stack_models(self) -> List["StackModel"]:
+    def stack_models(self) -> List["HydratedStackModel"]:
         """All stack models available in the current project and owned by the current user.
 
         This property is intended as a quick way to get information about the
@@ -469,10 +477,10 @@ class Repository(metaclass=RepositoryMetaClass):
             A list of all stacks available in the current project and owned by
             the current user.
         """
-        return self.zen_store.list_stacks(
-            project_name_or_id=self.active_project_name,
-            user_name_or_id=self.active_user.id,
-        )
+        return [stack.to_hydrated_model()
+                for stack in self.zen_store.list_stacks(
+                    project_name_or_id=self.active_project_name,
+                    user_name_or_id=self.active_user.id)]
 
     @property
     def stacks(self) -> List["Stack"]:
@@ -514,13 +522,13 @@ class Repository(metaclass=RepositoryMetaClass):
         dict_of_stacks = dict()
         for stack in stacks:
             dict_of_stacks[stack.name] = {"shared": str(stack.is_shared)}
-            for component_type, component in stack.components.items():
-                dict_of_stacks[stack.name][str(component_type)] = component.name
+            for comp_type, comp in stack.to_hydrated_model().components.items():
+                dict_of_stacks[stack.name][str(comp_type)] = comp[0].name
 
         return dict_of_stacks
 
     @property
-    def active_stack_model(self) -> "StackModel":
+    def active_stack_model(self) -> "HydratedStackModel":
         """The model of the active stack for this repository.
 
         If no active stack is configured locally for the repository, the active
@@ -545,7 +553,7 @@ class Repository(metaclass=RepositoryMetaClass):
                 "`zenml stack set STACK_NAME` to set the active stack."
             )
 
-        return self.zen_store.get_stack(stack_id=stack_id)
+        return self.zen_store.get_stack(stack_id=stack_id).to_hydrated_model()
 
     @property
     def active_stack(self) -> "Stack":
@@ -560,7 +568,7 @@ class Repository(metaclass=RepositoryMetaClass):
 
     @track(event=AnalyticsEvent.SET_STACK)
     def activate_stack(self, stack: "StackModel") -> None:
-        """Activates the stack for the given name.
+        """Sets the stack as active.
 
         Args:
             stack: Model of the stack to activate.
@@ -627,11 +635,8 @@ class Repository(metaclass=RepositoryMetaClass):
         Raises:
             RuntimeError: If the stack configuration is invalid.
         """
-        # TODO: [server] make sure the stack can be validated here
         if stack.is_valid:
             created_stack = self.zen_store.register_stack(
-                user_name_or_id=self.zen_store.active_user.name,
-                project_name_or_id=self.active_project.name,
                 stack=stack,
             )
             return created_stack
@@ -653,7 +658,7 @@ class Repository(metaclass=RepositoryMetaClass):
         """
         if stack.is_valid:
             assert stack.id is not None
-            self.zen_store.update_stack(stack_id=stack.id, stack=stack)
+            self.zen_store.update_stack(stack=stack)
         else:
             raise RuntimeError(
                 "Stack configuration is invalid. A valid"
@@ -771,6 +776,7 @@ class Repository(metaclass=RepositoryMetaClass):
         Returns:
             The registered stack component.
         """
+        # TODO: [server] this returns the implementation rather than the model
         logger.debug(
             "Fetching stack component with id '%s'.",
             id,
@@ -789,6 +795,7 @@ class Repository(metaclass=RepositoryMetaClass):
             component: The component to register.
         """
         from zenml.models import ComponentModel
+        # TODO: [server] this uses the implementation rather than the model
 
         self.zen_store.register_stack_component(
             project_name_or_id=self.active_project.name,
@@ -998,12 +1005,12 @@ class Repository(metaclass=RepositoryMetaClass):
         except KeyError:
             pipeline = PipelineModel(
                 name=pipeline_name,
-                owner=self.active_user.id,
-                project_id=self.active_project.id,
                 configuration=pipeline_configuration,
             )
             pipeline = self.zen_store.create_pipeline(
-                project_name_or_id=self.active_project.name, pipeline=pipeline
+                project_name_or_id=self.active_project.name,
+                user_name_or_id=self.active_user.id,
+                pipeline=pipeline
             )
             logger.info(f"Registered new pipeline with name {pipeline.name}.")
             assert pipeline.id is not None

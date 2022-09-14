@@ -31,7 +31,7 @@ from zenml.constants import ENV_ZENML_SECRET_VALIDATION_LEVEL
 from zenml.enums import SecretValidationLevel, StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.logger import get_logger
-from zenml.models import ComponentModel, StackModel
+from zenml.models.stack_models import HydratedStackModel
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
@@ -120,23 +120,8 @@ class Stack:
         self._annotator = annotator
         self._data_validator = data_validator
 
-    def to_model(self) -> "StackModel":
-        """Creates a StackModel from an actual Stack instance.
-
-        Returns:
-            a StackModel
-        """
-        return StackModel(
-            id=self.id,
-            name=self.name,
-            components={
-                type_: ComponentModel.from_component(component)
-                for type_, component in self.components.items()
-            },
-        )
-
     @classmethod
-    def from_model(cls, stack_model: StackModel) -> "Stack":
+    def from_model(cls, stack_model: HydratedStackModel) -> "Stack":
         """Creates a Stack instance from a StackModel.
 
         Args:
@@ -146,7 +131,7 @@ class Stack:
             The created Stack instance.
         """
         stack_components = {
-            type_: model.to_component()
+            type_: model[0].to_component()
             for type_, model in stack_model.components.items()
         }
         assert stack_model.id is not None

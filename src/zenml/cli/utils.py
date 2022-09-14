@@ -273,7 +273,7 @@ def print_stack_component_list(
         component_config = {
             "ACTIVE": ":point_right:" if is_active else "",
             "NAME": component.name,
-            "FLAVOR": component.flavor_name,
+            "FLAVOR": component.flavor,
             "UUID": component.id,
             **{
                 key.upper(): str(value)

@@ -34,7 +34,7 @@ class ProjectSchema(SQLModel, table=True):
     id: UUID = Field(primary_key=True, default_factory=uuid4)
     name: str
     description: Optional[str] = Field(nullable=True)
-    created_at: datetime = Field(default_factory=datetime.now)
+    creation_date: datetime = Field(default_factory=datetime.now)
 
     user_role_assignments: List["UserRoleAssignmentSchema"] = Relationship(
         back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
@@ -78,5 +78,5 @@ class ProjectSchema(SQLModel, table=True):
             id=self.id,
             name=self.name,
             description=self.description,
-            created_at=self.created_at,
+            created_at=self.creation_date,
         )

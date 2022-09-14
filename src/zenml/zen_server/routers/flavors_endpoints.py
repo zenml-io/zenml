@@ -11,19 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Endpoint definitions for stacks."""
-
 from typing import List, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from zenml.constants import STACKS, VERSION_1
+from zenml.constants import STACKS, VERSION_1, FLAVORS
 from zenml.exceptions import NotAuthorizedError, ValidationError
-from zenml.models import StackModel
-from zenml.models.stack_models import HydratedStackModel
+from zenml.models import FlavorModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
-from zenml.zen_server.models.stack_models import UpdateStackModel
 from zenml.zen_server.utils import (
     authorize,
     error_detail,
@@ -32,8 +28,8 @@ from zenml.zen_server.utils import (
 )
 
 router = APIRouter(
-    prefix=VERSION_1 + STACKS,
-    tags=["stacks"],
+    prefix=VERSION_1 + FLAVORS,
+    tags=["flavors"],
     dependencies=[Depends(authorize)],
     responses={401: error_response},
 )
@@ -41,28 +37,21 @@ router = APIRouter(
 
 @router.get(
     "/",
-    response_model=Union[List[HydratedStackModel], List[StackModel]],
+    response_model=List[FlavorModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def list_stacks(
+async def list_flavors(
     project_name_or_id: Optional[str] = None,
-    user_name_or_id: Optional[str] = None,
-    stack_name: Optional[str] = None,
-    is_shared: Optional[bool] = None,
-    hydrated: bool = True
-) -> Union[List[HydratedStackModel], List[StackModel]]:
-    """Returns all stacks.
+    component_type: Optional[str] = None
+) -> List[FlavorModel]:
+    """Returns all flavors.
 
     Args:
-        project_name_or_id: Name or ID of the project
-        user_name_or_id: Optionally filter by name or ID of the user.
-        stack_name: Optionally filter by stack name
-        is_shared: Optionally filter by shared status of the stack
-        hydrated: Defines if stack components, users and projects will be
-                  included by reference (FALSE) or as model (TRUE)
+        project_name_or_id: Name or ID of the project.
+        component_type: Optionally filter by component_type.
 
     Returns:
-        All stacks.
+        All flavors.
 
     Raises:
         401 error: when not authorized to login
@@ -70,15 +59,11 @@ async def list_stacks(
         422 error: when unable to validate input
     """
     try:
-        stacks_list = zen_store.list_stacks(
+        flavors_list = zen_store.list_flavors(
             project_name_or_id=parse_name_or_uuid(project_name_or_id),
-            user_name_or_id=parse_name_or_uuid(user_name_or_id),
-            is_shared=is_shared,
-            name=stack_name)
-        if hydrated:
-            return [stack.to_hydrated_model() for stack in stacks_list]
-        else:
-            return stacks_list
+            component_type=component_type
+        )
+        return flavors_list
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
@@ -88,20 +73,17 @@ async def list_stacks(
 
 
 @router.get(
-    "/{stack_id}",
-    response_model=Union[HydratedStackModel, StackModel],
+    "/{flavor_id}",
+    response_model=FlavorModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_stack(
-    stack_id: str,
-    hydrated: bool = True
-) -> Union[HydratedStackModel, StackModel]:
-    """Returns the requested stack.
+async def get_flavor(
+    flavor_id: str,
+) -> FlavorModel:
+    """Returns the requested flavor.
 
     Args:
-        stack_id: ID of the stack.
-        hydrated: Defines if stack components, users and projects will be
-                  included by reference (FALSE) or as model (TRUE)
+        flavor_id: ID of the flavor.
 
     Returns:
         The requested stack.
@@ -112,11 +94,7 @@ async def get_stack(
         422 error: when unable to validate input
     """
     try:
-        stack = zen_store.get_stack(UUID(stack_id))
-        if hydrated:
-            return stack.to_hydrated_model()
-        else:
-            return stack
+        return zen_store.get_flavor(UUID(flavor_id))
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
@@ -126,25 +104,22 @@ async def get_stack(
 
 
 @router.put(
-    "/{stack_id}",
-    response_model=Union[HydratedStackModel, StackModel],
+    "/{flavor_id}",
+    response_model=FlavorModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def update_stack(
-    stack_id: str,
-    stack_update: UpdateStackModel,
-    hydrated: bool = True
-) -> Union[HydratedStackModel, StackModel]:
+async def update_flavor(
+    flavor_id: str,
+    flavor: FlavorModel
+) -> FlavorModel:
     """Updates a stack.
 
     Args:
-        stack_id: Name of the stack.
-        stack_update: Stack to use for the update.
-        hydrated: Defines if stack components, users and projects will be
-                  included by reference (FALSE) or as model (TRUE)
+        flavor_id: Name of the flavor.
+        flavor: Flavor to use for the update.
 
     Returns:
-        The updated stack.
+        The updated flavor.
 
     Raises:
         401 error: when not authorized to login
@@ -152,13 +127,8 @@ async def update_stack(
         422 error: when unable to validate input
     """
     try:
-        stack_in_db = zen_store.get_stack(parse_name_or_uuid(stack_id))
-        updated_stack = zen_store.update_stack(
-            stack=stack_update.apply_to_model(stack_in_db))
-        if hydrated:
-            return updated_stack.to_hydrated_model()
-        else:
-            return updated_stack
+        a = 0
+        # TODO: [server] implement an update method on the flavor
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
@@ -168,14 +138,14 @@ async def update_stack(
 
 
 @router.delete(
-    "/{stack_id}",
+    "/{flavor_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def delete_stack(stack_id: str) -> None:
-    """Deletes a stack.
+async def delete_flavor(flavor_id: str) -> None:
+    """Deletes a flavor.
 
     Args:
-        stack_id: Name of the stack.
+        flavor_id: Name of the flavor.
 
     Raises:
         401 error: when not authorized to login
@@ -183,7 +153,8 @@ async def delete_stack(stack_id: str) -> None:
         422 error: when unable to validate input
     """
     try:
-        zen_store.delete_stack(UUID(stack_id))  # aka 'deregister_stack'
+        a = 0
+        # TODO: [server] implement an update method on the flavor
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
