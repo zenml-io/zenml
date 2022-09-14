@@ -17,12 +17,12 @@ import json
 import os
 import uuid
 from pathlib import PurePath
+from secrets import token_hex
 from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 
 from packaging import version
 from pydantic import BaseModel, Field, ValidationError, validator
 from pydantic.main import ModelMetaclass
-from secrets import token_hex
 
 from zenml import __version__
 from zenml.config.store_config import StoreConfiguration

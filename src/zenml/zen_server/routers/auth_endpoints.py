@@ -12,17 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.param_functions import Form
-from fastapi.security import OAuth2PasswordRequestForm
 
-from zenml.constants import LOGIN, LOGOUT, VERSION_1
-from zenml.zen_server.auth import (
-    authenticate_user,
-)
-from zenml.zen_server.utils import (
-    error_response,
-)
+from zenml.constants import LOGIN, VERSION_1
+from zenml.zen_server.auth import authenticate_user
+from zenml.zen_server.utils import error_response
 
 router = APIRouter(
     prefix=VERSION_1,

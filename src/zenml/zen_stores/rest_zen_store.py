@@ -49,22 +49,6 @@ from zenml.models import (
 )
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
-from zenml.models import (
-    ComponentModel,
-    FlavorModel,
-    StackModel,
-    CodeRepositoryModel,
-    ArtifactModel,
-    PipelineModel,
-    PipelineRunModel,
-    StepRunModel,
-    ProjectModel,
-    RoleAssignmentModel,
-    RoleModel,
-    TeamModel,
-    UserModel,
-)
-
 logger = get_logger(__name__)
 
 # type alias for possible json payloads (the Anys are recursive Json instances)
@@ -989,13 +973,10 @@ class RestZenStore(BaseZenStore):
             KeyError: if the project does not exist.
         """
 
-    def update_pipeline(
-        self, pipeline_id: UUID, pipeline: PipelineModel
-    ) -> PipelineModel:
+    def update_pipeline(self, pipeline: PipelineModel) -> PipelineModel:
         """Updates a pipeline.
 
         Args:
-            pipeline_id: The ID of the pipeline to update.
             pipeline: The pipeline to use for the update.
 
         Returns:

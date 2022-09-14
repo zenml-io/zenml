@@ -15,7 +15,7 @@
 
 from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional, cast
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
@@ -58,33 +58,26 @@ def get_git_sha(clean: bool = True) -> Optional[str]:
 
 
 class PipelineModel(AnalyticsTrackedModelMixin):
-    """Pydantic object representing a pipeline.
-
-    Attributes:
-        name: Pipeline name
-        docstring: Docstring of the pipeline
-        steps: List of steps in this pipeline
-    """
+    """Domain Model representing a pipeline."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["id", "project", "user"]
 
-    id: Optional[UUID]
-    name: str
-
-    project: Optional[UUID] = Field(
-        default=None, title="The project that contains this component."
+    id: UUID = Field(
+        default_factory=uuid4, title="The unique id of the pipeline."
     )
-    user: Optional[UUID] = Field(
-        default=None,
-        title="The id of the user that owns this component.",
-    )
+    name: str = Field(title="The name of the pipeline.")
 
     docstring: Optional[str]
     configuration: Dict[str, str]
 
-    creation_date: Optional[datetime] = Field(
-        default=None,
-        title="The time at which the component was registered.",
+    project: UUID = Field(title="The project that contains this component.")
+    user: UUID = Field(
+        title="The id of the user that owns this component.",
+    )
+
+    creation_date: datetime = Field(
+        default_factory=datetime.now,
+        title="The time at which the pipeline was created.",
     )
 
     def to_hydrated_model(self) -> "HydratedPipelineModel":
@@ -118,26 +111,13 @@ class HydratedPipelineModel(PipelineModel):
     )
 
 
-class PipelineRunModel(BaseModel):
-    """Pydantic object representing a pipeline run.
+class PipelineRunModel(AnalyticsTrackedModelMixin):
+    """Domain Model representing a pipeline run."""
 
-    Attributes:
-        name: Pipeline run name.
-        zenml_version: Version of ZenML that this pipeline run was performed
-            with.
-        git_sha: Git commit SHA that this pipeline run was performed on. This
-            will only be set if the pipeline code is in a git repository and
-            there are no uncommitted files when running the pipeline.
-        pipeline: Pipeline that this run is referring to.
-        stack: Stack that this run was performed on.
-        runtime_configuration: Runtime configuration that was used for this run.
-        owner: Id of the user that ran this pipeline.
-    """
+    id: UUID = Field(default_factory=uuid4, title="The unique id of the run.")
+    name: str = Field(title="The name of the pipeline.")
 
-    id: Optional[UUID]
-    name: str
-
-    owner: Optional[UUID]  # might not be set for scheduled runs
+    user: UUID  # might not be set for scheduled runs
     stack_id: Optional[UUID]  # might not be set for scheduled runs
     pipeline_id: Optional[UUID]  # might not be set for scheduled runs
 
@@ -145,10 +125,14 @@ class PipelineRunModel(BaseModel):
 
     zenml_version: Optional[str] = current_zenml_version
     git_sha: Optional[str] = Field(default_factory=get_git_sha)
-    created_at: Optional[datetime]
 
     # ID in MLMD - needed for some metadata store methods
     mlmd_id: Optional[int]
+
+    creation_date: datetime = Field(
+        default_factory=datetime.now,
+        title="The time at which the run was registered.",
+    )
 
 
 class StepRunModel(BaseModel):

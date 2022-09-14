@@ -410,7 +410,7 @@ class SqlZenStore(BaseZenStore):
             A list of all stacks matching the filter criteria.
         """
         with Session(self.engine) as session:
-
+            # TODO: raise KeyError when nonexistent project or username passed in
             # Get a list of all stacks
             query = select(StackSchema)
             # TODO: prettify
@@ -1575,16 +1575,11 @@ class SqlZenStore(BaseZenStore):
     @track(AnalyticsEvent.CREATE_PIPELINE)
     def create_pipeline(
         self,
-        project_name_or_id: Union[str, UUID],
-        user_name_or_id: Union[str, UUID],
         pipeline: PipelineModel,
     ) -> PipelineModel:
         """Creates a new pipeline in a project.
 
         Args:
-            project_name_or_id: ID or name of the project to create the pipeline
-                in.
-            user_name_or_id: ID of the user that created the pipeline.
             pipeline: The pipeline to create.
 
         Returns:
@@ -1594,31 +1589,25 @@ class SqlZenStore(BaseZenStore):
             EntityExistsError: If an identical pipeline already exists.
         """
         with Session(self.engine) as session:
-            # Check if project with the given name exists
-            project = self._get_project_schema(project_name_or_id)
-            user = self._get_user_schema(user_name_or_id)
-
             # Check if pipeline with the given name already exists
             existing_pipeline = session.exec(
                 select(PipelineSchema)
                 .where(PipelineSchema.name == pipeline.name)
-                .where(PipelineSchema.project == project.id)
+                .where(PipelineSchema.project == pipeline.project)
             ).first()
             if existing_pipeline is not None:
                 raise EntityExistsError(
-                    f"Unable to create pipeline in project '{project.name}': "
-                    f"A pipeline with this name already exists."
+                    f"Unable to create pipeline in project "
+                    f"'{pipeline.project}': A pipeline with this name "
+                    f"already exists."
                 )
 
             # Create the pipeline
-            new_pipeline = PipelineSchema.from_create_model(
-                project_id=project.id, user_id=user.id, pipeline=pipeline
-            )
+            new_pipeline = PipelineSchema.from_create_model(pipeline=pipeline)
             session.add(new_pipeline)
             session.commit()
-
-            # After committing the model, sqlmodel takes care of updating the
-            # object with id, created_at, etc ...
+            # Refresh the Model that was just created
+            session.refresh(new_pipeline)
 
             return new_pipeline.to_model()
 
@@ -1711,13 +1700,10 @@ class SqlZenStore(BaseZenStore):
             return [pipeline.to_model() for pipeline in pipelines]
 
     @track(AnalyticsEvent.UPDATE_PIPELINE)
-    def update_pipeline(
-        self, pipeline_id: UUID, pipeline: PipelineModel
-    ) -> PipelineModel:
+    def update_pipeline(self, pipeline: PipelineModel) -> PipelineModel:
         """Updates a pipeline.
 
         Args:
-            pipeline_id: The ID of the pipeline to update.
             pipeline: The pipeline to use for the update.
 
         Returns:
@@ -1828,10 +1814,10 @@ class SqlZenStore(BaseZenStore):
                         f"No pipeline with ID {pipeline_run.pipeline_id} found."
                     )
                 new_run = PipelineRunSchema.from_create_model(
-                    model=pipeline_run, pipeline=pipeline
+                    run=pipeline_run, pipeline=pipeline
                 )
             else:
-                new_run = PipelineRunSchema.from_create_model(pipeline_run)
+                new_run = PipelineRunSchema.from_create_model(run=pipeline_run)
 
             # Create the pipeline run
             session.add(new_run)

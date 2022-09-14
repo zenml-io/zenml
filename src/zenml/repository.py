@@ -1005,14 +1005,12 @@ class Repository(metaclass=RepositoryMetaClass):
         # A) If there is no pipeline with this name, register a new pipeline.
         except KeyError:
             pipeline = PipelineModel(
+                project=self.active_project.id,
+                user=self.active_user.id,
                 name=pipeline_name,
                 configuration=pipeline_configuration,
             )
-            pipeline = self.zen_store.create_pipeline(
-                project_name_or_id=self.active_project.name,
-                user_name_or_id=self.active_user.id,
-                pipeline=pipeline,
-            )
+            pipeline = self.zen_store.create_pipeline(pipeline=pipeline)
             logger.info(f"Registered new pipeline with name {pipeline.name}.")
             assert pipeline.id is not None
             return pipeline.id
@@ -1071,7 +1069,8 @@ class Repository(metaclass=RepositoryMetaClass):
 
         pipeline_run = PipelineRunModel(
             name=runtime_configuration.run_name,
-            owner=self.active_user.id,
+            user=self.active_user.id,
+            project=self.active_project.id,
             stack_id=stack_id,
             pipeline_id=pipeline_id,
             runtime_configuration=runtime_configuration,

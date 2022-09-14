@@ -23,10 +23,24 @@ This separation allows the domain models and REST API to evolve independently
 of each other.
 """
 
-
+from zenml.zen_server.models.pipeline_models import (
+    CreatePipelineModel,
+    UpdatePipelineModel,
+)
+from zenml.zen_server.models.projects_models import (
+    CreateProjectModel,
+    UpdateProjectModel,
+)
 from zenml.zen_server.models.stack_models import (
     CreateStackModel,
     UpdateStackModel,
 )
 
-__all__ = ["CreateStackModel", "UpdateStackModel"]
+__all__ = [
+    "CreateStackModel",
+    "UpdateStackModel",
+    "CreateProjectModel",
+    "UpdateProjectModel",
+    "CreatePipelineModel",
+    "UpdatePipelineModel",
+]

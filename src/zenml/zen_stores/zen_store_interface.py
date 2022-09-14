@@ -863,15 +863,11 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def create_pipeline(
         self,
-        project_name_or_id: Union[str, UUID],
-        user_name_or_id: Union[str, UUID],
         pipeline: PipelineModel,
     ) -> PipelineModel:
         """Creates a new pipeline in a project.
 
         Args:
-            project_name_or_id: ID of the project to create the pipeline in.
-            user_name_or_id: ID of the user that created the pipeline.
             pipeline: The pipeline to create.
 
         Returns:
@@ -933,13 +929,10 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def update_pipeline(
-        self, pipeline_id: UUID, pipeline: PipelineModel
-    ) -> PipelineModel:
+    def update_pipeline(self, pipeline: PipelineModel) -> PipelineModel:
         """Updates a pipeline.
 
         Args:
-            pipeline_id: The ID of the pipeline to update.
             pipeline: The pipeline to use for the update.
 
         Returns:

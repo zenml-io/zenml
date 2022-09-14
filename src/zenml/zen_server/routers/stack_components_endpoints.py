@@ -24,11 +24,7 @@ from zenml.models import ComponentModel
 from zenml.models.component_models import HydratedComponentModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import authorize
-from zenml.zen_server.utils import (
-    error_detail,
-    error_response,
-    zen_store,
-)
+from zenml.zen_server.utils import error_detail, error_response, zen_store
 
 router = APIRouter(
     prefix=VERSION_1 + STACK_COMPONENTS,
