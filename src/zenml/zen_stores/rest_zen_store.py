@@ -22,8 +22,10 @@ import requests
 from pydantic import BaseModel
 
 from zenml.config.store_config import StoreConfiguration
+from zenml.constants import LOGIN, PROJECTS, STACKS, USERS, VERSION_1
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.exceptions import (
+    AuthorizationException,
     DoesNotExistException,
     EntityExistsError,
     StackComponentExistsError,
@@ -46,6 +48,22 @@ from zenml.models import (
     UserModel,
 )
 from zenml.zen_stores.base_zen_store import BaseZenStore
+
+from zenml.models import (
+    ComponentModel,
+    FlavorModel,
+    StackModel,
+    CodeRepositoryModel,
+    ArtifactModel,
+    PipelineModel,
+    PipelineRunModel,
+    StepRunModel,
+    ProjectModel,
+    RoleAssignmentModel,
+    RoleModel,
+    TeamModel,
+    UserModel,
+)
 
 logger = get_logger(__name__)
 
@@ -81,6 +99,8 @@ class RestZenStore(BaseZenStore):
     config: RestZenStoreConfiguration
     TYPE: ClassVar[StoreType] = StoreType.REST
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]] = RestZenStoreConfiguration
+    _api_token: Optional[str] = None
+    _session: Optional[requests.Session] = None
 
     def _initialize_database(self) -> None:
         """Initialize the database."""
@@ -97,9 +117,7 @@ class RestZenStore(BaseZenStore):
     def _initialize(self) -> None:
         """Initialize the REST store."""
         # try to connect to the server to validate the configuration
-        self._handle_response(
-            requests.get(self.url + "/", auth=self._get_authentication())
-        )
+        self.active_user
 
     @staticmethod
     def get_path_from_url(url: str) -> Optional[Path]:
@@ -228,6 +246,8 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the stack doesn't exist.
         """
+        body = self.get(f"{STACKS}/{str(stack_id)}")
+        return StackModel.parse_obj(body)
 
     def list_stacks(
         self,
@@ -252,6 +272,12 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the project doesn't exist.
         """
+        body = self.get(STACKS)
+        if not isinstance(body, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+        return [StackModel.parse_obj(s) for s in body]
 
     def update_stack(
         self,
@@ -465,6 +491,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The active username.
         """
+        return self.config.username
 
     def create_user(self, user: UserModel) -> UserModel:
         """Creates a new user.
@@ -491,6 +518,7 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If no user with the given name or ID exists.
         """
+        return UserModel.parse_obj(self.get(f"{USERS}/{str(user_name_or_id)}"))
 
     # TODO: [ALEX] add filtering param(s)
     def list_users(self) -> List[UserModel]:
@@ -782,6 +810,8 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If there is no such project.
         """
+        body = self.get(f"{PROJECTS}/{str(project_name_or_id)}")
+        return ProjectModel.parse_obj(body)
 
     # TODO: [ALEX] add filtering param(s)
     def list_projects(self) -> List[ProjectModel]:
@@ -1184,6 +1214,34 @@ class RestZenStore(BaseZenStore):
     # Internal helper methods
     # =======================
 
+    def _get_auth_token(self) -> str:
+        """Get the authentication token for the REST store.
+
+        Returns:
+            The authentication token.
+        """
+        if self._api_token is None:
+            self._api_token = self._handle_response(
+                requests.post(
+                    self.url + VERSION_1 + LOGIN,
+                    data={
+                        "username": self.config.username,
+                        "password": self.config.password,
+                    },
+                )
+            )["access_token"]
+        return self._api_token
+
+    @property
+    def session(self) -> requests.Session:
+        """Authenticate to the ZenML server."""
+        if self._session is None:
+            self._session = requests.Session()
+            token = self._get_auth_token()
+            self._session.headers.update({"Authorization": "Bearer " + token})
+            logger.debug("Authenticated to ZenML server.")
+        return self._session
+
     def _handle_response(self, response: requests.Response) -> Json:
         """Handle API response, translating http status codes to Exception.
 
@@ -1198,8 +1256,8 @@ class RestZenStore(BaseZenStore):
                 requested entity does not exist.
             EntityExistsError: If the response indicates that the requested
                 entity already exists.
-            HTTPError: If the response indicates that the requested entity
-                does not exist.
+            AuthorizationException: If the response indicates that the request
+                is not authorized.
             KeyError: If the response indicates that the requested entity
                 does not exist.
             RuntimeError: If the response indicates that the requested entity
@@ -1221,7 +1279,7 @@ class RestZenStore(BaseZenStore):
                     f"{response.text}"
                 )
         elif response.status_code == 401:
-            raise requests.HTTPError(
+            raise AuthorizationException(
                 f"{response.status_code} Client Error: Unauthorized request to URL {response.url}: {response.json().get('detail')}"
             )
         elif response.status_code == 404:
@@ -1256,13 +1314,25 @@ class RestZenStore(BaseZenStore):
                 f"{response.status_code} with body:\n{response.text}"
             )
 
-    def _get_authentication(self) -> Tuple[str, str]:
-        """Gets HTTP basic auth credentials.
+    def _request(self, method: str, url: str, **kwargs) -> Json:
+        """Make a request to the REST API.
 
-        Returns:
-            A tuple of the username and password.
+        Args:
+            method: The HTTP method to use.
+            url: The URL to request.
+            kwargs: Additional keyword arguments to pass to the request.
         """
-        return self.config.username, self.config.password
+        try:
+            return self._handle_response(
+                self.session.request(method, url, **kwargs)
+            )
+        except AuthorizationException:
+            # The authentication token could have expired; refresh it and try
+            # again
+            self._session = None
+            return self._handle_response(
+                self.session.request(method, url, **kwargs)
+            )
 
     def get(self, path: str) -> Json:
         """Make a GET request to the given endpoint path.
@@ -1273,9 +1343,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The response body.
         """
-        return self._handle_response(
-            requests.get(self.url + path, auth=self._get_authentication())
-        )
+        return self._request("GET", self.url + VERSION_1 + path)
 
     def delete(self, path: str) -> Json:
         """Make a DELETE request to the given endpoint path.
@@ -1286,9 +1354,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The response body.
         """
-        return self._handle_response(
-            requests.delete(self.url + path, auth=self._get_authentication())
-        )
+        return self._request("DELETE", self.url + VERSION_1 + path)
 
     def post(self, path: str, body: BaseModel) -> Json:
         """Make a POST request to the given endpoint path.
@@ -1300,11 +1366,8 @@ class RestZenStore(BaseZenStore):
         Returns:
             The response body.
         """
-        endpoint = self.url + path
-        return self._handle_response(
-            requests.post(
-                endpoint, data=body.json(), auth=self._get_authentication()
-            )
+        return self._request(
+            "POST", self.url + VERSION_1 + path, data=body.json()
         )
 
     def put(self, path: str, body: BaseModel) -> Json:
@@ -1317,9 +1380,6 @@ class RestZenStore(BaseZenStore):
         Returns:
             The response body.
         """
-        endpoint = self.url + path
-        return self._handle_response(
-            requests.put(
-                endpoint, data=body.json(), auth=self._get_authentication()
-            )
+        return self._request(
+            "PUT", self.url + VERSION_1 + path, data=body.json()
         )

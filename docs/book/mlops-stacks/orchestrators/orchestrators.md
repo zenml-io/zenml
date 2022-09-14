@@ -31,6 +31,7 @@ are provided by integrations:
 | Orchestrator         | Flavor    | Integration    | Notes |
 |----------------------------|-----------|----------------|-------------|
 | [LocalOrchestrator](./local.md)   | `local`   | _built-in_     | Runs your pipelines locally. |
+| [LocalDockerOrchestrator](./local-docker.md)   | `local_docker`   | _built-in_     | Runs your pipelines locally using Docker. |
 | [KubernetesOrchestrator](./kubernetes.md) | `kubernetes` | `kubernetes`     | Runs your pipelines in Kubernetes clusters. |
 | [KubeflowOrchestrator](./kubeflow.md)       | `kubeflow`       | `kubeflow`    | Runs your pipelines using Kubeflow. |
 | [VertexOrchestrator](./gcloud-vertexai.md)     | `vertex`     | `gcp`     | Runs your pipelines in Vertex AI. |

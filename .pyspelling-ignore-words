@@ -127,6 +127,7 @@ DataFrame's
 DataFrames
 DataLoader
 DataQualityProfileSection
+Databricks
 DatasetProfile
 DatasetProfileView
 Deepchecks
@@ -288,6 +289,7 @@ LocalArtifactStore
 LocalDaemonService
 LocalDaemonService
 LocalDaemonServiceConfig
+LocalDockerOrchestrator
 LocalExample
 LocalOrchestrator
 LocalStack
@@ -759,6 +761,7 @@ daemonization
 daemonize
 daemonizer
 dango
+databricks
 datadir
 datadrift
 dataframe
@@ -1328,3 +1331,5 @@ SleepingService
 SleepingServiceConfig
 LocalZenServer
 DockerZenServer
+databricks
+Databricks

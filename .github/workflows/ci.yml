@@ -62,5 +62,8 @@ jobs:
   spell-check:
     uses: ./.github/workflows/spellcheck.yml
 
+  docstring-check:
+    uses: ./.github/workflows/docstring.yml
+
   markdown-link-check:
     uses: ./.github/workflows/markdown-link-check.yml

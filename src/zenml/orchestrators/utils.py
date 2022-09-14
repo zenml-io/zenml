@@ -18,7 +18,9 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 import tfx.orchestration.pipeline as tfx_pipeline
 from tfx.orchestration.portable import data_types
 from tfx.proto.orchestration.pipeline_pb2 import ContextSpec, PipelineNode
+from tfx.utils.topsort import InvalidDAGError
 
+from zenml.exceptions import PipelineInterfaceError
 from zenml.logger import get_logger
 from zenml.steps import BaseStep
 
@@ -45,6 +47,7 @@ def create_tfx_pipeline(
     Raises:
         KeyError: If a step contains an upstream step which is not part of
             the pipeline.
+        PipelineInterfaceError: If the pipeline contains a cycle.
     """
     # Connect the inputs/outputs of all steps in the pipeline
     zenml_pipeline.connect(**zenml_pipeline.steps)
@@ -71,12 +74,22 @@ def create_tfx_pipeline(
     # We do not pass the metadata connection config here as it might not be
     # accessible. Instead it is queried from the active stack right before a
     # step is executed (see `BaseOrchestrator.run_step(...)`)
-    return tfx_pipeline.Pipeline(
-        pipeline_name=zenml_pipeline.name,
-        components=list(tfx_components.values()),
-        pipeline_root=artifact_store.path,
-        enable_cache=zenml_pipeline.enable_cache,
-    )
+    try:
+        pipeline = tfx_pipeline.Pipeline(
+            pipeline_name=zenml_pipeline.name,
+            components=list(tfx_components.values()),
+            pipeline_root=artifact_store.path,
+            enable_cache=zenml_pipeline.enable_cache,
+        )
+    except InvalidDAGError:
+        raise PipelineInterfaceError(
+            f"Some steps of the pipeline {zenml_pipeline.name} form a cycle "
+            "and can't be executed. If you're manually specifying step "
+            "dependencies (e.g. `step_1.after(step_2)`), make sure you're "
+            "not creating any cyclic dependencies."
+        )
+
+    return pipeline
 
 
 def get_step_for_node(node: PipelineNode, steps: List[BaseStep]) -> BaseStep:

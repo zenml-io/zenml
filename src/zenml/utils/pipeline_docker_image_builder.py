@@ -247,54 +247,34 @@ class PipelineDockerImageBuilder(BaseModel):
 
         return lines
 
-    def build_and_push_docker_image(
+    def build_docker_image(
         self,
+        target_image_name: str,
         pipeline_name: str,
         docker_configuration: DockerConfiguration,
         stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
         entrypoint: Optional[str] = None,
-    ) -> str:
-        """Builds and pushes a Docker image to run a pipeline.
-
-        Use the image name returned by this method whenever you need to uniquely
-        reference the pushed image in order to pull or run it.
+    ) -> None:
+        """Builds a Docker image to run a pipeline.
 
         Args:
+            target_image_name: The name of the image to build.
             pipeline_name: Name of the pipeline for which the image(s) should
                 be built.
             docker_configuration: Docker configuration that specifies what
                 should be included in the image.
             stack: The stack on which the pipeline will be executed.
-            runtime_configuration: The runtime configuration for the pipeline
-                run.
             entrypoint: Entrypoint to use for the final image. If left empty,
                 no entrypoint will be included in the image.
 
-        Returns:
-            The Docker repository digest of the pushed image.
-
         Raises:
-            RuntimeError: If the stack doesn't contain a container registry.
             ValueError: If no Dockerfile and/or custom parent image is
                 specified and the Docker configuration doesn't require an
                 image build.
         """
-        container_registry = stack.container_registry
-        if not container_registry:
-            raise RuntimeError(
-                "Unable to build and push Docker image because stack "
-                f"`{stack.name}` has no container registry."
-            )
-
         logger.info(
             "Building Docker image(s) for pipeline `%s`.", pipeline_name
         )
-        target_image_name = (
-            f"{container_registry.uri}/"
-            f"{docker_configuration.target_repository}:{pipeline_name}"
-        )
-
         requires_zenml_build = any(
             [
                 docker_configuration.requirements,
@@ -403,6 +383,56 @@ class PipelineDockerImageBuilder(BaseModel):
                     extra_files=requirement_files,
                     pull=pull_parent_image,
                 )
+
+    def build_and_push_docker_image(
+        self,
+        pipeline_name: str,
+        docker_configuration: DockerConfiguration,
+        stack: "Stack",
+        runtime_configuration: "RuntimeConfiguration",
+        entrypoint: Optional[str] = None,
+    ) -> str:
+        """Builds and pushes a Docker image to run a pipeline.
+
+        Use the image name returned by this method whenever you need to uniquely
+        reference the pushed image in order to pull or run it.
+
+        Args:
+            pipeline_name: Name of the pipeline for which the image(s) should
+                be built.
+            docker_configuration: Docker configuration that specifies what
+                should be included in the image.
+            stack: The stack on which the pipeline will be executed.
+            runtime_configuration: The runtime configuration for the pipeline
+                run.
+            entrypoint: Entrypoint to use for the final image. If left empty,
+                no entrypoint will be included in the image.
+
+        Returns:
+            The Docker repository digest of the pushed image.
+
+        Raises:
+            RuntimeError: If the stack doesn't contain a container registry.
+        """
+        container_registry = stack.container_registry
+        if not container_registry:
+            raise RuntimeError(
+                "Unable to build and push Docker image because stack "
+                f"`{stack.name}` has no container registry."
+            )
+
+        target_image_name = (
+            f"{container_registry.uri}/"
+            f"{docker_configuration.target_repository}:{pipeline_name}"
+        )
+
+        self.build_docker_image(
+            target_image_name=target_image_name,
+            pipeline_name=pipeline_name,
+            docker_configuration=docker_configuration,
+            stack=stack,
+            entrypoint=entrypoint,
+        )
 
         repo_digest = container_registry.push_image(target_image_name)
         # Store the docker repo digest in the runtime configuration so it gets

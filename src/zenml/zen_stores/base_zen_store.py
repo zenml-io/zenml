@@ -508,7 +508,13 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             The default user.
         """
         logger.info("Creating default user...")
-        return self.create_user(UserModel(name=DEFAULT_USERNAME))
+        return self.create_user(
+            UserModel(
+                name=DEFAULT_USERNAME,
+                active=True,
+                password="",
+            ).hash_password()
+        )
 
     # -----
     # Teams
