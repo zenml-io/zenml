@@ -256,13 +256,14 @@ def test_active_user_property(sql_store: BaseZenStore):
     """Tests the active user property."""
     active_user = sql_store["store"].active_user
     assert active_user is not None
+    assert active_user == sql_store["active_user"]
 
 
 def test_active_user_name_property(sql_store: BaseZenStore):
     """Tests the active user name property."""
     active_user_name = sql_store["store"].active_user_name
     assert active_user_name is not None
-    assert active_user_name == sql_store["store"].active_user.name
+    assert active_user_name == sql_store["active_user"].name
     assert active_user_name == DEFAULT_NAME
 
 
@@ -270,7 +271,9 @@ def test_users_property(sql_store: BaseZenStore):
     """Tests the users property."""
     assert len(sql_store["store"].users) == 1
     assert sql_store["store"].users[0].name == DEFAULT_NAME
+    assert sql_store["active_user"].name == DEFAULT_NAME
     assert sql_store["store"].users[0] == sql_store["store"].active_user
+    assert sql_store["store"].users[0] == sql_store["active_user"]
 
 
 def test_creating_user_succeeds(sql_store: BaseZenStore):
