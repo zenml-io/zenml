@@ -29,15 +29,7 @@ from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 
 class StackModel(AnalyticsTrackedModelMixin):
-    """Network Serializable Model describing the Stack.
-
-    name, description, components and is_shared can be specified explicitly by
-    the user through the user interface.
-
-    project, owner, created_at are added implicitly within domain logic
-
-    id is set when the database entry is created
-    """
+    """Domain Model describing the Stack."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "id",
@@ -46,10 +38,17 @@ class StackModel(AnalyticsTrackedModelMixin):
         "is_shared",
     ]
 
-    id: UUID = Field(default_factory=uuid4)
-    name: str
+    id: UUID = Field(
+        default_factory=uuid4,
+        title="The unique id of the stack."
+    )
+    name: str = Field(
+        title="The name of the stack."
+    )
     description: Optional[str] = Field(
-        default=None, title="The description of the stack", max_length=300
+        default=None,
+        title="The description of the stack",
+        max_length=300
     )
     components: Dict[StackComponentType, List[UUID]] = Field(
         title="A mapping of stack component types to the id's of"
@@ -59,7 +58,9 @@ class StackModel(AnalyticsTrackedModelMixin):
         default=False,
         title="Flag describing if this stack is shared.",
     )
-    project: UUID = Field(title="The project that contains this stack.")
+    project: UUID = Field(
+        title="The project that contains this stack."
+    )
     user: UUID = Field(
         title="The id of the user, that created this stack.",
     )

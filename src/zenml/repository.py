@@ -658,7 +658,6 @@ class Repository(metaclass=RepositoryMetaClass):
             RuntimeError: If the stack configuration is invalid.
         """
         if stack.is_valid:
-            assert stack.id is not None
             self.zen_store.update_stack(stack=stack)
         else:
             raise RuntimeError(

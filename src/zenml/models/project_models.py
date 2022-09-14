@@ -15,26 +15,33 @@
 
 from datetime import datetime
 from typing import ClassVar, List, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
+
+from pydantic import Field
 
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 
 class ProjectModel(AnalyticsTrackedModelMixin):
-    """Pydantic object representing a project.
-
-    Attributes:
-        id: Id of the project.
-        created_at: Date when the project was created.
-        name: Name of the project.
-        description: Optional project description.
-    """
+    """Domain Model describing the Project"""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "id",
     ]
 
-    id: Optional[UUID] = None
-    name: str
-    description: Optional[str] = None
-    created_at: Optional[datetime] = None
+    id: UUID = Field(
+        default_factory=uuid4,
+        title="The unique if of the stack."
+    )
+    name: str = Field(
+        title="The unique name of the stack."
+    )
+    description: Optional[str] = Field(
+        default=None,
+        title="The description of the project.",
+        max_length=300
+    )
+    creation_date: datetime = Field(
+        default_factory=datetime.now,
+        title="The time at which the project was created.",
+    )
