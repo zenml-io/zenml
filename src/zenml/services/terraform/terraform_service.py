@@ -14,7 +14,8 @@
 """Implementation of a Terraform ZenML service."""
 
 import os
-import pathlib
+from pathlib import Path
+import shutil
 import python_terraform
 import tempfile
 import time
@@ -60,12 +61,19 @@ class TerraformServiceConfig(ServiceConfig):
     """containerized service configuration.
 
     Attributes:
+        root_runtime_path: the root path where the service stores its files. 
+        singleton: set to True to store the service files directly in the
+            `root_runtime_path` directory instead of creating a subdirectory for
+            each service instance. Only has effect if the `root_runtime_path` is
+            also set.
         directory_path: the path to the directory that hosts all the HCL files.
         log_level: the log level to set the terraform client to. Choose one of
             TRACE, DEBUG, INFO, WARN or ERROR (case insensitive).
         variables_file_path: the path to the file that stores all variable values.
     """
 
+    root_runtime_path: str
+    singleton: bool = False
     directory_path: str
     log_level: str = "ERROR"
     variables_file_path: str = "values.tfvars.json" 
@@ -183,7 +191,7 @@ class TerraformService(BaseService):
             The terraform client.
         """
         if self._terraform_client is None:
-            self.terraform_client = python_terraform.Terraform(
+            self._terraform_client = python_terraform.Terraform(
                 working_dir=str(self.config.directory_path)
             )
         return self._terraform_client
@@ -265,6 +273,12 @@ class TerraformService(BaseService):
             raise_on_error=True,
         )
 
+        # write the service information in the service config file
+        assert self.status.config_file is not None
+
+        with open(self.status.config_file, "w") as f:
+            f.write(self.json(indent=4))
+
     def _get_vars(self, path: str) -> Any:
         """Get variables as a dictionary from values.tfvars.json.
         Args:
@@ -301,8 +315,35 @@ class TerraformService(BaseService):
             force=python_terraform.IsNotFlagged,
         )
 
+    def _setup_runtime_path(self) -> None:
+        """Set up the runtime path for the service.
+
+        This method sets up the runtime path for the service.
+        """
+        # reuse the config file and logfile location from a previous run,
+        # if available
+        if not self.status.runtime_path or not os.path.exists(
+            self.status.runtime_path
+        ):
+            if self.config.root_runtime_path:
+                if self.config.singleton:
+                    self.status.runtime_path = self.config.root_runtime_path
+                else:
+                    self.status.runtime_path = os.path.join(
+                        self.config.root_runtime_path,
+                        str(self.uuid),
+                    )
+                create_dir_recursive_if_not_exists(self.status.runtime_path)
+            else:
+                self.status.runtime_path = tempfile.mkdtemp(
+                    prefix="zenml-service-"
+                )
+
+
+
     def provision(self) -> None:
         """Provision the service."""
+        self._setup_runtime_path()
         self.check_installation()
         self._set_log_level()
         self._init_and_apply()
@@ -314,6 +355,56 @@ class TerraformService(BaseService):
         self.check_installation()
         self._set_log_level()
         self._destroy()
+        # in case of singleton services, this will remove the config
+        # path as a whole and otherwise, this removes the specific UUID
+        # directory
+        shutil.rmtree(Path(self.status.config_file).parent)
+
+    # overwriting the start/stop function to remove the progress indicator
+    # having which doesn't allow tf logs to be shown in stdout
+    def start(self, timeout: int = 0) -> None:
+        """Start the service and optionally wait for it to become active.
+
+        Args:
+            timeout: amount of time to wait for the service to become active.
+                If set to 0, the method will return immediately after checking
+                the service status.
+
+        Raises:
+            RuntimeError: if the service cannot be started
+        """
+        self.admin_state = ServiceState.ACTIVE
+        self.provision()
+        if timeout > 0:
+            if not self.poll_service_status(timeout):
+                raise RuntimeError(
+                    f"Failed to start service {self}\n"
+                    + self.get_service_status_message()
+                )
+
+    def stop(self, timeout: int = 0, force: bool = False) -> None:
+        """Stop the service and optionally wait for it to shutdown.
+
+        Args:
+            timeout: amount of time to wait for the service to shutdown.
+                If set to 0, the method will return immediately after checking
+                the service status.
+            force: if True, the service will be stopped even if it is not
+                currently running.
+
+        Raises:
+            RuntimeError: if the service cannot be stopped
+        """
+        self.admin_state = ServiceState.INACTIVE
+        self.deprovision(force)
+        if timeout > 0:
+            self.poll_service_status(timeout)
+            if not self.is_stopped:
+                raise RuntimeError(
+                    f"Failed to stop service {self}. Last state: "
+                    f"'{self.status.state.value}'. Last error: "
+                    f"'{self.status.last_error}'"
+                )
 
     def get_logs(
         self, follow: bool = False, tail: Optional[int] = None
