@@ -62,7 +62,6 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
-    from zenml.stack import StackComponent, StackComponentConfig
     from zenml.stack.flavor import Flavor
 
 
@@ -610,6 +609,7 @@ def validate_flavor_source(
             StackComponent which has the right component type.
     """
     from zenml.stack.flavor import Flavor
+    from zenml.stack.stack_component import StackComponent, StackComponentConfig
 
     try:
         flavor_class = load_source_path_class(source)
@@ -624,8 +624,9 @@ def validate_flavor_source(
             f"Flavor."
         )
 
+    flavor = flavor_class()
     try:
-        impl_class = flavor_class.implementation_class
+        impl_class = flavor.implementation_class
     except (ModuleNotFoundError, ImportError, NotImplementedError):
         raise ValueError(
             f"The implementation class defined within the "
@@ -645,7 +646,7 @@ def validate_flavor_source(
         )
 
     try:
-        conf_class = flavor_class.config_class
+        conf_class = flavor.config_class
     except (ModuleNotFoundError, ImportError, NotImplementedError):
         raise ValueError(
             f"The config class defined within the "
