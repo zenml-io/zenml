@@ -43,9 +43,9 @@ def register_annotator_subcommands() -> None:
         Args:
             ctx: The click Context object.
         """
-        repo = Repository()
-        active_stack = repo.active_stack
-        annotator_model = active_stack.components[StackComponentType.ANNOTATOR]
+        annotator_model = Repository().active_stack_model.components[
+            StackComponentType.ANNOTATOR
+        ]
         if annotator_model is None:
             cli_utils.error(
                 "No active annotator found. Please register an annotator "

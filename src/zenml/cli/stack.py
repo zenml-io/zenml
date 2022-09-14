@@ -168,7 +168,7 @@ def register_stack(
     annotator_name: Optional[str] = None,
     data_validator_name: Optional[str] = None,
     set_stack: bool = False,
-    share: bool = None,
+    share: bool = False,
 ) -> None:
     """Register a stack.
 
@@ -793,7 +793,8 @@ def describe_stack(stack_name: Optional[str]) -> None:
         cli_utils.error(f"Stack `{stack_name}` does not exist.")
 
     active_stack_name = repo.active_stack_model.name
-    stack_configuration = stack_configurations[active_stack_name]
+    stack_name = stack_name or active_stack_name
+    stack_configuration = stack_configurations[stack_name]
 
     cli_utils.print_stack_configuration(
         stack_configuration,
@@ -836,13 +837,14 @@ def delete_stack(
     with console.status(f"Deleting stack '{stack_name}'...\n"):
         cfg = GlobalConfiguration()
         repo = Repository()
-
-        if cfg.active_stack_name == stack_name:
-            cli_utils.error(
-                f"Stack {stack_name} cannot be deleted while it is globally "
-                f"active. Please choose a different active global stack first "
-                f"by running 'zenml stack set --global STACK'."
-            )
+        if cfg.active_stack_id is not None:
+            global_active_stack = repo.zen_store.get_stack(cfg.active_stack_id)
+            if global_active_stack.name == stack_name:
+                cli_utils.error(
+                    f"Stack {stack_name} cannot be deleted while it is globally "
+                    f"active. Please choose a different active global stack first "
+                    f"by running 'zenml stack set --global STACK'."
+                )
 
         if repo.active_stack_model.name == stack_name:
             cli_utils.error(
