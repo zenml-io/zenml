@@ -403,9 +403,9 @@ def test_deleting_nonexistent_role_fails(sql_store: BaseZenStore):
         sql_store["store"].delete_role(uuid.uuid4())
 
 
-#  .------.
-# | ROLES |
-# '-------'
+#  .----------------
+# | ROLE ASSIGNMENTS
+# '-----------------
 
 
 def test_assigning_role_to_user_succeeds(
@@ -413,9 +413,10 @@ def test_assigning_role_to_user_succeeds(
 ):
     """Tests assigning a role to a user."""
     new_role = RoleModel(name="aria_feeder")
-    current_user_id = str(sql_store_with_team["store"].active_user.id)
+    current_user_id = sql_store_with_team["active_user"].id
+
     sql_store_with_team["store"].create_role(new_role)
-    new_role_id = str(sql_store_with_team["store"].get_role("aria_feeder").id)
+    new_role_id = sql_store_with_team["store"].get_role("aria_feeder").id
     sql_store_with_team["store"].assign_role(new_role_id, current_user_id)
 
     assert len(sql_store_with_team["store"].roles) == 1
@@ -426,7 +427,7 @@ def test_assigning_role_to_team_succeeds(
     sql_store_with_team: BaseZenStore,
 ):
     """Tests assigning a role to a team."""
-    team_id = str(sql_store_with_team["store"].get_team("arias_team").id)
+    team_id = sql_store_with_team["default_team"].id
     new_role = RoleModel(name="blupus_friend")
     sql_store_with_team["store"].create_role(new_role)
     new_role_id = sql_store_with_team["store"].get_role("blupus_friend").id
@@ -439,7 +440,7 @@ def test_assigning_role_to_team_succeeds(
     assert (
         len(
             sql_store_with_team["store"].list_role_assignments(
-                user_name_or_id=sql_store_with_team["store"].active_user.id
+                user_name_or_id=sql_store_with_team["active_user"].id
             )
         )
         == 1
@@ -451,7 +452,7 @@ def test_assigning_role_if_assignment_already_exists(
 ):
     """Tests assigning a role to a user if the assignment already exists."""
     new_role = RoleModel(name="aria_feeder")
-    current_user_id = str(sql_store_with_team["store"].active_user.id)
+    current_user_id = sql_store_with_team["active_user"].id
     sql_store_with_team["store"].create_role(new_role)
     new_role_id = str(sql_store_with_team["store"].get_role("aria_feeder").id)
     sql_store_with_team["store"].assign_role(new_role_id, current_user_id)
@@ -467,7 +468,7 @@ def test_revoking_role_for_user_succeeds(
 ):
     """Tests revoking a role for a user."""
     new_role = RoleModel(name="aria_feeder")
-    current_user_id = str(sql_store_with_team["store"].active_user.id)
+    current_user_id = sql_store_with_team["active_user"].id
     sql_store_with_team["store"].create_role(new_role)
     new_role_id = str(sql_store_with_team["store"].get_role("aria_feeder").id)
     sql_store_with_team["store"].assign_role(new_role_id, current_user_id)
@@ -481,7 +482,7 @@ def test_revoking_role_for_team_succeeds(
     sql_store_with_team: BaseZenStore,
 ):
     """Tests revoking a role for a team."""
-    team_id = str(sql_store_with_team["store"].get_team("arias_team").id)
+    team_id = sql_store_with_team["default_team"].id
     new_role = RoleModel(name="blupus_friend")
     sql_store_with_team["store"].create_role(new_role)
     new_role_id = str(sql_store_with_team["store"].get_role("blupus_friend").id)
@@ -500,7 +501,7 @@ def test_revoking_nonexistent_role_fails(
     sql_store_with_team: BaseZenStore,
 ):
     """Tests revoking a nonexistent role fails."""
-    current_user_id = sql_store_with_team["store"].active_user.id
+    current_user_id = sql_store_with_team["active_user"].id
     with pytest.raises(KeyError):
         sql_store_with_team["store"].revoke_role(uuid.uuid4(), current_user_id)
 
@@ -512,7 +513,7 @@ def test_revoking_role_for_nonexistent_user_fails(
     new_role = RoleModel(name="aria_feeder")
     sql_store_with_team["store"].create_role(new_role)
     new_role_id = str(sql_store_with_team["store"].get_role("aria_feeder").id)
-    current_user_id = str(sql_store_with_team["store"].active_user.id)
+    current_user_id = sql_store_with_team["active_user"].id
     sql_store_with_team["store"].assign_role(new_role_id, current_user_id)
     with pytest.raises(KeyError):
         sql_store_with_team["store"].revoke_role(new_role_id, uuid.uuid4())
