@@ -24,8 +24,6 @@ from zenml.utils.pipeline_docker_image_builder import (
 )
 
 
-
-
 def test_including_active_profile_in_build_context(tmp_path: Path):
     """Tests that the context manager includes the active profile in the build
     context."""
