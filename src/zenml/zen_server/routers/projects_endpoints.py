@@ -20,7 +20,6 @@ from zenml.constants import (
     FLAVORS,
     PIPELINES,
     PROJECTS,
-    REPOSITORIES,
     STACK_COMPONENTS,
     STACKS,
     VERSION_1,
@@ -33,7 +32,6 @@ from zenml.exceptions import (
     ValidationError,
 )
 from zenml.models import (
-    CodeRepositoryModel,
     ComponentModel,
     FlavorModel,
     PipelineModel,
@@ -602,6 +600,7 @@ async def create_pipeline(
         raise HTTPException(status_code=409, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
+
 
 #
 # @router.get(

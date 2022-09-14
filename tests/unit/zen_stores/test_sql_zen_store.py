@@ -782,9 +782,7 @@ def test_creating_identical_pipeline_fails(
         user=user_id,
         configuration={},
     )
-    sql_store["store"].create_pipeline(
-        project_name_or_id=project_id, pipeline=new_pipeline
-    )
+    sql_store["store"].create_pipeline(pipeline=new_pipeline)
     with pytest.raises(EntityExistsError):
         sql_store["store"].create_pipeline(pipeline=new_pipeline)
     pipelines = sql_store["store"].list_pipelines()
