@@ -717,10 +717,10 @@ def generate_stack_component_remove_attribute_command(
                 return
 
             optional_attributes = _get_optional_attributes(
-                current_component.__class__
+                current_component.to_component().__class__
             )
             required_attributes = _get_required_attributes(
-                current_component.__class__
+                current_component.to_component().__class__
             )
 
             for arg in parsed_args:
@@ -749,9 +749,7 @@ def generate_stack_component_remove_attribute_command(
 
             updated_component = current_component.__class__(**new_attributes)
 
-            repo.update_stack_component(
-                name, updated_component.TYPE, updated_component
-            )
+            repo.update_stack_component(updated_component)
             cli_utils.declare(f"Successfully updated {display_name} `{name}`.")
 
     return remove_attribute_stack_component_command

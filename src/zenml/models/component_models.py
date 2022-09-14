@@ -126,6 +126,7 @@ class ComponentModel(AnalyticsTrackedModelMixin):
         """
         from zenml.repository import Repository
 
+        assert self.flavor_name is not None
         flavor = Repository(skip_repository_check=True).get_flavor(  # type: ignore[call-arg]
             name=self.flavor_name, component_type=self.type
         )

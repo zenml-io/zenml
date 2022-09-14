@@ -149,6 +149,7 @@ class Stack:
             type_: model.to_component()
             for type_, model in stack_model.components.items()
         }
+        assert stack_model.id is not None
         return Stack.from_components(
             id=stack_model.id,
             name=stack_model.name,

@@ -109,12 +109,14 @@ def get_pipeline(
         )
 
     repo = Repository()
+    active_project_id = repo.active_project.id
+    assert active_project_id is not None
     try:
-        pipeline = repo.zen_store.get_pipeline_in_project(
+        pipeline_model = repo.zen_store.get_pipeline_in_project(
             pipeline_name=pipeline_name,
-            project_name_or_id=repo.active_project.id,
+            project_name_or_id=active_project_id,
         )
-        return PipelineView(pipeline)
+        return PipelineView(pipeline_model)
     except KeyError:
         return None
 
@@ -141,6 +143,7 @@ class PipelineView:
         Returns:
             The ID of this pipeline.
         """
+        assert self._model.id is not None
         return self._model.id
 
     @property
