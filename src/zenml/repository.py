@@ -834,9 +834,8 @@ class Repository(metaclass=RepositoryMetaClass):
             component: The new component to update with.
         """
         # Get the existing component model
-        existing_component_model = self.get_stack_component_by_name_and_type(
-            type=component.type,
-            name=component.name,
+        existing_component_model = self.get_stack_component_by_id(
+            component.id,
         )
 
         # Get the flavor model of the existing component
@@ -846,26 +845,23 @@ class Repository(metaclass=RepositoryMetaClass):
         )
 
         # Use the flavor class to validate the new configuration
-        flavor_class = Flavor.from_model(flavor_model)
-        updated_configuration = flavor_class.config_class(
-            **{
-                **existing_component_model.configuration,
-                **component.configuration
-            }
-        ).dict()
-
-        # Create an updated component
-        updated_component = existing_component_model.copy(
-            update={'configuration': updated_configuration}
-        )
+        flavor = Flavor.from_model(flavor_model)
+        _ = flavor.config_class(**component.configuration)
 
         # Send the updated component to the ZenStore
         return self.zen_store.update_stack_component(
-            component=updated_component
+            component=component
         )
 
     def deregister_stack_component(self, component: ComponentModel) -> None:
-        """ """
+        """Deletes a registered stack component.
+
+        Args:
+            component: The model of the component to delete.
+
+        Raises:
+            KeyError: If the component does not exist.
+        """
         try:
             self.zen_store.delete_stack_component(component_id=component.id)
             logger.info(

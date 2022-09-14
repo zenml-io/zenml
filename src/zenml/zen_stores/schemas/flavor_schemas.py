@@ -21,6 +21,8 @@ from sqlmodel import Field, SQLModel
 from zenml.enums import StackComponentType
 from zenml.models import FlavorModel
 
+from typing import List, Optional
+
 
 class FlavorSchema(SQLModel, table=True):
     """SQL Model for flavors."""
@@ -31,7 +33,7 @@ class FlavorSchema(SQLModel, table=True):
 
     type: StackComponentType
     source: str
-    integration: str
+    integration: Optional[str] = Field(default="")
 
     config_schema: str
 

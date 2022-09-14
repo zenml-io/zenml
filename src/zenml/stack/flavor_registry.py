@@ -65,7 +65,9 @@ class FlavorRegistry:
         ]
         for flavor in default_flavors:
             flavor_instance = flavor()
-            self._register_flavor(flavor_instance.to_model())
+            self._register_flavor(flavor_instance.to_model(
+                integration='built-in'
+            ))
 
     def register_integration_flavors(self) -> None:
         """Registers the flavors implemented by integrations."""

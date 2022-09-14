@@ -658,8 +658,8 @@ class SqlZenStore(BaseZenStore):
                     f"'{component.id}': Found no"
                     f"existing component with this id."
                 )
-
             existing_component.from_update_model(component=component)
+
             session.add(existing_component)
             session.commit()
 

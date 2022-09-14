@@ -17,7 +17,7 @@ from abc import ABC
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Set, Type
 
 from pydantic import BaseModel, Extra, root_validator
-
+from uuid import UUID
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackComponentInterfaceError
 from zenml.logger import get_logger
@@ -28,14 +28,12 @@ from zenml.utils.source_utils import load_source_path_class
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
-    from zenml.stack import Flavor, Stack, StackValidator
+    from zenml.stack import Stack, StackValidator
 
 logger = get_logger(__name__)
 
 
 class StackComponentConfig(BaseModel, ABC):
-    name: str
-    id: Optional[str]
 
     def __init__(self, **kwargs: Any) -> None:
         """Ensures that secret references don't clash with pydantic validation.
@@ -98,67 +96,66 @@ class StackComponentConfig(BaseModel, ABC):
 
         super().__init__(**kwargs)
 
-    @classmethod
-    def from_flavor(cls, flavor: "FlavorModel") -> Type["StackComponentConfig"]:
-        try:
-            return load_source_path_class(source=flavor.config_source)  # noqa
-        except (ModuleNotFoundError, ImportError, NotImplementedError):
-            if flavor.integration:
-                raise ImportError(
-                    f"The configuration for the flavor {flavor.name} "
-                    f"is defined within the source {flavor.config_source} and "
-                    f"it can not be imported right now. Please make sure that "
-                    f"this execution is carried out in an environment where "
-                    f"this source is reachable as a module."
-                )
-
 
 class StackComponent:
     """Abstract StackComponent class for all components of a ZenML stack."""
 
-    TYPE: ClassVar[StackComponentType]
-    FLAVOR: ClassVar[str]
-
-    def __init__(self, config: StackComponentConfig, *args, **kwargs):
-        self._config = config
+    def __init__(
+        self,
+        name: str,
+        id: UUID,
+        config: StackComponentConfig,
+        flavor: str,
+        type: StackComponentType,
+        *args,
+        **kwargs
+    ):
+        self.id = id
+        self.name = name
+        self.config = config
+        self.flavor = flavor
+        self.type = type
 
     @property
     def config_class(self) -> Type[Any]:
         return StackComponentConfig
 
-    @property
-    def config(self):
-        return self.config_class(self._config)
-
     @classmethod
-    def from_model(cls, component_model) -> "StackComponent":
+    def from_model(cls, component_model: "ComponentModel") -> "StackComponent":
         from zenml.repository import Repository
 
         flavor_model = Repository(
-            skip_repository_check=True
+            skip_repository_check=True  # noqa
         ).get_flavor_by_name_and_type(
             name=component_model.flavor_name,
             component_type=component_model.type,
         )
 
         try:
-            flavor_class: "Flavor" = load_source_path_class(  # noqa
-                source=flavor_model.source
-            )
+            from zenml.stack import Flavor
+
+            flavor = Flavor.from_model(flavor_model)
         except (ModuleNotFoundError, ImportError, NotImplementedError):
             raise ImportError(f"tmp")
 
-        configuration = flavor_class.config_class.parse_obj(
-            component_model.configuration
+        configuration = flavor.config_class(
+            **component_model.configuration
         )
 
-        return flavor_class.implementation_class(configuration)
+        return flavor.implementation_class(
+            name=component_model.name,
+            id=component_model.id,
+            config=configuration,
+            flavor=component_model.flavor_name,
+            type=component_model.type
+        )
 
     def to_model(self) -> "ComponentModel":
         return ComponentModel(
-            type=self.TYPE,
-            flavor_name=self.FLAVOR,
-            name=self.config.name,
+            id=self.id,
+            type=self.type,
+            flavor_name=self.flavor,
+            name=self.name,
             configuration=self.config.dict(),
         )
 

@@ -14,7 +14,7 @@
 """Base ZenML Flavor implementation"""
 
 from abc import abstractmethod
-from typing import Type
+from typing import Type, Optional
 
 from zenml.models import FlavorModel
 from zenml.stack.stack_component import (
@@ -53,12 +53,16 @@ class Flavor:
 
     @classmethod
     def from_model(cls, flavor_model: FlavorModel) -> "Flavor":
-        return load_source_path_class(flavor_model.source)  # noqa
+        return load_source_path_class(flavor_model.source)()  # noqa
 
-    def to_model(self) -> FlavorModel:
-        return FlavorModel(
-            name=self.implementation_class.FLAVOR,
-            type=self.implementation_class.TYPE,
+    def to_model(self, integration: Optional[str] = None) -> FlavorModel:
+        model = FlavorModel(
+            name=self.name,
+            type=self.type,
             source=resolve_class(self.__class__),  # noqa
             config_schema=self.config_schema,
         )
+        if integration:
+            model.integration = integration
+
+        return model

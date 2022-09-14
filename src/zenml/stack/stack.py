@@ -130,7 +130,7 @@ class Stack:
             id=self.id,
             name=self.name,
             components={
-                type_: ComponentModel.from_component(component)
+                type_: component.to_model()
                 for type_, component in self.components.items()
             },
         )
@@ -145,8 +145,10 @@ class Stack:
         Returns:
             The created Stack instance.
         """
+        from zenml.stack import StackComponent
+
         stack_components = {
-            type_: model.to_component()
+            type_: StackComponent.from_model(model)
             for type_, model in stack_model.components.items()
         }
         assert stack_model.id is not None

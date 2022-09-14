@@ -46,6 +46,7 @@ from typing import (
     Tuple,
     Type,
     Union,
+    ClassVar,
 )
 
 from pydantic import validator
@@ -62,7 +63,7 @@ PathType = Union[bytes, str]
 
 
 class LocalArtifactStoreConfig(BaseArtifactStoreConfig):
-    supported_schemes: Set[str] = {""}
+    SUPPORTED_SCHEMES: ClassVar[Set[str]] = {""}
 
     @validator("path")
     def ensure_path_local(cls, path: str) -> str:

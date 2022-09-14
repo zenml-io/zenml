@@ -347,6 +347,7 @@ def generate_stack_component_remove_attribute_command(
             for arg in parsed_args:
                 existing_component.configuration.pop(arg)
 
+            print(existing_component)
             # Update the stack component
             repo.update_stack_component(component=existing_component)
 
@@ -487,7 +488,7 @@ def generate_stack_component_copy_command(
             # Register a new one with a new name
             component_create_model = ComponentModel(
                 name=target_component,
-                flavor_name=existing_component.flavor,
+                flavor_name=existing_component.flavor_name,
                 configuration=existing_component.configuration,
                 type=existing_component.type
             )

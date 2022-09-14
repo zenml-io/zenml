@@ -42,7 +42,7 @@ from typing import (
     Union,
 )
 
-from pydantic import root_validator
+from pydantic import root_validator, validator, ValidationError
 from tfx.dsl.io.fileio import NotFoundError
 
 from zenml.enums import StackComponentType
@@ -155,8 +155,10 @@ def _sanitize_paths(_func: Callable[..., Any]) -> Callable[..., Any]:
 
 
 class BaseArtifactStoreConfig(StackComponentConfig):
+
     path: str
-    supported_schemes: Set[str]
+
+    SUPPORTED_SCHEMES: ClassVar[Set[str]]
 
     @root_validator(skip_on_failure=True)
     def _ensure_artifact_store(cls, values: Dict[str, Any]) -> Any:
@@ -178,12 +180,7 @@ class BaseArtifactStoreConfig(StackComponentConfig):
             getattr(cls, "SUPPORTED_SCHEMES")
         except AttributeError:
             raise ArtifactStoreInterfaceError(
-                "When you are working with any classes which subclass from "
-                "'zenml.artifact_store.BaseArtifactStore' please make sure "
-                "that your class has a ClassVar named `SUPPORTED_SCHEMES` "
-                "which should hold a set of supported file schemes such "
-                "as {'s3://'} or {'gcs://'}. \n"
-                + textwrap.dedent(
+                textwrap.dedent(
                     """
                     When you are working with any classes which subclass from
                     zenml.artifact_store.BaseArtifactStore please make sure
@@ -193,7 +190,7 @@ class BaseArtifactStoreConfig(StackComponentConfig):
 
                     Example:
 
-                    class S3ArtifactStore(StackComponent):
+                    class MyArtifactStoreConfig(BaseArtifactStoreConfig):
                         ...
                         # Class Variables
                         SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"s3://"}
@@ -201,12 +198,12 @@ class BaseArtifactStoreConfig(StackComponentConfig):
                     """
                 )
             )
-        if not any(values["path"].startswith(i) for i in cls.supported_schemes):
+        if not any(values["path"].startswith(i) for i in cls.SUPPORTED_SCHEMES):
             raise ArtifactStoreInterfaceError(
                 f"The path: '{values['path']}' you defined for your "
                 f"artifact store is not supported by the implementation of "
                 f"{cls.schema()['title']}, because it does not start with "
-                f"one of its supported schemes: {cls.supported_schemes}."
+                f"one of its supported schemes: {cls.SUPPORTED_SCHEMES}."
             )
 
         return values
@@ -383,7 +380,7 @@ class BaseArtifactStore(StackComponent):
             self.__class__.__name__,
             (Filesystem,),
             {
-                "SUPPORTED_SCHEMES": self.SUPPORTED_SCHEMES,
+                "SUPPORTED_SCHEMES": self.config.SUPPORTED_SCHEMES,
                 "open": staticmethod(
                     _sanitize_paths(_catch_not_found_error(self.open))
                 ),
