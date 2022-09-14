@@ -1950,7 +1950,7 @@ class SqlZenStore(BaseZenStore):
                     PipelineRunSchema.pipeline_id == pipeline_id
                 )
             elif unlisted:
-                query = query.where(PipelineRunSchema.pipeline_id == None)
+                query = query.where(PipelineRunSchema.pipeline_id is None)
             if user_name_or_id is not None:
                 user = self._get_user_schema(user_name_or_id)
                 query = query.where(PipelineRunSchema.owner == user.id)
