@@ -333,13 +333,14 @@ class SqlZenStore(BaseZenStore):
                 .where(StackSchema.user == stack.user)
             ).first()
             existing_id_stack = session.exec(
-                select(StackSchema)
-                .where(StackSchema.id == stack.id)
+                select(StackSchema).where(StackSchema.id == stack.id)
             ).first()
             # TODO: [server] This is ugly, make it prettier by combining into
             #  one single query
-            if existing_domain_stack is not None \
-                    or existing_id_stack is not None:
+            if (
+                existing_domain_stack is not None
+                or existing_id_stack is not None
+            ):
                 raise StackExistsError(
                     f"Unable to register stack with name "
                     f"'{stack.name}': Found an existing stack with the same "
@@ -428,10 +429,7 @@ class SqlZenStore(BaseZenStore):
             return [stack.to_model() for stack in stacks]
 
     @track(AnalyticsEvent.UPDATED_STACK)
-    def update_stack(
-        self,
-        stack: StackModel
-    ) -> StackModel:
+    def update_stack(self, stack: StackModel) -> StackModel:
         """Update a stack.
 
         Args:
@@ -1572,7 +1570,7 @@ class SqlZenStore(BaseZenStore):
         self,
         project_name_or_id: Union[str, UUID],
         user_name_or_id: Union[str, UUID],
-        pipeline: PipelineModel
+        pipeline: PipelineModel,
     ) -> PipelineModel:
         """Creates a new pipeline in a project.
 
@@ -1607,9 +1605,7 @@ class SqlZenStore(BaseZenStore):
 
             # Create the pipeline
             new_pipeline = PipelineSchema.from_create_model(
-                project_id=project.id,
-                user_id=user.id,
-                pipeline=pipeline
+                project_id=project.id, user_id=user.id, pipeline=pipeline
             )
             session.add(new_pipeline)
             session.commit()

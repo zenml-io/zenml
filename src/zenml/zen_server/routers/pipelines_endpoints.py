@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for pipelines."""
-from typing import Dict, List, Union, Optional
+from typing import Dict, List, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -20,7 +20,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from zenml.constants import PIPELINES, RUNS, VERSION_1
 from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.models import PipelineRunModel
-from zenml.models.pipeline_models import PipelineModel, HydratedPipelineModel
+from zenml.models.pipeline_models import HydratedPipelineModel, PipelineModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.utils import (
     authorize,
@@ -47,7 +47,7 @@ router = APIRouter(
 async def get_pipelines(
     project_name_or_id: Optional[str] = None,
     user_name_or_id: Optional[str] = None,
-    hydrated: bool = True
+    hydrated: bool = True,
 ) -> Union[List[PipelineModel], List[HydratedPipelineModel]]:
     """Gets a list of pipelines.
 
@@ -67,7 +67,7 @@ async def get_pipelines(
     try:
         pipelines_list = zen_store.list_pipelines(
             project_name_or_id=parse_name_or_uuid(project_name_or_id),
-            user_name_or_id=parse_name_or_uuid(user_name_or_id)
+            user_name_or_id=parse_name_or_uuid(user_name_or_id),
         )
         if hydrated:
             return [pipeline.to_hydrated_model() for pipeline in pipelines_list]
@@ -83,8 +83,7 @@ async def get_pipelines(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def get_pipeline(
-    pipeline_id: str,
-    hydrated: bool = True
+    pipeline_id: str, hydrated: bool = True
 ) -> Union[PipelineModel, HydratedPipelineModel]:
     """Gets a specific pipeline using its unique id.
 
@@ -121,9 +120,7 @@ async def get_pipeline(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def update_pipeline(
-    pipeline_id: str,
-    updated_pipeline: PipelineModel,
-    hydrated: bool = True
+    pipeline_id: str, updated_pipeline: PipelineModel, hydrated: bool = True
 ) -> Union[PipelineModel, HydratedPipelineModel]:
     """Updates the attribute on a specific pipeline using its unique id.
 
@@ -144,8 +141,7 @@ async def update_pipeline(
     """
     try:
         updated_pipeline = zen_store.update_pipeline(
-            pipeline_id=UUID(pipeline_id),
-            pipeline=updated_pipeline
+            pipeline_id=UUID(pipeline_id), pipeline=updated_pipeline
         )
         if hydrated:
             return updated_pipeline.to_hydrated_model()

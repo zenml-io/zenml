@@ -114,5 +114,5 @@ class StackComponentSchema(SQLModel, table=True):
             configuration=json.loads(
                 base64.b64decode(self.configuration).decode()
             ),
-            creation_date=self.creation_date
+            creation_date=self.creation_date,
         )

@@ -56,7 +56,6 @@ def parse_name_or_uuid(name_or_id: Optional[str]) -> Union[str, UUID]:
         return name_or_id
 
 
-
 def parse_optional_name_or_uuid(
     name_or_id: Optional[str],
 ) -> Optional[Union[str, UUID]]:

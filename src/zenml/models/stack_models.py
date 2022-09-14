@@ -22,9 +22,9 @@ from pydantic import Field
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StackComponentType
-from zenml.models.user_management_models import UserModel
-from zenml.models.project_models import ProjectModel
 from zenml.models.component_models import ComponentModel
+from zenml.models.project_models import ProjectModel
+from zenml.models.user_management_models import UserModel
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 
@@ -59,9 +59,7 @@ class StackModel(AnalyticsTrackedModelMixin):
         default=False,
         title="Flag describing if this stack is shared.",
     )
-    project: UUID = Field(
-        title="The project that contains this stack."
-    )
+    project: UUID = Field(title="The project that contains this stack.")
     user: UUID = Field(
         title="The id of the user, that created this stack.",
     )
@@ -90,20 +88,23 @@ class StackModel(AnalyticsTrackedModelMixin):
 
         components = {}
         for comp_type, comp_id_list in self.components.items():
-            components[comp_type] = [zen_store.get_stack_component(c_id)
-                                     for c_id in comp_id_list]
+            components[comp_type] = [
+                zen_store.get_stack_component(c_id) for c_id in comp_id_list
+            ]
 
         project = zen_store.get_project(self.project)
         user = zen_store.get_user(self.user)
 
-        return HydratedStackModel(id=self.id,
-                                  name=self.name,
-                                  description=self.description,
-                                  components=components,
-                                  project=project,
-                                  user=user,
-                                  is_shared=self.is_shared,
-                                  creation_date=self.creation_date)
+        return HydratedStackModel(
+            id=self.id,
+            name=self.name,
+            description=self.description,
+            components=components,
+            project=project,
+            user=user,
+            is_shared=self.is_shared,
+            creation_date=self.creation_date,
+        )
 
 
 class HydratedStackModel(StackModel):
@@ -116,8 +117,7 @@ class HydratedStackModel(StackModel):
         "instances of components of this type."
     )
     project: ProjectModel = Field(
-        default=None,
-        title="The project that contains this stack."
+        default=None, title="The project that contains this stack."
     )
     user: UserModel = Field(
         default=None,
@@ -141,12 +141,12 @@ class HydratedStackModel(StackModel):
                     "id": "da63ad01-9117-4082-8a99-557ca5a7d324",
                     "name": "default",
                     "description": "Best project.",
-                    "creation_date": "2022-09-13T16:03:52.317039"
+                    "creation_date": "2022-09-13T16:03:52.317039",
                 },
                 "user": {
                     "id": "43d73159-04fe-418b-b604-b769dd5b771b",
                     "name": "default",
-                    "creation_date": "2022-09-13T16:03:52.329928"
+                    "creation_date": "2022-09-13T16:03:52.329928",
                 },
                 "creation_date": "2022-08-12T07:12:45.931Z",
             }
@@ -180,8 +180,5 @@ class HydratedStackModel(StackModel):
             Dict of analytics metadata.
         """
         metadata = super().get_analytics_metadata()
-        metadata.update(
-            {ct: c[0].flavor for ct, c in self.components.items()}
-        )
+        metadata.update({ct: c[0].flavor for ct, c in self.components.items()})
         return metadata
-

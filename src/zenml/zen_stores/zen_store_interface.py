@@ -868,7 +868,7 @@ class ZenStoreInterface(ABC):
         self,
         project_name_or_id: Union[str, UUID],
         user_name_or_id: Union[str, UUID],
-        pipeline: PipelineModel
+        pipeline: PipelineModel,
     ) -> PipelineModel:
         """Creates a new pipeline in a project.
 

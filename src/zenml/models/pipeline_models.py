@@ -72,8 +72,7 @@ class PipelineModel(AnalyticsTrackedModelMixin):
     name: str
 
     project: Optional[UUID] = Field(
-        default=None,
-        title="The project that contains this component."
+        default=None, title="The project that contains this component."
     )
     user: Optional[UUID] = Field(
         default=None,
@@ -94,19 +93,22 @@ class PipelineModel(AnalyticsTrackedModelMixin):
         project = zen_store.get_project(self.project)
         user = zen_store.get_user(self.user)
 
-        return HydratedPipelineModel(id=self.id,
-                                     name=self.name,
-                                     project=project,
-                                     user=user,
-                                     docstring=self.docstring,
-                                     configuration=self.configuration,
-                                     creation_date=self.creation_date)
+        return HydratedPipelineModel(
+            id=self.id,
+            name=self.name,
+            project=project,
+            user=user,
+            docstring=self.docstring,
+            configuration=self.configuration,
+            creation_date=self.creation_date,
+        )
 
 
 class HydratedPipelineModel(PipelineModel):
     """Network Serializable Model describing the Component with User and Project
-     fully hydrated.
+    fully hydrated.
     """
+
     project: ProjectModel = Field(
         default=None, title="The project that contains this stack."
     )

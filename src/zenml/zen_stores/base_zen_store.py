@@ -328,9 +328,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         """
         from zenml.config.global_config import GlobalConfiguration
 
-        project = self.get_project(
-            project_name_or_id=project_name_or_id
-        )
+        project = self.get_project(project_name_or_id=project_name_or_id)
         user = self.get_user(user_name_or_id=user_name_or_id)
         try:
             self._get_default_stack(
@@ -388,7 +386,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             components=components,
             is_shared=False,
             project=project.id,
-            user=user.id
+            user=user.id,
         )
         return self.register_stack(stack=stack)
 

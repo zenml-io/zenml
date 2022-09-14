@@ -595,9 +595,7 @@ def test_updating_stack_succeeds(
         project_name_or_id="default"
     )[0].id
     new_stack = StackModel(
-        id=current_stack_id,
-        name="arias_stack",
-        components={}
+        id=current_stack_id, name="arias_stack", components={}
     )
     fresh_sql_zen_store.update_stack(new_stack)
     assert fresh_sql_zen_store.get_stack(current_stack_id) is not None

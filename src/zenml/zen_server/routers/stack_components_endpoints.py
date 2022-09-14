@@ -17,10 +17,10 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from zenml.constants import FLAVORS, STACK_COMPONENTS, TYPES, VERSION_1
+from zenml.constants import STACK_COMPONENTS, TYPES, VERSION_1
 from zenml.enums import StackComponentType
 from zenml.exceptions import NotAuthorizedError, ValidationError
-from zenml.models import ComponentModel, FlavorModel
+from zenml.models import ComponentModel
 from zenml.models.component_models import HydratedComponentModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.utils import (
@@ -49,7 +49,7 @@ async def list_stack_components(
     component_type: Optional[str] = None,
     component_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
-    hydrated: bool = True
+    hydrated: bool = True,
 ) -> Union[List[ComponentModel], List[HydratedComponentModel]]:
     """Get a list of all stack components for a specific type.
 
@@ -96,8 +96,7 @@ async def list_stack_components(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def get_stack_component(
-    component_id: str,
-    hydrated: bool = True
+    component_id: str, hydrated: bool = True
 ) -> Union[ComponentModel, HydratedComponentModel]:
     """Returns the requested stack component.
 
@@ -134,9 +133,7 @@ async def get_stack_component(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def update_stack_component(
-    component_id: str,
-    component: ComponentModel,
-    hydrated: bool = True
+    component_id: str, component: ComponentModel, hydrated: bool = True
 ) -> Union[ComponentModel, HydratedComponentModel]:
     """Updates a stack component.
 

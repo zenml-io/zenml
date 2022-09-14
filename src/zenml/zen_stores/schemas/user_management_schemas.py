@@ -77,9 +77,9 @@ class UserSchema(SQLModel, table=True):
         Returns:
             The converted `UserModel`.
         """
-        return UserModel(id=self.id,
-                         name=self.name,
-                         created_at=self.creation_date)
+        return UserModel(
+            id=self.id, name=self.name, created_at=self.creation_date
+        )
 
 
 class TeamSchema(SQLModel, table=True):
