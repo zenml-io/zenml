@@ -1869,7 +1869,6 @@ class SqlZenStore(BaseZenStore):
             run = session.exec(
                 select(PipelineRunSchema)
                 .where(PipelineRunSchema.name == run_name)
-                .where(PipelineRunSchema.stack_id == StackSchema.id)
                 .where(StackSchema.project_id == project.id)
             ).first()
             if run is None:
@@ -1937,9 +1936,7 @@ class SqlZenStore(BaseZenStore):
         """
         self._sync_runs()  # Sync with MLMD
         with Session(self.engine) as session:
-            query = select(PipelineRunSchema).where(
-                PipelineRunSchema.stack_id == StackSchema.id
-            )
+            query = select(PipelineRunSchema)
             if project_name_or_id is not None:
                 project = self._get_project_schema(project_name_or_id)
                 query = query.where(StackSchema.project_id == project.id)
