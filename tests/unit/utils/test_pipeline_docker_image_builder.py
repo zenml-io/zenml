@@ -24,6 +24,8 @@ from zenml.utils.pipeline_docker_image_builder import (
 )
 
 
+
+
 def test_including_active_profile_in_build_context(tmp_path: Path):
     """Tests that the context manager includes the active profile in the build
     context."""
@@ -37,6 +39,28 @@ def test_including_active_profile_in_build_context(tmp_path: Path):
 
     assert not config_path.exists()
 
+
+def test_check_user_is_set(tmp_path: Path):
+    config = DockerConfiguration(
+        install_stack_requirements=False,
+        requirements=None,
+        required_integrations=[],
+        user=None,
+        replicate_local_python_environment="pip_freeze",
+    )
+    generated_dockerfile = PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile("test:test", config)
+    assert all(["USER" not in line for line in generated_dockerfile])
+
+    config = DockerConfiguration(
+        install_stack_requirements=False,
+        requirements=None,
+        required_integrations=[],
+        user="test_user",
+        replicate_local_python_environment="pip_freeze",
+    )
+    generated_dockerfile = PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile("test:test", config)
+    print(generated_dockerfile)
+    assert "USER test_user" in generated_dockerfile
 
 def test_requirements_file_generation(mocker, tmp_path: Path):
     """Tests that the requirements get included in the correct order and only

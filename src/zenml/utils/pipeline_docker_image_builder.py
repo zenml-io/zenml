@@ -223,6 +223,9 @@ class PipelineDockerImageBuilder(BaseModel):
         """
         lines = [f"FROM {parent_image}", f"WORKDIR {DOCKER_IMAGE_WORKDIR}"]
 
+        if docker_configuration.user:
+            lines.append(f"USER {docker_configuration.user}")
+
         if docker_configuration.copy_profile:
             lines.append(
                 f"ENV {ENV_ZENML_CONFIG_PATH}={DOCKER_IMAGE_ZENML_CONFIG_PATH}"
