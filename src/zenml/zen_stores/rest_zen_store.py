@@ -231,7 +231,7 @@ class RestZenStore(BaseZenStore):
 
     def list_stacks(
         self,
-        project_name_or_id: Union[str, UUID],
+        project_name_or_id: Union[str, UUID] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
@@ -255,6 +255,7 @@ class RestZenStore(BaseZenStore):
 
     def update_stack(
         self,
+        stack_id: UUID,
         stack: StackModel,
     ) -> StackModel:
         """Update a stack.

@@ -32,20 +32,22 @@ class PipelineSchema(SQLModel, table=True):
 
     name: str
 
-    project_id: UUID = Field(foreign_key="projectschema.id")
-    owner: UUID = Field(foreign_key="userschema.id")
+    project: UUID = Field(foreign_key="projectschema.id")
+    user: UUID = Field(foreign_key="userschema.id")
 
     docstring: Optional[str] = Field(nullable=True)
     configuration: str
 
-    created_at: datetime = Field(default_factory=datetime.now)
+    creation_date: datetime = Field(default_factory=datetime.now)
 
     runs: List["PipelineRunSchema"] = Relationship(
         back_populates="pipeline",
     )
 
     @classmethod
-    def from_create_model(cls, model: PipelineModel) -> "PipelineSchema":
+    def from_create_model(
+        cls, user_id: UUID, project_id: UUID, pipeline: PipelineModel
+    ) -> "PipelineSchema":
         """Create a `PipelineSchema` from a `PipelineModel`.
 
         Args:
@@ -55,11 +57,11 @@ class PipelineSchema(SQLModel, table=True):
             The created `PipelineSchema`.
         """
         return cls(
-            name=model.name,
-            project_id=model.project_id,
-            owner=model.owner,
-            docstring=model.docstring,
-            configuration=json.dumps(model.configuration),
+            name=pipeline.name,
+            project_id=project_id,
+            owner=user_id,
+            docstring=pipeline.docstring,
+            configuration=json.dumps(pipeline.configuration),
         )
 
     def from_update_model(self, model: PipelineModel) -> "PipelineSchema":
@@ -73,6 +75,7 @@ class PipelineSchema(SQLModel, table=True):
         """
         self.name = model.name
         self.docstring = model.docstring
+        # TODO: [server] verify that the
         return self
 
     def to_model(self) -> "PipelineModel":
@@ -84,11 +87,11 @@ class PipelineSchema(SQLModel, table=True):
         return PipelineModel(
             id=self.id,
             name=self.name,
-            project_id=self.project_id,
-            owner=self.owner,
+            project=self.project,
+            user=self.user,
             docstring=self.docstring,
             configuration=json.loads(self.configuration),
-            created_at=self.created_at,
+            creation_date=self.creation_date,
         )
 
 
@@ -99,7 +102,7 @@ class PipelineRunSchema(SQLModel, table=True):
     name: str
 
     # project_id - redundant since stack has this
-    owner: Optional[UUID] = Field(foreign_key="userschema.id", nullable=True)
+    user: Optional[UUID] = Field(foreign_key="userschema.id", nullable=True)
     stack_id: Optional[UUID] = Field(
         foreign_key="stackschema.id", nullable=True
     )
@@ -111,7 +114,7 @@ class PipelineRunSchema(SQLModel, table=True):
     git_sha: Optional[str] = Field(nullable=True)
     zenml_version: str
 
-    created_at: datetime = Field(default_factory=datetime.now)
+    creation_date: datetime = Field(default_factory=datetime.now)
 
     pipeline: PipelineSchema = Relationship(back_populates="runs")
 
@@ -135,7 +138,7 @@ class PipelineRunSchema(SQLModel, table=True):
         return cls(
             name=model.name,
             stack_id=model.stack_id,
-            owner=model.owner,
+            user=model.owner,
             pipeline_id=model.pipeline_id,
             runtime_configuration=json.dumps(model.runtime_configuration),
             git_sha=model.git_sha,
@@ -175,12 +178,12 @@ class PipelineRunSchema(SQLModel, table=True):
             id=self.id,
             name=self.name,
             stack_id=self.stack_id,
-            owner=self.owner,
+            owner=self.user,
             pipeline_id=self.pipeline_id,
             runtime_configuration=config,
             git_sha=self.git_sha,
             zenml_version=self.zenml_version,
-            created_at=self.created_at,
+            created_at=self.creation_date,
             mlmd_id=self.mlmd_id,
         )
 
