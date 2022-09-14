@@ -76,7 +76,7 @@ class UserSchema(SQLModel, table=True):
             active=model.active,
             password=model.get_password(),
             invite_token=model.get_invite_token(),
-            created_at=model.created_at,
+            creation_date=model.created_at,
             updated_date=model.created_at,
         )
 

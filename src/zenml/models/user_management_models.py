@@ -285,6 +285,14 @@ class UserModel(AnalyticsTrackedModelMixin):
         self.invite_token = token.encode()
         return self.invite_token
 
+    class Config:
+        """Pydantic configuration class."""
+
+        # Validate attributes when assigning them
+        validate_assignment = True
+        # Ignore extra attributes from configs of previous ZenML versions
+        extra = "forbid"
+
 
 class TeamModel(AnalyticsTrackedModelMixin):
     """Pydantic object representing a team.
