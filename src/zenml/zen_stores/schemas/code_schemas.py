@@ -26,8 +26,8 @@ class CodeRepositorySchema(SQLModel, table=True):
 
     id: UUID = Field(primary_key=True, default_factory=uuid4)
     name: str
-    project_id: UUID = Field(foreign_key="projectschema.id")
-    created_at: datetime = Field(default_factory=datetime.now)
+    project: UUID = Field(foreign_key="projectschema.id")
+    creation_date: datetime = Field(default_factory=datetime.now)
 
     @classmethod
     def from_create_model(
@@ -45,6 +45,6 @@ class CodeRepositorySchema(SQLModel, table=True):
         return CodeRepositoryModel(
             id=self.id,
             name=self.name,
-            project_id=self.project_id,
-            created_at=self.created_at,
+            project_id=self.project,
+            created_at=self.creation_date,
         )

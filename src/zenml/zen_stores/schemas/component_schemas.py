@@ -41,12 +41,12 @@ class StackComponentSchema(SQLModel, table=True):
     flavor_name: str
     # flavor_id: UUID = Field(foreign_key="flavorschema.id", nullable=True)
     # TODO: Prefill flavors
-    owner: UUID = Field(foreign_key="userschema.id")
-    project_id: UUID = Field(foreign_key="projectschema.id")
+    user: UUID = Field(foreign_key="userschema.id")
+    project: UUID = Field(foreign_key="projectschema.id")
 
     configuration: bytes
 
-    created_at: datetime = Field(default_factory=datetime.now)
+    creation_date: datetime = Field(default_factory=datetime.now)
 
     stacks: List["StackSchema"] = Relationship(
         back_populates="components", link_model=StackCompositionSchema
@@ -64,8 +64,8 @@ class StackComponentSchema(SQLModel, table=True):
         """
         return cls(
             name=component.name,
-            project_id=project_id,
-            owner=user_id,
+            project=project_id,
+            user=user_id,
             is_shared=component.is_shared,
             type=component.type,
             flavor_name=component.flavor,
@@ -101,11 +101,11 @@ class StackComponentSchema(SQLModel, table=True):
             name=self.name,
             type=self.type,
             flavor=self.flavor_name,
-            user=self.owner,
-            project=self.project_id,
+            user=self.user,
+            project=self.project,
             is_shared=self.is_shared,
             configuration=json.loads(
                 base64.b64decode(self.configuration).decode()
             ),
-            creation_date=self.created_at
+            creation_date=self.creation_date
         )

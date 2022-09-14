@@ -38,7 +38,7 @@ class UserSchema(SQLModel, table=True):
 
     id: UUID = Field(primary_key=True, default_factory=uuid4)
     name: str
-    created_at: datetime = Field(default_factory=datetime.now)
+    creation_date: datetime = Field(default_factory=datetime.now)
 
     teams: List["TeamSchema"] = Relationship(
         back_populates="users", link_model=TeamAssignmentSchema
@@ -56,7 +56,7 @@ class UserSchema(SQLModel, table=True):
         return self
 
     def to_model(self) -> UserModel:
-        return UserModel(id=self.id, name=self.name, created_at=self.created_at)
+        return UserModel(id=self.id, name=self.name, created_at=self.creation_date)
 
 
 class TeamSchema(SQLModel, table=True):

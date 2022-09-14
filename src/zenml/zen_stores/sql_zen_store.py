@@ -337,8 +337,8 @@ class SqlZenStore(BaseZenStore):
             existing_stack = session.exec(
                 select(StackSchema)
                 .where(StackSchema.name == stack.name)
-                .where(StackSchema.project_id == project.id)
-                .where(StackSchema.owner == user.id)
+                .where(StackSchema.project == project.id)
+                .where(StackSchema.user == user.id)
             ).first()
             # TODO: verify if is_shared status needs to be checked here
             if existing_stack is not None:
@@ -369,7 +369,7 @@ class SqlZenStore(BaseZenStore):
             )
             session.add(stack_in_db)
             session.commit()
-            print(stack_in_db)
+
             return stack_in_db.to_model()
 
     def get_stack(self, stack_id: UUID) -> StackModel:
@@ -423,10 +423,10 @@ class SqlZenStore(BaseZenStore):
             # TODO: prettify
             if project_name_or_id:
                 project = self._get_project_schema(project_name_or_id)
-                query = query.where(StackSchema.project_id == project.id)
+                query = query.where(StackSchema.project == project.id)
             if user_name_or_id:
                 user = self._get_user_schema(user_name_or_id)
-                query = query.where(StackSchema.owner == user.id)
+                query = query.where(StackSchema.user == user.id)
             if name:
                 query = query.where(StackSchema.name == name)
             if is_shared is not None:
@@ -537,8 +537,8 @@ class SqlZenStore(BaseZenStore):
             existing_component = session.exec(
                 select(StackComponentSchema)
                 .where(StackComponentSchema.name == component.name)
-                .where(StackComponentSchema.project_id == project.id)
-                .where(StackComponentSchema.owner == user.id)
+                .where(StackComponentSchema.project == project.id)
+                .where(StackComponentSchema.user == user.id)
                 .where(StackComponentSchema.type == component.type)
             ).first()
 
@@ -619,7 +619,7 @@ class SqlZenStore(BaseZenStore):
 
             # Get a list of all stacks
             query = select(StackComponentSchema).where(
-                StackComponentSchema.project_id == project.id
+                StackComponentSchema.project == project.id
             )
             # TODO: [server] prettify this
             if type:
@@ -630,7 +630,7 @@ class SqlZenStore(BaseZenStore):
                 )
             if user_name_or_id:
                 user = self._get_user_schema(user_name_or_id)
-                query = query.where(StackComponentSchema.owner == user.id)
+                query = query.where(StackComponentSchema.user == user.id)
             if name:
                 query = query.where(StackComponentSchema.name == name)
             if is_shared is not None:
@@ -1567,7 +1567,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Connect the repository to the project
-            existing_repository.project_id = project.id
+            existing_repository.project = project.id
             session.add(existing_repository)
             session.commit()
 
@@ -1621,7 +1621,7 @@ class SqlZenStore(BaseZenStore):
             # Get all repositories in the project
             repositories = session.exec(
                 select(CodeRepositorySchema).where(
-                    CodeRepositorySchema.project_id == project.id
+                    CodeRepositorySchema.project == project.id
                 )
             ).all()
 
@@ -1724,7 +1724,7 @@ class SqlZenStore(BaseZenStore):
             existing_pipeline = session.exec(
                 select(PipelineSchema)
                 .where(PipelineSchema.name == pipeline.name)
-                .where(PipelineSchema.project_id == project.id)
+                .where(PipelineSchema.project == project.id)
             ).first()
             if existing_pipeline is not None:
                 raise EntityExistsError(
@@ -1794,7 +1794,7 @@ class SqlZenStore(BaseZenStore):
             pipeline = session.exec(
                 select(PipelineSchema).where(
                     PipelineSchema.name == pipeline_name,
-                    PipelineSchema.project_id == project.id,
+                    PipelineSchema.project == project.id,
                 )
             ).first()
             if pipeline is None:
@@ -1827,11 +1827,11 @@ class SqlZenStore(BaseZenStore):
             query = select(PipelineSchema)
             if project_name_or_id is not None:
                 project = self._get_project_schema(project_name_or_id)
-                query = query.where(PipelineSchema.project_id == project.id)
+                query = query.where(PipelineSchema.project == project.id)
 
             if user_name_or_id is not None:
                 user = self._get_user_schema(user_name_or_id)
-                query = query.where(PipelineSchema.owner == user.id)
+                query = query.where(PipelineSchema.user == user.id)
 
             # Get all pipelines in the project
             pipelines = session.exec(query).all()
@@ -2018,7 +2018,7 @@ class SqlZenStore(BaseZenStore):
                 select(PipelineRunSchema)
                 .where(PipelineRunSchema.name == run_name)
                 .where(PipelineRunSchema.stack_id == StackSchema.id)
-                .where(StackSchema.project_id == project.id)
+                .where(StackSchema.project == project.id)
             ).first()
             if run is None:
                 raise KeyError(
@@ -2091,7 +2091,7 @@ class SqlZenStore(BaseZenStore):
             )
             if project_name_or_id is not None:
                 project = self._get_project_schema(project_name_or_id)
-                query = query.where(StackSchema.project_id == project.id)
+                query = query.where(StackSchema.project == project.id)
             if stack_id is not None:
                 query = query.where(PipelineRunSchema.stack_id == stack_id)
             if pipeline_id is not None:

@@ -41,14 +41,14 @@ class StackSchema(SQLModel, table=True):
     """SQL Model for stacks."""
 
     id: UUID = Field(primary_key=True, default_factory=uuid4)
-    created_at: datetime = Field(default_factory=datetime.now)
+    creation_date: datetime = Field(default_factory=datetime.now)
 
     name: str
     is_shared: bool
-    project_id: UUID = Field(
+    project: UUID = Field(
         foreign_key="projectschema.id",
     )
-    owner: UUID = Field(
+    user: UUID = Field(
         foreign_key="userschema.id",
     )
 
@@ -72,8 +72,8 @@ class StackSchema(SQLModel, table=True):
 
         return cls(
             name=stack.name,
-            project_id=project_id,
-            owner=user_id,
+            project=project_id,
+            user=user_id,
             is_shared=stack.is_shared,
             components=defined_components,
         )
@@ -102,9 +102,9 @@ class StackSchema(SQLModel, table=True):
         return StackModel(
             id=self.id,
             name=self.name,
-            user=self.owner,
-            project=self.project_id,
+            user=self.user,
+            project=self.project,
             is_shared=self.is_shared,
             components={c.type: [c.id] for c in self.components},
-            creation_date=self.created_at
+            creation_date=self.creation_date
         )

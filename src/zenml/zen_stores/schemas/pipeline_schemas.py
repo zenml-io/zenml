@@ -32,14 +32,14 @@ class PipelineSchema(SQLModel, table=True):
 
     name: str
 
-    project_id: UUID = Field(foreign_key="projectschema.id")
+    project: UUID = Field(foreign_key="projectschema.id")
     # repository_id: UUID = Field(foreign_key="coderepositoryschema.id")
-    owner: UUID = Field(foreign_key="userschema.id")
+    user: UUID = Field(foreign_key="userschema.id")
 
     docstring: Optional[str] = Field(nullable=True)
     configuration: str
 
-    created_at: datetime = Field(default_factory=datetime.now)
+    creation_date: datetime = Field(default_factory=datetime.now)
 
     runs: List["PipelineRunSchema"] = Relationship(
         back_populates="pipeline",
@@ -70,11 +70,11 @@ class PipelineSchema(SQLModel, table=True):
         return PipelineModel(
             id=self.id,
             name=self.name,
-            project=self.project_id,
-            user=self.owner,
+            project=self.project,
+            user=self.user,
             docstring=self.docstring,
             configuration=json.loads(self.configuration),
-            creation_date=self.created_at,
+            creation_date=self.creation_date,
         )
 
 
@@ -85,7 +85,7 @@ class PipelineRunSchema(SQLModel, table=True):
     name: str
 
     # project_id - redundant since stack has this
-    owner: Optional[UUID] = Field(foreign_key="userschema.id", nullable=True)
+    user: Optional[UUID] = Field(foreign_key="userschema.id", nullable=True)
     stack_id: Optional[UUID] = Field(
         foreign_key="stackschema.id", nullable=True
     )
@@ -97,7 +97,7 @@ class PipelineRunSchema(SQLModel, table=True):
     git_sha: Optional[str] = Field(nullable=True)
     zenml_version: str
 
-    created_at: datetime = Field(default_factory=datetime.now)
+    creation_date: datetime = Field(default_factory=datetime.now)
 
     pipeline: PipelineSchema = Relationship(back_populates="runs")
 
@@ -112,7 +112,7 @@ class PipelineRunSchema(SQLModel, table=True):
         return cls(
             name=model.name,
             stack_id=model.stack_id,
-            owner=model.owner,
+            user=model.owner,
             pipeline_id=model.pipeline_id,
             runtime_configuration=json.dumps(model.runtime_configuration),
             git_sha=model.git_sha,
@@ -134,12 +134,12 @@ class PipelineRunSchema(SQLModel, table=True):
             id=self.id,
             name=self.name,
             stack_id=self.stack_id,
-            owner=self.owner,
+            owner=self.user,
             pipeline_id=self.pipeline_id,
             runtime_configuration=json.loads(self.runtime_configuration),
             git_sha=self.git_sha,
             zenml_version=self.zenml_version,
-            created_at=self.created_at,
+            created_at=self.creation_date,
             mlmd_id=self.mlmd_id,
         )
 
