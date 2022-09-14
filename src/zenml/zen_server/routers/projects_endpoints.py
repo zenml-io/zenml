@@ -566,7 +566,8 @@ async def get_project_pipelines(
 async def create_pipeline(
     project_name_or_id: str,
     pipeline: CreatePipelineModel,
-    hydrated: bool = True
+    hydrated: bool = True,
+    auth_context: AuthContext = Depends(authorize),
 ) -> Union[PipelineModel, HydratedPipelineModel]:
     """Creates a pipeline.
 
@@ -583,10 +584,10 @@ async def create_pipeline(
         422 error: when unable to validate input
     """
     try:
-        # TODO: [server] insert user from context here
+        project = zen_store.get_project(parse_name_or_uuid(project_name_or_id))
         pipeline = pipeline.to_model(
-            project=parse_name_or_uuid(project_name_or_id),
-            user=parse_name_or_uuid(),
+            project=project.id,
+            user=auth_context.user.id,
         )
         created_pipeline = zen_store.create_pipeline(pipeline=pipeline)
         if hydrated:
@@ -602,77 +603,77 @@ async def create_pipeline(
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
 
-
-@router.get(
-    "/{project_name_or_id}" + REPOSITORIES,
-    response_model=List[CodeRepositoryModel],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-async def get_project_repositories(
-    project_name_or_id: str,
-) -> List[CodeRepositoryModel]:
-    """Gets repositories defined for a specific project.
-
-    # noqa: DAR401
-
-    Args:
-        project_name_or_id: Name or ID of the project.
-
-    Returns:
-        All repositories within the project.
-
-    Raises:
-        not_found: when the project does not exist.
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
-    """
-    try:
-        return zen_store.list_repositories(
-            project_name_or_id=parse_name_or_uuid(project_name_or_id)
-        )
-    except KeyError as error:
-        raise not_found(error) from error
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
-
-
-@router.post(
-    "/{project_name_or_id}" + REPOSITORIES,
-    response_model=CodeRepositoryModel,
-    responses={401: error_response, 409: error_response, 422: error_response},
-)
-async def connect_project_repository(
-    project_name_or_id: str, repository: CodeRepositoryModel
-) -> CodeRepositoryModel:
-    """Attach or connect a repository to a project.
-
-    # noqa: DAR401
-
-    Args:
-        project_name_or_id: Name or ID of the project.
-
-    Returns:
-        The connected repository.
-
-    Raises:
-        not_found: when the project does not exist.
-        401 error: when not authorized to login
-        409 error: when trigger does not exist
-        422 error: when unable to validate input
-    """
-    try:
-        return zen_store.connect_project_repository(
-            project_name_or_id=parse_name_or_uuid(project_name_or_id),
-            repository=repository,
-        )
-    except KeyError as error:
-        raise not_found(error) from error
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+#
+# @router.get(
+#     "/{project_name_or_id}" + REPOSITORIES,
+#     response_model=List[CodeRepositoryModel],
+#     responses={401: error_response, 404: error_response, 422: error_response},
+# )
+# async def get_project_repositories(
+#     project_name_or_id: str,
+# ) -> List[CodeRepositoryModel]:
+#     """Gets repositories defined for a specific project.
+#
+#     # noqa: DAR401
+#
+#     Args:
+#         project_name_or_id: Name or ID of the project.
+#
+#     Returns:
+#         All repositories within the project.
+#
+#     Raises:
+#         not_found: when the project does not exist.
+#         401 error: when not authorized to login
+#         404 error: when trigger does not exist
+#         422 error: when unable to validate input
+#     """
+#     try:
+#         return zen_store.list_repositories(
+#             project_name_or_id=parse_name_or_uuid(project_name_or_id)
+#         )
+#     except KeyError as error:
+#         raise not_found(error) from error
+#     except NotAuthorizedError as error:
+#         raise HTTPException(status_code=401, detail=error_detail(error))
+#     except KeyError as error:
+#         raise HTTPException(status_code=404, detail=error_detail(error))
+#     except ValidationError as error:
+#         raise HTTPException(status_code=422, detail=error_detail(error))
+#
+#
+# @router.post(
+#     "/{project_name_or_id}" + REPOSITORIES,
+#     response_model=CodeRepositoryModel,
+#     responses={401: error_response, 409: error_response, 422: error_response},
+# )
+# async def connect_project_repository(
+#     project_name_or_id: str, repository: CodeRepositoryModel
+# ) -> CodeRepositoryModel:
+#     """Attach or connect a repository to a project.
+#
+#     # noqa: DAR401
+#
+#     Args:
+#         project_name_or_id: Name or ID of the project.
+#
+#     Returns:
+#         The connected repository.
+#
+#     Raises:
+#         not_found: when the project does not exist.
+#         401 error: when not authorized to login
+#         409 error: when trigger does not exist
+#         422 error: when unable to validate input
+#     """
+#     try:
+#         return zen_store.connect_project_repository(
+#             project_name_or_id=parse_name_or_uuid(project_name_or_id),
+#             repository=repository,
+#         )
+#     except KeyError as error:
+#         raise not_found(error) from error
+#     except NotAuthorizedError as error:
+#         raise HTTPException(status_code=401, detail=error_detail(error))
+#     except ValidationError as error:
+#         raise HTTPException(status_code=422, detail=error_detail(error))
