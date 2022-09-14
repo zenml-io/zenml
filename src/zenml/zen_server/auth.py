@@ -12,22 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from datetime import datetime, timedelta
 import os
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Callable, Optional, Union
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
-from jose import JWTError, jwt
 from fastapi.security import (
-    OAuth2PasswordBearer,
     HTTPBasic,
     HTTPBasicCredentials,
+    OAuth2PasswordBearer,
 )
-from fastapi.security.base import SecurityBase
-
 from pydantic import BaseModel
-from starlette.requests import Request
 
 from zenml.constants import LOGIN, VERSION_1
 from zenml.exceptions import AuthorizationException
@@ -38,9 +33,7 @@ from zenml.models.user_management_models import (
     UserModel,
 )
 from zenml.utils.enum_utils import StrEnum
-from zenml.zen_server.utils import (
-    zen_store,
-)
+from zenml.zen_server.utils import zen_store
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 
 logger = get_logger(__name__)

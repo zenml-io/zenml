@@ -22,8 +22,8 @@ from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.models import PipelineRunModel
 from zenml.models.pipeline_models import HydratedPipelineModel, PipelineModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
-from zenml.zen_server.models import UpdatePipelineModel
 from zenml.zen_server.auth import authorize
+from zenml.zen_server.models import UpdatePipelineModel
 from zenml.zen_server.utils import (
     conflict,
     error_detail,
@@ -123,7 +123,7 @@ async def get_pipeline(
 async def update_pipeline(
     pipeline_id: str,
     pipeline_update: UpdatePipelineModel,
-    hydrated: bool = True
+    hydrated: bool = True,
 ) -> Union[PipelineModel, HydratedPipelineModel]:
     """Updates the attribute on a specific pipeline using its unique id.
 

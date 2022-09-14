@@ -1700,10 +1700,7 @@ class SqlZenStore(BaseZenStore):
             return [pipeline.to_model() for pipeline in pipelines]
 
     @track(AnalyticsEvent.UPDATE_PIPELINE)
-    def update_pipeline(
-        self,
-        pipeline: PipelineModel
-    ) -> PipelineModel:
+    def update_pipeline(self, pipeline: PipelineModel) -> PipelineModel:
         """Updates a pipeline.
 
         Args:
@@ -1816,8 +1813,9 @@ class SqlZenStore(BaseZenStore):
                         f"Unable to create pipeline run: {pipeline_run.name}: "
                         f"No pipeline with ID {pipeline_run.pipeline_id} found."
                     )
-                new_run = PipelineRunSchema.from_create_model(run=pipeline_run,
-                                                              pipeline=pipeline)
+                new_run = PipelineRunSchema.from_create_model(
+                    run=pipeline_run, pipeline=pipeline
+                )
             else:
                 new_run = PipelineRunSchema.from_create_model(run=pipeline_run)
 

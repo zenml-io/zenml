@@ -63,19 +63,14 @@ class PipelineModel(AnalyticsTrackedModelMixin):
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["id", "project", "user"]
 
     id: UUID = Field(
-        default_factory=uuid4,
-        title="The unique id of the pipeline."
+        default_factory=uuid4, title="The unique id of the pipeline."
     )
-    name: str = Field(
-        title="The name of the pipeline."
-    )
+    name: str = Field(title="The name of the pipeline.")
 
     docstring: Optional[str]
     configuration: Dict[str, str]
 
-    project: UUID = Field(
-        title="The project that contains this component."
-    )
+    project: UUID = Field(title="The project that contains this component.")
     user: UUID = Field(
         title="The id of the user that owns this component.",
     )
@@ -119,13 +114,8 @@ class HydratedPipelineModel(PipelineModel):
 class PipelineRunModel(AnalyticsTrackedModelMixin):
     """Domain Model representing a pipeline run."""
 
-    id: UUID = Field(
-        default_factory=uuid4,
-        title="The unique id of the run."
-    )
-    name: str = Field(
-        title="The name of the pipeline."
-    )
+    id: UUID = Field(default_factory=uuid4, title="The unique id of the run.")
+    name: str = Field(title="The name of the pipeline.")
 
     user: UUID  # might not be set for scheduled runs
     stack_id: Optional[UUID]  # might not be set for scheduled runs

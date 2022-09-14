@@ -20,12 +20,7 @@ from uuid import UUID, uuid4
 
 from sqlmodel import Field, Relationship, SQLModel
 
-from zenml.models import (
-    RoleAssignmentModel,
-    RoleModel,
-    TeamModel,
-    UserModel,
-)
+from zenml.models import RoleAssignmentModel, RoleModel, TeamModel, UserModel
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.project_schemas import ProjectSchema

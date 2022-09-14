@@ -25,15 +25,15 @@ of each other.
 
 from zenml.zen_server.models.pipeline_models import (
     CreatePipelineModel,
-    UpdatePipelineModel
+    UpdatePipelineModel,
 )
 from zenml.zen_server.models.projects_models import (
     CreateProjectModel,
-    UpdateProjectModel
+    UpdateProjectModel,
 )
 from zenml.zen_server.models.stack_models import (
     CreateStackModel,
-    UpdateStackModel
+    UpdateStackModel,
 )
 
 __all__ = [
@@ -42,5 +42,5 @@ __all__ = [
     "CreateProjectModel",
     "UpdateProjectModel",
     "CreatePipelineModel",
-    "UpdatePipelineModel"
+    "UpdatePipelineModel",
 ]

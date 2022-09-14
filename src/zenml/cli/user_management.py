@@ -21,12 +21,7 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.enums import CliCategories
 from zenml.exceptions import EntityExistsError, IllegalOperationError
-from zenml.models import (
-    ProjectModel,
-    RoleModel,
-    TeamModel,
-    UserModel,
-)
+from zenml.models import ProjectModel, RoleModel, TeamModel, UserModel
 from zenml.repository import Repository
 from zenml.utils.uuid_utils import parse_name_or_uuid
 
@@ -87,9 +82,7 @@ def create_user(user_name: str, password: Optional[str] = None) -> None:
         )
 
     cli_utils.print_active_config()
-    user = UserModel(
-        name=user_name, password=password
-    )
+    user = UserModel(name=user_name, password=password)
     try:
         Repository().zen_store.create_user(user.hash_password())
     except EntityExistsError as err:

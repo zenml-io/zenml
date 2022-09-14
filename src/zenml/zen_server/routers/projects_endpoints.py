@@ -44,13 +44,13 @@ from zenml.models.component_models import HydratedComponentModel
 from zenml.models.pipeline_models import HydratedPipelineModel
 from zenml.models.stack_models import HydratedStackModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
+from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.models import CreatePipelineModel
 from zenml.zen_server.models.projects_models import (
     CreateProjectModel,
-    UpdateProjectModel
+    UpdateProjectModel,
 )
 from zenml.zen_server.models.stack_models import CreateStackModel
-from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.utils import (
     conflict,
     error_detail,
@@ -566,7 +566,7 @@ async def get_project_pipelines(
 async def create_pipeline(
     project_name_or_id: str,
     pipeline: CreatePipelineModel,
-    hydrated: bool = True
+    hydrated: bool = True,
 ) -> Union[PipelineModel, HydratedPipelineModel]:
     """Creates a pipeline.
 

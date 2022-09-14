@@ -13,14 +13,11 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for users."""
 
-from datetime import datetime
 from typing import List, Optional
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import Field, SecretStr
 
-from zenml.constants import ACTIVATE, INVITE_TOKEN, ROLES, USERS, VERSION_1
+from zenml.constants import ACTIVATE, ROLES, USERS, VERSION_1
 from zenml.exceptions import (
     EntityExistsError,
     NotAuthorizedError,
