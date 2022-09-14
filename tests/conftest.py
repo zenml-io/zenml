@@ -196,12 +196,12 @@ def sql_store() -> BaseZenStore:
         )
         default_project = store.list_projects()[0]
         default_stack = store.list_stacks()[0]
-        default_user = store.list_users()[0]
+        active_user = store.list_users()[0]
         yield {
             "store": store,
             "default_project": default_project,
             "default_stack": default_stack,
-            "default_user": default_user,
+            "active_user": active_user,
         }
 
 
@@ -218,13 +218,13 @@ def sql_store_with_team() -> BaseZenStore:
         store.create_team(new_team)
         default_project = store.list_projects()[0]
         default_stack = store.list_stacks()[0]
-        default_user = store.list_users()[0]
+        active_user = store.list_users()[0]
         default_team = store.list_teams()[0]
         yield {
             "store": store,
             "default_project": default_project,
             "default_stack": default_stack,
-            "default_user": default_user,
+            "active_user": active_user,
             "default_team": default_team,
         }
 

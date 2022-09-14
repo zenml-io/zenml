@@ -153,7 +153,7 @@ def test_adding_user_to_team(sql_store: BaseZenStore):
     team_name = "arias_team"
     new_team = TeamModel(name=team_name)
     sql_store["store"].create_team(new_team)
-    current_user_id = sql_store["store"].active_user.id
+    current_user_id = sql_store["active_user"].id
     sql_store["store"].add_user_to_team(
         user_name_or_id=DEFAULT_NAME, team_name_or_id=team_name
     )
@@ -186,7 +186,7 @@ def test_adding_real_user_to_nonexistent_team_raises_error(
     sql_store: BaseZenStore,
 ):
     """Tests adding a nonexistent user to a team raises an error."""
-    current_user_id = sql_store["store"].active_user.id
+    current_user_id = sql_store["active_user"].id
     with pytest.raises(KeyError):
         sql_store["store"].add_user_to_team(current_user_id, uuid.uuid4())
 
@@ -196,7 +196,7 @@ def test_removing_user_from_team_succeeds(sql_store: BaseZenStore):
     assert len(sql_store["store"].teams) == 0
     new_team = TeamModel(name="arias_team")
     sql_store["store"].create_team(new_team)
-    current_user_id = sql_store["store"].active_user.id
+    current_user_id = sql_store["active_user"].id
     new_team_id = sql_store["store"].get_team("arias_team").id
     sql_store["store"].add_user_to_team(current_user_id, new_team_id)
     assert len(sql_store["store"].get_users_for_team(new_team_id)) == 1
@@ -227,7 +227,7 @@ def test_getting_user_for_team(sql_store: BaseZenStore):
     """Tests getting a user from a team."""
     new_team = TeamModel(name="arias_team")
     sql_store["store"].create_team(new_team)
-    current_user_id = sql_store["store"].active_user.id
+    current_user_id = sql_store["active_user"].id
     new_team_id = sql_store["store"].get_team("arias_team").id
     sql_store["store"].add_user_to_team(current_user_id, new_team_id)
     users_for_team = sql_store["store"].get_users_for_team(new_team_id)
@@ -239,7 +239,7 @@ def test_getting_team_for_user(sql_store: BaseZenStore):
     """Tests getting a team for a user."""
     new_team = TeamModel(name="arias_team")
     sql_store["store"].create_team(new_team)
-    current_user_id = sql_store["store"].active_user.id
+    current_user_id = sql_store["active_user"].id
     new_team_id = sql_store["store"].get_team("arias_team").id
     sql_store["store"].add_user_to_team(current_user_id, new_team_id)
     teams_for_user = sql_store["store"].get_teams_for_user(current_user_id)
