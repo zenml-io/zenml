@@ -16,7 +16,7 @@
 import os
 from abc import ABCMeta
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast, Type
 from uuid import UUID
 
 from zenml.config.global_config import GlobalConfiguration
@@ -26,6 +26,7 @@ from zenml.constants import (
     REPOSITORY_DIRECTORY_NAME,
     handle_bool_env_var,
 )
+from zenml.constants import MANDATORY_COMPONENT_ATTRIBUTES
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.exceptions import (
@@ -37,6 +38,7 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import ComponentModel, FlavorModel, ProjectModel, StackModel
 from zenml.models.pipeline_models import PipelineModel, PipelineRunModel
+from zenml.stack import Flavor
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
@@ -44,13 +46,88 @@ from zenml.utils.filesync_model import FileSyncModel
 if TYPE_CHECKING:
     from zenml.models import ComponentModel, ProjectModel, StackModel, UserModel
     from zenml.runtime_configuration import RuntimeConfiguration
-    from zenml.stack import Stack
+    from zenml.stack import Stack, StackComponentConfig
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
 
 # TODO: [server] this is defined in two places now, should be fixed
 DEFAULT_STACK_NAME = "default"
+
+
+def _get_available_attributes(
+    component_class: Type["StackComponentConfig"],
+) -> List[str]:
+    """Gets the available non-mandatory properties for a stack component.
+
+    Args:
+        component_class: Class of the component to get the available
+            properties for.
+
+    Returns:
+        A list of the available properties for the given component class.
+    """
+    return [
+        field_name
+        for field_name, _ in component_class.__fields__.items()
+        if field_name not in MANDATORY_COMPONENT_ATTRIBUTES
+    ]
+
+
+def _get_required_attributes(
+    component_class: Type["StackComponentConfig"],
+) -> List[str]:
+    """Gets the required properties for a stack component.
+
+    Args:
+        component_class: Class of the component to get the required properties
+            for.
+
+    Returns:
+        A list of the required properties for the given component class.
+    """
+    return [
+        field_name
+        for field_name, field in component_class.__fields__.items()
+        if (field.required is True)
+           and field_name not in MANDATORY_COMPONENT_ATTRIBUTES
+    ]
+
+
+def _get_optional_attributes(
+    component_class: Type["StackComponentConfig"],
+) -> List[str]:
+    """Gets the optional properties for a stack component.
+
+    Args:
+        component_class: Class of the component to get the optional properties
+            for.
+
+    Returns:
+        A list of the optional properties for the given component class.
+    """
+    return [
+        field_name
+        for field_name, field in component_class.__fields__.items()
+        if field.required is False
+           and field_name not in MANDATORY_COMPONENT_ATTRIBUTES
+    ]
+
+
+def _component_display_name(
+    component_type: "StackComponentType", plural: bool = False
+) -> str:
+    """Human-readable name for a stack component.
+
+    Args:
+        component_type: Type of the component to get the display name for.
+        plural: Whether the display name should be plural or not.
+
+    Returns:
+        A human-readable name for the given stack component type.
+    """
+    name = component_type.plural if plural else component_type.value
+    return name.replace("_", " ")
 
 
 class RepositoryConfiguration(FileSyncModel):
@@ -775,33 +852,79 @@ class Repository(metaclass=RepositoryMetaClass):
 
     def register_stack_component(
         self,
-        component: ComponentModel,
-    ) -> None:
+        component: "ComponentModel",
+    ) -> "ComponentModel":
         """Registers a stack component.
 
         Args:
             component: The component to register.
         """
-        # TODO: To the check
-        self.zen_store.register_stack_component(
-            project_id=self.active_project.id,
-            user_id=self.zen_store.default_user_id,  # TODO: Do this right
-            component=component,
+        # Get the flavor model
+        flavor_model = self.get_flavor_by_name_and_type(
+            name=component.flavor_name,
+            component_type=component.type
         )
-        # if component.post_registration_message:
-        #     logger.info(component.post_registration_message)
+
+        # Create and validate the configuration
+        flavor_class = Flavor.from_model(flavor_model)
+        configuration = flavor_class.config_class(
+            **component.configuration
+        ).dict()
+
+        # Create a new component model
+        new_component = ComponentModel(
+            name=component.name,
+            flavor_name=component.flavor_name,
+            type=component.type,
+            configuration=configuration,
+        )
+
+        # Register the new model
+        return self.zen_store.register_stack_component(
+            project_name_or_id=self.active_project.id,
+            user_name_or_id=self.active_user.id,
+            component=new_component,
+        )
 
     def update_stack_component(
         self,
         component: "ComponentModel",
-    ) -> None:
+    ) -> "ComponentModel":
         """Updates a stack component.
 
         Args:
             component: The new component to update with.
         """
-        # TODO: To the check
-        self.zen_store.update_stack_component(component=component)
+        # Get the existing component model
+        existing_component_model = self.get_stack_component_by_name_and_type(
+            type=component.type,
+            name=component.name,
+        )
+
+        # Get the flavor model of the existing component
+        flavor_model = self.get_flavor_by_name_and_type(
+            name=existing_component_model.flavor_name,
+            component_type=existing_component_model.type
+        )
+
+        # Use the flavor class to validate the new configuration
+        flavor_class = Flavor.from_model(flavor_model)
+        updated_configuration = flavor_class.config_class(
+            **{
+                **existing_component_model.configuration,
+                **component.configuration
+            }
+            ).dict()
+
+        # Create an updated component
+        updated_component = existing_component_model.copy(
+            update={'configuration': updated_configuration}
+        )
+
+        # Send the updated component to the ZenStore
+        return self.zen_store.update_stack_component(
+            component=updated_component
+        )
 
     def deregister_stack_component(self, component: ComponentModel) -> None:
         """ """
@@ -822,7 +945,8 @@ class Repository(metaclass=RepositoryMetaClass):
 
     def get_stack_components(self) -> List[ComponentModel]:
         return self.zen_store.list_stack_components(
-            project_id=self.active_project.id
+            project_name_or_id=self.active_project.id,
+            user_name_or_id=self.active_user.id,
         )
 
     def get_stack_component_by_id(self, component_id: UUID) -> ComponentModel:
@@ -846,16 +970,15 @@ class Repository(metaclass=RepositoryMetaClass):
         """ """
         if is_shared:
             return self.zen_store.list_stack_components(
-                project_id=self.active_project.id,
+                project_name_or_id=self.active_project.id,
                 type=type,
                 is_shared=True,
             )
         else:
-            # TODO: [server] access the user id in a more elegant way
             return self.zen_store.list_stack_components(
-                project_id=self.active_project.id,
+                project_name_or_id=self.active_project.id,
+                user_name_or_id=self.active_user.id,
                 type=type,
-                user_id=self.zen_store.default_user_id,
             )
 
     def get_stack_component_by_name_and_type(
@@ -904,15 +1027,21 @@ class Repository(metaclass=RepositoryMetaClass):
 
         return custom_flavors + zenml_flavors
 
-    def create_flavor(self, flavor: FlavorModel) -> None:
-        self.zen_store.create_flavor(
-            flavor=flavor,
-            user_id=self.zen_store.default_user_id,
-            project_id=self.active_project.id,
+    def create_flavor(self, flavor: "FlavorModel") -> "FlavorModel":
+        from zenml.utils.source_utils import validate_flavor_source
+
+        flavor_class = validate_flavor_source(
+            source=flavor.source,
+            component_type=flavor.type,
         )
 
-    def update_flavor(self, flavor: FlavorModel) -> None:
-        pass
+        flavor_model = flavor_class().to_model()
+
+        return self.zen_store.create_flavor(
+            flavor=flavor_model,
+            user_name_or_id=self.active_user.id,
+            project_name_or_id=self.active_project.id,
+        )
 
     def delete_flavor(self, flavor: FlavorModel) -> None:
         try:
@@ -931,27 +1060,24 @@ class Repository(metaclass=RepositoryMetaClass):
 
         zenml_flavors = flavor_registry.flavors
         custom_flavors = self.zen_store.list_flavors(
-            project_id=self.active_project.id,
+            user_name_or_id=self.active_user.id,
+            project_name_or_id=self.active_project.id,
         )
         return zenml_flavors + custom_flavors
 
     def get_flavors_by_type(
-        self, name: str, component_type: StackComponentType
+        self, component_type: StackComponentType
     ) -> List[FlavorModel]:
-        """Fetches a registered flavor.
+        """Fetches the list of flavor for a stack component type.
 
         Args:
             component_type: The type of the component to fetch.
-            name: The name of the flavor to fetch.
 
         Returns:
-            The registered flavor.
-
-        Raises:
-            KeyError: If no flavor exists for the given type and name.
+            The list of flavors.
         """
         logger.debug(
-            f"Fetching the flavor of type {component_type} with name {name}."
+            f"Fetching the flavors of type {component_type}."
         )
 
         from zenml.stack.flavor_registry import flavor_registry
@@ -961,7 +1087,8 @@ class Repository(metaclass=RepositoryMetaClass):
         )
 
         custom_flavors = self.zen_store.list_flavors(
-            project_id=self.active_project.id, type=component_type
+            project_name_or_id=self.active_project.id,
+            component_type=component_type
         )
 
         return zenml_flavors + custom_flavors
@@ -996,8 +1123,8 @@ class Repository(metaclass=RepositoryMetaClass):
             zenml_flavor = None
 
         custom_flavors = self.zen_store.list_flavors(
-            project_id=self.active_project.id,
-            type=component_type,
+            project_name_or_id=self.active_project.id,
+            component_type=component_type,
             name=name,
         )
 
