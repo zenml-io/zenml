@@ -46,10 +46,7 @@ class PipelineSchema(SQLModel, table=True):
 
     @classmethod
     def from_create_model(
-        cls,
-        user_id: UUID,
-        project_id: UUID,
-        pipeline: PipelineModel
+        cls, user_id: UUID, project_id: UUID, pipeline: PipelineModel
     ) -> "PipelineSchema":
         """Create a `PipelineSchema` from a `PipelineModel`.
 

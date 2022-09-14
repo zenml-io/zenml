@@ -12,17 +12,18 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for projects."""
-from typing import List, Union, Optional
+from typing import List, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException
 
 from zenml.constants import (
+    FLAVORS,
     PIPELINES,
     PROJECTS,
     REPOSITORIES,
     STACK_COMPONENTS,
     STACKS,
-    VERSION_1, FLAVORS,
+    VERSION_1,
 )
 from zenml.exceptions import (
     EntityExistsError,
@@ -34,9 +35,10 @@ from zenml.exceptions import (
 from zenml.models import (
     CodeRepositoryModel,
     ComponentModel,
+    FlavorModel,
     PipelineModel,
     ProjectModel,
-    StackModel, FlavorModel,
+    StackModel,
 )
 from zenml.models.component_models import HydratedComponentModel
 from zenml.models.pipeline_models import HydratedPipelineModel
@@ -49,7 +51,7 @@ from zenml.zen_server.utils import (
     error_detail,
     error_response,
     not_found,
-    zen_store
+    zen_store,
 )
 
 router = APIRouter(
@@ -233,7 +235,7 @@ async def get_project_stacks(
     user_name_or_id: Optional[str] = None,
     stack_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
-    hydrated: bool = True
+    hydrated: bool = True,
 ) -> Union[List[HydratedStackModel], List[StackModel]]:
     """Get stacks that are part of a specific project.
 
@@ -261,7 +263,8 @@ async def get_project_stacks(
             project_name_or_id=parse_name_or_uuid(project_name_or_id),
             user_name_or_id=parse_name_or_uuid(user_name_or_id),
             is_shared=is_shared,
-            name=stack_name)
+            name=stack_name,
+        )
         if hydrated:
             return [stack.to_hydrated_model() for stack in stacks_list]
         else:
@@ -280,9 +283,7 @@ async def get_project_stacks(
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 async def create_stack(
-    project_name_or_id: str,
-    stack: CreateStackModel,
-    hydrated: bool = True
+    project_name_or_id: str, stack: CreateStackModel, hydrated: bool = True
 ) -> Union[HydratedStackModel, StackModel]:
     """Creates a stack for a particular project.
 
@@ -305,7 +306,8 @@ async def create_stack(
         # TODO: [server] insert user from context here
         full_stack = stack.to_model(
             project=parse_name_or_uuid(project_name_or_id),
-            user=parse_name_or_uuid())
+            user=parse_name_or_uuid(),
+        )
 
         created_stack = zen_store.register_stack(stack=full_stack)
         if hydrated:
@@ -337,7 +339,7 @@ async def list_project_stack_components(
     component_type: Optional[str] = None,
     component_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
-    hydrated: bool = True
+    hydrated: bool = True,
 ) -> Union[List[ComponentModel], List[HydratedComponentModel]]:
     """List stack components that are part of a specific project.
 
@@ -386,9 +388,7 @@ async def list_project_stack_components(
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 async def create_stack_component(
-    project_name_or_id: str,
-    component: ComponentModel,
-    hydrated: bool = True
+    project_name_or_id: str, component: ComponentModel, hydrated: bool = True
 ) -> Union[ComponentModel, HydratedComponentModel]:
     """Creates a stack component.
 
@@ -408,7 +408,7 @@ async def create_stack_component(
         # TODO: [server] include the active user here
         updated_component = zen_store.register_stack_component(
             project_name_or_id=parse_name_or_uuid(project_name_or_id),
-            component=component
+            component=component,
         )
         if hydrated:
             return updated_component.to_hydrated_model()
@@ -431,7 +431,7 @@ async def create_stack_component(
 )
 async def list_project_flavors(
     project_name_or_id: Optional[str] = None,
-    component_type: Optional[str] = None
+    component_type: Optional[str] = None,
 ) -> List[FlavorModel]:
     """List stack components flavors of a certain type that are part of a project.
 
@@ -452,7 +452,7 @@ async def list_project_flavors(
     try:
         flavors_list = zen_store.list_flavors(
             project_name_or_id=parse_name_or_uuid(project_name_or_id),
-            component_type=component_type
+            component_type=component_type,
         )
         return flavors_list
     except KeyError as error:
@@ -509,7 +509,7 @@ async def create_flavor(
 async def get_project_pipelines(
     project_name_or_id: Optional[str] = None,
     user_name_or_id: Optional[str] = None,
-    hydrated: bool = True
+    hydrated: bool = True,
 ) -> Union[List[PipelineModel], List[HydratedPipelineModel]]:
     """Gets pipelines defined for a specific project.
 
@@ -533,7 +533,7 @@ async def get_project_pipelines(
     try:
         pipelines_list = zen_store.list_pipelines(
             project_name_or_id=parse_name_or_uuid(project_name_or_id),
-            user_name_or_id=parse_name_or_uuid(user_name_or_id)
+            user_name_or_id=parse_name_or_uuid(user_name_or_id),
         )
         if hydrated:
             return [pipeline.to_hydrated_model() for pipeline in pipelines_list]
@@ -553,9 +553,7 @@ async def get_project_pipelines(
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 async def create_pipeline(
-    project_name_or_id: str,
-    pipeline: PipelineModel,
-    hydrated: bool = True
+    project_name_or_id: str, pipeline: PipelineModel, hydrated: bool = True
 ) -> Union[PipelineModel, HydratedPipelineModel]:
     """Creates a pipeline.
 

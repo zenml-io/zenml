@@ -21,10 +21,10 @@ from zenml.enums import StoreType
 from zenml.repository import Repository
 from zenml.zen_server.routers import (
     auth_endpoints,
+    flavors_endpoints,
     metadata_config_endpoints,
     pipelines_endpoints,
     projects_endpoints,
-    flavors_endpoints,
     roles_endpoints,
     runs_endpoints,
     stack_components_endpoints,

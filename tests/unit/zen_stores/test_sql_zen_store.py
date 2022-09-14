@@ -20,7 +20,7 @@ import pytest
 
 from zenml.exceptions import EntityExistsError, StackExistsError
 from zenml.models import ProjectModel, RoleModel, TeamModel, UserModel
-from zenml.models.pipeline_models import PipelineModel
+from zenml.models.pipeline_models import PipelineModel, PipelineRunModel
 from zenml.models.stack_models import StackModel
 from zenml.zen_stores.base_zen_store import BaseZenStore
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
@@ -595,9 +595,7 @@ def test_updating_stack_succeeds(
         project_name_or_id="default"
     )[0].id
     new_stack = StackModel(
-        id=current_stack_id,
-        name="arias_stack",
-        components={}
+        id=current_stack_id, name="arias_stack", components={}
     )
     fresh_sql_zen_store.update_stack(new_stack)
     assert fresh_sql_zen_store.get_stack(current_stack_id) is not None
@@ -957,3 +955,110 @@ def test_deleting_nonexistent_pipeline_fails(
     """Tests deleting nonexistent pipeline fails."""
     with pytest.raises(KeyError):
         fresh_sql_zen_store.delete_pipeline(uuid.uuid4())
+
+
+# --------------
+# Pipeline runs
+# --------------
+
+
+def test_create_pipeline_run_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests creating pipeline run."""
+    pipeline_run = PipelineRunModel(
+        name="arias_pipeline_run",
+    )
+    with does_not_raise():
+        fresh_sql_zen_store.create_run(pipeline_run=pipeline_run)
+
+
+def test_creating_pipeline_run_fails_when_run_already_exists(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests creating pipeline run fails when run already exists."""
+    pipeline_run = PipelineRunModel(
+        name="arias_pipeline_run",
+    )
+    fresh_sql_zen_store.create_run(pipeline_run=pipeline_run)
+    with pytest.raises(EntityExistsError):
+        fresh_sql_zen_store.create_run(pipeline_run=pipeline_run)
+
+
+def test_creating_pipeline_run_fails_when_no_pipeline_exists(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests creating pipeline run fails when no pipeline exists."""
+    pipeline_run = PipelineRunModel(
+        name="arias_pipeline_run",
+        pipeline_id=uuid.uuid4(),
+    )
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.create_run(pipeline_run=pipeline_run)
+
+
+def test_getting_run_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting run."""
+    pipeline_run = PipelineRunModel(
+        name="arias_pipeline_run",
+    )
+    fresh_sql_zen_store.create_run(pipeline_run=pipeline_run)
+    run_id = fresh_sql_zen_store.list_runs()[0].id
+    with does_not_raise():
+        run = fresh_sql_zen_store.get_run(run_id=run_id)
+        assert run is not None
+        assert run.name == "arias_pipeline_run"
+
+
+def test_getting_nonexistent_run_fails(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting nonexistent run fails."""
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.get_run(uuid.uuid4())
+
+
+# TODO: remove xfail once the method is propely implemented
+@pytest.mark.xfail
+def test_get_run_in_project_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting run in project."""
+    run_name = "arias_pipeline_run"
+    pipeline_run = PipelineRunModel(
+        name=run_name,
+    )
+    fresh_sql_zen_store.create_run(pipeline_run=pipeline_run)
+
+    with does_not_raise():
+        run = fresh_sql_zen_store.get_run_in_project(
+            run_name=run_name, project_name_or_id="default"
+        )
+        assert run is not None
+        assert run.name == "arias_pipeline_run"
+
+
+def test_get_run_in_project_fails_for_nonexistent_run(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests getting run in project fails for nonexistent run."""
+    with pytest.raises(KeyError):
+        fresh_sql_zen_store.get_run_in_project(
+            run_name="nonexistent_run", project_name_or_id="default"
+        )
+
+
+def test_list_runs_succeeds(
+    fresh_sql_zen_store: BaseZenStore,
+):
+    """Tests listing runs."""
+    pipeline_run = PipelineRunModel(
+        name="arias_pipeline_run",
+    )
+    fresh_sql_zen_store.create_run(pipeline_run=pipeline_run)
+    with does_not_raise():
+        runs = fresh_sql_zen_store.list_runs()
+        assert len(runs) == 1
+        assert runs[0].name == "arias_pipeline_run"
