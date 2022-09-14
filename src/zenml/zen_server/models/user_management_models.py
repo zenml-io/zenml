@@ -55,8 +55,7 @@ class UserCreateResponse(UserModel):
     def from_model(cls, user: UserModel) -> "UserCreateResponse":
         """Convert from a user model."""
         response = cls(**user.dict())
-        if user.invite_token.get_secret_value():
-            response.invite_token = user.invite_token.get_secret_value()
+        response.invite_token = user.get_invite_token()
         return response
 
 

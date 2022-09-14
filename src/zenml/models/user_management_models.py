@@ -290,7 +290,7 @@ class UserModel(AnalyticsTrackedModelMixin):
 
         # Validate attributes when assigning them
         validate_assignment = True
-        # Ignore extra attributes from configs of previous ZenML versions
+        # Forbid extra attributes to prevent unexpected behavior
         extra = "forbid"
 
 

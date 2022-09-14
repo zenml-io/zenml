@@ -410,7 +410,7 @@ class SqlZenStore(BaseZenStore):
             A list of all stacks matching the filter criteria.
         """
         with Session(self.engine) as session:
-
+            # TODO: raise KeyError when nonexistent project or username passed in
             # Get a list of all stacks
             query = select(StackSchema)
             # TODO: prettify
