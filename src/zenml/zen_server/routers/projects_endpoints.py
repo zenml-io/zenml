@@ -34,6 +34,7 @@ from zenml.models import (
 from zenml.models.component_model import HydratedComponentModel
 from zenml.models.pipeline_models import HydratedPipelineModel
 from zenml.models.stack_models import HydratedStackModel
+from zenml.stack import Flavor
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.models import CreatePipelineModel
@@ -350,8 +351,10 @@ async def create_stack_component(
         project=project.id,
         user=auth_context.user.id,
     )
-    # TODO: [server] validate that the configuration conforms to the flavor
-    #  schema
+
+    # TODO: [server] if possible it should validate here tha tthe configuration
+    #  conforms to the flavor
+
     updated_component = zen_store.register_stack_component(
         component=full_component)
     if hydrated:
