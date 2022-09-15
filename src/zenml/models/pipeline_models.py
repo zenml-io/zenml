@@ -22,6 +22,7 @@ from pydantic import BaseModel, Field
 from zenml import __version__ as current_zenml_version
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import ArtifactType
+from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.models.project_models import ProjectModel
 from zenml.models.user_management_models import UserModel
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
@@ -58,21 +59,24 @@ def get_git_sha(clean: bool = True) -> Optional[str]:
 
 
 class PipelineModel(AnalyticsTrackedModelMixin):
-    """Domain Model representing a pipeline."""
+    """Domain model representing a pipeline."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["id", "project", "user"]
 
     id: UUID = Field(
         default_factory=uuid4, title="The unique id of the pipeline."
     )
-    name: str = Field(title="The name of the pipeline.")
+    name: str = Field(
+        title="The name of the pipeline.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
 
     docstring: Optional[str]
     configuration: Dict[str, str]
 
-    project: UUID = Field(title="The project that contains this component.")
+    project: UUID = Field(title="The project that contains this pipeline.")
     user: UUID = Field(
-        title="The id of the user that owns this component.",
+        title="The id of the user that created this pipeline.",
     )
 
     creation_date: datetime = Field(
@@ -106,20 +110,25 @@ class HydratedPipelineModel(PipelineModel):
     """Pipeline model with User and Project fully hydrated."""
 
     project: ProjectModel = Field(
-        default=None, title="The project that contains this stack."
+        title="The project that contains this pipeline."
     )
     user: UserModel = Field(
         default=None,
-        title="The id of the user, that created this stack.",
+        title="The user that created this pipeline.",
     )
 
 
 class PipelineRunModel(AnalyticsTrackedModelMixin):
     """Domain Model representing a pipeline run."""
 
-    id: UUID = Field(default_factory=uuid4, title="The unique id of the run.")
+    id: UUID = Field(
+        default_factory=uuid4, title="The unique id of the pipeline run."
+    )
 
-    name: str = Field(title="The name of the pipeline.")
+    name: str = Field(
+        title="The name of the pipeline run.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
 
     stack_id: Optional[UUID]  # might not be set for scheduled runs
     pipeline_id: Optional[UUID]  # might not be set for scheduled runs

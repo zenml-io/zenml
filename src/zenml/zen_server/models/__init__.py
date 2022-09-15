@@ -24,8 +24,8 @@ of each other.
 """
 
 from zenml.zen_server.models.pipeline_models import (
-    CreatePipelineModel,
-    UpdatePipelineModel,
+    CreatePipelineRequest,
+    UpdatePipelineRequest,
 )
 from zenml.zen_server.models.projects_models import (
     CreateProjectRequest,
@@ -41,6 +41,6 @@ __all__ = [
     "UpdateStackRequest",
     "CreateProjectRequest",
     "UpdateProjectRequest",
-    "CreatePipelineModel",
-    "UpdatePipelineModel",
+    "CreatePipelineRequest",
+    "UpdatePipelineRequest",
 ]

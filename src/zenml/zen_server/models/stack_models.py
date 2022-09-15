@@ -19,13 +19,18 @@ from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
 from zenml.models import StackModel
-from zenml.models.constants import MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH
+from zenml.models.constants import (
+    MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
+    MODEL_NAME_FIELD_MAX_LENGTH,
+)
 
 
 class CreateStackRequest(BaseModel):
-    """Stack create request schema."""
+    """Stack model for create requests."""
 
-    name: str = Field(title="The stack name.")
+    name: str = Field(
+        title="The stack name.", max_length=MODEL_NAME_FIELD_MAX_LENGTH
+    )
     description: Optional[str] = Field(
         default=None,
         title="The description of the stack",
@@ -62,9 +67,13 @@ class CreateStackRequest(BaseModel):
 
 
 class UpdateStackRequest(BaseModel):
-    """Stack update request schema."""
+    """Stack model for update requests."""
 
-    name: Optional[str] = Field(default=None, title="The stack name.")
+    name: Optional[str] = Field(
+        default=None,
+        title="The stack name.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
     description: Optional[str] = Field(
         default=None,
         title="The updated description of the stack",
@@ -95,3 +104,8 @@ class UpdateStackRequest(BaseModel):
             setattr(stack, key, value)
 
         return stack
+
+    @classmethod
+    def from_model(cls, stack: StackModel) -> "UpdateStackRequest":
+        """Convert from a `StackModel` model."""
+        return cls(**stack.dict())

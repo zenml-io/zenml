@@ -43,7 +43,7 @@ router = APIRouter(
 async def list_stacks(
     project_name_or_id: Optional[str] = None,
     user_name_or_id: Optional[str] = None,
-    stack_name: Optional[str] = None,
+    name: Optional[str] = None,
     is_shared: Optional[bool] = None,
     hydrated: bool = False,
 ) -> Union[List[HydratedStackModel], List[StackModel]]:
@@ -52,7 +52,7 @@ async def list_stacks(
     Args:
         project_name_or_id: Name or ID of the project
         user_name_or_id: Optionally filter by name or ID of the user.
-        stack_name: Optionally filter by stack name
+        name: Optionally filter by stack name
         is_shared: Optionally filter by shared status of the stack
         hydrated: Defines if stack components, users and projects will be
                   included by reference (FALSE) or as model (TRUE)
@@ -64,7 +64,7 @@ async def list_stacks(
         project_name_or_id=parse_name_or_uuid(project_name_or_id),
         user_name_or_id=parse_name_or_uuid(user_name_or_id),
         is_shared=is_shared,
-        name=stack_name,
+        name=name,
     )
     if hydrated:
         return [stack.to_hydrated_model() for stack in stacks_list]
@@ -105,7 +105,7 @@ async def get_stack(
 )
 @handle_exceptions
 async def update_stack(
-    stack_id: str, stack_update: UpdateStackRequest, hydrated: bool = False
+    stack_id: UUID, stack_update: UpdateStackRequest, hydrated: bool = False
 ) -> Union[HydratedStackModel, StackModel]:
     """Updates a stack.
 
@@ -118,7 +118,7 @@ async def update_stack(
     Returns:
         The updated stack.
     """
-    stack_in_db = zen_store.get_stack(parse_name_or_uuid(stack_id))
+    stack_in_db = zen_store.get_stack(stack_id)
     updated_stack = zen_store.update_stack(
         stack=stack_update.apply_to_model(stack_in_db)
     )

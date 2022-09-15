@@ -22,7 +22,7 @@ from zenml.models import PipelineRunModel
 from zenml.models.pipeline_models import HydratedPipelineModel, PipelineModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import authorize
-from zenml.zen_server.models import UpdatePipelineModel
+from zenml.zen_server.models import UpdatePipelineRequest
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
@@ -39,9 +39,10 @@ router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_pipelines(
+async def list_pipelines(
     project_name_or_id: Optional[str] = None,
     user_name_or_id: Optional[str] = None,
+    name: Optional[str] = None,
     hydrated: bool = False,
 ) -> Union[List[PipelineModel], List[HydratedPipelineModel]]:
     """Gets a list of pipelines.
@@ -49,6 +50,7 @@ async def get_pipelines(
     Args:
         project_name_or_id: Name or ID of the project to get pipelines for.
         user_name_or_id: Optionally filter by name or ID of the user.
+        name: Optionally filter by pipeline name
         hydrated: Defines if stack components, users and projects will be
                   included by reference (FALSE) or as model (TRUE)
 
@@ -58,6 +60,7 @@ async def get_pipelines(
     pipelines_list = zen_store.list_pipelines(
         project_name_or_id=parse_name_or_uuid(project_name_or_id),
         user_name_or_id=parse_name_or_uuid(user_name_or_id),
+        name=name,
     )
     if hydrated:
         return [pipeline.to_hydrated_model() for pipeline in pipelines_list]
@@ -72,7 +75,7 @@ async def get_pipelines(
 )
 @handle_exceptions
 async def get_pipeline(
-    pipeline_id: str, hydrated: bool = False
+    pipeline_id: UUID, hydrated: bool = False
 ) -> Union[PipelineModel, HydratedPipelineModel]:
     """Gets a specific pipeline using its unique id.
 
@@ -84,7 +87,7 @@ async def get_pipeline(
     Returns:
         A specific pipeline object.
     """
-    pipeline = zen_store.get_pipeline(pipeline_id=UUID(pipeline_id))
+    pipeline = zen_store.get_pipeline(pipeline_id=pipeline_id)
     if hydrated:
         return pipeline.to_hydrated_model()
     else:
@@ -98,8 +101,8 @@ async def get_pipeline(
 )
 @handle_exceptions
 async def update_pipeline(
-    pipeline_id: str,
-    pipeline_update: UpdatePipelineModel,
+    pipeline_id: UUID,
+    pipeline_update: UpdatePipelineRequest,
     hydrated: bool = False,
 ) -> Union[PipelineModel, HydratedPipelineModel]:
     """Updates the attribute on a specific pipeline using its unique id.
@@ -113,7 +116,7 @@ async def update_pipeline(
     Returns:
         The updated pipeline object.
     """
-    pipeline_in_db = zen_store.get_pipeline(UUID(pipeline_id))
+    pipeline_in_db = zen_store.get_pipeline(pipeline_id)
 
     updated_pipeline = zen_store.update_pipeline(
         pipeline=pipeline_update.apply_to_model(pipeline_in_db)
@@ -129,13 +132,13 @@ async def update_pipeline(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def delete_pipeline(pipeline_id: str) -> None:
+async def delete_pipeline(pipeline_id: UUID) -> None:
     """Deletes a specific pipeline.
 
     Args:
         pipeline_id: ID of the pipeline to get.
     """
-    zen_store.delete_pipeline(pipeline_id=UUID(pipeline_id))
+    zen_store.delete_pipeline(pipeline_id=pipeline_id)
 
 
 @router.get(

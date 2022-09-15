@@ -18,12 +18,16 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from zenml.models import PipelineModel
+from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 
 
-class CreatePipelineModel(BaseModel):
-    """Model used for all create operations on pipelines."""
+class CreatePipelineRequest(BaseModel):
+    """Pipeline model for create requests."""
 
-    name: str = Field(title="The name of the pipeline.")
+    name: str = Field(
+        title="The name of the pipeline.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
 
     docstring: Optional[str]
     configuration: Dict[str, str]
@@ -40,11 +44,19 @@ class CreatePipelineModel(BaseModel):
         """
         return PipelineModel(project=project, user=user, **self.dict())
 
+    @classmethod
+    def from_model(cls, pipeline: PipelineModel) -> "CreatePipelineRequest":
+        """Convert from a `PipelineModel`."""
+        return cls(**pipeline.dict())
 
-class UpdatePipelineModel(BaseModel):
-    """Model used for all update operations on pipelines."""
 
-    name: Optional[str] = Field(title="The name of the pipeline.")
+class UpdatePipelineRequest(BaseModel):
+    """Pipeline model for update requests."""
+
+    name: Optional[str] = Field(
+        title="The name of the pipeline.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
 
     docstring: Optional[str]
     # TODO: [server] have another look at this to figure out if adding a
@@ -64,3 +76,8 @@ class UpdatePipelineModel(BaseModel):
             setattr(pipeline, key, value)
 
         return pipeline
+
+    @classmethod
+    def from_model(cls, pipeline: PipelineModel) -> "UpdatePipelineRequest":
+        """Convert from a `PipelineModel` model."""
+        return cls(**pipeline.dict())

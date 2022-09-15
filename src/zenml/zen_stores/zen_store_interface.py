@@ -289,15 +289,11 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def register_stack_component(
         self,
-        user_name_or_id: Union[str, UUID],
-        project_name_or_id: Union[str, UUID],
         component: ComponentModel,
     ) -> ComponentModel:
         """Create a stack component.
 
         Args:
-            user_name_or_id: The stack component owner.
-            project_name_or_id: The project the stack component is created in.
             component: The stack component to create.
 
         Returns:
@@ -354,13 +350,11 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def update_stack_component(
         self,
-        component_id: UUID,
         component: ComponentModel,
     ) -> ComponentModel:
         """Update an existing stack component.
 
         Args:
-            component_id: The ID of the stack component to update.
             component: The stack component to use for the update.
 
         Returns:
@@ -518,9 +512,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def update_user(
-        self, user: UserModel
-    ) -> UserModel:
+    def update_user(self, user: UserModel) -> UserModel:
         """Updates an existing user.
 
         Args:
@@ -892,33 +884,18 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_pipeline_in_project(
-        self, pipeline_name: str, project_name_or_id: Union[str, UUID]
-    ) -> PipelineModel:
-        """Get a pipeline with a given name in a project.
-
-        Args:
-            pipeline_name: Name of the pipeline.
-            project_name_or_id: ID of the project.
-
-        Returns:
-            The pipeline.
-
-        Raises:
-            KeyError: if the pipeline does not exist.
-        """
-
-    @abstractmethod
     def list_pipelines(
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
+        name: Optional[str] = None,
     ) -> List[PipelineModel]:
         """List all pipelines in the project.
 
         Args:
             project_name_or_id: If provided, only list pipelines in this project.
             user_name_or_id: If provided, only list pipelines from this user.
+            name: If provided, only list pipelines with this name.
 
         Returns:
             A list of pipelines.

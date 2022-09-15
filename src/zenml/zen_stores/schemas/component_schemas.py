@@ -17,7 +17,7 @@ import base64
 import json
 from datetime import datetime
 from typing import List
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -32,7 +32,7 @@ from zenml.zen_stores.schemas.stack_schemas import (
 class StackComponentSchema(SQLModel, table=True):
     """SQL Model for stack components."""
 
-    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    id: UUID = Field(primary_key=True)
 
     name: str
     is_shared: bool
@@ -67,6 +67,7 @@ class StackComponentSchema(SQLModel, table=True):
             The created `StackComponentSchema`.
         """
         return cls(
+            id=component.id,
             name=component.name,
             project=project_id,
             user=user_id,

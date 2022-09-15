@@ -502,15 +502,11 @@ class SqlZenStore(BaseZenStore):
     @track(AnalyticsEvent.REGISTERED_STACK_COMPONENT)
     def register_stack_component(
         self,
-        user_name_or_id: Union[UUID, str],
-        project_name_or_id: Union[str, UUID],
         component: ComponentModel,
     ) -> ComponentModel:
         """Create a stack component.
 
         Args:
-            user_name_or_id: The stack component owner.
-            project_name_or_id: The project the stack component is created in.
             component: The stack component to create.
 
         Returns:
@@ -521,8 +517,8 @@ class SqlZenStore(BaseZenStore):
                 and type is already owned by this user in this project.
         """
         with Session(self.engine) as session:
-            project = self._get_project_schema(project_name_or_id)
-            user = self._get_user_schema(user_name_or_id)
+            project = self._get_project_schema(component.project)
+            user = self._get_user_schema(component.user)
 
             # Check if component with the same domain key (name, type, project,
             # owner) already exists
@@ -631,12 +627,11 @@ class SqlZenStore(BaseZenStore):
 
     @track(AnalyticsEvent.UPDATED_STACK_COMPONENT)
     def update_stack_component(
-        self, component_id: UUID, component: ComponentModel
+        self, component: ComponentModel
     ) -> ComponentModel:
         """Update an existing stack component.
 
         Args:
-            component_id: The ID of the stack component to update.
             component: The stack component model to use for the update.
 
         Returns:
@@ -648,7 +643,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             existing_component = session.exec(
                 select(StackComponentSchema).where(
-                    StackComponentSchema.id == component_id
+                    StackComponentSchema.id == component.id
                 )
             ).first()
 
@@ -899,9 +894,7 @@ class SqlZenStore(BaseZenStore):
         return [user.to_model() for user in users]
 
     @track(AnalyticsEvent.UPDATED_USER)
-    def update_user(
-        self, user: UserModel
-    ) -> UserModel:
+    def update_user(self, user: UserModel) -> UserModel:
         """Updates an existing user.
 
         Args:
@@ -911,12 +904,13 @@ class SqlZenStore(BaseZenStore):
             The updated user.
         """
         with Session(self.engine) as session:
-            existing_user = self._get_user_schema(
-                user.id, session=session
-            )
+            existing_user = self._get_user_schema(user.id, session=session)
             existing_user.from_update_model(user)
             session.add(existing_user)
             session.commit()
+
+            # Refresh the Model that was just created
+            session.refresh(existing_user)
             return existing_user.to_model()
 
     @track(AnalyticsEvent.DELETED_USER)
@@ -1637,43 +1631,11 @@ class SqlZenStore(BaseZenStore):
 
             return pipeline.to_model()
 
-    def get_pipeline_in_project(
-        self,
-        pipeline_name: str,
-        project_name_or_id: Union[str, UUID],
-    ) -> PipelineModel:
-        """Get a pipeline with a given name in a project.
-
-        Args:
-            pipeline_name: Name of the pipeline.
-            project_name_or_id: ID or name of the project.
-
-        Returns:
-            The pipeline.
-
-        Raises:
-            KeyError: if the pipeline does not exist.
-        """
-        with Session(self.engine) as session:
-            project = self._get_project_schema(project_name_or_id)
-            # Check if pipeline with the given name exists in the project
-            pipeline = session.exec(
-                select(PipelineSchema).where(
-                    PipelineSchema.name == pipeline_name,
-                    PipelineSchema.project == project.id,
-                )
-            ).first()
-            if pipeline is None:
-                raise KeyError(
-                    f"Unable to get pipeline '{pipeline_name}' in project "
-                    f"'{project.name}': No pipeline with this name found."
-                )
-            return pipeline.to_model()
-
     def list_pipelines(
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
+        name: Optional[str] = None,
     ) -> List[PipelineModel]:
         """List all pipelines in the project.
 
@@ -1681,6 +1643,7 @@ class SqlZenStore(BaseZenStore):
             project_name_or_id: If provided, only list pipelines in this
                 project.
             user_name_or_id: If provided, only list pipelines from this user.
+            name: If provided, only list pipelines with this name.
 
         Returns:
             A list of pipelines.
@@ -1939,7 +1902,7 @@ class SqlZenStore(BaseZenStore):
                 query = query.where(PipelineRunSchema.pipeline_id is None)
             if user_name_or_id is not None:
                 user = self._get_user_schema(user_name_or_id)
-                query = query.where(PipelineRunSchema.owner == user.id)
+                query = query.where(PipelineRunSchema.user == user.id)
             runs = session.exec(query).all()
             return [run.to_model() for run in runs]
 
@@ -2445,9 +2408,7 @@ class SqlZenStore(BaseZenStore):
                     name=input_name,
                 )
 
-    def _update_run(
-        self, run: PipelineRunModel
-    ) -> PipelineRunModel:
+    def _update_run(self, run: PipelineRunModel) -> PipelineRunModel:
         """Updates a pipeline run.
 
         Args:

@@ -36,7 +36,7 @@ from zenml.models.pipeline_models import HydratedPipelineModel
 from zenml.models.stack_models import HydratedStackModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import AuthContext, authorize
-from zenml.zen_server.models import CreatePipelineModel
+from zenml.zen_server.models import CreatePipelineRequest
 from zenml.zen_server.models.projects_models import (
     CreateProjectRequest,
     UpdateProjectRequest,
@@ -160,7 +160,7 @@ async def delete_project(project_name_or_id: str) -> None:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_project_stacks(
+async def list_project_stacks(
     project_name_or_id: str,
     user_name_or_id: Optional[str] = None,
     stack_name: Optional[str] = None,
@@ -240,8 +240,9 @@ async def create_stack(
 async def list_project_stack_components(
     project_name_or_id: str,
     user_name_or_id: Optional[str] = None,
-    component_type: Optional[str] = None,
-    component_name: Optional[str] = None,
+    type: Optional[str] = None,
+    name: Optional[str] = None,
+    flavor_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
     hydrated: bool = False,
 ) -> Union[List[ComponentModel], List[HydratedComponentModel]]:
@@ -252,8 +253,9 @@ async def list_project_stack_components(
     Args:
         project_name_or_id: Name or ID of the project.
         user_name_or_id: Optionally filter by name or ID of the user.
-        component_name: Optionally filter by component name
-        component_type: Optionally filter by component type
+        name: Optionally filter by component name
+        type: Optionally filter by component type
+        flavor_name: Optionally filter by flavor name
         is_shared: Optionally filter by shared status of the component
         hydrated: Defines if users and projects will be
             included by reference (FALSE) or as model (TRUE)
@@ -264,9 +266,10 @@ async def list_project_stack_components(
     components_list = zen_store.list_stack_components(
         project_name_or_id=parse_name_or_uuid(project_name_or_id),
         user_name_or_id=parse_name_or_uuid(user_name_or_id),
-        type=component_type,
+        type=type,
         is_shared=is_shared,
-        name=component_name,
+        name=name,
+        flavor_name=flavor_name,
     )
     if hydrated:
         return [comp.to_hydrated_model() for comp in components_list]
@@ -298,15 +301,16 @@ async def create_stack_component(
     Returns:
         The created stack component.
     """
-    updated_component = zen_store.register_stack_component(
-        project_name_or_id=parse_name_or_uuid(project_name_or_id),
-        user_name_or_id=auth_context.user.id,
+    project = zen_store.get_project(parse_name_or_uuid(project_name_or_id))
+    component.project = project.id
+    component.user = auth_context.user.id
+    created_component = zen_store.register_stack_component(
         component=component,
     )
     if hydrated:
-        return updated_component.to_hydrated_model()
+        return created_component.to_hydrated_model()
     else:
-        return updated_component
+        return created_component
 
 
 @router.get(
@@ -372,9 +376,10 @@ async def create_flavor(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_project_pipelines(
+async def list_project_pipelines(
     project_name_or_id: Optional[str] = None,
     user_name_or_id: Optional[str] = None,
+    name: Optional[str] = None,
     hydrated: bool = False,
 ) -> Union[List[PipelineModel], List[HydratedPipelineModel]]:
     """Gets pipelines defined for a specific project.
@@ -384,6 +389,7 @@ async def get_project_pipelines(
     Args:
         project_name_or_id: Name or ID of the project to get pipelines for.
         user_name_or_id: Optionally filter by name or ID of the user.
+        name: Optionally filter by pipeline name
         hydrated: Defines if stack components, users and projects will be
                   included by reference (FALSE) or as model (TRUE)
 
@@ -393,6 +399,7 @@ async def get_project_pipelines(
     pipelines_list = zen_store.list_pipelines(
         project_name_or_id=parse_name_or_uuid(project_name_or_id),
         user_name_or_id=parse_name_or_uuid(user_name_or_id),
+        name=name,
     )
     if hydrated:
         return [pipeline.to_hydrated_model() for pipeline in pipelines_list]
@@ -408,7 +415,7 @@ async def get_project_pipelines(
 @handle_exceptions
 async def create_pipeline(
     project_name_or_id: str,
-    pipeline: CreatePipelineModel,
+    pipeline: CreatePipelineRequest,
     hydrated: bool = False,
     auth_context: AuthContext = Depends(authorize),
 ) -> Union[PipelineModel, HydratedPipelineModel]:

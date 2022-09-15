@@ -16,13 +16,13 @@
 
 from typing import Optional
 
-from pydantic import BaseModel, Field, SecretStr
+from pydantic import BaseModel, Field
+
 from zenml.models.constants import (
     MODEL_NAME_FIELD_MAX_LENGTH,
     USER_ACTIVATION_TOKEN_LENGTH,
     USER_PASSWORD_MAX_LENGTH,
 )
-
 from zenml.models.user_management_models import UserModel
 
 

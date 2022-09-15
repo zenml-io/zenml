@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 """Model definitions for users, teams, and roles."""
 
-from datetime import datetime, timedelta
 import re
+from datetime import datetime, timedelta
 from secrets import token_hex
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 from uuid import UUID, uuid4
@@ -24,10 +24,7 @@ from pydantic import BaseModel, Field, SecretStr, root_validator
 from zenml.config.global_config import GlobalConfiguration
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
-from zenml.models.constants import (
-    MODEL_NAME_FIELD_MAX_LENGTH,
-    USER_PASSWORD_MAX_LENGTH,
-)
+from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 from zenml.utils.enum_utils import StrEnum
 
@@ -323,7 +320,7 @@ class UserModel(AnalyticsTrackedModelMixin):
             return None
         return self.activation_token.get_secret_value()
 
-    def get_hashed_activation_token(self) -> "UserModel":
+    def get_hashed_activation_token(self) -> str:
         """Returns the hashed activation token, if configured.
 
         Returns:

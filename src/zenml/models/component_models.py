@@ -16,13 +16,14 @@
 import json
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from pydantic import Field
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
+from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.models.project_models import ProjectModel
 from zenml.models.user_management_models import UserModel
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
@@ -53,35 +54,36 @@ class ComponentModel(AnalyticsTrackedModelMixin):
         "is_shared",
     ]
 
-    id: Optional[UUID] = Field(
-        default=None,
-        title="The id of the Stack Component.",
+    id: UUID = Field(
+        default_factory=uuid4,
+        title="The unique id of the stack component.",
     )
     name: str = Field(
-        title="The name of the Stack Component.",
+        title="The name of the stack component.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
     type: StackComponentType = Field(
-        title="The type of the Stack Component.",
+        title="The type of the stack component.",
     )
-    flavor: Optional[str] = Field(
-        title="The flavor of the Stack Component.",
+    flavor: str = Field(
+        title="The flavor of the stack component.",
     )
     configuration: Dict[
         str, Any
     ] = Field(  # Json representation of the configuration
-        title="The id of the Stack Component.",
+        title="The stack component configuration.",
     )
-    user: Optional[UUID] = Field(
-        default=None,
-        title="The id of the user that owns this component.",
+    project: UUID = Field(
+        title="The project that contains this stack component."
+    )
+    user: UUID = Field(
+        title="The id of the user that created this stack component.",
     )
     is_shared: bool = Field(
         default=False,
         title="Flag describing if this component is shared.",
     )
-    project: Optional[UUID] = Field(
-        default=None, title="The project that contains this component."
-    )
+
     creation_date: Optional[datetime] = Field(
         default=None,
         title="The time at which the component was registered.",
@@ -128,7 +130,7 @@ class ComponentModel(AnalyticsTrackedModelMixin):
 
     @classmethod
     def from_component(cls, component: "StackComponent") -> "ComponentModel":
-        """Creates a ComponentModel from an instance of a Stack Component.
+        """Creates a ComponentModel from an instance of a stack component.
 
         Args:
             component: the instance of a StackComponent
@@ -136,23 +138,28 @@ class ComponentModel(AnalyticsTrackedModelMixin):
         Returns:
             a ComponentModel
         """
+        from zenml.repository import Repository
+
+        repo = Repository()
+
         return cls(
             type=component.TYPE,
             flavor=component.FLAVOR,
             name=component.name,
             id=component.uuid,
+            project=repo.active_project.id,
+            user=repo.active_user.id,
             configuration=json.loads(component.json()),
         )
 
     def to_component(self) -> "StackComponent":
-        """Converts the ComponentModel into an instance of a Stack Component.
+        """Converts the ComponentModel into an instance of a stack component.
 
         Returns:
             a StackComponent
         """
         from zenml.repository import Repository
 
-        assert self.flavor is not None
         flavor = Repository(skip_repository_check=True).get_flavor(  # type: ignore[call-arg]
             name=self.flavor, component_type=self.type
         )
@@ -166,12 +173,9 @@ class ComponentModel(AnalyticsTrackedModelMixin):
 class HydratedComponentModel(ComponentModel):
     """Component model with User and Project fully hydrated."""
 
-    project: ProjectModel = Field(
-        default=None, title="The project that contains this stack."
-    )
+    project: ProjectModel = Field(title="The project that contains this stack.")
     user: UserModel = Field(
-        default=None,
-        title="The id of the user, that created this stack.",
+        title="The user that created this stack.",
     )
 
     class Config:

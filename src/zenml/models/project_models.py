@@ -14,15 +14,15 @@
 """Model definitions for code projects."""
 
 from datetime import datetime
-from typing import ClassVar, List, Optional
+from typing import ClassVar, List
 from uuid import UUID, uuid4
 
 from pydantic import Field
+
 from zenml.models.constants import (
     MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
     MODEL_NAME_FIELD_MAX_LENGTH,
 )
-
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 

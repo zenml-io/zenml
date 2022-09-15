@@ -42,8 +42,9 @@ router = APIRouter(
 async def list_stack_components(
     project_name_or_id: Optional[str] = None,
     user_name_or_id: Optional[str] = None,
-    component_type: Optional[str] = None,
-    component_name: Optional[str] = None,
+    type: Optional[str] = None,
+    name: Optional[str] = None,
+    flavor_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
     hydrated: bool = False,
 ) -> Union[List[ComponentModel], List[HydratedComponentModel]]:
@@ -52,8 +53,9 @@ async def list_stack_components(
     Args:
         project_name_or_id: Name or ID of the project
         user_name_or_id: Optionally filter by name or ID of the user.
-        component_name: Optionally filter by component name
-        component_type: Optionally filter by component type
+        name: Optionally filter by component name
+        type: Optionally filter by component type
+        flavor_name: Optionally filter by flavor
         is_shared: Optionally filter by shared status of the component
         hydrated: Defines if users and projects will be
                   included by reference (FALSE) or as model (TRUE)
@@ -64,9 +66,10 @@ async def list_stack_components(
     components_list = zen_store.list_stack_components(
         project_name_or_id=parse_name_or_uuid(project_name_or_id),
         user_name_or_id=parse_name_or_uuid(user_name_or_id),
-        type=component_type,
+        type=type,
+        name=name,
+        flavor_name=flavor_name,
         is_shared=is_shared,
-        name=component_name,
     )
     if hydrated:
         return [comp.to_hydrated_model() for comp in components_list]
@@ -107,7 +110,7 @@ async def get_stack_component(
 )
 @handle_exceptions
 async def update_stack_component(
-    component_id: str, component: ComponentModel, hydrated: bool = False
+    component_id: UUID, component: ComponentModel, hydrated: bool = False
 ) -> Union[ComponentModel, HydratedComponentModel]:
     """Updates a stack component.
 
@@ -120,9 +123,8 @@ async def update_stack_component(
     Returns:
         Updated stack component.
     """
-    updated_component = zen_store.update_stack_component(
-        component_id=UUID(component_id), component=component
-    )
+    component.id = component_id
+    updated_component = zen_store.update_stack_component(component=component)
     if hydrated:
         return updated_component.to_hydrated_model()
     else:

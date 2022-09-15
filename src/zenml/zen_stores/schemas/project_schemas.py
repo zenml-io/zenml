@@ -14,7 +14,7 @@
 """SQL Model Implementations for Projects."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List
 from uuid import UUID
 
 from sqlmodel import Field, Relationship, SQLModel

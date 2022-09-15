@@ -258,10 +258,8 @@ def list_projects() -> None:
 
 @project.command("create", help="Create a new project.")
 @click.argument("project_name", type=str, required=True)
-@click.option("--description", "-d", type=str, required=False)
-def create_project(
-    project_name: str, description: Optional[str] = None
-) -> None:
+@click.option("--description", "-d", type=str, required=False, default="")
+def create_project(project_name: str, description: str) -> None:
     """Create a new project.
 
     Args:

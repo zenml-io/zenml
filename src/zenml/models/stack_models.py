@@ -15,7 +15,7 @@
 
 import json
 from datetime import datetime
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from uuid import UUID, uuid4
 
 from pydantic import Field
@@ -23,6 +23,10 @@ from pydantic import Field
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StackComponentType
 from zenml.models.component_models import ComponentModel
+from zenml.models.constants import (
+    MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
+    MODEL_NAME_FIELD_MAX_LENGTH,
+)
 from zenml.models.project_models import ProjectModel
 from zenml.models.user_management_models import UserModel
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
@@ -39,13 +43,19 @@ class StackModel(AnalyticsTrackedModelMixin):
     ]
 
     id: UUID = Field(default_factory=uuid4, title="The unique id of the stack.")
-    name: str = Field(title="The name of the stack.")
-    description: Optional[str] = Field(
-        default=None, title="The description of the stack", max_length=300
+    name: str = Field(
+        title="The name of the stack.", max_length=MODEL_NAME_FIELD_MAX_LENGTH
+    )
+    description: str = Field(
+        default="",
+        title="The description of the stack",
+        max_length=MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
     )
     components: Dict[StackComponentType, List[UUID]] = Field(
-        title="A mapping of stack component types to the id's of"
-        "instances of components of this type."
+        title=(
+            "A mapping of stack component types to the id's of"
+            "instances of components of this type."
+        )
     )
     is_shared: bool = Field(
         default=False,
@@ -53,7 +63,7 @@ class StackModel(AnalyticsTrackedModelMixin):
     )
     project: UUID = Field(title="The project that contains this stack.")
     user: UUID = Field(
-        title="The id of the user, that created this stack.",
+        title="The id of the user that created this stack.",
     )
     creation_date: datetime = Field(
         default_factory=datetime.now,
@@ -130,12 +140,9 @@ class HydratedStackModel(StackModel):
         title="A mapping of stack component types to the actual"
         "instances of components of this type."
     )
-    project: ProjectModel = Field(
-        default=None, title="The project that contains this stack."
-    )
+    project: ProjectModel = Field(title="The project that contains this stack.")
     user: UserModel = Field(
-        default=None,
-        title="The id of the user, that created this stack.",
+        title="The user that created this stack.",
     )
 
     class Config:

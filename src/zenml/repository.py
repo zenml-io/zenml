@@ -523,8 +523,11 @@ class Repository(metaclass=RepositoryMetaClass):
         dict_of_stacks = dict()
         for stack in stacks:
             dict_of_stacks[stack.name] = {"shared": str(stack.is_shared)}
-            for comp_type, comp in stack.to_hydrated_model().components.items():
-                dict_of_stacks[stack.name][str(comp_type)] = comp[0].name
+            for (
+                comp_type,
+                comps,
+            ) in stack.to_hydrated_model().components.items():
+                dict_of_stacks[stack.name][str(comp_type)] = comps[0].name
 
         return dict_of_stacks
 
@@ -682,7 +685,6 @@ class Repository(metaclass=RepositoryMetaClass):
             )
 
         try:
-            assert stack.id is not None
             self.zen_store.delete_stack(stack_id=stack.id)
             logger.info("Deregistered stack with name '%s'.", stack.name)
         except KeyError:
@@ -701,10 +703,7 @@ class Repository(metaclass=RepositoryMetaClass):
         Args:
             component: The new component to update with.
         """
-        assert component.id is not None
-        self.zen_store.update_stack_component(
-            component_id=component.id, component=component
-        )
+        self.zen_store.update_stack_component(component=component)
 
     def list_stack_components(
         self, component_type: "StackComponentType"
@@ -799,8 +798,6 @@ class Repository(metaclass=RepositoryMetaClass):
         # TODO: [server] this uses the implementation rather than the model
 
         self.zen_store.register_stack_component(
-            project_name_or_id=self.active_project.name,
-            user_name_or_id=self.zen_store.active_user.name,
             component=ComponentModel.from_component(component),
         )
         if component.post_registration_message:
@@ -815,7 +812,6 @@ class Repository(metaclass=RepositoryMetaClass):
             stack_component: The component to deregister.
         """
         try:
-            assert stack_component.id is not None
             self.zen_store.delete_stack_component(
                 component_id=stack_component.id
             )

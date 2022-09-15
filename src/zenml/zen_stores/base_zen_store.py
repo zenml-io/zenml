@@ -32,6 +32,7 @@ from zenml.models import (
     TeamModel,
     UserModel,
 )
+from zenml.models.pipeline_models import PipelineModel
 from zenml.stack.flavor_registry import flavor_registry
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import (
@@ -251,7 +252,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             logger.warning("Active project not set. Setting it to the default.")
             active_project = self._default_project
 
-        active_stack: Optional[StackModel] = None
+        active_stack: StackModel
 
         # Create a default stack in the active project for the active user if
         # one is not yet created.
@@ -266,7 +267,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
                 user_name_or_id=self.active_user.id,
             )
 
-
         # Sanitize the active stack
         if active_stack_id:
             # Ensure that the active stack is still valid
@@ -278,10 +278,19 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
                     "stack to the default project stack.",
                     active_stack_id,
                 )
+                active_stack = default_stack
             else:
                 if active_stack.project != active_project.id:
                     logger.warning(
                         "The stack with id '%s' is not in the active project. "
+                        "Resetting the active stack to the default "
+                        "project stack.",
+                        active_stack_id,
+                    )
+                    active_stack = default_stack
+                elif active_stack.user != self.active_user.id:
+                    logger.warning(
+                        "The stack with id '%s' is not owned by the active user. "
                         "Resetting the active stack to the default "
                         "project stack.",
                         active_stack_id,
@@ -347,10 +356,10 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
 
         # Register the default orchestrator
         orchestrator = self.register_stack_component(
-            user_name_or_id=user.name,
-            project_name_or_id=project.name,
             component=ComponentModel(
                 name="default",
+                user=user.id,
+                project=project.id,
                 type=StackComponentType.ORCHESTRATOR,
                 flavor="local",
                 configuration={},
@@ -366,10 +375,10 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         io_utils.create_dir_recursive_if_not_exists(artifact_store_path)
 
         artifact_store = self.register_stack_component(
-            user_name_or_id=user.name,
-            project_name_or_id=project.name,
             component=ComponentModel(
                 name="default",
+                user=user.id,
+                project=project.id,
                 type=StackComponentType.ARTIFACT_STORE,
                 flavor="local",
                 configuration={"path": artifact_store_path},
@@ -584,6 +593,31 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
     # ---------
     # Pipelines
     # ---------
+
+    def get_pipeline_in_project(
+        self, pipeline_name: str, project_name_or_id: Union[str, UUID]
+    ) -> PipelineModel:
+        """Get a pipeline with a given name in a project.
+
+        Args:
+            pipeline_name: Name of the pipeline.
+            project_name_or_id: ID of the project.
+
+        Returns:
+            The pipeline.
+
+        Raises:
+            KeyError: if the pipeline does not exist.
+        """
+        pipelines = self.list_pipelines(
+            project_name_or_id=project_name_or_id, name=pipeline_name
+        )
+        if len(pipelines) == 0:
+            raise KeyError(
+                f"No pipeline found with name {pipeline_name} in project "
+                f"{project_name_or_id}"
+            )
+        return pipelines[0]
 
     # TODO: is this really needed ?
     def get_pipeline_configuration(self, pipeline_id: UUID) -> Dict[str, str]:

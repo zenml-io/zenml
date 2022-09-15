@@ -165,12 +165,12 @@ def _get_stack_component_model(
                 f"No {singular_display_name} found for name '{component_name}'."
             )
     elif component_type in active_stack.components.keys():
-        active_component = active_stack.components[component_type]
+        active_components = active_stack.components[component_type]
         cli_utils.declare(
             f"No component name given; using `{active_component.name}` "
             f"from active stack."
         )
-        return active_component, True
+        return active_components[0] if active_component else None, True
 
     else:
         cli_utils.error(f"No {singular_display_name} in active stack.")
@@ -194,7 +194,8 @@ def generate_stack_component_get_command(
         cli_utils.print_active_stack()
 
         active_stack = Repository().active_stack_model
-        component = active_stack.components.get(component_type, None)
+        components = active_stack.components.get(component_type, [])
+        component = components[0] if components else None
         display_name = _component_display_name(component_type)
         if component:
             cli_utils.declare(f"Active {display_name}: '{component.name}'")
@@ -274,8 +275,10 @@ def generate_stack_component_list_command(
         active_stack = repo.active_stack_model
         active_component_name = None
         if component_type in active_stack.components.keys():
-            active_component = active_stack.components[component_type]
-            active_component_name = active_component.name
+            active_components = active_stack.components[component_type]
+            active_component_name = (
+                active_components[0].name if active_components else None
+            )
 
         cli_utils.print_stack_component_list(
             components, active_component_name=active_component_name
@@ -288,6 +291,7 @@ def _register_stack_component(
     component_type: StackComponentType,
     component_name: str,
     component_flavor: str,
+    share: bool = False,
     **kwargs: Any,
 ) -> None:
     """Register a stack component.
@@ -296,13 +300,20 @@ def _register_stack_component(
         component_type: Type of the component to register.
         component_name: Name of the component to register.
         component_flavor: Flavor of the component to register.
+        share: Share the stack with other users.
         **kwargs: Additional arguments to pass to the component.
     """
     repo = Repository()
     flavor_class = repo.get_flavor(
         name=component_flavor, component_type=component_type
     )
-    component = flavor_class(name=component_name, **kwargs)
+    component = flavor_class(
+        name=component_name,
+        is_shared=share,
+        project=repo.active_project.id,
+        user=repo.active_user.id,
+        **kwargs,
+    )
     Repository().register_stack_component(component)
 
 
@@ -346,12 +357,20 @@ def generate_stack_component_register_command(
         help="Use interactive mode to update the secret values.",
         type=click.BOOL,
     )
+    @click.option(
+        "--share",
+        "share",
+        is_flag=True,
+        help="Use this flag to share this stack component with other users.",
+        type=click.BOOL,
+    )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
     def register_stack_component_command(
         name: str,
         flavor: str,
         old_flavor: str,
         interactive: bool,
+        share: bool,
         args: List[str],
     ) -> None:
         """Registers a stack component.
@@ -361,6 +380,7 @@ def generate_stack_component_register_command(
             flavor: Flavor of the component to register.
             old_flavor: DEPRECATED: The flavor of the component to register.
             interactive: Use interactive mode to fill missing values.
+            share: Share the stack with other users.
             args: Additional arguments to pass to the component.
         """
         cli_utils.print_active_config()
@@ -399,6 +419,7 @@ def generate_stack_component_register_command(
             component_type=component_type,
             component_name=name,
             component_flavor=flavor,
+            share=share,
             **parsed_args,
         )
         # except ValidationError as e:
