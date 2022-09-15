@@ -57,6 +57,7 @@ async def get_pipelines(
         user_name_or_id: Optionally filter by name or ID of the user.
         hydrated: Defines if stack components, users and projects will be
                   included by reference (FALSE) or as model (TRUE)
+
     Returns:
         List of pipeline objects.
 

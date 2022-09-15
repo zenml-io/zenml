@@ -14,12 +14,12 @@
 """Model definitions for users, teams, and roles."""
 
 from datetime import datetime, timedelta
+from secrets import token_hex
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 from uuid import UUID, uuid4
 
 from jose import JWTError, jwt
 from pydantic import BaseModel, Field, SecretStr, root_validator
-from secrets import token_hex
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.exceptions import AuthorizationException
@@ -73,7 +73,7 @@ class JWTToken(BaseModel):
     def decode(cls, token_type: JWTTokenType, token: str) -> "JWTToken":
         """Decodes a JWT access token.
 
-        Decodes a JWT access token and returns a JWTToken object with the
+        Decodes a JWT access token and returns a `JWTToken` object with the
         information retrieved from its subject claim.
 
         Args:
@@ -86,7 +86,6 @@ class JWTToken(BaseModel):
         Raises:
             AuthorizationException: If the token is invalid.
         """
-
         try:
             payload = jwt.decode(
                 token,

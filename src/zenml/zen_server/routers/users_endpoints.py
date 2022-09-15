@@ -32,9 +32,9 @@ from zenml.utils.uuid_utils import (
 from zenml.zen_server.auth import authenticate_credentials, authorize
 from zenml.zen_server.models.user_management_models import (
     ActivateUserRequest,
-    DeactivateUserResponse,
     CreateUserModel,
     CreateUserResponse,
+    DeactivateUserResponse,
     UpdateUserRequest,
 )
 from zenml.zen_server.utils import (
@@ -125,7 +125,7 @@ async def create_user(user: CreateUserModel) -> CreateUserResponse:
             user_model.active = True
             user_model.hash_password()
         new_user = zen_store.create_user(user_model)
-        # add back the original un-hashed activation token, if generated, to
+        # add back the original unhashed activation token, if generated, to
         # send it back to the client
         new_user.activation_token = token
         return CreateUserResponse.from_model(new_user)
@@ -284,7 +284,7 @@ async def deactivate_user(user_name_or_id: str) -> UserModel:
         user = zen_store.update_user(
             user_name_or_id=parse_name_or_uuid(user_name_or_id), user=user
         )
-        # add back the original un-hashed activation token, if generated, to
+        # add back the original unhashed activation token, if generated, to
         # send it back to the client
         user.activation_token = token
         return DeactivateUserResponse.from_model(user)

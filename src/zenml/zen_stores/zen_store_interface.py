@@ -912,8 +912,8 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_pipelines(
         self,
-        project_name_or_id: Optional[Union[str, UUID]],
-        user_name_or_id: Optional[Union[str, UUID]],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List[PipelineModel]:
         """List all pipelines in the project.
 
