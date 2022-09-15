@@ -47,6 +47,11 @@ from zenml.models import (
     TeamModel,
     UserModel,
 )
+from zenml.zen_server.models.user_management_models import (
+    CreateUserRequest,
+    CreateUserResponse,
+    UpdateUserRequest,
+)
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
@@ -199,8 +204,6 @@ class RestZenStore(BaseZenStore):
 
     def register_stack(
         self,
-        user_name_or_id: Union[str, UUID],
-        project_name_or_id: Union[str, UUID],
         stack: StackModel,
     ) -> StackModel:
         """Register a new stack.
@@ -235,7 +238,7 @@ class RestZenStore(BaseZenStore):
 
     def list_stacks(
         self,
-        project_name_or_id: Union[str, UUID] = None,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
@@ -489,6 +492,9 @@ class RestZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If a user with the given name already exists.
         """
+        request = CreateUserRequest.from_model(user)
+        response = CreateUserResponse.parse_obj(self.post(USERS, body=request))
+        return response.to_model()
 
     def get_user(self, user_name_or_id: Union[str, UUID]) -> UserModel:
         """Gets a specific user.
@@ -511,14 +517,17 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all users.
         """
+        response = self.get(USERS)
+        if not isinstance(response, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(response)}"
+            )
+        return [UserModel.parse_obj(user_dict) for user_dict in response]
 
-    def update_user(
-        self, user_name_or_id: Union[str, UUID], user: UserModel
-    ) -> UserModel:
+    def update_user(self, user: UserModel) -> UserModel:
         """Updates an existing user.
 
         Args:
-            user_name_or_id: The name or ID of the user to update.
             user: The user model to use for the update.
 
         Returns:
@@ -527,6 +536,10 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If no user with the given name exists.
         """
+        request = UpdateUserRequest.from_model(user)
+        return UserModel.parse_obj(
+            self.put(f"{USERS}/{str(user.id)}", body=request)
+        )
 
     def delete_user(self, user_name_or_id: Union[str, UUID]) -> None:
         """Deletes a user.
@@ -537,6 +550,7 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If no user with the given ID exists.
         """
+        self.delete(f"{USERS}/{str(user_name_or_id)}")
 
     # -----
     # Teams
@@ -592,7 +606,7 @@ class RestZenStore(BaseZenStore):
         """Fetches all users of a team.
 
         Args:
-            team_id: The name or ID of the team for which to get users.
+            team_name_or_id: The name or ID of the team for which to get users.
 
         Returns:
             A list of all users that are part of the team.
@@ -832,92 +846,17 @@ class RestZenStore(BaseZenStore):
     # Repositories
     # ------------
 
-    # TODO: create repository?
-
-    def connect_project_repository(
-        self,
-        project_name_or_id: Union[str, UUID],
-        repository: CodeRepositoryModel,
-    ) -> CodeRepositoryModel:
-        """Connects a repository to a project.
-
-        Args:
-            project_name_or_id: Name or ID of the project to connect the
-                repository to.
-            repository: The repository to connect.
-
-        Returns:
-            The connected repository.
-
-        Raises:
-            KeyError: if the project or repository doesn't exist.
-        """
-
-    def get_repository(self, repository_id: UUID) -> CodeRepositoryModel:
-        """Get a repository by ID.
-
-        Args:
-            repository_id: The ID of the repository to get.
-
-        Returns:
-            The repository.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
-
-    def list_repositories(
-        self, project_name_or_id: Union[str, UUID]
-    ) -> List[CodeRepositoryModel]:
-        """Get all repositories in a given project.
-
-        Args:
-            project_name_or_id: The name or ID of the project.
-
-        Returns:
-            A list of all repositories in the project.
-
-        Raises:
-            KeyError: if the project doesn't exist.
-        """
-
-    def update_repository(
-        self, repository_id: UUID, repository: CodeRepositoryModel
-    ) -> CodeRepositoryModel:
-        """Update a repository.
-
-        Args:
-            repository_id: The ID of the repository to update.
-            repository: The repository to use for the update.
-
-        Returns:
-            The updated repository.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
-
-    def delete_repository(self, repository_id: UUID) -> None:
-        """Delete a repository.
-
-        Args:
-            repository_id: The ID of the repository to delete.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
-
     # ---------
     # Pipelines
     # ---------
 
     def create_pipeline(
-        self, project_name_or_id: Union[str, UUID], pipeline: PipelineModel
+        self,
+        pipeline: PipelineModel,
     ) -> PipelineModel:
         """Creates a new pipeline in a project.
 
         Args:
-            project_name_or_id: ID of the project to create the pipeline in.
             pipeline: The pipeline to create.
 
         Returns:
@@ -959,12 +898,14 @@ class RestZenStore(BaseZenStore):
 
     def list_pipelines(
         self,
-        project_name_or_id: Optional[Union[str, UUID]],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List[PipelineModel]:
         """List all pipelines in the project.
 
         Args:
             project_name_or_id: If provided, only list pipelines in this project.
+            user_name_or_id: If provided, only list pipelines from this user.
 
         Returns:
             A list of pipelines.
@@ -1000,7 +941,6 @@ class RestZenStore(BaseZenStore):
     # Pipeline steps
     # --------------
 
-    # TODO: change into an abstract method
     # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
     # TODO: Discuss whether we even need this, given that the endpoint is on
     # pipeline runs
@@ -1146,42 +1086,50 @@ class RestZenStore(BaseZenStore):
     # Pipeline run steps
     # ------------------
 
-    def get_run_step(self, step_id: int) -> StepRunModel:
-        """Get a pipeline run step by ID.
+    def get_run_step(self, step_id: UUID) -> StepRunModel:
+        """Get a step by ID.
 
         Args:
             step_id: The ID of the step to get.
 
         Returns:
-            The pipeline run step.
+            The step.
+
+        Raises:
+            KeyError: if the step doesn't exist.
         """
 
-    # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
-    def get_run_step_artifacts(
-        self, step: StepRunModel
-    ) -> Tuple[Dict[str, ArtifactModel], Dict[str, ArtifactModel]]:
-        """Returns input and output artifacts for the given pipeline run step.
+    def get_run_step_outputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
+        """Get a list of outputs for a specific step.
 
         Args:
-            step: The pipeline run step for which to get the artifacts.
+            step_id: The id of the step to get outputs for.
 
         Returns:
-            A tuple (inputs, outputs) where inputs and outputs
-            are both Dicts mapping artifact names
-            to the input and output artifacts respectively.
+            A dict mapping artifact names to the output artifacts for the step.
         """
 
-    def get_run_step_status(self, step_id: int) -> ExecutionStatus:
-        """Gets the execution status of a single pipeline run  step.
+    def get_run_step_inputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
+        """Get a list of inputs for a specific step.
 
         Args:
-            step_id: The ID of the pipeline run step to get the status for.
+            step_id: The id of the step to get inputs for.
 
         Returns:
-            ExecutionStatus: The status of the pipeline run step.
+            A dict mapping artifact names to the input artifacts for the step.
         """
 
-    def list_run_steps(self, run_id: int) -> Dict[str, StepRunModel]:
+    def get_run_step_status(self, step_id: UUID) -> ExecutionStatus:
+        """Gets the execution status of a single step.
+
+        Args:
+            step_id: The ID of the step to get the status for.
+
+        Returns:
+            ExecutionStatus: The status of the step.
+        """
+
+    def list_run_steps(self, run_id: UUID) -> List[StepRunModel]:
         """Gets all steps in a pipeline run.
 
         Args:
@@ -1295,17 +1243,25 @@ class RestZenStore(BaseZenStore):
                 f"{response.status_code} with body:\n{response.text}"
             )
 
-    def _request(self, method: str, url: str, **kwargs) -> Json:
+    def _request(
+        self,
+        method: str,
+        url: str,
+        params: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ) -> Json:
         """Make a request to the REST API.
 
         Args:
             method: The HTTP method to use.
             url: The URL to request.
+            params: The query parameters to pass to the endpoint.
             kwargs: Additional keyword arguments to pass to the request.
         """
+        params = {k: str(v) for k, v in params.items()} if params else {}
         try:
             return self._handle_response(
-                self.session.request(method, url, **kwargs)
+                self.session.request(method, url, params=params, **kwargs)
             )
         except AuthorizationException:
             # The authentication token could have expired; refresh it and try
@@ -1315,52 +1271,88 @@ class RestZenStore(BaseZenStore):
                 self.session.request(method, url, **kwargs)
             )
 
-    def get(self, path: str) -> Json:
+    def get(
+        self, path: str, params: Optional[Dict[str, Any]] = None, **kwargs
+    ) -> Json:
         """Make a GET request to the given endpoint path.
 
         Args:
             path: The path to the endpoint.
+            params: The query parameters to pass to the endpoint.
+            kwargs: Additional keyword arguments to pass to the request.
 
         Returns:
             The response body.
         """
-        return self._request("GET", self.url + VERSION_1 + path)
+        return self._request(
+            "GET", self.url + VERSION_1 + path, params=params, **kwargs
+        )
 
-    def delete(self, path: str) -> Json:
+    def delete(
+        self, path: str, params: Optional[Dict[str, Any]] = None, **kwargs
+    ) -> Json:
         """Make a DELETE request to the given endpoint path.
 
         Args:
             path: The path to the endpoint.
+            params: The query parameters to pass to the endpoint.
+            kwargs: Additional keyword arguments to pass to the request.
 
         Returns:
             The response body.
         """
-        return self._request("DELETE", self.url + VERSION_1 + path)
+        return self._request(
+            "DELETE", self.url + VERSION_1 + path, params=params, **kwargs
+        )
 
-    def post(self, path: str, body: BaseModel) -> Json:
+    def post(
+        self,
+        path: str,
+        body: BaseModel,
+        params: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ) -> Json:
         """Make a POST request to the given endpoint path.
 
         Args:
             path: The path to the endpoint.
             body: The body to send.
+            params: The query parameters to pass to the endpoint.
+            kwargs: Additional keyword arguments to pass to the request.
 
         Returns:
             The response body.
         """
         return self._request(
-            "POST", self.url + VERSION_1 + path, data=body.json()
+            "POST",
+            self.url + VERSION_1 + path,
+            data=body.json(),
+            params=params,
+            **kwargs,
         )
 
-    def put(self, path: str, body: BaseModel) -> Json:
+    def put(
+        self,
+        path: str,
+        body: BaseModel,
+        params: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ) -> Json:
         """Make a PUT request to the given endpoint path.
 
         Args:
             path: The path to the endpoint.
             body: The body to send.
+            params: The query parameters to pass to the endpoint.
+            kwargs: Additional keyword arguments to pass to the request.
 
         Returns:
             The response body.
         """
         return self._request(
-            "PUT", self.url + VERSION_1 + path, data=body.json()
+            "PUT",
+            self.url + VERSION_1 + path,
+            data=body.json(),
+            params=params,
+            **kwargs,
         )

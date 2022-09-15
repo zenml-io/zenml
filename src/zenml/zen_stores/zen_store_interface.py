@@ -519,12 +519,11 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def update_user(
-        self, user_name_or_id: Union[str, UUID], user: UserModel
+        self, user: UserModel
     ) -> UserModel:
         """Updates an existing user.
 
         Args:
-            user_name_or_id: The name or ID of the user to update.
             user: The user model to use for the update.
 
         Returns:
@@ -912,8 +911,8 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_pipelines(
         self,
-        project_name_or_id: Optional[Union[str, UUID]],
-        user_name_or_id: Optional[Union[str, UUID]],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List[PipelineModel]:
         """List all pipelines in the project.
 
@@ -957,7 +956,6 @@ class ZenStoreInterface(ABC):
     # Pipeline steps
     # --------------
 
-    # TODO: change into an abstract method
     # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
     # TODO: Discuss whether we even need this, given that the endpoint is on
     # pipeline runs

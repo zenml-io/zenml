@@ -29,8 +29,8 @@ class ProjectModel(AnalyticsTrackedModelMixin):
         "id",
     ]
 
-    id: UUID = Field(default_factory=uuid4, title="The unique if of the stack.")
-    name: str = Field(title="The unique name of the stack.")
+    id: UUID = Field(default_factory=uuid4, title="The unique if of the project.")
+    name: str = Field(title="The unique name of the project.")
     description: Optional[str] = Field(
         default=None, title="The description of the project.", max_length=300
     )

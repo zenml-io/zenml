@@ -17,7 +17,6 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 from uuid import UUID, uuid4
 
-from jose import JWTError, jwt
 from pydantic import BaseModel, Field, SecretStr, root_validator
 from secrets import token_hex
 
@@ -86,6 +85,8 @@ class JWTToken(BaseModel):
         Raises:
             AuthorizationException: If the token is invalid.
         """
+        # import here to keep these dependencies out of the client
+        from jose import JWTError, jwt
 
         try:
             payload = jwt.decode(
@@ -122,6 +123,9 @@ class JWTToken(BaseModel):
         Returns:
             The generated access token.
         """
+        # import here to keep these dependencies out of the client
+        from jose import jwt
+
         claims = {
             "sub": str(self.user_id),
         }
@@ -160,15 +164,30 @@ class UserModel(AnalyticsTrackedModelMixin):
         "active",
     ]
 
-    id: UUID = Field(default_factory=uuid4)
-    name: str = ""
-    full_name: str = ""
-    email: str = ""
-    active: bool = False
+    id: UUID = Field(
+        default_factory=uuid4, title="The unique id of the account."
+    )
+    name: str = Field(
+        "", title="The unique username for the account.", max_length=128
+    )
+    full_name: str = Field(
+        "", title="The full name for the account owner.", max_length=128
+    )
+    email: str = Field(
+        "",
+        title="The email address associated with the account.",
+        max_length=128,
+    )
+    active: bool = Field(False, title="Active account.")
     password: Optional[SecretStr] = Field(None, exclude=True)
     activation_token: Optional[SecretStr] = Field(None, exclude=True)
-    created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(
+        default_factory=datetime.now, title="Time when the account was created."
+    )
+    updated_at: datetime = Field(
+        default_factory=datetime.now,
+        title="Time when the account was last updated.",
+    )
 
     @classmethod
     def _get_crypt_context(cls) -> "CryptContext":

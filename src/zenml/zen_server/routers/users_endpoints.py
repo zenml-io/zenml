@@ -33,7 +33,7 @@ from zenml.zen_server.auth import authenticate_credentials, authorize
 from zenml.zen_server.models.user_management_models import (
     ActivateUserRequest,
     DeactivateUserResponse,
-    CreateUserModel,
+    CreateUserRequest,
     CreateUserResponse,
     UpdateUserRequest,
 )
@@ -93,7 +93,7 @@ async def list_users() -> List[UserModel]:
     response_model=CreateUserResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-async def create_user(user: CreateUserModel) -> CreateUserResponse:
+async def create_user(user: CreateUserRequest) -> CreateUserResponse:
     """Creates a user.
 
     # noqa: DAR401
@@ -200,7 +200,7 @@ async def update_user(
             user_model.hash_password()
 
         return zen_store.update_user(
-            user_name_or_id=parse_name_or_uuid(user_name_or_id), user=user_model
+            user=user_model
         )
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
@@ -247,7 +247,7 @@ async def activate_user(
         user_model.active = True
         user_model.activation_token = None
         return zen_store.update_user(
-            user_name_or_id=parse_name_or_uuid(user_name_or_id), user=user_model
+            user=user_model
         )
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
@@ -282,7 +282,7 @@ async def deactivate_user(user_name_or_id: str) -> UserModel:
         token = user.generate_activation_token()
         user.hash_activation_token()
         user = zen_store.update_user(
-            user_name_or_id=parse_name_or_uuid(user_name_or_id), user=user
+            user=user
         )
         # add back the original un-hashed activation token, if generated, to
         # send it back to the client

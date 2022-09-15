@@ -21,7 +21,7 @@ from pydantic import BaseModel, SecretStr
 from zenml.models.user_management_models import UserModel
 
 
-class CreateUserModel(BaseModel):
+class CreateUserRequest(BaseModel):
     """Pydantic object representing a user create request.
 
     Attributes:
@@ -34,12 +34,19 @@ class CreateUserModel(BaseModel):
     name: str
     full_name: Optional[str] = None
     email: Optional[str] = None
-    password: Optional[SecretStr] = None
+    password: Optional[str] = None
 
     def to_model(self) -> UserModel:
         """Convert to a user model."""
         return UserModel(
             **self.dict(exclude_none=True),
+        )
+
+    @classmethod
+    def from_model(cls, user: UserModel) -> "CreateUserRequest":
+        """Convert from a user model."""
+        return cls(
+            **user.dict(), password=user.get_password()
         )
 
 
@@ -59,6 +66,12 @@ class CreateUserResponse(UserModel):
         )
         return response
 
+    def to_model(self) -> UserModel:
+        """Convert to a user model."""
+        return UserModel(
+            **self.dict(),
+        )
+
 
 class UpdateUserRequest(BaseModel):
     """Pydantic object representing a user update request.
@@ -73,16 +86,23 @@ class UpdateUserRequest(BaseModel):
     name: Optional[str] = None
     full_name: Optional[str] = None
     email: Optional[str] = None
-    password: Optional[SecretStr] = None
+    password: Optional[str] = None
 
     def to_model(self, user: UserModel) -> UserModel:
         """Convert to a user model."""
         for k, v in self.dict(exclude_none=True).items():
             setattr(user, k, v)
         if self.password is not None:
-            user.password = self.password.get_secret_value()
+            user.password = self.password
         return user
 
+    @classmethod
+    def from_model(cls, user: UserModel) -> "UpdateUserRequest":
+        """Convert from a user model."""
+        response = cls(
+            **user.dict(), password=user.get_password()
+        )
+        return response
 
 class ActivateUserRequest(BaseModel):
     """Pydantic object representing a user activation request.
