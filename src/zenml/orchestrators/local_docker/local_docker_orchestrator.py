@@ -94,8 +94,9 @@ class LocalDockerOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         volumes = {}
 
         # Add a volume for all local paths of stack components
-        for stack_comp in stack.components.values():
-            local_path = stack_comp.local_path
+        for stack_comps in stack.components.values():
+            stack_component = stack_comps[0]
+            local_path = stack_component.local_path
             if not local_path:
                 continue
 

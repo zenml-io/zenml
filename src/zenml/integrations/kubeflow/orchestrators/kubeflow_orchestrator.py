@@ -268,23 +268,24 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 # go through all stack components and identify those that
                 # advertise a local path where they persist information that
                 # they need to be available when running pipelines.
-                for stack_comp in stack.components.values():
-                    local_path = stack_comp.local_path
+                for stack_comps in stack.components.values():
+                    stack_component = stack_comps[0]
+                    local_path = stack_component.local_path
                     if not local_path:
                         continue
                     return False, (
                         f"The Kubeflow orchestrator is configured to run "
                         f"pipelines in a remote Kubernetes cluster designated "
                         f"by the '{self.kubernetes_context}' configuration "
-                        f"context, but the '{stack_comp.name}' "
-                        f"{stack_comp.TYPE.value} is a local stack component "
-                        f"and will not be available in the Kubeflow pipeline "
-                        f"step.\nPlease ensure that you always use non-local "
-                        f"stack components with a remote Kubeflow orchestrator, "
-                        f"otherwise you may run into pipeline execution "
-                        f"problems. You should use a flavor of "
-                        f"{stack_comp.TYPE.value} other than "
-                        f"'{stack_comp.FLAVOR}'.\n"
+                        f"context, but the '{stack_component.name}' "
+                        f"{stack_component.TYPE.value} is a local stack "
+                        f"component and will not be available in the Kubeflow "
+                        f"pipeline step.\nPlease ensure that you always use "
+                        f"non-local stack components with a remote Kubeflow "
+                        f"orchestrator, otherwise you may run into pipeline "
+                        f"execution problems. You should use a flavor of "
+                        f"{stack_component.TYPE.value} other than "
+                        f"'{stack_component.FLAVOR}'.\n"
                         + silence_local_validations_msg
                     )
 
@@ -427,22 +428,25 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         # available when running pipelines. For those that do, mount them
         # into the Kubeflow container.
         has_local_repos = False
-        for stack_comp in stack.components.values():
-            local_path = stack_comp.local_path
+        for stack_comps in stack.components.values():
+            stack_component = stack_comps[0]
+            # TODO: [server] make sure ComponentModel have this functionality
+            local_path = stack_component.local_path
             if not local_path:
                 continue
             # double-check this convention, just in case it wasn't respected
             # as documented in `StackComponent.local_path`
             if not local_path.startswith(global_cfg_dir):
                 raise ValueError(
-                    f"Local path {local_path} for component {stack_comp.name} "
-                    f"is not in the global config directory ({global_cfg_dir})."
+                    f"Local path {local_path} for component "
+                    f"{stack_component.name} is not in the global config "
+                    f"directory ({global_cfg_dir})."
                 )
             has_local_repos = True
             host_path = k8s_client.V1HostPathVolumeSource(
                 path=local_path, type="Directory"
             )
-            volume_name = f"{stack_comp.TYPE.value}-{stack_comp.name}"
+            volume_name = f"{stack_component.TYPE.value}-{stack_component.name}"
             volumes[local_path] = k8s_client.V1Volume(
                 name=re.sub(r"[^0-9a-zA-Z-]+", "-", volume_name)
                 .strip("-")

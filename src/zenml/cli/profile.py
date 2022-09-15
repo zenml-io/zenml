@@ -237,7 +237,8 @@ class LocalStore(BaseModel):
             ):
                 zen_store = Repository().zen_store
                 # use the component in the active store
-                # TODO: [server] make sure this is the intended use of _get_default_stack
+                # TODO: [server] make sure this is the intended use
+                #  of _get_default_stack
                 component = (
                     zen_store._get_default_stack(
                         project_name_or_id=project,

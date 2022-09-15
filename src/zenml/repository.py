@@ -523,8 +523,8 @@ class Repository(metaclass=RepositoryMetaClass):
         dict_of_stacks = dict()
         for stack in stacks:
             dict_of_stacks[stack.name] = {"shared": str(stack.is_shared)}
-            for comp_type, comp in stack.to_hydrated_model().components.items():
-                dict_of_stacks[stack.name][str(comp_type)] = comp[0].name
+            for com_type, comps in stack.to_hydrated_model().components.items():
+                dict_of_stacks[stack.name][str(com_type)] = comps[0].name
 
         return dict_of_stacks
 

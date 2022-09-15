@@ -106,6 +106,8 @@ class StackSchema(SQLModel, table=True):
         Returns:
             a `FullStackModel`
         """
+        # This needs to be updated once multiple stack components per type are
+        #  supported
         return StackModel(
             id=self.id,
             name=self.name,

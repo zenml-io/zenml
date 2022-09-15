@@ -43,17 +43,17 @@ def register_annotator_subcommands() -> None:
         Args:
             ctx: The click Context object.
         """
-        annotator_model = Repository().active_stack_model.components[
+        annotator_models = Repository().active_stack_model.components[
             StackComponentType.ANNOTATOR
         ]
-        if annotator_model is None:
+        if annotator_models is None:
             cli_utils.error(
                 "No active annotator found. Please register an annotator "
                 "first and add it to your stack."
             )
             return
 
-        ctx.obj = annotator_model.to_component()
+        ctx.obj = annotator_models[0].to_component()
 
     @dataset.command(
         "list",

@@ -202,19 +202,24 @@ class VertexOrchestrator(
                 )
 
             # Validate that the rest of the components are not local.
-            for stack_comp in stack.components.values():
-                local_path = stack_comp.local_path
+            for stack_comps in stack.components.values():
+                # For Forward compatibility a list of components is returned,
+                # but only the first item is relevant for now
+                stack_component = stack_comps[0]
+                # TODO: [server] make sur ethe ComponentModel actually has
+                #  a local_path property or implement similar check
+                local_path = stack_component.local_path
                 if not local_path:
                     continue
                 return False, (
-                    f"The '{stack_comp.name}' {stack_comp.TYPE.value} is a "
-                    f"local stack component. The Vertex AI Pipelines "
+                    f"The '{stack_component.name}' {stack_component.TYPE.value} "
+                    f"is a local stack component. The Vertex AI Pipelines "
                     f"orchestrator requires that all the components in the "
                     f"stack used to execute the pipeline have to be not local, "
                     f"because there is no way for Vertex to connect to your "
                     f"local machine. You should use a flavor of "
-                    f"{stack_comp.TYPE.value} other than '"
-                    f"{stack_comp.FLAVOR}'."
+                    f"{stack_component.TYPE.value} other than '"
+                    f"{stack_component.FLAVOR}'."
                 )
 
             # If the `pipeline_root` has not been defined in the orchestrator
