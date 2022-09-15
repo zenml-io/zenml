@@ -60,6 +60,7 @@ def test_check_user_is_set():
     print(generated_dockerfile)
     assert "USER test_user" in generated_dockerfile
 
+
 def test_requirements_file_generation(mocker, tmp_path: Path):
     """Tests that the requirements get included in the correct order and only
     when configured."""
