@@ -93,12 +93,6 @@ async def token(auth_form_data: PasswordRequestForm = Depends()):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
-        )
-    return auth_context
-    if not auth_context:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
 

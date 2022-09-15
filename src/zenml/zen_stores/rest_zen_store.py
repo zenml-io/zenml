@@ -34,7 +34,6 @@ from zenml.exceptions import (
 from zenml.logger import get_logger
 from zenml.models import (
     ArtifactModel,
-    CodeRepositoryModel,
     ComponentModel,
     FlavorModel,
     PipelineModel,
@@ -828,96 +827,14 @@ class RestZenStore(BaseZenStore):
             KeyError: If no project with the given name exists.
         """
 
-    # ------------
-    # Repositories
-    # ------------
-
-    # TODO: create repository?
-
-    def connect_project_repository(
-        self,
-        project_name_or_id: Union[str, UUID],
-        repository: CodeRepositoryModel,
-    ) -> CodeRepositoryModel:
-        """Connects a repository to a project.
-
-        Args:
-            project_name_or_id: Name or ID of the project to connect the
-                repository to.
-            repository: The repository to connect.
-
-        Returns:
-            The connected repository.
-
-        Raises:
-            KeyError: if the project or repository doesn't exist.
-        """
-
-    def get_repository(self, repository_id: UUID) -> CodeRepositoryModel:
-        """Get a repository by ID.
-
-        Args:
-            repository_id: The ID of the repository to get.
-
-        Returns:
-            The repository.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
-
-    def list_repositories(
-        self, project_name_or_id: Union[str, UUID]
-    ) -> List[CodeRepositoryModel]:
-        """Get all repositories in a given project.
-
-        Args:
-            project_name_or_id: The name or ID of the project.
-
-        Returns:
-            A list of all repositories in the project.
-
-        Raises:
-            KeyError: if the project doesn't exist.
-        """
-
-    def update_repository(
-        self, repository_id: UUID, repository: CodeRepositoryModel
-    ) -> CodeRepositoryModel:
-        """Update a repository.
-
-        Args:
-            repository_id: The ID of the repository to update.
-            repository: The repository to use for the update.
-
-        Returns:
-            The updated repository.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
-
-    def delete_repository(self, repository_id: UUID) -> None:
-        """Delete a repository.
-
-        Args:
-            repository_id: The ID of the repository to delete.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
-
     # ---------
     # Pipelines
     # ---------
 
-    def create_pipeline(
-        self, project_name_or_id: Union[str, UUID], pipeline: PipelineModel
-    ) -> PipelineModel:
+    def create_pipeline(self, pipeline: PipelineModel) -> PipelineModel:
         """Creates a new pipeline in a project.
 
         Args:
-            project_name_or_id: ID of the project to create the pipeline in.
             pipeline: The pipeline to create.
 
         Returns:

@@ -45,7 +45,7 @@ class StackModel(AnalyticsTrackedModelMixin):
     )
     components: Dict[StackComponentType, List[UUID]] = Field(
         title="A mapping of stack component types to the id's of"
-              "instances of components of this type."
+        "instances of components of this type."
     )
     is_shared: bool = Field(
         default=False,
@@ -69,17 +69,13 @@ class StackModel(AnalyticsTrackedModelMixin):
                 "name": "default",
                 "description": "",
                 "components": {
-                    "artifact_store": [
-                        "55a32b96-7995-4622-8474-12e7c94f3054"
-                    ],
-                    "orchestrator": [
-                        "67441c8b-e4e7-439b-bad3-e5883659d387"
-                    ]
+                    "artifact_store": ["55a32b96-7995-4622-8474-12e7c94f3054"],
+                    "orchestrator": ["67441c8b-e4e7-439b-bad3-e5883659d387"],
                 },
                 "is_shared": "False",
                 "project": "c5600721-8432-436d-ac59-a47aec6dec0f",
                 "user": "ae1fd828-fb3b-48e8-a31a-f3ecb3cdb294",
-                "creation_date": "2022-09-15T11:43:29.994722"
+                "creation_date": "2022-09-15T11:43:29.994722",
             }
         }
 
@@ -91,8 +87,8 @@ class StackModel(AnalyticsTrackedModelMixin):
             True if the stack is valid, False otherwise.
         """
         if (
-                StackComponentType.ARTIFACT_STORE
-                and StackComponentType.ORCHESTRATOR in self.components.keys()
+            StackComponentType.ARTIFACT_STORE
+            and StackComponentType.ORCHESTRATOR in self.components.keys()
         ):
             return True
         else:
@@ -132,7 +128,7 @@ class HydratedStackModel(StackModel):
 
     components: Dict[StackComponentType, List[ComponentModel]] = Field(
         title="A mapping of stack component types to the actual"
-              "instances of components of this type."
+        "instances of components of this type."
     )
     project: ProjectModel = Field(
         default=None, title="The project that contains this stack."
@@ -158,13 +154,12 @@ class HydratedStackModel(StackModel):
                             "type": "artifact_store",
                             "flavor": "local",
                             "configuration": {
-                                "path":
-                                    "../zenml/local_stores/default_local_store"
+                                "path": "../zenml/local_stores/default_local_store"
                             },
                             "user": "ae1fd828-fb3b-48e8-a31a-f3ecb3cdb294",
                             "is_shared": "False",
                             "project": "c5600721-8432-436d-ac59-a47aec6dec0f",
-                            "creation_date": "2022-09-15T11:43:29.987627"
+                            "creation_date": "2022-09-15T11:43:29.987627",
                         }
                     ],
                     "orchestrator": [
@@ -177,16 +172,16 @@ class HydratedStackModel(StackModel):
                             "user": "ae1fd828-fb3b-48e8-a31a-f3ecb3cdb294",
                             "is_shared": "False",
                             "project": "c5600721-8432-436d-ac59-a47aec6dec0f",
-                            "creation_date": "2022-09-15T11:43:29.976439"
+                            "creation_date": "2022-09-15T11:43:29.976439",
                         }
-                    ]
+                    ],
                 },
                 "is_shared": "False",
                 "project": {
                     "id": "c5600721-8432-436d-ac59-a47aec6dec0f",
                     "name": "default",
                     "description": "",
-                    "creation_date": "2022-09-15T11:43:29.622882"
+                    "creation_date": "2022-09-15T11:43:29.622882",
                 },
                 "user": {
                     "id": "ae1fd828-fb3b-48e8-a31a-f3ecb3cdb294",
@@ -195,9 +190,9 @@ class HydratedStackModel(StackModel):
                     "email": "",
                     "active": "True",
                     "created_at": "2022-09-15T11:43:29.955116",
-                    "updated_at": "2022-09-15T11:43:29.955121"
+                    "updated_at": "2022-09-15T11:43:29.955121",
                 },
-                "creation_date": "2022-09-15T11:43:29.994722"
+                "creation_date": "2022-09-15T11:43:29.994722",
             }
         }
 
