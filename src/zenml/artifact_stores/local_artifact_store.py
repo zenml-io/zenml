@@ -59,7 +59,6 @@ from zenml.artifact_stores import (
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import LOCAL_STORES_DIRECTORY_NAME
 from zenml.exceptions import ArtifactStoreInterfaceError
-from zenml.stack import StackComponent, StackComponentConfig
 from zenml.utils import io_utils
 
 PathType = Union[bytes, str]
@@ -296,9 +295,9 @@ class LocalArtifactStoreFlavor(BaseArtifactStoreFlavor):
         return "local"
 
     @property
-    def config_class(self) -> Type[StackComponentConfig]:
+    def config_class(self) -> Type[LocalArtifactStoreConfig]:
         return LocalArtifactStoreConfig
 
     @property
-    def implementation_class(self) -> Type[StackComponent]:
+    def implementation_class(self) -> Type[LocalArtifactStore]:
         return LocalArtifactStore

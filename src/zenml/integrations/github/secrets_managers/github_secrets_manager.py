@@ -16,7 +16,7 @@
 import base64
 import json
 import os
-from typing import Any, ClassVar, List, NoReturn, Optional, Tuple, cast
+from typing import Any, List, NoReturn, Optional, Tuple, Type, cast
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -27,7 +27,11 @@ from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
-from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
+from zenml.secrets_managers.base_secrets_manager import (
+    BaseSecretsManager,
+    BaseSecretsManagerConfig,
+    BaseSecretsManagerFlavor,
+)
 from zenml.utils import string_utils
 
 logger = get_logger(__name__)
@@ -91,8 +95,8 @@ def _convert_secret_name(
     return secret_name
 
 
-class GitHubSecretsManager(BaseSecretsManager):
-    """Class to interact with the GitHub secrets manager.
+class GitHubSecretsManagerConfig(BaseSecretsManagerConfig):
+    """The configuration for the GitHub Secrets Manager.
 
     Attributes:
         owner: The owner (either individual or organization) of the repository.
@@ -102,10 +106,11 @@ class GitHubSecretsManager(BaseSecretsManager):
     owner: str
     repository: str
 
-    _session: Optional[requests.Session] = None
 
-    # Class configuration
-    FLAVOR: ClassVar[str] = GITHUB_SECRET_MANAGER_FLAVOR
+class GitHubSecretsManager(BaseSecretsManager):
+    """Class to interact with the GitHub secrets manager."""
+
+    _session: Optional[requests.Session] = None
 
     @property
     def post_registration_message(self) -> Optional[str]:
@@ -165,8 +170,8 @@ class GitHubSecretsManager(BaseSecretsManager):
             HTTPError: If the request failed due to a client or server error.
         """
         url = (
-            f"https://api.github.com/repos/{self.owner}/{self.repository}"
-            f"/actions/secrets"
+            f"https://api.github.com/repos/{self.config.owner}"
+            f"/{self.config.repository}/actions/secrets"
         )
         if resource:
             url += resource
@@ -298,8 +303,8 @@ class GitHubSecretsManager(BaseSecretsManager):
         else:
             logger.info(
                 "Fetching list of secrets for repository %s/%s",
-                self.owner,
-                self.repository,
+                self.config.owner,
+                self.config.repository,
             )
             response = self._send_request("GET", params={"per_page": 100})
             potential_secret_keys = [
@@ -378,3 +383,17 @@ class GitHubSecretsManager(BaseSecretsManager):
         """Delete all existing secrets."""
         for secret_name in self.get_all_secret_keys(include_prefix=False):
             self.delete_secret(secret_name=secret_name)
+
+
+class GitHubSecretsManagerFlavor(BaseSecretsManagerFlavor):
+    @property
+    def name(self) -> str:
+        return GITHUB_SECRET_MANAGER_FLAVOR
+
+    @property
+    def config_class(self) -> Type[GitHubSecretsManagerConfig]:
+        return GitHubSecretsManagerConfig
+
+    @property
+    def implementation_class(self) -> Type[GitHubSecretsManager]:
+        return GitHubSecretsManager
