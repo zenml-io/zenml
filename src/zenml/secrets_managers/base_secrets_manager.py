@@ -14,16 +14,28 @@
 """Base class for ZenML secrets managers."""
 
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar, Dict, List, Optional, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    cast,
+)
 
 from pydantic import root_validator
 
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
-from zenml.secret.base_secret import BaseSecretSchema
-from zenml.stack import StackComponent
+from zenml.stack import Flavor, StackComponent
+from zenml.stack.stack_component import StackComponentConfig
 from zenml.utils import secret_utils
 from zenml.utils.enum_utils import StrEnum
+
+if TYPE_CHECKING:
+    from zenml.secret.base_secret import BaseSecretSchema
 
 logger = get_logger(__name__)
 
@@ -41,33 +53,8 @@ class SecretsManagerScope(StrEnum):
     NAMESPACE = "namespace"
 
 
-class BaseSecretsManager(StackComponent, ABC):
-    """Base class for all ZenML secrets managers.
-
-    Attributes:
-        scope: The Secrets Manager scope determines how secrets are visible and
-            shared across different Secrets Manager instances:
-
-            * global: secrets are shared across all Secrets Manager instances
-            that connect to the same backend and have a global scope.
-            * component: secrets are not shared outside this Secrets Manager
-            instance.
-            * namespace: secrets are shared only by Secrets Manager instances
-            that connect to the same backend *and* have the same `namespace`
-            value configured.
-            * none: only used to preserve backwards compatibility with
-            old Secrets Manager instances that do not yet understand the
-            concept of secrets scoping. Will be deprecated and removed in
-            future versions.
-        namespace: Optional namespace to use with a `namespace` scoped Secrets
-            Manager.
-    """
-
-    # Class configuration
-    TYPE: ClassVar[StackComponentType] = StackComponentType.SECRETS_MANAGER
-    FLAVOR: ClassVar[str]
+class BaseSecretsManagerConfig(StackComponentConfig):
     SUPPORTS_SCOPING: ClassVar[bool] = False
-
     scope: SecretsManagerScope = SecretsManagerScope.COMPONENT
     namespace: Optional[str] = None
 
@@ -115,7 +102,7 @@ class BaseSecretsManager(StackComponent, ABC):
             # Secrets Manager that doesn't support scoping
             if scope != SecretsManagerScope.NONE and not cls.SUPPORTS_SCOPING:
                 raise ValueError(
-                    f"The {cls.FLAVOR} Secrets Manager does not support "
+                    f"The {cls.flavor} Secrets Manager does not support "
                     f"scoping. You can only use a `none` scope value."
                 )
         elif not cls.SUPPORTS_SCOPING:
@@ -134,7 +121,7 @@ class BaseSecretsManager(StackComponent, ABC):
         # Secrets Manager that does support scoping
         if scope == SecretsManagerScope.NONE and cls.SUPPORTS_SCOPING:
             logger.warning(
-                f"Unscoped support for the {cls.FLAVOR} Secrets "
+                f"Unscoped support for the {cls.flavor} Secrets "
                 f"Manager is deprecated and will be removed in a future "
                 f"release. You should use the `global` scope instead."
             )
@@ -185,6 +172,29 @@ class BaseSecretsManager(StackComponent, ABC):
             namespace: Namespace value.
         """
         ...
+
+
+class BaseSecretsManager(StackComponent, ABC):
+    """Base class for all ZenML secrets managers.
+
+    Attributes:
+        scope: The Secrets Manager scope determines how secrets are visible and
+            shared across different Secrets Manager instances:
+
+            * global: secrets are shared across all Secrets Manager instances
+            that connect to the same backend and have a global scope.
+            * component: secrets are not shared outside this Secrets Manager
+            instance.
+            * namespace: secrets are shared only by Secrets Manager instances
+            that connect to the same backend *and* have the same `namespace`
+            value configured.
+            * none: only used to preserve backwards compatibility with
+            old Secrets Manager instances that do not yet understand the
+            concept of secrets scoping. Will be deprecated and removed in
+            future versions.
+        namespace: Optional namespace to use with a `namespace` scoped Secrets
+            Manager.
+    """
 
     def _get_scope_path(self) -> List[str]:
         """Get the secret path for the current scope.
@@ -347,7 +357,9 @@ class BaseSecretsManager(StackComponent, ABC):
 
         return metadata
 
-    def _get_secret_metadata(self, secret: BaseSecretSchema) -> Dict[str, str]:
+    def _get_secret_metadata(
+        self, secret: "BaseSecretSchema"
+    ) -> Dict[str, str]:
         """Get a dictionary with metadata describing a secret.
 
         This is utility method can be used with Secrets Managers that can
@@ -383,7 +395,7 @@ class BaseSecretsManager(StackComponent, ABC):
         return scope_metadata
 
     @abstractmethod
-    def register_secret(self, secret: BaseSecretSchema) -> None:
+    def register_secret(self, secret: "BaseSecretSchema") -> None:
         """Registers a new secret.
 
         The implementation should throw a `SecretExistsError` exception if the
@@ -394,7 +406,7 @@ class BaseSecretsManager(StackComponent, ABC):
         """
 
     @abstractmethod
-    def get_secret(self, secret_name: str) -> BaseSecretSchema:
+    def get_secret(self, secret_name: str) -> "BaseSecretSchema":
         """Gets the value of a secret.
 
         The implementation should throw a `KeyError` exception if the
@@ -409,7 +421,7 @@ class BaseSecretsManager(StackComponent, ABC):
         """Get all secret keys."""
 
     @abstractmethod
-    def update_secret(self, secret: BaseSecretSchema) -> None:
+    def update_secret(self, secret: "BaseSecretSchema") -> None:
         """Update an existing secret.
 
         The implementation should throw a `KeyError` exception if the
@@ -433,3 +445,23 @@ class BaseSecretsManager(StackComponent, ABC):
     @abstractmethod
     def delete_all_secrets(self) -> None:
         """Delete all existing secrets."""
+
+
+class BaseSecretsManagerFlavor(Flavor):
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        """"""
+
+    @property
+    def type(self) -> StackComponentType:
+        return StackComponentType.SECRETS_MANAGER
+
+    @property
+    def config_class(self) -> Type[BaseSecretsManagerConfig]:
+        return BaseSecretsManagerConfig
+
+    @property
+    @abstractmethod
+    def implementation_class(self) -> Type["BaseSecretsManager"]:
+        """"""

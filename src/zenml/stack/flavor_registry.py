@@ -50,8 +50,7 @@ class FlavorRegistry:
         #     GitHubContainerRegistry,
         # )
         from zenml.orchestrators import LocalOrchestratorFlavor
-
-        # from zenml.secrets_managers import LocalSecretsManager
+        from zenml.secrets_managers import LocalSecretsManagerFlavor
 
         default_flavors = [
             LocalArtifactStoreFlavor,
@@ -61,7 +60,7 @@ class FlavorRegistry:
             # DockerHubContainerRegistry,
             # GCPContainerRegistry,
             # GitHubContainerRegistry,
-            # LocalSecretsManager,
+            LocalSecretsManagerFlavor,
         ]
         for flavor in default_flavors:
             flavor_instance = flavor()
