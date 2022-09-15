@@ -334,8 +334,8 @@ class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
         # differentiates between pure model and custom code deployments
         stack = Repository().active_stack
         stack_metadata = {
-            component_type.value: component.FLAVOR
-            for component_type, component in stack.components.items()
+            component_type.value: components[0].FLAVOR
+            for component_type, components in stack.components.items()
         }
         metadata = {
             "store_type": Repository().zen_store.type.value,

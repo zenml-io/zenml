@@ -98,8 +98,10 @@ def _delete_local_files(force_delete: bool = False) -> None:
     repo = Repository()
     if repo.active_stack_model:
         stack_components = repo.active_stack_model.components
-        for _, component in stack_components.items():
-            local_path = component.local_path
+        for _, components in stack_components.items():
+            # TODO: [server] this needs to be adjustes as the ComponentModel
+            #  does not have the local_path property anymore
+            local_path = components[0].local_path
             if local_path:
                 for path in Path(local_path).iterdir():
                     if fileio.isdir(str(path)):

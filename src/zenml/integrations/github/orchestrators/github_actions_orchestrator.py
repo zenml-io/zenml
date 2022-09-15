@@ -182,7 +182,8 @@ class GitHubActionsOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                     "authentication."
                 )
 
-            for component in stack.components.values():
+            for components in stack.components.values():
+                component = components[0]
                 if component.local_path:
                     return False, (
                         "The GitHub Actions orchestrator runs pipelines on "

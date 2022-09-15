@@ -115,23 +115,24 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             # go through all stack components and identify those that
             # advertise a local path where they persist information that
             # they need to be available when running pipelines.
-            for stack_comp in stack.components.values():
-                local_path = stack_comp.local_path
+            for stack_comps in stack.components.values():
+                stack_component = stack_comps[0]
+                local_path = stack_component.local_path
                 if not local_path:
                     continue
                 return False, (
                     f"The Tekton orchestrator is configured to run "
                     f"pipelines in a remote Kubernetes cluster designated "
                     f"by the '{self.kubernetes_context}' configuration "
-                    f"context, but the '{stack_comp.name}' "
-                    f"{stack_comp.TYPE.value} is a local stack component "
+                    f"context, but the '{stack_component.name}' "
+                    f"{stack_component.TYPE.value} is a local stack component "
                     f"and will not be available in the Tekton pipeline "
                     f"step.\nPlease ensure that you always use non-local "
                     f"stack components with a Tekton orchestrator, "
                     f"otherwise you may run into pipeline execution "
                     f"problems. You should use a flavor of "
-                    f"{stack_comp.TYPE.value} other than "
-                    f"'{stack_comp.FLAVOR}'."
+                    f"{stack_component.TYPE.value} other than "
+                    f"'{stack_component.FLAVOR}'."
                 )
 
             if container_registry.is_local:

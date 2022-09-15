@@ -167,7 +167,7 @@ def _get_stack_component_model(
     elif component_type in active_stack.components.keys():
         active_components = active_stack.components[component_type]
         cli_utils.declare(
-            f"No component name given; using `{active_component.name}` "
+            f"No component name given; using `{active_components[0].name}` "
             f"from active stack."
         )
         return active_components[0] if active_component else None, True
@@ -194,11 +194,10 @@ def generate_stack_component_get_command(
         cli_utils.print_active_stack()
 
         active_stack = Repository().active_stack_model
-        components = active_stack.components.get(component_type, [])
-        component = components[0] if components else None
+        components = active_stack.components.get(component_type, None)
         display_name = _component_display_name(component_type)
-        if component:
-            cli_utils.declare(f"Active {display_name}: '{component.name}'")
+        if components:
+            cli_utils.declare(f"Active {display_name}: '{components[0].name}'")
         else:
             cli_utils.warning(
                 f"No {display_name} set for active stack "

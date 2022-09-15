@@ -141,8 +141,8 @@ class StackComponent(BaseModel, ABC):
         # not able to identify the 'correct' secrets manager that the user
         # wanted to resolve the secrets in a general way. We therefore
         # limit secret resolving to components of the active stack.
-        component = stack.components.get(self.TYPE, None)
-        if not component or component.uuid != self.uuid:
+        components = stack.components.get(self.TYPE, None)
+        if not components or components[0].uuid != self.uuid:
             raise RuntimeError(
                 f"Failed to resolve secret reference for attribute {key} "
                 f"of stack component `{self}`: The stack component is not "
