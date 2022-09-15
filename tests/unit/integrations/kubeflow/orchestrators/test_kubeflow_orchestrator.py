@@ -17,7 +17,7 @@ from uuid import uuid4
 import pytest
 
 from zenml.artifact_stores import LocalArtifactStore
-from zenml.container_registries import DefaultContainerRegistry
+from zenml.container_registries import DefaultContainerRegistryFlavor
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
 from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
@@ -43,7 +43,9 @@ def test_kubeflow_orchestrator_stack_validation(mocker):
 
     orchestrator = KubeflowOrchestrator(name="")
     artifact_store = LocalArtifactStore(name="", path=".")
-    container_registry = DefaultContainerRegistry(name="", uri="localhost:5000")
+    container_registry = DefaultContainerRegistryFlavor(
+        name="", uri="localhost:5000"
+    )
 
     with pytest.raises(StackValidationError):
         # missing container registry

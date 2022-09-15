@@ -18,7 +18,7 @@ from uuid import uuid4
 import pytest
 
 from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
-from zenml.container_registries import DefaultContainerRegistry
+from zenml.container_registries import DefaultContainerRegistryFlavor
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
 from zenml.integrations.gcp.artifact_stores import GCPArtifactStore
@@ -38,13 +38,15 @@ def test_github_actions_orchestrator_stack_validation() -> None:
     """Tests the GitHub actions orchestrator stack validation."""
     orchestrator = GitHubActionsOrchestrator(name="")
 
-    local_container_registry = DefaultContainerRegistry(
+    local_container_registry = DefaultContainerRegistryFlavor(
         name="", uri="localhost:5000"
     )
-    container_registry_that_requires_authentication = DefaultContainerRegistry(
-        name="", uri="localhost:5000", authentication_secret="some_secret"
+    container_registry_that_requires_authentication = (
+        DefaultContainerRegistryFlavor(
+            name="", uri="localhost:5000", authentication_secret="some_secret"
+        )
     )
-    remote_container_registry = DefaultContainerRegistry(
+    remote_container_registry = DefaultContainerRegistryFlavor(
         name="", uri="gcr.io/my-project"
     )
 

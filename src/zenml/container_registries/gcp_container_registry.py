@@ -13,16 +13,16 @@
 #  permissions and limitations under the License.
 """Implementation of a GCP Container Registry class."""
 
-from typing import ClassVar
 
 from zenml.container_registries.base_container_registry import (
-    BaseContainerRegistry,
+    BaseContainerRegistryFlavor,
 )
 from zenml.enums import ContainerRegistryFlavor
 
 
-class GCPContainerRegistry(BaseContainerRegistry):
+class GCPContainerRegistryFlavor(BaseContainerRegistryFlavor):
     """Class for GCP Container Registry."""
 
-    # Class Configuration
-    FLAVOR: ClassVar[str] = ContainerRegistryFlavor.GCP.value
+    @property
+    def name(self) -> str:
+        return ContainerRegistryFlavor.GCP.value

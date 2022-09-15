@@ -449,11 +449,6 @@ class BaseSecretsManager(StackComponent, ABC):
 
 class BaseSecretsManagerFlavor(Flavor):
     @property
-    @abstractmethod
-    def name(self) -> str:
-        """"""
-
-    @property
     def type(self) -> StackComponentType:
         return StackComponentType.SECRETS_MANAGER
 

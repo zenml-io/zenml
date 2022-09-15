@@ -41,25 +41,24 @@ class FlavorRegistry:
     def register_default_flavors(self) -> None:
         """Registers the default built-in flavors."""
         from zenml.artifact_stores import LocalArtifactStoreFlavor
-
-        # from zenml.container_registries import (
-        #     AzureContainerRegistry,
-        #     DefaultContainerRegistry,
-        #     DockerHubContainerRegistry,
-        #     GCPContainerRegistry,
-        #     GitHubContainerRegistry,
-        # )
+        from zenml.container_registries import (
+            AzureContainerRegistryFlavor,
+            DefaultContainerRegistryFlavor,
+            DockerHubContainerRegistryFlavor,
+            GCPContainerRegistryFlavor,
+            GitHubContainerRegistryFlavor,
+        )
         from zenml.orchestrators import LocalOrchestratorFlavor
         from zenml.secrets_managers import LocalSecretsManagerFlavor
 
         default_flavors = [
             LocalArtifactStoreFlavor,
             LocalOrchestratorFlavor,
-            # DefaultContainerRegistry,
-            # AzureContainerRegistry,
-            # DockerHubContainerRegistry,
-            # GCPContainerRegistry,
-            # GitHubContainerRegistry,
+            DefaultContainerRegistryFlavor,
+            AzureContainerRegistryFlavor,
+            DockerHubContainerRegistryFlavor,
+            GCPContainerRegistryFlavor,
+            GitHubContainerRegistryFlavor,
             LocalSecretsManagerFlavor,
         ]
         for flavor in default_flavors:

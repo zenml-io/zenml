@@ -19,8 +19,8 @@ import pytest
 
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.container_registries import (
-    DefaultContainerRegistry,
-    GCPContainerRegistry,
+    DefaultContainerRegistryFlavor,
+    GCPContainerRegistryFlavor,
 )
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
@@ -64,10 +64,10 @@ def test_vertex_orchestrator_stack_validation() -> None:
         name="azure_artifact_store", path="abfs://my-container/artifacts"
     )
 
-    local_container_registry = DefaultContainerRegistry(
+    local_container_registry = DefaultContainerRegistryFlavor(
         name="", uri="localhost:5000"
     )
-    gcp_container_registry = GCPContainerRegistry(
+    gcp_container_registry = GCPContainerRegistryFlavor(
         name="", uri="gcr.io/my-project"
     )
 

@@ -26,7 +26,7 @@ from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
 from zenml.container_registries import (
     BaseContainerRegistry,
-    GitHubContainerRegistry,
+    GitHubContainerRegistryFlavor,
 )
 from zenml.entrypoints.step_entrypoint_configuration import PIPELINE_JSON_OPTION
 from zenml.integrations.github.orchestrators.github_actions_entrypoint_configuration import (
@@ -215,8 +215,8 @@ class GitHubActionsOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             with the container registry if that is required, `None` otherwise.
         """
         if (
-            isinstance(container_registry, GitHubContainerRegistry)
-            and container_registry.automatic_token_authentication
+            isinstance(container_registry, GitHubContainerRegistryFlavor)
+            and container_registry.config.automatic_token_authentication
         ):
             # Use GitHub Actions specific placeholder if the container registry
             # specifies automatic token authentication

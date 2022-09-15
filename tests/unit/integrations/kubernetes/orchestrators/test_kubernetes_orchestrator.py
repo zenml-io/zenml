@@ -19,7 +19,7 @@ from uuid import uuid4
 import pytest
 
 from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
-from zenml.container_registries import DefaultContainerRegistry
+from zenml.container_registries import DefaultContainerRegistryFlavor
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
 from zenml.integrations.gcp.artifact_stores import GCPArtifactStore
@@ -37,7 +37,7 @@ def test_kubernetes_orchestrator_attributes() -> None:
 def test_kubernetes_orchestrator_remote_stack() -> None:
     """Test that the kubernetes orchestrator works with remote stacks."""
     orchestrator = KubernetesOrchestrator(name="", skip_config_loading=True)
-    remote_container_registry = DefaultContainerRegistry(
+    remote_container_registry = DefaultContainerRegistryFlavor(
         name="", uri="gcr.io/my-project"
     )
     remote_artifact_store = GCPArtifactStore(name="", path="gs://bucket")
@@ -54,7 +54,7 @@ def test_kubernetes_orchestrator_remote_stack() -> None:
 def test_kubernetes_orchestrator_local_stack() -> None:
     """Test that the kubernetes orchestrator raises an error in local stacks."""
     orchestrator = KubernetesOrchestrator(name="", skip_config_loading=True)
-    local_container_registry = DefaultContainerRegistry(
+    local_container_registry = DefaultContainerRegistryFlavor(
         name="", uri="localhost:5000"
     )
     local_artifact_store = LocalArtifactStore(name="", path="artifacts/")

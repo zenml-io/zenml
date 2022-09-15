@@ -14,7 +14,7 @@
 """Implementation of the AWS container registry integration."""
 
 import re
-from typing import ClassVar, List, Optional
+from typing import List, Optional, Type
 
 import boto3
 from botocore.exceptions import ClientError
@@ -22,6 +22,8 @@ from pydantic import validator
 
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
+    BaseContainerRegistryConfig,
+    BaseContainerRegistryFlavor,
 )
 from zenml.integrations.aws import AWS_CONTAINER_REGISTRY_FLAVOR
 from zenml.logger import get_logger
@@ -29,11 +31,8 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-class AWSContainerRegistry(BaseContainerRegistry):
-    """Class for AWS Container Registry."""
-
-    # Class Configuration
-    FLAVOR: ClassVar[str] = AWS_CONTAINER_REGISTRY_FLAVOR
+class AWSContainerRegistryConfig(BaseContainerRegistryConfig):
+    """Configuration for AWS Container Registry."""
 
     @validator("uri")
     def validate_aws_uri(cls, uri: str) -> str:
@@ -56,6 +55,10 @@ class AWSContainerRegistry(BaseContainerRegistry):
 
         return uri
 
+
+class AWSContainerRegistry(BaseContainerRegistry):
+    """Class for AWS Container Registry."""
+
     def _get_region(self) -> str:
         """Parses the AWS region from the registry URI.
 
@@ -65,10 +68,12 @@ class AWSContainerRegistry(BaseContainerRegistry):
         Returns:
             The region string.
         """
-        match = re.fullmatch(r".*\.dkr\.ecr\.(.*)\.amazonaws\.com", self.uri)
+        match = re.fullmatch(
+            r".*\.dkr\.ecr\.(.*)\.amazonaws\.com", self.config.uri
+        )
         if not match:
             raise RuntimeError(
-                f"Unable to parse region from ECR URI {self.uri}."
+                f"Unable to parse region from ECR URI {self.config.uri}."
             )
 
         return match.group(1)
@@ -122,7 +127,23 @@ class AWSContainerRegistry(BaseContainerRegistry):
             "Amazon ECR requires you to create a repository before you can "
             "push an image to it. If you want to for example run a pipeline "
             "using our Kubeflow orchestrator, ZenML will automatically build a "
-            f"docker image called `{self.uri}/zenml-kubeflow:<PIPELINE_NAME>` "
+            f"docker image called `{self.config.uri}/zenml-kubeflow:<PIPELINE_NAME>` "
             f"and try to push it. This will fail unless you create the "
             f"repository `zenml-kubeflow` inside your amazon registry."
         )
+
+
+class AWSContainerRegistryFlavor(BaseContainerRegistryFlavor):
+    """AWS Container Registry flavor."""
+
+    @property
+    def name(self) -> str:
+        return AWS_CONTAINER_REGISTRY_FLAVOR
+
+    @property
+    def config_class(self) -> Type[AWSContainerRegistryConfig]:
+        return AWSContainerRegistryConfig
+
+    @property
+    def implementation_class(self) -> Type[AWSContainerRegistry]:
+        return AWSContainerRegistry
