@@ -59,11 +59,6 @@ async def list_stacks(
 
     Returns:
         All stacks.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     stacks_list = zen_store.list_stacks(
         project_name_or_id=parse_name_or_uuid(project_name_or_id),
@@ -95,11 +90,6 @@ async def get_stack(
 
     Returns:
         The requested stack.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     stack = zen_store.get_stack(UUID(stack_id))
     if hydrated:
@@ -127,11 +117,6 @@ async def update_stack(
 
     Returns:
         The updated stack.
-
-    Raises:
-        401 error: when not authorized
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     stack_in_db = zen_store.get_stack(parse_name_or_uuid(stack_id))
     updated_stack = zen_store.update_stack(
@@ -153,10 +138,5 @@ async def delete_stack(stack_id: str) -> None:
 
     Args:
         stack_id: Name of the stack.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     zen_store.delete_stack(UUID(stack_id))  # aka 'deregister_stack'

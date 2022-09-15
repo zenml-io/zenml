@@ -34,7 +34,6 @@ from zenml.models import (
 from zenml.models.component_model import HydratedComponentModel
 from zenml.models.pipeline_models import HydratedPipelineModel
 from zenml.models.stack_models import HydratedStackModel
-from zenml.stack import Flavor
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.models import CreatePipelineModel
@@ -65,11 +64,6 @@ async def list_projects() -> List[ProjectModel]:
 
     Returns:
         A list of projects.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     return zen_store.list_projects()
 
@@ -90,12 +84,6 @@ async def create_project(project: CreateProjectModel) -> ProjectModel:
 
     Returns:
         The created project.
-
-    Raises:
-        conflict: when project already exists
-        401 error: when not authorized to login
-        409 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     return zen_store.create_project(project=project.to_model())
 
@@ -116,12 +104,6 @@ async def get_project(project_name_or_id: str) -> ProjectModel:
 
     Returns:
         The requested project.
-
-    Raises:
-        not_found: when project does not exist
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     return zen_store.get_project(
         project_name_or_id=parse_name_or_uuid(project_name_or_id)
@@ -147,12 +129,6 @@ async def update_project(
 
     Returns:
         The updated project.
-
-    Raises:
-        not_found: when project does not exist
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     project_in_db = zen_store.get_project(
         parse_name_or_uuid(project_name_or_id)
@@ -173,11 +149,6 @@ async def delete_project(project_name_or_id: str) -> None:
 
     Args:
         project_name_or_id: Name or ID of the project.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     zen_store.delete_project(
         project_name_or_id=parse_name_or_uuid(project_name_or_id)
@@ -211,12 +182,6 @@ async def get_project_stacks(
 
     Returns:
         All stacks part of the specified project.
-
-    Raises:
-        not_found: when project does not exist
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     stacks_list = zen_store.list_stacks(
         project_name_or_id=parse_name_or_uuid(project_name_or_id),
@@ -248,16 +213,11 @@ async def create_stack(
         project_name_or_id: Name or ID of the project.
         stack: Stack to register.
         hydrated: Defines if stack components, users and projects will be
-                  included by reference (FALSE) or as model (TRUE)
+            included by reference (FALSE) or as model (TRUE)
+        auth_context: The authentification context.
 
     Returns:
         The created stack.
-
-    Raises:
-        conflict: when an identical stack already exists
-        401 error: when not authorized to login
-        409 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     project = zen_store.get_project(parse_name_or_uuid(project_name_or_id))
     full_stack = stack.to_model(
@@ -297,15 +257,10 @@ async def list_project_stack_components(
         component_type: Optionally filter by component type
         is_shared: Optionally filter by shared status of the component
         hydrated: Defines if users and projects will be
-                  included by reference (FALSE) or as model (TRUE)
+            included by reference (FALSE) or as model (TRUE)
 
     Returns:
         All stack components part of the specified project.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     components_list = zen_store.list_stack_components(
         project_name_or_id=parse_name_or_uuid(project_name_or_id),
@@ -338,13 +293,11 @@ async def create_stack_component(
         project_name_or_id: Name or ID of the project.
         component: Stack component to register.
         hydrated: Defines if stack components, users and projects will be
-                  included by reference (FALSE) or as model (TRUE)
+            included by reference (FALSE) or as model (TRUE)
+        auth_context: Authentication context.
 
-    Raises:
-        conflict: when the component already exists.
-        401 error: when not authorized to login
-        409 error: when trigger does not exist
-        422 error: when unable to validate input
+    Returns:
+        The created stack component.
     """
     project = zen_store.get_project(parse_name_or_uuid(project_name_or_id))
     full_component = component.to_model(
@@ -356,7 +309,8 @@ async def create_stack_component(
     #  conforms to the flavor
 
     updated_component = zen_store.register_stack_component(
-        component=full_component)
+        component=full_component
+    )
     if hydrated:
         return updated_component.to_hydrated_model()
     else:
@@ -383,11 +337,6 @@ async def list_project_flavors(
 
     Returns:
         All stack components of a certain type that are part of a project.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     flavors_list = zen_store.list_flavors(
         project_name_or_id=parse_name_or_uuid(project_name_or_id),
@@ -412,12 +361,10 @@ async def create_flavor(
     Args:
         project_name_or_id: Name or ID of the project.
         flavor: Stack component flavor to register.
+        auth_context: Authentication context.
 
-    Raises:
-        conflict: when the component already exists.
-        401 error: when not authorized to login
-        409 error: when trigger does not exist
-        422 error: when unable to validate input
+    Returns:
+        The created stack component flavor.
     """
     created_flavor = zen_store.create_flavor(
         project_name_or_id=parse_name_or_uuid(project_name_or_id),
@@ -450,12 +397,6 @@ async def get_project_pipelines(
 
     Returns:
         All pipelines within the project.
-
-    Raises:
-        not_found: when the project does not exist.
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     pipelines_list = zen_store.list_pipelines(
         project_name_or_id=parse_name_or_uuid(project_name_or_id),
@@ -485,13 +426,11 @@ async def create_pipeline(
         project_name_or_id: Name or ID of the project.
         pipeline: Pipeline to create.
         hydrated: Defines if stack components, users and projects will be
-                  included by reference (FALSE) or as model (TRUE)
+            included by reference (FALSE) or as model (TRUE)
+        auth_context: Authentication context.
 
-    Raises:
-        conflict: when the pipeline already exists.
-        401 error: when not authorized to login
-        409 error: when trigger does not exist
-        422 error: when unable to validate input
+    Returns:
+        The created pipeline.
     """
     project = zen_store.get_project(parse_name_or_uuid(project_name_or_id))
     pipeline = pipeline.to_model(

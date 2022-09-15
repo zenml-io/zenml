@@ -352,7 +352,7 @@ class RestZenStore(BaseZenStore):
         """
 
     def update_stack_component(
-            self, component: ComponentModel
+        self, component: ComponentModel
     ) -> ComponentModel:
         """Update an existing stack component.
 

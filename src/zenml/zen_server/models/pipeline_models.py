@@ -21,7 +21,7 @@ from zenml.models import PipelineModel
 
 
 class CreatePipelineModel(BaseModel):
-    """Model used for all update operations on stacks."""
+    """Model used for all create operations on pipelines."""
 
     name: str = Field(title="The name of the pipeline.")
 
@@ -29,17 +29,20 @@ class CreatePipelineModel(BaseModel):
     configuration: Dict[str, str]
 
     def to_model(self, project: UUID, user: UUID) -> "PipelineModel":
-        """Applies user defined changes to this model.
+        """Create a `PipelineModel` from this object.
 
         Args:
             project: Project context of the pipeline.
             user: User context of the pipeline
+
+        Returns:
+            The created `PipelineModel`.
         """
         return PipelineModel(project=project, user=user, **self.dict())
 
 
 class UpdatePipelineModel(BaseModel):
-    """Model used for all update operations on stacks."""
+    """Model used for all update operations on pipelines."""
 
     name: Optional[str] = Field(title="The name of the pipeline.")
 
@@ -49,7 +52,14 @@ class UpdatePipelineModel(BaseModel):
     configuration: Optional[Dict[str, str]]
 
     def apply_to_model(self, pipeline: "PipelineModel") -> "PipelineModel":
-        """Applies user defined changes to this model."""
+        """Update a `PipelineModel` from this object.
+
+        Args:
+            pipeline: The `PipelineModel` to apply the changes to.
+
+        Returns:
+            The updated `PipelineModel`.
+        """
         for key, value in self.dict().items():
             if value is not None:
                 setattr(pipeline, key, value)

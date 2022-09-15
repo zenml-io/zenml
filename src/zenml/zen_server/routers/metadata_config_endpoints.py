@@ -38,10 +38,5 @@ async def get_metadata_config() -> str:
 
     Returns:
         The metadata config.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     return zen_store.get_metadata_config()

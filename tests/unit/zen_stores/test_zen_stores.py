@@ -201,9 +201,13 @@ def test_register_deregister_components(fresh_zen_store):
     for component_type in StackComponentType:
         component_type = StackComponentType(component_type)
         if component_type in required_components:
-            assert len(zen_store.list_stack_components(type=component_type)) == 1
+            assert (
+                len(zen_store.list_stack_components(type=component_type)) == 1
+            )
         else:
-            assert len(zen_store.list_stack_components(type=component_type)) == 0
+            assert (
+                len(zen_store.list_stack_components(type=component_type)) == 0
+            )
 
     # get a component
     orchestrator = zen_store.get_stack_component(
@@ -226,7 +230,11 @@ def test_register_deregister_components(fresh_zen_store):
         ComponentModel.parse_obj(new_orchestrator)
     )
     assert (
-        len(zen_store.list_stack_components(type=StackComponentType.ORCHESTRATOR))
+        len(
+            zen_store.list_stack_components(
+                type=StackComponentType.ORCHESTRATOR
+            )
+        )
         == 2
     )
 

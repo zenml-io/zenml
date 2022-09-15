@@ -45,12 +45,6 @@ async def get_step(step_id: str) -> StepRunModel:
 
     Returns:
         The step.
-
-    Raises:
-        not_found: If the step does not exist.
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     return zen_store.get_run_step(parse_name_or_uuid(step_id))
 
@@ -69,11 +63,6 @@ async def get_step_outputs(step_id: str) -> Dict[str, ArtifactModel]:
 
     Returns:
         All outputs of the step, mapping from output name to artifact model.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     return zen_store.get_run_step_outputs(parse_name_or_uuid(step_id))
 
@@ -92,10 +81,5 @@ async def get_step_inputs(step_id: str) -> Dict[str, ArtifactModel]:
 
     Returns:
         All inputs of the step, mapping from input name to artifact model.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     return zen_store.get_run_step_inputs(parse_name_or_uuid(step_id))

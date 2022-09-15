@@ -23,8 +23,8 @@ from zenml.models import ComponentModel
 from zenml.models.component_model import HydratedComponentModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import authorize
-from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 from zenml.zen_server.models.component_models import UpdateComponentModel
+from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
     prefix=VERSION_1 + STACK_COMPONENTS,
@@ -61,11 +61,6 @@ async def list_stack_components(
 
     Returns:
         List of stack components for a specific type.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     components_list = zen_store.list_stack_components(
         project_name_or_id=parse_name_or_uuid(project_name_or_id),
@@ -98,11 +93,6 @@ async def get_stack_component(
 
     Returns:
         The requested stack component.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     component = zen_store.get_stack_component(UUID(component_id))
     if hydrated:
@@ -118,7 +108,9 @@ async def get_stack_component(
 )
 @handle_exceptions
 async def update_stack_component(
-    component_id: str, component_update: UpdateComponentModel, hydrated: bool = True
+    component_id: str,
+    component_update: UpdateComponentModel,
+    hydrated: bool = True,
 ) -> Union[ComponentModel, HydratedComponentModel]:
     """Updates a stack component.
 
@@ -130,11 +122,6 @@ async def update_stack_component(
 
     Returns:
         Updated stack component.
-
-    Raises:
-        401 error: when not authorized to log-in
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     component_in_db = zen_store.get_stack_component(
         parse_name_or_uuid(component_id)
@@ -159,11 +146,6 @@ async def deregister_stack_component(component_id: str) -> None:
 
     Args:
         component_id: ID of the stack component.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     zen_store.delete_stack_component(UUID(component_id))
 
@@ -179,10 +161,5 @@ async def get_stack_component_types() -> List[str]:
 
     Returns:
         List of stack components.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     return StackComponentType.values()

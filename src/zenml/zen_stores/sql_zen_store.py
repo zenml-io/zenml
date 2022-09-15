@@ -346,7 +346,7 @@ class SqlZenStore(BaseZenStore):
             if existing_id_stack is not None:
                 raise StackExistsError(
                     f"Unable to register stack with name "
-                    f"'{stack.name}' and id '{stack.id}': " 
+                    f"'{stack.name}' and id '{stack.id}': "
                     f" Found an existing component with the same id."
                 )
 
@@ -504,7 +504,8 @@ class SqlZenStore(BaseZenStore):
     # ----------------
 
     @track(AnalyticsEvent.REGISTERED_STACK_COMPONENT)
-    def register_stack_component(self, component: ComponentModel
+    def register_stack_component(
+        self, component: ComponentModel
     ) -> ComponentModel:
         """Create a stack component.
 
@@ -540,13 +541,14 @@ class SqlZenStore(BaseZenStore):
                     f"'{user.name}' user."
                 )
             existing_id_component = session.exec(
-                select(StackComponentSchema)
-                .where(StackComponentSchema.id == component.id)
+                select(StackComponentSchema).where(
+                    StackComponentSchema.id == component.id
+                )
             ).first()
             if existing_id_component is not None:
                 raise StackComponentExistsError(
                     f"Unable to register '{component.type.value}' component "
-                    f"with name '{component.name}' and id '{component.id}': " 
+                    f"with name '{component.name}' and id '{component.id}': "
                     f" Found an existing component with the same id."
                 )
 
@@ -619,9 +621,7 @@ class SqlZenStore(BaseZenStore):
             # TODO: [server] prettify this
             if project_name_or_id:
                 project = self._get_project_schema(project_name_or_id)
-                query = query.where(
-                    StackComponentSchema.project == project.id
-                )
+                query = query.where(StackComponentSchema.project == project.id)
             if type:
                 query = query.where(StackComponentSchema.type == type)
             if flavor_name:

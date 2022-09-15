@@ -259,6 +259,9 @@ class UserModel(AnalyticsTrackedModelMixin):
         """Generates an access token.
 
         Generates an access token and returns it.
+
+        Returns:
+            The generated access token.
         """
         return JWTToken(
             token_type=JWTTokenType.ACCESS_TOKEN, user_id=self.id

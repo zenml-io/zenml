@@ -50,7 +50,11 @@ class AuthContext(BaseModel):
 
 
 def authentication_scheme() -> AuthScheme:
-    """Returns the authentication type."""
+    """Returns the authentication type.
+
+    Returns:
+        The authentication type.
+    """
     auth_scheme = AuthScheme(
         os.environ.get(ENV_ZENML_AUTH_TYPE, AuthScheme.OAUTH2_PASSWORD_BEARER)
     )
@@ -76,6 +80,7 @@ def authenticate_credentials(
         user_name_or_id: The username or user ID.
         password: The password.
         access_token: The access token.
+        activation_token: The activation token.
 
     Returns:
         The authenticated account details, if the account is valid, otherwise
@@ -170,7 +175,14 @@ def no_authentication() -> AuthContext:
 
 
 def authentication_provider() -> Callable[[], AuthContext]:
-    """Returns the authentication provider."""
+    """Returns the authentication provider.
+
+    Returns:
+        The authentication provider.
+
+    Raises:
+        ValueError: If the authentication scheme is not supported.
+    """
     auth_scheme = authentication_scheme()
     if auth_scheme == AuthScheme.NO_AUTH:
         return no_authentication
