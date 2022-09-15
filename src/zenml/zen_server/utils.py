@@ -115,9 +115,9 @@ def unprocessable(error: Exception) -> HTTPException:
 
 def handle_exceptions(f):
     @wraps(f)
-    def decorated(*args, **kwargs):
+    async def decorated(*args, **kwargs):
         try:
-            return f(*args, **kwargs)
+            return await f(*args, **kwargs)
         except NotAuthorizedError as error:
             raise not_authorized(error) from error
         except KeyError as error:
