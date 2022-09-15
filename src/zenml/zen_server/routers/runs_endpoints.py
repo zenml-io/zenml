@@ -15,7 +15,7 @@
 from typing import Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from fastapi.responses import FileResponse
 
 from zenml.constants import (
@@ -26,11 +26,10 @@ from zenml.constants import (
     STEPS,
     VERSION_1,
 )
-from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.models.pipeline_models import PipelineRunModel, StepRunModel
 from zenml.utils.uuid_utils import parse_optional_name_or_uuid
 from zenml.zen_server.auth import authorize
-from zenml.zen_server.utils import error_detail, error_response, zen_store
+from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
     prefix=VERSION_1 + RUNS,
@@ -45,6 +44,7 @@ router = APIRouter(
     response_model=List[PipelineRunModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def get_runs(
     project_name_or_id: Optional[str] = None,
     stack_id: Optional[str] = None,
@@ -67,18 +67,11 @@ async def get_runs(
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        return zen_store.list_runs(
-            project_name_or_id=parse_optional_name_or_uuid(project_name_or_id),
-            stack_id=stack_id,
-            pipeline_id=pipeline_id,
-        )
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    return zen_store.list_runs(
+        project_name_or_id=parse_optional_name_or_uuid(project_name_or_id),
+        stack_id=stack_id,
+        pipeline_id=pipeline_id,
+    )
 
 
 @router.get(
@@ -86,6 +79,7 @@ async def get_runs(
     response_model=PipelineRunModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def get_run(run_id: str) -> PipelineRunModel:
     """Get a specific pipeline run using its ID.
 
@@ -101,20 +95,14 @@ async def get_run(run_id: str) -> PipelineRunModel:
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        return zen_store.get_run(run_id=UUID(run_id))
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    return zen_store.get_run(run_id=UUID(run_id))
 
 
 @router.delete(
     "/{run_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def delete_run(run_id: str) -> None:
     """Delete a pipeline run using its ID.
 
@@ -126,14 +114,7 @@ async def delete_run(run_id: str) -> None:
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        zen_store.delete_run(run_id=UUID(run_id))
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    zen_store.delete_run(run_id=UUID(run_id))
 
 
 @router.get(
@@ -141,7 +122,10 @@ async def delete_run(run_id: str) -> None:
     response_model=str,  # TODO: Use file type / image type
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_run_dag(run_id: str) -> str:  # TODO: use file type / image type
+@handle_exceptions
+async def get_run_dag(
+    run_id: str,
+) -> FileResponse:  # TODO: use file type / image type
     """Get the DAG for a given pipeline run.
 
     Args:
@@ -155,17 +139,10 @@ async def get_run_dag(run_id: str) -> str:  # TODO: use file type / image type
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        image_object_path = zen_store.get_run_dag(
-            run_id=UUID(run_id)
-        )  # TODO: ZenStore should return a path
-        return FileResponse(image_object_path)
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    image_object_path = zen_store.get_run_dag(
+        run_id=UUID(run_id)
+    )  # TODO: ZenStore should return a path
+    return FileResponse(image_object_path)
 
 
 @router.get(
@@ -173,6 +150,7 @@ async def get_run_dag(run_id: str) -> str:  # TODO: use file type / image type
     response_model=List[StepRunModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def get_run_steps(run_id: str) -> List[StepRunModel]:
     """Get all steps for a given pipeline run.
 
@@ -187,14 +165,7 @@ async def get_run_steps(run_id: str) -> List[StepRunModel]:
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        return zen_store.list_run_steps(UUID(run_id))
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    return zen_store.list_run_steps(UUID(run_id))
 
 
 # TODO: Figure out what exactly gets returned from this
@@ -217,14 +188,7 @@ async def get_run_runtime_configuration(run_id: str) -> Dict:
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        return zen_store.get_run_runtime_configuration(run_id=UUID(run_id))
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    return zen_store.get_run_runtime_configuration(run_id=UUID(run_id))
 
 
 @router.get(
@@ -232,6 +196,7 @@ async def get_run_runtime_configuration(run_id: str) -> Dict:
     response_model=Dict,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def get_run_component_side_effects(
     run_id: str, component_id: str
 ) -> Dict:
@@ -250,14 +215,7 @@ async def get_run_component_side_effects(
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        return zen_store.get_run_component_side_effects(
-            run_id=UUID(run_id),
-            component_id=component_id,
-        )
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    return zen_store.get_run_component_side_effects(
+        run_id=UUID(run_id),
+        component_id=component_id,
+    )

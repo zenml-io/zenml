@@ -14,7 +14,7 @@
 """Endpoint definitions for projects."""
 from typing import List, Optional, Union
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from zenml.constants import (
     FLAVORS,
@@ -23,13 +23,6 @@ from zenml.constants import (
     STACK_COMPONENTS,
     STACKS,
     VERSION_1,
-)
-from zenml.exceptions import (
-    EntityExistsError,
-    NotAuthorizedError,
-    StackComponentExistsError,
-    StackExistsError,
-    ValidationError,
 )
 from zenml.models import (
     ComponentModel,
@@ -49,13 +42,7 @@ from zenml.zen_server.models.projects_models import (
     UpdateProjectModel,
 )
 from zenml.zen_server.models.stack_models import CreateStackModel
-from zenml.zen_server.utils import (
-    conflict,
-    error_detail,
-    error_response,
-    not_found,
-    zen_store,
-)
+from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
     prefix=VERSION_1 + PROJECTS,
@@ -70,6 +57,7 @@ router = APIRouter(
     response_model=List[ProjectModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def list_projects() -> List[ProjectModel]:
     """Lists all projects in the organization.
 
@@ -81,14 +69,7 @@ async def list_projects() -> List[ProjectModel]:
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        return zen_store.list_projects()
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    return zen_store.list_projects()
 
 
 @router.post(
@@ -96,6 +77,7 @@ async def list_projects() -> List[ProjectModel]:
     response_model=ProjectModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
+@handle_exceptions
 async def create_project(project: CreateProjectModel) -> ProjectModel:
     """Creates a project based on the requestBody.
 
@@ -113,16 +95,7 @@ async def create_project(project: CreateProjectModel) -> ProjectModel:
         409 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        return zen_store.create_project(project=project.to_model())
-    except EntityExistsError as error:
-        raise conflict(error) from error
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=409, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    return zen_store.create_project(project=project.to_model())
 
 
 @router.get(
@@ -130,6 +103,7 @@ async def create_project(project: CreateProjectModel) -> ProjectModel:
     response_model=ProjectModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def get_project(project_name_or_id: str) -> ProjectModel:
     """Get a project for given name.
 
@@ -147,16 +121,9 @@ async def get_project(project_name_or_id: str) -> ProjectModel:
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        return zen_store.get_project(
-            project_name_or_id=parse_name_or_uuid(project_name_or_id)
-        )
-    except KeyError as error:
-        raise not_found(error) from error
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    return zen_store.get_project(
+        project_name_or_id=parse_name_or_uuid(project_name_or_id)
+    )
 
 
 @router.put(
@@ -164,6 +131,7 @@ async def get_project(project_name_or_id: str) -> ProjectModel:
     response_model=ProjectModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def update_project(
     project_name_or_id: str, project_update: UpdateProjectModel
 ) -> ProjectModel:
@@ -184,28 +152,20 @@ async def update_project(
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        project_in_db = zen_store.get_project(
-            parse_name_or_uuid(project_name_or_id)
-        )
+    project_in_db = zen_store.get_project(
+        parse_name_or_uuid(project_name_or_id)
+    )
 
-        return zen_store.update_project(
-            project=project_update.apply_to_model(project_in_db),
-        )
-    except KeyError as error:
-        raise not_found(error) from error
-    # except NotAuthorizedError as error:
-    #     raise HTTPException(status_code=401, detail=error_detail(error))
-    # except KeyError as error:
-    #     raise HTTPException(status_code=404, detail=error_detail(error))
-    # except ValidationError as error:
-    #     raise HTTPException(status_code=422, detail=error_detail(error))
+    return zen_store.update_project(
+        project=project_update.apply_to_model(project_in_db),
+    )
 
 
 @router.delete(
     "/{project_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def delete_project(project_name_or_id: str) -> None:
     """Deletes a project.
 
@@ -217,18 +177,9 @@ async def delete_project(project_name_or_id: str) -> None:
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        zen_store.delete_project(
-            project_name_or_id=parse_name_or_uuid(project_name_or_id)
-        )
-    except KeyError as error:
-        raise not_found(error) from error
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    zen_store.delete_project(
+        project_name_or_id=parse_name_or_uuid(project_name_or_id)
+    )
 
 
 @router.get(
@@ -236,6 +187,7 @@ async def delete_project(project_name_or_id: str) -> None:
     response_model=Union[List[HydratedStackModel], List[StackModel]],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def get_project_stacks(
     project_name_or_id: str,
     user_name_or_id: Optional[str] = None,
@@ -264,23 +216,16 @@ async def get_project_stacks(
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        stacks_list = zen_store.list_stacks(
-            project_name_or_id=parse_name_or_uuid(project_name_or_id),
-            user_name_or_id=parse_name_or_uuid(user_name_or_id),
-            is_shared=is_shared,
-            name=stack_name,
-        )
-        if hydrated:
-            return [stack.to_hydrated_model() for stack in stacks_list]
-        else:
-            return stacks_list
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    stacks_list = zen_store.list_stacks(
+        project_name_or_id=parse_name_or_uuid(project_name_or_id),
+        user_name_or_id=parse_name_or_uuid(user_name_or_id),
+        is_shared=is_shared,
+        name=stack_name,
+    )
+    if hydrated:
+        return [stack.to_hydrated_model() for stack in stacks_list]
+    else:
+        return stacks_list
 
 
 @router.post(
@@ -288,6 +233,7 @@ async def get_project_stacks(
     response_model=Union[HydratedStackModel, StackModel],
     responses={401: error_response, 409: error_response, 422: error_response},
 )
+@handle_exceptions
 async def create_stack(
     project_name_or_id: str,
     stack: CreateStackModel,
@@ -311,30 +257,17 @@ async def create_stack(
         409 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        project = zen_store.get_project(parse_name_or_uuid(project_name_or_id))
-        full_stack = stack.to_model(
-            project=project.id,
-            user=auth_context.user.id,
-        )
+    project = zen_store.get_project(parse_name_or_uuid(project_name_or_id))
+    full_stack = stack.to_model(
+        project=project.id,
+        user=auth_context.user.id,
+    )
 
-        created_stack = zen_store.register_stack(stack=full_stack)
-        if hydrated:
-            return created_stack.to_hydrated_model()
-        else:
-            return created_stack
-    except (
-        StackExistsError,
-        StackComponentExistsError,
-        EntityExistsError,
-    ) as error:
-        raise conflict(error) from error
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    created_stack = zen_store.register_stack(stack=full_stack)
+    if hydrated:
+        return created_stack.to_hydrated_model()
+    else:
+        return created_stack
 
 
 @router.get(
@@ -342,6 +275,7 @@ async def create_stack(
     response_model=Union[List[ComponentModel], List[HydratedComponentModel]],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def list_project_stack_components(
     project_name_or_id: str,
     user_name_or_id: Optional[str] = None,
@@ -371,24 +305,17 @@ async def list_project_stack_components(
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        components_list = zen_store.list_stack_components(
-            project_name_or_id=parse_name_or_uuid(project_name_or_id),
-            user_name_or_id=parse_name_or_uuid(user_name_or_id),
-            type=component_type,
-            is_shared=is_shared,
-            name=component_name,
-        )
-        if hydrated:
-            return [comp.to_hydrated_model() for comp in components_list]
-        else:
-            return components_list
-    except KeyError as error:
-        raise not_found(error) from error
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    components_list = zen_store.list_stack_components(
+        project_name_or_id=parse_name_or_uuid(project_name_or_id),
+        user_name_or_id=parse_name_or_uuid(user_name_or_id),
+        type=component_type,
+        is_shared=is_shared,
+        name=component_name,
+    )
+    if hydrated:
+        return [comp.to_hydrated_model() for comp in components_list]
+    else:
+        return components_list
 
 
 @router.post(
@@ -396,8 +323,12 @@ async def list_project_stack_components(
     response_model=Union[ComponentModel, HydratedComponentModel],
     responses={401: error_response, 409: error_response, 422: error_response},
 )
+@handle_exceptions
 async def create_stack_component(
-    project_name_or_id: str, component: ComponentModel, hydrated: bool = True
+    project_name_or_id: str,
+    component: ComponentModel,
+    hydrated: bool = True,
+    auth_context: AuthContext = Depends(authorize),
 ) -> Union[ComponentModel, HydratedComponentModel]:
     """Creates a stack component.
 
@@ -413,24 +344,15 @@ async def create_stack_component(
         409 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        # TODO: [server] include the active user here
-        updated_component = zen_store.register_stack_component(
-            project_name_or_id=parse_name_or_uuid(project_name_or_id),
-            component=component,
-        )
-        if hydrated:
-            return updated_component.to_hydrated_model()
-        else:
-            return updated_component
-    except StackComponentExistsError as error:
-        raise conflict(error) from error
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=409, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    updated_component = zen_store.register_stack_component(
+        project_name_or_id=parse_name_or_uuid(project_name_or_id),
+        user_name_or_id=auth_context.user.id,
+        component=component,
+    )
+    if hydrated:
+        return updated_component.to_hydrated_model()
+    else:
+        return updated_component
 
 
 @router.get(
@@ -438,6 +360,7 @@ async def create_stack_component(
     response_model=List[FlavorModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def list_project_flavors(
     project_name_or_id: Optional[str] = None,
     component_type: Optional[str] = None,
@@ -458,18 +381,11 @@ async def list_project_flavors(
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        flavors_list = zen_store.list_flavors(
-            project_name_or_id=parse_name_or_uuid(project_name_or_id),
-            component_type=component_type,
-        )
-        return flavors_list
-    except KeyError as error:
-        raise not_found(error) from error
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    flavors_list = zen_store.list_flavors(
+        project_name_or_id=parse_name_or_uuid(project_name_or_id),
+        component_type=component_type,
+    )
+    return flavors_list
 
 
 @router.post(
@@ -477,9 +393,11 @@ async def list_project_flavors(
     response_model=FlavorModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
+@handle_exceptions
 async def create_flavor(
     project_name_or_id: str,
     flavor: FlavorModel,
+    auth_context: AuthContext = Depends(authorize),
 ) -> FlavorModel:
     """Creates a stack component flavor.
 
@@ -493,21 +411,12 @@ async def create_flavor(
         409 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        # TODO: [server] inject user here
-        created_flavor = zen_store.create_flavor(
-            project_name_or_id=parse_name_or_uuid(project_name_or_id),
-            flavor=flavor,
-        )
-        return created_flavor
-    except StackComponentExistsError as error:
-        raise conflict(error) from error
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=409, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    created_flavor = zen_store.create_flavor(
+        project_name_or_id=parse_name_or_uuid(project_name_or_id),
+        user_name_or_id=auth_context.user.id,
+        flavor=flavor,
+    )
+    return created_flavor
 
 
 @router.get(
@@ -515,6 +424,7 @@ async def create_flavor(
     response_model=Union[List[PipelineModel], List[HydratedPipelineModel]],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def get_project_pipelines(
     project_name_or_id: Optional[str] = None,
     user_name_or_id: Optional[str] = None,
@@ -539,21 +449,14 @@ async def get_project_pipelines(
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        pipelines_list = zen_store.list_pipelines(
-            project_name_or_id=parse_name_or_uuid(project_name_or_id),
-            user_name_or_id=parse_name_or_uuid(user_name_or_id),
-        )
-        if hydrated:
-            return [pipeline.to_hydrated_model() for pipeline in pipelines_list]
-        else:
-            return pipelines_list
-    except KeyError as error:
-        raise not_found(error) from error
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    pipelines_list = zen_store.list_pipelines(
+        project_name_or_id=parse_name_or_uuid(project_name_or_id),
+        user_name_or_id=parse_name_or_uuid(user_name_or_id),
+    )
+    if hydrated:
+        return [pipeline.to_hydrated_model() for pipeline in pipelines_list]
+    else:
+        return pipelines_list
 
 
 @router.post(
@@ -561,6 +464,7 @@ async def get_project_pipelines(
     response_model=Union[PipelineModel, HydratedPipelineModel],
     responses={401: error_response, 409: error_response, 422: error_response},
 )
+@handle_exceptions
 async def create_pipeline(
     project_name_or_id: str,
     pipeline: CreatePipelineModel,
@@ -581,98 +485,13 @@ async def create_pipeline(
         409 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        project = zen_store.get_project(parse_name_or_uuid(project_name_or_id))
-        pipeline = pipeline.to_model(
-            project=project.id,
-            user=auth_context.user.id,
-        )
-        created_pipeline = zen_store.create_pipeline(pipeline=pipeline)
-        if hydrated:
-            return created_pipeline.to_hydrated_model()
-        else:
-            return created_pipeline
-    except PipelineExistsError as error:
-        raise conflict(error) from error
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=409, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
-
-
-#
-# @router.get(
-#     "/{project_name_or_id}" + REPOSITORIES,
-#     response_model=List[CodeRepositoryModel],
-#     responses={401: error_response, 404: error_response, 422: error_response},
-# )
-# async def get_project_repositories(
-#     project_name_or_id: str,
-# ) -> List[CodeRepositoryModel]:
-#     """Gets repositories defined for a specific project.
-#
-#     # noqa: DAR401
-#
-#     Args:
-#         project_name_or_id: Name or ID of the project.
-#
-#     Returns:
-#         All repositories within the project.
-#
-#     Raises:
-#         not_found: when the project does not exist.
-#         401 error: when not authorized to login
-#         404 error: when trigger does not exist
-#         422 error: when unable to validate input
-#     """
-#     try:
-#         return zen_store.list_repositories(
-#             project_name_or_id=parse_name_or_uuid(project_name_or_id)
-#         )
-#     except KeyError as error:
-#         raise not_found(error) from error
-#     except NotAuthorizedError as error:
-#         raise HTTPException(status_code=401, detail=error_detail(error))
-#     except KeyError as error:
-#         raise HTTPException(status_code=404, detail=error_detail(error))
-#     except ValidationError as error:
-#         raise HTTPException(status_code=422, detail=error_detail(error))
-#
-#
-# @router.post(
-#     "/{project_name_or_id}" + REPOSITORIES,
-#     response_model=CodeRepositoryModel,
-#     responses={401: error_response, 409: error_response, 422: error_response},
-# )
-# async def connect_project_repository(
-#     project_name_or_id: str, repository: CodeRepositoryModel
-# ) -> CodeRepositoryModel:
-#     """Attach or connect a repository to a project.
-#
-#     # noqa: DAR401
-#
-#     Args:
-#         project_name_or_id: Name or ID of the project.
-#
-#     Returns:
-#         The connected repository.
-#
-#     Raises:
-#         not_found: when the project does not exist.
-#         401 error: when not authorized to login
-#         409 error: when trigger does not exist
-#         422 error: when unable to validate input
-#     """
-#     try:
-#         return zen_store.connect_project_repository(
-#             project_name_or_id=parse_name_or_uuid(project_name_or_id),
-#             repository=repository,
-#         )
-#     except KeyError as error:
-#         raise not_found(error) from error
-#     except NotAuthorizedError as error:
-#         raise HTTPException(status_code=401, detail=error_detail(error))
-#     except ValidationError as error:
-#         raise HTTPException(status_code=422, detail=error_detail(error))
+    project = zen_store.get_project(parse_name_or_uuid(project_name_or_id))
+    pipeline = pipeline.to_model(
+        project=project.id,
+        user=auth_context.user.id,
+    )
+    created_pipeline = zen_store.create_pipeline(pipeline=pipeline)
+    if hydrated:
+        return created_pipeline.to_hydrated_model()
+    else:
+        return created_pipeline

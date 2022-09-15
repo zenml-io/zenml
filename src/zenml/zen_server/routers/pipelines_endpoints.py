@@ -15,22 +15,15 @@
 from typing import Dict, List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from zenml.constants import PIPELINES, RUNS, VERSION_1
-from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.models import PipelineRunModel
 from zenml.models.pipeline_models import HydratedPipelineModel, PipelineModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.models import UpdatePipelineModel
-from zenml.zen_server.utils import (
-    conflict,
-    error_detail,
-    error_response,
-    not_found,
-    zen_store,
-)
+from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
     prefix=VERSION_1 + PIPELINES,
@@ -45,6 +38,7 @@ router = APIRouter(
     response_model=Union[List[PipelineModel], List[HydratedPipelineModel]],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def get_pipelines(
     project_name_or_id: Optional[str] = None,
     user_name_or_id: Optional[str] = None,
@@ -57,6 +51,7 @@ async def get_pipelines(
         user_name_or_id: Optionally filter by name or ID of the user.
         hydrated: Defines if stack components, users and projects will be
                   included by reference (FALSE) or as model (TRUE)
+
     Returns:
         List of pipeline objects.
 
@@ -65,17 +60,14 @@ async def get_pipelines(
         not_found: when user does not exist
         validation error: when unable to validate credentials
     """
-    try:
-        pipelines_list = zen_store.list_pipelines(
-            project_name_or_id=parse_name_or_uuid(project_name_or_id),
-            user_name_or_id=parse_name_or_uuid(user_name_or_id),
-        )
-        if hydrated:
-            return [pipeline.to_hydrated_model() for pipeline in pipelines_list]
-        else:
-            return pipelines_list
-    except KeyError as e:
-        raise not_found(e) from e
+    pipelines_list = zen_store.list_pipelines(
+        project_name_or_id=parse_name_or_uuid(project_name_or_id),
+        user_name_or_id=parse_name_or_uuid(user_name_or_id),
+    )
+    if hydrated:
+        return [pipeline.to_hydrated_model() for pipeline in pipelines_list]
+    else:
+        return pipelines_list
 
 
 @router.get(
@@ -83,6 +75,7 @@ async def get_pipelines(
     response_model=Union[PipelineModel, HydratedPipelineModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def get_pipeline(
     pipeline_id: str, hydrated: bool = True
 ) -> Union[PipelineModel, HydratedPipelineModel]:
@@ -101,18 +94,11 @@ async def get_pipeline(
         not_found: when user does not exist
         validation error: when unable to validate credentials
     """
-    try:
-        pipeline = zen_store.get_pipeline(pipeline_id=UUID(pipeline_id))
-        if hydrated:
-            return pipeline.to_hydrated_model()
-        else:
-            return pipeline
-    except NotAuthorizedError as error:
-        raise conflict(error) from error
-    except KeyError as error:
-        raise not_found(error) from error
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    pipeline = zen_store.get_pipeline(pipeline_id=UUID(pipeline_id))
+    if hydrated:
+        return pipeline.to_hydrated_model()
+    else:
+        return pipeline
 
 
 @router.put(
@@ -120,6 +106,7 @@ async def get_pipeline(
     response_model=Union[PipelineModel, HydratedPipelineModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def update_pipeline(
     pipeline_id: str,
     pipeline_update: UpdatePipelineModel,
@@ -142,28 +129,22 @@ async def update_pipeline(
         not_found: when user does not exist
         validation error: when unable to validate credentials
     """
-    try:
-        pipeline_in_db = zen_store.get_pipeline(UUID(pipeline_id))
+    pipeline_in_db = zen_store.get_pipeline(UUID(pipeline_id))
 
-        updated_pipeline = zen_store.update_pipeline(
-            pipeline=pipeline_update.apply_to_model(pipeline_in_db)
-        )
-        if hydrated:
-            return updated_pipeline.to_hydrated_model()
-        else:
-            return updated_pipeline
-    except NotAuthorizedError as error:
-        raise conflict(error) from error
-    except KeyError as error:
-        raise not_found(error) from error
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    updated_pipeline = zen_store.update_pipeline(
+        pipeline=pipeline_update.apply_to_model(pipeline_in_db)
+    )
+    if hydrated:
+        return updated_pipeline.to_hydrated_model()
+    else:
+        return updated_pipeline
 
 
 @router.delete(
     "/{pipeline_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def delete_pipeline(pipeline_id: str) -> None:
     """Deletes a specific pipeline.
 
@@ -175,14 +156,7 @@ async def delete_pipeline(pipeline_id: str) -> None:
         not_found: when user does not exist
         validation error: when unable to validate credentials
     """
-    try:
-        zen_store.delete_pipeline(pipeline_id=UUID(pipeline_id))
-    except NotAuthorizedError as error:
-        raise conflict(error) from error
-    except KeyError as error:
-        raise not_found(error) from error
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    zen_store.delete_pipeline(pipeline_id=UUID(pipeline_id))
 
 
 @router.get(
@@ -190,6 +164,7 @@ async def delete_pipeline(pipeline_id: str) -> None:
     response_model=List[Dict],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def get_pipeline_runs(pipeline_id: str) -> List[PipelineRunModel]:
     """Gets a list of runs for a specific pipeline.
 
@@ -204,20 +179,14 @@ async def get_pipeline_runs(pipeline_id: str) -> List[PipelineRunModel]:
         not_found: when user does not exist
         validation error: when unable to validate credentials
     """
-    try:
-        return zen_store.list_runs(pipeline_id=UUID(pipeline_id))
-    except NotAuthorizedError as error:
-        raise conflict(error) from error
-    except KeyError as error:
-        raise not_found(error) from error
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    return zen_store.list_runs(pipeline_id=UUID(pipeline_id))
 
 
 @router.post(
     "/{pipeline_id}" + RUNS,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
+@handle_exceptions
 async def create_pipeline_run(
     pipeline_id: str, pipeline_run: PipelineRunModel
 ) -> PipelineRunModel:
@@ -236,12 +205,5 @@ async def create_pipeline_run(
         conflict: when user does not exist
         validation error: when unable to validate credentials
     """
-    try:
-        pipeline_run.pipeline_id = pipeline_id
-        return zen_store.create_run(pipeline_run=pipeline_run)
-    except NotAuthorizedError as error:
-        raise conflict(error) from error
-    except KeyError as error:
-        raise conflict(error) from error
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    pipeline_run.pipeline_id = pipeline_id
+    return zen_store.create_run(pipeline_run=pipeline_run)

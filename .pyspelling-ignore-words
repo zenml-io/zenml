@@ -35,6 +35,7 @@ ArtifactView
 AssertionError
 AssumeRole
 AttributeError
+AuthorizationException
 AutoML
 AutoTokenizer
 AutoTokenizercreds
@@ -257,6 +258,7 @@ Itemwise
 Iterable
 JSONDecodeError
 Jupyter
+JWT
 KFP
 KFPCompiler
 KMS
@@ -965,6 +967,7 @@ jsonified
 jsonpath
 jsonschema
 jupyter
+jwt
 kaggle
 keras
 keyRings
@@ -1262,6 +1265,7 @@ uncomment
 unconfigured
 unencrypted
 unencrypted
+unhashed
 uninstallation
 unix
 unlinking

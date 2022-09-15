@@ -27,7 +27,7 @@ from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 
 class ProjectModel(AnalyticsTrackedModelMixin):
-    """Domain Model describing the Project"""
+    """Domain Model describing the Project."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "id",

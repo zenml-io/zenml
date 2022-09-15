@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Endpoint definitions for authentication (login)."""
+
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -30,9 +32,8 @@ router = APIRouter(
 class PasswordRequestForm:
     """OAuth2 password grant type request form.
 
-    This form is similar to fastapi.security.OAuth2PasswordRequestForm, with
+    This form is similar to `fastapi.security.OAuth2PasswordRequestForm`, with
     the single difference being that it also allows an empty password.
-
     """
 
     def __init__(
@@ -44,6 +45,22 @@ class PasswordRequestForm:
         client_id: Optional[str] = Form(None),
         client_secret: Optional[str] = Form(None),
     ):
+        """Initializes the form.
+
+        Args:
+            grant_type: The grant type.
+            username: The username.
+            password: The password.
+            scope: The scope.
+            client_id: The client ID.
+            client_secret: The client secret.
+        """
+        self.grant_type = grant_type
+        self.username = username
+        self.password = password
+        self.scope = scope
+        self.client_id = client_id
+        self.client_secret = client_secret
         self.grant_type = grant_type
         self.username = username
         self.password = password
@@ -57,10 +74,27 @@ class PasswordRequestForm:
     responses={401: error_response},
 )
 async def token(auth_form_data: PasswordRequestForm = Depends()):
+    """Returns an access token for the given user.
+
+    Args:
+        auth_form_data: The authentication form data.
+
+    Returns:
+        An access token.
+
+    Raises:
+        401 error: when not authorized to login
+    """
     auth_context = authenticate_credentials(
         user_name_or_id=auth_form_data.username,
         password=auth_form_data.password,
     )
+    if not auth_context:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+        )
+    return auth_context
     if not auth_context:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

@@ -13,13 +13,20 @@
 #  permissions and limitations under the License.
 """Util functions for the ZenServer."""
 
+from functools import wraps
 from typing import Any, List
 
 from fastapi import HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StoreType
+from zenml.exceptions import (
+    EntityExistsError,
+    NotAuthorizedError,
+    StackComponentExistsError,
+    StackExistsError,
+)
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 # TODO(Stefan): figure out how not to populate the ZenStore with default
@@ -58,6 +65,18 @@ def error_detail(error: Exception) -> List[str]:
     return [type(error).__name__] + [str(a) for a in error.args]
 
 
+def not_authorized(error: Exception) -> HTTPException:
+    """Convert an Exception to a HTTP 401 response.
+
+    Args:
+        error: Exception to convert.
+
+    Returns:
+        HTTPException with status code 401.
+    """
+    return HTTPException(status_code=401, detail=error_detail(error))
+
+
 def not_found(error: Exception) -> HTTPException:
     """Convert an Exception to a HTTP 404 response.
 
@@ -80,3 +99,36 @@ def conflict(error: Exception) -> HTTPException:
         HTTPException with status code 409.
     """
     return HTTPException(status_code=409, detail=error_detail(error))
+
+
+def unprocessable(error: Exception) -> HTTPException:
+    """Convert an Exception to a HTTP 409 response.
+
+    Args:
+        error: Exception to convert.
+
+    Returns:
+        HTTPException with status code 422.
+    """
+    return HTTPException(status_code=422, detail=error_detail(error))
+
+
+def handle_exceptions(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except NotAuthorizedError as error:
+            raise not_authorized(error) from error
+        except KeyError as error:
+            raise not_found(error) from error
+        except (
+            StackExistsError,
+            StackComponentExistsError,
+            EntityExistsError,
+        ) as error:
+            raise conflict(error) from error
+        except ValidationError as error:
+            raise unprocessable(error) from error
+
+    return decorated

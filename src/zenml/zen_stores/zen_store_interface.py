@@ -1079,13 +1079,10 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def update_run(
-        self, run_id: UUID, run: PipelineRunModel
-    ) -> PipelineRunModel:
+    def update_run(self, run: PipelineRunModel) -> PipelineRunModel:
         """Updates a pipeline run.
 
         Args:
-            run_id: The ID of the pipeline run to update.
             run: The pipeline run to use for the update.
 
         Returns:
