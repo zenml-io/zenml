@@ -1004,24 +1004,6 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_run_in_project(
-        self, run_name: str, project_name_or_id: Union[str, UUID]
-    ) -> PipelineRunModel:
-        """Get a pipeline run with a given name in a project.
-
-        Args:
-            run_name: Name of the pipeline run.
-            project_name_or_id: ID or name of the project.
-
-        Returns:
-            The pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-
-    # TODO: figure out args and output for this
-    @abstractmethod
     def get_run_dag(self, run_id: UUID) -> str:
         """Gets the DAG for a pipeline run.
 
@@ -1060,6 +1042,7 @@ class ZenStoreInterface(ABC):
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[UUID] = None,
+        run_name: Optional[str] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[UUID] = None,
         unlisted: bool = False,
@@ -1069,6 +1052,7 @@ class ZenStoreInterface(ABC):
         Args:
             project_name_or_id: If provided, only return runs for this project.
             stack_id: If provided, only return runs for this stack.
+            run_name: Run name if provided
             user_name_or_id: If provided, only return runs for this user.
             pipeline_id: If provided, only return runs for this pipeline.
             unlisted: If True, only return unlisted runs that are not

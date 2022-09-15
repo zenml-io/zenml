@@ -118,9 +118,9 @@ class PipelineRunModel(AnalyticsTrackedModelMixin):
     """Domain Model representing a pipeline run."""
 
     id: UUID = Field(default_factory=uuid4, title="The unique id of the run.")
+
     name: str = Field(title="The name of the pipeline.")
 
-    user: UUID  # might not be set for scheduled runs
     stack_id: Optional[UUID]  # might not be set for scheduled runs
     pipeline_id: Optional[UUID]  # might not be set for scheduled runs
 
@@ -131,6 +131,7 @@ class PipelineRunModel(AnalyticsTrackedModelMixin):
 
     # ID in MLMD - needed for some metadata store methods
     mlmd_id: Optional[int]
+    user: Optional[UUID]  # might not be set for scheduled runs
 
     creation_date: datetime = Field(
         default_factory=datetime.now,

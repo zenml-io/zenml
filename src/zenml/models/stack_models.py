@@ -60,6 +60,25 @@ class StackModel(AnalyticsTrackedModelMixin):
         title="The time at which the stack was registered.",
     )
 
+    class Config:
+        """Example of a json-serialized instance."""
+
+        schema_extra = {
+            "example": {
+                "id": "cbc7d4fd-8c88-49dd-ab12-d998e4fafe22",
+                "name": "default",
+                "description": "",
+                "components": {
+                    "artifact_store": ["55a32b96-7995-4622-8474-12e7c94f3054"],
+                    "orchestrator": ["67441c8b-e4e7-439b-bad3-e5883659d387"],
+                },
+                "is_shared": "False",
+                "project": "c5600721-8432-436d-ac59-a47aec6dec0f",
+                "user": "ae1fd828-fb3b-48e8-a31a-f3ecb3cdb294",
+                "creation_date": "2022-09-15T11:43:29.994722",
+            }
+        }
+
     @property
     def is_valid(self):
         """Check if the stack is valid.
@@ -120,30 +139,60 @@ class HydratedStackModel(StackModel):
     )
 
     class Config:
-        """Pydantic config."""
+        """Example of a json-serialized instance."""
 
         schema_extra = {
             "example": {
-                "id": "8d0acbc3-c51a-452c-bda3-e1b5469f79fd",
-                "name": "prd_stack",
-                "description": "A stack for running pipelines in production.",
+                "id": "cbc7d4fd-8c88-49dd-ab12-d998e4fafe22",
+                "name": "default",
+                "description": "",
                 "components": {
-                    "alerter": [{}, {}],
-                    "orchestrator": [{}],
+                    "artifact_store": [
+                        {
+                            "id": "55a32b96-7995-4622-8474-12e7c94f3054",
+                            "name": "default",
+                            "type": "artifact_store",
+                            "flavor": "local",
+                            "configuration": {
+                                "path": "../zenml/local_stores/default_local_store"
+                            },
+                            "user": "ae1fd828-fb3b-48e8-a31a-f3ecb3cdb294",
+                            "is_shared": "False",
+                            "project": "c5600721-8432-436d-ac59-a47aec6dec0f",
+                            "creation_date": "2022-09-15T11:43:29.987627",
+                        }
+                    ],
+                    "orchestrator": [
+                        {
+                            "id": "67441c8b-e4e7-439b-bad3-e5883659d387",
+                            "name": "default",
+                            "type": "orchestrator",
+                            "flavor": "local",
+                            "configuration": {},
+                            "user": "ae1fd828-fb3b-48e8-a31a-f3ecb3cdb294",
+                            "is_shared": "False",
+                            "project": "c5600721-8432-436d-ac59-a47aec6dec0f",
+                            "creation_date": "2022-09-15T11:43:29.976439",
+                        }
+                    ],
                 },
-                "is_shared": "True",
+                "is_shared": "False",
                 "project": {
-                    "id": "da63ad01-9117-4082-8a99-557ca5a7d324",
+                    "id": "c5600721-8432-436d-ac59-a47aec6dec0f",
                     "name": "default",
-                    "description": "Best project.",
-                    "creation_date": "2022-09-13T16:03:52.317039",
+                    "description": "",
+                    "creation_date": "2022-09-15T11:43:29.622882",
                 },
                 "user": {
-                    "id": "43d73159-04fe-418b-b604-b769dd5b771b",
+                    "id": "ae1fd828-fb3b-48e8-a31a-f3ecb3cdb294",
                     "name": "default",
-                    "creation_date": "2022-09-13T16:03:52.329928",
+                    "full_name": "",
+                    "email": "",
+                    "active": "True",
+                    "created_at": "2022-09-15T11:43:29.955116",
+                    "updated_at": "2022-09-15T11:43:29.955121",
                 },
-                "creation_date": "2022-08-12T07:12:45.931Z",
+                "creation_date": "2022-09-15T11:43:29.994722",
             }
         }
 
