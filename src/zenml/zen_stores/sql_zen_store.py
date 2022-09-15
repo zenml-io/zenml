@@ -1965,13 +1965,10 @@ class SqlZenStore(BaseZenStore):
             runs = session.exec(query).all()
             return [run.to_model() for run in runs]
 
-    def update_run(
-        self, run_id: UUID, run: PipelineRunModel
-    ) -> PipelineRunModel:
+    def update_run(self, run: PipelineRunModel) -> PipelineRunModel:
         """Updates a pipeline run.
 
         Args:
-            run_id: The ID of the pipeline run to update.
             run: The pipeline run to use for the update.
 
         Returns:
@@ -1983,11 +1980,11 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if pipeline run with the given ID exists
             existing_run = session.exec(
-                select(PipelineRunSchema).where(PipelineRunSchema.id == run_id)
+                select(PipelineRunSchema).where(PipelineRunSchema.id == run.id)
             ).first()
             if existing_run is None:
                 raise KeyError(
-                    f"Unable to update pipeline run with ID {run_id}: "
+                    f"Unable to update pipeline run with ID {run.id}: "
                     f"No pipeline run with this ID found."
                 )
 

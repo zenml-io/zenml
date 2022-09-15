@@ -15,18 +15,13 @@
 
 from typing import Dict
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from zenml.constants import INPUTS, OUTPUTS, STEPS, VERSION_1
-from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.models.pipeline_models import ArtifactModel, StepRunModel
+from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import authorize
-from zenml.zen_server.utils import (
-    error_detail,
-    error_response,
-    not_found,
-    zen_store,
-)
+from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
     prefix=VERSION_1 + STEPS,
@@ -41,6 +36,7 @@ router = APIRouter(
     response_model=StepRunModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def get_step(step_id: str) -> StepRunModel:
     """Get one specific step.
 
@@ -56,14 +52,7 @@ async def get_step(step_id: str) -> StepRunModel:
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        return zen_store.get_run_step(step_id)
-    except KeyError as e:
-        raise not_found(e) from e
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    return zen_store.get_run_step(parse_name_or_uuid(step_id))
 
 
 @router.get(
@@ -71,6 +60,7 @@ async def get_step(step_id: str) -> StepRunModel:
     response_model=Dict[str, ArtifactModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def get_step_outputs(step_id: str) -> Dict[str, ArtifactModel]:
     """Get the outputs of a specific step.
 
@@ -85,14 +75,7 @@ async def get_step_outputs(step_id: str) -> Dict[str, ArtifactModel]:
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        return zen_store.get_run_step_outputs(step_id)
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as e:
-        raise not_found(error_detail(e)) from e
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    return zen_store.get_run_step_outputs(parse_name_or_uuid(step_id))
 
 
 @router.get(
@@ -100,6 +83,7 @@ async def get_step_outputs(step_id: str) -> Dict[str, ArtifactModel]:
     response_model=Dict[str, ArtifactModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def get_step_inputs(step_id: str) -> Dict[str, ArtifactModel]:
     """Get the inputs of a specific step.
 
@@ -114,11 +98,4 @@ async def get_step_inputs(step_id: str) -> Dict[str, ArtifactModel]:
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        return zen_store.get_run_step_inputs(step_id)
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as e:
-        raise not_found(error_detail(e)) from e
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    return zen_store.get_run_step_inputs(parse_name_or_uuid(step_id))
