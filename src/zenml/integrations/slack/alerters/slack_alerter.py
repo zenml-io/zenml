@@ -14,13 +14,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Any, ClassVar, List, Optional
+from typing import Any, List, Optional, Type
 
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from slack_sdk.rtm import RTMClient
 
-from zenml.alerter.base_alerter import BaseAlerter
+from zenml.alerter.base_alerter import (
+    BaseAlerter,
+    BaseAlerterConfig,
+    BaseAlerterFlavor,
+)
 from zenml.integrations.slack import SLACK_ALERTER_FLAVOR
 from zenml.logger import get_logger
 from zenml.steps.step_interfaces.base_alerter_step import BaseAlerterStepConfig
@@ -33,7 +37,7 @@ DEFAULT_APPROVE_MSG_OPTIONS = ["approve", "LGTM", "ok", "yes"]
 DEFAULT_DISAPPROVE_MSG_OPTIONS = ["decline", "disapprove", "no", "reject"]
 
 
-class SlackAlerterConfig(BaseAlerterStepConfig):
+class SlackAlerterStepConfig(BaseAlerterStepConfig):
     """Slack alerter config."""
 
     # The ID of the Slack channel to use for communication.
@@ -46,18 +50,22 @@ class SlackAlerterConfig(BaseAlerterStepConfig):
     disapprove_msg_options: Optional[List[str]] = None
 
 
-class SlackAlerter(BaseAlerter):
-    """Send messages to Slack channels.
+class SlackAlerterConfig(BaseAlerterConfig):
+    """Slack alerter config.
 
     Attributes:
         slack_token: The Slack token tied to the Slack account to be used.
+        default_slack_channel_id: The ID of the Slack channel to use for
+            communication if no channel ID is provided in the step config.
+
     """
 
     slack_token: str = SecretField()
     default_slack_channel_id: Optional[str] = None
 
-    # Class Configuration
-    FLAVOR: ClassVar[str] = SLACK_ALERTER_FLAVOR
+
+class SlackAlerter(BaseAlerter):
+    """Send messages to Slack channels."""
 
     def _get_channel_id(self, config: Optional[BaseAlerterStepConfig]) -> str:
         """Get the Slack channel ID to be used by post/ask.
@@ -78,13 +86,13 @@ class SlackAlerter(BaseAlerter):
                 "The config object must be of type `BaseAlerterStepConfig`."
             )
         if (
-            isinstance(config, SlackAlerterConfig)
+            isinstance(config, SlackAlerterStepConfig)
             and hasattr(config, "slack_channel_id")
             and config.slack_channel_id is not None
         ):
             return config.slack_channel_id
-        if self.default_slack_channel_id is not None:
-            return self.default_slack_channel_id
+        if self.config.default_slack_channel_id is not None:
+            return self.config.default_slack_channel_id
         raise ValueError(
             "Neither the `SlackAlerterConfig.slack_channel_id` in the runtime "
             "configuration, nor the `default_slack_channel_id` in the alerter "
@@ -103,7 +111,7 @@ class SlackAlerter(BaseAlerter):
             Set of messages that lead to approval in alerter.ask().
         """
         if (
-            isinstance(config, SlackAlerterConfig)
+            isinstance(config, SlackAlerterStepConfig)
             and hasattr(config, "approve_msg_options")
             and config.approve_msg_options is not None
         ):
@@ -122,7 +130,7 @@ class SlackAlerter(BaseAlerter):
             Set of messages that lead to disapproval in alerter.ask().
         """
         if (
-            isinstance(config, SlackAlerterConfig)
+            isinstance(config, SlackAlerterStepConfig)
             and hasattr(config, "disapprove_msg_options")
             and config.disapprove_msg_options is not None
         ):
@@ -142,7 +150,7 @@ class SlackAlerter(BaseAlerter):
             True if operation succeeded, else False
         """
         slack_channel_id = self._get_channel_id(config=config)
-        client = WebClient(token=self.slack_token)
+        client = WebClient(token=self.config.slack_token)
         try:
             response = client.chat_postMessage(
                 channel=slack_channel_id,
@@ -166,7 +174,7 @@ class SlackAlerter(BaseAlerter):
         Returns:
             True if a user approved the operation, else False
         """
-        rtm = RTMClient(token=self.slack_token)
+        rtm = RTMClient(token=self.config.slack_token)
         slack_channel_id = self._get_channel_id(config=config)
 
         approved = False  # will be modified by handle()
@@ -207,3 +215,19 @@ class SlackAlerter(BaseAlerter):
         rtm.start()
 
         return approved
+
+
+class SlackAlerterFlavor(BaseAlerterFlavor):
+    """Slack alerter flavor."""
+
+    @property
+    def name(self) -> str:
+        return SLACK_ALERTER_FLAVOR
+
+    @property
+    def config_class(self) -> Type[SlackAlerterConfig]:
+        return SlackAlerterConfig
+
+    @property
+    def implementation_class(self) -> Type[SlackAlerter]:
+        return SlackAlerter

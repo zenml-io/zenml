@@ -16,14 +16,14 @@
 from zenml.alerter.alerter_utils import get_active_alerter
 from zenml.integrations.slack.alerters.slack_alerter import (
     SlackAlerter,
-    SlackAlerterConfig,
+    SlackAlerterStepConfig,
 )
 from zenml.steps import StepContext, step
 
 
 @step
 def slack_alerter_ask_step(
-    config: SlackAlerterConfig, context: StepContext, message: str
+    config: SlackAlerterStepConfig, context: StepContext, message: str
 ) -> bool:
     """Posts a message to the Slack alerter component and waits for approval.
 

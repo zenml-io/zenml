@@ -79,5 +79,6 @@ class BaseFeatureStoreFlavor(Flavor):
         return BaseFeatureStoreConfig
 
     @property
+    @abstractmethod
     def implementation_class(self) -> Type[BaseFeatureStore]:
         return BaseFeatureStore
