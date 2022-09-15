@@ -962,23 +962,6 @@ class RestZenStore(BaseZenStore):
             KeyError: if the pipeline run doesn't exist.
         """
 
-    def get_run_in_project(
-        self, run_name: str, project_name_or_id: Union[str, UUID]
-    ) -> PipelineRunModel:
-        """Get a pipeline run with a given name in a project.
-
-        Args:
-            run_name: Name of the pipeline run.
-            project_name_or_id: ID or name of the project.
-
-        Returns:
-            The pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-
-    # TODO: figure out args and output for this
     def get_run_dag(self, run_id: UUID) -> str:
         """Gets the DAG for a pipeline run.
 
@@ -1015,6 +998,7 @@ class RestZenStore(BaseZenStore):
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[UUID] = None,
+        run_name: Optional[str] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[UUID] = None,
         unlisted: bool = False,
@@ -1024,6 +1008,7 @@ class RestZenStore(BaseZenStore):
         Args:
             project_name_or_id: If provided, only return runs for this project.
             stack_id: If provided, only return runs for this stack.
+            run_name: Run name if provided
             user_name_or_id: If provided, only return runs for this user.
             pipeline_id: If provided, only return runs for this pipeline.
             unlisted: If True, only return unlisted runs that are not
@@ -1034,12 +1019,11 @@ class RestZenStore(BaseZenStore):
         """
 
     def update_run(
-        self, run_id: UUID, run: PipelineRunModel
+        self, run: PipelineRunModel
     ) -> PipelineRunModel:
         """Updates a pipeline run.
 
         Args:
-            run_id: The ID of the pipeline run to update.
             run: The pipeline run to use for the update.
 
         Returns:

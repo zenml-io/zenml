@@ -160,10 +160,10 @@ class PipelineRunSchema(SQLModel, table=True):
         self.name = model.name
         self.runtime_configuration = json.dumps(model.runtime_configuration)
         self.git_sha = model.git_sha
-        assert model.zenml_version is not None
-        self.zenml_version = model.zenml_version
-        assert model.mlmd_id is not None
-        self.mlmd_id = model.mlmd_id
+        if model.zenml_version is not None:
+            self.zenml_version = model.zenml_version
+        if model.mlmd_id is not None:
+            self.mlmd_id = model.mlmd_id
         return self
 
     def to_model(self) -> PipelineRunModel:

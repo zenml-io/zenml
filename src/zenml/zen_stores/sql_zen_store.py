@@ -1715,11 +1715,11 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if pipeline with the given ID exists
             existing_pipeline = session.exec(
-                select(PipelineSchema).where(PipelineSchema.id == pipeline_id)
+                select(PipelineSchema).where(PipelineSchema.id == pipeline.id)
             ).first()
             if existing_pipeline is None:
                 raise KeyError(
-                    f"Unable to update pipeline with ID {pipeline_id}: "
+                    f"Unable to update pipeline with ID {pipeline.id}: "
                     f"No pipeline with this ID found."
                 )
 
@@ -1790,15 +1790,25 @@ class SqlZenStore(BaseZenStore):
         # TODO: fix for when creating without associating to a project
         with Session(self.engine) as session:
             # Check if pipeline run already exists
-            existing_run = session.exec(
+            existing_domain_run = session.exec(
                 select(PipelineRunSchema).where(
                     PipelineRunSchema.name == pipeline_run.name
                 )
             ).first()
-            if existing_run is not None:
+            if existing_domain_run is not None:
                 raise EntityExistsError(
                     f"Unable to create pipeline run {pipeline_run.name}: "
                     f"A pipeline run with this name already exists."
+                )
+            existing_id_run = session.exec(
+                select(PipelineRunSchema).where(
+                    PipelineRunSchema.id == pipeline_run.id
+                )
+            ).first()
+            if existing_id_run is not None:
+                raise EntityExistsError(
+                    f"Unable to create pipeline run {pipeline_run.id}: "
+                    f"A pipeline run with this id already exists."
                 )
 
             # Query pipeline
@@ -1854,43 +1864,6 @@ class SqlZenStore(BaseZenStore):
 
             return run.to_model()
 
-    def get_run_in_project(
-        self,
-        run_name: str,
-        project_name_or_id: Union[str, UUID],
-    ) -> PipelineRunModel:
-        """Get a pipeline run with a given name in a project.
-
-        Args:
-            run_name: Name of the pipeline run.
-            project_name_or_id: Name or ID of the project.
-
-        Returns:
-            The pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-        # TODO: fix when creating run without a project
-        self._sync_runs()  # Sync with MLMD
-        with Session(self.engine) as session:
-            project = self._get_project_schema(project_name_or_id)
-            # Check if pipeline run with the given name exists in the project
-            run = session.exec(
-                select(PipelineRunSchema)
-                .where(PipelineRunSchema.name == run_name)
-                .where(PipelineRunSchema.stack_id == StackSchema.id)
-                .where(StackSchema.project == project.id)
-            ).first()
-            if run is None:
-                raise KeyError(
-                    f"Unable to get pipeline run '{run_name}' in project "
-                    f"'{project.name}': No pipeline run with this name "
-                    "found."
-                )
-
-            return run.to_model()
-
     def get_run_dag(self, run_id: UUID) -> str:
         """Gets the DAG for a pipeline run.
 
@@ -1928,6 +1901,7 @@ class SqlZenStore(BaseZenStore):
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[UUID] = None,
+        run_name: Optional[str] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[UUID] = None,
         unlisted: bool = False,
@@ -1937,6 +1911,7 @@ class SqlZenStore(BaseZenStore):
         Args:
             project_name_or_id: If provided, only return runs for this project.
             stack_id: If provided, only return runs for this stack.
+            run_name: Run name if provided
             user_name_or_id: If provided, only return runs for this user.
             pipeline_id: If provided, only return runs for this pipeline.
             unlisted: If True, only return unlisted runs that are not
@@ -1953,6 +1928,8 @@ class SqlZenStore(BaseZenStore):
                 query = query.where(StackSchema.project == project.id)
             if stack_id is not None:
                 query = query.where(PipelineRunSchema.stack_id == stack_id)
+            if run_name is not None:
+                query = query.where(PipelineRunSchema.name == run_name)
             if pipeline_id is not None:
                 query = query.where(
                     PipelineRunSchema.pipeline_id == pipeline_id
@@ -2364,7 +2341,7 @@ class SqlZenStore(BaseZenStore):
             if not existing_run.mlmd_id:
                 existing_run.mlmd_id = mlmd_id
                 assert existing_run.id is not None
-                self._update_run(run_id=existing_run.id, run=existing_run)
+                self._update_run(run=existing_run)
                 self._sync_run_steps(existing_run.id)
 
     def _sync_run_steps(self, run_id: UUID) -> None:
@@ -2468,12 +2445,11 @@ class SqlZenStore(BaseZenStore):
                 )
 
     def _update_run(
-        self, run_id: UUID, run: PipelineRunModel
+        self, run: PipelineRunModel
     ) -> PipelineRunModel:
         """Updates a pipeline run.
 
         Args:
-            run_id: The ID of the pipeline run to update.
             run: The pipeline run to use for the update.
 
         Returns:
@@ -2486,11 +2462,11 @@ class SqlZenStore(BaseZenStore):
 
             # Check if pipeline run with the given ID exists
             existing_run = session.exec(
-                select(PipelineRunSchema).where(PipelineRunSchema.id == run_id)
+                select(PipelineRunSchema).where(PipelineRunSchema.id == run.id)
             ).first()
             if existing_run is None:
                 raise KeyError(
-                    f"Unable to update pipeline run with ID {run_id}: "
+                    f"Unable to update pipeline run with ID {run.id}: "
                     f"No pipeline run with this ID found."
                 )
 
@@ -2498,6 +2474,8 @@ class SqlZenStore(BaseZenStore):
             existing_run.from_update_model(run)
             session.add(existing_run)
             session.commit()
+
+            session.refresh(existing_run)
             return existing_run.to_model()
 
     def _create_run_step(self, step: StepRunModel) -> StepRunModel:
