@@ -60,8 +60,7 @@ class UpdatePipelineModel(BaseModel):
         Returns:
             The updated `PipelineModel`.
         """
-        for key, value in self.dict().items():
-            if value is not None:
-                setattr(pipeline, key, value)
+        for key, value in self.dict(exclude_none=True).items():
+            setattr(pipeline, key, value)
 
         return pipeline

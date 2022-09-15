@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for users."""
 
-from typing import List, Optional
+from typing import List, Optional, Union
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -93,10 +94,8 @@ async def create_user(user: CreateUserRequest) -> CreateUserResponse:
     if user.password is None:
         user_model.active = False
         token = user_model.generate_activation_token()
-        user_model.hash_activation_token()
     else:
         user_model.active = True
-        user_model.hash_password()
     new_user = zen_store.create_user(user_model)
     # add back the original unhashed activation token, if generated, to
     # send it back to the client
@@ -144,9 +143,6 @@ async def update_user(
     """
     existing_user = zen_store.get_user(parse_name_or_uuid(user_name_or_id))
     user_model = user.apply_to_model(user=existing_user)
-    if user.password is not None:
-        user_model.hash_password()
-
     return zen_store.update_user(user=user_model)
 
 
@@ -181,7 +177,6 @@ async def activate_user(
             detail="Invalid authentication credentials",
         )
     user_model = user.apply_to_model(user=auth_context.user)
-    user_model.hash_password()
     user_model.active = True
     user_model.activation_token = None
     return zen_store.update_user(user=user_model)
@@ -205,10 +200,8 @@ async def deactivate_user(user_name_or_id: str) -> UserModel:
     user = zen_store.get_user(parse_name_or_uuid(user_name_or_id))
     user.active = False
     token = user.generate_activation_token()
-    user.hash_activation_token()
     user = zen_store.update_user(user=user)
-    # add back the original un-hashed activation token, if generated, to
-    # send it back to the client
+    # add back the original un-hashed activation token
     user.activation_token = token
     return DeactivateUserResponse.from_model(user)
 
@@ -218,7 +211,7 @@ async def deactivate_user(user_name_or_id: str) -> UserModel:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def delete_user(user_name_or_id: str) -> None:
+async def delete_user(user_name_or_id: Union[str, UUID]) -> None:
     """Deletes a specific user.
 
     Args:

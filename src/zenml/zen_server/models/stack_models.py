@@ -19,19 +19,24 @@ from pydantic import BaseModel, Field
 
 from zenml.enums import StackComponentType
 from zenml.models import StackModel
+from zenml.models.constants import MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH
 
 
-class CreateStackModel(BaseModel):
-    """Model used for all create operations on stacks."""
+class CreateStackRequest(BaseModel):
+    """Stack create request schema."""
 
-    name: str
+    name: str = Field(title="The stack name.")
     description: Optional[str] = Field(
-        default=None, title="The description of the stack", max_length=300
+        default=None,
+        title="The description of the stack",
+        max_length=MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
     )
     components: Dict[StackComponentType, List[UUID]] = Field(
         default=None,
-        title="A mapping of stack component types to the id's of"
-        "instances of components of this type.",
+        title=(
+            "A mapping of stack component types to the id's of"
+            "instances of components of this type."
+        ),
     )
     is_shared: bool = Field(
         default=False,
@@ -50,22 +55,31 @@ class CreateStackModel(BaseModel):
         """
         return StackModel(project=project, user=user, **self.dict())
 
+    @classmethod
+    def from_model(cls, stack: StackModel) -> "CreateStackRequest":
+        """Convert from a stack model."""
+        return cls(**stack.dict())
 
-class UpdateStackModel(BaseModel):
-    """Model used for all update operations on stacks."""
 
-    name: Optional[str]
+class UpdateStackRequest(BaseModel):
+    """Stack update request schema."""
+
+    name: Optional[str] = Field(default=None, title="The stack name.")
     description: Optional[str] = Field(
-        default=None, title="The description of the stack", max_length=300
+        default=None,
+        title="The updated description of the stack",
+        max_length=300,
     )
     components: Optional[Dict[StackComponentType, List[UUID]]] = Field(
         default=None,
-        title="A mapping of stack component types to the id's of"
-        "instances of components of this type.",
+        title=(
+            "An updated mapping of stack component types to the id's of"
+            "instances of components of this type."
+        ),
     )
     is_shared: Optional[bool] = Field(
-        default=False,
-        title="Flag describing if this stack is shared.",
+        default=None,
+        title="Updated flag describing if this stack is shared.",
     )
 
     def apply_to_model(self, stack: "StackModel") -> "StackModel":
@@ -77,8 +91,7 @@ class UpdateStackModel(BaseModel):
         Returns:
             The updated `StackModel`.
         """
-        for key, value in self.dict().items():
-            if value is not None:
-                setattr(stack, key, value)
+        for key, value in self.dict(exclude_none=True).items():
+            setattr(stack, key, value)
 
         return stack

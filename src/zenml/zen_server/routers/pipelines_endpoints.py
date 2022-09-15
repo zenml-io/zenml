@@ -42,7 +42,7 @@ router = APIRouter(
 async def get_pipelines(
     project_name_or_id: Optional[str] = None,
     user_name_or_id: Optional[str] = None,
-    hydrated: bool = True,
+    hydrated: bool = False,
 ) -> Union[List[PipelineModel], List[HydratedPipelineModel]]:
     """Gets a list of pipelines.
 
@@ -72,7 +72,7 @@ async def get_pipelines(
 )
 @handle_exceptions
 async def get_pipeline(
-    pipeline_id: str, hydrated: bool = True
+    pipeline_id: str, hydrated: bool = False
 ) -> Union[PipelineModel, HydratedPipelineModel]:
     """Gets a specific pipeline using its unique id.
 
@@ -100,7 +100,7 @@ async def get_pipeline(
 async def update_pipeline(
     pipeline_id: str,
     pipeline_update: UpdatePipelineModel,
-    hydrated: bool = True,
+    hydrated: bool = False,
 ) -> Union[PipelineModel, HydratedPipelineModel]:
     """Updates the attribute on a specific pipeline using its unique id.
 

@@ -23,7 +23,7 @@ from zenml.models import StackModel
 from zenml.models.stack_models import HydratedStackModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import authorize
-from zenml.zen_server.models.stack_models import UpdateStackModel
+from zenml.zen_server.models.stack_models import UpdateStackRequest
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
@@ -45,7 +45,7 @@ async def list_stacks(
     user_name_or_id: Optional[str] = None,
     stack_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
-    hydrated: bool = True,
+    hydrated: bool = False,
 ) -> Union[List[HydratedStackModel], List[StackModel]]:
     """Returns all stacks.
 
@@ -79,7 +79,7 @@ async def list_stacks(
 )
 @handle_exceptions
 async def get_stack(
-    stack_id: str, hydrated: bool = True
+    stack_id: str, hydrated: bool = False
 ) -> Union[HydratedStackModel, StackModel]:
     """Returns the requested stack.
 
@@ -105,7 +105,7 @@ async def get_stack(
 )
 @handle_exceptions
 async def update_stack(
-    stack_id: str, stack_update: UpdateStackModel, hydrated: bool = True
+    stack_id: str, stack_update: UpdateStackRequest, hydrated: bool = False
 ) -> Union[HydratedStackModel, StackModel]:
     """Updates a stack.
 
@@ -133,7 +133,7 @@ async def update_stack(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def delete_stack(stack_id: str) -> None:
+async def delete_stack(stack_id: UUID) -> None:
     """Deletes a stack.
 
     Args:

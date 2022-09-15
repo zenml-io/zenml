@@ -27,14 +27,7 @@ from zenml.models.user_management_models import UserModel
 
 
 class CreateUserRequest(BaseModel):
-    """Model used for all create operations on users.
-
-    Attributes:
-        name: Name of the user.
-        full_name: Full name for the user account.
-        email: Email address for the user account.
-        password: Password for the user account.
-    """
+    """Model for user creation requests."""
 
     name: str = Field(
         title="The unique username for the account.",
@@ -73,10 +66,7 @@ class CreateUserRequest(BaseModel):
 
 
 class CreateUserResponse(UserModel):
-    """Pydantic object representing a user create response.
-
-    The activation token is included in the response.
-    """
+    """Model for user creation responses."""
 
     activation_token: Optional[str] = Field(
         default=None, title="Account activation token."
@@ -105,33 +95,26 @@ class CreateUserResponse(UserModel):
 
 
 class UpdateUserRequest(BaseModel):
-    """Model used for all update operations on users.
-
-    Attributes:
-        name: Name of the user.
-        full_name: Full name for the user account.
-        email: Email address for the user account.
-        password: Password for the user account.
-    """
+    """Model for user update requests."""
 
     name: Optional[str] = Field(
         default=None,
-        title="New unique username for the account.",
+        title="Updated username for the account.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
     full_name: Optional[str] = Field(
         default=None,
-        title="New full name for the account owner.",
+        title="Updated full name for the account owner.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
     email: Optional[str] = Field(
         default=None,
-        title="New email address associated with the account.",
+        title="Updated email address associated with the account.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
     password: Optional[str] = Field(
         default=None,
-        title="New account password.",
+        title="Updated account password.",
         max_length=USER_PASSWORD_MAX_LENGTH,
     )
 
@@ -158,15 +141,7 @@ class UpdateUserRequest(BaseModel):
 
 
 class ActivateUserRequest(BaseModel):
-    """Pydantic object representing a user activation request.
-
-    Attributes:
-        name: Name of the user.
-        full_name: Full name for the user account.
-        email: Email address for the user account.
-        password: Password for the user account.
-        activation_token: Activation token for the user account.
-    """
+    """Model for user activation requests."""
 
     name: Optional[str] = Field(
         default=None,
@@ -212,11 +187,7 @@ class ActivateUserRequest(BaseModel):
 
 
 class DeactivateUserResponse(UserModel):
-    """Pydantic object representing a user deactivation response.
-
-    Attributes:
-        activation_token: Activation token for the user account.
-    """
+    """Model for user deactivation requests."""
 
     activation_token: str = Field(..., title="Account activation token.")
 

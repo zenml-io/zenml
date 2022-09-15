@@ -45,7 +45,7 @@ async def list_stack_components(
     component_type: Optional[str] = None,
     component_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
-    hydrated: bool = True,
+    hydrated: bool = False,
 ) -> Union[List[ComponentModel], List[HydratedComponentModel]]:
     """Get a list of all stack components for a specific type.
 
@@ -81,7 +81,7 @@ async def list_stack_components(
 )
 @handle_exceptions
 async def get_stack_component(
-    component_id: str, hydrated: bool = True
+    component_id: str, hydrated: bool = False
 ) -> Union[ComponentModel, HydratedComponentModel]:
     """Returns the requested stack component.
 
@@ -107,7 +107,7 @@ async def get_stack_component(
 )
 @handle_exceptions
 async def update_stack_component(
-    component_id: str, component: ComponentModel, hydrated: bool = True
+    component_id: str, component: ComponentModel, hydrated: bool = False
 ) -> Union[ComponentModel, HydratedComponentModel]:
     """Updates a stack component.
 

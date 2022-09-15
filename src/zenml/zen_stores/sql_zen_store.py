@@ -1545,6 +1545,8 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_project)
             session.commit()
 
+            # Refresh the Model that was just created
+            session.refresh(existing_project)
             return existing_project.to_model()
 
     @track(AnalyticsEvent.DELETED_PROJECT)

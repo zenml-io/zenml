@@ -23,8 +23,8 @@ from zenml.models.constants import (
 )
 
 
-class CreateProjectModel(BaseModel):
-    """Model used for all create operations on projects."""
+class CreateProjectRequest(BaseModel):
+    """Project model for create requests."""
 
     name: str = Field(
         title="The unique name of the project.",
@@ -45,13 +45,13 @@ class CreateProjectModel(BaseModel):
         return ProjectModel.parse_obj(self)
 
     @classmethod
-    def from_model(cls, project: ProjectModel) -> "CreateProjectModel":
+    def from_model(cls, project: ProjectModel) -> "CreateProjectRequest":
         """Convert from a project model."""
         return cls(**project.dict())
 
 
-class UpdateProjectModel(BaseModel):
-    """Model used for all update operations on projects."""
+class UpdateProjectRequest(BaseModel):
+    """Project model for update requests."""
 
     name: Optional[str] = Field(
         default=None,
@@ -73,13 +73,12 @@ class UpdateProjectModel(BaseModel):
         Returns:
             The updated `ProjectModel`.
         """
-        for key, value in self.dict().items():
-            if value is not None:
-                setattr(project, key, value)
+        for key, value in self.dict(exclude_none=True).items():
+            setattr(project, key, value)
 
         return project
 
     @classmethod
-    def from_model(cls, project: ProjectModel) -> "UpdateProjectModel":
+    def from_model(cls, project: ProjectModel) -> "UpdateProjectRequest":
         """Convert from a project model."""
         return cls(**project.dict())

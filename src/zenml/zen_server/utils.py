@@ -27,7 +27,10 @@ from zenml.exceptions import (
     StackComponentExistsError,
     StackExistsError,
 )
+from zenml.logger import get_logger
 from zenml.zen_stores.base_zen_store import BaseZenStore
+
+logger = get_logger(__name__)
 
 # TODO(Stefan): figure out how not to populate the ZenStore with default
 # user/stack and make this a method instead of a global variable
@@ -138,16 +141,20 @@ def handle_exceptions(func: F) -> F:
         try:
             return await func(*args, **kwargs)
         except NotAuthorizedError as error:
+            logger.exception("Authorization error")
             raise not_authorized(error) from error
         except KeyError as error:
+            logger.exception("Entity not found")
             raise not_found(error) from error
         except (
             StackExistsError,
             StackComponentExistsError,
             EntityExistsError,
         ) as error:
+            logger.exception("Entity already exists")
             raise conflict(error) from error
         except ValidationError as error:
+            logger.exception("Validation error")
             raise unprocessable(error) from error
 
     return cast(F, decorated)

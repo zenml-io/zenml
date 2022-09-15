@@ -84,7 +84,7 @@ def create_user(user_name: str, password: Optional[str] = None) -> None:
     cli_utils.print_active_config()
     user = UserModel(name=user_name, password=password)
     try:
-        Repository().zen_store.create_user(user.hash_password())
+        Repository().zen_store.create_user(user)
     except EntityExistsError as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Created user '{user_name}'.")
@@ -278,22 +278,51 @@ def create_project(
     cli_utils.declare(f"Created project '{project_name}'.")
 
 
+@project.command("update", help="Update an existing project.")
+@click.argument("project_name", type=str, required=True)
+@click.option(
+    "--name", "-n", type=str, required=False, help="New project name."
+)
+@click.option(
+    "--description",
+    "-d",
+    type=str,
+    required=False,
+    help="New project description.",
+)
+def update_project(
+    project_name: str,
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+) -> None:
+    """Update an existing project.
+
+    Args:
+        project_name: The name of the project.
+        name: The new name of the project.
+        description: The new description of the project.
+    """
+    cli_utils.print_active_config()
+    try:
+        project = Repository().zen_store.get_project(project_name)
+        project.name = name or project.name
+        project.description = description or project.description
+        Repository().zen_store.update_project(project)
+    except (EntityExistsError, KeyError) as err:
+        cli_utils.error(str(err))
+    cli_utils.declare(f"Updated project '{project_name}'.")
+
+
 @project.command("get")
 def get_project() -> None:
     """Get the currently active project."""
     active_project = Repository().active_project
-    if active_project:
-        description = (
-            "\nDescription: " + active_project.description
-            if active_project.description
-            else ""
-        )
-        cli_utils.declare(f"ACTIVE PROJECT: {active_project.name}{description}")
-    else:
-        cli_utils.warning(
-            "No project is configured as active. Run "
-            "`zenml project set <PROJECT_NAME>` to set an active project."
-        )
+    description = (
+        "\nDescription: " + active_project.description
+        if active_project.description
+        else ""
+    )
+    cli_utils.declare(f"ACTIVE PROJECT: {active_project.name}{description}")
 
 
 @project.command("set", help="Set the active project.")

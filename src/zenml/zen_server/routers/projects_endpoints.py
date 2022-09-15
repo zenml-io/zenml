@@ -38,10 +38,10 @@ from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.models import CreatePipelineModel
 from zenml.zen_server.models.projects_models import (
-    CreateProjectModel,
-    UpdateProjectModel,
+    CreateProjectRequest,
+    UpdateProjectRequest,
 )
-from zenml.zen_server.models.stack_models import CreateStackModel
+from zenml.zen_server.models.stack_models import CreateStackRequest
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
@@ -73,7 +73,7 @@ async def list_projects() -> List[ProjectModel]:
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-async def create_project(project: CreateProjectModel) -> ProjectModel:
+async def create_project(project: CreateProjectRequest) -> ProjectModel:
     """Creates a project based on the requestBody.
 
     # noqa: DAR401
@@ -116,7 +116,7 @@ async def get_project(project_name_or_id: str) -> ProjectModel:
 )
 @handle_exceptions
 async def update_project(
-    project_name_or_id: str, project_update: UpdateProjectModel
+    project_name_or_id: str, project_update: UpdateProjectRequest
 ) -> ProjectModel:
     """Get a project for given name.
 
@@ -165,7 +165,7 @@ async def get_project_stacks(
     user_name_or_id: Optional[str] = None,
     stack_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
-    hydrated: bool = True,
+    hydrated: bool = False,
 ) -> Union[List[HydratedStackModel], List[StackModel]]:
     """Get stacks that are part of a specific project.
 
@@ -202,8 +202,8 @@ async def get_project_stacks(
 @handle_exceptions
 async def create_stack(
     project_name_or_id: str,
-    stack: CreateStackModel,
-    hydrated: bool = True,
+    stack: CreateStackRequest,
+    hydrated: bool = False,
     auth_context: AuthContext = Depends(authorize),
 ) -> Union[HydratedStackModel, StackModel]:
     """Creates a stack for a particular project.
@@ -243,7 +243,7 @@ async def list_project_stack_components(
     component_type: Optional[str] = None,
     component_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
-    hydrated: bool = True,
+    hydrated: bool = False,
 ) -> Union[List[ComponentModel], List[HydratedComponentModel]]:
     """List stack components that are part of a specific project.
 
@@ -283,7 +283,7 @@ async def list_project_stack_components(
 async def create_stack_component(
     project_name_or_id: str,
     component: ComponentModel,
-    hydrated: bool = True,
+    hydrated: bool = False,
     auth_context: AuthContext = Depends(authorize),
 ) -> Union[ComponentModel, HydratedComponentModel]:
     """Creates a stack component.
@@ -375,7 +375,7 @@ async def create_flavor(
 async def get_project_pipelines(
     project_name_or_id: Optional[str] = None,
     user_name_or_id: Optional[str] = None,
-    hydrated: bool = True,
+    hydrated: bool = False,
 ) -> Union[List[PipelineModel], List[HydratedPipelineModel]]:
     """Gets pipelines defined for a specific project.
 
@@ -409,7 +409,7 @@ async def get_project_pipelines(
 async def create_pipeline(
     project_name_or_id: str,
     pipeline: CreatePipelineModel,
-    hydrated: bool = True,
+    hydrated: bool = False,
     auth_context: AuthContext = Depends(authorize),
 ) -> Union[PipelineModel, HydratedPipelineModel]:
     """Creates a pipeline.

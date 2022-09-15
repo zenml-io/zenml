@@ -14,6 +14,7 @@
 """Model definitions for users, teams, and roles."""
 
 from datetime import datetime, timedelta
+import re
 from secrets import token_hex
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 from uuid import UUID, uuid4
@@ -23,7 +24,10 @@ from pydantic import BaseModel, Field, SecretStr, root_validator
 from zenml.config.global_config import GlobalConfiguration
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
-from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
+from zenml.models.constants import (
+    MODEL_NAME_FIELD_MAX_LENGTH,
+    USER_PASSWORD_MAX_LENGTH,
+)
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 from zenml.utils.enum_utils import StrEnum
 
@@ -144,18 +148,7 @@ class JWTToken(BaseModel):
 
 
 class UserModel(AnalyticsTrackedModelMixin):
-    """Pydantic object representing a user.
-
-    Attributes:
-        id: Id of the user.
-        name: Name of the user.
-        full_name: Full name for the user account.
-        email: Email address for the user account.
-        active: Whether the user account is active.
-        created_at: Date when the user was created.
-        password: Password for the user account.
-        activation_token: Activation token for the user account.
-    """
+    """Domain model for user accounts."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "id",
@@ -223,7 +216,7 @@ class UserModel(AnalyticsTrackedModelMixin):
         # attacks (https://cwe.mitre.org/data/definitions/204.html)
         hash: Optional[str] = None
         if user is not None and user.password is not None and user.active:
-            hash = user.password.get_secret_value()
+            hash = user.get_hashed_password()
         pwd_context = cls._get_crypt_context()
         return pwd_context.verify(plain_password, hash)
 
@@ -237,17 +230,45 @@ class UserModel(AnalyticsTrackedModelMixin):
             return None
         return self.password.get_secret_value()
 
-    def hash_password(self) -> "UserModel":
-        """Hashes the stored password and replaces it with the hashed value.
+    @classmethod
+    def _is_hashed_secret(cls, secret: SecretStr) -> bool:
+        """Checks if a secret value is already hashed.
+
+        Args:
+            secret: The secret value to check.
 
         Returns:
-            The user model, as a convenience.
+            True if the secret value is hashed, otherwise False.
         """
-        if self.password is None:
-            return
-        pwd_context = self._get_crypt_context()
-        self.password = pwd_context.hash(self.password.get_secret_value())
-        return self
+        return (
+            re.match(r"^\$2[ayb]\$.{56}$", secret.get_secret_value())
+            is not None
+        )
+
+    @classmethod
+    def _get_hashed_secret(cls, secret: Optional[SecretStr]) -> Optional[str]:
+        """Hashes the input secret and returns the hash value, if supplied and if not already hashed.
+
+        Args:
+            secret: The secret value to hash.
+
+        Returns:
+            The secret hash value, or None if no secret was supplied.
+        """
+        if secret is None:
+            return None
+        if cls._is_hashed_secret(secret):
+            return secret.get_secret_value()
+        pwd_context = cls._get_crypt_context()
+        return pwd_context.hash(secret.get_secret_value())
+
+    def get_hashed_password(self) -> Optional[str]:
+        """Returns the hashed password, if configured.
+
+        Returns:
+            The hashed password.
+        """
+        return self._get_hashed_secret(self.password)
 
     @classmethod
     def verify_access_token(cls, token: str) -> Optional["UserModel"]:
@@ -302,19 +323,13 @@ class UserModel(AnalyticsTrackedModelMixin):
             return None
         return self.activation_token.get_secret_value()
 
-    def hash_activation_token(self) -> "UserModel":
-        """Hashes the activation token and replaces it with the hashed value.
+    def get_hashed_activation_token(self) -> "UserModel":
+        """Returns the hashed activation token, if configured.
 
         Returns:
-            The user model, as a convenience.
+            The hashed activation token.
         """
-        if self.activation_token is None:
-            return
-        pwd_context = self._get_crypt_context()
-        self.activation_token = pwd_context.hash(
-            self.activation_token.get_secret_value()
-        )
-        return self
+        return self._get_hashed_secret(self.activation_token)
 
     @classmethod
     def verify_activation_token(
@@ -338,7 +353,7 @@ class UserModel(AnalyticsTrackedModelMixin):
             and user.activation_token is not None
             and not user.active
         ):
-            hash = user.activation_token.get_secret_value()
+            hash = user.get_hashed_activation_token()
         pwd_context = cls._get_crypt_context()
         return pwd_context.verify(activation_token, hash)
 

@@ -28,19 +28,19 @@ from zenml.zen_server.models.pipeline_models import (
     UpdatePipelineModel,
 )
 from zenml.zen_server.models.projects_models import (
-    CreateProjectModel,
-    UpdateProjectModel,
+    CreateProjectRequest,
+    UpdateProjectRequest,
 )
 from zenml.zen_server.models.stack_models import (
-    CreateStackModel,
-    UpdateStackModel,
+    CreateStackRequest,
+    UpdateStackRequest,
 )
 
 __all__ = [
-    "CreateStackModel",
-    "UpdateStackModel",
-    "CreateProjectModel",
-    "UpdateProjectModel",
+    "CreateStackRequest",
+    "UpdateStackRequest",
+    "CreateProjectRequest",
+    "UpdateProjectRequest",
     "CreatePipelineModel",
     "UpdatePipelineModel",
 ]

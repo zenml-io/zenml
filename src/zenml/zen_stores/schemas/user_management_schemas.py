@@ -69,8 +69,8 @@ class UserSchema(SQLModel, table=True):
             full_name=model.full_name,
             email=model.email,
             active=model.active,
-            password=model.get_password(),
-            activation_token=model.get_activation_token(),
+            password=model.get_hashed_password(),
+            activation_token=model.get_hashed_activation_token(),
             creation_date=datetime.now(),
             updated_date=datetime.now(),
         )
@@ -88,8 +88,8 @@ class UserSchema(SQLModel, table=True):
         self.full_name = model.full_name
         self.email = model.email
         self.active = model.active
-        self.password = model.get_password()
-        self.activation_token = model.get_activation_token()
+        self.password = model.get_hashed_password()
+        self.activation_token = model.get_hashed_activation_token()
         self.updated_date = datetime.now()
         return self
 

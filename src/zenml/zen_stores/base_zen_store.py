@@ -184,8 +184,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         except KeyError:
             default_user = self._create_default_user()
         try:
-            assert default_project.id is not None
-            assert default_user.id is not None
             self._get_default_stack(
                 project_name_or_id=default_project.id,
                 user_name_or_id=default_user.id,
@@ -255,6 +253,20 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
 
         active_stack: Optional[StackModel] = None
 
+        # Create a default stack in the active project for the active user if
+        # one is not yet created.
+        try:
+            default_stack = self._get_default_stack(
+                project_name_or_id=active_project.id,
+                user_name_or_id=self.active_user.id,
+            )
+        except KeyError:
+            default_stack = self._register_default_stack(
+                project_name_or_id=active_project.id,
+                user_name_or_id=self.active_user.id,
+            )
+
+
         # Sanitize the active stack
         if active_stack_id:
             # Ensure that the active stack is still valid
@@ -274,28 +286,13 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
                         "project stack.",
                         active_stack_id,
                     )
-                    active_stack = None
+                    active_stack = default_stack
         else:
             logger.warning(
                 "The active stack is not set. Setting the "
                 "active stack to the default project stack."
             )
-
-        if active_stack is None:
-            # If no active stack is set, use the default stack in the project
-            # (create one if one is not yet created).
-            try:
-                assert active_project.id is not None
-                assert self.active_user.id is not None
-                active_stack = self._get_default_stack(
-                    project_name_or_id=active_project.id,
-                    user_name_or_id=self.active_user.id,
-                )
-            except KeyError:
-                active_stack = self._register_default_stack(
-                    project_name_or_id=active_project.id,
-                    user_name_or_id=self.active_user.id,
-                )
+            active_stack = default_stack
 
         return active_project, active_stack
 
@@ -513,7 +510,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
                 name=DEFAULT_USERNAME,
                 active=True,
                 password="",
-            ).hash_password()
+            )
         )
 
     # -----
