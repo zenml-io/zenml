@@ -33,7 +33,7 @@ class ProjectSchema(SQLModel, table=True):
 
     id: UUID = Field(primary_key=True)
     name: str
-    description: Optional[str] = Field(nullable=True)
+    description: str
     creation_date: datetime
 
     user_role_assignments: List["UserRoleAssignmentSchema"] = Relationship(
