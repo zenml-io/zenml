@@ -27,7 +27,7 @@ from zenml.models.user_management_models import UserModel
 
 
 class CreateUserRequest(BaseModel):
-    """Pydantic object representing a user create request.
+    """Model used for all create operations on users.
 
     Attributes:
         name: Name of the user.
@@ -51,11 +51,17 @@ class CreateUserRequest(BaseModel):
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
     password: Optional[str] = Field(
-        default=None, title="Account password.", max_length=USER_PASSWORD_MAX_LENGTH
+        default=None,
+        title="Account password.",
+        max_length=USER_PASSWORD_MAX_LENGTH,
     )
 
     def to_model(self) -> UserModel:
-        """Convert to a user model."""
+        """Create a `UserModel` from this object.
+
+        Returns:
+            The created `UserModel`.
+        """
         return UserModel(
             **self.dict(exclude_none=True),
         )
@@ -78,7 +84,14 @@ class CreateUserResponse(UserModel):
 
     @classmethod
     def from_model(cls, user: UserModel) -> "CreateUserResponse":
-        """Convert from a user model."""
+        """Create a `CreateUserResponse` from a `UserModel`.
+
+        Args:
+            user: The `UserModel` to create the response from.
+
+        Returns:
+            The created `CreateUserResponse`.
+        """
         response = cls(
             **user.dict(), activation_token=user.get_activation_token()
         )
@@ -92,7 +105,7 @@ class CreateUserResponse(UserModel):
 
 
 class UpdateUserRequest(BaseModel):
-    """Pydantic object representing a user update request.
+    """Model used for all update operations on users.
 
     Attributes:
         name: Name of the user.
@@ -117,11 +130,20 @@ class UpdateUserRequest(BaseModel):
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
     password: Optional[str] = Field(
-        default=None, title="New account password.", max_length=USER_PASSWORD_MAX_LENGTH
+        default=None,
+        title="New account password.",
+        max_length=USER_PASSWORD_MAX_LENGTH,
     )
 
     def apply_to_model(self, user: UserModel) -> UserModel:
-        """Convert to a user model."""
+        """Apply the changes to a `UserModel`.
+
+        Args:
+            user: The `UserModel` to apply the changes to.
+
+        Returns:
+            The updated `UserModel`.
+        """
         for k, v in self.dict(exclude_none=True).items():
             setattr(user, k, v)
         if self.password is not None:
@@ -171,13 +193,20 @@ class ActivateUserRequest(BaseModel):
     )
 
     def apply_to_model(self, user: UserModel) -> UserModel:
-        """Convert to a user model."""
+        """Apply the changes to a `UserModel`.
+
+        Args:
+            user: The `UserModel` to apply the changes to.
+
+        Returns:
+            The updated `UserModel`.
+        """
         for k, v in self.dict(exclude_none=True).items():
             if k in ["activation_token", "password"]:
                 continue
             setattr(user, k, v)
         user.password = self.password
-        # skip the activation token intentionally, because it is validated 
+        # skip the activation token intentionally, because it is validated
         # separately
         return user
 
@@ -193,7 +222,14 @@ class DeactivateUserResponse(UserModel):
 
     @classmethod
     def from_model(cls, user: UserModel) -> "DeactivateUserResponse":
-        """Convert from a user model."""
+        """Create a `DeactivateUserResponse` from a `UserModel`.
+
+        Args:
+            user: The `UserModel` to create the response from.
+
+        Returns:
+            The created `DeactivateUserResponse`.
+        """
         response = cls(
             **user.dict(), activation_token=user.get_activation_token()
         )

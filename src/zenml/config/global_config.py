@@ -43,6 +43,9 @@ def generate_jwt_secret_key() -> str:
     """Generate a random JWT secret key.
 
     This key is used to sign and verify generated JWT tokens.
+
+    Returns:
+        A random JWT secret key.
     """
     return token_hex(32)
 

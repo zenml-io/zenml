@@ -24,7 +24,7 @@ from zenml.models.constants import (
 
 
 class CreateProjectModel(BaseModel):
-    """Model used for all update operations on stacks."""
+    """Model used for all create operations on projects."""
 
     name: str = Field(
         title="The unique name of the project.",
@@ -36,8 +36,12 @@ class CreateProjectModel(BaseModel):
         max_length=MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
     )
 
-    def to_model(self) -> ProjectModel:
-        """Applies user defined changes to this model."""
+    def to_model(self) -> "ProjectModel":
+        """Create a `ProjectModel` from this object.
+
+        Returns:
+            The created `ProjectModel`.
+        """
         return ProjectModel.parse_obj(self)
 
     @classmethod
@@ -47,7 +51,7 @@ class CreateProjectModel(BaseModel):
 
 
 class UpdateProjectModel(BaseModel):
-    """Model used for all update operations on stacks."""
+    """Model used for all update operations on projects."""
 
     name: Optional[str] = Field(
         default=None,
@@ -61,7 +65,14 @@ class UpdateProjectModel(BaseModel):
     )
 
     def apply_to_model(self, project: "ProjectModel") -> "ProjectModel":
-        """Applies user defined changes to this model."""
+        """Applies user defined changes to the given `ProjectModel`.
+
+        Args:
+            project: The `ProjectModel` to apply the changes to.
+
+        Returns:
+            The updated `ProjectModel`.
+        """
         for key, value in self.dict().items():
             if value is not None:
                 setattr(project, key, value)

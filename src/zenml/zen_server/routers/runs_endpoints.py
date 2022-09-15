@@ -56,16 +56,9 @@ async def get_runs(
         project_name_or_id: Name or ID of the project for which to filter runs.
         stack_id: ID of the stack for which to filter runs.
         pipeline_id: ID of the pipeline for which to filter runs.
-        trigger_id: ID of the trigger for which to filter runs.
 
     Returns:
         The pipeline runs according to query filters.
-
-    Raises:
-        not_found: If the project, stack, pipeline, or trigger do not exist.
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     return zen_store.list_runs(
         project_name_or_id=parse_optional_name_or_uuid(project_name_or_id),
@@ -88,12 +81,6 @@ async def get_run(run_id: str) -> PipelineRunModel:
 
     Returns:
         The pipeline run.
-
-    Raises:
-        not_found: If the pipeline run does not exist.
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     return zen_store.get_run(run_id=UUID(run_id))
 
@@ -108,11 +95,6 @@ async def delete_run(run_id: str) -> None:
 
     Args:
         run_id: ID of the pipeline run to get.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     zen_store.delete_run(run_id=UUID(run_id))
 
@@ -133,11 +115,6 @@ async def get_run_dag(
 
     Returns:
         The DAG for a given pipeline run.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     image_object_path = zen_store.get_run_dag(
         run_id=UUID(run_id)
@@ -159,11 +136,6 @@ async def get_run_steps(run_id: str) -> List[StepRunModel]:
 
     Returns:
         The steps for a given pipeline run.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     return zen_store.list_run_steps(UUID(run_id))
 
@@ -182,11 +154,6 @@ async def get_run_runtime_configuration(run_id: str) -> Dict:
 
     Returns:
         The runtime configuration for a given pipeline run.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     return zen_store.get_run_runtime_configuration(run_id=UUID(run_id))
 
@@ -209,11 +176,6 @@ async def get_run_component_side_effects(
 
     Returns:
         The component side-effects for a given pipeline run.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     return zen_store.get_run_component_side_effects(
         run_id=UUID(run_id),

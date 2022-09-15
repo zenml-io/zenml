@@ -54,11 +54,6 @@ async def get_pipelines(
 
     Returns:
         List of pipeline objects.
-
-    Raises:
-        conflict: when not authorized to login
-        not_found: when user does not exist
-        validation error: when unable to validate credentials
     """
     pipelines_list = zen_store.list_pipelines(
         project_name_or_id=parse_name_or_uuid(project_name_or_id),
@@ -88,11 +83,6 @@ async def get_pipeline(
 
     Returns:
         A specific pipeline object.
-
-    Raises:
-        conflict: when not authorized to login
-        not_found: when user does not exist
-        validation error: when unable to validate credentials
     """
     pipeline = zen_store.get_pipeline(pipeline_id=UUID(pipeline_id))
     if hydrated:
@@ -116,18 +106,12 @@ async def update_pipeline(
 
     Args:
         pipeline_id: ID of the pipeline to get.
-        updated_pipeline: the schema to use to update your pipeline.
+        pipeline_update: the model containing the attributes to update.
         hydrated: Defines if stack components, users and projects will be
-                  included by reference (FALSE) or as model (TRUE)
+            included by reference (FALSE) or as model (TRUE)
 
     Returns:
         The updated pipeline object.
-
-    Raises:
-        not_found: when pipeline does not exist
-        conflict: when not authorized to login
-        not_found: when user does not exist
-        validation error: when unable to validate credentials
     """
     pipeline_in_db = zen_store.get_pipeline(UUID(pipeline_id))
 
@@ -150,11 +134,6 @@ async def delete_pipeline(pipeline_id: str) -> None:
 
     Args:
         pipeline_id: ID of the pipeline to get.
-
-    Raises:
-        conflict: when not authorized to login
-        not_found: when user does not exist
-        validation error: when unable to validate credentials
     """
     zen_store.delete_pipeline(pipeline_id=UUID(pipeline_id))
 
@@ -173,11 +152,6 @@ async def get_pipeline_runs(pipeline_id: str) -> List[PipelineRunModel]:
 
     Returns:
         List of triggers.
-
-    Raises:
-        conflict: when not authorized to login
-        not_found: when user does not exist
-        validation error: when unable to validate credentials
     """
     return zen_store.list_runs(pipeline_id=UUID(pipeline_id))
 
@@ -200,10 +174,8 @@ async def create_pipeline_run(
         pipeline_id: ID of the pipeline.
         pipeline_run: The pipeline run to create.
 
-    Raises:
-        conflict: when not authorized to login
-        conflict: when user does not exist
-        validation error: when unable to validate credentials
+    Returns:
+        The created pipeline run.
     """
     pipeline_run.pipeline_id = pipeline_id
     return zen_store.create_run(pipeline_run=pipeline_run)
