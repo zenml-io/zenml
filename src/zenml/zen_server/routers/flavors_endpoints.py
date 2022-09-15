@@ -21,7 +21,8 @@ from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.models import FlavorModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import authorize
-from zenml.zen_server.utils import error_detail, error_response, zen_store
+from zenml.zen_server.utils import error_detail, error_response, zen_store, \
+    handle_exceptions
 
 router = APIRouter(
     prefix=VERSION_1 + FLAVORS,
@@ -36,6 +37,7 @@ router = APIRouter(
     response_model=List[FlavorModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def list_flavors(
     project_name_or_id: Optional[str] = None,
     component_type: Optional[str] = None,
@@ -54,18 +56,11 @@ async def list_flavors(
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        flavors_list = zen_store.list_flavors(
-            project_name_or_id=parse_name_or_uuid(project_name_or_id),
-            component_type=component_type,
-        )
-        return flavors_list
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    flavors_list = zen_store.list_flavors(
+        project_name_or_id=parse_name_or_uuid(project_name_or_id),
+        component_type=component_type,
+    )
+    return flavors_list
 
 
 @router.get(
@@ -73,6 +68,7 @@ async def list_flavors(
     response_model=FlavorModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def get_flavor(
     flavor_id: str,
 ) -> FlavorModel:
@@ -89,14 +85,7 @@ async def get_flavor(
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        return zen_store.get_flavor(UUID(flavor_id))
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    return zen_store.get_flavor(UUID(flavor_id))
 
 
 @router.put(
@@ -104,6 +93,7 @@ async def get_flavor(
     response_model=FlavorModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def update_flavor(flavor_id: str, flavor: FlavorModel) -> FlavorModel:
     """Updates a stack.
 
@@ -119,21 +109,15 @@ async def update_flavor(flavor_id: str, flavor: FlavorModel) -> FlavorModel:
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        pass
-        # TODO: [server] implement an update method on the flavor
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    pass
+    # TODO: [server] implement an update method on the flavor
 
 
 @router.delete(
     "/{flavor_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def delete_flavor(flavor_id: str) -> None:
     """Deletes a flavor.
 
@@ -145,12 +129,5 @@ async def delete_flavor(flavor_id: str) -> None:
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        pass
-        # TODO: [server] implement an update method on the flavor
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    pass
+    # TODO: [server] implement an update method on the flavor

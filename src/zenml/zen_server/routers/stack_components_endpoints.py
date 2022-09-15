@@ -24,7 +24,8 @@ from zenml.models import ComponentModel
 from zenml.models.component_models import HydratedComponentModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import authorize
-from zenml.zen_server.utils import error_detail, error_response, zen_store
+from zenml.zen_server.utils import error_detail, error_response, zen_store, \
+    handle_exceptions
 
 router = APIRouter(
     prefix=VERSION_1 + STACK_COMPONENTS,
@@ -39,6 +40,7 @@ router = APIRouter(
     response_model=Union[List[ComponentModel], List[HydratedComponentModel]],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def list_stack_components(
     project_name_or_id: Optional[str] = None,
     user_name_or_id: Optional[str] = None,
@@ -66,24 +68,17 @@ async def list_stack_components(
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        components_list = zen_store.list_stack_components(
-            project_name_or_id=parse_name_or_uuid(project_name_or_id),
-            user_name_or_id=parse_name_or_uuid(user_name_or_id),
-            type=component_type,
-            is_shared=is_shared,
-            name=component_name,
-        )
-        if hydrated:
-            return [comp.to_hydrated_model() for comp in components_list]
-        else:
-            return components_list
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    components_list = zen_store.list_stack_components(
+        project_name_or_id=parse_name_or_uuid(project_name_or_id),
+        user_name_or_id=parse_name_or_uuid(user_name_or_id),
+        type=component_type,
+        is_shared=is_shared,
+        name=component_name,
+    )
+    if hydrated:
+        return [comp.to_hydrated_model() for comp in components_list]
+    else:
+        return components_list
 
 
 @router.get(
@@ -91,6 +86,7 @@ async def list_stack_components(
     response_model=Union[ComponentModel, HydratedComponentModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def get_stack_component(
     component_id: str, hydrated: bool = True
 ) -> Union[ComponentModel, HydratedComponentModel]:
@@ -109,18 +105,11 @@ async def get_stack_component(
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        component = zen_store.get_stack_component(UUID(component_id))
-        if hydrated:
-            return component.to_hydrated_model()
-        else:
-            return component
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    component = zen_store.get_stack_component(UUID(component_id))
+    if hydrated:
+        return component.to_hydrated_model()
+    else:
+        return component
 
 
 @router.put(
@@ -128,6 +117,7 @@ async def get_stack_component(
     response_model=Union[ComponentModel, HydratedComponentModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def update_stack_component(
     component_id: str, component: ComponentModel, hydrated: bool = True
 ) -> Union[ComponentModel, HydratedComponentModel]:
@@ -147,26 +137,20 @@ async def update_stack_component(
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        updated_component = zen_store.update_stack_component(
-            component_id=UUID(component_id), component=component
-        )
-        if hydrated:
-            return updated_component.to_hydrated_model()
-        else:
-            return updated_component
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    updated_component = zen_store.update_stack_component(
+        component_id=UUID(component_id), component=component
+    )
+    if hydrated:
+        return updated_component.to_hydrated_model()
+    else:
+        return updated_component
 
 
 @router.delete(
     "/{component_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def deregister_stack_component(component_id: str) -> None:
     """Deletes a stack component.
 
@@ -178,14 +162,7 @@ async def deregister_stack_component(component_id: str) -> None:
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        zen_store.delete_stack_component(UUID(component_id))
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    zen_store.delete_stack_component(UUID(component_id))
 
 
 @router.get(
@@ -193,6 +170,7 @@ async def deregister_stack_component(component_id: str) -> None:
     response_model=List[StackComponentType],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def get_stack_component_types() -> List[str]:
     """Get a list of all stack component types.
 
@@ -204,11 +182,4 @@ async def get_stack_component_types() -> List[str]:
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        return StackComponentType.values()
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    return StackComponentType.values()

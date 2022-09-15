@@ -25,7 +25,8 @@ from zenml.models.stack_models import HydratedStackModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.models.stack_models import UpdateStackModel
-from zenml.zen_server.utils import error_detail, error_response, zen_store
+from zenml.zen_server.utils import error_detail, error_response, zen_store, \
+    handle_exceptions
 
 router = APIRouter(
     prefix=VERSION_1 + STACKS,
@@ -40,6 +41,7 @@ router = APIRouter(
     response_model=Union[List[HydratedStackModel], List[StackModel]],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def list_stacks(
     project_name_or_id: Optional[str] = None,
     user_name_or_id: Optional[str] = None,
@@ -65,23 +67,16 @@ async def list_stacks(
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        stacks_list = zen_store.list_stacks(
-            project_name_or_id=parse_name_or_uuid(project_name_or_id),
-            user_name_or_id=parse_name_or_uuid(user_name_or_id),
-            is_shared=is_shared,
-            name=stack_name,
-        )
-        if hydrated:
-            return [stack.to_hydrated_model() for stack in stacks_list]
-        else:
-            return stacks_list
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    stacks_list = zen_store.list_stacks(
+        project_name_or_id=parse_name_or_uuid(project_name_or_id),
+        user_name_or_id=parse_name_or_uuid(user_name_or_id),
+        is_shared=is_shared,
+        name=stack_name,
+    )
+    if hydrated:
+        return [stack.to_hydrated_model() for stack in stacks_list]
+    else:
+        return stacks_list
 
 
 @router.get(
@@ -89,6 +84,7 @@ async def list_stacks(
     response_model=Union[HydratedStackModel, StackModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def get_stack(
     stack_id: str, hydrated: bool = True
 ) -> Union[HydratedStackModel, StackModel]:
@@ -107,18 +103,11 @@ async def get_stack(
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        stack = zen_store.get_stack(UUID(stack_id))
-        if hydrated:
-            return stack.to_hydrated_model()
-        else:
-            return stack
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    stack = zen_store.get_stack(UUID(stack_id))
+    if hydrated:
+        return stack.to_hydrated_model()
+    else:
+        return stack
 
 
 @router.put(
@@ -126,6 +115,7 @@ async def get_stack(
     response_model=Union[HydratedStackModel, StackModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def update_stack(
     stack_id: str, stack_update: UpdateStackModel, hydrated: bool = True
 ) -> Union[HydratedStackModel, StackModel]:
@@ -141,31 +131,25 @@ async def update_stack(
         The updated stack.
 
     Raises:
-        401 error: when not authorized to login
+        401 error: when not authorized
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        stack_in_db = zen_store.get_stack(parse_name_or_uuid(stack_id))
-        updated_stack = zen_store.update_stack(
-            stack=stack_update.apply_to_model(stack_in_db)
-        )
-        if hydrated:
-            return updated_stack.to_hydrated_model()
-        else:
-            return updated_stack
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    stack_in_db = zen_store.get_stack(parse_name_or_uuid(stack_id))
+    updated_stack = zen_store.update_stack(
+        stack=stack_update.apply_to_model(stack_in_db)
+    )
+    if hydrated:
+        return updated_stack.to_hydrated_model()
+    else:
+        return updated_stack
 
 
 @router.delete(
     "/{stack_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def delete_stack(stack_id: str) -> None:
     """Deletes a stack.
 
@@ -177,11 +161,4 @@ async def delete_stack(stack_id: str) -> None:
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    try:
-        zen_store.delete_stack(UUID(stack_id))  # aka 'deregister_stack'
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    zen_store.delete_stack(UUID(stack_id))  # aka 'deregister_stack'
