@@ -1047,7 +1047,7 @@ if terraform_installed:  # noqa: C901
                     if stack_recipe_service:
                         cli_utils.declare(
                             "An existing deployment of the recipe found. "
-                            f"at {local_stack_recipe.path} "
+                            f"with path {local_stack_recipe.path}. "
                             "Proceeding to update or create resources. "
                         )
                     else:
