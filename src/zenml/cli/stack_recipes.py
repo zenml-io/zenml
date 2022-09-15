@@ -18,7 +18,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, List, Optional, cast
+from typing import Any, ClassVar, List, Optional, cast
 
 import click
 from packaging.version import Version, parse
@@ -81,7 +81,7 @@ class StackRecipeService(TerraformService):
         flavor="recipes",
     )
 
-    STACK_RECIPES_CONFIG_PATH = os.path.join(
+    STACK_RECIPES_CONFIG_PATH: ClassVar[str] = os.path.join(
         io_utils.get_global_config_directory(),
         "stack_recipes",
     )
@@ -167,7 +167,7 @@ class StackRecipeService(TerraformService):
             The path to the stack yaml file.
         """
         # return the path of the stack yaml file
-        _, stack_file_path, _ = self.terraform_client.output(
+        stack_file_path = self.terraform_client.output(
             "stack-yaml-path", full_value=True
         )
         return str(stack_file_path)
@@ -200,7 +200,7 @@ class StackRecipeService(TerraformService):
         from zenml.services import ServiceRegistry
 
         try:
-            for root, _, files in os.walk(cls.STACK_RECIPES_CONFIG_PATH):
+            for root, _, files in os.walk(str(cls.STACK_RECIPES_CONFIG_PATH)):
                 for file in files:
                     if file == SERVICE_CONFIG_FILE_NAME:
                         service_config_path = os.path.join(root, file)
@@ -1027,12 +1027,14 @@ if terraform_installed:  # noqa: C901
                     "resources with the same values as above don't already "
                     "exist on your cloud account."
                 ):
+                    from zenml.cli.stack_recipes import StackRecipeService
                     # Telemetry
                     track_event(
                         AnalyticsEvent.RUN_STACK_RECIPE,
                         {"stack_recipe_name": stack_recipe_name},
                     )
                     terraform_config = TerraformServiceConfig(
+                        root_runtime_path=str(StackRecipeService.STACK_RECIPES_CONFIG_PATH),
                         directory_path=str(local_stack_recipe.path),
                         log_level=log_level,
                         variables_file_path=VARIABLES_FILE,
@@ -1045,6 +1047,7 @@ if terraform_installed:  # noqa: C901
                     if stack_recipe_service:
                         cli_utils.declare(
                             "An existing deployment of the recipe found. "
+                            f"at {local_stack_recipe.path} "
                             "Proceeding to update or create resources. "
                         )
                     else:
