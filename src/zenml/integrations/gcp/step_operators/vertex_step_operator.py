@@ -103,8 +103,8 @@ class VertexStepOperator(
             #  store
             return (
                 (
-                    stack.orchestrator.FLAVOR == "local"
-                    and stack.artifact_store.FLAVOR == "gcp"
+                    stack.orchestrator.flavor == "local"
+                    and stack.artifact_store.flavor == "gcp"
                 ),
                 "Only local orchestrator and GCP artifact store are currently "
                 "supported",

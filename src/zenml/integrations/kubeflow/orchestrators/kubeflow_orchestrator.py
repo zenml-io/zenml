@@ -277,14 +277,14 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                         f"pipelines in a remote Kubernetes cluster designated "
                         f"by the '{self.kubernetes_context}' configuration "
                         f"context, but the '{stack_comp.name}' "
-                        f"{stack_comp.TYPE.value} is a local stack component "
+                        f"{stack_comp.type.value} is a local stack component "
                         f"and will not be available in the Kubeflow pipeline "
                         f"step.\nPlease ensure that you always use non-local "
                         f"stack components with a remote Kubeflow orchestrator, "
                         f"otherwise you may run into pipeline execution "
                         f"problems. You should use a flavor of "
-                        f"{stack_comp.TYPE.value} other than "
-                        f"'{stack_comp.FLAVOR}'.\n"
+                        f"{stack_comp.type.value} other than "
+                        f"'{stack_comp.flavor}'.\n"
                         + silence_local_validations_msg
                     )
 
@@ -302,7 +302,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                         f"a remote Kubeflow orchestrator, otherwise you will "
                         f"run into problems. You should use a flavor of "
                         f"container registry other than "
-                        f"'{container_registry.FLAVOR}'.\n"
+                        f"'{container_registry.flavor}'.\n"
                         + silence_local_validations_msg
                     )
 
@@ -322,7 +322,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                         f"local container registry because it cannot "
                         f"currently authenticate to external container "
                         f"registries. You should use a flavor of container "
-                        f"registry other than '{container_registry.FLAVOR}'.\n"
+                        f"registry other than '{container_registry.flavor}'.\n"
                         + silence_local_validations_msg
                     )
 
@@ -442,7 +442,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             host_path = k8s_client.V1HostPathVolumeSource(
                 path=local_path, type="Directory"
             )
-            volume_name = f"{stack_comp.TYPE.value}-{stack_comp.name}"
+            volume_name = f"{stack_comp.type.value}-{stack_comp.name}"
             volumes[local_path] = k8s_client.V1Volume(
                 name=re.sub(r"[^0-9a-zA-Z-]+", "-", volume_name)
                 .strip("-")
@@ -452,7 +452,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             logger.debug(
                 "Adding host path volume for %s %s (path: %s) "
                 "in kubeflow pipelines container.",
-                stack_comp.TYPE.value,
+                stack_comp.type.value,
                 stack_comp.name,
                 local_path,
             )

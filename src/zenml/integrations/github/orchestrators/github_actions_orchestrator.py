@@ -177,7 +177,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 return False, (
                     "The GitHub Actions orchestrator currently only works with "
                     "GitHub container registries or public container "
-                    f"registries, but your {container_registry.FLAVOR} "
+                    f"registries, but your {container_registry.flavor} "
                     f"container registry '{container_registry.name}' requires "
                     "authentication."
                 )
@@ -187,7 +187,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                     return False, (
                         "The GitHub Actions orchestrator runs pipelines on "
                         "remote GitHub Actions runners, but the "
-                        f"'{component.name}' {component.TYPE.value} of your "
+                        f"'{component.name}' {component.type.value} of your "
                         "active stack is a local component. Please make sure "
                         "to only use remote stack components in combination "
                         "with the GitHub Actions orchestrator. "

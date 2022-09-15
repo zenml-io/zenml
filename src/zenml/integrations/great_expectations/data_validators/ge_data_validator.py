@@ -310,7 +310,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
 
                 repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
                 artifact_store = repo.active_stack.artifact_store
-                if artifact_store.FLAVOR != "local":
+                if artifact_store.flavor != "local":
                     self._context.config.data_docs_sites[
                         "zenml_local"
                     ] = self.get_data_docs_config("data_docs", local=True)

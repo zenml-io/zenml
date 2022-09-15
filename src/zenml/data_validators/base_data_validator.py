@@ -61,11 +61,11 @@ class BaseDataValidator(StackComponent):
                 f"actions with {cls.NAME}. You can create a new stack with "
                 f"a {cls.NAME} data validator component or update your "
                 f"active stack to add this component, e.g.:\n\n"
-                f"  `zenml data-validator register {cls.FLAVOR} "
-                f"--flavor={cls.FLAVOR} ...`\n"
-                f"  `zenml stack register <STACK-NAME> -dv {cls.FLAVOR} ...`\n"
+                f"  `zenml data-validator register {cls.flavor} "
+                f"--flavor={cls.flavor} ...`\n"
+                f"  `zenml stack register <STACK-NAME> -dv {cls.flavor} ...`\n"
                 f"  or:\n"
-                f"  `zenml stack update -dv {cls.FLAVOR}`\n\n"
+                f"  `zenml stack update -dv {cls.flavor}`\n\n"
             )
 
         return data_validator

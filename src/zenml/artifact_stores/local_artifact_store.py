@@ -116,9 +116,6 @@ class LocalArtifactStoreConfig(BaseArtifactStoreConfig):
 class LocalArtifactStore(BaseArtifactStore):
     """Artifact Store for local artifacts."""
 
-    # Class Configuration
-    FLAVOR: ClassVar[str] = "local"
-
     @staticmethod
     def open(name: PathType, mode: str = "r") -> Any:
         """Open a file at the given path.

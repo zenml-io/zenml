@@ -14,7 +14,7 @@
 """Implementation of the ZenML Stack Component class."""
 import textwrap
 from abc import ABC
-from typing import TYPE_CHECKING, Any, Dict, Optional, Set, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Set
 from uuid import UUID
 
 from pydantic import BaseModel, Extra, root_validator
@@ -119,10 +119,6 @@ class StackComponent:
         self.user = user
         self.project = project
 
-    @property
-    def config_class(self) -> Type[Any]:
-        return StackComponentConfig
-
     @classmethod
     def from_model(cls, component_model: "ComponentModel") -> "StackComponent":
         from zenml.repository import Repository
@@ -196,7 +192,7 @@ class StackComponent:
         # not able to identify the 'correct' secrets manager that the user
         # wanted to resolve the secrets in a general way. We therefore
         # limit secret resolving to components of the active stack.
-        component = stack.components.get(self.TYPE, None)
+        component = stack.components.get(self.type, None)
         if not component or component.uuid != self.uuid:
             raise RuntimeError(
                 f"Failed to resolve secret reference for attribute {key} "
@@ -464,8 +460,8 @@ class StackComponent:
             f"{key}={value}" for key, value in self.dict().items()
         )
         return (
-            f"{self.__class__.__qualname__}(type={self.TYPE}, "
-            f"flavor={self.FLAVOR}, {attribute_representation})"
+            f"{self.__class__.__qualname__}(type={self.type}, "
+            f"flavor={self.flavor}, {attribute_representation})"
         )
 
     def __str__(self) -> str:
@@ -491,7 +487,7 @@ class StackComponent:
                 implemented correctly.
         """
         try:
-            stack_component_type = getattr(cls, "TYPE")
+            stack_component_type = getattr(cls, "type")
             assert stack_component_type in StackComponentType
         except (AttributeError, AssertionError):
             raise StackComponentInterfaceError(
@@ -499,7 +495,7 @@ class StackComponent:
                     """
                     When you are working with any classes which subclass from
                     `zenml.stack.StackComponent` please make sure that your
-                    class has a ClassVar named `TYPE` and its value is set to a
+                    class has a ClassVar named `type` and its value is set to a
                     `StackComponentType` from `from zenml.enums import
                     StackComponentType`.
 
@@ -513,20 +509,20 @@ class StackComponent:
                         path: str
 
                         # Class Variables
-                        TYPE: ClassVar[StackComponentType] = StackComponentType.ARTIFACT_STORE
+                        type: ClassVar[StackComponentType] = StackComponentType.ARTIFACT_STORE
                     """
                 )
             )
 
         try:
-            getattr(cls, "FLAVOR")
+            getattr(cls, "flavor")
         except AttributeError:
             raise StackComponentInterfaceError(
                 textwrap.dedent(
                     """
                     When you are working with any classes which subclass from
                     `zenml.stack.StackComponent` please make sure that your
-                    class has a defined ClassVar `FLAVOR`.
+                    class has a defined ClassVar `flavor`.
 
                     Example:
 
@@ -535,7 +531,7 @@ class StackComponent:
                         ...
 
                         # Define flavor as a ClassVar
-                        FLAVOR: ClassVar[str] = "local"
+                        flavor: ClassVar[str] = "local"
 
                         ...
                     """

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML local orchestrator."""
 
-from typing import TYPE_CHECKING, Any, ClassVar, List
+from typing import TYPE_CHECKING, Any, List
 
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
@@ -46,8 +46,6 @@ class LocalOrchestrator(BaseOrchestrator):
     This orchestrator does not allow for concurrent execution of steps and also
     does not support running on a schedule.
     """
-
-    FLAVOR: ClassVar[str] = "local"
 
     def prepare_or_run_pipeline(
         self,

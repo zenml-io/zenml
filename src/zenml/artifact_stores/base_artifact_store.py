@@ -212,8 +212,6 @@ class BaseArtifactStoreConfig(StackComponentConfig):
 class BaseArtifactStore(StackComponent):
     """Base class for all ZenML artifact stores."""
 
-    TYPE: ClassVar[StackComponentType] = StackComponentType.ARTIFACT_STORE
-
     # --- User interface ---
     @abstractmethod
     def open(self, name: PathType, mode: str = "r") -> Any:
@@ -418,9 +416,6 @@ class BaseArtifactStore(StackComponent):
         DEFAULT_FILESYSTEM_REGISTRY.register(
             filesystem_class, priority=priority
         )
-
-    def config_class(self):
-        return BaseArtifactStoreConfig
 
 
 class BaseArtifactStoreFlavor(Flavor):

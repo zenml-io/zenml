@@ -207,14 +207,14 @@ class VertexOrchestrator(
                 if not local_path:
                     continue
                 return False, (
-                    f"The '{stack_comp.name}' {stack_comp.TYPE.value} is a "
+                    f"The '{stack_comp.name}' {stack_comp.type.value} is a "
                     f"local stack component. The Vertex AI Pipelines "
                     f"orchestrator requires that all the components in the "
                     f"stack used to execute the pipeline have to be not local, "
                     f"because there is no way for Vertex to connect to your "
                     f"local machine. You should use a flavor of "
-                    f"{stack_comp.TYPE.value} other than '"
-                    f"{stack_comp.FLAVOR}'."
+                    f"{stack_comp.type.value} other than '"
+                    f"{stack_comp.flavor}'."
                 )
 
             # If the `pipeline_root` has not been defined in the orchestrator
@@ -222,7 +222,7 @@ class VertexOrchestrator(
             # then raise an error.
             if (
                 not self.pipeline_root
-                and stack.artifact_store.FLAVOR != GCP_ARTIFACT_STORE_FLAVOR
+                and stack.artifact_store.flavor != GCP_ARTIFACT_STORE_FLAVOR
             ):
                 return False, (
                     f"The attribute `pipeline_root` has not been set and it "

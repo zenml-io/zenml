@@ -79,7 +79,7 @@ class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
 
         def _ensure_local_orchestrator(stack: Stack) -> Tuple[bool, str]:
             return (
-                stack.orchestrator.FLAVOR == "local",
+                stack.orchestrator.flavor == "local",
                 "Local orchestrator is required",
             )
 

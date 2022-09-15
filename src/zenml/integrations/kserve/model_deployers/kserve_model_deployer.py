@@ -285,7 +285,7 @@ class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
         # differentiates between pure model and custom code deployments
         stack = Repository().active_stack
         stack_metadata = {
-            component_type.value: component.FLAVOR
+            component_type.value: component.flavor
             for component_type, component in stack.components.items()
         }
         metadata = {
@@ -560,7 +560,7 @@ class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
         # if the orchestrator is local, then we need to build a docker image with the repo
         # and requirements and push it to the container registry.
         # if the orchestrator is remote, then we can use the same image used to run the pipeline.
-        if stack.orchestrator.FLAVOR == "local":
+        if stack.orchestrator.flavor == "local":
             # more information about stack ..
             custom_docker_image_name = self.build_and_push_docker_image(
                 pipeline_name=pipeline_name,

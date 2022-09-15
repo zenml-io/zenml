@@ -124,14 +124,14 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                     f"pipelines in a remote Kubernetes cluster designated "
                     f"by the '{self.kubernetes_context}' configuration "
                     f"context, but the '{stack_comp.name}' "
-                    f"{stack_comp.TYPE.value} is a local stack component "
+                    f"{stack_comp.type.value} is a local stack component "
                     f"and will not be available in the Tekton pipeline "
                     f"step.\nPlease ensure that you always use non-local "
                     f"stack components with a Tekton orchestrator, "
                     f"otherwise you may run into pipeline execution "
                     f"problems. You should use a flavor of "
-                    f"{stack_comp.TYPE.value} other than "
-                    f"'{stack_comp.FLAVOR}'."
+                    f"{stack_comp.type.value} other than "
+                    f"'{stack_comp.flavor}'."
                 )
 
             if container_registry.is_local:
@@ -146,7 +146,7 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                     f"a Tekton orchestrator, otherwise you will "
                     f"run into problems. You should use a flavor of "
                     f"container registry other than "
-                    f"'{container_registry.FLAVOR}'."
+                    f"'{container_registry.flavor}'."
                 )
 
             return True, ""

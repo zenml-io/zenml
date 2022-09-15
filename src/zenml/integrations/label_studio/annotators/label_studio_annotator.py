@@ -67,7 +67,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         def _ensure_cloud_artifact_stores(stack: Stack) -> Tuple[bool, str]:
             # For now this only works on cloud artifact stores.
             return (
-                stack.artifact_store.FLAVOR
+                stack.artifact_store.flavor
                 in [
                     AZURE_ARTIFACT_STORE_FLAVOR,
                     GCP_ARTIFACT_STORE_FLAVOR,

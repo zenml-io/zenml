@@ -202,7 +202,7 @@ class KubernetesOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                     return False, (
                         f"The Kubernetes orchestrator currently only supports "
                         f"remote stacks, but the '{stack_comp.name}' "
-                        f"{stack_comp.TYPE.value} is a local component. "
+                        f"{stack_comp.type.value} is a local component. "
                         f"Please make sure to only use non-local stack "
                         f"components with a Kubernetes orchestrator."
                     )

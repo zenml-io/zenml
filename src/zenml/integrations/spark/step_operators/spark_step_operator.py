@@ -180,7 +180,7 @@ class SparkStepOperator(BaseStepOperator):
         from zenml.integrations.s3 import S3_ARTIFACT_STORE_FLAVOR
 
         # If S3, preconfigure the spark session
-        if artifact_store.FLAVOR == S3_ARTIFACT_STORE_FLAVOR:
+        if artifact_store.flavor == S3_ARTIFACT_STORE_FLAVOR:
             (
                 key,
                 secret,
@@ -220,7 +220,7 @@ class SparkStepOperator(BaseStepOperator):
                 "using. That also means, that when you use this step operator "
                 "with certain artifact store flavor, ZenML can take care of "
                 "the pre-configuration. However, the artifact store flavor "
-                f"'{artifact_store.FLAVOR}' featured in this stack is not "
+                f"'{artifact_store.flavor}' featured in this stack is not "
                 f"known to this step operator and it might require additional "
                 f"configuration."
             )

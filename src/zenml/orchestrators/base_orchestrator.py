@@ -198,11 +198,6 @@ class BaseOrchestrator(StackComponent, ABC):
     details of what needs to be implemented within it.
     """
 
-    TYPE = StackComponentType.ORCHESTRATOR
-
-    def config_class(self):
-        return BaseOrchestratorConfig
-
     @abstractmethod
     def prepare_or_run_pipeline(
         self,

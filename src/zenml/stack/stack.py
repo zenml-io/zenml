@@ -298,7 +298,7 @@ class Stack:
             A dictionary of all components of the stack.
         """
         return {
-            component.TYPE: component
+            component.type: component
             for component in [
                 self.orchestrator,
                 self.artifact_store,
@@ -492,7 +492,7 @@ class Stack:
         requirements = [
             component.requirements
             for component in self.components.values()
-            if component.TYPE not in exclude_components
+            if component.type not in exclude_components
         ]
         return set.union(*requirements) if requirements else set()
 
@@ -636,7 +636,7 @@ class Stack:
         for component in self.components.values():
             if not component.is_running:
                 raise StackValidationError(
-                    f"The '{component.name}' {component.TYPE} stack component "
+                    f"The '{component.name}' {component.type} stack component "
                     f"is not currently running. Please run the following "
                     f"command to provision and start the component:\n\n"
                     f"    `zenml stack up`\n"
