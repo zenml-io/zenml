@@ -14,7 +14,7 @@
 """Endpoint definitions for projects."""
 from typing import List, Optional, Union
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from zenml.constants import (
     FLAVORS,
@@ -23,13 +23,6 @@ from zenml.constants import (
     STACK_COMPONENTS,
     STACKS,
     VERSION_1,
-)
-from zenml.exceptions import (
-    EntityExistsError,
-    NotAuthorizedError,
-    StackComponentExistsError,
-    StackExistsError,
-    ValidationError,
 )
 from zenml.models import (
     ComponentModel,
@@ -49,13 +42,7 @@ from zenml.zen_server.models.projects_models import (
     UpdateProjectModel,
 )
 from zenml.zen_server.models.stack_models import CreateStackModel
-from zenml.zen_server.utils import (
-    conflict,
-    error_detail,
-    error_response,
-    not_found,
-    zen_store, handle_exceptions,
-)
+from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
     prefix=VERSION_1 + PROJECTS,

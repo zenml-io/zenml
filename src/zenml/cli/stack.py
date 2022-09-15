@@ -1217,7 +1217,7 @@ def copy_stack(
         copied_stack = StackModel.parse_obj(
             stack_model.dict(exclude={"id", "creation_date"})
         )
-        # TODO: [server] an actually new instance needs to be created hiere to
+        # TODO: [server] an actually new instance needs to be created here to
         #  to ensure a new stack id is created
         repo.register_stack(copied_stack)
 

@@ -85,6 +85,11 @@ class ComponentModel(AnalyticsTrackedModelMixin):
     )
 
     def to_hydrated_model(self) -> "HydratedComponentModel":
+        """Converts the `ComponentModel` into a `HydratedComponentModel`.
+
+        Returns:
+            The hydrated component model.
+        """
         zen_store = GlobalConfiguration().zen_store
 
         project = zen_store.get_project(self.project)
@@ -104,9 +109,7 @@ class ComponentModel(AnalyticsTrackedModelMixin):
 
 
 class HydratedComponentModel(ComponentModel):
-    """Network Serializable Model describing the Component with User and Project
-    fully hydrated.
-    """
+    """Component model with User and Project fully hydrated."""
 
     project: ProjectModel = Field(
         default=None, title="The project that contains this stack."

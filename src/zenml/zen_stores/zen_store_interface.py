@@ -916,8 +916,8 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_pipelines(
         self,
-        project_name_or_id: Optional[Union[str, UUID]],
-        user_name_or_id: Optional[Union[str, UUID]],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
     ) -> List[PipelineModel]:
         """List all pipelines in the project.
 
@@ -1085,9 +1085,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def update_run(
-        self, run: PipelineRunModel
-    ) -> PipelineRunModel:
+    def update_run(self, run: PipelineRunModel) -> PipelineRunModel:
         """Updates a pipeline run.
 
         Args:

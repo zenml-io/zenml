@@ -13,16 +13,20 @@
 #  permissions and limitations under the License.
 """Util functions for the ZenServer."""
 
+from functools import wraps
 from typing import Any, List
 
 from fastapi import HTTPException
 from pydantic import BaseModel, ValidationError
-from functools import wraps
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StoreType
-from zenml.exceptions import NotAuthorizedError, StackExistsError, \
-    StackComponentExistsError, EntityExistsError
+from zenml.exceptions import (
+    EntityExistsError,
+    NotAuthorizedError,
+    StackComponentExistsError,
+    StackExistsError,
+)
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 # TODO(Stefan): figure out how not to populate the ZenStore with default
@@ -111,17 +115,17 @@ def unprocessable(error: Exception) -> HTTPException:
 
 def handle_exceptions(f):
     @wraps(f)
-    def decorated(*args, **kwargs):
+    async def decorated(*args, **kwargs):
         try:
-            return f(*args, **kwargs)
+            return await f(*args, **kwargs)
         except NotAuthorizedError as error:
             raise not_authorized(error) from error
         except KeyError as error:
             raise not_found(error) from error
         except (
-                StackExistsError,
-                StackComponentExistsError,
-                EntityExistsError,
+            StackExistsError,
+            StackComponentExistsError,
+            EntityExistsError,
         ) as error:
             raise conflict(error) from error
         except ValidationError as error:

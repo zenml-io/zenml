@@ -15,22 +15,15 @@
 from typing import Dict, List, Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from zenml.constants import PIPELINES, RUNS, VERSION_1
-from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.models import PipelineRunModel
 from zenml.models.pipeline_models import HydratedPipelineModel, PipelineModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.models import UpdatePipelineModel
-from zenml.zen_server.utils import (
-    conflict,
-    error_detail,
-    error_response,
-    not_found,
-    zen_store, handle_exceptions,
-)
+from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
     prefix=VERSION_1 + PIPELINES,
@@ -58,6 +51,7 @@ async def get_pipelines(
         user_name_or_id: Optionally filter by name or ID of the user.
         hydrated: Defines if stack components, users and projects will be
                   included by reference (FALSE) or as model (TRUE)
+
     Returns:
         List of pipeline objects.
 

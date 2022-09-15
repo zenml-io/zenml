@@ -18,11 +18,6 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from zenml.constants import ACTIVATE, DEACTIVATE, ROLES, USERS, VERSION_1
-from zenml.exceptions import (
-    EntityExistsError,
-    NotAuthorizedError,
-    ValidationError,
-)
 from zenml.logger import get_logger
 from zenml.models import RoleAssignmentModel, UserModel
 from zenml.utils.uuid_utils import (
@@ -32,18 +27,12 @@ from zenml.utils.uuid_utils import (
 from zenml.zen_server.auth import authenticate_credentials, authorize
 from zenml.zen_server.models.user_management_models import (
     ActivateUserRequest,
-    DeactivateUserResponse,
     CreateUserModel,
     CreateUserResponse,
+    DeactivateUserResponse,
     UpdateUserRequest,
 )
-from zenml.zen_server.utils import (
-    conflict,
-    error_detail,
-    error_response,
-    not_found,
-    zen_store, handle_exceptions,
-)
+from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 logger = get_logger(__name__)
 
@@ -275,9 +264,7 @@ async def delete_user(user_name_or_id: str) -> None:
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    zen_store.delete_user(
-        user_name_or_id=parse_name_or_uuid(user_name_or_id)
-    )
+    zen_store.delete_user(user_name_or_id=parse_name_or_uuid(user_name_or_id))
 
 
 @router.get(

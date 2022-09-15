@@ -544,7 +544,7 @@ def test_list_stacks_succeeds(
     assert len(sql_store["store"].list_stacks()) == 1
 
 
-# TODO: remove xfail when we raise the error again
+# TODO: remove `xfail` when we raise the error again
 @pytest.mark.xfail
 def test_list_stacks_fails_with_nonexistent_project(
     sql_store: BaseZenStore,
@@ -1004,7 +1004,7 @@ def test_getting_nonexistent_run_fails(
         sql_store["store"].get_run(uuid.uuid4())
 
 
-# TODO: remove xfail once the method is propely implemented
+# TODO: remove `xfail` once the method is properly implemented
 @pytest.mark.xfail
 def test_get_run_in_project_succeeds(
     sql_store: BaseZenStore,

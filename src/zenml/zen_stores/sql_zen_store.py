@@ -2019,9 +2019,7 @@ class SqlZenStore(BaseZenStore):
             runs = session.exec(query).all()
             return [run.to_model() for run in runs]
 
-    def update_run(
-        self, run: PipelineRunModel
-    ) -> PipelineRunModel:
+    def update_run(self, run: PipelineRunModel) -> PipelineRunModel:
         """Updates a pipeline run.
 
         Args:

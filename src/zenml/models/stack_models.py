@@ -76,6 +76,11 @@ class StackModel(AnalyticsTrackedModelMixin):
             return False
 
     def to_hydrated_model(self) -> "HydratedStackModel":
+        """Create a hydrated version of the stack model.
+
+        Returns:
+            A hydrated version of the stack model.
+        """
         zen_store = GlobalConfiguration().zen_store
 
         components = {}
@@ -100,9 +105,7 @@ class StackModel(AnalyticsTrackedModelMixin):
 
 
 class HydratedStackModel(StackModel):
-    """Network Serializable Model describing the Stack with Components,
-    User and Project fully hydrated.
-    """
+    """Stack model with Components, User and Project fully hydrated."""
 
     components: Dict[StackComponentType, List[ComponentModel]] = Field(
         title="A mapping of stack component types to the actual"
