@@ -32,7 +32,7 @@ from zenml.zen_stores.schemas.stack_schemas import (
 class StackComponentSchema(SQLModel, table=True):
     """SQL Model for stack components."""
 
-    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    id: UUID = Field(primary_key=True)
 
     name: str
     is_shared: bool
@@ -46,7 +46,7 @@ class StackComponentSchema(SQLModel, table=True):
 
     configuration: bytes
 
-    creation_date: datetime = Field(default_factory=datetime.now)
+    creation_date: datetime
 
     stacks: List["StackSchema"] = Relationship(
         back_populates="components", link_model=StackCompositionSchema
@@ -67,6 +67,8 @@ class StackComponentSchema(SQLModel, table=True):
             The created `StackComponentSchema`.
         """
         return cls(
+            id=component.id,
+            creation_date=component.creation_date,
             name=component.name,
             project=project_id,
             user=user_id,

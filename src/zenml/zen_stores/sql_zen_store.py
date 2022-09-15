@@ -324,6 +324,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             project = self._get_project_schema(stack.project)
             user = self._get_user_schema(stack.user)
+
             # Check if stack with the domain key (name, project, owner) already
             #  exists
             existing_domain_stack = session.exec(
@@ -332,20 +333,21 @@ class SqlZenStore(BaseZenStore):
                 .where(StackSchema.project == stack.project)
                 .where(StackSchema.user == stack.user)
             ).first()
-            existing_id_stack = session.exec(
-                select(StackSchema).where(StackSchema.id == stack.id)
-            ).first()
-            # TODO: [server] This is ugly, make it prettier by combining into
-            #  one single query
-            if (
-                existing_domain_stack is not None
-                or existing_id_stack is not None
-            ):
+            if existing_domain_stack is not None:
                 raise StackExistsError(
                     f"Unable to register stack with name "
                     f"'{stack.name}': Found an existing stack with the same "
                     f"name in the same '{project.name}' project owned by the "
                     f"same '{user.name}' user."
+                )
+            existing_id_stack = session.exec(
+                select(StackSchema).where(StackSchema.id == stack.id)
+            ).first()
+            if existing_id_stack is not None:
+                raise StackExistsError(
+                    f"Unable to register stack with name "
+                    f"'{stack.name}' and id '{stack.id}': " 
+                    f" Found an existing component with the same id."
                 )
 
             # Get the Schemas of all components mentioned
@@ -366,6 +368,8 @@ class SqlZenStore(BaseZenStore):
             )
             session.add(stack_in_db)
             session.commit()
+
+            session.refresh(stack_in_db)
 
             return stack_in_db.to_model()
 
@@ -500,17 +504,11 @@ class SqlZenStore(BaseZenStore):
     # ----------------
 
     @track(AnalyticsEvent.REGISTERED_STACK_COMPONENT)
-    def register_stack_component(
-        self,
-        user_name_or_id: Union[UUID, str],
-        project_name_or_id: Union[str, UUID],
-        component: ComponentModel,
+    def register_stack_component(self, component: ComponentModel
     ) -> ComponentModel:
         """Create a stack component.
 
         Args:
-            user_name_or_id: The stack component owner.
-            project_name_or_id: The project the stack component is created in.
             component: The stack component to create.
 
         Returns:
@@ -521,26 +519,35 @@ class SqlZenStore(BaseZenStore):
                 and type is already owned by this user in this project.
         """
         with Session(self.engine) as session:
-            project = self._get_project_schema(project_name_or_id)
-            user = self._get_user_schema(user_name_or_id)
+            project = self._get_project_schema(component.project)
+            user = self._get_user_schema(component.user)
 
             # Check if component with the same domain key (name, type, project,
             # owner) already exists
-            existing_component = session.exec(
+            existing_domain_component = session.exec(
                 select(StackComponentSchema)
                 .where(StackComponentSchema.name == component.name)
-                .where(StackComponentSchema.project == project.id)
-                .where(StackComponentSchema.user == user.id)
+                .where(StackComponentSchema.project == component.project)
+                .where(StackComponentSchema.user == component.user)
                 .where(StackComponentSchema.type == component.type)
             ).first()
-
-            if existing_component is not None:
+            if existing_domain_component is not None:
                 raise StackComponentExistsError(
                     f"Unable to register '{component.type.value}' component "
                     f"with name '{component.name}': Found an existing "
                     f"component with the same name and type in the same "
                     f"'{project.name}' project owned by the same "
                     f"'{user.name}' user."
+                )
+            existing_id_component = session.exec(
+                select(StackComponentSchema)
+                .where(StackComponentSchema.id == component.id)
+            ).first()
+            if existing_id_component is not None:
+                raise StackComponentExistsError(
+                    f"Unable to register '{component.type.value}' component "
+                    f"with name '{component.name}' and id '{component.id}': " 
+                    f" Found an existing component with the same id."
                 )
 
             # Create the component
@@ -550,6 +557,8 @@ class SqlZenStore(BaseZenStore):
 
             session.add(component_in_db)
             session.commit()
+
+            session.refresh(component_in_db)
 
             return component_in_db.to_model()
 
@@ -581,10 +590,10 @@ class SqlZenStore(BaseZenStore):
 
     def list_stack_components(
         self,
-        project_name_or_id: Union[str, UUID],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
         type: Optional[str] = None,
         flavor_name: Optional[str] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
     ) -> List[ComponentModel]:
@@ -604,13 +613,15 @@ class SqlZenStore(BaseZenStore):
             A list of all stack components matching the filter criteria.
         """
         with Session(self.engine) as session:
-            project = self._get_project_schema(project_name_or_id)
 
             # Get a list of all stacks
-            query = select(StackComponentSchema).where(
-                StackComponentSchema.project == project.id
-            )
+            query = select(StackComponentSchema)
             # TODO: [server] prettify this
+            if project_name_or_id:
+                project = self._get_project_schema(project_name_or_id)
+                query = query.where(
+                    StackComponentSchema.project == project.id
+                )
             if type:
                 query = query.where(StackComponentSchema.type == type)
             if flavor_name:

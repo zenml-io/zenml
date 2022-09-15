@@ -106,6 +106,8 @@ class StackComponent:
         config: StackComponentConfig,
         flavor: str,
         type: StackComponentType,
+        user: UUID,
+        project: UUID,
         *args,
         **kwargs,
     ):
@@ -114,6 +116,8 @@ class StackComponent:
         self.config = config
         self.flavor = flavor
         self.type = type
+        self.user = user
+        self.project = project
 
     @property
     def config_class(self) -> Type[Any]:
@@ -140,6 +144,8 @@ class StackComponent:
         configuration = flavor.config_class(**component_model.configuration)
 
         return flavor.implementation_class(
+            user=component_model.user,
+            project=component_model.project,
             name=component_model.name,
             id=component_model.id,
             config=configuration,
@@ -149,6 +155,8 @@ class StackComponent:
 
     def to_model(self) -> "ComponentModel":
         return ComponentModel(
+            user=self.user,
+            project=self.project,
             id=self.id,
             type=self.type,
             flavor_name=self.flavor,

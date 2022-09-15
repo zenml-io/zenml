@@ -815,6 +815,8 @@ class Repository(metaclass=RepositoryMetaClass):
 
         # Create a new component model
         new_component = ComponentModel(
+            user=self.active_user.id,
+            project=self.active_project.id,
             name=component.name,
             flavor_name=component.flavor,
             type=component.type,
@@ -822,11 +824,7 @@ class Repository(metaclass=RepositoryMetaClass):
         )
 
         # Register the new model
-        return self.zen_store.register_stack_component(
-            project_name_or_id=self.active_project.id,
-            user_name_or_id=self.active_user.id,
-            component=new_component,
-        )
+        return self.zen_store.register_stack_component(component=new_component)
 
     def update_stack_component(
         self,

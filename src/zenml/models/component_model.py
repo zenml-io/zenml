@@ -13,10 +13,9 @@
 #  permissions and limitations under the License.
 """Model definition for stack components."""
 
-import json
 from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from pydantic import Field
 
@@ -50,10 +49,10 @@ class ComponentModel(AnalyticsTrackedModelMixin):
         "is_shared",
     ]
 
-    id: Optional[UUID] = Field(
-        default=None,
-        title="The id of the Stack Component.",
-    )
+    id: UUID = Field(
+        default_factory=uuid4,
+        title="The unique id of the component.")
+
     name: str = Field(
         title="The name of the Stack Component.",
     )
@@ -79,10 +78,11 @@ class ComponentModel(AnalyticsTrackedModelMixin):
     project: Optional[UUID] = Field(
         default=None, title="The project that contains this component."
     )
-    creation_date: Optional[datetime] = Field(
-        default=None,
+    creation_date: datetime = Field(
+        default_factory=datetime.now,
         title="The time at which the component was registered.",
     )
+
 
     def to_hydrated_model(self) -> "HydratedComponentModel":
         """Converts the `ComponentModel` into a `HydratedComponentModel`.

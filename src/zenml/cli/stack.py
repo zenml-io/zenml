@@ -1084,6 +1084,8 @@ def _import_stack_component(
     repo = Repository()
     repo.register_stack_component(
         ComponentModel(
+            user=repo.active_user.id,
+            project=repo.active_project.id,
             type=component_type,
             name=component_name,
             flavor_name=component_flavor,

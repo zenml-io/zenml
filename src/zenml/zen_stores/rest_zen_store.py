@@ -295,15 +295,11 @@ class RestZenStore(BaseZenStore):
 
     def register_stack_component(
         self,
-        user_name_or_id: Union[str, UUID],
-        project_name_or_id: Union[str, UUID],
         component: ComponentModel,
     ) -> ComponentModel:
         """Create a stack component.
 
         Args:
-            user_name_or_id: The stack component owner.
-            project_name_or_id: The project the stack component is created in.
             component: The stack component to create.
 
         Returns:
@@ -329,10 +325,10 @@ class RestZenStore(BaseZenStore):
 
     def list_stack_components(
         self,
-        project_name_or_id: Union[str, UUID],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
         type: Optional[str] = None,
         flavor_name: Optional[str] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
     ) -> List[ComponentModel]:
@@ -356,9 +352,7 @@ class RestZenStore(BaseZenStore):
         """
 
     def update_stack_component(
-        self,
-        component_id: UUID,
-        component: ComponentModel,
+            self, component: ComponentModel
     ) -> ComponentModel:
         """Update an existing stack component.
 

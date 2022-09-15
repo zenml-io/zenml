@@ -289,15 +289,11 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def register_stack_component(
         self,
-        user_name_or_id: Union[str, UUID],
-        project_name_or_id: Union[str, UUID],
         component: ComponentModel,
     ) -> ComponentModel:
         """Create a stack component.
 
         Args:
-            user_name_or_id: The stack component owner.
-            project_name_or_id: The project the stack component is created in.
             component: The stack component to create.
 
         Returns:
@@ -309,26 +305,12 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_stack_component(self, component_id: UUID) -> ComponentModel:
-        """Get a stack component by ID.
-
-        Args:
-            component_id: The ID of the stack component to get.
-
-        Returns:
-            The stack component.
-
-        Raises:
-            KeyError: if the stack component doesn't exist.
-        """
-
-    @abstractmethod
     def list_stack_components(
         self,
-        project_name_or_id: Union[str, UUID],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
         type: Optional[str] = None,
         flavor_name: Optional[str] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
     ) -> List[ComponentModel]:
@@ -349,6 +331,20 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: if the project doesn't exist.
+        """
+
+    @abstractmethod
+    def get_stack_component(self, component_id: UUID) -> ComponentModel:
+        """Get a stack component by ID.
+
+        Args:
+            component_id: The ID of the stack component to get.
+
+        Returns:
+            The stack component.
+
+        Raises:
+            KeyError: if the stack component doesn't exist.
         """
 
     @abstractmethod

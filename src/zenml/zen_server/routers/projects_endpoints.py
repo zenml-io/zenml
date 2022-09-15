@@ -31,12 +31,13 @@ from zenml.models import (
     ProjectModel,
     StackModel,
 )
-from zenml.models.component_models import HydratedComponentModel
+from zenml.models.component_model import HydratedComponentModel
 from zenml.models.pipeline_models import HydratedPipelineModel
 from zenml.models.stack_models import HydratedStackModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.models import CreatePipelineModel
+from zenml.zen_server.models.component_models import CreateComponentModel
 from zenml.zen_server.models.projects_models import (
     CreateProjectModel,
     UpdateProjectModel,
@@ -326,7 +327,7 @@ async def list_project_stack_components(
 @handle_exceptions
 async def create_stack_component(
     project_name_or_id: str,
-    component: ComponentModel,
+    component: CreateComponentModel,
     hydrated: bool = True,
     auth_context: AuthContext = Depends(authorize),
 ) -> Union[ComponentModel, HydratedComponentModel]:
@@ -344,11 +345,15 @@ async def create_stack_component(
         409 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    updated_component = zen_store.register_stack_component(
-        project_name_or_id=parse_name_or_uuid(project_name_or_id),
-        user_name_or_id=auth_context.user.id,
-        component=component,
+    project = zen_store.get_project(parse_name_or_uuid(project_name_or_id))
+    full_component = component.to_model(
+        project=project.id,
+        user=auth_context.user.id,
     )
+    # TODO: [server] validate that the configuration conforms to the flavor
+    #  schema
+    updated_component = zen_store.register_stack_component(
+        component=full_component)
     if hydrated:
         return updated_component.to_hydrated_model()
     else:

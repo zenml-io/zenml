@@ -210,7 +210,7 @@ def generate_stack_component_register_command(
         with console.status(f"Registering {display_name} '{name}'...\n"):
             cli_utils.print_active_config()
             cli_utils.print_active_stack()
-
+            repo = Repository()
             # Parse the given args
             parsed_args = cli_utils.parse_unknown_options(
                 args, expand_args=True
@@ -218,6 +218,8 @@ def generate_stack_component_register_command(
 
             # Create a new stack component model
             component_create_model = ComponentModel(
+                user=repo.active_user.id,
+                project=repo.active_project.id,
                 name=name,
                 flavor_name=flavor,
                 configuration=parsed_args,
@@ -480,6 +482,8 @@ def generate_stack_component_copy_command(
 
             # Register a new one with a new name
             component_create_model = ComponentModel(
+                user=repo.active_user.id,
+                project=repo.active_project.id,
                 name=target_component,
                 flavor_name=existing_component.flavor_name,
                 configuration=existing_component.configuration,

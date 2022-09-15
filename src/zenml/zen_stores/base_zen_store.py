@@ -345,9 +345,9 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
 
         # Register the default orchestrator
         orchestrator = self.register_stack_component(
-            user_name_or_id=user.name,
-            project_name_or_id=project.name,
             component=ComponentModel(
+                user=user.id,
+                project=project.id,
                 name="default",
                 type=StackComponentType.ORCHESTRATOR,
                 flavor="local",
@@ -364,9 +364,9 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         io_utils.create_dir_recursive_if_not_exists(artifact_store_path)
 
         artifact_store = self.register_stack_component(
-            user_name_or_id=user.name,
-            project_name_or_id=project.name,
             component=ComponentModel(
+                user=user.id,
+                project=project.id,
                 name="default",
                 type=StackComponentType.ARTIFACT_STORE,
                 flavor="local",

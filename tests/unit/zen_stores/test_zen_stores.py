@@ -201,9 +201,9 @@ def test_register_deregister_components(fresh_zen_store):
     for component_type in StackComponentType:
         component_type = StackComponentType(component_type)
         if component_type in required_components:
-            assert len(zen_store.get_stack_components(component_type)) == 1
+            assert len(zen_store.list_stack_components(type=component_type)) == 1
         else:
-            assert len(zen_store.get_stack_components(component_type)) == 0
+            assert len(zen_store.list_stack_components(type=component_type)) == 0
 
     # get a component
     orchestrator = zen_store.get_stack_component(
@@ -216,29 +216,23 @@ def test_register_deregister_components(fresh_zen_store):
     # can't add another orchestrator of same name
     with pytest.raises(StackComponentExistsError):
         zen_store.register_stack_component(
-            ComponentModel.from_component(
-                LocalOrchestrator(
-                    name="default",
-                )
-            )
+            ComponentModel.parse_obj(orchestrator.dict(exclude={"id"}))
         )
 
     # but can add one if it has a different name
+    new_orchestrator = orchestrator.dict(exclude={"id"})
+    new_orchestrator["name"] = "local_orchestrator_part_2_the_remix"
     zen_store.register_stack_component(
-        ComponentModel.from_component(
-            LocalOrchestrator(
-                name="local_orchestrator_part_2_the_remix",
-            )
-        )
+        ComponentModel.parse_obj(new_orchestrator)
     )
     assert (
-        len(zen_store.get_stack_components(StackComponentType.ORCHESTRATOR))
+        len(zen_store.list_stack_components(type=StackComponentType.ORCHESTRATOR))
         == 2
     )
 
     # can't delete an orchestrator that's part of a stack
     with pytest.raises(ValueError):
-        zen_store.deregister_stack_component(
+        zen_store.delete_stack_component(
             StackComponentType.ORCHESTRATOR, "default"
         )
 
