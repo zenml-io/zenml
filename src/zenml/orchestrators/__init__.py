@@ -24,5 +24,8 @@ orchestrator to handle the steps of your pipeline.
 """
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
+from zenml.orchestrators.local_docker.local_docker_orchestrator import (
+    LocalDockerOrchestrator,
+)
 
-__all__ = ["BaseOrchestrator", "LocalOrchestrator"]
+__all__ = ["BaseOrchestrator", "LocalOrchestrator", "LocalDockerOrchestrator"]

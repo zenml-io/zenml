@@ -148,7 +148,7 @@ Weights & Biases integration. One feature that is super useful is to enable
 ```python
 import wandb
 
-@enable_wandb(wandb.Settings(magic=True))
+@enable_wandb(settings=wandb.Settings(magic=True))
 @step
 def my_step(
         x_test: np.ndarray,

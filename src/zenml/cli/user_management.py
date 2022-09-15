@@ -51,6 +51,7 @@ def list_users() -> None:
 
     cli_utils.print_pydantic_models(
         users,
+        exclude_columns=["credentials"],
         is_active=lambda u: u.name == Repository().zen_store.active_user_name,
     )
 
@@ -58,16 +59,32 @@ def list_users() -> None:
 @user.command("create", help="Create a new user.")
 @click.argument("user_name", type=str, required=True)
 # @click.option("--email", type=str, required=True)
-# @click.password_option("--password", type=str, required=True)
-def create_user(user_name: str) -> None:
+@click.option(
+    "--password",
+    help=(
+        "The user password. If omitted, a prompt will be shown to enter the "
+        "password."
+    ),
+    required=False,
+    type=str,
+)
+def create_user(user_name: str, password: Optional[str] = None) -> None:
     """Create a new user.
 
     Args:
         user_name: The name of the user to create.
+        password: The password of the user to create.
     """
+    if not password:
+        password = click.prompt(
+            f"Password for user {user_name}",
+            hide_input=True,
+        )
+
     cli_utils.print_active_config()
+    user = UserModel(name=user_name, password=password)
     try:
-        Repository().zen_store.create_user(UserModel(name=user_name))
+        Repository().zen_store.create_user(user.hash_password())
     except EntityExistsError as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Created user '{user_name}'.")
@@ -232,7 +249,7 @@ def list_projects() -> None:
         active_project_id = active_project.id if active_project else None
         cli_utils.print_pydantic_models(
             projects,
-            columns=("name", "description", "created_at"),
+            columns=("name", "description", "creation_date"),
             is_active=(lambda p: p.id == active_project_id),
         )
     else:

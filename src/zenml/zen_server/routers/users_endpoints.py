@@ -15,21 +15,29 @@
 
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 
-from zenml.constants import INVITE_TOKEN, ROLES, USERS, VERSION_1
+from zenml.constants import ACTIVATE, DEACTIVATE, ROLES, USERS, VERSION_1
 from zenml.exceptions import (
     EntityExistsError,
     NotAuthorizedError,
     ValidationError,
 )
+from zenml.logger import get_logger
 from zenml.models import RoleAssignmentModel, UserModel
 from zenml.utils.uuid_utils import (
     parse_name_or_uuid,
     parse_optional_name_or_uuid,
 )
+from zenml.zen_server.auth import authenticate_credentials, authorize
+from zenml.zen_server.models.user_management_models import (
+    ActivateUserRequest,
+    DeactivateUserResponse,
+    CreateUserModel,
+    CreateUserResponse,
+    UpdateUserRequest,
+)
 from zenml.zen_server.utils import (
-    authorize,
     conflict,
     error_detail,
     error_response,
@@ -37,10 +45,19 @@ from zenml.zen_server.utils import (
     zen_store,
 )
 
+logger = get_logger(__name__)
+
 router = APIRouter(
     prefix=VERSION_1 + USERS,
     tags=["users"],
     dependencies=[Depends(authorize)],
+    responses={401: error_response},
+)
+
+
+activation_router = APIRouter(
+    prefix=VERSION_1 + USERS,
+    tags=["users"],
     responses={401: error_response},
 )
 
@@ -73,10 +90,10 @@ async def list_users() -> List[UserModel]:
 
 @router.post(
     "/",
-    response_model=UserModel,
+    response_model=CreateUserResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-async def create_user(user: UserModel) -> UserModel:
+async def create_user(user: CreateUserModel) -> CreateUserResponse:
     """Creates a user.
 
     # noqa: DAR401
@@ -93,7 +110,25 @@ async def create_user(user: UserModel) -> UserModel:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.create_user(user=user)
+        # Two ways of creating a new user:
+        # 1. Create a new user with a password and have it immediately active
+        # 2. Create a new user without a password and have it activated at a
+        # later time with an activation token
+
+        user_model = user.to_model()
+        token: Optional[str] = None
+        if user.password is None:
+            user_model.active = False
+            token = user_model.generate_activation_token()
+            user_model.hash_activation_token()
+        else:
+            user_model.active = True
+            user_model.hash_password()
+        new_user = zen_store.create_user(user_model)
+        # add back the original un-hashed activation token, if generated, to
+        # send it back to the client
+        new_user.activation_token = token
+        return CreateUserResponse.from_model(new_user)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
@@ -114,7 +149,7 @@ async def get_user(user_name_or_id: str) -> UserModel:
 
     Args:
         user_name_or_id: Name or ID of the user.
-        invite_token: Token to use for the invitation.
+        activation_token: Token to use for the invitation.
 
     Returns:
         A specific user.
@@ -141,7 +176,9 @@ async def get_user(user_name_or_id: str) -> UserModel:
     response_model=UserModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def update_user(user_name_or_id: str, user: UserModel) -> UserModel:
+async def update_user(
+    user_name_or_id: str, user: UpdateUserRequest
+) -> UserModel:
     """Updates a specific user.
 
     Args:
@@ -157,9 +194,100 @@ async def update_user(user_name_or_id: str, user: UserModel) -> UserModel:
         422 error: when unable to validate input
     """
     try:
+        existing_user = zen_store.get_user(parse_name_or_uuid(user_name_or_id))
+        user_model = user.to_model(user=existing_user)
+        if user.password is not None:
+            user_model.hash_password()
+
         return zen_store.update_user(
+            user_name_or_id=parse_name_or_uuid(user_name_or_id), user=user_model
+        )
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@activation_router.put(
+    "/{user_name_or_id}" + ACTIVATE,
+    response_model=UserModel,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def activate_user(
+    user_name_or_id: str, user: ActivateUserRequest
+) -> UserModel:
+    """Activates a specific user.
+
+    Args:
+        user_name_or_id: Name or ID of the user.
+        user: the user to to use for the update.
+
+    Returns:
+        The updated user.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        auth_context = authenticate_credentials(
+            user_name_or_id=parse_name_or_uuid(user_name_or_id),
+            activation_token=user.activation_token.get_secret_value(),
+        )
+        if auth_context is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication credentials",
+            )
+        user_model = user.to_model(user=auth_context.user)
+        user_model.hash_password()
+        user_model.active = True
+        user_model.activation_token = None
+        return zen_store.update_user(
+            user_name_or_id=parse_name_or_uuid(user_name_or_id), user=user_model
+        )
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@router.put(
+    "/{user_name_or_id}" + DEACTIVATE,
+    response_model=DeactivateUserResponse,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+async def deactivate_user(user_name_or_id: str) -> UserModel:
+    """Deactivates a user and generates a new activation token for it.
+
+    Args:
+        user_name_or_id: Name or ID of the user.
+
+    Returns:
+        The generated activation token.
+
+    Raises:
+        401 error: when not authorized to login
+        404 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        user = zen_store.get_user(parse_name_or_uuid(user_name_or_id))
+        user.active = False
+        token = user.generate_activation_token()
+        user.hash_activation_token()
+        user = zen_store.update_user(
             user_name_or_id=parse_name_or_uuid(user_name_or_id), user=user
         )
+        # add back the original un-hashed activation token, if generated, to
+        # send it back to the client
+        user.activation_token = token
+        return DeactivateUserResponse.from_model(user)
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
@@ -266,65 +394,6 @@ async def assign_role(
         raise conflict(error) from error
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
-
-
-@router.get(
-    "/{user_name_or_id}" + INVITE_TOKEN,
-    response_model=str,
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-async def get_invite_token(user_name_or_id: str) -> str:
-    """Gets an invite token for a given user.
-
-    If no invite token exists, one is created.
-
-    Args:
-        user_name_or_id: Name or ID of the user.
-
-    Returns:
-        An invite token.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
-    """
-    try:
-        # TODO: implement this
-        return ""  # zen_store.get_invite_token(parse_name_or_uuid(user_name_or_id))
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
-
-
-@router.delete(
-    "/{user_name_or_id}" + INVITE_TOKEN,
-    responses={401: error_response, 409: error_response, 422: error_response},
-)
-async def invalidate_invite_token(user_name_or_id: str) -> None:
-    """Invalidates an invite token for a given user.
-
-    Args:
-        user_name_or_id: Name or ID of the user.
-
-    Raises:
-        401 error: when not authorized to login
-        409 error: when trigger does not exist
-        422 error: when unable to validate input
-    """
-    try:
-        # TODO: implement this
-        # zen_store.invalidate_invite_token(parse_name_or_uuid(user_name_or_id))
-        pass
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=409, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
 

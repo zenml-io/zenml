@@ -17,14 +17,12 @@
 from fastapi import FastAPI
 
 import zenml
-from zenml.enums import StoreType
-from zenml.repository import Repository
 from zenml.zen_server.routers import (
     auth_endpoints,
+    flavors_endpoints,
     metadata_config_endpoints,
     pipelines_endpoints,
     projects_endpoints,
-    flavors_endpoints,
     roles_endpoints,
     runs_endpoints,
     stack_components_endpoints,
@@ -32,18 +30,6 @@ from zenml.zen_server.routers import (
     steps_endpoints,
     users_endpoints,
 )
-
-zen_store = Repository().zen_store
-# We override track_analytics=False because we do not
-# want to track anything server side.
-zen_store.track_analytics = False
-
-if zen_store.type == StoreType.REST:
-    raise ValueError(
-        "Server cannot be started with a REST store type. Make sure you "
-        "configure ZenML to use a non-networked store backend "
-        "when trying to start the ZenServer."
-    )
 
 app = FastAPI(title="ZenML", version=zenml.__version__)
 
@@ -74,6 +60,7 @@ app.include_router(stacks_endpoints.router)
 app.include_router(stack_components_endpoints.router)
 app.include_router(steps_endpoints.router)
 app.include_router(users_endpoints.router)
+app.include_router(users_endpoints.activation_router)
 # For future use
 
 # app.include_router(repositories_endpoints.router)

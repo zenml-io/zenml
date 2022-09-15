@@ -24,8 +24,8 @@ from zenml.exceptions import (
 )
 from zenml.models import RoleModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
+from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import (
-    authorize,
     conflict,
     error_detail,
     error_response,
@@ -157,8 +157,8 @@ async def update_role(role_name_or_id: str, role: RoleModel) -> RoleModel:
     try:
         # TODO: [server] this zen_store endpoint needs to be implemented
         return zen_store.update_role(
-            role_name_or_id=parse_name_or_uuid(role_name_or_id),
-            role=role)
+            role_name_or_id=parse_name_or_uuid(role_name_or_id), role=role
+        )
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:

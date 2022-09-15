@@ -186,18 +186,27 @@ def clean_repo(
 
 
 @pytest.fixture
-def fresh_sql_zen_store() -> BaseZenStore:
+def sql_store() -> BaseZenStore:
     with tempfile.TemporaryDirectory(suffix="_zenml_sql_test") as temp_dir:
-        yield SqlZenStore(
+        store = SqlZenStore(
             config=SqlZenStoreConfiguration(
                 url=f"sqlite:///{Path(temp_dir) / 'store.db'}"
             ),
             track_analytics=False,
         )
+        default_project = store.list_projects()[0]
+        default_stack = store.list_stacks()[0]
+        active_user = store.list_users()[0]
+        yield {
+            "store": store,
+            "default_project": default_project,
+            "default_stack": default_stack,
+            "active_user": active_user,
+        }
 
 
 @pytest.fixture
-def fresh_sql_store_with_team() -> BaseZenStore:
+def sql_store_with_team() -> BaseZenStore:
     with tempfile.TemporaryDirectory(suffix="_zenml_sql_test") as temp_dir:
         store = SqlZenStore(
             config=SqlZenStoreConfiguration(
@@ -207,7 +216,17 @@ def fresh_sql_store_with_team() -> BaseZenStore:
         )
         new_team = TeamModel(name="arias_team")
         store.create_team(new_team)
-        yield store
+        default_project = store.list_projects()[0]
+        default_stack = store.list_stacks()[0]
+        active_user = store.list_users()[0]
+        default_team = store.list_teams()[0]
+        yield {
+            "store": store,
+            "default_project": default_project,
+            "default_stack": default_stack,
+            "active_user": active_user,
+            "default_team": default_team,
+        }
 
 
 @pytest.fixture

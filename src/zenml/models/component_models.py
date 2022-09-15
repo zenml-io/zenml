@@ -23,8 +23,8 @@ from pydantic import Field
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
-from zenml.models.user_management_models import UserModel
 from zenml.models.project_models import ProjectModel
+from zenml.models.user_management_models import UserModel
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 if TYPE_CHECKING:
@@ -93,15 +93,17 @@ class ComponentModel(AnalyticsTrackedModelMixin):
         project = zen_store.get_project(self.project)
         user = zen_store.get_user(self.user)
 
-        return HydratedComponentModel(id=self.id,
-                                      name=self.name,
-                                      type=self.type,
-                                      flavor=self.flavor,
-                                      configuration=self.configuration,
-                                      project=project,
-                                      user=user,
-                                      is_shared=self.is_shared,
-                                      creation_date=self.creation_date)
+        return HydratedComponentModel(
+            id=self.id,
+            name=self.name,
+            type=self.type,
+            flavor=self.flavor,
+            configuration=self.configuration,
+            project=project,
+            user=user,
+            is_shared=self.is_shared,
+            creation_date=self.creation_date,
+        )
 
     @classmethod
     def from_component(cls, component: "StackComponent") -> "ComponentModel":
@@ -129,7 +131,7 @@ class ComponentModel(AnalyticsTrackedModelMixin):
         """
         from zenml.repository import Repository
 
-        assert self.flavor_name is not None
+        assert self.flavor is not None
         flavor = Repository(skip_repository_check=True).get_flavor(  # type: ignore[call-arg]
             name=self.flavor, component_type=self.type
         )
@@ -142,8 +144,9 @@ class ComponentModel(AnalyticsTrackedModelMixin):
 
 class HydratedComponentModel(ComponentModel):
     """Network Serializable Model describing the Component with User and Project
-     fully hydrated.
+    fully hydrated.
     """
+
     project: ProjectModel = Field(
         default=None, title="The project that contains this stack."
     )
@@ -154,25 +157,24 @@ class HydratedComponentModel(ComponentModel):
 
     class Config:
         """Pydantic config."""
+
         schema_extra = {
             "example": {
                 "id": "5e4286b5-51f4-4286-b1f8-b0143e9a27ce",
                 "name": "vertex_prd_orchestrator",
                 "type": "orchestrator",
                 "flavor": "vertex",
-                "configuration": {
-                    "location": "europe-west3"
-                },
+                "configuration": {"location": "europe-west3"},
                 "project": {
                     "id": "da63ad01-9117-4082-8a99-557ca5a7d324",
                     "name": "default",
                     "description": "Best project.",
-                    "creation_date": "2022-09-13T16:03:52.317039"
+                    "creation_date": "2022-09-13T16:03:52.317039",
                 },
                 "user": {
                     "id": "43d73159-04fe-418b-b604-b769dd5b771b",
                     "name": "default",
-                    "creation_date": "2022-09-13T16:03:52.329928"
+                    "creation_date": "2022-09-13T16:03:52.329928",
                 },
                 "created_at": "2022-08-12T07:12:44.931Z",
             }

@@ -23,13 +23,9 @@ from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.models import StackModel
 from zenml.models.stack_models import HydratedStackModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
+from zenml.zen_server.auth import authorize
 from zenml.zen_server.models.stack_models import UpdateStackModel
-from zenml.zen_server.utils import (
-    authorize,
-    error_detail,
-    error_response,
-    zen_store,
-)
+from zenml.zen_server.utils import error_detail, error_response, zen_store
 
 router = APIRouter(
     prefix=VERSION_1 + STACKS,
@@ -49,7 +45,7 @@ async def list_stacks(
     user_name_or_id: Optional[str] = None,
     stack_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
-    hydrated: bool = True
+    hydrated: bool = True,
 ) -> Union[List[HydratedStackModel], List[StackModel]]:
     """Returns all stacks.
 
@@ -74,7 +70,8 @@ async def list_stacks(
             project_name_or_id=parse_name_or_uuid(project_name_or_id),
             user_name_or_id=parse_name_or_uuid(user_name_or_id),
             is_shared=is_shared,
-            name=stack_name)
+            name=stack_name,
+        )
         if hydrated:
             return [stack.to_hydrated_model() for stack in stacks_list]
         else:
@@ -93,8 +90,7 @@ async def list_stacks(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def get_stack(
-    stack_id: str,
-    hydrated: bool = True
+    stack_id: str, hydrated: bool = True
 ) -> Union[HydratedStackModel, StackModel]:
     """Returns the requested stack.
 
@@ -131,9 +127,7 @@ async def get_stack(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def update_stack(
-    stack_id: str,
-    stack_update: UpdateStackModel,
-    hydrated: bool = True
+    stack_id: str, stack_update: UpdateStackModel, hydrated: bool = True
 ) -> Union[HydratedStackModel, StackModel]:
     """Updates a stack.
 
@@ -154,7 +148,8 @@ async def update_stack(
     try:
         stack_in_db = zen_store.get_stack(parse_name_or_uuid(stack_id))
         updated_stack = zen_store.update_stack(
-            stack=stack_update.apply_to_model(stack_in_db))
+            stack=stack_update.apply_to_model(stack_in_db)
+        )
         if hydrated:
             return updated_stack.to_hydrated_model()
         else:

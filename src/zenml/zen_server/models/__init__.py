@@ -11,4 +11,36 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Models for the API endpoint definitions."""
+"""ZenML Server API Models.
+
+These models are only used as REST API representations of the domain models
+in the context of different operations, where different fields can be omitted
+or even renamed depending on the REST endpoint where they are used. These are
+separate from the domain models and should provide conversion logic where
+needed.
+
+This separation allows the domain models and REST API to evolve independently
+of each other.
+"""
+
+from zenml.zen_server.models.pipeline_models import (
+    CreatePipelineModel,
+    UpdatePipelineModel,
+)
+from zenml.zen_server.models.projects_models import (
+    CreateProjectModel,
+    UpdateProjectModel,
+)
+from zenml.zen_server.models.stack_models import (
+    CreateStackModel,
+    UpdateStackModel,
+)
+
+__all__ = [
+    "CreateStackModel",
+    "UpdateStackModel",
+    "CreateProjectModel",
+    "UpdateProjectModel",
+    "CreatePipelineModel",
+    "UpdatePipelineModel",
+]

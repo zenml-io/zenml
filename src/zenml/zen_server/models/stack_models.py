@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Stack Models for the API endpoint definitions."""
-from typing import Optional, Dict, List
+from typing import Dict, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -23,6 +23,7 @@ from zenml.models import StackModel
 
 class CreateStackModel(BaseModel):
     """Model used for all update operations on stacks."""
+
     name: str
     description: Optional[str] = Field(
         default=None, title="The description of the stack", max_length=300
@@ -30,7 +31,7 @@ class CreateStackModel(BaseModel):
     components: Dict[StackComponentType, List[UUID]] = Field(
         default=None,
         title="A mapping of stack component types to the id's of"
-        "instances of components of this type."
+        "instances of components of this type.",
     )
     is_shared: bool = Field(
         default=False,
@@ -44,13 +45,12 @@ class CreateStackModel(BaseModel):
             project: Project context of the stack.
             user: User context of the stack
         """
-        return StackModel(project=project,
-                          user=user,
-                          **self.dict())
+        return StackModel(project=project, user=user, **self.dict())
 
 
 class UpdateStackModel(BaseModel):
     """Model used for all update operations on stacks."""
+
     name: Optional[str]
     description: Optional[str] = Field(
         default=None, title="The description of the stack", max_length=300
@@ -58,7 +58,7 @@ class UpdateStackModel(BaseModel):
     components: Optional[Dict[StackComponentType, List[UUID]]] = Field(
         default=None,
         title="A mapping of stack component types to the id's of"
-        "instances of components of this type."
+        "instances of components of this type.",
     )
     is_shared: Optional[bool] = Field(
         default=False,

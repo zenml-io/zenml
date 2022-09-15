@@ -1952,7 +1952,7 @@ paths:
           content:
             application/json:
               schema:
-                title: The Invite token
+                title: The Activation token
                 type: string
         '401': 
           $ref: '#/components/responses/401'
