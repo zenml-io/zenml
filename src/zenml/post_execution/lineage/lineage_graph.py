@@ -40,8 +40,8 @@ class LineageGraph(BaseModel):
 
     def generate_step_nodes_and_edges(self, step: StepView):
         step_output_artifacts = list(step.outputs.values())
-        execution_id = (
-            step_output_artifacts[0].producer_step.id
+        execution_id = str(
+            step_output_artifacts[0].producer_step_id
             if step_output_artifacts
             else step.id
         )
@@ -64,44 +64,38 @@ class LineageGraph(BaseModel):
         )
 
         for artifact_name, artifact in step.outputs.items():
+            artifact_id = ARTIFACT_PREFIX + str(artifact.id)
             self.nodes.append(
                 ArtifactNode(
-                    id=ARTIFACT_PREFIX + str(artifact.id),
+                    id=artifact_id,
                     type="artifact",
                     data=ArtifactNodeDetails(
-                        execution_id=artifact.id,
+                        execution_id=str(artifact.id),
                         name=artifact_name,
                         is_cached=artifact.is_cached,
                         artifact_type=artifact.type,
                         artifact_data_type=artifact.data_type,
-                        parent_step_id=artifact.parent_step_id,
-                        producer_step_id=artifact.producer_step.id,
+                        parent_step_id=str(artifact.parent_step_id),
+                        producer_step_id=str(artifact.producer_step_id),
                         uri=artifact.uri,
                     ),
                 )
             )
             self.edges.append(
                 Edge(
-                    id=STEP_PREFIX
-                    + str(step.id)
-                    + "_"
-                    + ARTIFACT_PREFIX
-                    + str(artifact.id),
-                    source=STEP_PREFIX + str(step.id),
-                    target=ARTIFACT_PREFIX + str(artifact.id),
+                    id=step_id + "_" + artifact_id,
+                    source=step_id,
+                    target=artifact_id,
                 )
             )
 
         for artifact_name, artifact in step.inputs.items():
+            artifact_id = ARTIFACT_PREFIX + str(artifact.id)
             self.edges.append(
                 Edge(
-                    id=STEP_PREFIX
-                    + str(step.id)
-                    + "_"
-                    + ARTIFACT_PREFIX
-                    + str(artifact.id),
-                    source=ARTIFACT_PREFIX + str(artifact.id),
-                    target=STEP_PREFIX + str(step.id),
+                    id=step_id + "_" + artifact_id,
+                    source=artifact_id,
+                    target=step_id,
                 )
             )
 
