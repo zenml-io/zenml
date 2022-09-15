@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Authentication module for ZenML server."""
 
 import os
 from typing import Callable, Optional, Union
@@ -43,6 +44,8 @@ class AuthScheme(StrEnum):
 
 
 class AuthContext(BaseModel):
+    """The authentication context."""
+
     user: UserModel
 
 

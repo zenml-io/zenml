@@ -73,7 +73,7 @@ class JWTToken(BaseModel):
     def decode(cls, token_type: JWTTokenType, token: str) -> "JWTToken":
         """Decodes a JWT access token.
 
-        Decodes a JWT access token and returns a JWTToken object with the
+        Decodes a JWT access token and returns a `JWTToken` object with the
         information retrieved from its subject claim.
 
         Args:
@@ -86,7 +86,6 @@ class JWTToken(BaseModel):
         Raises:
             AuthorizationException: If the token is invalid.
         """
-
         try:
             payload = jwt.decode(
                 token,

@@ -81,6 +81,11 @@ class PipelineModel(AnalyticsTrackedModelMixin):
     )
 
     def to_hydrated_model(self) -> "HydratedPipelineModel":
+        """Converts this model to a hydrated model.
+
+        Returns:
+            A hydrated model.
+        """
         zen_store = GlobalConfiguration().zen_store
 
         project = zen_store.get_project(self.project)
@@ -98,9 +103,7 @@ class PipelineModel(AnalyticsTrackedModelMixin):
 
 
 class HydratedPipelineModel(PipelineModel):
-    """Network Serializable Model describing the Component with User and Project
-    fully hydrated.
-    """
+    """Pipeline model with User and Project fully hydrated."""
 
     project: ProjectModel = Field(
         default=None, title="The project that contains this stack."

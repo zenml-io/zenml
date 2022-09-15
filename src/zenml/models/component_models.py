@@ -87,7 +87,28 @@ class ComponentModel(AnalyticsTrackedModelMixin):
         title="The time at which the component was registered.",
     )
 
+    class Config:
+        """Example of a json-serialized instance."""
+
+        schema_extra = {
+            "example": {
+                "id": "5e4286b5-51f4-4286-b1f8-b0143e9a27ce",
+                "name": "vertex_prd_orchestrator",
+                "type": "orchestrator",
+                "flavor": "vertex",
+                "configuration": {"location": "europe-west3"},
+                "project": "da63ad01-9117-4082-8a99-557ca5a7d324",
+                "user": "43d73159-04fe-418b-b604-b769dd5b771b",
+                "created_at": "2022-08-12T07:12:44.931Z",
+            }
+        }
+
     def to_hydrated_model(self) -> "HydratedComponentModel":
+        """Converts the `ComponentModel` into a `HydratedComponentModel`.
+
+        Returns:
+            The hydrated component model.
+        """
         zen_store = GlobalConfiguration().zen_store
 
         project = zen_store.get_project(self.project)
@@ -143,9 +164,7 @@ class ComponentModel(AnalyticsTrackedModelMixin):
 
 
 class HydratedComponentModel(ComponentModel):
-    """Network Serializable Model describing the Component with User and Project
-    fully hydrated.
-    """
+    """Component model with User and Project fully hydrated."""
 
     project: ProjectModel = Field(
         default=None, title="The project that contains this stack."
@@ -156,7 +175,7 @@ class HydratedComponentModel(ComponentModel):
     )
 
     class Config:
-        """Pydantic config."""
+        """Example of a json-serialized instance."""
 
         schema_extra = {
             "example": {
