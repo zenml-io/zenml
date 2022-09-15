@@ -23,13 +23,14 @@ from secrets import token_hex
 from zenml.config.global_config import GlobalConfiguration
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
+from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 from zenml.utils.enum_utils import StrEnum
 
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
-    from passlib.context import CryptContext
+    from passlib.context import CryptContext  # type: ignore[import]
 
 
 class RoleModel(AnalyticsTrackedModelMixin):
@@ -86,7 +87,7 @@ class JWTToken(BaseModel):
             AuthorizationException: If the token is invalid.
         """
         # import here to keep these dependencies out of the client
-        from jose import JWTError, jwt
+        from jose import JWTError, jwt  # type: ignore[import]
 
         try:
             payload = jwt.decode(
@@ -168,19 +169,23 @@ class UserModel(AnalyticsTrackedModelMixin):
         default_factory=uuid4, title="The unique id of the account."
     )
     name: str = Field(
-        "", title="The unique username for the account.", max_length=128
+        default="",
+        title="The unique username for the account.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
     full_name: str = Field(
-        "", title="The full name for the account owner.", max_length=128
+        default="",
+        title="The full name for the account owner.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
     email: str = Field(
-        "",
+        default="",
         title="The email address associated with the account.",
-        max_length=128,
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
-    active: bool = Field(False, title="Active account.")
-    password: Optional[SecretStr] = Field(None, exclude=True)
-    activation_token: Optional[SecretStr] = Field(None, exclude=True)
+    active: bool = Field(default=False, title="Active account.")
+    password: Optional[SecretStr] = Field(default=None, exclude=True)
+    activation_token: Optional[SecretStr] = Field(default=None, exclude=True)
     created_at: datetime = Field(
         default_factory=datetime.now, title="Time when the account was created."
     )

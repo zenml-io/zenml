@@ -195,7 +195,7 @@ async def update_user(
     """
     try:
         existing_user = zen_store.get_user(parse_name_or_uuid(user_name_or_id))
-        user_model = user.to_model(user=existing_user)
+        user_model = user.apply_to_model(user=existing_user)
         if user.password is not None:
             user_model.hash_password()
 
@@ -235,17 +235,17 @@ async def activate_user(
     try:
         auth_context = authenticate_credentials(
             user_name_or_id=parse_name_or_uuid(user_name_or_id),
-            activation_token=user.activation_token.get_secret_value(),
+            activation_token=user.activation_token,
         )
         if auth_context is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid authentication credentials",
             )
-        user_model = user.to_model(user=auth_context.user)
+        user_model = user.apply_to_model(user=auth_context.user)
         user_model.hash_password()
         user_model.active = True
-        user_model.activation_token = None
+        user_model.activation_token = None  
         return zen_store.update_user(
             user=user_model
         )

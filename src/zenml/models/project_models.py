@@ -18,6 +18,10 @@ from typing import ClassVar, List, Optional
 from uuid import UUID, uuid4
 
 from pydantic import Field
+from zenml.models.constants import (
+    MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
+    MODEL_NAME_FIELD_MAX_LENGTH,
+)
 
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
@@ -29,10 +33,17 @@ class ProjectModel(AnalyticsTrackedModelMixin):
         "id",
     ]
 
-    id: UUID = Field(default_factory=uuid4, title="The unique if of the project.")
-    name: str = Field(title="The unique name of the project.")
-    description: Optional[str] = Field(
-        default=None, title="The description of the project.", max_length=300
+    id: UUID = Field(
+        default_factory=uuid4, title="The unique id of the project."
+    )
+    name: str = Field(
+        title="The unique name of the project.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+    description: str = Field(
+        default="",
+        title="The description of the project.",
+        max_length=MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
     )
     creation_date: datetime = Field(
         default_factory=datetime.now,

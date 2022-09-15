@@ -16,7 +16,12 @@
 
 from typing import Optional
 
-from pydantic import BaseModel, SecretStr
+from pydantic import BaseModel, Field, SecretStr
+from zenml.models.constants import (
+    MODEL_NAME_FIELD_MAX_LENGTH,
+    USER_ACTIVATION_TOKEN_LENGTH,
+    USER_PASSWORD_MAX_LENGTH,
+)
 
 from zenml.models.user_management_models import UserModel
 
@@ -31,10 +36,23 @@ class CreateUserRequest(BaseModel):
         password: Password for the user account.
     """
 
-    name: str
-    full_name: Optional[str] = None
-    email: Optional[str] = None
-    password: Optional[str] = None
+    name: str = Field(
+        title="The unique username for the account.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+    full_name: Optional[str] = Field(
+        default=None,
+        title="The full name for the account owner.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+    email: Optional[str] = Field(
+        default=None,
+        title="The email address associated with the account.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+    password: Optional[str] = Field(
+        default=None, title="Account password.", max_length=USER_PASSWORD_MAX_LENGTH
+    )
 
     def to_model(self) -> UserModel:
         """Convert to a user model."""
@@ -45,9 +63,7 @@ class CreateUserRequest(BaseModel):
     @classmethod
     def from_model(cls, user: UserModel) -> "CreateUserRequest":
         """Convert from a user model."""
-        return cls(
-            **user.dict(), password=user.get_password()
-        )
+        return cls(**user.dict(), password=user.get_password())
 
 
 class CreateUserResponse(UserModel):
@@ -56,7 +72,9 @@ class CreateUserResponse(UserModel):
     The activation token is included in the response.
     """
 
-    activation_token: Optional[str] = None
+    activation_token: Optional[str] = Field(
+        default=None, title="Account activation token."
+    )
 
     @classmethod
     def from_model(cls, user: UserModel) -> "CreateUserResponse":
@@ -83,12 +101,26 @@ class UpdateUserRequest(BaseModel):
         password: Password for the user account.
     """
 
-    name: Optional[str] = None
-    full_name: Optional[str] = None
-    email: Optional[str] = None
-    password: Optional[str] = None
+    name: Optional[str] = Field(
+        default=None,
+        title="New unique username for the account.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+    full_name: Optional[str] = Field(
+        default=None,
+        title="New full name for the account owner.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+    email: Optional[str] = Field(
+        default=None,
+        title="New email address associated with the account.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+    password: Optional[str] = Field(
+        default=None, title="New account password.", max_length=USER_PASSWORD_MAX_LENGTH
+    )
 
-    def to_model(self, user: UserModel) -> UserModel:
+    def apply_to_model(self, user: UserModel) -> UserModel:
         """Convert to a user model."""
         for k, v in self.dict(exclude_none=True).items():
             setattr(user, k, v)
@@ -99,10 +131,9 @@ class UpdateUserRequest(BaseModel):
     @classmethod
     def from_model(cls, user: UserModel) -> "UpdateUserRequest":
         """Convert from a user model."""
-        response = cls(
-            **user.dict(), password=user.get_password()
-        )
+        response = cls(**user.dict(), password=user.get_password())
         return response
+
 
 class ActivateUserRequest(BaseModel):
     """Pydantic object representing a user activation request.
@@ -115,19 +146,39 @@ class ActivateUserRequest(BaseModel):
         activation_token: Activation token for the user account.
     """
 
-    name: Optional[str] = None
-    full_name: Optional[str] = None
-    email: Optional[str] = None
-    password: SecretStr
-    activation_token: SecretStr
+    name: Optional[str] = Field(
+        default=None,
+        title="Unique username for the account.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+    full_name: Optional[str] = Field(
+        default=None,
+        title="Full name for the account owner.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+    email: Optional[str] = Field(
+        default=None,
+        title="Email address associated with the account.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+    password: str = Field(
+        title="Account password.", max_length=USER_PASSWORD_MAX_LENGTH
+    )
+    activation_token: str = Field(
+        title="Account activation token.",
+        min_length=USER_ACTIVATION_TOKEN_LENGTH,
+        max_length=USER_ACTIVATION_TOKEN_LENGTH,
+    )
 
-    def to_model(self, user: UserModel) -> UserModel:
+    def apply_to_model(self, user: UserModel) -> UserModel:
         """Convert to a user model."""
         for k, v in self.dict(exclude_none=True).items():
             if k in ["activation_token", "password"]:
                 continue
             setattr(user, k, v)
-        user.password = self.password.get_secret_value()
+        user.password = self.password
+        # skip the activation token intentionally, because it is validated 
+        # separately
         return user
 
 
@@ -138,7 +189,7 @@ class DeactivateUserResponse(UserModel):
         activation_token: Activation token for the user account.
     """
 
-    activation_token: str
+    activation_token: str = Field(..., title="Account activation token.")
 
     @classmethod
     def from_model(cls, user: UserModel) -> "DeactivateUserResponse":

@@ -17,29 +17,47 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 from zenml.models import ProjectModel
+from zenml.models.constants import (
+    MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
+    MODEL_NAME_FIELD_MAX_LENGTH,
+)
 
 
 class CreateProjectModel(BaseModel):
     """Model used for all update operations on stacks."""
 
-    name: str = Field(title="The unique name of the stack.")
+    name: str = Field(
+        title="The unique name of the project.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
     description: Optional[str] = Field(
-        default=None, title="The description of the project.", max_length=300
+        default=None,
+        title="The description of the project.",
+        max_length=MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
     )
 
-    def to_model(self) -> "ProjectModel":
+    def to_model(self) -> ProjectModel:
         """Applies user defined changes to this model."""
         return ProjectModel.parse_obj(self)
+
+    @classmethod
+    def from_model(cls, project: ProjectModel) -> "CreateProjectModel":
+        """Convert from a project model."""
+        return cls(**project.dict())
 
 
 class UpdateProjectModel(BaseModel):
     """Model used for all update operations on stacks."""
 
     name: Optional[str] = Field(
-        default=None, title="The unique name of the stack."
+        default=None,
+        title="The new name of the project.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
     description: Optional[str] = Field(
-        default=None, title="The description of the project.", max_length=300
+        default=None,
+        title="The new description of the project.",
+        max_length=MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
     )
 
     def apply_to_model(self, project: "ProjectModel") -> "ProjectModel":
@@ -49,3 +67,8 @@ class UpdateProjectModel(BaseModel):
                 setattr(project, key, value)
 
         return project
+
+    @classmethod
+    def from_model(cls, project: ProjectModel) -> "UpdateProjectModel":
+        """Convert from a project model."""
+        return cls(**project.dict())

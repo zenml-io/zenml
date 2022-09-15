@@ -47,6 +47,10 @@ from zenml.models import (
     TeamModel,
     UserModel,
 )
+from zenml.zen_server.models.projects_models import (
+    CreateProjectModel,
+    UpdateProjectModel,
+)
 from zenml.zen_server.models.user_management_models import (
     CreateUserRequest,
     CreateUserResponse,
@@ -795,6 +799,8 @@ class RestZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If a project with the given name already exists.
         """
+        request = CreateProjectModel.from_model(project)
+        return ProjectModel.parse_obj(self.post(PROJECTS, body=request))
 
     def get_project(self, project_name_or_id: Union[UUID, str]) -> ProjectModel:
         """Get an existing project by name or ID.
@@ -818,6 +824,14 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all projects.
         """
+        response = self.get(PROJECTS)
+        if not isinstance(response, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(response)}"
+            )
+        return [
+            ProjectModel.parse_obj(project_dict) for project_dict in response
+        ]
 
     def update_project(self, project: ProjectModel) -> ProjectModel:
         """Update an existing project.
@@ -831,6 +845,10 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the project does not exist.
         """
+        request = UpdateProjectModel.from_model(project)
+        return ProjectModel.parse_obj(
+            self.put(f"{PROJECTS}/{str(project.id)}", body=request)
+        )
 
     def delete_project(self, project_name_or_id: Union[str, UUID]) -> None:
         """Deletes a project.
@@ -841,6 +859,7 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If no project with the given name exists.
         """
+        self.delete(f"{PROJECTS}/{str(project_name_or_id)}")
 
     # ------------
     # Repositories
