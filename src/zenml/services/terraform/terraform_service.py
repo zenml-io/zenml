@@ -333,13 +333,11 @@ class TerraformService(BaseService):
                         self.config.root_runtime_path,
                         str(self.uuid),
                     )
-                create_dir_recursive_if_not_exists(self.status.runtime_path)
+                create_dir_recursive_if_not_exists(str(self.status.runtime_path))
             else:
                 self.status.runtime_path = tempfile.mkdtemp(
                     prefix="zenml-service-"
                 )
-
-
 
     def provision(self) -> None:
         """Provision the service."""
@@ -382,21 +380,19 @@ class TerraformService(BaseService):
                     + self.get_service_status_message()
                 )
 
-    def stop(self, timeout: int = 0, force: bool = False) -> None:
+    def stop(self, timeout: int = 0) -> None:
         """Stop the service and optionally wait for it to shutdown.
 
         Args:
             timeout: amount of time to wait for the service to shutdown.
                 If set to 0, the method will return immediately after checking
                 the service status.
-            force: if True, the service will be stopped even if it is not
-                currently running.
 
         Raises:
             RuntimeError: if the service cannot be stopped
         """
         self.admin_state = ServiceState.INACTIVE
-        self.deprovision(force)
+        self.deprovision()
         if timeout > 0:
             self.poll_service_status(timeout)
             if not self.is_stopped:
