@@ -60,6 +60,7 @@ app.include_router(stacks_endpoints.router)
 app.include_router(stack_components_endpoints.router)
 app.include_router(steps_endpoints.router)
 app.include_router(users_endpoints.router)
+app.include_router(users_endpoints.activation_router)
 # For future use
 
 # app.include_router(repositories_endpoints.router)

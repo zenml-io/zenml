@@ -19,11 +19,15 @@ from uuid import UUID, uuid4
 
 from jose import JWTError, jwt
 from pydantic import BaseModel, Field, SecretStr, root_validator
+from secrets import token_hex
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.exceptions import AuthorizationException
+from zenml.logger import get_logger
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 from zenml.utils.enum_utils import StrEnum
+
+logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     from passlib.context import CryptContext
@@ -50,7 +54,6 @@ class JWTTokenType(StrEnum):
     """The type of JWT token."""
 
     ACCESS_TOKEN = "access_token"
-    INVITE_TOKEN = "invite_token"
 
 
 class JWTToken(BaseModel):
@@ -146,7 +149,7 @@ class UserModel(AnalyticsTrackedModelMixin):
         active: Whether the user account is active.
         created_at: Date when the user was created.
         password: Password for the user account.
-        invite_token: Invite token for the user account.
+        activation_token: Activation token for the user account.
     """
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
@@ -163,7 +166,7 @@ class UserModel(AnalyticsTrackedModelMixin):
     email: str = ""
     active: bool = False
     password: Optional[SecretStr] = Field(None, exclude=True)
-    invite_token: Optional[SecretStr] = Field(None, exclude=True)
+    activation_token: Optional[SecretStr] = Field(None, exclude=True)
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 
@@ -178,23 +181,27 @@ class UserModel(AnalyticsTrackedModelMixin):
 
         return CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-    def verify_password(self, plain_password: str) -> bool:
+    @classmethod
+    def verify_password(
+        cls, plain_password: str, user: Optional["UserModel"] = None
+    ) -> bool:
         """Verifies a given plain password against the stored password.
 
         Args:
             plain_password: Input password to be verified.
+            user: User for which the password is to be verified.
 
         Returns:
             True if the passwords match.
         """
-        if self.password is None:
-            return False
-        if not self.active:
-            return False
-        pwd_context = self._get_crypt_context()
-        return pwd_context.verify(
-            plain_password, self.password.get_secret_value()
-        )
+        # even when the user or password is not set, we still want to execute
+        # the password hash verification to protect against response discrepancy
+        # attacks (https://cwe.mitre.org/data/definitions/204.html)
+        hash: Optional[str] = None
+        if user is not None and user.password is not None and user.active:
+            hash = user.password.get_secret_value()
+        pwd_context = cls._get_crypt_context()
+        return pwd_context.verify(plain_password, hash)
 
     def get_password(self) -> Optional[str]:
         """Get the password.
@@ -218,21 +225,36 @@ class UserModel(AnalyticsTrackedModelMixin):
         self.password = pwd_context.hash(self.password.get_secret_value())
         return self
 
-    def verify_access_token(self, token: JWTToken) -> None:
+    @classmethod
+    def verify_access_token(cls, token: str) -> Optional["UserModel"]:
         """Verifies an access token.
 
-        Verifies an access token and returns True if the token is valid
-        and False otherwise.
+        Verifies an access token and returns the user that was used to generate
+        it if the token is valid and None otherwise.
 
         Args:
-            encoded_token: The access token to verify.
+            token: The access token to verify.
+
+        Returns:
+            The user that generated the token if valid, None otherwise.
         """
-        if (
-            token.token_type != JWTTokenType.ACCESS_TOKEN
-            or token.user_id != self.id
-            or not self.active
-        ):
-            raise AuthorizationException("Invalid access token")
+        try:
+            access_token = JWTToken.decode(
+                token_type=JWTTokenType.ACCESS_TOKEN, token=token
+            )
+        except AuthorizationException:
+            return None
+
+        zen_store = GlobalConfiguration().zen_store
+        try:
+            user = zen_store.get_user(user_name_or_id=access_token.user_id)
+        except KeyError:
+            return None
+
+        if access_token.user_id == user.id and user.active:
+            return user
+
+        return None
 
     def generate_access_token(self) -> str:
         """Generates an access token.
@@ -243,43 +265,64 @@ class UserModel(AnalyticsTrackedModelMixin):
             token_type=JWTTokenType.ACCESS_TOKEN, user_id=self.id
         ).encode()
 
-    def get_invite_token(self) -> Optional[str]:
-        """Get the invite token.
+    def get_activation_token(self) -> Optional[str]:
+        """Get the activation token.
 
         Returns:
-            The invite token as a plain string, if it exists.
+            The activation token as a plain string, if it exists.
         """
-        if self.invite_token is None:
+        if self.activation_token is None:
             return None
-        return self.invite_token.get_secret_value()
+        return self.activation_token.get_secret_value()
 
-    def verify_invite_token(self, invite_token: str) -> None:
-        """Verifies a given invite token against the stored invite token.
+    def hash_activation_token(self) -> "UserModel":
+        """Hashes the activation token and replaces it with the hashed value.
+
+        Returns:
+            The user model, as a convenience.
+        """
+        if self.activation_token is None:
+            return
+        pwd_context = self._get_crypt_context()
+        self.activation_token = pwd_context.hash(
+            self.activation_token.get_secret_value()
+        )
+        return self
+
+    @classmethod
+    def verify_activation_token(
+        cls, activation_token: str, user: Optional["UserModel"] = None
+    ) -> bool:
+        """Verifies a given activation token against the stored activation token.
 
         Args:
-            invite_token: Input invite token to be verified.
-
-        Raises:
-            AuthorizationException: If the invite token is invalid.
-        """
-        if (
-            self.active
-            or self.invite_token is None
-            or invite_token != self.invite_token
-        ):
-            raise AuthorizationException(
-                f"Invalid invite token for user {self.name}"
-            )
-
-    def generate_invite_token(self) -> str:
-        """Generates and stores a new invite token.
+            activation_token: Input activation token to be verified.
+            user: User for which the activation token is to be verified.
 
         Returns:
-            The generated invite token.
+            True if the token is valid.
         """
-        token = JWTToken(token_type=JWTTokenType.INVITE_TOKEN, user_id=self.id)
-        self.invite_token = token.encode()
-        return self.invite_token
+        # even when the user or token is not set, we still want to execute the
+        # token hash verification to protect against response discrepancy
+        # attacks (https://cwe.mitre.org/data/definitions/204.html)
+        hash: Optional[str] = None
+        if (
+            user is not None
+            and user.activation_token is not None
+            and not user.active
+        ):
+            hash = user.activation_token.get_secret_value()
+        pwd_context = cls._get_crypt_context()
+        return pwd_context.verify(activation_token, hash)
+
+    def generate_activation_token(self) -> str:
+        """Generates and stores a new activation token.
+
+        Returns:
+            The generated activation token.
+        """
+        self.activation_token = token_hex(32)
+        return self.activation_token
 
     class Config:
         """Pydantic configuration class."""

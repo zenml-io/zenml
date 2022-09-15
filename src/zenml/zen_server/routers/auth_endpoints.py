@@ -17,7 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.param_functions import Form
 
 from zenml.constants import LOGIN, VERSION_1
-from zenml.zen_server.auth import authenticate_user
+from zenml.zen_server.auth import authenticate_credentials
 from zenml.zen_server.utils import error_response
 
 router = APIRouter(
@@ -57,8 +57,9 @@ class PasswordRequestForm:
     responses={401: error_response},
 )
 async def token(auth_form_data: PasswordRequestForm = Depends()):
-    auth_context = authenticate_user(
-        auth_form_data.username, auth_form_data.password
+    auth_context = authenticate_credentials(
+        user_name_or_id=auth_form_data.username,
+        password=auth_form_data.password,
     )
     if not auth_context:
         raise HTTPException(
