@@ -27,7 +27,6 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import ProvisioningError
-
 from zenml.models import ComponentModel, StackModel
 from zenml.models.stack_models import StackModel
 from zenml.repository import Repository

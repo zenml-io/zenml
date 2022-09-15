@@ -15,9 +15,10 @@
 
 import json
 from datetime import datetime
-from pydantic import Field
 from typing import Any, ClassVar, Dict, List, Optional
 from uuid import UUID
+
+from pydantic import Field
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StackComponentType
@@ -100,43 +101,6 @@ class ComponentModel(AnalyticsTrackedModelMixin):
             is_shared=self.is_shared,
             creation_date=self.creation_date,
         )
-
-    @classmethod
-    def from_component(cls, component: "StackComponent") -> "ComponentModel":
-        """Creates a ComponentModel from an instance of a Stack Component.
-
-        Args:
-            component: the instance of a StackComponent
-
-        Returns:
-            a ComponentModel
-        """
-        return cls(
-            type=component.TYPE,
-            flavor=component.FLAVOR,
-            name=component.name,
-            id=component.uuid,
-            configuration=json.loads(component.json()),
-        )
-
-    def to_component(self) -> "StackComponent":
-        """Converts the ComponentModel into an instance of a Stack Component.
-
-        Returns:
-            a StackComponent
-        """
-        from zenml.repository import Repository
-
-        assert self.flavor is not None
-        flavor = Repository(skip_repository_check=True).get_flavor(
-            # type: ignore[call-arg]
-            name=self.flavor, component_type=self.type
-        )
-
-        config = self.configuration
-        config["uuid"] = self.id
-        config["name"] = self.name
-        return flavor.parse_obj(config)
 
 
 class HydratedComponentModel(ComponentModel):

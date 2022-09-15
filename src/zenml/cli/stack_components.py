@@ -15,10 +15,9 @@
 
 import time
 from importlib import import_module
-from typing import TYPE_CHECKING, Callable, List, Optional, Sequence, Type
+from typing import TYPE_CHECKING, Callable, List, Optional
 
 import click
-from pydantic import ValidationError
 from rich.markdown import Markdown
 
 from zenml.cli import utils as cli_utils
@@ -29,16 +28,13 @@ from zenml.cli.model import register_model_deployer_subcommands
 from zenml.cli.secret import register_secrets_manager_subcommands
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
-from zenml.exceptions import EntityExistsError
 from zenml.io import fileio
 from zenml.models import ComponentModel, FlavorModel
 from zenml.repository import Repository
-from zenml.stack.flavor import Flavor
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
-from zenml.utils.source_utils import validate_flavor_source
 
 if TYPE_CHECKING:
-    from zenml.stack import StackComponentConfig
+    pass
 
 
 def _component_display_name(
@@ -163,7 +159,7 @@ def generate_stack_component_list_command(
         active_stack = repo.active_stack_model
         active_component_name = None
         if component_type in active_stack.components.keys():
-            active_component = active_stack.components[component_type]
+            active_component = active_stack.components[component_type][0]
             active_component_name = active_component.name
 
         cli_utils.print_stack_component_list(
@@ -216,21 +212,25 @@ def generate_stack_component_register_command(
             cli_utils.print_active_stack()
 
             # Parse the given args
-            parsed_args = cli_utils.parse_unknown_options(args, expand_args=True)
+            parsed_args = cli_utils.parse_unknown_options(
+                args, expand_args=True
+            )
 
             # Create a new stack component model
             component_create_model = ComponentModel(
                 name=name,
                 flavor_name=flavor,
                 configuration=parsed_args,
-                type=component_type
+                type=component_type,
             )
 
             # Register the new model
             repo = Repository()
             repo.register_stack_component(component_create_model)
 
-            cli_utils.declare(f"Successfully registered {display_name} `{name}`.")
+            cli_utils.declare(
+                f"Successfully registered {display_name} `{name}`."
+            )
 
     return register_stack_component_command
 
@@ -269,15 +269,13 @@ def generate_stack_component_update_command(
 
             # Parse the given args
             parsed_args = cli_utils.parse_unknown_options(
-                args=args,
-                expand_args=True
+                args=args, expand_args=True
             )
 
             # Get the existing component
             repo = Repository()
             existing_component = repo.get_stack_component_by_name_and_type(
-                type=component_type,
-                name=name
+                type=component_type, name=name
             )
 
             # Update the existing configuration
@@ -337,8 +335,7 @@ def generate_stack_component_remove_attribute_command(
             repo = Repository()
 
             existing_component = repo.get_stack_component_by_name_and_type(
-                type=component_type,
-                name=name
+                type=component_type, name=name
             )
 
             # Remove the specified attributes
@@ -396,9 +393,7 @@ def generate_stack_component_rename_command(
 
             # Rename and update the existing component
             repo.update_stack_component(
-                component=existing_component.copy(
-                    update={"name": new_name}
-                ),
+                component=existing_component.copy(update={"name": new_name}),
             )
 
             cli_utils.declare(
@@ -488,7 +483,7 @@ def generate_stack_component_copy_command(
                 name=target_component,
                 flavor_name=existing_component.flavor_name,
                 configuration=existing_component.configuration,
-                type=existing_component.type
+                type=existing_component.type,
             )
             repo.register_stack_component(component=component_create_model)
 
@@ -589,7 +584,7 @@ def generate_stack_component_down_command(
         "old_force",
         is_flag=True,
         help="DEPRECATED: Deprovisions local resources instead of suspending "
-             "them. Use `-f/--force` instead.",
+        "them. Use `-f/--force` instead.",
     )
     def down_stack_component_command(
         name: Optional[str] = None,
@@ -832,8 +827,7 @@ def generate_stack_component_flavor_register_command(
 
             # Create a new model
             flavor_create_model = FlavorModel(
-                source=source,
-                type=component_type
+                source=source, type=component_type
             )
 
             # Register the new model
@@ -881,8 +875,7 @@ def generate_stack_component_flavor_describe_command(
             repo = Repository()
 
             flavor_model = repo.get_flavor_by_name_and_type(
-                name=name,
-                component_type=component_type
+                name=name, component_type=component_type
             )
 
             # TODO: Implement a utility function here to display the schema
@@ -923,7 +916,7 @@ def generate_stack_component_flavor_delete_command(
             # Fetch the flavor
             repo = Repository()
             existing_flavor = repo.get_flavor_by_name_and_type(
-                    name=name, component_type=component_type
+                name=name, component_type=component_type
             )
 
             # Delete the flavor
@@ -1030,7 +1023,7 @@ def register_single_stack_component_cli_commands(
     command_group.command(
         "up",
         help=f"Provisions or resumes local resources for the "
-             f"{singular_display_name} if possible.",
+        f"{singular_display_name} if possible.",
     )(up_command)
 
     # zenml stack-component down
@@ -1038,7 +1031,7 @@ def register_single_stack_component_cli_commands(
     command_group.command(
         "down",
         help=f"Suspends resources of the local {singular_display_name} "
-             f"deployment.",
+        f"deployment.",
     )(down_command)
 
     # zenml stack-component logs

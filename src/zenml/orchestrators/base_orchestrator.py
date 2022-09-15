@@ -35,8 +35,8 @@ import json
 import os
 import time
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 from google.protobuf.json_format import Parse
 from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
 from pydantic.json import pydantic_encoder

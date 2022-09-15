@@ -16,14 +16,13 @@
 import os
 from abc import ABCMeta
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 from uuid import UUID
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
     ENV_ZENML_REPOSITORY_PATH,
-    MANDATORY_COMPONENT_ATTRIBUTES,
     REPOSITORY_DIRECTORY_NAME,
     handle_bool_env_var,
 )
@@ -53,7 +52,7 @@ if TYPE_CHECKING:
         UserModel,
     )
     from zenml.runtime_configuration import RuntimeConfiguration
-    from zenml.stack import Stack, StackComponentConfig
+    from zenml.stack import Stack
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
@@ -557,7 +556,6 @@ class Repository(metaclass=RepositoryMetaClass):
         return self.zen_store.active_user
 
     @property
-
     def stack_models(self) -> List["HydratedStackModel"]:
         """All stack models in the current project, owned by the current user.
 
@@ -806,8 +804,7 @@ class Repository(metaclass=RepositoryMetaClass):
         """
         # Get the flavor model
         flavor_model = self.get_flavor_by_name_and_type(
-            name=component.flavor_name,
-            component_type=component.type
+            name=component.flavor, component_type=component.type
         )
 
         # Create and validate the configuration
@@ -819,7 +816,7 @@ class Repository(metaclass=RepositoryMetaClass):
         # Create a new component model
         new_component = ComponentModel(
             name=component.name,
-            flavor_name=component.flavor_name,
+            flavor_name=component.flavor,
             type=component.type,
             configuration=configuration,
         )
@@ -847,8 +844,8 @@ class Repository(metaclass=RepositoryMetaClass):
 
         # Get the flavor model of the existing component
         flavor_model = self.get_flavor_by_name_and_type(
-            name=existing_component_model.flavor_name,
-            component_type=existing_component_model.type
+            name=existing_component_model.flavor,
+            component_type=existing_component_model.type,
         )
 
         # Use the flavor class to validate the new configuration
@@ -856,9 +853,7 @@ class Repository(metaclass=RepositoryMetaClass):
         _ = flavor.config_class(**component.configuration)
 
         # Send the updated component to the ZenStore
-        return self.zen_store.update_stack_component(
-            component=component
-        )
+        return self.zen_store.update_stack_component(component=component)
 
     def deregister_stack_component(self, component: ComponentModel) -> None:
         """Deletes a registered stack component.
@@ -1012,9 +1007,7 @@ class Repository(metaclass=RepositoryMetaClass):
         Returns:
             The list of flavors.
         """
-        logger.debug(
-            f"Fetching the flavors of type {component_type}."
-        )
+        logger.debug(f"Fetching the flavors of type {component_type}.")
 
         from zenml.stack.flavor_registry import flavor_registry
 
@@ -1024,7 +1017,7 @@ class Repository(metaclass=RepositoryMetaClass):
 
         custom_flavors = self.zen_store.list_flavors(
             project_name_or_id=self.active_project.id,
-            component_type=component_type
+            component_type=component_type,
         )
 
         return zenml_flavors + custom_flavors

@@ -22,11 +22,9 @@ from pydantic import Field
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StackComponentType
-
 from zenml.models.component_model import ComponentModel
 from zenml.models.project_models import ProjectModel
 from zenml.models.user_management_models import UserModel
-
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 
