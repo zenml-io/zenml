@@ -14,16 +14,16 @@
 """Implementation of the ZenML Stack Component class."""
 import textwrap
 from abc import ABC
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Set, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Set, Type
+from uuid import UUID
 
 from pydantic import BaseModel, Extra, root_validator
-from uuid import UUID
+
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackComponentInterfaceError
 from zenml.logger import get_logger
-from zenml.models import ComponentModel, FlavorModel
+from zenml.models import ComponentModel
 from zenml.utils import secret_utils
-from zenml.utils.source_utils import load_source_path_class
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
@@ -34,7 +34,6 @@ logger = get_logger(__name__)
 
 
 class StackComponentConfig(BaseModel, ABC):
-
     def __init__(self, **kwargs: Any) -> None:
         """Ensures that secret references don't clash with pydantic validation.
 
@@ -108,7 +107,7 @@ class StackComponent:
         flavor: str,
         type: StackComponentType,
         *args,
-        **kwargs
+        **kwargs,
     ):
         self.id = id
         self.name = name
@@ -127,7 +126,7 @@ class StackComponent:
         flavor_model = Repository(
             skip_repository_check=True  # noqa
         ).get_flavor_by_name_and_type(
-            name=component_model.flavor_name,
+            name=component_model.flavor,
             component_type=component_model.type,
         )
 
@@ -138,16 +137,14 @@ class StackComponent:
         except (ModuleNotFoundError, ImportError, NotImplementedError):
             raise ImportError(f"tmp")
 
-        configuration = flavor.config_class(
-            **component_model.configuration
-        )
+        configuration = flavor.config_class(**component_model.configuration)
 
         return flavor.implementation_class(
             name=component_model.name,
             id=component_model.id,
             config=configuration,
-            flavor=component_model.flavor_name,
-            type=component_model.type
+            flavor=component_model.flavor,
+            type=component_model.type,
         )
 
     def to_model(self) -> "ComponentModel":

@@ -24,8 +24,8 @@ from zenml.exceptions import (
 )
 from zenml.models import RoleModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
+from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import (
-    authorize,
     conflict,
     error_detail,
     error_response,
@@ -110,7 +110,6 @@ async def get_role(role_name_or_id: str) -> RoleModel:
 
     Args:
         role_name_or_id: Name or ID of the role.
-        invite_token: Token to use for the invitation.
 
     Returns:
         A specific role.
@@ -130,6 +129,44 @@ async def get_role(role_name_or_id: str) -> RoleModel:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
+
+
+@router.put(
+    ROLES + "/{role_name_or_id}",
+    response_model=RoleModel,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+async def update_role(role_name_or_id: str, role: RoleModel) -> RoleModel:
+    """Updates a role.
+
+    # noqa: DAR401
+
+    Args:
+        role: Role to create.
+        role_name_or_id: Name or ID of the role.
+
+
+    Returns:
+        The created role.
+
+    Raises:
+        401 error: when not authorized to login
+        409 error: when trigger does not exist
+        422 error: when unable to validate input
+    """
+    try:
+        # TODO: [server] this zen_store endpoint needs to be implemented
+        return zen_store.update_role(
+            role_name_or_id=parse_name_or_uuid(role_name_or_id), role=role
+        )
+    except NotAuthorizedError as error:
+        raise HTTPException(status_code=401, detail=error_detail(error))
+    except KeyError as error:
+        raise HTTPException(status_code=409, detail=error_detail(error))
+    except ValidationError as error:
+        raise HTTPException(status_code=422, detail=error_detail(error))
+    except EntityExistsError as error:
+        raise conflict(error) from error
 
 
 @router.delete(
@@ -158,39 +195,3 @@ async def delete_role(role_name_or_id: str) -> None:
         raise HTTPException(status_code=422, detail=error_detail(error))
     except KeyError as error:
         raise not_found(error) from error
-
-
-# @router.get(ROLE_ASSIGNMENTS, response_model=List[RoleAssignment])
-# async def role_assignments() -> List[RoleAssignment]:
-#     """Returns all role assignments.
-
-#     Returns:
-#         All role assignments.
-#     """
-#     return zen_store.role_assignments
-
-
-# @router.delete(ROLE_ASSIGNMENTS, responses={404: error_response})
-# async def revoke_role(data: Dict[str, Any]) -> None:
-#     """Revokes a role.
-
-#     Args:
-#         data: Data containing the role assignment.
-
-#     Raises:
-#         not_found: when none are found
-#     """
-#     role_name = data["role_name"]
-#     entity_name = data["entity_name"]
-#     project_name = data.get("project_name")
-#     is_user = data.get("is_user", True)
-
-#     try:
-#         zen_store.revoke_role(
-#             role_name=role_name,
-#             entity_name=entity_name,
-#             project_name=project_name,
-#             is_user=is_user,
-#         )
-#     except KeyError as error:
-#         raise not_found(error) from error

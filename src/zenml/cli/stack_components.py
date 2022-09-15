@@ -209,8 +209,6 @@ def generate_stack_component_register_command(
         Args:
             name: Name of the component to register.
             flavor: Flavor of the component to register.
-            old_flavor: DEPRECATED: The flavor of the component to register.
-            interactive: Use interactive mode to fill missing values.
             args: Additional arguments to pass to the component.
         """
         with console.status(f"Registering {display_name} '{name}'...\n"):

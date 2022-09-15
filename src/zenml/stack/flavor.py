@@ -14,7 +14,7 @@
 """Base ZenML Flavor implementation"""
 
 from abc import abstractmethod
-from typing import Type, Optional
+from typing import Optional, Type
 
 from zenml.models import FlavorModel
 from zenml.stack.stack_component import (

@@ -28,38 +28,40 @@ from zenml.models.pipeline_models import ArtifactModel, StepRunModel
 class PipelineSchema(SQLModel, table=True):
     """SQL Model for pipelines."""
 
-    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    id: UUID = Field(primary_key=True)
 
     name: str
 
-    project_id: UUID = Field(foreign_key="projectschema.id")
-    owner: UUID = Field(foreign_key="userschema.id")
+    project: UUID = Field(foreign_key="projectschema.id")
+    user: UUID = Field(foreign_key="userschema.id")
 
     docstring: Optional[str] = Field(nullable=True)
     configuration: str
 
-    created_at: datetime = Field(default_factory=datetime.now)
+    creation_date: datetime
 
     runs: List["PipelineRunSchema"] = Relationship(
         back_populates="pipeline",
     )
 
     @classmethod
-    def from_create_model(cls, model: PipelineModel) -> "PipelineSchema":
+    def from_create_model(cls, pipeline: PipelineModel) -> "PipelineSchema":
         """Create a `PipelineSchema` from a `PipelineModel`.
 
         Args:
-            model: The `PipelineModel` to create the schema from.
+            pipeline: The `PipelineModel` to create the schema from.
 
         Returns:
             The created `PipelineSchema`.
         """
         return cls(
-            name=model.name,
-            project_id=model.project_id,
-            owner=model.owner,
-            docstring=model.docstring,
-            configuration=json.dumps(model.configuration),
+            id=pipeline.id,
+            creation_date=pipeline.creation_date,
+            name=pipeline.name,
+            project_id=pipeline.project,
+            user=pipeline.user,
+            docstring=pipeline.docstring,
+            configuration=json.dumps(pipeline.configuration),
         )
 
     def from_update_model(self, model: PipelineModel) -> "PipelineSchema":
@@ -84,22 +86,22 @@ class PipelineSchema(SQLModel, table=True):
         return PipelineModel(
             id=self.id,
             name=self.name,
-            project_id=self.project_id,
-            owner=self.owner,
+            project=self.project,
+            user=self.user,
             docstring=self.docstring,
             configuration=json.loads(self.configuration),
-            created_at=self.created_at,
+            creation_date=self.creation_date,
         )
 
 
 class PipelineRunSchema(SQLModel, table=True):
     """SQL Model for pipeline runs."""
 
-    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    id: UUID = Field(primary_key=True)
     name: str
 
     # project_id - redundant since stack has this
-    owner: Optional[UUID] = Field(foreign_key="userschema.id", nullable=True)
+    user: Optional[UUID] = Field(foreign_key="userschema.id", nullable=True)
     stack_id: Optional[UUID] = Field(
         foreign_key="stackschema.id", nullable=True
     )
@@ -111,7 +113,7 @@ class PipelineRunSchema(SQLModel, table=True):
     git_sha: Optional[str] = Field(nullable=True)
     zenml_version: str
 
-    created_at: datetime = Field(default_factory=datetime.now)
+    creation_date: datetime
 
     pipeline: PipelineSchema = Relationship(back_populates="runs")
 
@@ -120,28 +122,30 @@ class PipelineRunSchema(SQLModel, table=True):
     @classmethod
     def from_create_model(
         cls,
-        model: PipelineRunModel,
+        run: PipelineRunModel,
         pipeline: Optional[PipelineSchema] = None,
     ) -> "PipelineRunSchema":
         """Create a `PipelineRunSchema` from a `PipelineRunModel`.
 
         Args:
-            model: The `PipelineRunModel` to create the schema from.
+            run: The `PipelineRunModel` to create the schema from.
             pipeline: The `PipelineSchema` to link to the run.
 
         Returns:
             The created `PipelineRunSchema`.
         """
         return cls(
-            name=model.name,
-            stack_id=model.stack_id,
-            owner=model.owner,
-            pipeline_id=model.pipeline_id,
-            runtime_configuration=json.dumps(model.runtime_configuration),
-            git_sha=model.git_sha,
-            zenml_version=model.zenml_version,
+            id=run.id,
+            creation_date=run.creation_date,
+            name=run.name,
+            stack_id=run.stack_id,
+            user=run.user,
+            pipeline_id=run.pipeline_id,
+            runtime_configuration=json.dumps(run.runtime_configuration),
+            git_sha=run.git_sha,
+            zenml_version=run.zenml_version,
             pipeline=pipeline,
-            mlmd_id=model.mlmd_id,
+            mlmd_id=run.mlmd_id,
         )
 
     def from_update_model(self, model: PipelineRunModel) -> "PipelineRunSchema":
@@ -175,12 +179,12 @@ class PipelineRunSchema(SQLModel, table=True):
             id=self.id,
             name=self.name,
             stack_id=self.stack_id,
-            owner=self.owner,
+            user=self.user,
             pipeline_id=self.pipeline_id,
             runtime_configuration=config,
             git_sha=self.git_sha,
             zenml_version=self.zenml_version,
-            created_at=self.created_at,
+            creation_date=self.creation_date,
             mlmd_id=self.mlmd_id,
         )
 

@@ -31,6 +31,10 @@ from zenml.orchestrators.local.local_orchestrator import (
     LocalOrchestrator,
     LocalOrchestratorFlavor,
 )
+# TODO: Flavor refactoring
+from zenml.orchestrators.local_docker.local_docker_orchestrator import (
+    LocalDockerOrchestrator,
+)
 
 __all__ = [
     "BaseOrchestrator",
@@ -38,4 +42,5 @@ __all__ = [
     "BaseOrchestratorFlavor",
     "LocalOrchestrator",
     "LocalOrchestratorFlavor",
+    "LocalDockerOrchestrator",
 ]

@@ -21,11 +21,12 @@ from zenml.materializers.default_materializer_registry import (
 
 
 def _test_materialization(
-    type_,
-    example,
+    type_, example, artifact_uri=None, validation_function=None
 ):
     materializer_class = default_materializer_registry[type_]
     mock_artifact = DataArtifact()
+    if artifact_uri:
+        mock_artifact.uri = artifact_uri
     materializer = materializer_class(mock_artifact)
     data_path = os.path.abspath(mock_artifact.uri)
     existing_files = os.listdir(data_path)
@@ -36,6 +37,9 @@ def _test_materialization(
         loaded_data = materializer.handle_input(type_)
         assert isinstance(loaded_data, type_)  # correct type
         assert loaded_data == example  # correct content
+
+        if validation_function:
+            validation_function(data_path)
     finally:
         new_files = os.listdir(data_path)
         created_files = [
@@ -75,11 +79,32 @@ def test_empty_dict_list_tuple_materialization():
     _test_materialization(type_=tuple, example=())
 
 
-def test_simple_dict_list_tuple_materialization():
+def test_simple_dict_list_tuple_materialization(tmp_path):
     """Test materialization for `dict`, `list`, `tuple` with data."""
-    _test_materialization(type_=dict, example={"a": 0, "b": 1, "c": 2})
-    _test_materialization(type_=list, example=[0, 1, 2])
-    _test_materialization(type_=tuple, example=(0, 1, 2))
+    artifact_uri = str(tmp_path)
+
+    def _validate_single_file(artifact_uri: str) -> None:
+        files = os.listdir(artifact_uri)
+        assert len(files) == 1
+
+    _test_materialization(
+        type_=dict,
+        example={"a": 0, "b": 1, "c": 2},
+        artifact_uri=artifact_uri,
+        validation_function=_validate_single_file,
+    )
+    _test_materialization(
+        type_=list,
+        example=[0, 1, 2],
+        artifact_uri=artifact_uri,
+        validation_function=_validate_single_file,
+    )
+    _test_materialization(
+        type_=tuple,
+        example=(0, 1, 2),
+        artifact_uri=artifact_uri,
+        validation_function=_validate_single_file,
+    )
 
 
 def test_list_of_bytes_materialization():
@@ -118,3 +143,9 @@ def test_mixture_of_all_builtin_types():
         {1.0, 2.0, 4, 4},  # set of serializable types
     ]  # non-serializable list
     _test_materialization(type_=list, example=example)
+
+
+def test_none_values():
+    """Tests serialization of `None` values in container types."""
+    _test_materialization(type_=list, example=[1, "a", None])
+    _test_materialization(type_=dict, example={"key": None})

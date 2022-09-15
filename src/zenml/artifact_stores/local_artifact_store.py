@@ -39,6 +39,7 @@ from typing import (
     Any,
     Callable,
     ClassVar,
+    Dict,
     Iterable,
     List,
     Optional,
@@ -46,18 +47,20 @@ from typing import (
     Tuple,
     Type,
     Union,
-    ClassVar,
 )
 
-from pydantic import validator
+from pydantic import root_validator, validator
 
 from zenml.artifact_stores import (
     BaseArtifactStore,
     BaseArtifactStoreConfig,
     BaseArtifactStoreFlavor,
 )
+from zenml.config.global_config import GlobalConfiguration
+from zenml.constants import LOCAL_STORES_DIRECTORY_NAME
 from zenml.exceptions import ArtifactStoreInterfaceError
 from zenml.stack import StackComponent, StackComponentConfig
+from zenml.utils import io_utils
 
 PathType = Union[bytes, str]
 
@@ -85,6 +88,29 @@ class LocalArtifactStoreConfig(BaseArtifactStoreConfig):
                 f"start with one of the remote prefixes."
             )
         return path
+
+    @root_validator
+    def _default_local_path(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Generates a local artifact store path if not configured.
+
+        Args:
+            values: The values to validate.
+
+        Returns:
+            The validated values.
+        """
+        path = values.get("path")
+        artifact_store_id = values.get("uuid")
+        if path == "" and artifact_store_id:
+            artifact_store_path = os.path.join(
+                GlobalConfiguration().config_directory,
+                LOCAL_STORES_DIRECTORY_NAME,
+                str(artifact_store_id),
+            )
+            io_utils.create_dir_recursive_if_not_exists(artifact_store_path)
+            values["path"] = artifact_store_path
+
+        return values
 
 
 class LocalArtifactStore(BaseArtifactStore):

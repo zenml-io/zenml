@@ -48,6 +48,10 @@ class InitializationException(ZenMLBaseException):
     """Raised when an error occurred during initialization of a ZenML repository."""
 
 
+class AuthorizationException(ZenMLBaseException):
+    """Raised when an authorization error occurred while trying to access a ZenML resource ."""
+
+
 class DoesNotExistException(ZenMLBaseException):
     """Raises exception when the entity does not exist in the system but an action is being done that requires it to be present."""
 

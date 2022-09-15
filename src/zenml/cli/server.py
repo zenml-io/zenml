@@ -348,7 +348,7 @@ def get_server_logs(
     deployer = ServerDeployer()
 
     try:
-        logs = deployer.get_server_logs(server_name)
+        logs = deployer.get_server_logs(server_name, follow=follow, tail=tail)
     except ServerDeploymentNotFoundError as e:
         cli_utils.error(f"Server not found: {e}")
 

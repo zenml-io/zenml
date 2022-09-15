@@ -38,7 +38,7 @@ def is_valid_uuid(value: Any, version: int = 4) -> bool:
     return False
 
 
-def parse_name_or_uuid(name_or_id: str) -> Union[str, UUID]:
+def parse_name_or_uuid(name_or_id: Optional[str]) -> Union[str, UUID]:
     """Convert a "name or id" string value to a string or UUID.
 
     Args:
@@ -47,9 +47,12 @@ def parse_name_or_uuid(name_or_id: str) -> Union[str, UUID]:
     Returns:
         A UUID if name_or_id is a UUID, string otherwise.
     """
-    try:
-        return UUID(name_or_id)
-    except ValueError:
+    if name_or_id:
+        try:
+            return UUID(name_or_id)
+        except ValueError:
+            return name_or_id
+    else:
         return name_or_id
 
 

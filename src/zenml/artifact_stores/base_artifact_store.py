@@ -42,7 +42,7 @@ from typing import (
     Union,
 )
 
-from pydantic import root_validator, validator, ValidationError
+from pydantic import root_validator
 from tfx.dsl.io.fileio import NotFoundError
 
 from zenml.enums import StackComponentType

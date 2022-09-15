@@ -22,7 +22,7 @@ You can use Google Colab to see ZenML in action, no signup / installation requir
 
 ## :cloud: The Zen 🧘 way to run on a cloud provider of your choice
 
-If you're looking for a quick way to test the quickstart out on your cloud but don't want to go through the pain-staking process of creating all the required resources, we have just the solution for you: [stack recipes!](../../docs/book/cloud-guide/stack-recipes.md) 🥗
+If you're looking for a quick way to test the quickstart out on your cloud but don't want to go through the pain-staking process of creating all the required resources, we have just the solution for you: [stack recipes!](../../docs/book/stack-deployment-guide/stack-recipes.md) 🥗
 
 A flow to get started for this example can be the following:
 

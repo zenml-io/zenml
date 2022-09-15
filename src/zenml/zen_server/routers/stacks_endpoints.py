@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for stacks."""
 
-from typing import List, Optional
+from typing import List, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -21,13 +21,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from zenml.constants import STACKS, VERSION_1
 from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.models import StackModel
+from zenml.models.stack_models import HydratedStackModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
-from zenml.zen_server.utils import (
-    authorize,
-    error_detail,
-    error_response,
-    zen_store,
-)
+from zenml.zen_server.auth import authorize
+from zenml.zen_server.models.stack_models import UpdateStackModel
+from zenml.zen_server.utils import error_detail, error_response, zen_store
 
 router = APIRouter(
     prefix=VERSION_1 + STACKS,
@@ -39,18 +37,25 @@ router = APIRouter(
 
 @router.get(
     "/",
-    response_model=List[StackModel],
+    response_model=Union[List[HydratedStackModel], List[StackModel]],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 async def list_stacks(
-    project_name_or_id: str,
+    project_name_or_id: Optional[str] = None,
+    user_name_or_id: Optional[str] = None,
     stack_name: Optional[str] = None,
-) -> List[StackModel]:
+    is_shared: Optional[bool] = None,
+    hydrated: bool = True,
+) -> Union[List[HydratedStackModel], List[StackModel]]:
     """Returns all stacks.
 
     Args:
         project_name_or_id: Name or ID of the project
+        user_name_or_id: Optionally filter by name or ID of the user.
         stack_name: Optionally filter by stack name
+        is_shared: Optionally filter by shared status of the stack
+        hydrated: Defines if stack components, users and projects will be
+                  included by reference (FALSE) or as model (TRUE)
 
     Returns:
         All stacks.
@@ -61,10 +66,16 @@ async def list_stacks(
         422 error: when unable to validate input
     """
     try:
-        return zen_store.list_stacks(
+        stacks_list = zen_store.list_stacks(
             project_name_or_id=parse_name_or_uuid(project_name_or_id),
+            user_name_or_id=parse_name_or_uuid(user_name_or_id),
+            is_shared=is_shared,
             name=stack_name,
         )
+        if hydrated:
+            return [stack.to_hydrated_model() for stack in stacks_list]
+        else:
+            return stacks_list
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
@@ -75,14 +86,18 @@ async def list_stacks(
 
 @router.get(
     "/{stack_id}",
-    response_model=StackModel,
+    response_model=Union[HydratedStackModel, StackModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_stack(stack_id: str) -> StackModel:
+async def get_stack(
+    stack_id: str, hydrated: bool = True
+) -> Union[HydratedStackModel, StackModel]:
     """Returns the requested stack.
 
     Args:
         stack_id: ID of the stack.
+        hydrated: Defines if stack components, users and projects will be
+                  included by reference (FALSE) or as model (TRUE)
 
     Returns:
         The requested stack.
@@ -93,7 +108,11 @@ async def get_stack(stack_id: str) -> StackModel:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.get_stack(UUID(stack_id))
+        stack = zen_store.get_stack(UUID(stack_id))
+        if hydrated:
+            return stack.to_hydrated_model()
+        else:
+            return stack
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
@@ -104,15 +123,19 @@ async def get_stack(stack_id: str) -> StackModel:
 
 @router.put(
     "/{stack_id}",
-    response_model=StackModel,
+    response_model=Union[HydratedStackModel, StackModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def update_stack(stack_id: str, stack: StackModel) -> StackModel:
+async def update_stack(
+    stack_id: str, stack_update: UpdateStackModel, hydrated: bool = True
+) -> Union[HydratedStackModel, StackModel]:
     """Updates a stack.
 
     Args:
         stack_id: Name of the stack.
-        stack: Stack to use for the update.
+        stack_update: Stack to use for the update.
+        hydrated: Defines if stack components, users and projects will be
+                  included by reference (FALSE) or as model (TRUE)
 
     Returns:
         The updated stack.
@@ -123,7 +146,14 @@ async def update_stack(stack_id: str, stack: StackModel) -> StackModel:
         422 error: when unable to validate input
     """
     try:
-        return zen_store.update_stack(stack_id=UUID(stack_id), stack=stack)
+        stack_in_db = zen_store.get_stack(parse_name_or_uuid(stack_id))
+        updated_stack = zen_store.update_stack(
+            stack=stack_update.apply_to_model(stack_in_db)
+        )
+        if hydrated:
+            return updated_stack.to_hydrated_model()
+        else:
+            return updated_stack
     except NotAuthorizedError as error:
         raise HTTPException(status_code=401, detail=error_detail(error))
     except KeyError as error:
@@ -155,39 +185,3 @@ async def delete_stack(stack_id: str) -> None:
         raise HTTPException(status_code=404, detail=error_detail(error))
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=error_detail(error))
-
-
-# TODO: [server] this endpoint below might no longer be necessary as the
-#  full list of Component models can already be found on the StackModel
-#
-# @router.get(
-#     "/{stack_id}" + STACK_COMPONENTS,
-#     response_model=List[StackComponentType],
-#     responses={401: error_response, 404: error_response, 422: error_response},
-# )
-# async def get_stack_configuration(
-#     stack_id: str,
-# ) -> List[StackComponentType]:
-#     """Returns the configuration for the requested stack.
-#
-#     This comes in the form of a list of stack components within the stack.
-#
-#     Args:
-#         name: Name of the stack.
-#
-#     Returns:
-#         Configuration for the requested stack.
-#
-#     Raises:
-#         401 error: when not authorized to login
-#         404 error: when trigger does not exist
-#         422 error: when unable to validate input
-#     """
-#     try:
-#         return zen_store.get_stack_configuration(stack_id)
-#     except NotAuthorizedError as error:
-#         raise HTTPException(status_code=401, detail=error_detail(error))
-#     except KeyError as error:
-#         raise HTTPException(status_code=404, detail=error_detail(error))
-#     except ValidationError as error:
-#         raise HTTPException(status_code=422, detail=error_detail(error))

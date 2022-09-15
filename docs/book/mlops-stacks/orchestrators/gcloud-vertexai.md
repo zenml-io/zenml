@@ -18,7 +18,7 @@ runs.
 
 ## How to deploy it
 
-Check out our cloud guide [ZenML Cloud Guide](../../cloud-guide/overview.md)
+Check out our cloud guide [ZenML Cloud Guide](../../stack-deployment-guide/overview.md)
 for information on how to set up the Vertex orchestrator.
 
 ## How to use it

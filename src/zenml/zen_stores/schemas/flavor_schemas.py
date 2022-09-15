@@ -14,14 +14,13 @@
 """SQL Model Implementations for Flavors."""
 
 from datetime import datetime
+from typing import Optional
 from uuid import UUID, uuid4
 
 from sqlmodel import Field, SQLModel
 
 from zenml.enums import StackComponentType
 from zenml.models import FlavorModel
-
-from typing import List, Optional
 
 
 class FlavorSchema(SQLModel, table=True):

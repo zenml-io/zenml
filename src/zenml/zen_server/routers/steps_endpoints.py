@@ -20,8 +20,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from zenml.constants import INPUTS, OUTPUTS, STEPS, VERSION_1
 from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.models.pipeline_models import ArtifactModel, StepRunModel
+from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import (
-    authorize,
     error_detail,
     error_response,
     not_found,
