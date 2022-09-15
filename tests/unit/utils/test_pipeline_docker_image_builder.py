@@ -57,7 +57,6 @@ def test_check_user_is_set():
         replicate_local_python_environment="pip_freeze",
     )
     generated_dockerfile = PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile("test:test", config)
-    print(generated_dockerfile)
     assert "USER test_user" in generated_dockerfile
 
 
