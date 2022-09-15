@@ -818,7 +818,7 @@ class Repository(metaclass=RepositoryMetaClass):
             user=self.active_user.id,
             project=self.active_project.id,
             name=component.name,
-            flavor_name=component.flavor,
+            flavor=component.flavor,
             type=component.type,
             configuration=configuration,
         )

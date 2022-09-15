@@ -221,7 +221,7 @@ def generate_stack_component_register_command(
                 user=repo.active_user.id,
                 project=repo.active_project.id,
                 name=name,
-                flavor_name=flavor,
+                flavor=flavor,
                 configuration=parsed_args,
                 type=component_type,
             )
@@ -485,7 +485,7 @@ def generate_stack_component_copy_command(
                 user=repo.active_user.id,
                 project=repo.active_project.id,
                 name=target_component,
-                flavor_name=existing_component.flavor_name,
+                flavor=existing_component.flavor,
                 configuration=existing_component.configuration,
                 type=existing_component.type,
             )

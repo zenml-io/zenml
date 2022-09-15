@@ -83,7 +83,6 @@ class ComponentModel(AnalyticsTrackedModelMixin):
         title="The time at which the component was registered.",
     )
 
-
     def to_hydrated_model(self) -> "HydratedComponentModel":
         """Converts the `ComponentModel` into a `HydratedComponentModel`.
 
