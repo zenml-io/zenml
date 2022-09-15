@@ -22,7 +22,7 @@ from zenml.models.user_management_models import UserModel
 
 
 class CreateUserModel(BaseModel):
-    """Pydantic object representing a user create request.
+    """Model used for all create operations on users.
 
     Attributes:
         name: Name of the user.
@@ -37,7 +37,11 @@ class CreateUserModel(BaseModel):
     password: Optional[SecretStr] = None
 
     def to_model(self) -> UserModel:
-        """Convert to a user model."""
+        """Create a `UserModel` from this object.
+
+        Returns:
+            The created `UserModel`.
+        """
         return UserModel(
             **self.dict(exclude_none=True),
         )
@@ -53,7 +57,14 @@ class CreateUserResponse(UserModel):
 
     @classmethod
     def from_model(cls, user: UserModel) -> "CreateUserResponse":
-        """Convert from a user model."""
+        """Create a `CreateUserResponse` from a `UserModel`.
+
+        Args:
+            user: The `UserModel` to create the response from.
+
+        Returns:
+            The created `CreateUserResponse`.
+        """
         response = cls(
             **user.dict(), activation_token=user.get_activation_token()
         )
@@ -61,7 +72,7 @@ class CreateUserResponse(UserModel):
 
 
 class UpdateUserRequest(BaseModel):
-    """Pydantic object representing a user update request.
+    """Model used for all update operations on users.
 
     Attributes:
         name: Name of the user.
@@ -76,7 +87,14 @@ class UpdateUserRequest(BaseModel):
     password: Optional[SecretStr] = None
 
     def to_model(self, user: UserModel) -> UserModel:
-        """Convert to a user model."""
+        """Update a `UserModel` from this object.
+
+        Args:
+            user: The `UserModel` to apply the changes to.
+
+        Returns:
+            The updated `UserModel`.
+        """
         for k, v in self.dict(exclude_none=True).items():
             setattr(user, k, v)
         if self.password is not None:
@@ -102,7 +120,14 @@ class ActivateUserRequest(BaseModel):
     activation_token: SecretStr
 
     def to_model(self, user: UserModel) -> UserModel:
-        """Convert to a user model."""
+        """Apply the changes to a `UserModel`.
+
+        Args:
+            user: The `UserModel` to apply the changes to.
+
+        Returns:
+            The updated `UserModel`.
+        """
         for k, v in self.dict(exclude_none=True).items():
             if k in ["activation_token", "password"]:
                 continue
@@ -122,7 +147,14 @@ class DeactivateUserResponse(UserModel):
 
     @classmethod
     def from_model(cls, user: UserModel) -> "DeactivateUserResponse":
-        """Convert from a user model."""
+        """Create a `DeactivateUserResponse` from a `UserModel`.
+
+        Args:
+            user: The `UserModel` to create the response from.
+
+        Returns:
+            The created `DeactivateUserResponse`.
+        """
         response = cls(
             **user.dict(), activation_token=user.get_activation_token()
         )

@@ -62,11 +62,6 @@ async def list_users() -> List[UserModel]:
 
     Returns:
         A list of all users.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     return zen_store.list_users()
 
@@ -87,11 +82,6 @@ async def create_user(user: CreateUserModel) -> CreateUserResponse:
 
     Returns:
         The created user.
-
-    Raises:
-        401 error: when not authorized to login
-        409 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     # Two ways of creating a new user:
     # 1. Create a new user with a password and have it immediately active
@@ -108,7 +98,7 @@ async def create_user(user: CreateUserModel) -> CreateUserResponse:
         user_model.active = True
         user_model.hash_password()
     new_user = zen_store.create_user(user_model)
-    # add back the original un-hashed activation token, if generated, to
+    # add back the original unhashed activation token, if generated, to
     # send it back to the client
     new_user.activation_token = token
     return CreateUserResponse.from_model(new_user)
@@ -125,15 +115,9 @@ async def get_user(user_name_or_id: str) -> UserModel:
 
     Args:
         user_name_or_id: Name or ID of the user.
-        activation_token: Token to use for the invitation.
 
     Returns:
         A specific user.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     return zen_store.get_user(
         user_name_or_id=parse_name_or_uuid(user_name_or_id)
@@ -157,11 +141,6 @@ async def update_user(
 
     Returns:
         The updated user.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     existing_user = zen_store.get_user(parse_name_or_uuid(user_name_or_id))
     user_model = user.to_model(user=existing_user)
@@ -192,9 +171,7 @@ async def activate_user(
         The updated user.
 
     Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
+        HTTPException: If the user is not authorized to activate the user.
     """
     auth_context = authenticate_credentials(
         user_name_or_id=parse_name_or_uuid(user_name_or_id),
@@ -228,11 +205,6 @@ async def deactivate_user(user_name_or_id: str) -> UserModel:
 
     Returns:
         The generated activation token.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     user = zen_store.get_user(parse_name_or_uuid(user_name_or_id))
     user.active = False
@@ -241,7 +213,7 @@ async def deactivate_user(user_name_or_id: str) -> UserModel:
     user = zen_store.update_user(
         user_name_or_id=parse_name_or_uuid(user_name_or_id), user=user
     )
-    # add back the original un-hashed activation token, if generated, to
+    # add back the original unhashed activation token, if generated, to
     # send it back to the client
     user.activation_token = token
     return DeactivateUserResponse.from_model(user)
@@ -257,12 +229,6 @@ async def delete_user(user_name_or_id: str) -> None:
 
     Args:
         user_name_or_id: Name or ID of the user.
-
-    Raises:
-        not_found: when user does not exist
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     zen_store.delete_user(user_name_or_id=parse_name_or_uuid(user_name_or_id))
 
@@ -283,11 +249,6 @@ async def get_role_assignments_for_user(
 
     Returns:
         A list of all roles that are assigned to a user.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     return zen_store.list_role_assignments(
         user_name_or_id=parse_name_or_uuid(user_name_or_id)
@@ -312,12 +273,6 @@ async def assign_role(
         project_name_or_id: Name or ID of the project in which to assign the
             role to the user. If this is not provided, the role will be
             assigned globally.
-
-    Raises:
-        not_found: when user does not exist
-        401 error: when not authorized to login
-        409 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     zen_store.assign_role(
         role_name_or_id=parse_name_or_uuid(role_name_or_id),
@@ -344,11 +299,6 @@ async def unassign_role(
         role_name_or_id: Name or ID of the role.
         project_name_or_id: Name or ID of the project. If this is not
             provided, the role will be revoked globally.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     zen_store.revoke_role(
         role_name_or_id=parse_name_or_uuid(role_name_or_id),

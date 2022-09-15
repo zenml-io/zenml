@@ -41,11 +41,6 @@ async def list_roles() -> List[RoleModel]:
 
     Returns:
         List of all roles.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     return zen_store.list_roles()
 
@@ -66,11 +61,6 @@ async def create_role(role: RoleModel) -> RoleModel:
 
     Returns:
         The created role.
-
-    Raises:
-        401 error: when not authorized to login
-        409 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     return zen_store.create_role(role=role)
 
@@ -89,11 +79,6 @@ async def get_role(role_name_or_id: str) -> RoleModel:
 
     Returns:
         A specific role.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     return zen_store.get_role(
         role_name_or_id=parse_name_or_uuid(role_name_or_id)
@@ -118,11 +103,6 @@ async def update_role(role_name_or_id: str, role: RoleModel) -> RoleModel:
 
     Returns:
         The created role.
-
-    Raises:
-        401 error: when not authorized to login
-        409 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     # TODO: [server] this zen_store endpoint needs to be implemented
     return zen_store.update_role(
@@ -140,11 +120,5 @@ async def delete_role(role_name_or_id: str) -> None:
 
     Args:
         role_name_or_id: Name or ID of the role.
-
-    Raises:
-        not_found: when role does not exist
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     zen_store.delete_role(role_name_or_id=parse_name_or_uuid(role_name_or_id))
