@@ -22,7 +22,7 @@ from zenml.models import StackModel
 
 
 class CreateStackModel(BaseModel):
-    """Model used for all update operations on stacks."""
+    """Model used for all create operations on stacks."""
 
     name: str
     description: Optional[str] = Field(
@@ -39,11 +39,14 @@ class CreateStackModel(BaseModel):
     )
 
     def to_model(self, project: UUID, user: UUID) -> "StackModel":
-        """Applies user defined changes to this model.
+        """Create a `StackModel` from this object.
 
         Args:
             project: Project context of the stack.
             user: User context of the stack
+
+        Returns:
+            The created `StackModel`.
         """
         return StackModel(project=project, user=user, **self.dict())
 
@@ -66,10 +69,13 @@ class UpdateStackModel(BaseModel):
     )
 
     def apply_to_model(self, stack: "StackModel") -> "StackModel":
-        """Applies user defined changes to this model.
+        """Update a `StackModel` from this object.
 
         Args:
-            stack: Stack model the changes will be applied to
+            stack: The `StackModel` to apply the changes to.
+
+        Returns:
+            The updated `StackModel`.
         """
         for key, value in self.dict().items():
             if value is not None:

@@ -14,7 +14,7 @@
 """Util functions for the ZenServer."""
 
 from functools import wraps
-from typing import Any, List
+from typing import Any, Callable, List, TypeVar, cast
 
 from fastapi import HTTPException
 from pydantic import BaseModel, ValidationError
@@ -113,11 +113,30 @@ def unprocessable(error: Exception) -> HTTPException:
     return HTTPException(status_code=422, detail=error_detail(error))
 
 
-def handle_exceptions(f):
-    @wraps(f)
+F = TypeVar("F", bound=Callable[..., Any])
+
+
+def handle_exceptions(func: F) -> F:
+    """Decorator to handle exceptions in the API.
+
+    Args:
+        func: Function to decorate.
+
+    Returns:
+        Decorated function.
+
+    Raises:
+        HTTPException:
+            - 401: if the user is not authorized.
+            - 404: if the entity is not found.
+            - 409: if the entity already exists.
+            - 422: if the request is unprocessable.
+    """
+
+    @wraps(func)
     async def decorated(*args, **kwargs):
         try:
-            return await f(*args, **kwargs)
+            return await func(*args, **kwargs)
         except NotAuthorizedError as error:
             raise not_authorized(error) from error
         except KeyError as error:
@@ -131,4 +150,4 @@ def handle_exceptions(f):
         except ValidationError as error:
             raise unprocessable(error) from error
 
-    return decorated
+    return cast(F, decorated)

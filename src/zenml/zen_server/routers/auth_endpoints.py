@@ -83,7 +83,7 @@ async def token(auth_form_data: PasswordRequestForm = Depends()):
         An access token.
 
     Raises:
-        401 error: when not authorized to login
+        HTTPException: 401 if not authorized to login.
     """
     auth_context = authenticate_credentials(
         user_name_or_id=auth_form_data.username,

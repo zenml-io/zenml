@@ -50,11 +50,6 @@ async def list_flavors(
 
     Returns:
         All flavors.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     flavors_list = zen_store.list_flavors(
         project_name_or_id=parse_name_or_uuid(project_name_or_id),
@@ -79,11 +74,6 @@ async def get_flavor(
 
     Returns:
         The requested stack.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     return zen_store.get_flavor(UUID(flavor_id))
 
@@ -103,11 +93,6 @@ async def update_flavor(flavor_id: str, flavor: FlavorModel) -> FlavorModel:
 
     Returns:
         The updated flavor.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     # TODO: [server] implement an update method on the flavor
 
@@ -122,10 +107,5 @@ async def delete_flavor(flavor_id: str) -> None:
 
     Args:
         flavor_id: Name of the flavor.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
     # TODO: [server] implement an update method on the flavor

@@ -20,7 +20,7 @@ from zenml.models import ProjectModel
 
 
 class CreateProjectModel(BaseModel):
-    """Model used for all update operations on stacks."""
+    """Model used for all create operations on projects."""
 
     name: str = Field(title="The unique name of the stack.")
     description: Optional[str] = Field(
@@ -28,12 +28,16 @@ class CreateProjectModel(BaseModel):
     )
 
     def to_model(self) -> "ProjectModel":
-        """Applies user defined changes to this model."""
+        """Create a `ProjectModel` from this object.
+
+        Returns:
+            The created `ProjectModel`.
+        """
         return ProjectModel.parse_obj(self)
 
 
 class UpdateProjectModel(BaseModel):
-    """Model used for all update operations on stacks."""
+    """Model used for all update operations on projects."""
 
     name: Optional[str] = Field(
         default=None, title="The unique name of the stack."
@@ -43,7 +47,14 @@ class UpdateProjectModel(BaseModel):
     )
 
     def apply_to_model(self, project: "ProjectModel") -> "ProjectModel":
-        """Applies user defined changes to this model."""
+        """Applies user defined changes to the given `ProjectModel`.
+
+        Args:
+            project: The `ProjectModel` to apply the changes to.
+
+        Returns:
+            The updated `ProjectModel`.
+        """
         for key, value in self.dict().items():
             if value is not None:
                 setattr(project, key, value)
