@@ -1081,9 +1081,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def update_run(
-        self, run: PipelineRunModel
-    ) -> PipelineRunModel:
+    def update_run(self, run: PipelineRunModel) -> PipelineRunModel:
         """Updates a pipeline run.
 
         Args:

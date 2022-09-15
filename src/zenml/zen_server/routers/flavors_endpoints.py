@@ -14,15 +14,13 @@
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from zenml.constants import FLAVORS, VERSION_1
-from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.models import FlavorModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import authorize
-from zenml.zen_server.utils import error_detail, error_response, zen_store, \
-    handle_exceptions
+from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
     prefix=VERSION_1 + FLAVORS,
@@ -109,7 +107,6 @@ async def update_flavor(flavor_id: str, flavor: FlavorModel) -> FlavorModel:
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    pass
     # TODO: [server] implement an update method on the flavor
 
 
@@ -129,5 +126,4 @@ async def delete_flavor(flavor_id: str) -> None:
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    pass
     # TODO: [server] implement an update method on the flavor

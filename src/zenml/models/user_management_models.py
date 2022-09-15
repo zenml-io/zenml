@@ -14,12 +14,12 @@
 """Model definitions for users, teams, and roles."""
 
 from datetime import datetime, timedelta
+from secrets import token_hex
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 from uuid import UUID, uuid4
 
 from jose import JWTError, jwt
 from pydantic import BaseModel, Field, SecretStr, root_validator
-from secrets import token_hex
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.exceptions import AuthorizationException

@@ -13,12 +13,11 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for metadata config."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from zenml.constants import METADATA_CONFIG, VERSION_1
 from zenml.zen_server.auth import authorize
-from zenml.zen_server.utils import error_detail, error_response, zen_store, \
-    handle_exceptions
+from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
     prefix=VERSION_1 + METADATA_CONFIG,

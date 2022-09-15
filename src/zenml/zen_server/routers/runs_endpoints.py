@@ -15,7 +15,7 @@
 from typing import Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from fastapi.responses import FileResponse
 
 from zenml.constants import (
@@ -26,12 +26,10 @@ from zenml.constants import (
     STEPS,
     VERSION_1,
 )
-from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.models.pipeline_models import PipelineRunModel, StepRunModel
 from zenml.utils.uuid_utils import parse_optional_name_or_uuid
 from zenml.zen_server.auth import authorize
-from zenml.zen_server.utils import error_detail, error_response, zen_store, \
-    handle_exceptions
+from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
     prefix=VERSION_1 + RUNS,
@@ -125,7 +123,9 @@ async def delete_run(run_id: str) -> None:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_run_dag(run_id: str) -> FileResponse:  # TODO: use file type / image type
+async def get_run_dag(
+    run_id: str,
+) -> FileResponse:  # TODO: use file type / image type
     """Get the DAG for a given pipeline run.
 
     Args:

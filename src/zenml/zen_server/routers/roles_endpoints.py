@@ -14,24 +14,13 @@
 """Endpoint definitions for roles and role assignment."""
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from zenml.constants import ROLES, VERSION_1
-from zenml.exceptions import (
-    EntityExistsError,
-    NotAuthorizedError,
-    ValidationError,
-)
 from zenml.models import RoleModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import authorize
-from zenml.zen_server.utils import (
-    conflict,
-    error_detail,
-    error_response,
-    not_found,
-    zen_store, handle_exceptions,
-)
+from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
     prefix=VERSION_1,
@@ -158,6 +147,4 @@ async def delete_role(role_name_or_id: str) -> None:
         404 error: when trigger does not exist
         422 error: when unable to validate input
     """
-    zen_store.delete_role(
-        role_name_or_id=parse_name_or_uuid(role_name_or_id)
-    )
+    zen_store.delete_role(role_name_or_id=parse_name_or_uuid(role_name_or_id))
