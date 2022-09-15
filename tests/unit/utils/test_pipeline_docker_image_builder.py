@@ -38,7 +38,7 @@ def test_including_active_profile_in_build_context(tmp_path: Path):
     assert not config_path.exists()
 
 
-def test_check_user_is_set(tmp_path: Path):
+def test_check_user_is_set():
     config = DockerConfiguration(
         install_stack_requirements=False,
         requirements=None,
