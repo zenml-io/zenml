@@ -46,7 +46,11 @@ def test_check_user_is_set():
         user=None,
         replicate_local_python_environment="pip_freeze",
     )
-    generated_dockerfile = PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile("test:test", config)
+    generated_dockerfile = (
+        PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
+            "test:test", config
+        )
+    )
     assert all(["USER" not in line for line in generated_dockerfile])
 
     config = DockerConfiguration(
@@ -56,7 +60,11 @@ def test_check_user_is_set():
         user="test_user",
         replicate_local_python_environment="pip_freeze",
     )
-    generated_dockerfile = PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile("test:test", config)
+    generated_dockerfile = (
+        PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
+            "test:test", config
+        )
+    )
     assert "USER test_user" in generated_dockerfile
 
 
