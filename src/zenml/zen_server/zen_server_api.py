@@ -15,6 +15,9 @@
 
 
 from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+import pkg_resources
 
 import zenml
 from zenml.zen_server.routers import (
@@ -33,6 +36,9 @@ from zenml.zen_server.routers import (
 
 app = FastAPI(title="ZenML", version=zenml.__version__)
 
+app.mount("/dashboard", StaticFiles(directory="/home/htahir1/workspace/zenml_io/zenml/dashboard/build", html=True))
+# app.mount("/static", StaticFiles(directory="/home/htahir1/workspace/zenml_io/zenml/dashboard/build/static"))
+
 # Basic Health Endpoint
 @app.head("/health", include_in_schema=False)
 @app.get("/health")
@@ -44,6 +50,9 @@ async def health() -> str:
     """
     return "OK"
 
+# @app.get("/dashboard", include_in_schema=False)
+# def root():
+#     return HTMLResponse('/home/htahir1/workspace/zenml_io/zenml/dashboard/build/index.html')
 
 # to run this file locally, execute:
 # uvicorn zenml.zen_server.zen_server_api:app --reload
