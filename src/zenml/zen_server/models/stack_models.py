@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Stack Models for the API endpoint definitions."""
-from typing import Dict, List, Optional
+from typing import ClassVar, Dict, List, Optional, Type
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -23,10 +23,16 @@ from zenml.models.constants import (
     MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
     MODEL_NAME_FIELD_MAX_LENGTH,
 )
+from zenml.zen_server.models.base_models import (
+    ProjectScopedCreateRequest,
+    UpdateRequest,
+)
 
 
-class CreateStackRequest(BaseModel):
+class CreateStackRequest(ProjectScopedCreateRequest):
     """Stack model for create requests."""
+
+    DOMAIN_MODEL: ClassVar[Type[BaseModel]] = StackModel
 
     name: str = Field(
         title="The stack name.", max_length=MODEL_NAME_FIELD_MAX_LENGTH
@@ -48,26 +54,11 @@ class CreateStackRequest(BaseModel):
         title="Flag describing if this stack is shared.",
     )
 
-    def to_model(self, project: UUID, user: UUID) -> "StackModel":
-        """Create a `StackModel` from this object.
 
-        Args:
-            project: Project context of the stack.
-            user: User context of the stack
-
-        Returns:
-            The created `StackModel`.
-        """
-        return StackModel(project=project, user=user, **self.dict())
-
-    @classmethod
-    def from_model(cls, stack: StackModel) -> "CreateStackRequest":
-        """Convert from a stack model."""
-        return cls(**stack.dict())
-
-
-class UpdateStackRequest(BaseModel):
+class UpdateStackRequest(UpdateRequest):
     """Stack model for update requests."""
+
+    DOMAIN_MODEL: ClassVar[Type[BaseModel]] = StackModel
 
     name: Optional[str] = Field(
         default=None,
@@ -90,22 +81,3 @@ class UpdateStackRequest(BaseModel):
         default=None,
         title="Updated flag describing if this stack is shared.",
     )
-
-    def apply_to_model(self, stack: "StackModel") -> "StackModel":
-        """Update a `StackModel` from this object.
-
-        Args:
-            stack: The `StackModel` to apply the changes to.
-
-        Returns:
-            The updated `StackModel`.
-        """
-        for key, value in self.dict(exclude_none=True).items():
-            setattr(stack, key, value)
-
-        return stack
-
-    @classmethod
-    def from_model(cls, stack: StackModel) -> "UpdateStackRequest":
-        """Convert from a `StackModel` model."""
-        return cls(**stack.dict())

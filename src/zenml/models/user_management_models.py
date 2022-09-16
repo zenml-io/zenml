@@ -24,6 +24,7 @@ from pydantic import BaseModel, Field, SecretStr, root_validator
 from zenml.config.global_config import GlobalConfiguration
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
+from zenml.models.base_models import DomainModel
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 from zenml.utils.enum_utils import StrEnum
@@ -32,23 +33,6 @@ logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     from passlib.context import CryptContext  # type: ignore[import]
-
-
-class RoleModel(AnalyticsTrackedModelMixin):
-    """Pydantic object representing a role.
-
-    Attributes:
-        id: Id of the role.
-        created_at: Date when the role was created.
-        name: Name of the role.
-        permissions: Set of permissions allowed by this role.
-    """
-
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id"]
-
-    id: Optional[UUID] = None
-    name: str
-    created_at: Optional[datetime] = None
 
 
 class JWTTokenType(StrEnum):
@@ -144,7 +128,7 @@ class JWTToken(BaseModel):
         return token
 
 
-class UserModel(AnalyticsTrackedModelMixin):
+class UserModel(DomainModel, AnalyticsTrackedModelMixin):
     """Domain model for user accounts."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
@@ -155,9 +139,6 @@ class UserModel(AnalyticsTrackedModelMixin):
         "active",
     ]
 
-    id: UUID = Field(
-        default_factory=uuid4, title="The unique id of the account."
-    )
     name: str = Field(
         default="",
         title="The unique username for the account.",
@@ -176,13 +157,6 @@ class UserModel(AnalyticsTrackedModelMixin):
     active: bool = Field(default=False, title="Active account.")
     password: Optional[SecretStr] = Field(default=None, exclude=True)
     activation_token: Optional[SecretStr] = Field(default=None, exclude=True)
-    created_at: datetime = Field(
-        default_factory=datetime.now, title="Time when the account was created."
-    )
-    updated_at: datetime = Field(
-        default_factory=datetime.now,
-        title="Time when the account was last updated.",
-    )
 
     @classmethod
     def _get_crypt_context(cls) -> "CryptContext":
@@ -372,20 +346,26 @@ class UserModel(AnalyticsTrackedModelMixin):
         extra = "forbid"
 
 
-class TeamModel(AnalyticsTrackedModelMixin):
-    """Pydantic object representing a team.
-
-    Attributes:
-        id: Id of the team.
-        created_at: Date when the team was created.
-        name: Name of the team.
-    """
+class RoleModel(DomainModel, AnalyticsTrackedModelMixin):
+    """Domain model for roles."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["id"]
 
-    id: Optional[UUID] = None
-    name: str
-    created_at: Optional[datetime] = None
+    name: str = Field(
+        title="The unique name of the role.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+
+
+class TeamModel(DomainModel, AnalyticsTrackedModelMixin):
+    """Domain model for teams."""
+
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id"]
+
+    name: str = Field(
+        title="The unique name of the team.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
 
 
 class RoleAssignmentModel(BaseModel):

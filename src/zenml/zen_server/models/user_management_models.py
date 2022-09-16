@@ -14,7 +14,7 @@
 """REST API user management models implementation."""
 
 
-from typing import Optional
+from typing import ClassVar, Optional, Type
 
 from pydantic import BaseModel, Field
 
@@ -23,11 +23,19 @@ from zenml.models.constants import (
     USER_ACTIVATION_TOKEN_LENGTH,
     USER_PASSWORD_MAX_LENGTH,
 )
-from zenml.models.user_management_models import UserModel
+from zenml.models.user_management_models import RoleModel, TeamModel, UserModel
+from zenml.zen_server.models.base_models import (
+    CreateRequest,
+    CreateResponse,
+    UpdateRequest,
+    UpdateResponse,
+)
 
 
-class CreateUserRequest(BaseModel):
+class CreateUserRequest(CreateRequest):
     """Model for user creation requests."""
+
+    DOMAIN_MODEL: ClassVar[Type[BaseModel]] = UserModel
 
     name: str = Field(
         title="The unique username for the account.",
@@ -49,53 +57,50 @@ class CreateUserRequest(BaseModel):
         max_length=USER_PASSWORD_MAX_LENGTH,
     )
 
-    def to_model(self) -> UserModel:
-        """Create a `UserModel` from this object.
+    @classmethod
+    def from_model(cls, model: BaseModel) -> "CreateRequest":
+        """Convert a user domain model into a create request.
+
+        Args:
+            model: The user domain model to convert.
 
         Returns:
-            The created `UserModel`.
+            The create request.
         """
-        return UserModel(
-            **self.dict(exclude_none=True),
-        )
-
-    @classmethod
-    def from_model(cls, user: UserModel) -> "CreateUserRequest":
-        """Convert from a user model."""
-        return cls(**user.dict(), password=user.get_password())
+        assert isinstance(model, UserModel)
+        return cls(**model.dict(), password=model.get_password())
 
 
-class CreateUserResponse(UserModel):
+class CreateUserResponse(UserModel, CreateResponse):
     """Model for user creation responses."""
+
+    DOMAIN_MODEL: ClassVar[Type[BaseModel]] = UserModel
 
     activation_token: Optional[str] = Field(
         default=None, title="Account activation token."
     )
 
     @classmethod
-    def from_model(cls, user: UserModel) -> "CreateUserResponse":
-        """Create a `CreateUserResponse` from a `UserModel`.
+    def from_model(cls, model: BaseModel) -> "CreateResponse":
+        """Convert a user domain model into a create response.
 
         Args:
-            user: The `UserModel` to create the response from.
+            model: The user domain model to convert.
 
         Returns:
-            The created `CreateUserResponse`.
+            The create response.
         """
-        response = cls(
-            **user.dict(), activation_token=user.get_activation_token()
-        )
-        return response
+        assert isinstance(model, UserModel)
 
-    def to_model(self) -> UserModel:
-        """Convert to a user model."""
-        return UserModel(
-            **self.dict(),
+        return cls(
+            **model.dict(), activation_token=model.get_activation_token()
         )
 
 
-class UpdateUserRequest(BaseModel):
+class UpdateUserRequest(UpdateRequest):
     """Model for user update requests."""
+
+    DOMAIN_MODEL: ClassVar[Type[BaseModel]] = UserModel
 
     name: Optional[str] = Field(
         default=None,
@@ -118,30 +123,40 @@ class UpdateUserRequest(BaseModel):
         max_length=USER_PASSWORD_MAX_LENGTH,
     )
 
-    def apply_to_model(self, user: UserModel) -> UserModel:
-        """Apply the changes to a `UserModel`.
+    def apply_to_model(self, model: UserModel) -> UserModel:
+        """Apply the update changes to a user domain model.
 
         Args:
-            user: The `UserModel` to apply the changes to.
+            model: The user domain model to update.
 
         Returns:
-            The updated `UserModel`.
+            The updated user domain model.
         """
-        for k, v in self.dict(exclude_none=True).items():
-            setattr(user, k, v)
+        user = super().apply_to_model(model)
         if self.password is not None:
             user.password = self.password
         return user
 
     @classmethod
-    def from_model(cls, user: UserModel) -> "UpdateUserRequest":
-        """Convert from a user model."""
-        response = cls(**user.dict(), password=user.get_password())
+    def from_model(cls, model: UserModel) -> "UpdateRequest":
+        """Convert a user domain model into an update request.
+
+        Args:
+            model: The user domain model to convert.
+
+        Returns:
+            The update request.
+        """
+        assert isinstance(model, UserModel)
+
+        response = cls(**model.dict(), password=model.get_password())
         return response
 
 
-class ActivateUserRequest(BaseModel):
+class ActivateUserRequest(UpdateRequest):
     """Model for user activation requests."""
+
+    DOMAIN_MODEL: ClassVar[Type[BaseModel]] = UserModel
 
     name: Optional[str] = Field(
         default=None,
@@ -167,41 +182,89 @@ class ActivateUserRequest(BaseModel):
         max_length=USER_ACTIVATION_TOKEN_LENGTH,
     )
 
-    def apply_to_model(self, user: UserModel) -> UserModel:
-        """Apply the changes to a `UserModel`.
+    def apply_to_model(self, model: UserModel) -> UserModel:
+        """Apply the update changes to a user domain model.
 
         Args:
-            user: The `UserModel` to apply the changes to.
+            model: The user domain model to update.
 
         Returns:
-            The updated `UserModel`.
+            The updated user domain model.
         """
         for k, v in self.dict(exclude_none=True).items():
             if k in ["activation_token", "password"]:
                 continue
-            setattr(user, k, v)
-        user.password = self.password
+            setattr(model, k, v)
+        model.password = self.password
         # skip the activation token intentionally, because it is validated
         # separately
-        return user
+        return model
 
 
-class DeactivateUserResponse(UserModel):
+class DeactivateUserResponse(UserModel, UpdateResponse):
     """Model for user deactivation requests."""
+
+    DOMAIN_MODEL: ClassVar[Type[BaseModel]] = UserModel
 
     activation_token: str = Field(..., title="Account activation token.")
 
     @classmethod
-    def from_model(cls, user: UserModel) -> "DeactivateUserResponse":
-        """Create a `DeactivateUserResponse` from a `UserModel`.
+    def from_model(cls, model: UserModel) -> "UpdateResponse":
+        """Convert a domain model into a user deactivation response.
 
         Args:
-            user: The `UserModel` to create the response from.
+            model: The domain model to convert.
 
         Returns:
-            The created `DeactivateUserResponse`.
+            The user deactivation response.
         """
         response = cls(
-            **user.dict(), activation_token=user.get_activation_token()
+            **model.dict(), activation_token=model.get_activation_token()
         )
         return response
+
+
+class CreateRoleRequest(CreateRequest):
+    """Model for role creation requests."""
+
+    DOMAIN_MODEL: ClassVar[Type[BaseModel]] = RoleModel
+
+    name: str = Field(
+        title="The unique name of the role.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+
+
+class UpdateRoleRequest(UpdateRequest):
+    """Model for role update requests."""
+
+    DOMAIN_MODEL: ClassVar[Type[BaseModel]] = RoleModel
+
+    name: Optional[str] = Field(
+        default=None,
+        title="Updated role name.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+
+
+class CreateTeamRequest(CreateRequest):
+    """Model for team creation requests."""
+
+    DOMAIN_MODEL: ClassVar[Type[BaseModel]] = TeamModel
+
+    name: str = Field(
+        title="The unique name of the team.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+
+
+class UpdateTeamRequest(UpdateRequest):
+    """Model for team update requests."""
+
+    DOMAIN_MODEL: ClassVar[Type[BaseModel]] = TeamModel
+
+    name: Optional[str] = Field(
+        default=None,
+        title="Updated team name.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )

@@ -22,6 +22,7 @@ from pydantic import BaseModel, Field
 from zenml import __version__ as current_zenml_version
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import ArtifactType
+from zenml.models.base_models import ProjectScopedDomainModel
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.models.project_models import ProjectModel
 from zenml.models.user_management_models import UserModel
@@ -58,14 +59,11 @@ def get_git_sha(clean: bool = True) -> Optional[str]:
     return cast(str, repo.head.object.hexsha)
 
 
-class PipelineModel(AnalyticsTrackedModelMixin):
+class PipelineModel(ProjectScopedDomainModel, AnalyticsTrackedModelMixin):
     """Domain model representing a pipeline."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["id", "project", "user"]
 
-    id: UUID = Field(
-        default_factory=uuid4, title="The unique id of the pipeline."
-    )
     name: str = Field(
         title="The name of the pipeline.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
@@ -73,16 +71,6 @@ class PipelineModel(AnalyticsTrackedModelMixin):
 
     docstring: Optional[str]
     configuration: Dict[str, str]
-
-    project: UUID = Field(title="The project that contains this pipeline.")
-    user: UUID = Field(
-        title="The id of the user that created this pipeline.",
-    )
-
-    creation_date: datetime = Field(
-        default_factory=datetime.now,
-        title="The time at which the pipeline was created.",
-    )
 
     def to_hydrated_model(self) -> "HydratedPipelineModel":
         """Converts this model to a hydrated model.
@@ -102,7 +90,8 @@ class PipelineModel(AnalyticsTrackedModelMixin):
             user=user,
             docstring=self.docstring,
             configuration=self.configuration,
-            creation_date=self.creation_date,
+            created=self.created,
+            updated=self.updated,
         )
 
 

@@ -865,9 +865,6 @@ class SqlZenStore(BaseZenStore):
             session.add(new_user)
             session.commit()
 
-            # After committing the model, sqlmodel takes care of updating the
-            # object with id, created_at, etc ...
-
             return new_user.to_model()
 
     def get_user(self, user_name_or_id: Union[str, UUID]) -> UserModel:
@@ -959,9 +956,6 @@ class SqlZenStore(BaseZenStore):
             session.add(new_team)
             session.commit()
 
-            # After committing the model, sqlmodel takes care of updating the
-            # object with id, created_at, etc ...
-
             return new_team.to_model()
 
     def get_team(self, team_name_or_id: Union[str, UUID]) -> TeamModel:
@@ -985,6 +979,41 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             teams = session.exec(select(TeamSchema)).all()
             return [team.to_model() for team in teams]
+
+    @track(AnalyticsEvent.UPDATED_TEAM)
+    def update_team(self, team: TeamModel) -> TeamModel:
+        """Update an existing team.
+
+        Args:
+            team: The team to use for the update.
+
+        Returns:
+            The updated team.
+
+        Raises:
+            KeyError: if the team does not exist.
+        """
+        with Session(self.engine) as session:
+            existing_team = session.exec(
+                select(TeamSchema).where(TeamSchema.id == team.id)
+            ).first()
+
+            if existing_team is None:
+                raise KeyError(
+                    f"Unable to update team with id "
+                    f"'{team.id}': Found no"
+                    f"existing teams with this id."
+                )
+
+            # Update the team
+            existing_team.from_update_model(team)
+
+            session.add(existing_team)
+            session.commit()
+
+            # Refresh the Model that was just created
+            session.refresh(existing_team)
+            return existing_team.to_model()
 
     @track(AnalyticsEvent.DELETED_TEAM)
     def delete_team(self, team_name_or_id: Union[str, UUID]) -> None:
@@ -1140,6 +1169,41 @@ class SqlZenStore(BaseZenStore):
             roles = session.exec(select(RoleSchema)).all()
 
         return [role.to_model() for role in roles]
+
+    @track(AnalyticsEvent.UPDATED_ROLE)
+    def update_role(self, role: RoleModel) -> RoleModel:
+        """Update an existing role.
+
+        Args:
+            role: The role to use for the update.
+
+        Returns:
+            The updated role.
+
+        Raises:
+            KeyError: if the role does not exist.
+        """
+        with Session(self.engine) as session:
+            existing_role = session.exec(
+                select(RoleSchema).where(RoleSchema.id == role.id)
+            ).first()
+
+            if existing_role is None:
+                raise KeyError(
+                    f"Unable to update role with id "
+                    f"'{role.id}': Found no"
+                    f"existing roles with this id."
+                )
+
+            # Update the role
+            existing_role.from_update_model(role)
+
+            session.add(existing_role)
+            session.commit()
+
+            # Refresh the Model that was just created
+            session.refresh(existing_role)
+            return existing_role.to_model()
 
     @track(AnalyticsEvent.DELETED_ROLE)
     def delete_role(self, role_name_or_id: Union[str, UUID]) -> None:
@@ -1484,9 +1548,6 @@ class SqlZenStore(BaseZenStore):
             # Explicitly refresh the new_project schema
             session.refresh(new_project)
 
-            # After committing the model, sqlmodel takes care of updating the
-            # object with id, created_at, etc ...
-
             return new_project.to_model()
 
     def get_project(self, project_name_or_id: Union[str, UUID]) -> ProjectModel:
@@ -1520,6 +1581,9 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated project.
+
+        Raises:
+            KeyError: if the project does not exist.
         """
         with Session(self.engine) as session:
             existing_project = session.exec(
@@ -1530,7 +1594,7 @@ class SqlZenStore(BaseZenStore):
                 raise KeyError(
                     f"Unable to update project with id "
                     f"'{project.id}': Found no"
-                    f"existing stack with this id."
+                    f"existing projects with this id."
                 )
 
             # Update the project
@@ -1796,9 +1860,6 @@ class SqlZenStore(BaseZenStore):
             # Create the pipeline run
             session.add(new_run)
             session.commit()
-
-            # After committing the model, sqlmodel takes care of updating the
-            # object with id, created_at, etc ...
 
             return new_run.to_model()
 
