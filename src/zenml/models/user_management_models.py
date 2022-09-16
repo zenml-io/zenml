@@ -112,7 +112,7 @@ class JWTToken(BaseModel):
         # import here to keep these dependencies out of the client
         from jose import jwt
 
-        claims = {
+        claims: Dict[str, Any] = {
             "sub": str(self.user_id),
         }
 
@@ -120,7 +120,7 @@ class JWTToken(BaseModel):
             expire = datetime.utcnow() + timedelta(minutes=expire_minutes)
             claims["exp"] = expire
 
-        token = jwt.encode(
+        token: str = jwt.encode(
             claims,
             GlobalConfiguration().jwt_secret_key,
             algorithm=self.JWT_ALGORITHM,
@@ -294,7 +294,7 @@ class UserModel(DomainModel, AnalyticsTrackedModelMixin):
             return None
         return self.activation_token.get_secret_value()
 
-    def get_hashed_activation_token(self) -> str:
+    def get_hashed_activation_token(self) -> Optional[str]:
         """Returns the hashed activation token, if configured.
 
         Returns:
@@ -345,7 +345,6 @@ class UserModel(DomainModel, AnalyticsTrackedModelMixin):
         # Forbid extra attributes to prevent unexpected behavior
         extra = "forbid"
         underscore_attrs_are_private = True
-
 
 
 class RoleModel(DomainModel, AnalyticsTrackedModelMixin):

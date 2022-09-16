@@ -541,7 +541,7 @@ class SqlZenStore(BaseZenStore):
 
             # Create the component
             component_in_db = StackComponentSchema.from_create_model(
-                user_id=user.id, project_id=project.id, component=component
+                component=component
             )
 
             session.add(component_in_db)

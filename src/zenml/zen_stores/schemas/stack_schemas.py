@@ -63,7 +63,7 @@ class StackSchema(SQLModel, table=True):
         defined_components: List["StackComponentSchema"],
         stack: StackModel,
     ) -> "StackSchema":
-        """Create an incomplete StackSchema with `id` and `created_at` missing.
+        """Create a StackSchema.
 
         Args:
             defined_components: The components that are part of the stack.

@@ -78,7 +78,7 @@ class StackModel(ShareableProjectScopedDomainModel, AnalyticsTrackedModelMixin):
         }
 
     @property
-    def is_valid(self):
+    def is_valid(self) -> bool:
         """Check if the stack is valid.
 
         Returns:
