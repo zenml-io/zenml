@@ -20,11 +20,13 @@ from fastapi import APIRouter, Depends
 from zenml.constants import PIPELINES, RUNS, VERSION_1
 from zenml.models import PipelineRunModel
 from zenml.models.pipeline_models import PipelineModel
-from zenml.zen_server.models.pipeline_models import HydratedPipelineModel
-from zenml.utils.uuid_utils import parse_name_or_uuid, \
-    parse_optional_name_or_uuid
+from zenml.utils.uuid_utils import (
+    parse_name_or_uuid,
+    parse_optional_name_or_uuid,
+)
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.models import UpdatePipelineRequest
+from zenml.zen_server.models.pipeline_models import HydratedPipelineModel
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
@@ -65,8 +67,10 @@ async def list_pipelines(
         name=name,
     )
     if hydrated:
-        return [HydratedPipelineModel.from_model(pipeline)
-                for pipeline in pipelines_list]
+        return [
+            HydratedPipelineModel.from_model(pipeline)
+            for pipeline in pipelines_list
+        ]
     else:
         return pipelines_list
 
@@ -151,10 +155,10 @@ async def delete_pipeline(pipeline_id: UUID) -> None:
 )
 @handle_exceptions
 async def list_pipeline_runs(
-        project_name_or_id: Optional[str] = None,
-        stack_id: Optional[str] = None,
-        component_id: Optional[str] = None,
-        pipeline_id: Optional[str] = None,
+    project_name_or_id: Optional[str] = None,
+    stack_id: Optional[str] = None,
+    component_id: Optional[str] = None,
+    pipeline_id: Optional[str] = None,
 ) -> List[PipelineRunModel]:
     """Get pipeline runs according to query filters.
 

@@ -32,11 +32,11 @@ from zenml.models import (
     StackModel,
 )
 from zenml.models.component_models import HydratedComponentModel
-from zenml.zen_server.models.pipeline_models import HydratedPipelineModel
 from zenml.models.stack_models import HydratedStackModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.models import CreatePipelineRequest
+from zenml.zen_server.models.pipeline_models import HydratedPipelineModel
 from zenml.zen_server.models.projects_models import (
     CreateProjectRequest,
     UpdateProjectRequest,
@@ -404,8 +404,10 @@ async def list_project_pipelines(
         name=name,
     )
     if hydrated:
-        return [HydratedPipelineModel.from_model(pipeline)
-                for pipeline in pipelines_list]
+        return [
+            HydratedPipelineModel.from_model(pipeline)
+            for pipeline in pipelines_list
+        ]
     else:
         return pipelines_list
 

@@ -12,14 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Project Models for the API endpoint definitions."""
-from typing import ClassVar, Dict, Optional, Type, List
-from uuid import UUID
+from typing import ClassVar, Dict, List, Optional, Type
 
 from pydantic import BaseModel, Field
 
 from zenml.config.global_config import GlobalConfiguration
-from zenml.models import PipelineModel, PipelineRunModel, ProjectModel, \
-    UserModel
+from zenml.models import (
+    PipelineModel,
+    PipelineRunModel,
+    ProjectModel,
+    UserModel,
+)
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.zen_server.models.base_models import (
     ProjectScopedCreateRequest,
@@ -84,7 +87,7 @@ class HydratedPipelineModel(PipelineModel):
                     "id": "48533493-cb6d-4927-bc72-b8e998503d93",
                     "name": "default",
                     "description": "",
-                    "creation_date": "2022-09-16T14:03:35.567052"
+                    "creation_date": "2022-09-16T14:03:35.567052",
                 },
                 "user": {
                     "id": "3143dec6-450e-4909-bf3e-a5f389b2a566",
@@ -93,76 +96,65 @@ class HydratedPipelineModel(PipelineModel):
                     "email": "",
                     "active": "True",
                     "created_at": "2022-09-16T14:03:35.918900",
-                    "updated_at": "2022-09-16T14:03:35.918930"
+                    "updated_at": "2022-09-16T14:03:35.918930",
                 },
                 "creation_date": "2022-09-16T14:30:26.023422",
                 "runs": [
                     {
                         "id": "c3a15c1e-7f77-4cd7-9fe6-e2fde19b7a39",
-                        "name":
-                            "example_pipeline-16_Sep_22-14_30_25_931594",
+                        "name": "example_pipeline-16_Sep_22-14_30_25_931594",
                         "stack_id": "341dd1d4-13fe-4163-9921-a0587da31651",
                         "pipeline_id": "24db6395-669b-4e6d-8e60-cc2c4f6c47cf",
                         "runtime_configuration": {
-                            "dag_filepath":
-                                "zenml/examples/airflow_orchestration/run.py",
-                            "run_name":
-                                "example_pipeline-16_Sep_22-14_30_25_931594",
-                            "schedule": None
+                            "dag_filepath": "zenml/examples/airflow_orchestration/run.py",
+                            "run_name": "example_pipeline-16_Sep_22-14_30_25_931594",
+                            "schedule": None,
                         },
                         "zenml_version": "0.13.2",
                         "git_sha": None,
                         "mlmd_id": 2,
                         "user": "3143dec6-450e-4909-bf3e-a5f389b2a566",
-                        "creation_date": "2022-09-16T14:30:26.119091"
+                        "creation_date": "2022-09-16T14:30:26.119091",
                     },
                     {
                         "id": "46e1e41f-9436-45ef-a4e8-46976dbbe6b8",
-                        "name":
-                            "airflow_example_pipeline-16_Sep_22-14_30_53_621455",
+                        "name": "airflow_example_pipeline-16_Sep_22-14_30_53_621455",
                         "stack_id": "341dd1d4-13fe-4163-9921-a0587da31651",
                         "pipeline_id": "24db6395-669b-4e6d-8e60-cc2c4f6c47cf",
                         "runtime_configuration": {
-                            "dag_filepath":
-                                "/zenml/examples/airflow_orchestration/run.py",
-                            "run_name":
-                                "example_pipeline-16_Sep_22-14_30_53_621455",
-                            "schedule": None
+                            "dag_filepath": "/zenml/examples/airflow_orchestration/run.py",
+                            "run_name": "example_pipeline-16_Sep_22-14_30_53_621455",
+                            "schedule": None,
                         },
                         "zenml_version": "0.13.2",
                         "git_sha": None,
                         "mlmd_id": 12,
                         "user": "3143dec6-450e-4909-bf3e-a5f389b2a566",
-                        "creation_date": "2022-09-16T14:30:53.779004"
+                        "creation_date": "2022-09-16T14:30:53.779004",
                     },
                     {
                         "id": "0c4eac13-4691-4035-8836-ca12b5331eaa",
-                        "name":
-                            "airflow_example_pipeline-16_Sep_22-14_31_05_349435",
+                        "name": "airflow_example_pipeline-16_Sep_22-14_31_05_349435",
                         "stack_id": "341dd1d4-13fe-4163-9921-a0587da31651",
                         "pipeline_id": "24db6395-669b-4e6d-8e60-cc2c4f6c47cf",
                         "runtime_configuration": {
-                            "dag_filepath":
-                                "/examples/airflow_orchestration/run.py",
-                            "run_name":
-                                "example_pipeline-16_Sep_22-14_31_05_349435",
-                            "schedule": None
+                            "dag_filepath": "/examples/airflow_orchestration/run.py",
+                            "run_name": "example_pipeline-16_Sep_22-14_31_05_349435",
+                            "schedule": None,
                         },
                         "zenml_version": "0.13.2",
                         "git_sha": None,
                         "mlmd_id": 15,
                         "user": "3143dec6-450e-4909-bf3e-a5f389b2a566",
-                        "creation_date": "2022-09-16T14:31:05.498228"
-                    }
-                ]
+                        "creation_date": "2022-09-16T14:31:05.498228",
+                    },
+                ],
             }
         }
 
     @classmethod
     def from_model(
-            cls,
-            pipeline_model: PipelineModel,
-            num_runs: int = 3
+        cls, pipeline_model: PipelineModel, num_runs: int = 3
     ) -> "HydratedPipelineModel":
         """Converts this model to a hydrated model.
 
