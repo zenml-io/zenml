@@ -212,6 +212,11 @@ class BaseArtifactStoreConfig(StackComponentConfig):
 class BaseArtifactStore(StackComponent):
     """Base class for all ZenML artifact stores."""
 
+    @property
+    def path(self) -> str:
+        """The path to the artifact store."""
+        return self.config.path
+
     # --- User interface ---
     @abstractmethod
     def open(self, name: PathType, mode: str = "r") -> Any:
@@ -419,10 +424,7 @@ class BaseArtifactStore(StackComponent):
 
 
 class BaseArtifactStoreFlavor(Flavor):
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        """"""
+    """Base class for artifact store flavors."""
 
     @property
     def type(self) -> StackComponentType:

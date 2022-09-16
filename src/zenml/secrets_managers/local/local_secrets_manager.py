@@ -15,9 +15,7 @@
 
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Type
-
-from pydantic import root_validator
+from typing import TYPE_CHECKING, Dict, List, Type
 
 from zenml.cli.utils import error
 from zenml.constants import LOCAL_SECRETS_FILENAME, LOCAL_STORES_DIRECTORY_NAME
@@ -50,27 +48,26 @@ logger = get_logger(__name__)
 class LocalSecretsManagerConfig(BaseSecretsManagerConfig):
     secrets_file: str = ""
 
-    @root_validator(skip_on_failure=True)
-    def set_secrets_file(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Sets the secrets_file attribute value according to the component UUID.
 
-        Args:
-            values: The values to validate.
+class LocalSecretsManager(BaseSecretsManager):
+    """Class for ZenML local file-based secret manager."""
+
+    @property
+    def secrets_file(self) -> str:
+        """Gets the secrets file path.
+
+        If the secrets file was not provided in the config by the user, this
+        will return the default secrets file path based on the component ID.
 
         Returns:
-            The validated values.
+            The secrets file path.
         """
-        if values.get("secrets_file"):
-            return values
-
-        # not likely to happen, due to Pydantic validation, but mypy complains
-        assert "id" in values
-
-        values["secrets_file"] = cls.get_secret_store_path(values["id"])
-        return values
+        if self.config.secrets_file:
+            return self.config.secrets_file
+        return self.get_default_secret_store_path(self.id)
 
     @staticmethod
-    def get_secret_store_path(id_: "UUID") -> str:
+    def get_default_secret_store_path(id_: "UUID") -> str:
         """Get the path to the secret store.
 
         Args:
@@ -86,10 +83,6 @@ class LocalSecretsManagerConfig(BaseSecretsManagerConfig):
             LOCAL_SECRETS_FILENAME,
         )
 
-
-class LocalSecretsManager(BaseSecretsManager):
-    """Class for ZenML local file-based secret manager."""
-
     @property
     def local_path(self) -> str:
         """Path to the local directory where the secrets are stored.
@@ -97,11 +90,11 @@ class LocalSecretsManager(BaseSecretsManager):
         Returns:
             The path to the local directory where the secrets are stored.
         """
-        return str(Path(self.config.secrets_file).parent)
+        return str(Path(self.secrets_file).parent)
 
     def _create_secrets_file__if_not_exists(self) -> None:
         """Makes sure the secrets yaml file exists."""
-        create_file_if_not_exists(self.config.secrets_file)
+        create_file_if_not_exists(self.secrets_file)
 
     def _verify_secret_key_exists(self, secret_name: str) -> bool:
         """Checks if a secret key exists.
@@ -113,7 +106,7 @@ class LocalSecretsManager(BaseSecretsManager):
             True if the secret key exists, False otherwise.
         """
         self._create_secrets_file__if_not_exists()
-        secrets_store_items = yaml_utils.read_yaml(self.config.secrets_file)
+        secrets_store_items = yaml_utils.read_yaml(self.secrets_file)
         try:
             return secret_name in secrets_store_items
         except TypeError:
@@ -126,7 +119,7 @@ class LocalSecretsManager(BaseSecretsManager):
             A dictionary containing all secrets.
         """
         self._create_secrets_file__if_not_exists()
-        return yaml_utils.read_yaml(self.config.secrets_file) or {}
+        return yaml_utils.read_yaml(self.secrets_file) or {}
 
     def register_secret(self, secret: "BaseSecretSchema") -> None:
         """Registers a new secret.
@@ -145,7 +138,7 @@ class LocalSecretsManager(BaseSecretsManager):
 
         secrets_store_items = self._get_all_secrets()
         secrets_store_items[secret.name] = encoded_secret
-        yaml_utils.append_yaml(self.config.secrets_file, secrets_store_items)
+        yaml_utils.append_yaml(self.secrets_file, secrets_store_items)
 
     def get_secret(self, secret_name: str) -> "BaseSecretSchema":
         """Gets a specific secret.
@@ -202,7 +195,7 @@ class LocalSecretsManager(BaseSecretsManager):
 
         secrets_store_items = self._get_all_secrets()
         secrets_store_items[secret.name] = encoded_secret
-        yaml_utils.append_yaml(self.config.secrets_file, secrets_store_items)
+        yaml_utils.append_yaml(self.secrets_file, secrets_store_items)
 
     def delete_secret(self, secret_name: str) -> None:
         """Delete an existing secret.
@@ -221,14 +214,14 @@ class LocalSecretsManager(BaseSecretsManager):
 
         try:
             secrets_store_items.pop(secret_name)
-            yaml_utils.write_yaml(self.config.secrets_file, secrets_store_items)
+            yaml_utils.write_yaml(self.secrets_file, secrets_store_items)
         except KeyError:
             error(f"Secret {secret_name} does not exist.")
 
     def delete_all_secrets(self) -> None:
         """Delete all existing secrets."""
         self._create_secrets_file__if_not_exists()
-        remove(self.config.secrets_file)
+        remove(self.secrets_file)
 
 
 class LocalSecretsManagerFlavor(BaseSecretsManagerFlavor):

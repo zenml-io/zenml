@@ -110,13 +110,6 @@ class BaseSecretsManagerConfig(StackComponentConfig):
             # support scoping
             values["scope"] = SecretsManagerScope.NONE
 
-        elif "id" in values:
-            # this is an existing Secrets Manager instance without a scope
-            # explicitly set (i.e. a legacy Secrets Manager that was already
-            # in operation before scoping was introduced). Continue to use
-            # unscoped secrets.
-            values["scope"] = SecretsManagerScope.NONE
-
         # warn if the user tries to explicitly disable scoping for a
         # Secrets Manager that does support scoping
         if scope == SecretsManagerScope.NONE and cls.SUPPORTS_SCOPING:

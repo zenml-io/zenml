@@ -36,10 +36,10 @@ import glob
 import os
 import shutil
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     ClassVar,
-    Dict,
     Iterable,
     List,
     Optional,
@@ -49,7 +49,7 @@ from typing import (
     Union,
 )
 
-from pydantic import root_validator, validator
+from pydantic import validator
 
 from zenml.artifact_stores import (
     BaseArtifactStore,
@@ -60,6 +60,9 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import LOCAL_STORES_DIRECTORY_NAME
 from zenml.exceptions import ArtifactStoreInterfaceError
 from zenml.utils import io_utils
+
+if TYPE_CHECKING:
+    from uuid import UUID
 
 PathType = Union[bytes, str]
 
@@ -83,37 +86,52 @@ class LocalArtifactStoreConfig(BaseArtifactStoreConfig):
         remote_prefixes = ["gs://", "hdfs://", "s3://", "az://", "abfs://"]
         if any(path.startswith(prefix) for prefix in remote_prefixes):
             raise ArtifactStoreInterfaceError(
-                f"The path:{path} you defined for your local artifact store "
-                f"start with one of the remote prefixes."
+                f"The path '{path}' you defined for your local artifact store "
+                f"starts with a remote prefix."
             )
         return path
-
-    @root_validator
-    def _default_local_path(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Generates a local artifact store path if not configured.
-
-        Args:
-            values: The values to validate.
-
-        Returns:
-            The validated values.
-        """
-        path = values.get("path")
-        artifact_store_id = values.get("id")
-        if path == "" and artifact_store_id:
-            artifact_store_path = os.path.join(
-                GlobalConfiguration().config_directory,
-                LOCAL_STORES_DIRECTORY_NAME,
-                str(artifact_store_id),
-            )
-            io_utils.create_dir_recursive_if_not_exists(artifact_store_path)
-            values["path"] = artifact_store_path
-
-        return values
 
 
 class LocalArtifactStore(BaseArtifactStore):
     """Artifact Store for local artifacts."""
+
+    _path: Optional[str] = None
+
+    @staticmethod
+    def get_default_local_path(id_: "UUID") -> str:
+        """Returns the default local path for a local artifact store.
+
+        Args:
+            id_: The id of the local artifact store.
+
+        Returns:
+            str: The default local path.
+        """
+        return os.path.join(
+            GlobalConfiguration().config_directory,
+            LOCAL_STORES_DIRECTORY_NAME,
+            str(id_),
+        )
+
+    @property
+    def path(self):
+        """Returns the path to the local artifact store.
+
+        If the user has not defined a path in the config, this will create a
+        subfolder in the global config directory.
+
+        Returns:
+            The path to the local artifact store.
+        """
+        if self._path:
+            return self._path
+
+        if self.config.path:
+            self._path = self.config.path
+        else:
+            self._path = self.get_default_local_path(self.id)
+        io_utils.create_dir_recursive_if_not_exists(self._path)
+        return self._path
 
     @staticmethod
     def open(name: PathType, mode: str = "r") -> Any:
