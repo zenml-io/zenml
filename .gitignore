@@ -183,3 +183,6 @@ zenml_examples/
 
 # stack recipes
 test_terraform/
+
+# Dashboard
+!dashboard/*
