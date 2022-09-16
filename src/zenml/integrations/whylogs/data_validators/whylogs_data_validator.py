@@ -14,7 +14,7 @@
 """Implementation of the whylogs data validator."""
 
 import datetime
-from typing import Any, ClassVar, Optional, Sequence, cast
+from typing import Any, ClassVar, Optional, Sequence, Type, cast
 
 import pandas as pd
 import whylogs as why  # type: ignore
@@ -22,6 +22,7 @@ from whylogs.api.writer.whylabs import WhyLabsWriter  # type: ignore
 from whylogs.core import DatasetProfileView  # type: ignore
 
 from zenml.data_validators import BaseDataValidator
+from zenml.data_validators.base_data_validator import BaseDataValidatorConfig, BaseDataValidatorFlavor
 from zenml.environment import Environment
 from zenml.integrations.whylogs import WHYLOGS_DATA_VALIDATOR_FLAVOR
 from zenml.integrations.whylogs.secret_schemas.whylabs_secret_schema import (
@@ -44,8 +45,6 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
             stored in the ZenML Artifact Store.
     """
 
-    # Class Configuration
-    FLAVOR: ClassVar[str] = WHYLOGS_DATA_VALIDATOR_FLAVOR
     NAME: ClassVar[str] = "whylogs"
 
     def data_profiling(
@@ -129,3 +128,15 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
 
         # pass a profile view to the writer's write method
         writer.write(profile=profile_view)
+
+
+class WhylogsDataValidatorFlavor(BaseDataValidatorFlavor):
+    """Whylogs data validator flavor."""
+
+    @property
+    def name(self) -> str:
+        return WHYLOGS_DATA_VALIDATOR_FLAVOR
+
+    @property
+    def implementation_class(self) -> Type["WhylogsDataValidator"]:
+        return WhylogsDataValidator

@@ -13,19 +13,21 @@
 #  permissions and limitations under the License.
 """Base class for all ZenML data validators."""
 
-from typing import Any, ClassVar, Optional, Sequence
+from typing import Any, ClassVar, Optional, Sequence, Type
 
 from zenml.enums import StackComponentType
 from zenml.repository import Repository
-from zenml.stack import StackComponent
+from zenml.stack import Flavor, StackComponent
+from zenml.stack.stack_component import StackComponentConfig
+
+
+class BaseDataValidatorConfig(StackComponentConfig):
+    """Base config for all data validators."""
 
 
 class BaseDataValidator(StackComponent):
     """Base class for all ZenML data validators."""
 
-    # Class configuration
-    TYPE: ClassVar[StackComponentType] = StackComponentType.DATA_VALIDATOR
-    FLAVOR: ClassVar[str]
     NAME: ClassVar[str]
 
     @classmethod
@@ -212,3 +214,19 @@ class BaseDataValidator(StackComponent):
         raise NotImplementedError(
             f"Model validation not implemented for {self}."
         )
+
+
+class BaseDataValidatorFlavor(Flavor):
+    """Base class for data validator flavors."""
+
+    @property
+    def type(self) -> StackComponentType:
+        return StackComponentType.DATA_VALIDATOR
+
+    @property
+    def config_class(self) -> Type[BaseDataValidatorConfig]:
+        return BaseDataValidatorConfig
+
+    @property
+    def implementation_class(self) -> Type[BaseDataValidator]:
+        return BaseDataValidator
