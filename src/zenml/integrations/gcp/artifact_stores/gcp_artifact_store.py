@@ -23,6 +23,7 @@ from typing import (
     Optional,
     Set,
     Tuple,
+    Type,
     Union,
     cast,
 )
@@ -30,6 +31,10 @@ from typing import (
 import gcsfs
 
 from zenml.artifact_stores import BaseArtifactStore
+from zenml.artifact_stores.base_artifact_store import (
+    BaseArtifactStoreConfig,
+    BaseArtifactStoreFlavor,
+)
 from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
 from zenml.secret.schemas import GCPSecretSchema
 from zenml.stack.authentication_mixin import AuthenticationMixin
@@ -41,14 +46,16 @@ PathType = Union[bytes, str]
 GCP_PATH_PREFIX = "gs://"
 
 
+class GCPArtifactStoreConfig(BaseArtifactStoreConfig):
+    """Configuration for GCP Artifact Store."""
+
+    SUPPORTED_SCHEMES: ClassVar[Set[str]] = {GCP_PATH_PREFIX}
+
+
 class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
     """Artifact Store for Google Cloud Storage based artifacts."""
 
     _filesystem: Optional[gcsfs.GCSFileSystem] = None
-
-    # Class Configuration
-    FLAVOR: ClassVar[str] = GCP_ARTIFACT_STORE_FLAVOR
-    SUPPORTED_SCHEMES: ClassVar[Set[str]] = {GCP_PATH_PREFIX}
 
     @property
     def filesystem(self) -> gcsfs.GCSFileSystem:
@@ -274,3 +281,19 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
             files,
         ) in self.filesystem.walk(path=top):
             yield f"{GCP_PATH_PREFIX}{directory}", subdirectories, files
+
+
+class GCPArtifactStoreFlavor(BaseArtifactStoreFlavor):
+    """Flavor of the GCP artifact store."""
+
+    @property
+    def name(self) -> str:
+        return GCP_ARTIFACT_STORE_FLAVOR
+
+    @property
+    def config_class(self) -> Type[GCPArtifactStoreConfig]:
+        return GCPArtifactStoreConfig
+
+    @property
+    def implementation_class(self) -> Type["GCPArtifactStore"]:
+        return GCPArtifactStore

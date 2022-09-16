@@ -24,6 +24,7 @@ from typing import (
     Optional,
     Set,
     Tuple,
+    Type,
     Union,
     cast,
 )
@@ -32,6 +33,10 @@ import s3fs
 from pydantic import validator
 
 from zenml.artifact_stores import BaseArtifactStore
+from zenml.artifact_stores.base_artifact_store import (
+    BaseArtifactStoreConfig,
+    BaseArtifactStoreFlavor,
+)
 from zenml.integrations.s3 import S3_ARTIFACT_STORE_FLAVOR
 from zenml.secret.schemas import AWSSecretSchema
 from zenml.stack.authentication_mixin import AuthenticationMixin
@@ -41,9 +46,9 @@ from zenml.utils.secret_utils import SecretField
 PathType = Union[bytes, str]
 
 
-class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
-    """Artifact Store for S3 based artifacts.
-
+class S3ArtifactStoreConfig(BaseArtifactStoreConfig):
+    """Configuration for the S3 Artifact Store.
+    
     All attributes of this class except `path` will be passed to the
     `s3fs.S3FileSystem` initialization. See
     [here](https://s3fs.readthedocs.io/en/latest/) for more information on how
@@ -58,17 +63,14 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
     ```
     """
 
+    SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"s3://"}
+
     key: Optional[str] = SecretField()
     secret: Optional[str] = SecretField()
     token: Optional[str] = SecretField()
     client_kwargs: Optional[Dict[str, Any]] = None
     config_kwargs: Optional[Dict[str, Any]] = None
     s3_additional_kwargs: Optional[Dict[str, Any]] = None
-    _filesystem: Optional[s3fs.S3FileSystem] = None
-
-    # Class variables
-    FLAVOR: ClassVar[str] = S3_ARTIFACT_STORE_FLAVOR
-    SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"s3://"}
 
     @validator(
         "client_kwargs", "config_kwargs", "s3_additional_kwargs", pre=True
@@ -106,6 +108,12 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         else:
             raise TypeError(f"{value} is not a json string or a dictionary.")
 
+
+class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
+    """Artifact Store for S3 based artifacts."""
+
+    _filesystem: Optional[s3fs.S3FileSystem] = None
+
     def _get_credentials(
         self,
     ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
@@ -128,7 +136,7 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
                 secret.aws_session_token,
             )
         else:
-            return self.key, self.secret, self.token
+            return self.config.key, self.config.secret, self.config.token
 
     @property
     def filesystem(self) -> s3fs.S3FileSystem:
@@ -144,9 +152,9 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
                 key=key,
                 secret=secret,
                 token=token,
-                client_kwargs=self.client_kwargs,
-                config_kwargs=self.config_kwargs,
-                s3_additional_kwargs=self.s3_additional_kwargs,
+                client_kwargs=self.config.client_kwargs,
+                config_kwargs=self.config.config_kwargs,
+                s3_additional_kwargs=self.config.s3_additional_kwargs,
             )
         return self._filesystem
 
@@ -357,3 +365,19 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         # TODO [ENG-153]: Additional params
         for directory, subdirectories, files in self.filesystem.walk(path=top):
             yield f"s3://{directory}", subdirectories, files
+
+
+class S3ArtifactStoreFlavor(BaseArtifactStoreFlavor):
+    """Flavor of the S3 artifact store."""
+
+    @property
+    def name(self) -> str:
+        return S3_ARTIFACT_STORE_FLAVOR
+
+    @property
+    def config_class(self) -> Type[S3ArtifactStoreConfig]:
+        return S3ArtifactStoreConfig
+
+    @property
+    def implementation_class(self) -> Type["S3ArtifactStore"]:
+        return S3ArtifactStore
