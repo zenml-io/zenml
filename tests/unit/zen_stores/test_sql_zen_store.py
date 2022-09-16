@@ -27,6 +27,7 @@ from zenml.exceptions import (
 )
 from zenml.models import (
     ComponentModel,
+    FlavorModel,
     ProjectModel,
     RoleModel,
     TeamModel,
@@ -1435,3 +1436,103 @@ def test_delete_stack_component_fails_when_component_does_not_exist(
     """Tests deleting stack component fails when component does not exist."""
     with pytest.raises(KeyError):
         sql_store["store"].delete_stack_component(component_id=uuid.uuid4())
+
+
+# -----------------------
+# Stack component flavors
+# -----------------------
+
+
+def test_create_stack_component_flavor_succeeds(
+    sql_store: BaseZenStore,
+):
+    """Tests creating stack component flavor."""
+    flavor_name = "blupus"
+    blupus_flavor = FlavorModel(
+        name=flavor_name,
+        type=StackComponentType.ORCHESTRATOR,
+        source=".",
+    )
+    with does_not_raise():
+        sql_store["store"].create_flavor(flavor=blupus_flavor)
+        blupus_flavor_id = sql_store["store"].list_flavors(
+            project_name_or_id=sql_store["default_project"].name,
+            component_type=StackComponentType.ORCHESTRATOR,
+            name=flavor_name,
+        )
+        created_flavor = sql_store["store"].get_flavor(
+            flavor_id=blupus_flavor_id
+        )
+        assert created_flavor.name == flavor_name
+
+
+def test_create_stack_component_fails_when_flavor_already_exists(
+    sql_store: BaseZenStore,
+):
+    """Tests creating stack component flavor fails when flavor already exists."""
+    flavor_name = "default"
+    default_flavor = FlavorModel(
+        name=flavor_name,
+        type=StackComponentType.ORCHESTRATOR,
+        source=".",
+    )
+    with pytest.raises(EntityExistsError):
+        sql_store["store"].create_flavor(flavor=default_flavor)
+
+
+def test_get_flavor_succeeds(
+    sql_store: BaseZenStore,
+):
+    """Tests getting stack component flavor."""
+    flavor_name = "default"
+    default_flavor_id = (
+        sql_store["store"]
+        .list_flavors(
+            project_name_or_id=sql_store["default_project"].name,
+            component_type=StackComponentType.ORCHESTRATOR,
+            name=flavor_name,
+        )[0]
+        .id
+    )
+    with does_not_raise():
+        assert (
+            sql_store["store"].get_flavor(flavor_id=default_flavor_id).name
+            == flavor_name
+        )
+
+
+def test_get_flavor_fails_when_flavor_does_not_exist(
+    sql_store: BaseZenStore,
+):
+    """Tests getting stack component flavor fails when flavor does not exist."""
+    with pytest.raises(KeyError):
+        sql_store["store"].get_flavor(flavor_id=uuid.uuid4())
+
+
+def test_list_flavors_succeeds(
+    sql_store: BaseZenStore,
+):
+    """Tests listing stack component flavors."""
+    flavor_name = "default"
+    with does_not_raise():
+        assert (
+            sql_store["store"]
+            .list_flavors(
+                project_name_or_id=sql_store["default_project"].name,
+                component_type=StackComponentType.ORCHESTRATOR,
+                name=flavor_name,
+            )[0]
+            .name
+            == flavor_name
+        )
+
+
+def test_list_flavors_fails_with_nonexistent_project(
+    sql_store: BaseZenStore,
+):
+    """Tests listing stack component flavors fails with nonexistent project."""
+    with pytest.raises(KeyError):
+        sql_store["store"].list_flavors(
+            project_name_or_id="nonexistent",
+            component_type=StackComponentType.ORCHESTRATOR,
+        )
