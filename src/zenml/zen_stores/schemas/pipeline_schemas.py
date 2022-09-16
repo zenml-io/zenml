@@ -38,7 +38,8 @@ class PipelineSchema(SQLModel, table=True):
     docstring: Optional[str] = Field(nullable=True)
     configuration: str
 
-    creation_date: datetime
+    created: datetime = Field(default_factory=datetime.now)
+    updated: datetime = Field(default_factory=datetime.now)
 
     runs: List["PipelineRunSchema"] = Relationship(
         back_populates="pipeline",
@@ -56,7 +57,6 @@ class PipelineSchema(SQLModel, table=True):
         """
         return cls(
             id=pipeline.id,
-            creation_date=pipeline.creation_date,
             name=pipeline.name,
             project=pipeline.project,
             user=pipeline.user,
@@ -74,7 +74,9 @@ class PipelineSchema(SQLModel, table=True):
             The updated `PipelineSchema`.
         """
         self.name = model.name
+        self.updated = datetime.now()
         self.docstring = model.docstring
+        self.configuration = json.dumps(model.configuration)
         return self
 
     def to_model(self) -> "PipelineModel":
@@ -90,7 +92,8 @@ class PipelineSchema(SQLModel, table=True):
             user=self.user,
             docstring=self.docstring,
             configuration=json.loads(self.configuration),
-            creation_date=self.creation_date,
+            created=self.created,
+            updated=self.updated,
         )
 
 

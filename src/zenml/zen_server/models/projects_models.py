@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Project Models for the API endpoint definitions."""
-from typing import Optional
+from typing import ClassVar, Optional, Type
 
 from pydantic import BaseModel, Field
 
@@ -21,10 +21,13 @@ from zenml.models.constants import (
     MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
     MODEL_NAME_FIELD_MAX_LENGTH,
 )
+from zenml.zen_server.models.base_models import CreateRequest, UpdateRequest
 
 
-class CreateProjectRequest(BaseModel):
+class CreateProjectRequest(CreateRequest):
     """Project model for create requests."""
+
+    DOMAIN_MODEL: ClassVar[Type[ProjectModel]]
 
     name: str = Field(
         title="The unique name of the project.",
@@ -36,22 +39,11 @@ class CreateProjectRequest(BaseModel):
         max_length=MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
     )
 
-    def to_model(self) -> "ProjectModel":
-        """Create a `ProjectModel` from this object.
 
-        Returns:
-            The created `ProjectModel`.
-        """
-        return ProjectModel.parse_obj(self)
-
-    @classmethod
-    def from_model(cls, project: ProjectModel) -> "CreateProjectRequest":
-        """Convert from a project model."""
-        return cls(**project.dict())
-
-
-class UpdateProjectRequest(BaseModel):
+class UpdateProjectRequest(UpdateRequest):
     """Project model for update requests."""
+
+    DOMAIN_MODEL: ClassVar[Type[ProjectModel]]
 
     name: Optional[str] = Field(
         default=None,
@@ -63,22 +55,3 @@ class UpdateProjectRequest(BaseModel):
         title="The new description of the project.",
         max_length=MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
     )
-
-    def apply_to_model(self, project: "ProjectModel") -> "ProjectModel":
-        """Applies user defined changes to the given `ProjectModel`.
-
-        Args:
-            project: The `ProjectModel` to apply the changes to.
-
-        Returns:
-            The updated `ProjectModel`.
-        """
-        for key, value in self.dict(exclude_none=True).items():
-            setattr(project, key, value)
-
-        return project
-
-    @classmethod
-    def from_model(cls, project: ProjectModel) -> "UpdateProjectRequest":
-        """Convert from a project model."""
-        return cls(**project.dict())

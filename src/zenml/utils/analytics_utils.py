@@ -86,6 +86,7 @@ class AnalyticsEvent(str, Enum):
 
     # Teams
     CREATED_TEAM = "Team created"
+    UPDATED_TEAM = "Team updated"
     DELETED_TEAM = "Team deleted"
 
     # Projects
@@ -97,6 +98,7 @@ class AnalyticsEvent(str, Enum):
 
     # Role
     CREATED_ROLE = "Role created"
+    UPDATED_ROLE = "Role updated"
     DELETED_ROLE = "Role deleted"
 
     # Flavor

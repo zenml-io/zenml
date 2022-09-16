@@ -1005,13 +1005,11 @@ class Repository(metaclass=RepositoryMetaClass):
             )
             pipeline = self.zen_store.create_pipeline(pipeline=pipeline)
             logger.info(f"Registered new pipeline with name {pipeline.name}.")
-            assert pipeline.id is not None
             return pipeline.id
 
         # B) If a pipeline exists that has the same config, use that pipeline.
         if pipeline_configuration == existing_pipeline.configuration:
             logger.debug("Did not register pipeline since it already exists.")
-            assert existing_pipeline.id is not None
             return existing_pipeline.id
 
         # C) If a pipeline with different config exists, raise an error.
