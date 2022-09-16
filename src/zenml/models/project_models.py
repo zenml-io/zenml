@@ -16,8 +16,8 @@
 from typing import ClassVar, List
 
 from pydantic import Field
-from zenml.models.base_models import DomainModel
 
+from zenml.models.base_models import DomainModel
 from zenml.models.constants import (
     MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
     MODEL_NAME_FIELD_MAX_LENGTH,

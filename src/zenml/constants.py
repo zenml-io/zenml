@@ -200,3 +200,6 @@ MLMD_CONTEXT_MATERIALIZER_SOURCES_PROPERTY_NAME = "materializer_sources"
 
 # model metadata yaml file name
 MODEL_METADATA_YAML_FILE_NAME = "model_metadata.yaml"
+
+# testing constants
+TEST_STEP_INPUT_INT = 7
