@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Project Models for the API endpoint definitions."""
-from typing import Dict, Optional, List
+from typing import ClassVar, Dict, Optional, Type, List
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -21,10 +21,16 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.models import PipelineModel, PipelineRunModel, ProjectModel, \
     UserModel
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
+from zenml.zen_server.models.base_models import (
+    ProjectScopedCreateRequest,
+    UpdateRequest,
+)
 
 
-class CreatePipelineRequest(BaseModel):
+class CreatePipelineRequest(ProjectScopedCreateRequest):
     """Pipeline model for create requests."""
+
+    DOMAIN_MODEL: ClassVar[Type[BaseModel]] = PipelineModel
 
     name: str = Field(
         title="The name of the pipeline.",
@@ -34,26 +40,11 @@ class CreatePipelineRequest(BaseModel):
     docstring: Optional[str]
     configuration: Dict[str, str]
 
-    def to_model(self, project: UUID, user: UUID) -> "PipelineModel":
-        """Create a `PipelineModel` from this object.
 
-        Args:
-            project: Project context of the pipeline.
-            user: User context of the pipeline
-
-        Returns:
-            The created `PipelineModel`.
-        """
-        return PipelineModel(project=project, user=user, **self.dict())
-
-    @classmethod
-    def from_model(cls, pipeline: PipelineModel) -> "CreatePipelineRequest":
-        """Convert from a `PipelineModel`."""
-        return cls(**pipeline.dict())
-
-
-class UpdatePipelineRequest(BaseModel):
+class UpdatePipelineRequest(UpdateRequest):
     """Pipeline model for update requests."""
+
+    DOMAIN_MODEL: ClassVar[Type[BaseModel]] = PipelineModel
 
     name: Optional[str] = Field(
         title="The name of the pipeline.",
@@ -64,25 +55,6 @@ class UpdatePipelineRequest(BaseModel):
     # TODO: [server] have another look at this to figure out if adding a
     #  single k:v pair overwrites the existing k:v pairs
     configuration: Optional[Dict[str, str]]
-
-    def apply_to_model(self, pipeline: "PipelineModel") -> "PipelineModel":
-        """Update a `PipelineModel` from this object.
-
-        Args:
-            pipeline: The `PipelineModel` to apply the changes to.
-
-        Returns:
-            The updated `PipelineModel`.
-        """
-        for key, value in self.dict(exclude_none=True).items():
-            setattr(pipeline, key, value)
-
-        return pipeline
-
-    @classmethod
-    def from_model(cls, pipeline: PipelineModel) -> "UpdatePipelineRequest":
-        """Convert from a `PipelineModel` model."""
-        return cls(**pipeline.dict())
 
 
 class HydratedPipelineModel(PipelineModel):

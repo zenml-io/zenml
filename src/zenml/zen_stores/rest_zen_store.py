@@ -36,8 +36,10 @@ from zenml.constants import (
     LOGIN,
     PIPELINES,
     PROJECTS,
+    ROLES,
     STACK_COMPONENTS,
     STACKS,
+    TEAMS,
     USERS,
     VERSION_1,
 )
@@ -64,6 +66,13 @@ from zenml.models import (
     TeamModel,
     UserModel,
 )
+from zenml.models.base_models import DomainModel, ProjectScopedDomainModel
+from zenml.zen_server.models.base_models import (
+    CreateRequest,
+    CreateResponse,
+    UpdateRequest,
+    UpdateResponse,
+)
 from zenml.zen_server.models.pipeline_models import (
     CreatePipelineRequest,
     UpdatePipelineRequest,
@@ -77,8 +86,12 @@ from zenml.zen_server.models.stack_models import (
     UpdateStackRequest,
 )
 from zenml.zen_server.models.user_management_models import (
+    CreateRoleRequest,
+    CreateTeamRequest,
     CreateUserRequest,
     CreateUserResponse,
+    UpdateRoleRequest,
+    UpdateTeamRequest,
     UpdateUserRequest,
 )
 from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -88,7 +101,10 @@ logger = get_logger(__name__)
 # type alias for possible json payloads (the Anys are recursive Json instances)
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
-AnyModel = TypeVar("AnyModel", bound=BaseModel)
+AnyModel = TypeVar("AnyModel", bound=DomainModel)
+AnyProjectScopedModel = TypeVar(
+    "AnyProjectScopedModel", bound=ProjectScopedDomainModel
+)
 
 
 class RestZenStoreConfiguration(StoreConfiguration):
@@ -649,6 +665,11 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created team.
         """
+        return self._create_resource(
+            resource=team,
+            route=TEAMS,
+            request_model=CreateTeamRequest,
+        )
 
     def get_team(self, team_name_or_id: Union[str, UUID]) -> TeamModel:
         """Gets a specific team.
@@ -662,6 +683,11 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If no team with the given name or ID exists.
         """
+        return self._get_resource(
+            resource_id=team_name_or_id,
+            route=TEAMS,
+            resource_model=TeamModel,
+        )
 
     def list_teams(self) -> List[TeamModel]:
         """List all teams.
@@ -669,6 +695,31 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all teams.
         """
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=TEAMS,
+            resource_model=TeamModel,
+            **filters,
+        )
+
+    def update_team(self, team: TeamModel) -> TeamModel:
+        """Update an existing team.
+
+        Args:
+            team: The team to use for the update.
+
+        Returns:
+            The updated team.
+
+        Raises:
+            KeyError: if the team does not exist.
+        """
+        return self._update_resource(
+            resource=team,
+            route=TEAMS,
+            request_model=UpdateTeamRequest,
+        )
 
     def delete_team(self, team_name_or_id: Union[str, UUID]) -> None:
         """Deletes a team.
@@ -679,6 +730,10 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If no team with the given ID exists.
         """
+        self._delete_resource(
+            resource_id=team_name_or_id,
+            route=TEAMS,
+        )
 
     # ---------------
     # Team membership
@@ -762,6 +817,11 @@ class RestZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If a role with the given name already exists.
         """
+        return self._create_resource(
+            resource=role,
+            route=ROLES,
+            request_model=CreateRoleRequest,
+        )
 
     # TODO: consider using team_id instead
     def get_role(self, role_name_or_id: Union[str, UUID]) -> RoleModel:
@@ -776,6 +836,11 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If no role with the given name exists.
         """
+        return self._get_resource(
+            resource_id=role_name_or_id,
+            route=ROLES,
+            resource_model=RoleModel,
+        )
 
     # TODO: [ALEX] add filtering param(s)
     def list_roles(self) -> List[RoleModel]:
@@ -784,6 +849,31 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all roles.
         """
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=ROLES,
+            resource_model=RoleModel,
+            **filters,
+        )
+
+    def update_role(self, role: RoleModel) -> RoleModel:
+        """Update an existing role.
+
+        Args:
+            role: The role to use for the update.
+
+        Returns:
+            The updated role.
+
+        Raises:
+            KeyError: if the role does not exist.
+        """
+        return self._update_resource(
+            resource=role,
+            route=ROLES,
+            request_model=UpdateRoleRequest,
+        )
 
     def delete_role(self, role_name_or_id: Union[str, UUID]) -> None:
         """Deletes a role.
@@ -794,6 +884,10 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If no role with the given ID exists.
         """
+        self._delete_resource(
+            resource_id=role_name_or_id,
+            route=ROLES,
+        )
 
     # ----------------
     # Role assignments
@@ -1456,8 +1550,8 @@ class RestZenStore(BaseZenStore):
         self,
         resource: AnyModel,
         route: str,
-        request_model: Optional[Type[BaseModel]] = None,
-        response_model: Optional[Type[BaseModel]] = None,
+        request_model: Optional[Type[CreateRequest]] = None,
+        response_model: Optional[Type[CreateResponse]] = None,
     ) -> AnyModel:
         """Create a new resource.
 
@@ -1485,11 +1579,11 @@ class RestZenStore(BaseZenStore):
 
     def _create_project_scoped_resource(
         self,
-        resource: AnyModel,
+        resource: AnyProjectScopedModel,
         route: str,
-        request_model: Optional[Type[BaseModel]] = None,
-        response_model: Optional[Type[BaseModel]] = None,
-    ) -> AnyModel:
+        request_model: Optional[Type[CreateRequest]] = None,
+        response_model: Optional[Type[CreateResponse]] = None,
+    ) -> AnyProjectScopedModel:
         """Create a new project scoped resource.
 
         Args:
@@ -1503,16 +1597,9 @@ class RestZenStore(BaseZenStore):
         Returns:
             The created resource.
         """
-        project = getattr(resource, "project", None)
-
-        # TODO: this should be guaranteed through inheritance
-        assert project is not None and isinstance(project, UUID), (
-            f"Project scoped resource '{type(resource)}' must have a UUID "
-            f"'project' attribute"
-        )
         return self._create_resource(
             resource=resource,
-            route=f"{PROJECTS}/{str(project)}{route}",
+            route=f"{PROJECTS}/{str(resource.project)}{route}",
             request_model=request_model,
             response_model=response_model,
         )
@@ -1568,8 +1655,8 @@ class RestZenStore(BaseZenStore):
         self,
         resource: AnyModel,
         route: str,
-        request_model: Optional[Type[BaseModel]] = None,
-        response_model: Optional[Type[BaseModel]] = None,
+        request_model: Optional[Type[UpdateRequest]] = None,
+        response_model: Optional[Type[UpdateResponse]] = None,
     ) -> AnyModel:
         """Update an existing resource.
 
@@ -1584,16 +1671,10 @@ class RestZenStore(BaseZenStore):
         Returns:
             The updated resource.
         """
-        resource_id = getattr(resource, "id", None)
-
-        # TODO: this should be guaranteed through inheritance
-        assert resource_id is not None and isinstance(
-            resource_id, UUID
-        ), f"Resource '{type(resource)}' must have a UUID 'id' attribute"
         request = resource
         if request_model is not None:
             request = request_model.from_model(resource)
-        response_body = self.put(f"{route}/{str(resource_id)}", body=request)
+        response_body = self.put(f"{route}/{str(resource.id)}", body=request)
         if response_model is not None:
             response = response_model.parse_obj(response_body)
             updated_resource = cast(AnyModel, response.to_model())

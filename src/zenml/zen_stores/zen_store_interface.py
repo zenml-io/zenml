@@ -574,6 +574,20 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
+    def update_team(self, team: TeamModel) -> TeamModel:
+        """Update an existing team.
+
+        Args:
+            team: The team to use for the update.
+
+        Returns:
+            The updated team.
+
+        Raises:
+            KeyError: if the team does not exist.
+        """
+
+    @abstractmethod
     def delete_team(self, team_name_or_id: Union[str, UUID]) -> None:
         """Deletes a team.
 
@@ -694,6 +708,20 @@ class ZenStoreInterface(ABC):
 
         Returns:
             A list of all roles.
+        """
+
+    @abstractmethod
+    def update_role(self, role: RoleModel) -> RoleModel:
+        """Update an existing role.
+
+        Args:
+            role: The role to use for the update.
+
+        Returns:
+            The updated role.
+
+        Raises:
+            KeyError: if the role does not exist.
         """
 
     @abstractmethod

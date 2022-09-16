@@ -51,7 +51,7 @@ def list_users() -> None:
 
     cli_utils.print_pydantic_models(
         users,
-        exclude_columns=["credentials"],
+        exclude_columns=["id", "created", "updated"],
         is_active=lambda u: u.name == Repository().zen_store.active_user_name,
     )
 
@@ -120,7 +120,10 @@ def list_teams() -> None:
         cli_utils.declare("No teams registered.")
         return
 
-    cli_utils.print_pydantic_models(teams)
+    cli_utils.print_pydantic_models(
+        teams,
+        exclude_columns=["id", "created", "updated"],
+    )
 
 
 @team.command("describe", help="List all users in a team.")
@@ -161,6 +164,29 @@ def create_team(team_name: str) -> None:
     except EntityExistsError as err:
         cli_utils.error(str(err))
     cli_utils.declare(f"Created team '{team_name}'.")
+
+
+@team.command("update", help="Update an existing team.")
+@click.argument("team_name", type=str, required=True)
+@click.option("--name", "-n", type=str, required=False, help="New team name.")
+def update_team(
+    team_name: str,
+    name: Optional[str] = None,
+) -> None:
+    """Update an existing team.
+
+    Args:
+        team_name: The name of the team.
+        name: The new name of the team.
+    """
+    cli_utils.print_active_config()
+    try:
+        team = Repository().zen_store.get_team(team_name)
+        team.name = name or team.name
+        Repository().zen_store.update_team(team)
+    except (EntityExistsError, KeyError) as err:
+        cli_utils.error(str(err))
+    cli_utils.declare(f"Updated team '{team_name}'.")
 
 
 @team.command("delete", help="Delete a team.")
@@ -249,7 +275,7 @@ def list_projects() -> None:
         active_project_id = active_project.id if active_project else None
         cli_utils.print_pydantic_models(
             projects,
-            columns=("name", "description", "creation_date"),
+            exclude_columns=["id", "created", "updated"],
             is_active=(lambda p: p.id == active_project_id),
         )
     else:
@@ -373,7 +399,10 @@ def list_roles() -> None:
     if not roles:
         cli_utils.declare("No roles registered.")
         return
-    cli_utils.print_pydantic_models(roles)
+    cli_utils.print_pydantic_models(
+        roles,
+        exclude_columns=["id", "created", "updated"],
+    )
 
 
 @role.command("create", help="Create a new role.")
@@ -387,6 +416,29 @@ def create_role(role_name: str) -> None:
     cli_utils.print_active_config()
     Repository().zen_store.create_role(role=RoleModel(name=role_name))
     cli_utils.declare(f"Created role '{role_name}'.")
+
+
+@role.command("update", help="Update an existing role.")
+@click.argument("role_name", type=str, required=True)
+@click.option("--name", "-n", type=str, required=False, help="New role name.")
+def update_role(
+    role_name: str,
+    name: Optional[str] = None,
+) -> None:
+    """Update an existing role.
+
+    Args:
+        role_name: The name of the role.
+        name: The new name of the role.
+    """
+    cli_utils.print_active_config()
+    try:
+        role = Repository().zen_store.get_role(role_name)
+        role.name = name or role.name
+        Repository().zen_store.update_role(role)
+    except (EntityExistsError, KeyError) as err:
+        cli_utils.error(str(err))
+    cli_utils.declare(f"Updated role '{role_name}'.")
 
 
 @role.command("delete", help="Delete a role.")
