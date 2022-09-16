@@ -24,10 +24,10 @@ from zenml.zen_server.models.base_models import (
 )
 
 
-class CreatePipelineRequest(ProjectScopedCreateRequest):
+class CreatePipelineRequest(ProjectScopedCreateRequest[PipelineModel]):
     """Pipeline model for create requests."""
 
-    DOMAIN_MODEL: ClassVar[Type[BaseModel]] = PipelineModel
+    _MODEL_TYPE = PipelineModel
 
     name: str = Field(
         title="The name of the pipeline.",
@@ -38,10 +38,10 @@ class CreatePipelineRequest(ProjectScopedCreateRequest):
     configuration: Dict[str, str]
 
 
-class UpdatePipelineRequest(UpdateRequest):
+class UpdatePipelineRequest(UpdateRequest[PipelineModel]):
     """Pipeline model for update requests."""
 
-    DOMAIN_MODEL: ClassVar[Type[BaseModel]] = PipelineModel
+    _MODEL_TYPE = PipelineModel
 
     name: Optional[str] = Field(
         title="The name of the pipeline.",

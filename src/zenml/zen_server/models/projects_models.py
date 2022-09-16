@@ -14,7 +14,7 @@
 """Project Models for the API endpoint definitions."""
 from typing import ClassVar, Optional, Type
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from zenml.models import ProjectModel
 from zenml.models.constants import (
@@ -24,10 +24,10 @@ from zenml.models.constants import (
 from zenml.zen_server.models.base_models import CreateRequest, UpdateRequest
 
 
-class CreateProjectRequest(CreateRequest):
+class CreateProjectRequest(CreateRequest[ProjectModel]):
     """Project model for create requests."""
 
-    DOMAIN_MODEL: ClassVar[Type[ProjectModel]] = ProjectModel
+    _MODEL_TYPE = ProjectModel
 
     name: str = Field(
         title="The unique name of the project.",
@@ -40,10 +40,10 @@ class CreateProjectRequest(CreateRequest):
     )
 
 
-class UpdateProjectRequest(UpdateRequest):
+class UpdateProjectRequest(UpdateRequest[ProjectModel]):
     """Project model for update requests."""
 
-    DOMAIN_MODEL: ClassVar[Type[ProjectModel]] = ProjectModel
+    _MODEL_TYPE = ProjectModel
 
     name: Optional[str] = Field(
         default=None,

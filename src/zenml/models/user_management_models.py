@@ -17,7 +17,7 @@ import re
 from datetime import datetime, timedelta
 from secrets import token_hex
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from pydantic import BaseModel, Field, SecretStr, root_validator
 
@@ -344,6 +344,8 @@ class UserModel(DomainModel, AnalyticsTrackedModelMixin):
         validate_assignment = True
         # Forbid extra attributes to prevent unexpected behavior
         extra = "forbid"
+        underscore_attrs_are_private = True
+
 
 
 class RoleModel(DomainModel, AnalyticsTrackedModelMixin):

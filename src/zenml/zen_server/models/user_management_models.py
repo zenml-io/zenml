@@ -14,7 +14,7 @@
 """REST API user management models implementation."""
 
 
-from typing import ClassVar, Optional, Type
+from typing import Any, ClassVar, Optional, Type, cast
 
 from pydantic import BaseModel, Field
 
@@ -32,10 +32,10 @@ from zenml.zen_server.models.base_models import (
 )
 
 
-class CreateUserRequest(CreateRequest):
+class CreateUserRequest(CreateRequest[UserModel]):
     """Model for user creation requests."""
 
-    DOMAIN_MODEL: ClassVar[Type[BaseModel]] = UserModel
+    _MODEL_TYPE = UserModel
 
     name: str = Field(
         title="The unique username for the account.",
@@ -58,49 +58,65 @@ class CreateUserRequest(CreateRequest):
     )
 
     @classmethod
-    def from_model(cls, model: BaseModel) -> "CreateRequest":
-        """Convert a user domain model into a create request.
+    def from_model(cls, model: UserModel, **kwargs: Any) -> "CreateUserRequest":
+        """Convert a user domain model into a user create request.
 
         Args:
             model: The user domain model to convert.
+            kwargs: Additional keyword arguments to pass to the user create
+                request.
 
         Returns:
-            The create request.
+            The user create request.
         """
-        assert isinstance(model, UserModel)
-        return cls(**model.dict(), password=model.get_password())
+        return cast(
+            CreateUserRequest,
+            super().from_model(model, **kwargs, password=model.get_password()),
+        )
 
 
-class CreateUserResponse(UserModel, CreateResponse):
+class CreateUserResponse(UserModel, CreateResponse[UserModel]):
     """Model for user creation responses."""
 
-    DOMAIN_MODEL: ClassVar[Type[BaseModel]] = UserModel
+    _MODEL_TYPE = UserModel
 
-    activation_token: Optional[str] = Field(
+    activation_token: Optional[str] = Field(  # type: ignore[assignment]
         default=None, title="Account activation token."
     )
 
     @classmethod
-    def from_model(cls, model: BaseModel) -> "CreateResponse":
-        """Convert a user domain model into a create response.
+    def from_model(
+        cls, model: UserModel, **kwargs: Any
+    ) -> "CreateUserResponse":
+        """Convert a user domain model into a user create response.
 
         Args:
             model: The user domain model to convert.
+            kwargs: Additional keyword arguments to pass to the user create
+                response.
 
         Returns:
-            The create response.
+            The user create response.
         """
-        assert isinstance(model, UserModel)
-
-        return cls(
-            **model.dict(), activation_token=model.get_activation_token()
+        return cast(
+            CreateUserResponse,
+            super().from_model(
+                model, **kwargs, activation_token=model.get_activation_token()
+            ),
         )
 
+    class Config:
+        """Pydantic configuration class."""
 
-class UpdateUserRequest(UpdateRequest):
+        # Validate attributes when assigning them
+        validate_assignment = True
+        underscore_attrs_are_private = True
+
+
+class UpdateUserRequest(UpdateRequest[UserModel]):
     """Model for user update requests."""
 
-    DOMAIN_MODEL: ClassVar[Type[BaseModel]] = UserModel
+    _MODEL_TYPE = UserModel
 
     name: Optional[str] = Field(
         default=None,
@@ -138,25 +154,27 @@ class UpdateUserRequest(UpdateRequest):
         return user
 
     @classmethod
-    def from_model(cls, model: UserModel) -> "UpdateRequest":
+    def from_model(cls, model: UserModel, **kwargs: Any) -> "UpdateUserRequest":
         """Convert a user domain model into an update request.
 
         Args:
             model: The user domain model to convert.
+            kwargs: Additional keyword arguments to pass to the user update
+                response.
 
         Returns:
             The update request.
         """
-        assert isinstance(model, UserModel)
+        return cast(
+            UpdateUserRequest,
+            super().from_model(model, **kwargs, password=model.get_password()),
+        )
 
-        response = cls(**model.dict(), password=model.get_password())
-        return response
 
-
-class ActivateUserRequest(UpdateRequest):
+class ActivateUserRequest(UpdateRequest[UserModel]):
     """Model for user activation requests."""
 
-    DOMAIN_MODEL: ClassVar[Type[BaseModel]] = UserModel
+    _MODEL_TYPE = UserModel
 
     name: Optional[str] = Field(
         default=None,
@@ -201,33 +219,46 @@ class ActivateUserRequest(UpdateRequest):
         return model
 
 
-class DeactivateUserResponse(UserModel, UpdateResponse):
+class DeactivateUserResponse(UserModel, UpdateResponse[UserModel]):
     """Model for user deactivation requests."""
 
-    DOMAIN_MODEL: ClassVar[Type[BaseModel]] = UserModel
+    _MODEL_TYPE = UserModel
 
     activation_token: str = Field(..., title="Account activation token.")
 
     @classmethod
-    def from_model(cls, model: UserModel) -> "UpdateResponse":
+    def from_model(
+        cls, model: UserModel, **kwargs: Any
+    ) -> "DeactivateUserResponse":
         """Convert a domain model into a user deactivation response.
 
         Args:
             model: The domain model to convert.
+            kwargs: Additional keyword arguments to pass to the user
+                deactivation response.
 
         Returns:
             The user deactivation response.
         """
-        response = cls(
-            **model.dict(), activation_token=model.get_activation_token()
+        return cast(
+            DeactivateUserResponse,
+            super().from_model(
+                model, **kwargs, activation_token=model.get_activation_token()
+            ),
         )
-        return response
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # Validate attributes when assigning them
+        validate_assignment = True
+        underscore_attrs_are_private = True
 
 
-class CreateRoleRequest(CreateRequest):
+class CreateRoleRequest(CreateRequest[RoleModel]):
     """Model for role creation requests."""
 
-    DOMAIN_MODEL: ClassVar[Type[BaseModel]] = RoleModel
+    _MODEL_TYPE = RoleModel
 
     name: str = Field(
         title="The unique name of the role.",
@@ -235,10 +266,10 @@ class CreateRoleRequest(CreateRequest):
     )
 
 
-class UpdateRoleRequest(UpdateRequest):
+class UpdateRoleRequest(UpdateRequest[RoleModel]):
     """Model for role update requests."""
 
-    DOMAIN_MODEL: ClassVar[Type[BaseModel]] = RoleModel
+    _MODEL_TYPE = RoleModel
 
     name: Optional[str] = Field(
         default=None,
@@ -247,10 +278,10 @@ class UpdateRoleRequest(UpdateRequest):
     )
 
 
-class CreateTeamRequest(CreateRequest):
+class CreateTeamRequest(CreateRequest[TeamModel]):
     """Model for team creation requests."""
 
-    DOMAIN_MODEL: ClassVar[Type[BaseModel]] = TeamModel
+    _MODEL_TYPE = TeamModel
 
     name: str = Field(
         title="The unique name of the team.",
@@ -258,10 +289,10 @@ class CreateTeamRequest(CreateRequest):
     )
 
 
-class UpdateTeamRequest(UpdateRequest):
+class UpdateTeamRequest(UpdateRequest[TeamModel]):
     """Model for team update requests."""
 
-    DOMAIN_MODEL: ClassVar[Type[BaseModel]] = TeamModel
+    _MODEL_TYPE = TeamModel
 
     name: Optional[str] = Field(
         default=None,

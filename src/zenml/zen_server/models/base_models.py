@@ -14,85 +14,109 @@
 """Base REST API model definitions."""
 
 
-from typing import ClassVar, Type, TypeVar
+from typing import Any, ClassVar, Type, TypeVar, Generic, List
 from uuid import UUID
+
 from pydantic import BaseModel
 
 AnyModel = TypeVar("AnyModel", bound=BaseModel)
 
 
-class CreateRequest(BaseModel):
+class CreateRequest(BaseModel, Generic[AnyModel]):
     """Base model used for create requests."""
 
-    DOMAIN_MODEL: ClassVar[Type[BaseModel]]
+    _MODEL_TYPE: Type[AnyModel]
 
-    def to_model(self) -> BaseModel:
+    def to_model(self, **kwargs: Any) -> AnyModel:
         """Create a domain model from this create request.
+
+        Args:
+            kwargs: Additional keyword arguments to pass to the model
 
         Returns:
             The created domain model.
         """
-        return self.DOMAIN_MODEL(**self.dict(exclude_none=True))
+        return self._MODEL_TYPE(**self.dict(exclude_none=True), **kwargs)
 
     @classmethod
-    def from_model(cls, model: BaseModel) -> "CreateRequest":
+    def from_model(
+        cls, model: AnyModel, **kwargs: Any
+    ) -> "CreateRequest[AnyModel]":
         """Convert a domain model into a create request.
 
         Args:
             model: The domain model to convert.
+            kwargs: Additional keyword arguments to pass to the create request.
 
         Returns:
             The create request.
         """
-        return cls(**model.dict())
+        return cls(**model.dict(), **kwargs)
+
+    class Config:
+        """Pydantic config."""
+
+        underscore_attrs_are_private = True
 
 
-class ProjectScopedCreateRequest(CreateRequest):
+class ProjectScopedCreateRequest(CreateRequest[AnyModel]):
     """Base model used for project scoped create requests."""
 
-    DOMAIN_MODEL: ClassVar[Type[BaseModel]]
-
-    def to_model(self, project: UUID, user: UUID) -> "BaseModel":
+    def to_model(self, project: UUID, user: UUID, **kwargs: Any) -> AnyModel:  # type: ignore[override]
         """Create a domain model from this create request.
+
+        Args:
+            project: The project to create the model in.
+            user: The user creating the model.
+            kwargs: Additional keyword arguments to pass to the model
 
         Returns:
             The created domain model.
         """
-        return self.DOMAIN_MODEL(
-            project=project, user=user, **self.dict(exclude_none=True)
-        )
+        return super().to_model(project=project, user=user, **kwargs)
 
 
-class CreateResponse(BaseModel):
+class CreateResponse(BaseModel, Generic[AnyModel]):
     """Base model used for create responses."""
 
-    DOMAIN_MODEL: ClassVar[Type[BaseModel]]
+    _MODEL_TYPE: Type[AnyModel]
 
     @classmethod
-    def from_model(cls, model: BaseModel) -> "CreateResponse":
+    def from_model(
+        cls, model: AnyModel, **kwargs: Any
+    ) -> "CreateResponse[AnyModel]":
         """Convert a domain model into a create response.
 
         Args:
             model: The domain model to convert.
+            kwargs: Additional keyword arguments to pass to the create response.
 
         Returns:
             The create response.
         """
-        return cls(**model.dict())
+        return cls(**model.dict(), **kwargs)
 
-    def to_model(self) -> BaseModel:
+    def to_model(self, **kwargs: Any) -> AnyModel:
         """Create a domain model from this create response.
+
+        Args:
+            kwargs: Additional keyword arguments to pass to the model
 
         Returns:
             The created domain model.
         """
-        return self.DOMAIN_MODEL(**self.dict())
+        return self._MODEL_TYPE(**self.dict(exclude_none=True), **kwargs)
+
+    class Config:
+        """Pydantic config."""
+
+        underscore_attrs_are_private = True
 
 
-class UpdateRequest(BaseModel):
+class UpdateRequest(BaseModel, Generic[AnyModel]):
     """Base model used for update requests."""
 
-    DOMAIN_MODEL: ClassVar[Type[BaseModel]]
+    _MODEL_TYPE: Type[AnyModel]
 
     def apply_to_model(self, model: AnyModel) -> AnyModel:
         """Apply the update changes to a domain model.
@@ -108,39 +132,58 @@ class UpdateRequest(BaseModel):
         return model
 
     @classmethod
-    def from_model(cls, model: BaseModel) -> "UpdateRequest":
-        """Convert a domain model into an update request.
+    def from_model(
+        cls, model: AnyModel, **kwargs: Any
+    ) -> "UpdateRequest[AnyModel]":
+        """Convert a domain model into a update request.
 
         Args:
             model: The domain model to convert.
+            kwargs: Additional keyword arguments to pass to the update request.
 
         Returns:
-            The update request.
+            The create request.
         """
-        return cls(**model.dict())
+        return cls(**model.dict(), **kwargs)
+
+    class Config:
+        """Pydantic config."""
+
+        underscore_attrs_are_private = True
 
 
-class UpdateResponse(BaseModel):
+class UpdateResponse(BaseModel, Generic[AnyModel]):
     """Base model used for update responses."""
 
-    DOMAIN_MODEL: ClassVar[Type[BaseModel]]
+    _MODEL_TYPE: Type[AnyModel]
 
     @classmethod
-    def from_model(cls, model: BaseModel) -> "UpdateResponse":
+    def from_model(
+        cls, model: AnyModel, **kwargs: Any
+    ) -> "UpdateResponse[AnyModel]":
         """Convert a domain model into an update response.
 
         Args:
             model: The domain model to convert.
+            kwargs: Additional keyword arguments to pass to the update response.
 
         Returns:
             The update response.
         """
-        return cls(**model.dict())
+        return cls(**model.dict(), **kwargs)
 
-    def to_model(self) -> BaseModel:
+    def to_model(self, **kwargs: Any) -> AnyModel:
         """Create a domain model from this update response.
+
+        Args:
+            kwargs: Additional keyword arguments to pass to the model
 
         Returns:
             The created domain model.
         """
-        return self.DOMAIN_MODEL(**self.dict())
+        return self._MODEL_TYPE(**self.dict(exclude_none=True), **kwargs)
+
+    class Config:
+        """Pydantic config."""
+
+        underscore_attrs_are_private = True

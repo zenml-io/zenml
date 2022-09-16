@@ -29,10 +29,10 @@ from zenml.zen_server.models.base_models import (
 )
 
 
-class CreateStackRequest(ProjectScopedCreateRequest):
+class CreateStackRequest(ProjectScopedCreateRequest[StackModel]):
     """Stack model for create requests."""
 
-    DOMAIN_MODEL: ClassVar[Type[BaseModel]] = StackModel
+    _MODEL_TYPE = StackModel
 
     name: str = Field(
         title="The stack name.", max_length=MODEL_NAME_FIELD_MAX_LENGTH
@@ -55,10 +55,10 @@ class CreateStackRequest(ProjectScopedCreateRequest):
     )
 
 
-class UpdateStackRequest(UpdateRequest):
+class UpdateStackRequest(UpdateRequest[StackModel]):
     """Stack model for update requests."""
 
-    DOMAIN_MODEL: ClassVar[Type[BaseModel]] = StackModel
+    _MODEL_TYPE = StackModel
 
     name: Optional[str] = Field(
         default=None,

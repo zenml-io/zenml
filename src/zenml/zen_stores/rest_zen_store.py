@@ -1550,8 +1550,8 @@ class RestZenStore(BaseZenStore):
         self,
         resource: AnyModel,
         route: str,
-        request_model: Optional[Type[CreateRequest]] = None,
-        response_model: Optional[Type[CreateResponse]] = None,
+        request_model: Optional[Type[CreateRequest[AnyModel]]] = None,
+        response_model: Optional[Type[CreateResponse[AnyModel]]] = None,
     ) -> AnyModel:
         """Create a new resource.
 
@@ -1566,13 +1566,13 @@ class RestZenStore(BaseZenStore):
         Returns:
             The created resource.
         """
-        request = resource
+        request: BaseModel = resource
         if request_model is not None:
             request = request_model.from_model(resource)
         response_body = self.post(f"{route}/", body=request)
         if response_model is not None:
             response = response_model.parse_obj(response_body)
-            created_resource = cast(AnyModel, response.to_model())
+            created_resource = response.to_model()
         else:
             created_resource = resource.parse_obj(response_body)
         return created_resource
@@ -1581,8 +1581,12 @@ class RestZenStore(BaseZenStore):
         self,
         resource: AnyProjectScopedModel,
         route: str,
-        request_model: Optional[Type[CreateRequest]] = None,
-        response_model: Optional[Type[CreateResponse]] = None,
+        request_model: Optional[
+            Type[CreateRequest[AnyProjectScopedModel]]
+        ] = None,
+        response_model: Optional[
+            Type[CreateResponse[AnyProjectScopedModel]]
+        ] = None,
     ) -> AnyProjectScopedModel:
         """Create a new project scoped resource.
 
@@ -1655,8 +1659,8 @@ class RestZenStore(BaseZenStore):
         self,
         resource: AnyModel,
         route: str,
-        request_model: Optional[Type[UpdateRequest]] = None,
-        response_model: Optional[Type[UpdateResponse]] = None,
+        request_model: Optional[Type[UpdateRequest[AnyModel]]] = None,
+        response_model: Optional[Type[UpdateResponse[AnyModel]]] = None,
     ) -> AnyModel:
         """Update an existing resource.
 
@@ -1671,13 +1675,13 @@ class RestZenStore(BaseZenStore):
         Returns:
             The updated resource.
         """
-        request = resource
+        request: BaseModel = resource
         if request_model is not None:
             request = request_model.from_model(resource)
         response_body = self.put(f"{route}/{str(resource.id)}", body=request)
         if response_model is not None:
             response = response_model.parse_obj(response_body)
-            updated_resource = cast(AnyModel, response.to_model())
+            updated_resource = response.to_model()
         else:
             updated_resource = resource.parse_obj(response_body)
 
