@@ -45,9 +45,10 @@ router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_runs(
+async def list_runs(
     project_name_or_id: Optional[str] = None,
     stack_id: Optional[str] = None,
+    component_id: Optional[str] = None,
     pipeline_id: Optional[str] = None,
 ) -> List[PipelineRunModel]:
     """Get pipeline runs according to query filters.
@@ -55,6 +56,7 @@ async def get_runs(
     Args:
         project_name_or_id: Name or ID of the project for which to filter runs.
         stack_id: ID of the stack for which to filter runs.
+        component_id: Id of a component that where used in the run.
         pipeline_id: ID of the pipeline for which to filter runs.
 
     Returns:

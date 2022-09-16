@@ -19,8 +19,10 @@ from fastapi import APIRouter, Depends
 
 from zenml.constants import PIPELINES, RUNS, VERSION_1
 from zenml.models import PipelineRunModel
-from zenml.models.pipeline_models import HydratedPipelineModel, PipelineModel
-from zenml.utils.uuid_utils import parse_name_or_uuid
+from zenml.models.pipeline_models import PipelineModel
+from zenml.zen_server.models.pipeline_models import HydratedPipelineModel
+from zenml.utils.uuid_utils import parse_name_or_uuid, \
+    parse_optional_name_or_uuid
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.models import UpdatePipelineRequest
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
@@ -35,7 +37,7 @@ router = APIRouter(
 
 @router.get(
     "/",
-    response_model=Union[List[PipelineModel], List[HydratedPipelineModel]],
+    response_model=Union[List[HydratedPipelineModel], List[PipelineModel]],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -44,7 +46,7 @@ async def list_pipelines(
     user_name_or_id: Optional[str] = None,
     name: Optional[str] = None,
     hydrated: bool = False,
-) -> Union[List[PipelineModel], List[HydratedPipelineModel]]:
+) -> Union[List[HydratedPipelineModel], List[PipelineModel]]:
     """Gets a list of pipelines.
 
     Args:
@@ -63,20 +65,21 @@ async def list_pipelines(
         name=name,
     )
     if hydrated:
-        return [pipeline.to_hydrated_model() for pipeline in pipelines_list]
+        return [HydratedPipelineModel.from_model(pipeline)
+                for pipeline in pipelines_list]
     else:
         return pipelines_list
 
 
 @router.get(
     "/{pipeline_id}",
-    response_model=Union[PipelineModel, HydratedPipelineModel],
+    response_model=Union[HydratedPipelineModel, PipelineModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 async def get_pipeline(
     pipeline_id: UUID, hydrated: bool = False
-) -> Union[PipelineModel, HydratedPipelineModel]:
+) -> Union[HydratedPipelineModel, PipelineModel]:
     """Gets a specific pipeline using its unique id.
 
     Args:
@@ -89,14 +92,14 @@ async def get_pipeline(
     """
     pipeline = zen_store.get_pipeline(pipeline_id=pipeline_id)
     if hydrated:
-        return pipeline.to_hydrated_model()
+        return HydratedPipelineModel.from_model(pipeline)
     else:
         return pipeline
 
 
 @router.put(
     "/{pipeline_id}",
-    response_model=Union[PipelineModel, HydratedPipelineModel],
+    response_model=Union[HydratedPipelineModel, PipelineModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -104,7 +107,7 @@ async def update_pipeline(
     pipeline_id: UUID,
     pipeline_update: UpdatePipelineRequest,
     hydrated: bool = False,
-) -> Union[PipelineModel, HydratedPipelineModel]:
+) -> Union[HydratedPipelineModel, PipelineModel]:
     """Updates the attribute on a specific pipeline using its unique id.
 
     Args:
@@ -122,7 +125,7 @@ async def update_pipeline(
         pipeline=pipeline_update.apply_to_model(pipeline_in_db)
     )
     if hydrated:
-        return updated_pipeline.to_hydrated_model()
+        return HydratedPipelineModel.from_model(updated_pipeline)
     else:
         return updated_pipeline
 
@@ -147,16 +150,28 @@ async def delete_pipeline(pipeline_id: UUID) -> None:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_pipeline_runs(pipeline_id: str) -> List[PipelineRunModel]:
-    """Gets a list of runs for a specific pipeline.
+async def list_pipeline_runs(
+        project_name_or_id: Optional[str] = None,
+        stack_id: Optional[str] = None,
+        component_id: Optional[str] = None,
+        pipeline_id: Optional[str] = None,
+) -> List[PipelineRunModel]:
+    """Get pipeline runs according to query filters.
 
     Args:
-        pipeline_id: ID of the pipeline to get.
+        project_name_or_id: Name or ID of the project for which to filter runs.
+        stack_id: ID of the stack for which to filter runs.
+        component_id: Id of a component that where used in the run.
+        pipeline_id: ID of the pipeline for which to filter runs.
 
     Returns:
-        List of triggers.
+        The pipeline runs according to query filters.
     """
-    return zen_store.list_runs(pipeline_id=UUID(pipeline_id))
+    return zen_store.list_runs(
+        project_name_or_id=parse_optional_name_or_uuid(project_name_or_id),
+        stack_id=stack_id,
+        pipeline_id=pipeline_id,
+    )
 
 
 @router.post(

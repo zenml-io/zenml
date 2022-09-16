@@ -20,11 +20,8 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel, Field
 
 from zenml import __version__ as current_zenml_version
-from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import ArtifactType
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
-from zenml.models.project_models import ProjectModel
-from zenml.models.user_management_models import UserModel
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 
@@ -82,39 +79,6 @@ class PipelineModel(AnalyticsTrackedModelMixin):
     creation_date: datetime = Field(
         default_factory=datetime.now,
         title="The time at which the pipeline was created.",
-    )
-
-    def to_hydrated_model(self) -> "HydratedPipelineModel":
-        """Converts this model to a hydrated model.
-
-        Returns:
-            A hydrated model.
-        """
-        zen_store = GlobalConfiguration().zen_store
-
-        project = zen_store.get_project(self.project)
-        user = zen_store.get_user(self.user)
-
-        return HydratedPipelineModel(
-            id=self.id,
-            name=self.name,
-            project=project,
-            user=user,
-            docstring=self.docstring,
-            configuration=self.configuration,
-            creation_date=self.creation_date,
-        )
-
-
-class HydratedPipelineModel(PipelineModel):
-    """Pipeline model with User and Project fully hydrated."""
-
-    project: ProjectModel = Field(
-        title="The project that contains this pipeline."
-    )
-    user: UserModel = Field(
-        default=None,
-        title="The user that created this pipeline.",
     )
 
 
