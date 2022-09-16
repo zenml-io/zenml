@@ -14,7 +14,7 @@
 """Implementation of the KServe Model Deployer."""
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
 from uuid import UUID
 
 from kserve import KServeClient, V1beta1InferenceService, constants, utils
@@ -28,7 +28,11 @@ from zenml.integrations.kserve.services.kserve_deployment import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.model_deployers.base_model_deployer import BaseModelDeployer
+from zenml.model_deployers.base_model_deployer import (
+    BaseModelDeployer,
+    BaseModelDeployerConfig,
+    BaseModelDeployerFlavor,
+)
 from zenml.repository import Repository
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
@@ -45,8 +49,8 @@ logger = get_logger(__name__)
 DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT = 300
 
 
-class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
-    """KServe model deployer stack component implementation.
+class KServeModelDeployerConfig(BaseModelDeployerConfig):
+    """Configuration for the KServeModelDeployer.
 
     Attributes:
         kubernetes_context: the Kubernetes context to use to contact the remote
@@ -67,15 +71,16 @@ class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
             KServe inference services.
     """
 
-    # Class Configuration
-    FLAVOR: ClassVar[str] = KSERVE_MODEL_DEPLOYER_FLAVOR
-
     kubernetes_context: Optional[str]
     kubernetes_namespace: Optional[str]
-    base_url: str
+    base_url: str  # TODO: unused?
     secret: Optional[str]
-    custom_domain: Optional[str]
-    # private attributes
+    custom_domain: Optional[str]  # TODO: unused?
+
+
+class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
+    """KServe model deployer stack component implementation."""
+
     _client: Optional[KServeClient] = None
 
     @staticmethod
@@ -136,7 +141,7 @@ class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
         """
         if not self._client:
             self._client = KServeClient(
-                context=self.kubernetes_context,
+                context=self.config.kubernetes_context,
             )
         return self._client
 
@@ -151,7 +156,7 @@ class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
             secret_folder = Path(
                 GlobalConfiguration().config_directory,
                 "kserve-storage",
-                str(self.uuid),
+                str(self.id),
             )
             kserve_credentials = {}
             # Handle the secrets attributes
@@ -170,7 +175,7 @@ class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
 
             # We need to add the namespace to the kserve_credentials
             kserve_credentials["namespace"] = (
-                self.kubernetes_namespace
+                self.config.kubernetes_namespace
                 or utils.get_default_target_namespace()
             )
 
@@ -239,7 +244,7 @@ class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
 
         # if the secret is passed in the config, use it to set the credentials
         if config.secret_name:
-            self.secret = config.secret_name or self.secret
+            self.config.secret = config.secret_name or self.config.secret
         self._set_credentials()
 
         # if replace is True, find equivalent KServe deployments
@@ -316,7 +321,8 @@ class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
         )
 
         namespace = (
-            self.kubernetes_namespace or utils.get_default_target_namespace()
+            self.config.kubernetes_namespace
+            or utils.get_default_target_namespace()
         )
 
         try:
@@ -506,7 +512,7 @@ class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
         Raises:
             RuntimeError: if the secret object is not found or secrets_manager is not set.
         """
-        if self.secret:
+        if self.config.secret:
 
             secret_manager = Repository(  # type: ignore [call-arg]
                 skip_repository_check=True
@@ -518,14 +524,14 @@ class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
                 raise RuntimeError(
                     f"The active stack doesn't have a secret manager component. "
                     f"The ZenML secret specified in the KServe Model "
-                    f"Deployer configuration cannot be fetched: {self.secret}."
+                    f"Deployer configuration cannot be fetched: {self.config.secret}."
                 )
             try:
-                secret = secret_manager.get_secret(self.secret)
+                secret = secret_manager.get_secret(self.config.secret)
                 return secret
             except KeyError:
                 raise RuntimeError(
-                    f"The secret `{self.secret}` used for your KServe Model"
+                    f"The secret `{self.config.secret}` used for your KServe Model"
                     f"Deployer configuration does not exist in your secrets "
                     f"manager `{secret_manager.name}`."
                 )
@@ -573,3 +579,19 @@ class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
             custom_docker_image_name = runtime_configuration["docker_image"]
 
         return custom_docker_image_name
+
+
+class KServeModelDeployerFlavor(BaseModelDeployerFlavor):
+    """Flavor for the KServe model deployer."""
+
+    @property
+    def name(self) -> str:
+        return KSERVE_MODEL_DEPLOYER_FLAVOR
+
+    @property
+    def config_class(self) -> Type[KServeModelDeployerConfig]:
+        return KServeModelDeployerConfig
+
+    @property
+    def implementation_class(self) -> Type[KServeModelDeployer]:
+        return KServeModelDeployer

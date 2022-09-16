@@ -15,7 +15,7 @@
 
 import re
 from datetime import datetime
-from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Dict, List, Optional, Type, cast
 from uuid import UUID
 
 from zenml.integrations.seldon import SELDON_MODEL_DEPLOYER_FLAVOR
@@ -25,7 +25,11 @@ from zenml.integrations.seldon.services.seldon_deployment import (
     SeldonDeploymentService,
 )
 from zenml.logger import get_logger
-from zenml.model_deployers.base_model_deployer import BaseModelDeployer
+from zenml.model_deployers.base_model_deployer import (
+    BaseModelDeployer,
+    BaseModelDeployerConfig,
+    BaseModelDeployerFlavor,
+)
 from zenml.repository import Repository
 from zenml.secrets_managers import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
@@ -42,8 +46,8 @@ logger = get_logger(__name__)
 DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT = 300
 
 
-class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
-    """Seldon Core model deployer stack component implementation.
+class SeldonModelDeployerConfig(BaseModelDeployerConfig):
+    """Config for the Seldon Model Deployer.
 
     Attributes:
         kubernetes_context: the Kubernetes context to use to contact the remote
@@ -66,15 +70,15 @@ class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
             https://docs.seldon.io/projects/seldon-core/en/latest/servers/overview.html#handling-credentials).
     """
 
-    # Class Configuration
-    FLAVOR: ClassVar[str] = SELDON_MODEL_DEPLOYER_FLAVOR
-
     kubernetes_context: Optional[str]
     kubernetes_namespace: Optional[str]
-    base_url: str
+    base_url: str  # TODO: unused?
     secret: Optional[str]
 
-    # private attributes
+
+class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
+    """Seldon Core model deployer stack component implementation."""
+
     _client: Optional[SeldonClient] = None
 
     @staticmethod
@@ -134,8 +138,8 @@ class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
         """
         if not self._client:
             self._client = SeldonClient(
-                context=self.kubernetes_context,
-                namespace=self.kubernetes_namespace,
+                context=self.config.kubernetes_context,
+                namespace=self.config.kubernetes_namespace,
             )
         return self._client
 
@@ -152,10 +156,14 @@ class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
             The Seldon Core Kubernetes secret name, or None if no secret is
             configured.
         """
-        if not self.secret:
+        if not self.config.secret:
             return None
         return (
-            re.sub(r"[^0-9a-zA-Z-]+", "-", f"zenml-seldon-core-{self.secret}")
+            re.sub(
+                r"[^0-9a-zA-Z-]+",
+                "-",
+                f"zenml-seldon-core-{self.config.secret}",
+            )
             .strip("-")
             .lower()
         )
@@ -175,7 +183,7 @@ class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
         # if a ZenML secret was configured in the model deployer,
         # create a Kubernetes secret as a means to pass this information
         # to the Seldon Core deployment
-        if self.secret:
+        if self.config.secret:
 
             secret_manager = Repository(  # type: ignore [call-arg]
                 skip_repository_check=True
@@ -187,14 +195,14 @@ class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
                 raise RuntimeError(
                     f"The active stack doesn't have a secret manager component. "
                     f"The ZenML secret specified in the Seldon Core Model "
-                    f"Deployer configuration cannot be fetched: {self.secret}."
+                    f"Deployer configuration cannot be fetched: {self.config.secret}."
                 )
 
             try:
-                zenml_secret = secret_manager.get_secret(self.secret)
+                zenml_secret = secret_manager.get_secret(self.config.secret)
             except KeyError:
                 raise RuntimeError(
-                    f"The ZenML secret '{self.secret}' specified in the "
+                    f"The ZenML secret '{self.config.secret}' specified in the "
                     f"Seldon Core Model Deployer configuration was not found "
                     f"in the active stack's secret manager."
                 )
@@ -535,3 +543,16 @@ class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
             custom_docker_image_name = runtime_configuration["docker_image"]
 
         return custom_docker_image_name
+
+
+class SeldonModelDeployerFlavor(BaseModelDeployerFlavor):
+    """Seldon Core model deployer flavor."""
+
+    def name(self) -> str:
+        return SELDON_MODEL_DEPLOYER_FLAVOR
+
+    def config_class(self) -> Type[SeldonModelDeployerConfig]:
+        return SeldonModelDeployerConfig
+
+    def implementation_class(self) -> Type[SeldonModelDeployer]:
+        return SeldonModelDeployer
