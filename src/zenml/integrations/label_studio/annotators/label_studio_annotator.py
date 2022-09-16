@@ -40,7 +40,10 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.secret.arbitrary_secret_schema import ArbitrarySecretSchema
 from zenml.stack import Stack, StackValidator
-from zenml.stack.authentication_mixin import AuthenticationMixin
+from zenml.stack.authentication_mixin import (
+    AuthenticationConfigMixin,
+    AuthenticationMixin,
+)
 from zenml.utils import io_utils, networking_utils
 
 logger = get_logger(__name__)
@@ -48,7 +51,9 @@ logger = get_logger(__name__)
 DEFAULT_LABEL_STUDIO_PORT = 8093
 
 
-class LabelStudioAnnotatorConfig(BaseAnnotatorConfig):
+class LabelStudioAnnotatorConfig(
+    BaseAnnotatorConfig, AuthenticationConfigMixin
+):
     """Config for the Label Studio annotator
 
     Attributes:

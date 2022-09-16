@@ -39,14 +39,17 @@ from zenml.artifact_stores.base_artifact_store import (
 )
 from zenml.integrations.s3 import S3_ARTIFACT_STORE_FLAVOR
 from zenml.secret.schemas import AWSSecretSchema
-from zenml.stack.authentication_mixin import AuthenticationMixin
+from zenml.stack.authentication_mixin import (
+    AuthenticationConfigMixin,
+    AuthenticationMixin,
+)
 from zenml.utils.io_utils import convert_to_str
 from zenml.utils.secret_utils import SecretField
 
 PathType = Union[bytes, str]
 
 
-class S3ArtifactStoreConfig(BaseArtifactStoreConfig):
+class S3ArtifactStoreConfig(BaseArtifactStoreConfig, AuthenticationConfigMixin):
     """Configuration for the S3 Artifact Store.
     
     All attributes of this class except `path` will be passed to the

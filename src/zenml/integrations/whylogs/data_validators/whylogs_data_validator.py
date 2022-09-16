@@ -22,17 +22,29 @@ from whylogs.api.writer.whylabs import WhyLabsWriter  # type: ignore
 from whylogs.core import DatasetProfileView  # type: ignore
 
 from zenml.data_validators import BaseDataValidator
-from zenml.data_validators.base_data_validator import BaseDataValidatorConfig, BaseDataValidatorFlavor
+from zenml.data_validators.base_data_validator import (
+    BaseDataValidatorConfig,
+    BaseDataValidatorFlavor,
+)
 from zenml.environment import Environment
 from zenml.integrations.whylogs import WHYLOGS_DATA_VALIDATOR_FLAVOR
 from zenml.integrations.whylogs.secret_schemas.whylabs_secret_schema import (
     WhylabsSecretSchema,
 )
 from zenml.logger import get_logger
-from zenml.stack.authentication_mixin import AuthenticationMixin
+from zenml.stack.authentication_mixin import (
+    AuthenticationConfigMixin,
+    AuthenticationMixin,
+)
 from zenml.steps import STEP_ENVIRONMENT_NAME, StepEnvironment
 
 logger = get_logger(__name__)
+
+
+class WhylogsDataValidatorConfig(
+    BaseDataValidatorConfig, AuthenticationConfigMixin
+):
+    """Config for the whylogs data validator."""
 
 
 class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
@@ -136,6 +148,10 @@ class WhylogsDataValidatorFlavor(BaseDataValidatorFlavor):
     @property
     def name(self) -> str:
         return WHYLOGS_DATA_VALIDATOR_FLAVOR
+
+    @property
+    def config_class(self) -> Type[WhylogsDataValidatorConfig]:
+        return WhylogsDataValidatorConfig
 
     @property
     def implementation_class(self) -> Type["WhylogsDataValidator"]:

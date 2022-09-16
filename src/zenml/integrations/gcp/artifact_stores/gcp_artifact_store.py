@@ -37,7 +37,10 @@ from zenml.artifact_stores.base_artifact_store import (
 )
 from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
 from zenml.secret.schemas import GCPSecretSchema
-from zenml.stack.authentication_mixin import AuthenticationMixin
+from zenml.stack.authentication_mixin import (
+    AuthenticationConfigMixin,
+    AuthenticationMixin,
+)
 from zenml.utils.io_utils import convert_to_str
 
 PathType = Union[bytes, str]
@@ -46,7 +49,9 @@ PathType = Union[bytes, str]
 GCP_PATH_PREFIX = "gs://"
 
 
-class GCPArtifactStoreConfig(BaseArtifactStoreConfig):
+class GCPArtifactStoreConfig(
+    BaseArtifactStoreConfig, AuthenticationConfigMixin
+):
     """Configuration for GCP Artifact Store."""
 
     SUPPORTED_SCHEMES: ClassVar[Set[str]] = {GCP_PATH_PREFIX}

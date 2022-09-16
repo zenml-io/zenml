@@ -37,13 +37,18 @@ from zenml.artifact_stores.base_artifact_store import (
 )
 from zenml.integrations.azure import AZURE_ARTIFACT_STORE_FLAVOR
 from zenml.secret.schemas import AzureSecretSchema
-from zenml.stack.authentication_mixin import AuthenticationMixin
+from zenml.stack.authentication_mixin import (
+    AuthenticationConfigMixin,
+    AuthenticationMixin,
+)
 from zenml.utils.io_utils import convert_to_str
 
 PathType = Union[bytes, str]
 
 
-class AzureArtfactStoreConfig(BaseArtifactStoreConfig):
+class AzureArtfactStoreConfig(
+    BaseArtifactStoreConfig, AuthenticationConfigMixin
+):
     """Configuration class for Azure Artifact Store."""
 
     SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"abfs://", "az://"}

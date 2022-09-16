@@ -21,13 +21,18 @@ from pydantic import validator
 from zenml.enums import StackComponentType
 from zenml.secret.schemas import BasicAuthSecretSchema
 from zenml.stack import StackComponent
-from zenml.stack.authentication_mixin import AuthenticationMixin
+from zenml.stack.authentication_mixin import (
+    AuthenticationConfigMixin,
+    AuthenticationMixin,
+)
 from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig
 from zenml.utils import docker_utils
 
 
-class BaseContainerRegistryConfig(StackComponentConfig):
+class BaseContainerRegistryConfig(
+    StackComponentConfig, AuthenticationConfigMixin
+):
     """Base config for a container registry.
 
     Attributes:

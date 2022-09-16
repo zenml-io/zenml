@@ -14,7 +14,7 @@
 """Implementation of the Great Expectations data validator."""
 
 import os
-from typing import Any, ClassVar, Dict, List, Optional, Sequence, Type, cast
+from typing import Any, Dict, List, Optional, Sequence, Type, cast
 
 import pandas as pd
 import yaml
@@ -38,7 +38,10 @@ from great_expectations.profile.user_configurable_profiler import (  # type: ign
 from pydantic import root_validator, validator
 
 from zenml.data_validators import BaseDataValidator
-from zenml.data_validators.base_data_validator import BaseDataValidatorConfig, BaseDataValidatorFlavor
+from zenml.data_validators.base_data_validator import (
+    BaseDataValidatorConfig,
+    BaseDataValidatorFlavor,
+)
 from zenml.environment import Environment
 from zenml.integrations.great_expectations import (
     GREAT_EXPECTATIONS_DATA_VALIDATOR_FLAVOR,
@@ -59,7 +62,7 @@ logger = get_logger(__name__)
 
 class GreatExpectationsDataValidatorConfig(BaseDataValidatorConfig):
     """Config for the Great Expectations data validator.
-    
+
     Attributes:
         context_root_dir: location of an already initialized Great Expectations
             data context. If configured, the data validator will only be usable
@@ -566,7 +569,7 @@ class GreatExpectationsDataValidatorFlavor(BaseDataValidatorFlavor):
     @property
     def config_class(self) -> Type[GreatExpectationsDataValidatorConfig]:
         return GreatExpectationsDataValidatorConfig
-    
+
     @property
     def implementation_class(self) -> Type[GreatExpectationsDataValidator]:
         return GreatExpectationsDataValidator
