@@ -577,7 +577,7 @@ class SqlZenStore(BaseZenStore):
 
     def list_stack_components(
         self,
-        project_name_or_id: Union[str, UUID],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
         type: Optional[str] = None,
         flavor_name: Optional[str] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
@@ -600,12 +600,11 @@ class SqlZenStore(BaseZenStore):
             A list of all stack components matching the filter criteria.
         """
         with Session(self.engine) as session:
-            project = self._get_project_schema(project_name_or_id)
-
             # Get a list of all stacks
-            query = select(StackComponentSchema).where(
-                StackComponentSchema.project == project.id
-            )
+            query = select(StackComponentSchema)
+            if project_name_or_id:
+                project = self._get_project_schema(project_name_or_id)
+                query = query.where(StackComponentSchema.project == project.id)
             # TODO: [server] prettify this
             if type:
                 query = query.where(StackComponentSchema.type == type)
@@ -708,16 +707,11 @@ class SqlZenStore(BaseZenStore):
     @track(AnalyticsEvent.CREATED_FLAVOR)
     def create_flavor(
         self,
-        user_name_or_id: Union[str, UUID],
-        project_name_or_id: Union[str, UUID],
         flavor: FlavorModel,
     ) -> FlavorModel:
         """Creates a new stack component flavor.
 
         Args:
-            user_name_or_id: The stack component flavor owner.
-            project_name_or_id: The project in which the stack component flavor
-                is created.
             flavor: The stack component flavor to create.
 
         Returns:
@@ -728,6 +722,9 @@ class SqlZenStore(BaseZenStore):
                 is already owned by this user in this project.
         """
         with Session(self.engine) as session:
+            self._get_project_schema(flavor.project)
+            self._get_user_schema(flavor.user)
+
             # TODO [Baris]: handle the domain key (name+type+owner+project) correctly
             existing_flavor = session.exec(
                 select(FlavorSchema).where(
@@ -742,6 +739,7 @@ class SqlZenStore(BaseZenStore):
                 )
             # TODO: add logic to convert from model in schema
             sql_flavor = FlavorSchema(
+                id=flavor.id,
                 name=flavor.name,
                 source=flavor.source,
                 type=flavor.type,
@@ -822,6 +820,35 @@ class SqlZenStore(BaseZenStore):
         return [
             FlavorModel(**flavor.dict()) for flavor in list_of_flavors_in_db
         ]
+
+    @track(AnalyticsEvent.UPDATED_FLAVOR)
+    def update_flavor(self, flavor: FlavorModel) -> FlavorModel:
+        """Update an existing stack component flavor.
+
+        Args:
+            component: The stack component flavor to use for the update.
+
+        Returns:
+            The updated stack component flavor.
+
+        Raises:
+            KeyError: if the stack component flavor doesn't exist.
+        """
+        # TODO: implement this
+        raise NotImplementedError
+
+    @track(AnalyticsEvent.DELETED_FLAVOR)
+    def delete_flavor(self, flavor_id: UUID) -> None:
+        """Delete a stack component flavor.
+
+        Args:
+            component_id: The ID of the stack component flavor to delete.
+
+        Raises:
+            KeyError: if the stack component flavor doesn't exist.
+        """
+        # TODO: implement this
+        raise NotImplementedError
 
     # -----
     # Users

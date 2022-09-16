@@ -308,9 +308,6 @@ def _register_stack_component(
     )
     component = flavor_class(
         name=component_name,
-        is_shared=share,
-        project=repo.active_project.id,
-        user=repo.active_user.id,
         **kwargs,
     )
     Repository().register_stack_component(component)
@@ -863,9 +860,14 @@ def generate_stack_component_delete_command(
         cli_utils.print_active_config()
 
         with console.status(f"Deleting {display_name} '{name}'...\n"):
+            repo = Repository()
+            current_component = repo.get_stack_component_by_name_and_type(
+                type=component_type, name=name
+            )
+            if current_component is None:
+                cli_utils.error(f"No {display_name} found for name '{name}'.")
             Repository().deregister_stack_component(
-                component_type=component_type,
-                name=name,
+                current_component,
             )
             cli_utils.declare(f"Deleted {display_name}: {name}")
 

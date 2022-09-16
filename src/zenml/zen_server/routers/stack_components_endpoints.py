@@ -84,7 +84,7 @@ async def list_stack_components(
 )
 @handle_exceptions
 async def get_stack_component(
-    component_id: str, hydrated: bool = False
+    component_id: UUID, hydrated: bool = False
 ) -> Union[ComponentModel, HydratedComponentModel]:
     """Returns the requested stack component.
 
@@ -96,7 +96,7 @@ async def get_stack_component(
     Returns:
         The requested stack component.
     """
-    component = zen_store.get_stack_component(UUID(component_id))
+    component = zen_store.get_stack_component(component_id)
     if hydrated:
         return component.to_hydrated_model()
     else:
@@ -136,13 +136,13 @@ async def update_stack_component(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def deregister_stack_component(component_id: str) -> None:
+async def deregister_stack_component(component_id: UUID) -> None:
     """Deletes a stack component.
 
     Args:
         component_id: ID of the stack component.
     """
-    zen_store.delete_stack_component(UUID(component_id))
+    zen_store.delete_stack_component(component_id)
 
 
 @router.get(

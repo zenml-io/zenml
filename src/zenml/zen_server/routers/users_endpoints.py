@@ -228,17 +228,21 @@ async def delete_user(user_name_or_id: Union[str, UUID]) -> None:
 @handle_exceptions
 async def get_role_assignments_for_user(
     user_name_or_id: str,
+    project_name_or_id: Optional[str] = None,
 ) -> List[RoleAssignmentModel]:
     """Returns a list of all roles that are assigned to a user.
 
     Args:
         user_name_or_id: Name or ID of the user.
+        project_name_or_id: If provided, only list roles that are limited to
+            the given project.
 
     Returns:
         A list of all roles that are assigned to a user.
     """
     return zen_store.list_role_assignments(
-        user_name_or_id=parse_name_or_uuid(user_name_or_id)
+        user_name_or_id=parse_name_or_uuid(user_name_or_id),
+        project_name_or_id=parse_name_or_uuid(project_name_or_id),
     )
 
 

@@ -81,7 +81,7 @@ async def list_stacks(
 )
 @handle_exceptions
 async def get_stack(
-    stack_id: str, hydrated: bool = False
+    stack_id: UUID, hydrated: bool = False
 ) -> Union[HydratedStackModel, StackModel]:
     """Returns the requested stack.
 
@@ -93,7 +93,7 @@ async def get_stack(
     Returns:
         The requested stack.
     """
-    stack = zen_store.get_stack(UUID(stack_id))
+    stack = zen_store.get_stack(stack_id)
     if hydrated:
         return stack.to_hydrated_model()
     else:

@@ -369,28 +369,23 @@ class TeamModel(DomainModel, AnalyticsTrackedModelMixin):
     )
 
 
-class RoleAssignmentModel(BaseModel):
-    """Pydantic object representing a role assignment.
+class RoleAssignmentModel(DomainModel):
+    """Domain model for role assignments."""
 
-    Attributes:
-        id: Id of the role assignment.
-        role_id: Id of the role.
-        project_id: Optional ID of a project that the role is limited to.
-        team_id: Id of a team to which the role is assigned.
-        user_id: Id of a user to which the role is assigned.
-        created_at: Date when the role was assigned.
-    """
-
-    id: Optional[UUID] = None
-    role_id: UUID
-    project_id: Optional[UUID] = None
-    team_id: Optional[UUID] = None
-    user_id: Optional[UUID] = None
-    created_at: Optional[datetime] = None
+    role: UUID = Field(title="The role.")
+    project: Optional[UUID] = Field(
+        None, title="The project that the role is limited to."
+    )
+    team: Optional[UUID] = Field(
+        None, title="The team that the role is assigned to."
+    )
+    user: Optional[UUID] = Field(
+        None, title="The user that the role is assigned to."
+    )
 
     @root_validator
     def ensure_single_entity(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Validates that either `user_id` or `team_id` is set.
+        """Validates that either `user` or `team` is set.
 
         Args:
             values: The values to validate.
@@ -399,16 +394,14 @@ class RoleAssignmentModel(BaseModel):
             The validated values.
 
         Raises:
-            ValueError: If neither `user_id` nor `team_id` is set.
+            ValueError: If neither `user` nor `team` is set.
         """
-        user_id = values.get("user_id", None)
-        team_id = values.get("team_id", None)
-        if user_id and team_id:
-            raise ValueError("Only `user_id` or `team_id` is allowed.")
+        user = values.get("user", None)
+        team = values.get("team", None)
+        if user and team:
+            raise ValueError("Only `user` or `team` is allowed.")
 
-        if not (user_id or team_id):
-            raise ValueError(
-                "Missing `user_id` or `team_id` for role assignment."
-            )
+        if not (user or team):
+            raise ValueError("Missing `user` or `team` for role assignment.")
 
         return values

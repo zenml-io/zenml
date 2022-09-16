@@ -321,7 +321,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_stack_components(
         self,
-        project_name_or_id: Union[str, UUID],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
         type: Optional[str] = None,
         flavor_name: Optional[str] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
@@ -399,16 +399,11 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def create_flavor(
         self,
-        user_name_or_id: Union[str, UUID],
-        project_name_or_id: Union[str, UUID],
         flavor: FlavorModel,
     ) -> FlavorModel:
         """Creates a new stack component flavor.
 
         Args:
-            user_name_or_id: The stack component flavor owner.
-            project_name_or_id: The project in which the stack component flavor
-                is created.
             flavor: The stack component flavor to create.
 
         Returns:
@@ -459,6 +454,31 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: if the project doesn't exist.
+        """
+
+    @abstractmethod
+    def update_flavor(self, flavor: FlavorModel) -> FlavorModel:
+        """Update an existing stack component flavor.
+
+        Args:
+            component: The stack component flavor to use for the update.
+
+        Returns:
+            The updated stack component flavor.
+
+        Raises:
+            KeyError: if the stack component flavor doesn't exist.
+        """
+
+    @abstractmethod
+    def delete_flavor(self, flavor_id: UUID) -> None:
+        """Delete a stack component flavor.
+
+        Args:
+            component_id: The ID of the stack component flavor to delete.
+
+        Raises:
+            KeyError: if the stack component flavor doesn't exist.
         """
 
     # -----

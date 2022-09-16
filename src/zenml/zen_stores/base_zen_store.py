@@ -555,7 +555,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         Returns:
             A list of all role assignments.
         """
-        return self.list_role_assignments()
+        return self.list_role_assignments(user_name_or_id=self.active_user_name)
 
     # --------
     # Projects

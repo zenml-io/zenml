@@ -28,6 +28,7 @@ from zenml.zen_server.routers import (
     stack_components_endpoints,
     stacks_endpoints,
     steps_endpoints,
+    teams_endpoints,
     users_endpoints,
 )
 
@@ -59,6 +60,7 @@ app.include_router(runs_endpoints.router)
 app.include_router(stacks_endpoints.router)
 app.include_router(stack_components_endpoints.router)
 app.include_router(steps_endpoints.router)
+app.include_router(teams_endpoints.router)
 app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.activation_router)
 # For future use

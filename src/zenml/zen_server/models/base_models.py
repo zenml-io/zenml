@@ -14,7 +14,7 @@
 """Base REST API model definitions."""
 
 
-from typing import Any, ClassVar, Type, TypeVar, Generic, List
+from typing import Any, Generic, Type, TypeVar
 from uuid import UUID
 
 from pydantic import BaseModel

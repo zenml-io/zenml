@@ -589,10 +589,32 @@ def assignment() -> None:
 
 
 @assignment.command("list")
-def list_role_assignments() -> None:
+@click.option("--role", "role_name_or_id", type=str, required=False)
+@click.option("--project", "project_name_or_id", type=str, required=False)
+@click.option(
+    "--user",
+    "user_name_or_id",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--team",
+    "team_name_or_id",
+    type=str,
+    required=False,
+)
+def list_role_assignments(
+    user_name_or_id: Optional[str] = None,
+    team_name_or_id: Optional[str] = None,
+    project_name_or_id: Optional[str] = None,
+) -> None:
     """List all role assignments."""
     cli_utils.print_active_config()
-    role_assignments = Repository().zen_store.role_assignments
+    role_assignments = Repository().zen_store.list_role_assignments(
+        user_name_or_id=user_name_or_id,
+        team_name_or_id=team_name_or_id,
+        project_name_or_id=project_name_or_id,
+    )
     if not role_assignments:
         cli_utils.declare("No roles assigned.")
         return

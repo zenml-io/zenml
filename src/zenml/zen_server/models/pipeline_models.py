@@ -12,9 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Project Models for the API endpoint definitions."""
-from typing import ClassVar, Dict, List, Optional, Type
+from typing import Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.models import (

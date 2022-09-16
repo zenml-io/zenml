@@ -12,10 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Stack Models for the API endpoint definitions."""
-from typing import ClassVar, Dict, List, Optional, Type
+from typing import Dict, List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from zenml.enums import StackComponentType
 from zenml.models import StackModel

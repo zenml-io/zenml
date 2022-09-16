@@ -103,6 +103,8 @@ class AnalyticsEvent(str, Enum):
 
     # Flavor
     CREATED_FLAVOR = "Flavor created"
+    UPDATED_FLAVOR = "Flavor updated"
+    DELETED_FLAVOR = "Flavor deleted"
 
     # Test event
     EVENT_TEST = "Test event"

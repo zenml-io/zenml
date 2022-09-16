@@ -14,9 +14,9 @@
 """REST API user management models implementation."""
 
 
-from typing import Any, ClassVar, Optional, Type, cast
+from typing import Any, Optional, cast
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from zenml.models.constants import (
     MODEL_NAME_FIELD_MAX_LENGTH,

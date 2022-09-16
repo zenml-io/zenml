@@ -227,7 +227,8 @@ class UserRoleAssignmentSchema(SQLModel, table=True):
     project_id: Optional[UUID] = Field(
         foreign_key="projectschema.id", nullable=True
     )
-    created_at: datetime = Field(default_factory=datetime.now)
+    created: datetime = Field(default_factory=datetime.now)
+    updated: datetime = Field(default_factory=datetime.now)
 
     role: RoleSchema = Relationship(back_populates="user_role_assignments")
     user: UserSchema = Relationship(back_populates="assigned_roles")
@@ -243,10 +244,11 @@ class UserRoleAssignmentSchema(SQLModel, table=True):
         """
         return RoleAssignmentModel(
             id=self.id,
-            role_id=self.role_id,
-            user_id=self.user_id,
-            project_id=self.project_id,
-            created_at=self.created_at,
+            role=self.role_id,
+            user=self.user_id,
+            project=self.project_id,
+            created=self.created,
+            updated=self.updated,
         )
 
 
@@ -259,7 +261,8 @@ class TeamRoleAssignmentSchema(SQLModel, table=True):
     project_id: Optional[UUID] = Field(
         foreign_key="projectschema.id", nullable=True
     )
-    created_at: datetime = Field(default_factory=datetime.now)
+    created: datetime = Field(default_factory=datetime.now)
+    updated: datetime = Field(default_factory=datetime.now)
 
     role: RoleSchema = Relationship(back_populates="team_role_assignments")
     team: TeamSchema = Relationship(back_populates="assigned_roles")
@@ -275,8 +278,9 @@ class TeamRoleAssignmentSchema(SQLModel, table=True):
         """
         return RoleAssignmentModel(
             id=self.id,
-            role_id=self.role_id,
-            team_id=self.team_id,
-            project_id=self.project_id,
-            created_at=self.created_at,
+            role=self.role_id,
+            team=self.team_id,
+            project=self.project_id,
+            created=self.created,
+            updated=self.updated,
         )

@@ -20,6 +20,7 @@ from zenml.constants import (
     FLAVORS,
     PIPELINES,
     PROJECTS,
+    ROLES,
     STACK_COMPONENTS,
     STACKS,
     VERSION_1,
@@ -33,6 +34,7 @@ from zenml.models import (
 )
 from zenml.models.component_models import HydratedComponentModel
 from zenml.models.stack_models import HydratedStackModel
+from zenml.models.user_management_models import RoleAssignmentModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.models import CreatePipelineRequest
@@ -151,6 +153,36 @@ async def delete_project(project_name_or_id: str) -> None:
     """
     zen_store.delete_project(
         project_name_or_id=parse_name_or_uuid(project_name_or_id)
+    )
+
+
+@router.get(
+    "/{project_name_or_id}" + ROLES,
+    response_model=List[RoleAssignmentModel],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+async def get_role_assignments_for_project(
+    project_name_or_id: str,
+    user_name_or_id: Optional[str] = None,
+    team_name_or_id: Optional[str] = None,
+) -> List[RoleAssignmentModel]:
+    """Returns a list of all roles that are assigned to a team.
+
+    Args:
+        project_name_or_id: Name or ID of the project.
+        user_name_or_id: If provided, only list roles that are assigned to the
+            given user.
+        team_name_or_id: If provided, only list roles that are assigned to the
+            given team.
+
+    Returns:
+        A list of all roles that are assigned to a team.
+    """
+    return zen_store.list_role_assignments(
+        project_name_or_id=parse_name_or_uuid(project_name_or_id),
+        user_name_or_id=parse_name_or_uuid(user_name_or_id),
+        team_name_or_id=parse_name_or_uuid(team_name_or_id),
     )
 
 
@@ -324,6 +356,10 @@ async def create_stack_component(
 async def list_project_flavors(
     project_name_or_id: Optional[str] = None,
     component_type: Optional[str] = None,
+    user_name_or_id: Optional[str] = None,
+    name: Optional[str] = None,
+    is_shared: Optional[bool] = None,
+    hydrated: bool = False,
 ) -> List[FlavorModel]:
     """List stack components flavors of a certain type that are part of a project.
 
@@ -332,6 +368,11 @@ async def list_project_flavors(
     Args:
         component_type: Type of the component.
         project_name_or_id: Name or ID of the project.
+        user_name_or_id: Optionally filter by name or ID of the user.
+        name: Optionally filter by flavor name.
+        is_shared: Optionally filter by shared status of the flavor.
+        hydrated: Defines if users and projects will be
+            included by reference (FALSE) or as model (TRUE)
 
     Returns:
         All stack components of a certain type that are part of a project.
@@ -339,7 +380,14 @@ async def list_project_flavors(
     flavors_list = zen_store.list_flavors(
         project_name_or_id=parse_name_or_uuid(project_name_or_id),
         component_type=component_type,
+        user_name_or_id=parse_name_or_uuid(user_name_or_id),
+        is_shared=is_shared,
+        name=name,
     )
+    # if hydrated:
+    #     return [flavor.to_hydrated_model() for flavor in flavors_list]
+    # else:
+    #     return flavors_list
     return flavors_list
 
 
@@ -352,6 +400,7 @@ async def list_project_flavors(
 async def create_flavor(
     project_name_or_id: str,
     flavor: FlavorModel,
+    hydrated: bool = False,
     auth_context: AuthContext = Depends(authorize),
 ) -> FlavorModel:
     """Creates a stack component flavor.
@@ -359,16 +408,23 @@ async def create_flavor(
     Args:
         project_name_or_id: Name or ID of the project.
         flavor: Stack component flavor to register.
+        hydrated: Defines if users and projects will be
+            included by reference (FALSE) or as model (TRUE)
         auth_context: Authentication context.
 
     Returns:
         The created stack component flavor.
     """
+    project = zen_store.get_project(parse_name_or_uuid(project_name_or_id))
+    flavor.project = project.id
+    flavor.user = auth_context.user.id
     created_flavor = zen_store.create_flavor(
-        project_name_or_id=parse_name_or_uuid(project_name_or_id),
-        user_name_or_id=auth_context.user.id,
         flavor=flavor,
     )
+    # if hydrated:
+    #     return created_flavor.to_hydrated_model()
+    # else:
+    #     return created_flavor
     return created_flavor
 
 

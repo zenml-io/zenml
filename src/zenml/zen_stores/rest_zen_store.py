@@ -15,17 +15,7 @@
 
 import re
 from pathlib import Path, PurePath
-from typing import (
-    Any,
-    ClassVar,
-    Dict,
-    List,
-    Optional,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar, Union
 from uuid import UUID
 
 import requests
@@ -33,6 +23,7 @@ from pydantic import BaseModel
 
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
+    FLAVORS,
     LOGIN,
     PIPELINES,
     PROJECTS,
@@ -403,7 +394,7 @@ class RestZenStore(BaseZenStore):
 
     def list_stack_components(
         self,
-        project_name_or_id: Union[str, UUID],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
         type: Optional[str] = None,
         flavor_name: Optional[str] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
@@ -494,16 +485,11 @@ class RestZenStore(BaseZenStore):
 
     def create_flavor(
         self,
-        user_name_or_id: Union[str, UUID],
-        project_name_or_id: Union[str, UUID],
         flavor: FlavorModel,
     ) -> FlavorModel:
         """Creates a new stack component flavor.
 
         Args:
-            user_name_or_id: The stack component flavor owner.
-            project_name_or_id: The project in which the stack component flavor
-                is created.
             flavor: The stack component flavor to create.
 
         Returns:
@@ -513,6 +499,12 @@ class RestZenStore(BaseZenStore):
             EntityExistsError: If a flavor with the same name and type
                 is already owned by this user in this project.
         """
+        return self._create_project_scoped_resource(
+            resource=flavor,
+            route=FLAVORS,
+            # TODO[Stefan]: for when the request model is ready
+            # request_model=CreateFlavorRequest,
+        )
 
     def get_flavor(self, flavor_id: UUID) -> FlavorModel:
         """Get a stack component flavor by ID.
@@ -526,6 +518,11 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the stack component flavor doesn't exist.
         """
+        return self._get_resource(
+            resource_id=flavor_id,
+            route=FLAVORS,
+            resource_model=FlavorModel,
+        )
 
     def list_flavors(
         self,
@@ -553,6 +550,46 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the project doesn't exist.
         """
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=FLAVORS,
+            resource_model=FlavorModel,
+            **filters,
+        )
+
+    def update_flavor(self, flavor: FlavorModel) -> FlavorModel:
+        """Update an existing stack component flavor.
+
+        Args:
+            component: The stack component flavor to use for the update.
+
+        Returns:
+            The updated stack component flavor.
+
+        Raises:
+            KeyError: if the stack component flavor doesn't exist.
+        """
+        return self._update_resource(
+            resource=flavor,
+            route=FLAVORS,
+            # TODO[Stefan]: for when the request model is ready
+            # request_model=UpdateFlavorRequest,
+        )
+
+    def delete_flavor(self, flavor_id: UUID) -> None:
+        """Delete a stack component flavor.
+
+        Args:
+            component_id: The ID of the stack component flavor to delete.
+
+        Raises:
+            KeyError: if the stack component flavor doesn't exist.
+        """
+        self._delete_resource(
+            resource_id=flavor_id,
+            route=FLAVORS,
+        )
 
     # -----
     # Users
@@ -912,6 +949,24 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all role assignments.
         """
+        roles: List[RoleAssignmentModel] = []
+        if user_name_or_id:
+            roles.extend(
+                self._list_resources(
+                    route=f"{USERS}/{user_name_or_id}{ROLES}",
+                    resource_model=RoleAssignmentModel,
+                    project_name_or_id=project_name_or_id,
+                )
+            )
+        if team_name_or_id:
+            roles.extend(
+                self._list_resources(
+                    route=f"{TEAMS}/{team_name_or_id}{ROLES}",
+                    resource_model=RoleAssignmentModel,
+                    project_name_or_id=project_name_or_id,
+                )
+            )
+        return roles
 
     def assign_role(
         self,

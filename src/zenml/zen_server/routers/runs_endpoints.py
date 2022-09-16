@@ -75,7 +75,7 @@ async def list_runs(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_run(run_id: str) -> PipelineRunModel:
+async def get_run(run_id: UUID) -> PipelineRunModel:
     """Get a specific pipeline run using its ID.
 
     Args:
@@ -84,7 +84,7 @@ async def get_run(run_id: str) -> PipelineRunModel:
     Returns:
         The pipeline run.
     """
-    return zen_store.get_run(run_id=UUID(run_id))
+    return zen_store.get_run(run_id=run_id)
 
 
 @router.delete(
@@ -92,13 +92,13 @@ async def get_run(run_id: str) -> PipelineRunModel:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def delete_run(run_id: str) -> None:
+async def delete_run(run_id: UUID) -> None:
     """Delete a pipeline run using its ID.
 
     Args:
         run_id: ID of the pipeline run to get.
     """
-    zen_store.delete_run(run_id=UUID(run_id))
+    zen_store.delete_run(run_id=run_id)
 
 
 @router.get(
@@ -108,7 +108,7 @@ async def delete_run(run_id: str) -> None:
 )
 @handle_exceptions
 async def get_run_dag(
-    run_id: str,
+    run_id: UUID,
 ) -> FileResponse:  # TODO: use file type / image type
     """Get the DAG for a given pipeline run.
 
@@ -119,7 +119,7 @@ async def get_run_dag(
         The DAG for a given pipeline run.
     """
     image_object_path = zen_store.get_run_dag(
-        run_id=UUID(run_id)
+        run_id=run_id
     )  # TODO: ZenStore should return a path
     return FileResponse(image_object_path)
 
@@ -130,7 +130,7 @@ async def get_run_dag(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_run_steps(run_id: str) -> List[StepRunModel]:
+async def get_run_steps(run_id: UUID) -> List[StepRunModel]:
     """Get all steps for a given pipeline run.
 
     Args:
@@ -139,7 +139,7 @@ async def get_run_steps(run_id: str) -> List[StepRunModel]:
     Returns:
         The steps for a given pipeline run.
     """
-    return zen_store.list_run_steps(UUID(run_id))
+    return zen_store.list_run_steps(run_id)
 
 
 # TODO: Figure out what exactly gets returned from this
@@ -148,7 +148,7 @@ async def get_run_steps(run_id: str) -> List[StepRunModel]:
     response_model=Dict,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_run_runtime_configuration(run_id: str) -> Dict:
+async def get_run_runtime_configuration(run_id: UUID) -> Dict:
     """Get the runtime configuration for a given pipeline run.
 
     Args:
@@ -157,7 +157,7 @@ async def get_run_runtime_configuration(run_id: str) -> Dict:
     Returns:
         The runtime configuration for a given pipeline run.
     """
-    return zen_store.get_run_runtime_configuration(run_id=UUID(run_id))
+    return zen_store.get_run_runtime_configuration(run_id=run_id)
 
 
 @router.get(
@@ -167,7 +167,7 @@ async def get_run_runtime_configuration(run_id: str) -> Dict:
 )
 @handle_exceptions
 async def get_run_component_side_effects(
-    run_id: str, component_id: str
+    run_id: UUID, component_id: UUID
 ) -> Dict:
     """Get the component side-effects for a given pipeline run.
 
@@ -180,6 +180,6 @@ async def get_run_component_side_effects(
         The component side-effects for a given pipeline run.
     """
     return zen_store.get_run_component_side_effects(
-        run_id=UUID(run_id),
+        run_id=run_id,
         component_id=component_id,
     )
