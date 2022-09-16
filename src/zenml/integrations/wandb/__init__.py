@@ -42,7 +42,7 @@ class WandbIntegration(Integration):
         return [
             FlavorModel(
                 name=WANDB_EXPERIMENT_TRACKER_FLAVOR,
-                source="zenml.integrations.wandb.experiment_trackers.WandbExperimentTracker",
+                source="zenml.integrations.wandb.flavors.WandbExperimentTrackerFlavor",
                 type=StackComponentType.EXPERIMENT_TRACKER,
                 integration=cls.NAME,
             )

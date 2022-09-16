@@ -30,7 +30,7 @@
 # inspired by the Kubernetes dag runner implementation of tfx
 """Kubernetes-native orchestrator."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -38,7 +38,6 @@ from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
-from zenml.integrations.kubernetes import KUBERNETES_ORCHESTRATOR_FLAVOR
 from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator_entrypoint_configuration import (
     KubernetesOrchestratorEntrypointConfiguration,
@@ -49,14 +48,8 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
 )
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
-from zenml.orchestrators.base_orchestrator import (
-    BaseOrchestratorConfig,
-    BaseOrchestratorFlavor,
-)
 from zenml.stack import StackValidator
-from zenml.utils import deprecation_utils
 from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilderConfigMixin,
     PipelineDockerImageBuilderMixin,
 )
 
@@ -67,43 +60,6 @@ if TYPE_CHECKING:
     from zenml.steps import BaseStep
 
 logger = get_logger(__name__)
-
-
-class KubernetesOrchestratorConfig(
-    BaseOrchestratorConfig, PipelineDockerImageBuilderConfigMixin
-):
-    """Configuration for the Kubernetes orchestrator.
-
-    Attributes:
-        custom_docker_base_image_name: Name of a Docker image that should be
-            used as the base for the image that will be run on Kubernetes pods.
-            If no custom image is given, a basic image of the active ZenML
-            version will be used.
-            **Note**: This image needs to have ZenML installed,
-            otherwise the pipeline execution will fail. For that reason, you
-            might want to extend the ZenML Docker images found here:
-            https://hub.docker.com/r/zenmldocker/zenml/
-        kubernetes_context: Optional name of a Kubernetes context to run
-            pipelines in. If not set, the current active context will be used.
-            You can find the active context by running `kubectl config
-            current-context`.
-        kubernetes_namespace: Name of the Kubernetes namespace to be used.
-            If not provided, `default` namespace will be used.
-        synchronous: If `True`, running a pipeline using this orchestrator will
-            block until all steps finished running on Kubernetes.
-        skip_config_loading: If `True`, don't load the Kubernetes context and
-            clients. This is only useful for unit testing.
-    """
-
-    custom_docker_base_image_name: Optional[str] = None
-    kubernetes_context: Optional[str] = None
-    kubernetes_namespace: str = "zenml"
-    synchronous: bool = False
-    skip_config_loading: bool = False
-
-    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        ("custom_docker_base_image_name", "docker_parent_image")
-    )
 
 
 class KubernetesOrchestrator(BaseOrchestrator, PipelineDockerImageBuilderMixin):
@@ -398,19 +354,3 @@ class KubernetesOrchestrator(BaseOrchestrator, PipelineDockerImageBuilderMixin):
                 f"Run the following command to inspect the logs: "
                 f"`kubectl logs {pod_name} -n {self.config.kubernetes_namespace}`."
             )
-
-
-class KubernetesOrchestratorFlavor(BaseOrchestratorFlavor):
-    """Kubernetes orchestrator flavor."""
-
-    @property
-    def name(self) -> str:
-        return KUBERNETES_ORCHESTRATOR_FLAVOR
-
-    @property
-    def config_class(self) -> Type[KubernetesOrchestratorConfig]:
-        return KubernetesOrchestratorConfig
-
-    @property
-    def implementation_class(self) -> Type["KubernetesOrchestrator"]:
-        return KubernetesOrchestrator

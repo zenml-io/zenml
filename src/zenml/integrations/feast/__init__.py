@@ -43,7 +43,7 @@ class FeastIntegration(Integration):
         return [
             FlavorModel(
                 name=FEAST_FEATURE_STORE_FLAVOR,
-                source="zenml.integrations.feast.feature_stores.FeastFeatureStore",
+                source="zenml.integrations.feast.flavors.FeastFeatureStoreFlavor",
                 type=StackComponentType.FEATURE_STORE,
                 integration=cls.NAME,
             )

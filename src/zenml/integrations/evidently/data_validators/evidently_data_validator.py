@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Evidently data validator."""
 
-from typing import Any, ClassVar, Dict, List, Optional, Sequence, Tuple, Type
+from typing import Any, ClassVar, Dict, List, Optional, Sequence, Tuple
 
 import pandas as pd
 from evidently.dashboard import Dashboard  # type: ignore
@@ -43,8 +43,6 @@ from evidently.model_profile.sections.base_profile_section import (  # type: ign
 from evidently.pipeline.column_mapping import ColumnMapping  # type: ignore
 
 from zenml.data_validators import BaseDataValidator
-from zenml.data_validators.base_data_validator import BaseDataValidatorFlavor
-from zenml.integrations.evidently import EVIDENTLY_DATA_VALIDATOR_FLAVOR
 from zenml.logger import get_logger
 from zenml.utils.source_utils import load_source_path_class
 
@@ -252,15 +250,3 @@ class EvidentlyDataValidator(BaseDataValidator):
             column_mapping=column_mapping,
         )
         return profile, dashboard
-
-
-class EvidentlyDataValidatorFlavor(BaseDataValidatorFlavor):
-    """Evidently data validator flavor."""
-
-    @property
-    def name(self) -> str:
-        return EVIDENTLY_DATA_VALIDATOR_FLAVOR
-
-    @property
-    def implementation_class(self) -> Type[EvidentlyDataValidator]:
-        return EvidentlyDataValidator

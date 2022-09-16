@@ -43,7 +43,7 @@ class KubernetesIntegration(Integration):
         return [
             FlavorModel(
                 name=KUBERNETES_ORCHESTRATOR_FLAVOR,
-                source="zenml.integrations.kubernetes.orchestrators.KubernetesOrchestrator",
+                source="zenml.integrations.kubernetes.flavors.KubernetesOrchestratorFlavor",
                 type=StackComponentType.ORCHESTRATOR,
                 integration=cls.NAME,
             ),

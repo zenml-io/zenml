@@ -15,38 +15,19 @@
 
 import os
 from contextlib import contextmanager
-from typing import Iterator, Optional, Tuple, Type
+from typing import Iterator, Optional, Tuple
 
 import wandb
 
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
-    BaseExperimentTrackerConfig,
-    BaseExperimentTrackerFlavor,
 )
-from zenml.integrations.wandb import WANDB_EXPERIMENT_TRACKER_FLAVOR
 from zenml.logger import get_logger
-from zenml.utils.secret_utils import SecretField
 
 logger = get_logger(__name__)
 
 
 WANDB_API_KEY = "WANDB_API_KEY"
-
-
-class WandbExperimentTrackerConfig(BaseExperimentTrackerConfig):
-    """Config for the Wandb experiment tracker.
-
-    Attributes:
-        entity: Name of an existing wandb entity.
-        project_name: Name of an existing wandb project to log to.
-        api_key: API key to should be authorized to log to the configured wandb
-            entity and project.
-    """
-
-    api_key: str = SecretField()
-    entity: Optional[str] = None
-    project_name: Optional[str] = None
 
 
 class WandbExperimentTracker(BaseExperimentTracker):
@@ -106,19 +87,3 @@ class WandbExperimentTracker(BaseExperimentTracker):
             yield
         finally:
             wandb.finish()
-
-
-class WandbExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
-    """Flavor for the Wandb experiment tracker."""
-
-    @property
-    def name(self) -> str:
-        return WANDB_EXPERIMENT_TRACKER_FLAVOR
-
-    @property
-    def config_class(self) -> Type[WandbExperimentTrackerConfig]:
-        return WandbExperimentTrackerConfig
-
-    @property
-    def implementation_class(self) -> Type[WandbExperimentTracker]:
-        return WandbExperimentTracker

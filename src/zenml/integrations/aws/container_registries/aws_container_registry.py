@@ -14,46 +14,17 @@
 """Implementation of the AWS container registry integration."""
 
 import re
-from typing import List, Optional, Type
+from typing import List, Optional
 
 import boto3
 from botocore.exceptions import ClientError
-from pydantic import validator
 
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
-    BaseContainerRegistryConfig,
-    BaseContainerRegistryFlavor,
 )
-from zenml.integrations.aws import AWS_CONTAINER_REGISTRY_FLAVOR
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
-
-
-class AWSContainerRegistryConfig(BaseContainerRegistryConfig):
-    """Configuration for AWS Container Registry."""
-
-    @validator("uri")
-    def validate_aws_uri(cls, uri: str) -> str:
-        """Validates that the URI is in the correct format.
-
-        Args:
-            uri: URI to validate.
-
-        Returns:
-            URI in the correct format.
-
-        Raises:
-            ValueError: If the URI contains a slash character.
-        """
-        if "/" in uri:
-            raise ValueError(
-                "Property `uri` can not contain a `/`. An example of a valid "
-                "URI is: `715803424592.dkr.ecr.us-east-1.amazonaws.com`"
-            )
-
-        return uri
 
 
 class AWSContainerRegistry(BaseContainerRegistry):
@@ -131,19 +102,3 @@ class AWSContainerRegistry(BaseContainerRegistry):
             f"and try to push it. This will fail unless you create the "
             f"repository `zenml-kubeflow` inside your amazon registry."
         )
-
-
-class AWSContainerRegistryFlavor(BaseContainerRegistryFlavor):
-    """AWS Container Registry flavor."""
-
-    @property
-    def name(self) -> str:
-        return AWS_CONTAINER_REGISTRY_FLAVOR
-
-    @property
-    def config_class(self) -> Type[AWSContainerRegistryConfig]:
-        return AWSContainerRegistryConfig
-
-    @property
-    def implementation_class(self) -> Type[AWSContainerRegistry]:
-        return AWSContainerRegistry

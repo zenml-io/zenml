@@ -53,22 +53,22 @@ class AzureIntegration(Integration):
         return [
             FlavorModel(
                 name=AZURE_ARTIFACT_STORE_FLAVOR,
-                source="zenml.integrations.azure.artifact_stores"
-                ".AzureArtifactStore",
+                source="zenml.integrations.azure.flavors"
+                ".AzureArtifactStoreFlavor",
                 type=StackComponentType.ARTIFACT_STORE,
                 integration=cls.NAME,
             ),
             FlavorModel(
                 name=AZURE_SECRETS_MANAGER_FLAVOR,
-                source="zenml.integrations.azure.secrets_managers"
-                ".AzureSecretsManager",
+                source="zenml.integrations.azure.flavors"
+                ".AzureSecretsManagerFlavor",
                 type=StackComponentType.SECRETS_MANAGER,
                 integration=cls.NAME,
             ),
             FlavorModel(
                 name=AZUREML_STEP_OPERATOR_FLAVOR,
-                source="zenml.integrations.azure.step_operators"
-                ".AzureMLStepOperator",
+                source="zenml.integrations.azure.flavors"
+                ".AzureMLStepOperatorFlavor",
                 type=StackComponentType.STEP_OPERATOR,
                 integration=cls.NAME,
             ),

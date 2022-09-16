@@ -15,7 +15,7 @@
 import os
 import subprocess
 import sys
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from kfp import dsl
 from kfp_tekton.compiler import TektonCompiler
@@ -24,21 +24,18 @@ from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
-from zenml.integrations.tekton import TEKTON_ORCHESTRATOR_FLAVOR
+from zenml.integrations.tekton.flavors.tekton_orchestrator_flavor import (
+    DEFAULT_TEKTON_UI_PORT,
+)
 from zenml.integrations.tekton.orchestrators.tekton_entrypoint_configuration import (
     TektonEntrypointConfiguration,
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
-from zenml.orchestrators.base_orchestrator import (
-    BaseOrchestratorConfig,
-    BaseOrchestratorFlavor,
-)
 from zenml.stack import StackValidator
 from zenml.utils import io_utils, networking_utils
 from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilderConfigMixin,
     PipelineDockerImageBuilderMixin,
 )
 
@@ -50,29 +47,6 @@ if TYPE_CHECKING:
 
 
 logger = get_logger(__name__)
-
-DEFAULT_TEKTON_UI_PORT = 8080
-
-
-class TektonOrchestratorConfig(
-    BaseOrchestratorConfig, PipelineDockerImageBuilderConfigMixin
-):
-    """Configuration for the Tekton orchestrator.
-
-    Attributes:
-        kubernetes_context: Name of a kubernetes context to run
-            pipelines in.
-        kubernetes_namespace: Name of the kubernetes namespace in which the
-            pods that run the pipeline steps should be running.
-        tekton_ui_port: A local port to which the Tekton UI will be forwarded.
-        skip_ui_daemon_provisioning: If `True`, provisioning the Tekton UI
-            daemon will be skipped.
-    """
-
-    kubernetes_context: str
-    kubernetes_namespace: str = "zenml"
-    tekton_ui_port: int = DEFAULT_TEKTON_UI_PORT
-    skip_ui_daemon_provisioning: bool = False
 
 
 class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilderMixin):
@@ -518,19 +492,3 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilderMixin):
                 daemon.stop_daemon(self._pid_file_path)
                 fileio.remove(self._pid_file_path)
                 logger.info("Stopped Tektion UI daemon.")
-
-
-class TektonOrchestratorFlavor(BaseOrchestratorFlavor):
-    """Flavor for the Tekton orchestrator."""
-
-    @property
-    def name(self) -> str:
-        return TEKTON_ORCHESTRATOR_FLAVOR
-
-    @property
-    def config_class(self) -> Type[TektonOrchestratorConfig]:
-        return TektonOrchestratorConfig
-
-    @property
-    def implementation_class(self) -> Type["TektionOrchestrator"]:
-        return TektonOrchestrator

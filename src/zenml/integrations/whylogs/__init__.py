@@ -46,7 +46,7 @@ class WhylogsIntegration(Integration):
         return [
             FlavorModel(
                 name=WHYLOGS_DATA_VALIDATOR_FLAVOR,
-                source="zenml.integrations.whylogs.data_validators.WhylogsDataValidator",
+                source="zenml.integrations.whylogs.flavors.WhylogsDataValidatorFlavor",
                 type=StackComponentType.DATA_VALIDATOR,
                 integration=cls.NAME,
             ),

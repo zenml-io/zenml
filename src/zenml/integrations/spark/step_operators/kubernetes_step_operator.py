@@ -13,17 +13,14 @@
 #  permissions and limitations under the License.
 """Implementation of the Kubernetes Spark Step Operator."""
 import os
-from typing import Any, Optional, Type
+from typing import Any
 
 from pyspark.conf import SparkConf
 
 from zenml.config.docker_configuration import DockerConfiguration
-from zenml.integrations.spark import SPARK_KUBERNETES_STEP_OPERATOR
 from zenml.integrations.spark.step_operators import spark_entrypoint
 from zenml.integrations.spark.step_operators.spark_step_operator import (
     SparkStepOperator,
-    SparkStepOperatorConfig,
-    SparkStepOperatorFlavor,
 )
 from zenml.io.fileio import copy, remove
 from zenml.logger import get_logger
@@ -31,7 +28,6 @@ from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.utils.pipeline_docker_image_builder import (
     DOCKER_IMAGE_WORKDIR,
-    PipelineDockerImageBuilderConfigMixin,
     PipelineDockerImageBuilderMixin,
 )
 from zenml.utils.source_utils import get_source_root_path
@@ -40,25 +36,6 @@ logger = get_logger(__name__)
 
 LOCAL_ENTRYPOINT = spark_entrypoint.__file__
 ENTRYPOINT_NAME = "zenml_spark_entrypoint.py"
-
-
-class KubernetesSparkStepOperatorConfig(
-    SparkStepOperatorConfig, PipelineDockerImageBuilderConfigMixin
-):
-    """Config for the Kubernetes Spark step operator.
-
-    Attributes:
-        namespace: the namespace under which the driver and executor pods
-            will run.
-        service_account: the service account that will be used by various Spark
-            components (to create and watch the pods).
-        docker_parent_image: (which originally comes from the
-            PipelineDockerImageBuilder base class) indicates the name of a
-            base image that has Spark enabled.
-    """
-
-    namespace: Optional[str] = None
-    service_account: Optional[str] = None
 
 
 class KubernetesSparkStepOperator(
@@ -132,19 +109,3 @@ class KubernetesSparkStepOperator(
                 "spark.kubernetes.authenticate.driver.serviceAccountName",
                 self.config.service_account,
             )
-
-
-class KubernetesSparkStepOperatorFlavor(SparkStepOperatorFlavor):
-    """Flavor for the Kubernetes Spark step operator."""
-
-    @property
-    def name(self) -> str:
-        return SPARK_KUBERNETES_STEP_OPERATOR
-
-    @property
-    def config_class(self) -> Type[KubernetesSparkStepOperatorConfig]:
-        return KubernetesSparkStepOperatorConfig
-
-    @property
-    def implementation_class(self) -> Type[KubernetesSparkStepOperator]:
-        return KubernetesSparkStepOperator

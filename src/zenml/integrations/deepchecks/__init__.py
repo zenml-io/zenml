@@ -54,7 +54,7 @@ class DeepchecksIntegration(Integration):
         return [
             FlavorModel(
                 name=DEEPCHECKS_DATA_VALIDATOR_FLAVOR,
-                source="zenml.integrations.deepchecks.data_validators.DeepchecksDataValidator",
+                source="zenml.integrations.deepchecks.flavors.DeepchecksDataValidatorFlavor",
                 type=StackComponentType.DATA_VALIDATOR,
                 integration=cls.NAME,
             ),

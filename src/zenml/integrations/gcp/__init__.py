@@ -59,29 +59,29 @@ class GcpIntegration(Integration):
         return [
             FlavorModel(
                 name=GCP_ARTIFACT_STORE_FLAVOR,
-                source="zenml.integrations.gcp.artifact_stores"
-                ".GCPArtifactStore",
+                source="zenml.integrations.gcp.flavors"
+                ".GCPArtifactStoreFlavor",
                 type=StackComponentType.ARTIFACT_STORE,
                 integration=cls.NAME,
             ),
             FlavorModel(
                 name=GCP_SECRETS_MANAGER_FLAVOR,
-                source="zenml.integrations.gcp.secrets_manager."
-                "GCPSecretsManager",
+                source="zenml.integrations.gcp.flavors."
+                "GCPSecretsManagerFlavor",
                 type=StackComponentType.SECRETS_MANAGER,
                 integration=cls.NAME,
             ),
             FlavorModel(
                 name=GCP_VERTEX_ORCHESTRATOR_FLAVOR,
-                source="zenml.integrations.gcp.orchestrators"
-                ".VertexOrchestrator",
+                source="zenml.integrations.gcp.flavors"
+                ".VertexOrchestratorFlavor",
                 type=StackComponentType.ORCHESTRATOR,
                 integration=cls.NAME,
             ),
             FlavorModel(
                 name=GCP_VERTEX_STEP_OPERATOR_FLAVOR,
-                source="zenml.integrations.gcp.step_operators"
-                ".VertexStepOperator",
+                source="zenml.integrations.gcp.flavors"
+                ".VertexStepOperatorFlavor",
                 type=StackComponentType.STEP_OPERATOR,
                 integration=cls.NAME,
             ),

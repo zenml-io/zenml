@@ -13,24 +13,17 @@
 #  permissions and limitations under the License.
 """Implementation of the Sagemaker Step Operator."""
 
-from typing import TYPE_CHECKING, List, Optional, Tuple, Type
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 import sagemaker
 
 from zenml.enums import StackComponentType
-from zenml.integrations.aws import AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
-from zenml.step_operators.base_step_operator import (
-    BaseStepOperatorConfig,
-    BaseStepOperatorFlavor,
-)
-from zenml.utils import deprecation_utils
 from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilderConfigMixin,
     PipelineDockerImageBuilderMixin,
 )
 
@@ -40,36 +33,6 @@ if TYPE_CHECKING:
 
 
 logger = get_logger(__name__)
-
-
-class SagemakerStepOperatorConfig(
-    BaseStepOperatorConfig, PipelineDockerImageBuilderConfigMixin
-):
-    """Config for the Sagemaker step operator.
-
-    Attributes:
-        role: The role that has to be assigned to the jobs which are
-            running in Sagemaker.
-        instance_type: The type of the compute instance where jobs will run.
-        base_image: The base image to use for building the docker
-            image that will be executed.
-        bucket: Name of the S3 bucket to use for storing artifacts
-            from the job run. If not provided, a default bucket will be created
-            based on the following format: "sagemaker-{region}-{aws-account-id}".
-        experiment_name: The name for the experiment to which the job
-            will be associated. If not provided, the job runs would be
-            independent.
-    """
-
-    role: str
-    instance_type: str
-    base_image: Optional[str] = None
-    bucket: Optional[str] = None
-    experiment_name: Optional[str] = None
-
-    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        ("base_image", "docker_parent_image")
-    )
 
 
 class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilderMixin):
@@ -160,19 +123,3 @@ class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilderMixin):
             experiment_config=experiment_config,
             job_name=sanitized_run_name,
         )
-
-
-class SagemakerStepOperatorFlavor(BaseStepOperatorFlavor):
-    """Flavor for the Sagemaker step operator."""
-
-    @property
-    def name(self) -> str:
-        return AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
-
-    @property
-    def config_class(self) -> Type[SagemakerStepOperatorConfig]:
-        return SagemakerStepOperatorConfig
-
-    @property
-    def implementation_class(self) -> Type[SagemakerStepOperator]:
-        return SagemakerStepOperator

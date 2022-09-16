@@ -32,7 +32,7 @@
 import os
 import re
 import sys
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 from uuid import UUID
 
 import kfp
@@ -48,7 +48,9 @@ from zenml.artifact_stores import LocalArtifactStore
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.exceptions import ProvisioningError
-from zenml.integrations.kubeflow import KUBEFLOW_ORCHESTRATOR_FLAVOR
+from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import (
+    DEFAULT_KFP_UI_PORT,
+)
 from zenml.integrations.kubeflow.orchestrators import (
     local_deployment_utils,
     utils,
@@ -63,15 +65,10 @@ from zenml.integrations.kubeflow.orchestrators.local_deployment_utils import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
-from zenml.orchestrators.base_orchestrator import (
-    BaseOrchestratorConfig,
-    BaseOrchestratorFlavor,
-)
 from zenml.repository import Repository
 from zenml.stack import StackValidator
-from zenml.utils import deprecation_utils, io_utils, networking_utils
+from zenml.utils import io_utils, networking_utils
 from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilderConfigMixin,
     PipelineDockerImageBuilderMixin,
 )
 
@@ -84,57 +81,10 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-DEFAULT_KFP_UI_PORT = 8080
 KFP_POD_LABELS = {
     "add-pod-env": "true",
     "pipelines.kubeflow.org/pipeline-sdk-type": "zenml",
 }
-
-
-class KubeflowOrchestratorConfig(
-    BaseOrchestratorConfig, PipelineDockerImageBuilderConfigMixin
-):
-    """Configuration for the Kubeflow orchestrator.
-
-    Attributes:
-        custom_docker_base_image_name: Name of a docker image that should be
-            used as the base for the image that will be run on KFP pods. If no
-            custom image is given, a basic image of the active ZenML version
-            will be used. **Note**: This image needs to have ZenML installed,
-            otherwise the pipeline execution will fail. For that reason, you
-            might want to extend the ZenML docker images found here:
-            https://hub.docker.com/r/zenmldocker/zenml/
-        kubeflow_pipelines_ui_port: A local port to which the KFP UI will be
-            forwarded.
-        kubeflow_hostname: The hostname to use to talk to the Kubeflow Pipelines
-            API. If not set, the hostname will be derived from the Kubernetes
-            API proxy.
-        kubernetes_context: Optional name of a kubernetes context to run
-            pipelines in. If not set, the current active context will be used.
-            You can find the active context by running `kubectl config
-            current-context`.
-        synchronous: If `True`, running a pipeline using this orchestrator will
-            block until all steps finished running on KFP.
-        skip_local_validations: If `True`, the local validations will be
-            skipped.
-        skip_cluster_provisioning: If `True`, the k3d cluster provisioning will
-            be skipped.
-        skip_ui_daemon_provisioning: If `True`, provisioning the KFP UI daemon
-            will be skipped.
-    """
-
-    custom_docker_base_image_name: Optional[str] = None
-    kubeflow_pipelines_ui_port: int = DEFAULT_KFP_UI_PORT
-    kubeflow_hostname: Optional[str] = None
-    kubernetes_context: Optional[str] = None
-    synchronous: bool = False
-    skip_local_validations: bool = False
-    skip_cluster_provisioning: bool = False
-    skip_ui_daemon_provisioning: bool = False
-
-    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        ("custom_docker_base_image_name", "docker_parent_image")
-    )
 
 
 class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilderMixin):
@@ -1172,19 +1122,3 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilderMixin):
             # No secrets provided by the user.
             pass
         return environment_vars
-
-
-class KubeflowOrchestratorFlavor(BaseOrchestratorFlavor):
-    """Kubeflow orchestrator flavor."""
-
-    @property
-    def name(self) -> str:
-        return KUBEFLOW_ORCHESTRATOR_FLAVOR
-
-    @property
-    def config_class(self) -> Type[KubeflowOrchestratorConfig]:
-        return KubeflowOrchestratorConfig
-
-    @property
-    def implementation_class(self) -> Type["KubeflowOrchestrator"]:
-        return KubeflowOrchestrator

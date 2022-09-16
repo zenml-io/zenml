@@ -34,16 +34,14 @@ import datetime
 import functools
 import os
 import time
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
 from zenml.environment import Environment
-from zenml.integrations.airflow import AIRFLOW_ORCHESTRATOR_FLAVOR
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
-from zenml.orchestrators.base_orchestrator import BaseOrchestratorFlavor
 from zenml.pipelines import Schedule
 from zenml.steps import BaseStep
 from zenml.utils import daemon, io_utils
@@ -437,15 +435,3 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         fileio.rmtree(self.airflow_home)
         logger.info("Airflow spun down.")
-
-
-class AirflowOrchestratorFlavor(BaseOrchestratorFlavor):
-    """Flavor for the Airflow orchestrator."""
-
-    @property
-    def name(self) -> str:
-        return AIRFLOW_ORCHESTRATOR_FLAVOR
-
-    @property
-    def implementation_class(self) -> Type["AirflowOrchestrator"]:
-        return AirflowOrchestrator

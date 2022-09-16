@@ -50,7 +50,7 @@ class GreatExpectationsIntegration(Integration):
         return [
             FlavorModel(
                 name=GREAT_EXPECTATIONS_DATA_VALIDATOR_FLAVOR,
-                source="zenml.integrations.great_expectations.data_validators.GreatExpectationsDataValidator",
+                source="zenml.integrations.great_expectations.flavors.GreatExpectationsDataValidatorFlavor",
                 type=StackComponentType.DATA_VALIDATOR,
                 integration=cls.NAME,
             ),

@@ -13,66 +13,23 @@
 #  permissions and limitations under the License.
 """Implementation of the AWS Secrets Manager integration."""
 import json
-import re
-from typing import Any, ClassVar, Dict, List, Optional, Type
+from typing import Any, ClassVar, Dict, List, Optional
 
 import boto3
 
 from zenml.exceptions import SecretExistsError
-from zenml.integrations.aws import AWS_SECRET_MANAGER_FLAVOR
+from zenml.integrations.aws.flavors.aws_secrets_manager_flavor import (
+    validate_aws_secret_name_or_namespace,
+)
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secrets_managers.base_secrets_manager import (
     BaseSecretsManager,
-    BaseSecretsManagerConfig,
-    BaseSecretsManagerFlavor,
     SecretsManagerScope,
 )
 from zenml.secrets_managers.utils import secret_from_dict, secret_to_dict
 
 logger = get_logger(__name__)
-
-
-def validate_aws_secret_name_or_namespace(name: str) -> None:
-    """Validate a secret name or namespace.
-
-    AWS secret names must contain only alphanumeric characters and the
-    characters /_+=.@-. The `/` character is only used internally to delimit
-    scopes.
-
-    Args:
-        name: the secret name or namespace
-
-    Raises:
-        ValueError: if the secret name or namespace is invalid
-    """
-    if not re.fullmatch(r"[a-zA-Z0-9_+=\.@\-]*", name):
-        raise ValueError(
-            f"Invalid secret name or namespace '{name}'. Must contain "
-            f"only alphanumeric characters and the characters _+=.@-."
-        )
-
-
-class AWSSecretsManagerConfig(BaseSecretsManagerConfig):
-
-    SUPPORTS_SCOPING: ClassVar[bool] = True
-
-    region_name: str
-
-    @classmethod
-    def _validate_scope(
-        cls,
-        scope: SecretsManagerScope,
-        namespace: Optional[str],
-    ) -> None:
-        """Validate the scope and namespace value.
-
-        Args:
-            scope: Scope value.
-            namespace: Optional namespace value.
-        """
-        if namespace:
-            validate_aws_secret_name_or_namespace(namespace)
 
 
 class AWSSecretsManager(BaseSecretsManager):
@@ -388,17 +345,3 @@ class AWSSecretsManager(BaseSecretsManager):
                 SecretId=self._get_scoped_secret_name(secret_name),
                 ForceDeleteWithoutRecovery=True,
             )
-
-
-class AWSSecretsManagerFlavor(BaseSecretsManagerFlavor):
-    @property
-    def name(self) -> str:
-        return AWS_SECRET_MANAGER_FLAVOR
-
-    @property
-    def config_class(self) -> Type[AWSSecretsManager]:
-        return AWSSecretsManagerConfig
-
-    @property
-    def implementation_class(self) -> Type["AWSSecretsManager"]:
-        return AWSSecretsManager

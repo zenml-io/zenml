@@ -13,30 +13,17 @@
 #  permissions and limitations under the License.
 """Implementation of the Feast Feature Store for ZenML."""
 
-from typing import Any, Dict, List, Type, Union
+from typing import Any, Dict, List, Union
 
 import pandas as pd
 import redis
 from feast import FeatureStore  # type: ignore[import]
 from feast.registry import Registry  # type: ignore[import]
 
-from zenml.feature_stores.base_feature_store import (
-    BaseFeatureStore,
-    BaseFeatureStoreConfig,
-    BaseFeatureStoreFlavor,
-)
-from zenml.integrations.feast import FEAST_FEATURE_STORE_FLAVOR
+from zenml.feature_stores.base_feature_store import BaseFeatureStore
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
-
-
-class FeastFeatureStoreConfig(BaseFeatureStoreConfig):
-    """Config for Feast feature store."""
-
-    online_host: str = "localhost"
-    online_port: int = 6379
-    feast_repo: str
 
 
 class FeastFeatureStore(BaseFeatureStore):
@@ -201,22 +188,3 @@ class FeastFeatureStore(BaseFeatureStore):
         """
         fs = FeatureStore(repo_path=self.config.feast_repo)
         return str(fs.version())
-
-
-class FeastFeatureStoreFlavor(BaseFeatureStoreFlavor):
-    """Feast Feature store flavor."""
-
-    @property
-    def name(self) -> str:
-        """Name of the flavor."""
-        return FEAST_FEATURE_STORE_FLAVOR
-
-    @property
-    def config_class(self) -> Type[FeastFeatureStoreConfig]:
-        """Config class for this flavor."""
-        return FeastFeatureStoreConfig
-
-    @property
-    def implementation_class(self) -> Type[FeastFeatureStore]:
-        """Implementation class for this flavor."""
-        return FeastFeatureStore

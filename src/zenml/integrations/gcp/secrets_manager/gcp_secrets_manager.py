@@ -13,22 +13,21 @@
 #  permissions and limitations under the License.
 """Implementation of the GCP Secrets Manager."""
 import json
-import re
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
+from typing import Any, ClassVar, Dict, List, Optional, Tuple
 
 from google.api_core import exceptions as google_exceptions
 from google.cloud import secretmanager
 
 from zenml.exceptions import SecretExistsError
-from zenml.integrations.gcp import GCP_SECRETS_MANAGER_FLAVOR
+from zenml.integrations.gcp.flavors.gcp_secrets_manager_flavor import (
+    validate_gcp_secret_name_or_namespace,
+)
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
 from zenml.secrets_managers.base_secrets_manager import (
     ZENML_SECRET_NAME_LABEL,
     BaseSecretsManager,
-    BaseSecretsManagerConfig,
-    BaseSecretsManagerFlavor,
     SecretsManagerScope,
 )
 from zenml.secrets_managers.utils import secret_from_dict, secret_to_dict
@@ -61,68 +60,6 @@ def remove_group_name_from_key(combined_key_name: str, group_name: str) -> str:
             f"prefix `{group_name}`. Key could not be "
             f"extracted."
         )
-
-
-def validate_gcp_secret_name_or_namespace(name: str) -> None:
-    """Validate a secret name or namespace.
-
-    A Google secret ID is a string with a maximum length of 255 characters
-    and can contain uppercase and lowercase letters, numerals, and the
-    hyphen (-) and underscore (_) characters. For scoped secrets, we have to
-    limit the size of the name and namespace even further to allow space for
-    both in the Google secret ID.
-
-    Given that we also save secret names and namespaces as labels, we are
-    also limited by the limitation that Google imposes on label values: max
-    63 characters and must only contain lowercase letters, numerals
-    and the hyphen (-) and underscore (_) characters
-
-    Args:
-        name: the secret name or namespace
-
-    Raises:
-        ValueError: if the secret name or namespace is invalid
-    """
-    if not re.fullmatch(r"[a-z0-9_\-]+", name):
-        raise ValueError(
-            f"Invalid secret name or namespace '{name}'. Must contain "
-            f"only lowercase alphanumeric characters and the hyphen (-) and "
-            f"underscore (_) characters."
-        )
-
-    if name and len(name) > 63:
-        raise ValueError(
-            f"Invalid secret name or namespace '{name}'. The length is "
-            f"limited to maximum 63 characters."
-        )
-
-
-class GCPSecretsManagerConfig(BaseSecretsManagerConfig):
-    """Configuration for the GCP Secrets Manager.
-
-    Attributes:
-        project_id: This is necessary to access the correct GCP project.
-            The project_id of your GCP project space that contains the Secret
-            Manager.
-    """
-
-    SUPPORTS_SCOPING: ClassVar[bool] = True
-    project_id: str
-
-    @classmethod
-    def _validate_scope(
-        cls,
-        scope: SecretsManagerScope,
-        namespace: Optional[str],
-    ) -> None:
-        """Validate the scope and namespace value.
-
-        Args:
-            scope: Scope value.
-            namespace: Optional namespace value.
-        """
-        if namespace:
-            validate_gcp_secret_name_or_namespace(namespace)
 
 
 class GCPSecretsManager(BaseSecretsManager):
@@ -489,17 +426,3 @@ class GCPSecretsManager(BaseSecretsManager):
         ):
             logger.info(f"Deleting Google secret {secret.name}")
             self.CLIENT.delete_secret(request={"name": secret.name})
-
-
-class GCPSecretsManagerFlavor(BaseSecretsManagerFlavor):
-    @property
-    def name(self) -> str:
-        return GCP_SECRETS_MANAGER_FLAVOR
-
-    @property
-    def config_class(self) -> Type[GCPSecretsManagerConfig]:
-        return GCPSecretsManagerConfig
-
-    @property
-    def implementation_class(self) -> Type["GCPSecretsManager"]:
-        return GCPSecretsManager

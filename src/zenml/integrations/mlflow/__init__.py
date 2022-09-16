@@ -52,13 +52,13 @@ class MlflowIntegration(Integration):
         return [
             FlavorModel(
                 name=MLFLOW_MODEL_DEPLOYER_FLAVOR,
-                source="zenml.integrations.mlflow.model_deployers.MLFlowModelDeployer",
+                source="zenml.integrations.mlflow.flavors.MLFlowModelDeployerFlavor",
                 type=StackComponentType.MODEL_DEPLOYER,
                 integration=cls.NAME,
             ),
             FlavorModel(
                 name=MLFLOW_MODEL_EXPERIMENT_TRACKER_FLAVOR,
-                source="zenml.integrations.mlflow.experiment_trackers.MLFlowExperimentTracker",
+                source="zenml.integrations.mlflow.flavors.MLFlowExperimentTrackerFlavor",
                 type=StackComponentType.EXPERIMENT_TRACKER,
                 integration=cls.NAME,
             ),

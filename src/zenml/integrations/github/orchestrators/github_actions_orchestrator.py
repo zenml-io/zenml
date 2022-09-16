@@ -17,7 +17,7 @@ import copy
 import os
 import re
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from git.exc import InvalidGitRepositoryError
 from git.repo.base import Repo
@@ -39,16 +39,11 @@ from zenml.integrations.github.secrets_managers.github_secrets_manager import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
-from zenml.orchestrators.base_orchestrator import (
-    BaseOrchestratorConfig,
-    BaseOrchestratorFlavor,
-)
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.stack import Stack
 from zenml.steps import BaseStep
-from zenml.utils import deprecation_utils, string_utils, yaml_utils
+from zenml.utils import string_utils, yaml_utils
 from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilderConfigMixin,
     PipelineDockerImageBuilderMixin,
 )
 
@@ -57,7 +52,6 @@ if TYPE_CHECKING:
     from zenml.runtime_configuration import RuntimeConfiguration
 
 from zenml.enums import StackComponentType
-from zenml.integrations.github import GITHUB_ORCHESTRATOR_FLAVOR
 from zenml.stack import StackValidator
 
 logger = get_logger(__name__)
@@ -68,40 +62,6 @@ GITHUB_REMOTE_URL_PREFIXES = ["git@github.com", "https://github.com"]
 DOCKER_LOGIN_ACTION = "docker/login-action@v1"
 # Name of the environment variable that holds the encoded pb2 pipeline
 ENV_ENCODED_ZENML_PIPELINE = "ENCODED_ZENML_PIPELINE"
-
-
-class GitHubActionsOrchestratorConfig(
-    BaseOrchestratorConfig, PipelineDockerImageBuilderConfigMixin
-):
-    """Configuration for the GitHub Actions orchestrator.
-
-    Attributes:
-        custom_docker_base_image_name: Name of a docker image that should be
-            used as the base for the image that will be run on GitHub Action
-            runners. If no custom image is given, a basic image of the active
-            ZenML version will be used. **Note**: This image needs to have
-            ZenML installed, otherwise the pipeline execution will fail. For
-            that reason, you might want to extend the ZenML docker images
-            found here: https://hub.docker.com/r/zenmldocker/zenml/
-        skip_dirty_repository_check: If `True`, this orchestrator will not
-            raise an exception when trying to run a pipeline while there are
-            still untracked/uncommitted files in the git repository.
-        skip_github_repository_check: If `True`, the orchestrator will not check
-            if your git repository is pointing to a GitHub remote.
-        push: If `True`, this orchestrator will automatically commit and push
-            the GitHub workflow file when running a pipeline. If `False`, the
-            workflow file will be written to the correct location but needs to
-            be committed and pushed manually.
-    """
-
-    custom_docker_base_image_name: Optional[str] = None
-    skip_dirty_repository_check: bool = False
-    skip_github_repository_check: bool = False
-    push: bool = False
-
-    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        ("custom_docker_base_image_name", "docker_parent_image")
-    )
 
 
 class GitHubActionsOrchestrator(
@@ -526,19 +486,3 @@ class GitHubActionsOrchestrator(
                 workflow_path,
                 self.name,
             )
-
-
-class GitHubActionsOrchestratorFlavor(BaseOrchestratorFlavor):
-    """GitHub Actions orchestrator flavor."""
-
-    @property
-    def name(self) -> str:
-        return GITHUB_ORCHESTRATOR_FLAVOR
-
-    @property
-    def config_class(self) -> Type[GitHubActionsOrchestratorConfig]:
-        return GitHubActionsOrchestratorConfig
-
-    @property
-    def implementation_class(self) -> Type["GitHubActionsOrchestrator"]:
-        return GitHubActionsOrchestrator

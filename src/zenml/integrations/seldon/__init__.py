@@ -51,7 +51,7 @@ class SeldonIntegration(Integration):
         return [
             FlavorModel(
                 name=SELDON_MODEL_DEPLOYER_FLAVOR,
-                source="zenml.integrations.seldon.model_deployers.SeldonModelDeployer",
+                source="zenml.integrations.seldon.flavors.SeldonModelDeployerFlavor",
                 type=StackComponentType.MODEL_DEPLOYER,
                 integration=cls.NAME,
             )

@@ -53,7 +53,7 @@ class KServeIntegration(Integration):
         return [
             FlavorModel(
                 name=KSERVE_MODEL_DEPLOYER_FLAVOR,
-                source="zenml.integrations.kserve.model_deployers.KServeModelDeployer",
+                source="zenml.integrations.kserve.flavors.KServeModelDeployerFlavor",
                 type=StackComponentType.MODEL_DEPLOYER,
                 integration=cls.NAME,
             )

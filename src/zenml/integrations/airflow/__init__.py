@@ -43,7 +43,7 @@ class AirflowIntegration(Integration):
         return [
             FlavorModel(
                 name=AIRFLOW_ORCHESTRATOR_FLAVOR,
-                source="zenml.integrations.airflow.orchestrators.AirflowOrchestrator",
+                source="zenml.integrations.airflow.flavors.AirflowOrchestratorFlavor",
                 type=StackComponentType.ORCHESTRATOR,
                 integration=cls.NAME,
             )

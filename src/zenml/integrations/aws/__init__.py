@@ -46,22 +46,22 @@ class AWSIntegration(Integration):
         return [
             FlavorModel(
                 name=AWS_SECRET_MANAGER_FLAVOR,
-                source="zenml.integrations.aws.secrets_managers"
-                ".AWSSecretsManager",
+                source="zenml.integrations.aws.flavors"
+                ".AWSSecretsManagerFlavor",
                 type=StackComponentType.SECRETS_MANAGER,
                 integration=cls.NAME,
             ),
             FlavorModel(
                 name=AWS_CONTAINER_REGISTRY_FLAVOR,
-                source="zenml.integrations.aws.container_registries"
-                ".AWSContainerRegistry",
+                source="zenml.integrations.aws.flavors"
+                ".AWSContainerRegistryFlavor",
                 type=StackComponentType.CONTAINER_REGISTRY,
                 integration=cls.NAME,
             ),
             FlavorModel(
                 name=AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR,
-                source="zenml.integrations.aws.step_operators"
-                ".SagemakerStepOperator",
+                source="zenml.integrations.aws.flavors"
+                ".SagemakerStepOperatorFlavor",
                 type=StackComponentType.STEP_OPERATOR,
                 integration=cls.NAME,
             ),

@@ -41,9 +41,7 @@ from torch.nn import Module  # type: ignore[attr-defined]
 from torch.utils.data.dataloader import DataLoader
 
 from zenml.data_validators import BaseDataValidator
-from zenml.data_validators.base_data_validator import BaseDataValidatorFlavor
 from zenml.environment import Environment
-from zenml.integrations.deepchecks import DEEPCHECKS_DATA_VALIDATOR_FLAVOR
 from zenml.integrations.deepchecks.validation_checks import (
     DeepchecksDataDriftCheck,
     DeepchecksDataIntegrityCheck,
@@ -447,15 +445,3 @@ class DeepchecksDataValidator(BaseDataValidator):
             check_kwargs=check_kwargs,
             run_kwargs=run_kwargs,
         )
-
-
-class DeepchecksDataValidatorFlavor(BaseDataValidatorFlavor):
-    """Flavor of the Deepchecks data validator."""
-
-    @property
-    def name(self) -> str:
-        return DEEPCHECKS_DATA_VALIDATOR_FLAVOR
-
-    @property
-    def implementation_class(self) -> Type[DeepchecksDataValidator]:
-        return DeepchecksDataValidator

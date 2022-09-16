@@ -43,7 +43,7 @@ class TektonIntegration(Integration):
         return [
             FlavorModel(
                 name=TEKTON_ORCHESTRATOR_FLAVOR,
-                source="zenml.integrations.tekton.orchestrators.TektonOrchestrator",
+                source="zenml.integrations.tekton.flavors.TektonOrchestratorFlavor",
                 type=StackComponentType.ORCHESTRATOR,
                 integration=cls.NAME,
             ),

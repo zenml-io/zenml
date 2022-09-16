@@ -16,7 +16,7 @@
 import itertools
 import os
 from pathlib import PurePosixPath
-from typing import TYPE_CHECKING, List, Optional, Type
+from typing import TYPE_CHECKING, List, Optional
 
 from azureml.core import (
     ComputeTarget,
@@ -34,22 +34,14 @@ from azureml.core.conda_dependencies import CondaDependencies
 import zenml
 from zenml.constants import ENV_ZENML_CONFIG_PATH
 from zenml.environment import Environment as ZenMLEnvironment
-from zenml.integrations.azure import AZUREML_STEP_OPERATOR_FLAVOR
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.step_operators import BaseStepOperator
-from zenml.step_operators.base_step_operator import (
-    BaseStepOperatorConfig,
-    BaseStepOperatorFlavor,
-)
-from zenml.utils import deprecation_utils
 from zenml.utils.pipeline_docker_image_builder import (
     DOCKER_IMAGE_ZENML_CONFIG_DIR,
-    PipelineDockerImageBuilderConfigMixin,
     PipelineDockerImageBuilderMixin,
     _include_global_config,
 )
-from zenml.utils.secret_utils import SecretField
 from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
@@ -57,49 +49,6 @@ if TYPE_CHECKING:
     from zenml.config.resource_configuration import ResourceConfiguration
 
 logger = get_logger(__name__)
-
-
-class AzureMLStepOperatorConfig(
-    BaseStepOperatorConfig, PipelineDockerImageBuilderConfigMixin
-):
-    """Config for the AzureML step operator.
-
-    Attributes:
-        subscription_id: The Azure account's subscription ID
-        resource_group: The resource group to which the AzureML workspace
-            is deployed.
-        workspace_name: The name of the AzureML Workspace.
-        compute_target_name: The name of the configured ComputeTarget.
-            An instance of it has to be created on the portal if it doesn't
-            exist already.
-        environment_name: The name of the environment if there
-            already exists one.
-        docker_base_image: The custom docker base image that the
-            environment should use.
-        tenant_id: The Azure Tenant ID.
-        service_principal_id: The ID for the service principal that is created
-            to allow apps to access secure resources.
-        service_principal_password: Password for the service principal.
-    """
-
-    subscription_id: str
-    resource_group: str
-    workspace_name: str
-    compute_target_name: str
-
-    # Environment
-    environment_name: Optional[str] = None
-    docker_base_image: Optional[str] = None
-
-    # Service principal authentication
-    # https://docs.microsoft.com/en-us/azure/machine-learning/how-to-setup-authentication#configure-a-service-principal
-    tenant_id: Optional[str] = SecretField()
-    service_principal_id: Optional[str] = SecretField()
-    service_principal_password: Optional[str] = SecretField()
-
-    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        ("docker_base_image", "docker_parent_image")
-    )
 
 
 class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilderMixin):
@@ -302,19 +251,3 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilderMixin):
 
         run.display_name = run_name
         run.wait_for_completion(show_output=True)
-
-
-class AzureMLStepOperatorFlavor(BaseStepOperatorFlavor):
-    """Flavor for the AzureML step operator."""
-
-    @property
-    def name(self) -> str:
-        return AZUREML_STEP_OPERATOR_FLAVOR
-
-    @property
-    def config_class(self) -> Type[AzureMLStepOperatorConfig]:
-        return AzureMLStepOperatorConfig
-
-    @property
-    def implementation_class(self) -> Type[AzureMLStepOperator]:
-        return AzureMLStepOperator
