@@ -19,7 +19,7 @@ google_cloud_ai_platform/training_clients.py
 """
 
 import time
-from typing import TYPE_CHECKING, ClassVar, List, Optional, Tuple
+from typing import TYPE_CHECKING, List, Optional, Tuple, Type
 
 from google.cloud import aiplatform
 from pydantic import validator as property_validator
@@ -42,6 +42,10 @@ from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
+from zenml.step_operators.base_step_operator import (
+    BaseStepOperatorConfig,
+    BaseStepOperatorFlavor,
+)
 from zenml.utils import deprecation_utils
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
@@ -52,13 +56,8 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class VertexStepOperator(
-    BaseStepOperator, PipelineDockerImageBuilder, GoogleCredentialsMixin
-):
-    """Step operator to run a step on Vertex AI.
-
-    This class defines code that can set up a Vertex AI environment and run the
-    ZenML entrypoint command in it.
+class VertexStepOperatorConfig(BaseStepOperatorConfig):
+    """Configuration for the Vertex step operator.
 
     Attributes:
         region: Region name, e.g., `europe-west1`.
@@ -83,12 +82,37 @@ class VertexStepOperator(
     # will be applied to all Vertex AI resources if set
     encryption_spec_key_name: Optional[str] = None
 
-    # Class configuration
-    FLAVOR: ClassVar[str] = GCP_VERTEX_STEP_OPERATOR_FLAVOR
-
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
         ("base_image", "docker_parent_image")
     )
+
+    @property_validator("accelerator_type")
+    def validate_accelerator_enum(cls, accelerator_type: Optional[str]) -> None:
+        """Validates that the accelerator type is valid.
+
+        Args:
+            accelerator_type: Accelerator type
+
+        Raises:
+            ValueError: If the accelerator type is not valid.
+        """
+        accepted_vals = list(
+            aiplatform.gapic.AcceleratorType.__members__.keys()
+        )
+        if accelerator_type and accelerator_type.upper() not in accepted_vals:
+            raise ValueError(
+                f"Accelerator must be one of the following: {accepted_vals}"
+            )
+
+
+class VertexStepOperator(
+    BaseStepOperator, PipelineDockerImageBuilder, GoogleCredentialsMixin
+):
+    """Step operator to run a step on Vertex AI.
+
+    This class defines code that can set up a Vertex AI environment and run the
+    ZenML entrypoint command in it.
+    """
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -114,24 +138,6 @@ class VertexStepOperator(
             required_components={StackComponentType.CONTAINER_REGISTRY},
             custom_validation_function=_ensure_local_orchestrator,
         )
-
-    @property_validator("accelerator_type")
-    def validate_accelerator_enum(cls, accelerator_type: Optional[str]) -> None:
-        """Validates that the accelerator type is valid.
-
-        Args:
-            accelerator_type: Accelerator type
-
-        Raises:
-            ValueError: If the accelerator type is not valid.
-        """
-        accepted_vals = list(
-            aiplatform.gapic.AcceleratorType.__members__.keys()
-        )
-        if accelerator_type and accelerator_type.upper() not in accepted_vals:
-            raise ValueError(
-                f"Accelerator must be one of the following: {accepted_vals}"
-            )
 
     def launch(
         self,
@@ -171,16 +177,16 @@ class VertexStepOperator(
 
         # Step 1: Authenticate with Google
         credentials, project_id = self._get_authentication()
-        if self.project:
-            if self.project != project_id:
+        if self.config.project:
+            if self.config.project != project_id:
                 logger.warning(
                     "Authenticated with project `%s`, but this orchestrator is "
                     "configured to use the project `%s`.",
                     project_id,
-                    self.project,
+                    self.config.project,
                 )
         else:
-            self.project = project_id
+            self.config.project = project_id
 
         # Step 2: Build and push image
         image_name = self.build_and_push_docker_image(
@@ -193,14 +199,16 @@ class VertexStepOperator(
 
         # Step 3: Launch the job
         # The AI Platform services require regional API endpoints.
-        client_options = {"api_endpoint": self.region + VERTEX_ENDPOINT_SUFFIX}
+        client_options = {
+            "api_endpoint": self.config.region + VERTEX_ENDPOINT_SUFFIX
+        }
         # Initialize client that will be used to create and send requests.
         # This client only needs to be created once, and can be reused for multiple requests.
         client = aiplatform.gapic.JobServiceClient(
             credentials=credentials, client_options=client_options
         )
         accelerator_count = (
-            resource_configuration.gpu_count or self.accelerator_count
+            resource_configuration.gpu_count or self.config.accelerator_count
         )
         custom_job = {
             "display_name": run_name,
@@ -208,10 +216,10 @@ class VertexStepOperator(
                 "worker_pool_specs": [
                     {
                         "machine_spec": {
-                            "machine_type": self.machine_type,
-                            "accelerator_type": self.accelerator_type,
+                            "machine_type": self.config.machine_type,
+                            "accelerator_type": self.config.accelerator_type,
                             "accelerator_count": accelerator_count
-                            if self.accelerator_type
+                            if self.config.accelerator_type
                             else 0,
                         },
                         "replica_count": 1,
@@ -224,13 +232,17 @@ class VertexStepOperator(
                 ]
             },
             "labels": job_labels,
-            "encryption_spec": {"kmsKeyName": self.encryption_spec_key_name}
-            if self.encryption_spec_key_name
+            "encryption_spec": {
+                "kmsKeyName": self.config.encryption_spec_key_name
+            }
+            if self.config.encryption_spec_key_name
             else {},
         }
         logger.debug("Vertex AI Job=%s", custom_job)
 
-        parent = f"projects/{self.project}/locations/{self.region}"
+        parent = (
+            f"projects/{self.config.project}/locations/{self.config.region}"
+        )
         logger.info(
             "Submitting custom job='%s', path='%s' to Vertex AI Training.",
             custom_job["display_name"],
@@ -301,3 +313,19 @@ class VertexStepOperator(
 
         # Cloud training complete
         logger.info("Job '%s' successful.", job_id)
+
+
+class VertexStepOperatorFlavor(BaseStepOperatorFlavor):
+    """Vertex Step Operator flavor."""
+
+    @property
+    def name(self) -> str:
+        return GCP_VERTEX_STEP_OPERATOR_FLAVOR
+
+    @property
+    def config_class(self) -> Type[VertexStepOperatorConfig]:
+        return VertexStepOperatorConfig
+
+    @property
+    def implementation_class(self) -> Type["VertexStepOperator"]:
+        return VertexStepOperator

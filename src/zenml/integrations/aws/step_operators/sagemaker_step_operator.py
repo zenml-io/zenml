@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Sagemaker Step Operator."""
 
-from typing import TYPE_CHECKING, ClassVar, List, Optional, Tuple
+from typing import TYPE_CHECKING, List, Optional, Tuple, Type
 
 import sagemaker
 
@@ -24,6 +24,10 @@ from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
+from zenml.step_operators.base_step_operator import (
+    BaseStepOperatorConfig,
+    BaseStepOperatorFlavor,
+)
 from zenml.utils import deprecation_utils
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
@@ -35,11 +39,8 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
-    """Step operator to run a step on Sagemaker.
-
-    This class defines code that builds an image with the ZenML entrypoint
-    to run using Sagemaker's Estimator.
+class SagemakerStepOperatorConfig(BaseStepOperatorConfig):
+    """Config for the Sagemaker step operator.
 
     Attributes:
         role: The role that has to be assigned to the jobs which are
@@ -57,17 +58,21 @@ class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
 
     role: str
     instance_type: str
-
     base_image: Optional[str] = None
     bucket: Optional[str] = None
     experiment_name: Optional[str] = None
 
-    # Class Configuration
-    FLAVOR: ClassVar[str] = AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
-
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
         ("base_image", "docker_parent_image")
     )
+
+
+class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
+    """Step operator to run a step on Sagemaker.
+
+    This class defines code that builds an image with the ZenML entrypoint
+    to run using Sagemaker's Estimator.
+    """
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -126,12 +131,12 @@ class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
                 self.name,
             )
 
-        session = sagemaker.Session(default_bucket=self.bucket)
+        session = sagemaker.Session(default_bucket=self.config.bucket)
         estimator = sagemaker.estimator.Estimator(
             image_name,
-            self.role,
+            self.config.role,
             instance_count=1,
-            instance_type=self.instance_type,
+            instance_type=self.config.instance_type,
             sagemaker_session=session,
         )
 
@@ -139,9 +144,9 @@ class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
         sanitized_run_name = run_name.replace("_", "-")
 
         experiment_config = {}
-        if self.experiment_name:
+        if self.config.experiment_name:
             experiment_config = {
-                "ExperimentName": self.experiment_name,
+                "ExperimentName": self.config.experiment_name,
                 "TrialName": sanitized_run_name,
             }
 
@@ -150,3 +155,19 @@ class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
             experiment_config=experiment_config,
             job_name=sanitized_run_name,
         )
+
+
+class SagemakerStepOperatorFlavor(BaseStepOperatorFlavor):
+    """Flavor for the Sagemaker step operator."""
+
+    @property
+    def name(self) -> str:
+        return AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
+
+    @property
+    def config_class(self) -> Type[SagemakerStepOperatorConfig]:
+        return SagemakerStepOperatorConfig
+
+    @property
+    def implementation_class(self) -> Type[SagemakerStepOperator]:
+        return SagemakerStepOperator

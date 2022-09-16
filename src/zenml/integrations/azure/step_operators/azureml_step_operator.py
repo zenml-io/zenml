@@ -16,7 +16,7 @@
 import itertools
 import os
 from pathlib import PurePosixPath
-from typing import TYPE_CHECKING, ClassVar, List, Optional
+from typing import TYPE_CHECKING, List, Optional, Type
 
 from azureml.core import (
     ComputeTarget,
@@ -38,6 +38,10 @@ from zenml.integrations.azure import AZUREML_STEP_OPERATOR_FLAVOR
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.step_operators import BaseStepOperator
+from zenml.step_operators.base_step_operator import (
+    BaseStepOperatorConfig,
+    BaseStepOperatorFlavor,
+)
 from zenml.utils import deprecation_utils
 from zenml.utils.pipeline_docker_image_builder import (
     DOCKER_IMAGE_ZENML_CONFIG_DIR,
@@ -54,11 +58,8 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
-    """Step operator to run a step on AzureML.
-
-    This class defines code that can set up an AzureML environment and run the
-    ZenML entrypoint command in it.
+class AzureMLStepOperatorConfig(BaseStepOperatorConfig):
+    """Config for the AzureML step operator.
 
     Attributes:
         subscription_id: The Azure account's subscription ID
@@ -93,12 +94,17 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
     service_principal_id: Optional[str] = SecretField()
     service_principal_password: Optional[str] = SecretField()
 
-    # Class Configuration
-    FLAVOR: ClassVar[str] = AZUREML_STEP_OPERATOR_FLAVOR
-
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
         ("docker_base_image", "docker_parent_image")
     )
+
+
+class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
+    """Step operator to run a step on AzureML.
+
+    This class defines code that can set up an AzureML environment and run the
+    ZenML entrypoint command in it.
+    """
 
     def _get_authentication(self) -> Optional[AbstractAuthentication]:
         """Returns the authentication object for the AzureML environment.
@@ -107,14 +113,14 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
             The authentication object for the AzureML environment.
         """
         if (
-            self.tenant_id
-            and self.service_principal_id
-            and self.service_principal_password
+            self.config.tenant_id
+            and self.config.service_principal_id
+            and self.config.service_principal_password
         ):
             return ServicePrincipalAuthentication(
-                tenant_id=self.tenant_id,
-                service_principal_id=self.service_principal_id,
-                service_principal_password=self.service_principal_password,
+                tenant_id=self.config.tenant_id,
+                service_principal_id=self.config.service_principal_id,
+                service_principal_password=self.config.service_principal_password,
             )
         return None
 
@@ -151,9 +157,9 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
             "Using requirements for AzureML step operator environment: %s",
             requirements,
         )
-        if self.environment_name:
+        if self.config.environment_name:
             environment = Environment.get(
-                workspace=workspace, name=self.environment_name
+                workspace=workspace, name=self.config.environment_name
             )
             if not environment.python.conda_dependencies:
                 environment.python.conda_dependencies = (
@@ -174,7 +180,8 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
             )
 
             parent_image = (
-                docker_configuration.parent_image or self.docker_parent_image
+                docker_configuration.parent_image
+                or self.config.docker_parent_image
             )
 
             if parent_image:
@@ -258,9 +265,9 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
             )
 
         workspace = Workspace.get(
-            subscription_id=self.subscription_id,
-            resource_group=self.resource_group,
-            name=self.workspace_name,
+            subscription_id=self.config.subscription_id,
+            resource_group=self.config.resource_group,
+            name=self.config.workspace_name,
             auth=self._get_authentication(),
         )
 
@@ -277,7 +284,7 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
                 run_name=run_name,
             )
             compute_target = ComputeTarget(
-                workspace=workspace, name=self.compute_target_name
+                workspace=workspace, name=self.config.compute_target_name
             )
 
             run_config = ScriptRunConfig(
@@ -292,3 +299,19 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
 
         run.display_name = run_name
         run.wait_for_completion(show_output=True)
+
+
+class AzureMLStepOperatorFlavor(BaseStepOperatorFlavor):
+    """Flavor for the AzureML step operator."""
+
+    @property
+    def name(self) -> str:
+        return AZUREML_STEP_OPERATOR_FLAVOR
+
+    @property
+    def config_class(self) -> Type[AzureMLStepOperatorConfig]:
+        return AzureMLStepOperatorConfig
+
+    @property
+    def implementation_class(self) -> Type[AzureMLStepOperator]:
+        return AzureMLStepOperator

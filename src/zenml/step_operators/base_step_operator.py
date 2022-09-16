@@ -14,21 +14,23 @@
 """Base class for ZenML step operators."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, ClassVar, List
+from typing import TYPE_CHECKING, List, Type
 
 from zenml.enums import StackComponentType
-from zenml.stack import StackComponent
+from zenml.stack import Flavor, StackComponent
+from zenml.stack.stack_component import StackComponentConfig
 
 if TYPE_CHECKING:
     from zenml.config.docker_configuration import DockerConfiguration
     from zenml.config.resource_configuration import ResourceConfiguration
 
 
+class BaseStepOperatorConfig(StackComponentConfig):
+    """Base config for step operators."""
+
+
 class BaseStepOperator(StackComponent, ABC):
     """Base class for all ZenML step operators."""
-
-    # Class Configuration
-    TYPE: ClassVar[StackComponentType] = StackComponentType.STEP_OPERATOR
 
     @abstractmethod
     def launch(
@@ -56,3 +58,20 @@ class BaseStepOperator(StackComponent, ABC):
             entrypoint_command: Command that executes the step.
             resource_configuration: The resource configuration for this step.
         """
+
+
+class BaseStepOperatorFlavor(Flavor):
+    """Base class for all ZenML step operator flavors."""
+
+    @property
+    def type(self) -> StackComponentType:
+        return StackComponentType.STEP_OPERATOR
+
+    @property
+    def config_class(self) -> Type[BaseStepOperatorConfig]:
+        return BaseStepOperatorConfig
+
+    @property
+    @abstractmethod
+    def implementation_class(self) -> Type[BaseStepOperator]:
+        """Returns the implementation class for this flavor."""

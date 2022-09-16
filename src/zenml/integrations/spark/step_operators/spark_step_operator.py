@@ -15,7 +15,7 @@
 
 import json
 import subprocess
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 
 from pydantic import validator
 from pyspark.conf import SparkConf
@@ -24,14 +24,18 @@ from zenml.config.docker_configuration import DockerConfiguration
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.step_operators import BaseStepOperator
+from zenml.step_operators.base_step_operator import (
+    BaseStepOperatorConfig,
+    BaseStepOperatorFlavor,
+)
 
 logger = get_logger(__name__)
 if TYPE_CHECKING:
     from zenml.config.resource_configuration import ResourceConfiguration
 
 
-class SparkStepOperator(BaseStepOperator):
-    """Base class for all Spark-related step operators.
+class SparkStepOperatorConfig(BaseStepOperatorConfig):
+    """Spark step operator config.
 
     Attributes:
         master: is the master URL for the cluster. You might see different
@@ -46,27 +50,9 @@ class SparkStepOperator(BaseStepOperator):
             operator was not implemented).
     """
 
-    # Instance parameters
     master: str
     deploy_mode: str = "cluster"
     submit_kwargs: Optional[Dict[str, Any]] = None
-
-    @property
-    def application_path(self) -> Optional[str]:
-        """Optional method for providing the application path.
-
-        This is especially critical when using 'spark-submit' as it defines the
-        path (to the application in the environment where Spark is running)
-        which is used within the command.
-
-        For more information on how to set this property please check:
-
-        https://spark.apache.org/docs/latest/submitting-applications.html#advanced-dependency-management
-
-        Returns:
-            The path to the application entrypoint
-        """
-        return None
 
     @validator("submit_kwargs", pre=True)
     def _convert_json_string(
@@ -101,6 +87,27 @@ class SparkStepOperator(BaseStepOperator):
             return value
         else:
             raise TypeError(f"{value} is not a json string or a dictionary.")
+
+
+class SparkStepOperator(BaseStepOperator):
+    """Base class for all Spark-related step operators."""
+
+    @property
+    def application_path(self) -> Optional[str]:
+        """Optional method for providing the application path.
+
+        This is especially critical when using 'spark-submit' as it defines the
+        path (to the application in the environment where Spark is running)
+        which is used within the command.
+
+        For more information on how to set this property please check:
+
+        https://spark.apache.org/docs/latest/submitting-applications.html#advanced-dependency-management
+
+        Returns:
+            The path to the application entrypoint
+        """
+        return None
 
     def _resource_configuration(
         self,
@@ -233,8 +240,8 @@ class SparkStepOperator(BaseStepOperator):
                 configuration parameters
         """
         # Add the additional parameters
-        if self.submit_kwargs:
-            for k, v in self.submit_kwargs.items():
+        if self.config.submit_kwargs:
+            for k, v in self.config.submit_kwargs.items():
                 spark_config.set(k, v)
 
     def _launch_spark_job(
@@ -256,8 +263,8 @@ class SparkStepOperator(BaseStepOperator):
         # Base spark-submit command
         command = [
             f"spark-submit "
-            f"--master {self.master} "
-            f"--deploy-mode {self.deploy_mode}"
+            f"--master {self.config.master} "
+            f"--deploy-mode {self.config.deploy_mode}"
         ]
 
         # Add the configuration parameters
@@ -342,3 +349,19 @@ class SparkStepOperator(BaseStepOperator):
             spark_config=conf,
             entrypoint_command=entrypoint_command,
         )
+
+
+class SparkStepOperatorFlavor(BaseStepOperatorFlavor):
+    """Spark step operator flavor."""
+
+    @property
+    def name(self) -> str:
+        return "spark"
+
+    @property
+    def config_class(self) -> Type[SparkStepOperatorConfig]:
+        return SparkStepOperatorConfig
+
+    @property
+    def implementation_class(self) -> Type[SparkStepOperator]:
+        return SparkStepOperator
