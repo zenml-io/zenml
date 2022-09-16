@@ -136,6 +136,10 @@ class DockerConfiguration(BaseModel):
             `False`, ZenML will not copy this configuration and you're
             responsible for making sure the right stack is active inside the
             Docker image.
+        user: If not `None`, will use the USER instruction to set the username and
+            run the commands of the dockerfile as `user` instead of root.
+            Specifically,  the specified user is used for RUN instructions
+            and at runtime, runs the relevant ENTRYPOINT and CMD commands.
     """
 
     parent_image: Optional[str] = None
@@ -156,6 +160,7 @@ class DockerConfiguration(BaseModel):
     dockerignore: Optional[str] = None
     copy_files: bool = True
     copy_profile: bool = True
+    user: Optional[str] = None
 
     class Config:
         """Pydantic configuration class."""
