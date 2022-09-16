@@ -110,7 +110,7 @@ class BaseSecretsManagerConfig(StackComponentConfig):
             # support scoping
             values["scope"] = SecretsManagerScope.NONE
 
-        elif "uuid" in values:
+        elif "id" in values:
             # this is an existing Secrets Manager instance without a scope
             # explicitly set (i.e. a legacy Secrets Manager that was already
             # in operation before scoping was introduced). Continue to use
@@ -210,7 +210,7 @@ class BaseSecretsManager(StackComponent, ABC):
 
         path = [ZENML_SCOPE_PATH_PREFIX, self.scope]
         if self.scope == SecretsManagerScope.COMPONENT:
-            path.append(str(self.uuid))
+            path.append(str(self.id))
         elif self.scope == SecretsManagerScope.NAMESPACE and self.namespace:
             path.append(self.namespace)
 
@@ -353,7 +353,7 @@ class BaseSecretsManager(StackComponent, ABC):
         if self.scope == SecretsManagerScope.NAMESPACE and self.namespace:
             metadata["zenml_namespace"] = self.namespace
         if self.scope == SecretsManagerScope.COMPONENT:
-            metadata["zenml_component_uuid"] = str(self.uuid)
+            metadata["zenml_component_uuid"] = str(self.id)
 
         return metadata
 
@@ -387,7 +387,7 @@ class BaseSecretsManager(StackComponent, ABC):
         scope_metadata.update(
             {
                 "zenml_component_name": self.name,
-                "zenml_component_uuid": str(self.uuid),
+                "zenml_component_uuid": str(self.id),
                 "zenml_secret_schema": secret.TYPE,
             }
         )

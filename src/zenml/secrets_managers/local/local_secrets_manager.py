@@ -14,7 +14,6 @@
 """Implementation of the ZenML local secrets manager."""
 
 import os
-import uuid
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Type
 
@@ -39,6 +38,8 @@ from zenml.utils.io_utils import (
 )
 
 if TYPE_CHECKING:
+    from uuid import UUID
+
     from zenml.secret.base_secret import BaseSecretSchema
     from zenml.stack.stack_component import StackComponent, StackComponentConfig
 
@@ -48,10 +49,6 @@ logger = get_logger(__name__)
 
 class LocalSecretsManagerConfig(BaseSecretsManagerConfig):
     secrets_file: str = ""
-
-
-class LocalSecretsManager(BaseSecretsManager):
-    """Class for ZenML local file-based secret manager."""
 
     @root_validator(skip_on_failure=True)
     def set_secrets_file(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -67,17 +64,17 @@ class LocalSecretsManager(BaseSecretsManager):
             return values
 
         # not likely to happen, due to Pydantic validation, but mypy complains
-        assert "uuid" in values
+        assert "id" in values
 
-        values["secrets_file"] = cls.get_secret_store_path(values["uuid"])
+        values["secrets_file"] = cls.get_secret_store_path(values["id"])
         return values
 
     @staticmethod
-    def get_secret_store_path(uuid: uuid.UUID) -> str:
+    def get_secret_store_path(id_: "UUID") -> str:
         """Get the path to the secret store.
 
         Args:
-            uuid: The UUID of the secret store.
+            id_: The ID of the secret store.
 
         Returns:
             The path to the secret store.
@@ -85,9 +82,13 @@ class LocalSecretsManager(BaseSecretsManager):
         return os.path.join(
             get_global_config_directory(),
             LOCAL_STORES_DIRECTORY_NAME,
-            str(uuid),
+            str(id_),
             LOCAL_SECRETS_FILENAME,
         )
+
+
+class LocalSecretsManager(BaseSecretsManager):
+    """Class for ZenML local file-based secret manager."""
 
     @property
     def local_path(self) -> str:

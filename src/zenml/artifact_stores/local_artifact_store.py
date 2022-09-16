@@ -99,7 +99,7 @@ class LocalArtifactStoreConfig(BaseArtifactStoreConfig):
             The validated values.
         """
         path = values.get("path")
-        artifact_store_id = values.get("uuid")
+        artifact_store_id = values.get("id")
         if path == "" and artifact_store_id:
             artifact_store_path = os.path.join(
                 GlobalConfiguration().config_directory,

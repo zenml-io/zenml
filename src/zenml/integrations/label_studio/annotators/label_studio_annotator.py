@@ -596,7 +596,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         return os.path.join(
             io_utils.get_global_config_directory(),
             "annotators",
-            str(self.uuid),
+            str(self.id),
         )
 
     @property

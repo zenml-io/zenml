@@ -34,6 +34,9 @@ logger = get_logger(__name__)
 
 
 class StackComponentConfig(BaseModel, ABC):
+
+    id: UUID  # ID of the stack component, required for some validations
+
     def __init__(self, **kwargs: Any) -> None:
         """Ensures that secret references don't clash with pydantic validation.
 
@@ -137,7 +140,9 @@ class StackComponent:
         except (ModuleNotFoundError, ImportError, NotImplementedError):
             raise ImportError(f"tmp")
 
-        configuration = flavor.config_class(**component_model.configuration)
+        configuration = flavor.config_class(
+            id=component_model.id, **component_model.configuration
+        )
 
         return flavor.implementation_class(
             user=component_model.user,
@@ -193,7 +198,7 @@ class StackComponent:
         # wanted to resolve the secrets in a general way. We therefore
         # limit secret resolving to components of the active stack.
         component = stack.components.get(self.type, None)
-        if not component or component.uuid != self.uuid:
+        if not component or component.id != self.id:
             raise RuntimeError(
                 f"Failed to resolve secret reference for attribute {key} "
                 f"of stack component `{self}`: The stack component is not "

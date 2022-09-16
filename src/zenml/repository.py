@@ -808,23 +808,20 @@ class Repository(metaclass=RepositoryMetaClass):
         )
 
         # Create and validate the configuration
+        # Some validations need the ID of the component, so we need to pass it
+        # here. Since UUID is not JSON serializable, we then remove it again.
+        # TODO: can this be done cleaner?
         flavor_class = Flavor.from_model(flavor_model)
-        configuration = flavor_class.config_class(
-            **component.configuration
-        ).dict()
+        config = component.configuration
+        config["id"] = component.id
+        config = flavor_class.config_class(**config).dict()
+        config.pop("id")
 
-        # Create a new component model
-        new_component = ComponentModel(
-            user=self.active_user.id,
-            project=self.active_project.id,
-            name=component.name,
-            flavor=component.flavor,
-            type=component.type,
-            configuration=configuration,
-        )
+        # Update the configuration in the model
+        component.configuration = config
 
         # Register the new model
-        return self.zen_store.register_stack_component(component=new_component)
+        return self.zen_store.register_stack_component(component=component)
 
     def update_stack_component(
         self,
