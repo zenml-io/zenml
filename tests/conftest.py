@@ -27,7 +27,7 @@ from tests.venv_clone_utils import clone_virtualenv
 from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import ENV_ZENML_DEBUG
+from zenml.constants import ENV_ZENML_DEBUG, TEST_STEP_INPUT_INT
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models.user_management_models import TeamModel
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
@@ -202,6 +202,41 @@ def sql_store() -> BaseZenStore:
             "default_project": default_project,
             "default_stack": default_stack,
             "active_user": active_user,
+        }
+
+
+@pytest.fixture
+def sql_store_with_run() -> BaseZenStore:
+    with tempfile.TemporaryDirectory(suffix="_zenml_sql_test") as temp_dir:
+        store = SqlZenStore(
+            config=SqlZenStoreConfiguration(
+                url=f"sqlite:///{Path(temp_dir) / 'store.db'}"
+            ),
+            track_analytics=False,
+        )
+        default_project = store.list_projects()[0]
+        default_stack = store.list_stacks()[0]
+        active_user = store.list_users()[0]
+
+        @step
+        def step_one(input_one: int) -> int:
+            return input_one
+
+        @pipeline
+        def test_pipeline(step_one):
+            step_one()
+
+        test_pipeline(step=step_one(TEST_STEP_INPUT_INT)).run()
+        pipeline_run = store.list_runs()[0]
+        pipeline_step = store.list_run_steps(pipeline_run.id)[0]
+
+        yield {
+            "store": store,
+            "default_project": default_project,
+            "default_stack": default_stack,
+            "active_user": active_user,
+            "pipeline_run": pipeline_run,
+            "step": pipeline_step,
         }
 
 

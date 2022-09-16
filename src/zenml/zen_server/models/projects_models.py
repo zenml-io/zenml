@@ -14,7 +14,7 @@
 """Project Models for the API endpoint definitions."""
 from typing import ClassVar, Optional, Type
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from zenml.models import ProjectModel
 from zenml.models.constants import (

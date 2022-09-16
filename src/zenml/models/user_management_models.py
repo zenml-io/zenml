@@ -17,7 +17,7 @@ import re
 from datetime import datetime, timedelta
 from secrets import token_hex
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from pydantic import BaseModel, Field, SecretStr, root_validator
 

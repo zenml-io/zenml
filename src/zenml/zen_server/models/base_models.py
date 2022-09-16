@@ -16,6 +16,7 @@
 
 from typing import ClassVar, Type, TypeVar
 from uuid import UUID
+
 from pydantic import BaseModel
 
 AnyModel = TypeVar("AnyModel", bound=BaseModel)

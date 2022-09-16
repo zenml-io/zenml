@@ -2049,7 +2049,7 @@ class SqlZenStore(BaseZenStore):
             return step_model
 
     def get_run_step_outputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
-        """Get a list of outputs for a specific step.
+        """Get the outputs for a specific step.
 
         Args:
             step_id: The id of the step to get outputs for.
@@ -2079,7 +2079,7 @@ class SqlZenStore(BaseZenStore):
             }
 
     def get_run_step_inputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
-        """Get a list of inputs for a specific step.
+        """Get the inputs for a specific step.
 
         Args:
             step_id: The id of the step to get inputs for.

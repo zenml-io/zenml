@@ -14,9 +14,8 @@
 """Model definitions for stack."""
 
 import json
-from datetime import datetime
 from typing import Any, ClassVar, Dict, List
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from pydantic import Field
 

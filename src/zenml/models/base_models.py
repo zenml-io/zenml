@@ -14,7 +14,6 @@
 """Base domain model definitions."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
