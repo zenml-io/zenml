@@ -27,7 +27,7 @@ from zenml.zen_server.models.base_models import CreateRequest, UpdateRequest
 class CreateProjectRequest(CreateRequest):
     """Project model for create requests."""
 
-    DOMAIN_MODEL: ClassVar[Type[ProjectModel]]
+    DOMAIN_MODEL: ClassVar[Type[ProjectModel]] = ProjectModel
 
     name: str = Field(
         title="The unique name of the project.",
@@ -43,7 +43,7 @@ class CreateProjectRequest(CreateRequest):
 class UpdateProjectRequest(UpdateRequest):
     """Project model for update requests."""
 
-    DOMAIN_MODEL: ClassVar[Type[ProjectModel]]
+    DOMAIN_MODEL: ClassVar[Type[ProjectModel]] = ProjectModel
 
     name: Optional[str] = Field(
         default=None,
