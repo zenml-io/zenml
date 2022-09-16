@@ -170,9 +170,9 @@ def test_register_deregister_stacks(fresh_zen_store):
 
     # can't register the same stack twice or another stack with the same name
     with pytest.raises(StackExistsError):
-        zen_store.register_stack(StackWrapper.from_stack(stack))
+        zen_store.create_stack(StackWrapper.from_stack(stack))
     with pytest.raises(StackExistsError):
-        zen_store.register_stack(StackWrapper(name=stack.name, components=[]))
+        zen_store.create_stack(StackWrapper(name=stack.name, components=[]))
 
     # can't remove a stack that doesn't exist:
     with pytest.raises(KeyError):
@@ -185,7 +185,7 @@ def test_register_deregister_stacks(fresh_zen_store):
         _ = zen_store.get_stack(stack.name)
 
     # now can add another stack with the same name
-    zen_store.register_stack(StackWrapper(name=stack.name, components=[]))
+    zen_store.create_stack(StackWrapper(name=stack.name, components=[]))
     assert len(zen_store.stacks) == 1
 
 
@@ -215,7 +215,7 @@ def test_register_deregister_components(fresh_zen_store):
 
     # can't add another orchestrator of same name
     with pytest.raises(StackComponentExistsError):
-        zen_store.register_stack_component(
+        zen_store.create_stack_component(
             ComponentModel.from_component(
                 LocalOrchestrator(
                     name="default",
@@ -224,7 +224,7 @@ def test_register_deregister_components(fresh_zen_store):
         )
 
     # but can add one if it has a different name
-    zen_store.register_stack_component(
+    zen_store.create_stack_component(
         ComponentModel.from_component(
             LocalOrchestrator(
                 name="local_orchestrator_part_2_the_remix",
@@ -597,7 +597,7 @@ def test_update_real_component_succeeds(
     kubeflow_orchestrator = ComponentModel.from_component(
         KubeflowOrchestrator(name="arias_orchestrator")
     )
-    fresh_zen_store.register_stack_component(kubeflow_orchestrator)
+    fresh_zen_store.create_stack_component(kubeflow_orchestrator)
 
     updated_kubeflow_orchestrator = ComponentModel.from_component(
         KubeflowOrchestrator(
@@ -671,7 +671,7 @@ def test_rename_non_core_stack_component_succeeds(
     kubeflow_orchestrator = ComponentModel.from_component(
         KubeflowOrchestrator(name=old_name)
     )
-    fresh_zen_store.register_stack_component(kubeflow_orchestrator)
+    fresh_zen_store.create_stack_component(kubeflow_orchestrator)
 
     renamed_kubeflow_orchestrator = ComponentModel.from_component(
         KubeflowOrchestrator(name=new_name)

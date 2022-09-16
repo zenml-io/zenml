@@ -190,7 +190,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
                 user_name_or_id=default_user.id,
             )
         except KeyError:
-            self._register_default_stack(
+            self._create_default_stack(
                 project_name_or_id=default_project.id,
                 user_name_or_id=default_user.id,
             )
@@ -262,7 +262,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
                 user_name_or_id=self.active_user.id,
             )
         except KeyError:
-            default_stack = self._register_default_stack(
+            default_stack = self._create_default_stack(
                 project_name_or_id=active_project.id,
                 user_name_or_id=self.active_user.id,
             )
@@ -310,12 +310,12 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
     # ------
 
     @track(AnalyticsEvent.REGISTERED_DEFAULT_STACK)
-    def _register_default_stack(
+    def _create_default_stack(
         self,
         project_name_or_id: Union[str, UUID],
         user_name_or_id: Union[str, UUID],
     ) -> StackModel:
-        """Construct and register the default stack components and stack.
+        """Create the default stack components and stack.
 
         The default stack contains a local orchestrator and a local artifact
         store.
@@ -326,10 +326,10 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             user_name_or_id: The name or ID of the user that owns the stack.
 
         Returns:
-            The model of the registered default stack.
+            The model of the created default stack.
 
         Raises:
-            StackExistsError: If a default stack is already registered for the
+            StackExistsError: If a default stack already exists for the
                 user in the supplied project.
         """
         from zenml.config.global_config import GlobalConfiguration
@@ -345,7 +345,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             pass
         else:
             raise StackExistsError(
-                f"Default stack already registered for user "
+                f"Default stack already exists for user "
                 f"{user.name} in project {project.name}"
             )
 
@@ -355,7 +355,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         )
 
         # Register the default orchestrator
-        orchestrator = self.register_stack_component(
+        orchestrator = self.create_stack_component(
             component=ComponentModel(
                 name="default",
                 user=user.id,
@@ -374,7 +374,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         )
         io_utils.create_dir_recursive_if_not_exists(artifact_store_path)
 
-        artifact_store = self.register_stack_component(
+        artifact_store = self.create_stack_component(
             component=ComponentModel(
                 name="default",
                 user=user.id,
@@ -394,7 +394,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             project=project.id,
             user=user.id,
         )
-        return self.register_stack(stack=stack)
+        return self.create_stack(stack=stack)
 
     def _get_default_stack(
         self,
@@ -435,10 +435,10 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
 
     @property
     def flavors(self) -> List[FlavorModel]:
-        """All registered flavors.
+        """All existing flavors.
 
         Returns:
-            A list of all registered flavors.
+            A list of all existing flavors.
         """
         return self.list_flavors()
 
@@ -484,10 +484,10 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
 
     @property
     def users(self) -> List[UserModel]:
-        """All registered users.
+        """All existing users.
 
         Returns:
-            A list of all registered users.
+            A list of all existing users.
         """
         return self.list_users()
 
@@ -541,10 +541,10 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
 
     @property
     def roles(self) -> List[RoleModel]:
-        """All registered roles.
+        """All existing roles.
 
         Returns:
-            A list of all registered roles.
+            A list of all existing roles.
         """
         return self.list_roles()
 

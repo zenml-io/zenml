@@ -305,7 +305,7 @@ class SqlZenStore(BaseZenStore):
     # ------
 
     @track(AnalyticsEvent.REGISTERED_STACK)
-    def register_stack(
+    def create_stack(
         self,
         stack: StackModel,
     ) -> StackModel:
@@ -500,7 +500,7 @@ class SqlZenStore(BaseZenStore):
     # ----------------
 
     @track(AnalyticsEvent.REGISTERED_STACK_COMPONENT)
-    def register_stack_component(
+    def create_stack_component(
         self,
         component: ComponentModel,
     ) -> ComponentModel:
