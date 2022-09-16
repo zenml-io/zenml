@@ -15,12 +15,14 @@
 
 import os
 from contextlib import contextmanager
-from typing import ClassVar, Iterator, Optional, Tuple
+from typing import Iterator, Optional, Tuple, Type
 
 import wandb
 
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
+    BaseExperimentTrackerConfig,
+    BaseExperimentTrackerFlavor,
 )
 from zenml.integrations.wandb import WANDB_EXPERIMENT_TRACKER_FLAVOR
 from zenml.logger import get_logger
@@ -30,6 +32,21 @@ logger = get_logger(__name__)
 
 
 WANDB_API_KEY = "WANDB_API_KEY"
+
+
+class WandbExperimentTrackerConfig(BaseExperimentTrackerConfig):
+    """Config for the Wandb experiment tracker.
+
+    Attributes:
+        entity: Name of an existing wandb entity.
+        project_name: Name of an existing wandb project to log to.
+        api_key: API key to should be authorized to log to the configured wandb
+            entity and project.
+    """
+
+    api_key: str = SecretField()
+    entity: Optional[str] = None
+    project_name: Optional[str] = None
 
 
 class WandbExperimentTracker(BaseExperimentTracker):
@@ -46,24 +63,11 @@ class WandbExperimentTracker(BaseExperimentTracker):
     def my_step(context: StepContext, ...)
         context.stack.experiment_tracker  # get the tracking_uri etc. from here
     ```
-
-    Attributes:
-        entity: Name of an existing wandb entity.
-        project_name: Name of an existing wandb project to log to.
-        api_key: API key to should be authorized to log to the configured wandb
-            entity and project.
     """
-
-    api_key: str = SecretField()
-    entity: Optional[str] = None
-    project_name: Optional[str] = None
-
-    # Class Configuration
-    FLAVOR: ClassVar[str] = WANDB_EXPERIMENT_TRACKER_FLAVOR
 
     def prepare_step_run(self) -> None:
         """Sets the wandb api key."""
-        os.environ[WANDB_API_KEY] = self.api_key
+        os.environ[WANDB_API_KEY] = self.config.api_key
 
     @contextmanager
     def activate_wandb_run(
@@ -88,16 +92,33 @@ class WandbExperimentTracker(BaseExperimentTracker):
         """
         try:
             logger.info(
-                f"Initializing wandb with project name: {self.project_name}, "
-                f"run_name: {run_name}, entity: {self.entity}."
+                "Initializing wandb with project name: "
+                f"{self.config.project_name}, run_name: {run_name}, entity: "
+                f"{self.config.entity}."
             )
             wandb.init(
-                project=self.project_name,
+                project=self.config.project_name,
                 name=run_name,
-                entity=self.entity,
+                entity=self.config.entity,
                 settings=settings,
                 tags=tags,
             )
             yield
         finally:
             wandb.finish()
+
+
+class WandbExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
+    """Flavor for the Wandb experiment tracker."""
+
+    @property
+    def name(self) -> str:
+        return WANDB_EXPERIMENT_TRACKER_FLAVOR
+
+    @property
+    def config_class(self) -> Type[WandbExperimentTrackerConfig]:
+        return WandbExperimentTrackerConfig
+
+    @property
+    def implementation_class(self) -> Type[WandbExperimentTracker]:
+        return WandbExperimentTracker
