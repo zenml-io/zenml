@@ -17,7 +17,7 @@ import os
 import shutil
 import uuid
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, Type, cast
 from uuid import UUID
 
 from pydantic import root_validator
@@ -32,7 +32,11 @@ from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentService,
 )
 from zenml.logger import get_logger
-from zenml.model_deployers.base_model_deployer import BaseModelDeployer
+from zenml.model_deployers.base_model_deployer import (
+    BaseModelDeployer,
+    BaseModelDeployerConfig,
+    BaseModelDeployerFlavor,
+)
 from zenml.repository import Repository
 from zenml.services import ServiceRegistry
 from zenml.services.local.local_service import SERVICE_DAEMON_CONFIG_FILE_NAME
@@ -45,22 +49,19 @@ from zenml.utils.io_utils import (
 logger = get_logger(__name__)
 
 
-class MLFlowModelDeployer(BaseModelDeployer):
-    """MLflow implementation of the BaseModelDeployer.
+class MLFlowModelDeployerConfig(BaseModelDeployerConfig):
+    """Configuration for the MLflow model deployer.
 
     Attributes:
         service_path: the path where the local MLflow deployment service
-        configuration, PID and log files are stored.
+            configuration, PID and log files are stored.
     """
 
     service_path: str = ""
 
-    # Class Configuration
-    FLAVOR: ClassVar[str] = MLFLOW_MODEL_DEPLOYER_FLAVOR
-
     @root_validator(skip_on_failure=True)
     def set_service_path(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Sets the service_path attribute value according to the component UUID.
+        """Sets the service_path attribute value according to the component ID.
 
         Args:
             values: the dictionary of values to be validated.
@@ -72,19 +73,20 @@ class MLFlowModelDeployer(BaseModelDeployer):
             return values
 
         # not likely to happen, due to Pydantic validation, but mypy complains
-        assert "uuid" in values
+        assert "id" in values
 
-        values["service_path"] = cls.get_service_path(values["uuid"])
+        values["service_path"] = cls.get_service_path(values["id"])
         return values
 
     @staticmethod
-    def get_service_path(uuid: uuid.UUID) -> str:
+    def get_service_path(id_: uuid.UUID) -> str:
         """Get the path where local MLflow service information is stored.
 
-        This includes the deployment service configuration, PID and log files are stored.
+        This includes the deployment service configuration, PID and log files
+        are stored.
 
         Args:
-            uuid: The UUID of the MLflow model deployer.
+            id_: The ID of the MLflow model deployer.
 
         Returns:
             The service path.
@@ -92,10 +94,14 @@ class MLFlowModelDeployer(BaseModelDeployer):
         service_path = os.path.join(
             get_global_config_directory(),
             LOCAL_STORES_DIRECTORY_NAME,
-            str(uuid),
+            str(id_),
         )
         create_dir_recursive_if_not_exists(service_path)
         return service_path
+
+
+class MLFlowModelDeployer(BaseModelDeployer):
+    """MLflow implementation of the BaseModelDeployer."""
 
     @property
     def local_path(self) -> str:
@@ -106,7 +112,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
         Returns:
             The path to the local service root directory.
         """
-        return self.service_path
+        return self.config.service_path
 
     @staticmethod
     def get_model_server_info(  # type: ignore[override]
@@ -471,3 +477,16 @@ class MLFlowModelDeployer(BaseModelDeployer):
             self._clean_up_existing_service(
                 existing_service=service, timeout=timeout, force=force
             )
+
+
+class MLFlowModelDeployerFlavor(BaseModelDeployerFlavor):
+    """Model deployer flavor for MLFlow models."""
+
+    def name(self) -> str:
+        return MLFLOW_MODEL_DEPLOYER_FLAVOR
+
+    def config_class(self) -> Type[MLFlowModelDeployerConfig]:
+        return MLFlowModelDeployerConfig
+
+    def implementation_class(self) -> Type[MLFlowModelDeployer]:
+        return MLFlowModelDeployer
