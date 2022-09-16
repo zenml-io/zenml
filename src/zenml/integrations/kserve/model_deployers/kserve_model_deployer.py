@@ -38,7 +38,10 @@ from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.stack.stack import Stack
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilderConfigMixin,
+    PipelineDockerImageBuilderMixin,
+)
 
 if TYPE_CHECKING:
     from zenml.config.docker_configuration import DockerConfiguration
@@ -49,7 +52,9 @@ logger = get_logger(__name__)
 DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT = 300
 
 
-class KServeModelDeployerConfig(BaseModelDeployerConfig):
+class KServeModelDeployerConfig(
+    BaseModelDeployerConfig, PipelineDockerImageBuilderConfigMixin
+):
     """Configuration for the KServeModelDeployer.
 
     Attributes:
@@ -78,7 +83,7 @@ class KServeModelDeployerConfig(BaseModelDeployerConfig):
     custom_domain: Optional[str]  # TODO: unused?
 
 
-class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
+class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilderMixin):
     """KServe model deployer stack component implementation."""
 
     _client: Optional[KServeClient] = None

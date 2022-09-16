@@ -70,7 +70,10 @@ from zenml.orchestrators.base_orchestrator import (
 from zenml.repository import Repository
 from zenml.stack import StackValidator
 from zenml.utils import deprecation_utils, io_utils, networking_utils
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilderConfigMixin,
+    PipelineDockerImageBuilderMixin,
+)
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
@@ -88,7 +91,9 @@ KFP_POD_LABELS = {
 }
 
 
-class KubeflowOrchestratorConfig(BaseOrchestratorConfig):
+class KubeflowOrchestratorConfig(
+    BaseOrchestratorConfig, PipelineDockerImageBuilderConfigMixin
+):
     """Configuration for the Kubeflow orchestrator.
 
     Attributes:
@@ -132,7 +137,7 @@ class KubeflowOrchestratorConfig(BaseOrchestratorConfig):
     )
 
 
-class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
+class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilderMixin):
     """Orchestrator responsible for running pipelines using Kubeflow."""
 
     @staticmethod

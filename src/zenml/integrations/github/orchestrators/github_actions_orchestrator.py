@@ -47,7 +47,10 @@ from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.stack import Stack
 from zenml.steps import BaseStep
 from zenml.utils import deprecation_utils, string_utils, yaml_utils
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilderConfigMixin,
+    PipelineDockerImageBuilderMixin,
+)
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
@@ -67,7 +70,9 @@ DOCKER_LOGIN_ACTION = "docker/login-action@v1"
 ENV_ENCODED_ZENML_PIPELINE = "ENCODED_ZENML_PIPELINE"
 
 
-class GitHubActionsOrchestratorConfig(BaseOrchestratorConfig):
+class GitHubActionsOrchestratorConfig(
+    BaseOrchestratorConfig, PipelineDockerImageBuilderConfigMixin
+):
     """Configuration for the GitHub Actions orchestrator.
 
     Attributes:
@@ -99,7 +104,9 @@ class GitHubActionsOrchestratorConfig(BaseOrchestratorConfig):
     )
 
 
-class GitHubActionsOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
+class GitHubActionsOrchestrator(
+    BaseOrchestrator, PipelineDockerImageBuilderMixin
+):
     """Orchestrator responsible for running pipelines using GitHub Actions."""
 
     _git_repo: Optional[Repo] = None

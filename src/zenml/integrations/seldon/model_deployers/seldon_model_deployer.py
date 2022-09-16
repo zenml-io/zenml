@@ -35,7 +35,10 @@ from zenml.secrets_managers import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.stack.stack import Stack
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilderConfigMixin,
+    PipelineDockerImageBuilderMixin,
+)
 
 if TYPE_CHECKING:
     from zenml.config.docker_configuration import DockerConfiguration
@@ -46,7 +49,9 @@ logger = get_logger(__name__)
 DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT = 300
 
 
-class SeldonModelDeployerConfig(BaseModelDeployerConfig):
+class SeldonModelDeployerConfig(
+    BaseModelDeployerConfig, PipelineDockerImageBuilderConfigMixin
+):
     """Config for the Seldon Model Deployer.
 
     Attributes:
@@ -76,7 +81,7 @@ class SeldonModelDeployerConfig(BaseModelDeployerConfig):
     secret: Optional[str]
 
 
-class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
+class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilderMixin):
     """Seldon Core model deployer stack component implementation."""
 
     _client: Optional[SeldonClient] = None

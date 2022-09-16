@@ -45,7 +45,8 @@ from zenml.step_operators.base_step_operator import (
 from zenml.utils import deprecation_utils
 from zenml.utils.pipeline_docker_image_builder import (
     DOCKER_IMAGE_ZENML_CONFIG_DIR,
-    PipelineDockerImageBuilder,
+    PipelineDockerImageBuilderConfigMixin,
+    PipelineDockerImageBuilderMixin,
     _include_global_config,
 )
 from zenml.utils.secret_utils import SecretField
@@ -58,7 +59,9 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class AzureMLStepOperatorConfig(BaseStepOperatorConfig):
+class AzureMLStepOperatorConfig(
+    BaseStepOperatorConfig, PipelineDockerImageBuilderConfigMixin
+):
     """Config for the AzureML step operator.
 
     Attributes:
@@ -99,7 +102,7 @@ class AzureMLStepOperatorConfig(BaseStepOperatorConfig):
     )
 
 
-class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
+class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilderMixin):
     """Step operator to run a step on AzureML.
 
     This class defines code that can set up an AzureML environment and run the

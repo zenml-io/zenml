@@ -40,8 +40,8 @@ class AuthenticationConfigMixin(BaseModel):
 class AuthenticationMixin:
     """Stack component mixin for authentication.
 
-    Any stack component that implements this should have a config that inherits
-    from `AuthenticationConfigMixin`.
+    Any stack component that implements this mixin should have a config that
+    inherits from `AuthenticationConfigMixin`.
     """
 
     def get_authentication_secret(

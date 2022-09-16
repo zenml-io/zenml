@@ -37,7 +37,10 @@ from zenml.orchestrators.base_orchestrator import (
 )
 from zenml.stack import StackValidator
 from zenml.utils import io_utils, networking_utils
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilderConfigMixin,
+    PipelineDockerImageBuilderMixin,
+)
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
@@ -51,7 +54,9 @@ logger = get_logger(__name__)
 DEFAULT_TEKTON_UI_PORT = 8080
 
 
-class TektonOrchestratorConfig(BaseOrchestratorConfig):
+class TektonOrchestratorConfig(
+    BaseOrchestratorConfig, PipelineDockerImageBuilderConfigMixin
+):
     """Configuration for the Tekton orchestrator.
 
     Attributes:
@@ -70,7 +75,7 @@ class TektonOrchestratorConfig(BaseOrchestratorConfig):
     skip_ui_daemon_provisioning: bool = False
 
 
-class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
+class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilderMixin):
     """Orchestrator responsible for running pipelines using Tekton."""
 
     def get_kubernetes_contexts(self) -> Tuple[List[str], Optional[str]]:

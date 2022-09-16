@@ -47,7 +47,10 @@ from zenml.step_operators.base_step_operator import (
     BaseStepOperatorFlavor,
 )
 from zenml.utils import deprecation_utils
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilderConfigMixin,
+    PipelineDockerImageBuilderMixin,
+)
 
 if TYPE_CHECKING:
     from zenml.config.docker_configuration import DockerConfiguration
@@ -56,7 +59,9 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class VertexStepOperatorConfig(BaseStepOperatorConfig):
+class VertexStepOperatorConfig(
+    BaseStepOperatorConfig, PipelineDockerImageBuilderConfigMixin
+):
     """Configuration for the Vertex step operator.
 
     Attributes:
@@ -106,7 +111,7 @@ class VertexStepOperatorConfig(BaseStepOperatorConfig):
 
 
 class VertexStepOperator(
-    BaseStepOperator, PipelineDockerImageBuilder, GoogleCredentialsMixin
+    BaseStepOperator, PipelineDockerImageBuilderMixin, GoogleCredentialsMixin
 ):
     """Step operator to run a step on Vertex AI.
 

@@ -61,7 +61,10 @@ from zenml.orchestrators.base_orchestrator import (
 from zenml.stack.stack_validator import StackValidator
 from zenml.utils import deprecation_utils
 from zenml.utils.io_utils import get_global_config_directory
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilderConfigMixin,
+    PipelineDockerImageBuilderMixin,
+)
 
 if TYPE_CHECKING:
     from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
@@ -86,7 +89,9 @@ def _clean_pipeline_name(pipeline_name: str) -> str:
     return pipeline_name.replace("_", "-").lower()
 
 
-class VertexOrchestratorConfig(BaseOrchestratorConfig):
+class VertexOrchestratorConfig(
+    BaseOrchestratorConfig, PipelineDockerImageBuilderConfigMixin
+):
     """Configuration for the Vertex orchestrator.
 
     Attributes:
@@ -170,7 +175,7 @@ class VertexOrchestratorConfig(BaseOrchestratorConfig):
 
 
 class VertexOrchestrator(
-    BaseOrchestrator, GoogleCredentialsMixin, PipelineDockerImageBuilder
+    BaseOrchestrator, GoogleCredentialsMixin, PipelineDockerImageBuilderMixin
 ):
     """Orchestrator responsible for running pipelines on Vertex AI."""
 

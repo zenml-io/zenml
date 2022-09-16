@@ -55,7 +55,10 @@ from zenml.orchestrators.base_orchestrator import (
 )
 from zenml.stack import StackValidator
 from zenml.utils import deprecation_utils
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilderConfigMixin,
+    PipelineDockerImageBuilderMixin,
+)
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
@@ -66,7 +69,9 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class KubernetesOrchestratorConfig(BaseOrchestratorConfig):
+class KubernetesOrchestratorConfig(
+    BaseOrchestratorConfig, PipelineDockerImageBuilderConfigMixin
+):
     """Configuration for the Kubernetes orchestrator.
 
     Attributes:
@@ -101,7 +106,7 @@ class KubernetesOrchestratorConfig(BaseOrchestratorConfig):
     )
 
 
-class KubernetesOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
+class KubernetesOrchestrator(BaseOrchestrator, PipelineDockerImageBuilderMixin):
     """Orchestrator for running ZenML pipelines using native Kubernetes."""
 
     _k8s_core_api: k8s_client.CoreV1Api = None

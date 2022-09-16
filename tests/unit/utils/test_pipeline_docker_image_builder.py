@@ -18,7 +18,7 @@ from zenml.config.docker_configuration import DockerConfiguration
 from zenml.integrations.sklearn import SKLEARN, SklearnIntegration
 from zenml.utils.pipeline_docker_image_builder import (
     DOCKER_IMAGE_ZENML_CONFIG_DIR,
-    PipelineDockerImageBuilder,
+    PipelineDockerImageBuilderMixin,
     _include_global_config,
 )
 
@@ -53,7 +53,7 @@ def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
         required_integrations=[],
         replicate_local_python_environment="pip_freeze",
     )
-    files = PipelineDockerImageBuilder._gather_requirements_files(
+    files = PipelineDockerImageBuilderMixin._gather_requirements_files(
         config, stack=local_stack
     )
     assert len(files) == 1
@@ -66,7 +66,7 @@ def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
         required_integrations=[],
         replicate_local_python_environment=None,
     )
-    files = PipelineDockerImageBuilder._gather_requirements_files(
+    files = PipelineDockerImageBuilderMixin._gather_requirements_files(
         config, stack=local_stack
     )
     assert len(files) == 1
@@ -79,7 +79,7 @@ def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
         required_integrations=[],
         replicate_local_python_environment=None,
     )
-    files = PipelineDockerImageBuilder._gather_requirements_files(
+    files = PipelineDockerImageBuilderMixin._gather_requirements_files(
         config, stack=local_stack
     )
     assert len(files) == 1
@@ -94,7 +94,7 @@ def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
         required_integrations=[SKLEARN],
         replicate_local_python_environment="pip_freeze",
     )
-    files = PipelineDockerImageBuilder._gather_requirements_files(
+    files = PipelineDockerImageBuilderMixin._gather_requirements_files(
         config, stack=local_stack
     )
     assert len(files) == 3

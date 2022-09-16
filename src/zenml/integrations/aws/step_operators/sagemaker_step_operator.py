@@ -29,7 +29,10 @@ from zenml.step_operators.base_step_operator import (
     BaseStepOperatorFlavor,
 )
 from zenml.utils import deprecation_utils
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilderConfigMixin,
+    PipelineDockerImageBuilderMixin,
+)
 
 if TYPE_CHECKING:
     from zenml.config.docker_configuration import DockerConfiguration
@@ -39,7 +42,9 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class SagemakerStepOperatorConfig(BaseStepOperatorConfig):
+class SagemakerStepOperatorConfig(
+    BaseStepOperatorConfig, PipelineDockerImageBuilderConfigMixin
+):
     """Config for the Sagemaker step operator.
 
     Attributes:
@@ -67,7 +72,7 @@ class SagemakerStepOperatorConfig(BaseStepOperatorConfig):
     )
 
 
-class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
+class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilderMixin):
     """Step operator to run a step on Sagemaker.
 
     This class defines code that builds an image with the ZenML entrypoint
