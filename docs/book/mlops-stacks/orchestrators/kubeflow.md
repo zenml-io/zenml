@@ -215,12 +215,14 @@ HTTP response body: {"error":"Invalid input error: Invalid resource references f
 namespace.","details":[{"@type":"type.googleapis.com/api.Error","error_message":"Invalid resource references for experiment. ListExperiment requires filtering by namespace.","error_details":"Invalid input error: Invalid resource references for experiment. ListExperiment requires filtering by namespace."}]}
 ```
 
-The current workaround is as follows:
+The current workaround is as follows. Please place the following code at the top of your runner script (commonly called `run.py`):
 
 ```python
 import json
 import os
 import kfp
+import os 
+from kubernetes import client as k8s_client
 
 NAMESPACE = "namespace_name"  # set this
 USERNAME = "foo"  # set this
@@ -255,7 +257,22 @@ os.remove(KFP_CONFIG)
 with open(KFP_CONFIG, 'w') as f:
     json.dump(data, f)
 
-# Continue with your normal pipeline code..
+original = KubeflowOrchestrator._configure_container_op
+
+def patch_container_op(container_op):
+    original(container_op)
+    container_op.container.add_env_variable(
+        k8s_client.V1EnvVar(name="ZENML_RUN_NAME", value="{{workflow.annotations.pipelines.kubeflow.org/run_name}}")
+    )
+
+KubeflowOrchestrator._configure_container_op = staticmethod(patch_container_op)
+
+def patch_get_run_name(self, pipeline_name):
+    return os.getenv("ZENML_RUN_NAME")
+
+KubeflowEntrypointConfiguration.get_run_name = patch_get_run_name
+
+# Continue with your normal pipeline runner code..
 ```
 
 Please note that in the above code, `HOST` should be registered on orchestration registration, 
@@ -267,6 +284,9 @@ zenml orchestrator register multi_tenant_kf --flavor=kubeflow \
    --kubeflow_hostname=$(HOST)/pipeline  # /pipeline is important!
    --other_params..
 ```
+
+Further note that the above is also currently not tested on all Kubeflow versions, so there might be further bugs with older Kubeflow versions. In this case, please reach out to us on [Slack](https://zenml.io/slack-invite).
+
 In future ZenML versions, multi-tenancy will be natively supported. See this 
 [Slack thread](https://zenml.slack.com/archives/C01FWQ5D0TT/p1662545810395779) for more details  
 on how the above workaround came to effect.
