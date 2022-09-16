@@ -22,8 +22,8 @@ if TYPE_CHECKING:
     from google.auth.credentials import Credentials
 
 
-class GoogleCredentialsMixin(BaseModel):
-    """Mixin for Google Cloud Platform credentials.
+class GoogleCredentialsConfigMixin(BaseModel):
+    """Config mixin for Google Cloud Platform credentials.
 
     Attributes:
         service_account_path: path to the service account credentials file to be
@@ -32,6 +32,10 @@ class GoogleCredentialsMixin(BaseModel):
     """
 
     service_account_path: Optional[str] = None
+
+
+class GoogleCredentialsMixin:
+    """StackComponent mixin to get Google Cloud Platform credentials."""
 
     def _get_authentication(self) -> Tuple["Credentials", str]:
         """Get GCP credentials and the project ID associated with the credentials.
@@ -44,9 +48,9 @@ class GoogleCredentialsMixin(BaseModel):
             A tuple containing the credentials and the project ID associated to
             the credentials.
         """
-        if self.service_account_path:
+        if self.config.service_account_path:
             credentials, project_id = load_credentials_from_file(
-                self.service_account_path
+                self.config.service_account_path
             )
         else:
             credentials, project_id = default()

@@ -35,6 +35,7 @@ from zenml.integrations.gcp.constants import (
     VERTEX_JOB_STATES_FAILED,
 )
 from zenml.integrations.gcp.google_credentials_mixin import (
+    GoogleCredentialsConfigMixin,
     GoogleCredentialsMixin,
 )
 from zenml.logger import get_logger
@@ -60,7 +61,9 @@ logger = get_logger(__name__)
 
 
 class VertexStepOperatorConfig(
-    BaseStepOperatorConfig, PipelineDockerImageBuilderConfigMixin
+    BaseStepOperatorConfig,
+    PipelineDockerImageBuilderConfigMixin,
+    GoogleCredentialsConfigMixin,
 ):
     """Configuration for the Vertex step operator.
 

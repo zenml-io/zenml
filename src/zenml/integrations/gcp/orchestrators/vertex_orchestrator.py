@@ -45,6 +45,7 @@ from zenml.integrations.gcp import (
     GCP_VERTEX_ORCHESTRATOR_FLAVOR,
 )
 from zenml.integrations.gcp.google_credentials_mixin import (
+    GoogleCredentialsConfigMixin,
     GoogleCredentialsMixin,
 )
 from zenml.integrations.gcp.orchestrators.vertex_entrypoint_configuration import (
@@ -90,7 +91,9 @@ def _clean_pipeline_name(pipeline_name: str) -> str:
 
 
 class VertexOrchestratorConfig(
-    BaseOrchestratorConfig, PipelineDockerImageBuilderConfigMixin
+    BaseOrchestratorConfig,
+    PipelineDockerImageBuilderConfigMixin,
+    GoogleCredentialsConfigMixin,
 ):
     """Configuration for the Vertex orchestrator.
 
