@@ -1278,3 +1278,160 @@ def test_get_stack_component(
     component_id = list(components.values())[0][0]
     with does_not_raise():
         sql_store["store"].get_stack_component(stack_component_id=component_id)
+
+
+def test_get_stack_component_fails_when_component_does_not_exist(
+    sql_store: BaseZenStore,
+):
+    """Tests getting stack component fails when component does not exist."""
+    with pytest.raises(KeyError):
+        sql_store["store"].get_stack_component(stack_component_id=uuid.uuid4())
+
+
+def test_list_stack_components_succeeds(
+    sql_store: BaseZenStore,
+):
+    """Tests listing stack components."""
+    stack_components = sql_store["store"].list_stack_components(
+        project_name_or_id=sql_store["default_project"].name
+    )
+    assert len(stack_components) == 2
+    component_types = [component.type for component in stack_components]
+    assert StackComponentType.ORCHESTRATOR in component_types
+    assert StackComponentType.ARTIFACT_STORE in component_types
+
+
+def test_list_stack_components_fails_when_project_does_not_exist(
+    sql_store: BaseZenStore,
+):
+    """Tests listing stack components fails when project does not exist."""
+    with pytest.raises(KeyError):
+        sql_store["store"].list_stack_components(
+            project_name_or_id=uuid.uuid4()
+        )
+
+
+def test_list_stack_components_works_with_filters(
+    sql_store: BaseZenStore,
+):
+    """Tests listing stack components works with filters."""
+    artifact_stores = sql_store["store"].list_stack_components(
+        project_name_or_id=sql_store["default_project"].name,
+        component_type=StackComponentType.ARTIFACT_STORE,
+    )
+    assert len(artifact_stores) == 1
+    assert artifact_stores[0].type == StackComponentType.ARTIFACT_STORE
+
+    orchestrators = sql_store["store"].list_stack_components(
+        project_name_or_id=sql_store["default_project"].name,
+        component_type=StackComponentType.ORCHESTRATOR,
+    )
+    assert len(orchestrators) == 1
+    assert orchestrators[0].type == StackComponentType.ORCHESTRATOR
+
+
+def test_list_stack_components_lists_nothing_for_nonexistent_filters(
+    sql_store: BaseZenStore,
+):
+    """Tests listing stack components lists nothing for nonexistent filters."""
+    flavor_filtered = sql_store["store"].list_stack_components(
+        project_name_or_id=sql_store["default_project"].name,
+        flavor="nonexistent",
+    )
+    assert len(flavor_filtered) == 0
+
+    user_filtered = sql_store["store"].list_stack_components(
+        project_name_or_id=sql_store["default_project"].name,
+        user_name_or_id=uuid.uuid4(),
+    )
+    assert len(user_filtered) == 0
+
+    name_filtered = sql_store["store"].list_stack_components(
+        project_name_or_id=sql_store["default_project"].name,
+        name="nonexistent",
+    )
+    assert len(name_filtered) == 0
+
+
+def test_update_stack_component_succeeds(
+    sql_store: BaseZenStore,
+):
+    """Tests updating stack component."""
+    updated_orchestrator_name = "blupus"
+    orchestrator = sql_store["store"].list_stack_components(
+        project_name_or_id=sql_store["default_project"].name,
+        component_type=StackComponentType.ORCHESTRATOR,
+    )[0]
+    orchestrator.name = updated_orchestrator_name
+    with does_not_raise():
+        sql_store["store"].update_stack_component(stack_component=orchestrator)
+        updated_stack_component = sql_store["store"].get_stack_component(
+            stack_component_id=orchestrator.id
+        )
+        assert updated_stack_component.name == updated_orchestrator_name
+
+
+def test_update_stack_component_fails_when_component_does_not_exist(
+    sql_store: BaseZenStore,
+):
+    """Tests updating stack component fails when component does not exist."""
+    stack_component = ComponentModel(
+        id=uuid.uuid4(),
+        name="nonexistent",
+        type=StackComponentType.ORCHESTRATOR,
+        flavor="default",
+        configuration={},
+        project=sql_store["default_project"],
+        user=sql_store["active_user"],
+    )
+    with pytest.raises(KeyError):
+        sql_store["store"].update_stack_component(
+            stack_component=stack_component
+        )
+
+
+def test_delete_stack_component_succeeds(
+    sql_store: BaseZenStore,
+):
+    """Tests deleting stack component."""
+    stack_component_name = "arias_cat_detection_orchestrator"
+    stack_component = ComponentModel(
+        name=stack_component_name,
+        type=StackComponentType.ORCHESTRATOR,
+        flavor="default",
+        configuration={},
+        project=sql_store["default_project"],
+        user=sql_store["active_user"],
+    )
+    sql_store["store"].create_stack_component(stack_component=stack_component)
+    created_stack_component_id = (
+        sql_store["store"]
+        .get_stack_component(stack_component_id=stack_component.id)
+        .id
+    )
+    orchestrators = sql_store["store"].list_stack_components(
+        project_name_or_id=sql_store["default_project"].name,
+        type=StackComponentType.ORCHESTRATOR,
+    )
+    assert len(orchestrators) == 2
+    with does_not_raise():
+        sql_store["store"].delete_stack_component(
+            component_id=created_stack_component_id
+        )
+        orchestrators = sql_store["store"].list_stack_components(
+            project_name_or_id=sql_store["default_project"].name,
+            type=StackComponentType.ORCHESTRATOR,
+        )
+        assert len(orchestrators) == 1
+    with pytest.raises(KeyError):
+        assert sql_store["store"].get_stack_component(
+            stack_component_id=stack_component.id
+        )
+
+
+def test_delete_stack_component_fails_when_component_does_not_exist(
+    sql_store: BaseZenStore,
+):
+    """Tests deleting stack component fails when component does not exist."""
+    with pytest.raises(KeyError):
+        sql_store["store"].delete_stack_component(component_id=uuid.uuid4())
