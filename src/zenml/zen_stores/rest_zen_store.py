@@ -249,7 +249,7 @@ class RestZenStore(BaseZenStore):
     # Stacks
     # ------
 
-    def register_stack(
+    def create_stack(
         self,
         stack: StackModel,
     ) -> StackModel:
@@ -360,7 +360,7 @@ class RestZenStore(BaseZenStore):
     # Stack components
     # ----------------
 
-    def register_stack_component(
+    def create_stack_component(
         self,
         component: ComponentModel,
     ) -> ComponentModel:

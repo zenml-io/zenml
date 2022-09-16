@@ -637,7 +637,7 @@ class Repository(metaclass=RepositoryMetaClass):
             RuntimeError: If the stack configuration is invalid.
         """
         if stack.is_valid:
-            created_stack = self.zen_store.register_stack(
+            created_stack = self.zen_store.create_stack(
                 stack=stack,
             )
             return created_stack
@@ -794,7 +794,7 @@ class Repository(metaclass=RepositoryMetaClass):
 
         # TODO: [server] this uses the implementation rather than the model
 
-        self.zen_store.register_stack_component(
+        self.zen_store.create_stack_component(
             component=ComponentModel.from_component(component),
         )
         if component.post_registration_message:

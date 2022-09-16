@@ -49,7 +49,7 @@ class ZenStoreInterface(ABC):
        that operate on the resources in that category. The order of the methods
        in each category should be:
 
-       * create/register methods - store a new resource. These methods
+       * create methods - store a new resource. These methods
          should fill in generated fields (e.g. UUIDs, creation timestamps) in
          the resource and return the updated resource.
        * get methods - retrieve a single existing resource identified by a
@@ -198,17 +198,17 @@ class ZenStoreInterface(ABC):
     # ------
 
     @abstractmethod
-    def register_stack(
+    def create_stack(
         self,
         stack: StackModel,
     ) -> StackModel:
-        """Register a new stack.
+        """Create a new stack.
 
         Args:
-            stack: The stack to register.
+            stack: The stack to create.
 
         Returns:
-            The registered stack.
+            The created stack.
 
         Raises:
             StackExistsError: If a stack with the same name is already owned
@@ -287,7 +287,7 @@ class ZenStoreInterface(ABC):
     # ----------------
 
     @abstractmethod
-    def register_stack_component(
+    def create_stack_component(
         self,
         component: ComponentModel,
     ) -> ComponentModel:

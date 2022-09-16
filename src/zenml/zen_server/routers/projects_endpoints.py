@@ -224,7 +224,7 @@ async def create_stack(
         user=auth_context.user.id,
     )
 
-    created_stack = zen_store.register_stack(stack=full_stack)
+    created_stack = zen_store.create_stack(stack=full_stack)
     if hydrated:
         return created_stack.to_hydrated_model()
     else:
@@ -304,7 +304,7 @@ async def create_stack_component(
     project = zen_store.get_project(parse_name_or_uuid(project_name_or_id))
     component.project = project.id
     component.user = auth_context.user.id
-    created_component = zen_store.register_stack_component(
+    created_component = zen_store.create_stack_component(
         component=component,
     )
     if hydrated:

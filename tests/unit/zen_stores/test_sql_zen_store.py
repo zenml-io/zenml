@@ -577,7 +577,7 @@ def test_register_stack_succeeds(
     """Tests registering stack."""
     new_stack = StackModel(name="arias_stack", components={})
     # TODO: [server] inject user and project into stack as well
-    sql_store["store"].register_stack(
+    sql_store["store"].create_stack(
         stack=new_stack,
     )
     stacks = sql_store["store"].list_stacks(DEFAULT_NAME)
@@ -592,7 +592,7 @@ def test_register_stack_fails_when_stack_exists(
     new_stack = StackModel(name=DEFAULT_NAME, components={})
     with pytest.raises(StackExistsError):
         # TODO: [server] inject user and project into stack as well
-        sql_store["store"].register_stack(
+        sql_store["store"].create_stack(
             stack=new_stack,
         )
 
@@ -650,7 +650,7 @@ def test_deleting_a_stack_succeeds(
     """Tests deleting stack."""
     # TODO: [server] inject user and project into stack as well
     new_stack = StackModel(name="arias_stack", components={})
-    sql_store["store"].register_stack(
+    sql_store["store"].create_stack(
         stack=new_stack,
     )
     stacks = sql_store["store"].list_stacks(project_name_or_id=DEFAULT_NAME)
