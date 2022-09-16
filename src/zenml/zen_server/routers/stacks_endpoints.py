@@ -43,6 +43,7 @@ router = APIRouter(
 async def list_stacks(
     project_name_or_id: Optional[str] = None,
     user_name_or_id: Optional[str] = None,
+    component_id: Optional[str] = None,
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
     hydrated: bool = False,
@@ -52,6 +53,7 @@ async def list_stacks(
     Args:
         project_name_or_id: Name or ID of the project
         user_name_or_id: Optionally filter by name or ID of the user.
+        component_id: Optionally filter by component that is part of the stack.
         name: Optionally filter by stack name
         is_shared: Optionally filter by shared status of the stack
         hydrated: Defines if stack components, users and projects will be

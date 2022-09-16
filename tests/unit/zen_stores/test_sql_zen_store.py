@@ -18,8 +18,21 @@ from contextlib import ExitStack as does_not_raise
 
 import pytest
 
-from zenml.exceptions import EntityExistsError, StackExistsError
-from zenml.models import ProjectModel, RoleModel, TeamModel, UserModel
+from zenml.constants import TEST_STEP_INPUT_INT
+from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.exceptions import (
+    EntityExistsError,
+    StackComponentExistsError,
+    StackExistsError,
+)
+from zenml.models import (
+    ComponentModel,
+    FlavorModel,
+    ProjectModel,
+    RoleModel,
+    TeamModel,
+    UserModel,
+)
 from zenml.models.pipeline_models import PipelineModel, PipelineRunModel
 from zenml.models.stack_models import StackModel
 from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -1046,3 +1059,480 @@ def test_list_runs_succeeds(
         runs = sql_store["store"].list_runs()
         assert len(runs) == 1
         assert runs[0].name == "arias_pipeline_run"
+
+
+def test_list_runs_returns_nothing_when_no_runs_exist(
+    sql_store: BaseZenStore,
+):
+    """Tests listing runs returns nothing when no runs exist."""
+    runs = sql_store["store"].list_runs()
+    assert len(runs) == 0
+
+    false_project_runs = sql_store["store"].list_runs(
+        project_name_or_id=uuid.uuid4()
+    )
+    assert len(false_project_runs) == 0
+
+    false_stack_runs = sql_store["store"].list_runs(stack_id=uuid.uuid4())
+    assert len(false_stack_runs) == 0
+
+    false_run_name_runs = sql_store["store"].list_runs(run_name="not_arias_run")
+    assert len(false_run_name_runs) == 0
+
+    false_user_runs = sql_store["store"].list_runs(user_name_or_id=uuid.uuid4())
+    assert len(false_user_runs) == 0
+
+    false_pipeline_runs = sql_store["store"].list_runs(pipeline_id=uuid.uuid4())
+    assert len(false_pipeline_runs) == 0
+
+
+def test_update_run_succeeds(
+    sql_store: BaseZenStore,
+):
+    """Tests updating run."""
+    pipeline_run = PipelineRunModel(
+        name="arias_pipeline_run",
+    )
+    sql_store["store"].create_run(pipeline_run=pipeline_run)
+    run_id = sql_store["store"].list_runs()[0].id
+    run = sql_store["store"].get_run(run_id=run_id)
+    run.name = "updated_arias_run"
+    with does_not_raise():
+        sql_store["store"].update_run(run=run)
+        updated_run = sql_store["store"].get_run(run_id=run_id)
+        assert updated_run.name == "updated_arias_run"
+
+
+def test_update_run_fails_when_run_does_not_exist(
+    sql_store: BaseZenStore,
+):
+    """Tests updating run fails when run does not exist."""
+    pipeline_run = PipelineRunModel(
+        name="arias_pipeline_run",
+    )
+    with pytest.raises(KeyError):
+        sql_store["store"].update_run(run=pipeline_run)
+
+
+def test_delete_run_succeeds(
+    sql_store: BaseZenStore,
+):
+    """Tests deleting run."""
+    pipeline_run = PipelineRunModel(
+        name="arias_pipeline_run",
+    )
+    sql_store["store"].create_run(pipeline_run=pipeline_run)
+    run_id = sql_store["store"].list_runs()[0].id
+    with does_not_raise():
+        sql_store["store"].delete_run(run_id=run_id)
+        assert len(sql_store["store"].list_runs()) == 0
+    with pytest.raises(KeyError):
+        sql_store["store"].get_run(run_id=run_id)
+
+
+# ------------------
+# Pipeline run steps
+# ------------------
+
+
+def test_get_run_step_succeeds(
+    sql_store_with_run: BaseZenStore,
+):
+    """Tests getting run step."""
+    pipeline_step = sql_store_with_run["step"]
+    run_step = sql_store_with_run["store"].get_run_step(
+        step_id=pipeline_step.id
+    )
+    assert run_step is not None
+    assert run_step.id == pipeline_step.id
+    assert run_step == pipeline_step
+
+
+def test_get_run_step_fails_when_step_does_not_exist(
+    sql_store: BaseZenStore,
+):
+    """Tests getting run step fails when step does not exist."""
+    with pytest.raises(KeyError):
+        sql_store["store"].get_run_step(step_id=uuid.uuid4())
+
+
+def test_get_run_step_outputs_succeeds(
+    sql_store_with_run: BaseZenStore,
+):
+    """Tests getting run step outputs."""
+    pipeline_step = sql_store_with_run["step"]
+    run_step_outputs = sql_store_with_run["store"].get_run_step_outputs(
+        step_id=pipeline_step.id
+    )
+    assert run_step_outputs is not None
+    assert run_step_outputs == pipeline_step.outputs
+    assert list(run_step_outputs.values())[0] == TEST_STEP_INPUT_INT
+
+
+def test_get_run_step_outputs_fails_when_step_does_not_exist(
+    sql_store: BaseZenStore,
+):
+    """Tests getting run step outputs fails when step does not exist."""
+    with pytest.raises(KeyError):
+        sql_store["store"].get_run_step_outputs(step_id=uuid.uuid4())
+
+
+def test_get_run_step_inputs_succeeds(
+    sql_store_with_run: BaseZenStore,
+):
+    """Tests getting run step inputs."""
+    pipeline_step = sql_store_with_run["step"]
+    run_step_inputs = sql_store_with_run["store"].get_run_step_inputs(
+        step_id=pipeline_step.id
+    )
+    assert run_step_inputs is not None
+    assert run_step_inputs == pipeline_step.inputs
+    assert list(run_step_inputs.values())[0] == TEST_STEP_INPUT_INT
+
+
+def test_get_run_step_inputs_fails_when_step_does_not_exist(
+    sql_store: BaseZenStore,
+):
+    """Tests getting run step inputs fails when step does not exist."""
+    with pytest.raises(KeyError):
+        sql_store["store"].get_run_step_inputs(step_id=uuid.uuid4())
+
+
+def test_get_run_step_status_succeeds(
+    sql_store_with_run: BaseZenStore,
+):
+    """Tests getting run step status."""
+    pipeline_step = sql_store_with_run["step"]
+    run_step_status = sql_store_with_run["store"].get_run_step_status(
+        step_id=pipeline_step.id
+    )
+    assert run_step_status is not None
+    assert run_step_status == pipeline_step.status
+    assert isinstance(run_step_status, ExecutionStatus)
+    assert run_step_status == ExecutionStatus.COMPLETED
+
+
+def test_list_run_steps_succeeds(
+    sql_store_with_run: BaseZenStore,
+):
+    """Tests listing run steps."""
+    run_steps = sql_store_with_run["store"].list_run_steps(
+        run_id=sql_store_with_run["run"].id
+    )
+    assert len(run_steps) == 1
+    assert run_steps[0] == sql_store_with_run["step"]
+
+
+# ----------------
+# Stack components
+# ----------------
+
+
+def test_create_stack_component_succeeds(
+    sql_store: BaseZenStore,
+):
+    """Tests creating stack component."""
+    stack_component_name = "arias_cat_detection_orchestrator"
+    stack_component = ComponentModel(
+        name=stack_component_name,
+        type=StackComponentType.ORCHESTRATOR,
+        flavor="default",
+        configuration={},
+        project=sql_store["default_project"],
+        user=sql_store["active_user"],
+    )
+    with does_not_raise():
+        sql_store["store"].create_stack_component(
+            stack_component=stack_component
+        )
+        created_stack_component = sql_store["store"].get_stack_component(
+            stack_component_id=stack_component.id
+        )
+        assert created_stack_component.name == stack_component_name
+
+
+def test_create_component_fails_when_same_name(
+    sql_store: BaseZenStore,
+):
+    """Tests creating component fails when same name."""
+    stack_component_name = "default"
+    stack_component = ComponentModel(
+        name=stack_component_name,
+        type=StackComponentType.ORCHESTRATOR,
+        flavor="default",
+        configuration={},
+        project=sql_store["default_project"],
+        user=sql_store["active_user"],
+    )
+    sql_store["store"].create_stack_component(stack_component=stack_component)
+    with pytest.raises(StackComponentExistsError):
+        sql_store["store"].create_stack_component(
+            stack_component=stack_component
+        )
+
+
+def test_get_stack_component(
+    sql_store: BaseZenStore,
+):
+    """Tests getting stack component."""
+    components = sql_store["default_stack"].components
+    component_id = list(components.values())[0][0]
+    with does_not_raise():
+        sql_store["store"].get_stack_component(stack_component_id=component_id)
+
+
+def test_get_stack_component_fails_when_component_does_not_exist(
+    sql_store: BaseZenStore,
+):
+    """Tests getting stack component fails when component does not exist."""
+    with pytest.raises(KeyError):
+        sql_store["store"].get_stack_component(stack_component_id=uuid.uuid4())
+
+
+def test_list_stack_components_succeeds(
+    sql_store: BaseZenStore,
+):
+    """Tests listing stack components."""
+    stack_components = sql_store["store"].list_stack_components(
+        project_name_or_id=sql_store["default_project"].name
+    )
+    assert len(stack_components) == 2
+    component_types = [component.type for component in stack_components]
+    assert StackComponentType.ORCHESTRATOR in component_types
+    assert StackComponentType.ARTIFACT_STORE in component_types
+
+
+def test_list_stack_components_fails_when_project_does_not_exist(
+    sql_store: BaseZenStore,
+):
+    """Tests listing stack components fails when project does not exist."""
+    with pytest.raises(KeyError):
+        sql_store["store"].list_stack_components(
+            project_name_or_id=uuid.uuid4()
+        )
+
+
+def test_list_stack_components_works_with_filters(
+    sql_store: BaseZenStore,
+):
+    """Tests listing stack components works with filters."""
+    artifact_stores = sql_store["store"].list_stack_components(
+        project_name_or_id=sql_store["default_project"].name,
+        component_type=StackComponentType.ARTIFACT_STORE,
+    )
+    assert len(artifact_stores) == 1
+    assert artifact_stores[0].type == StackComponentType.ARTIFACT_STORE
+
+    orchestrators = sql_store["store"].list_stack_components(
+        project_name_or_id=sql_store["default_project"].name,
+        component_type=StackComponentType.ORCHESTRATOR,
+    )
+    assert len(orchestrators) == 1
+    assert orchestrators[0].type == StackComponentType.ORCHESTRATOR
+
+
+def test_list_stack_components_lists_nothing_for_nonexistent_filters(
+    sql_store: BaseZenStore,
+):
+    """Tests listing stack components lists nothing for nonexistent filters."""
+    flavor_filtered = sql_store["store"].list_stack_components(
+        project_name_or_id=sql_store["default_project"].name,
+        flavor="nonexistent",
+    )
+    assert len(flavor_filtered) == 0
+
+    user_filtered = sql_store["store"].list_stack_components(
+        project_name_or_id=sql_store["default_project"].name,
+        user_name_or_id=uuid.uuid4(),
+    )
+    assert len(user_filtered) == 0
+
+    name_filtered = sql_store["store"].list_stack_components(
+        project_name_or_id=sql_store["default_project"].name,
+        name="nonexistent",
+    )
+    assert len(name_filtered) == 0
+
+
+def test_update_stack_component_succeeds(
+    sql_store: BaseZenStore,
+):
+    """Tests updating stack component."""
+    updated_orchestrator_name = "blupus"
+    orchestrator = sql_store["store"].list_stack_components(
+        project_name_or_id=sql_store["default_project"].name,
+        component_type=StackComponentType.ORCHESTRATOR,
+    )[0]
+    orchestrator.name = updated_orchestrator_name
+    with does_not_raise():
+        sql_store["store"].update_stack_component(stack_component=orchestrator)
+        updated_stack_component = sql_store["store"].get_stack_component(
+            stack_component_id=orchestrator.id
+        )
+        assert updated_stack_component.name == updated_orchestrator_name
+
+
+def test_update_stack_component_fails_when_component_does_not_exist(
+    sql_store: BaseZenStore,
+):
+    """Tests updating stack component fails when component does not exist."""
+    stack_component = ComponentModel(
+        id=uuid.uuid4(),
+        name="nonexistent",
+        type=StackComponentType.ORCHESTRATOR,
+        flavor="default",
+        configuration={},
+        project=sql_store["default_project"],
+        user=sql_store["active_user"],
+    )
+    with pytest.raises(KeyError):
+        sql_store["store"].update_stack_component(
+            stack_component=stack_component
+        )
+
+
+def test_delete_stack_component_succeeds(
+    sql_store: BaseZenStore,
+):
+    """Tests deleting stack component."""
+    stack_component_name = "arias_cat_detection_orchestrator"
+    stack_component = ComponentModel(
+        name=stack_component_name,
+        type=StackComponentType.ORCHESTRATOR,
+        flavor="default",
+        configuration={},
+        project=sql_store["default_project"],
+        user=sql_store["active_user"],
+    )
+    sql_store["store"].create_stack_component(stack_component=stack_component)
+    created_stack_component_id = (
+        sql_store["store"]
+        .get_stack_component(stack_component_id=stack_component.id)
+        .id
+    )
+    orchestrators = sql_store["store"].list_stack_components(
+        project_name_or_id=sql_store["default_project"].name,
+        type=StackComponentType.ORCHESTRATOR,
+    )
+    assert len(orchestrators) == 2
+    with does_not_raise():
+        sql_store["store"].delete_stack_component(
+            component_id=created_stack_component_id
+        )
+        orchestrators = sql_store["store"].list_stack_components(
+            project_name_or_id=sql_store["default_project"].name,
+            type=StackComponentType.ORCHESTRATOR,
+        )
+        assert len(orchestrators) == 1
+    with pytest.raises(KeyError):
+        assert sql_store["store"].get_stack_component(
+            stack_component_id=stack_component.id
+        )
+
+
+def test_delete_stack_component_fails_when_component_does_not_exist(
+    sql_store: BaseZenStore,
+):
+    """Tests deleting stack component fails when component does not exist."""
+    with pytest.raises(KeyError):
+        sql_store["store"].delete_stack_component(component_id=uuid.uuid4())
+
+
+# -----------------------
+# Stack component flavors
+# -----------------------
+
+
+def test_create_stack_component_flavor_succeeds(
+    sql_store: BaseZenStore,
+):
+    """Tests creating stack component flavor."""
+    flavor_name = "blupus"
+    blupus_flavor = FlavorModel(
+        name=flavor_name,
+        type=StackComponentType.ORCHESTRATOR,
+        source=".",
+    )
+    with does_not_raise():
+        sql_store["store"].create_flavor(flavor=blupus_flavor)
+        blupus_flavor_id = sql_store["store"].list_flavors(
+            project_name_or_id=sql_store["default_project"].name,
+            component_type=StackComponentType.ORCHESTRATOR,
+            name=flavor_name,
+        )
+        created_flavor = sql_store["store"].get_flavor(
+            flavor_id=blupus_flavor_id
+        )
+        assert created_flavor.name == flavor_name
+
+
+def test_create_stack_component_fails_when_flavor_already_exists(
+    sql_store: BaseZenStore,
+):
+    """Tests creating stack component flavor fails when flavor already exists."""
+    flavor_name = "default"
+    default_flavor = FlavorModel(
+        name=flavor_name,
+        type=StackComponentType.ORCHESTRATOR,
+        source=".",
+    )
+    with pytest.raises(EntityExistsError):
+        sql_store["store"].create_flavor(flavor=default_flavor)
+
+
+def test_get_flavor_succeeds(
+    sql_store: BaseZenStore,
+):
+    """Tests getting stack component flavor."""
+    flavor_name = "default"
+    default_flavor_id = (
+        sql_store["store"]
+        .list_flavors(
+            project_name_or_id=sql_store["default_project"].name,
+            component_type=StackComponentType.ORCHESTRATOR,
+            name=flavor_name,
+        )[0]
+        .id
+    )
+    with does_not_raise():
+        assert (
+            sql_store["store"].get_flavor(flavor_id=default_flavor_id).name
+            == flavor_name
+        )
+
+
+def test_get_flavor_fails_when_flavor_does_not_exist(
+    sql_store: BaseZenStore,
+):
+    """Tests getting stack component flavor fails when flavor does not exist."""
+    with pytest.raises(KeyError):
+        sql_store["store"].get_flavor(flavor_id=uuid.uuid4())
+
+
+def test_list_flavors_succeeds(
+    sql_store: BaseZenStore,
+):
+    """Tests listing stack component flavors."""
+    flavor_name = "default"
+    with does_not_raise():
+        assert (
+            sql_store["store"]
+            .list_flavors(
+                project_name_or_id=sql_store["default_project"].name,
+                component_type=StackComponentType.ORCHESTRATOR,
+                name=flavor_name,
+            )[0]
+            .name
+            == flavor_name
+        )
+
+
+def test_list_flavors_fails_with_nonexistent_project(
+    sql_store: BaseZenStore,
+):
+    """Tests listing stack component flavors fails with nonexistent project."""
+    with pytest.raises(KeyError):
+        sql_store["store"].list_flavors(
+            project_name_or_id="nonexistent",
+            component_type=StackComponentType.ORCHESTRATOR,
+        )

@@ -32,11 +32,11 @@ from zenml.models import (
     StackModel,
 )
 from zenml.models.component_models import HydratedComponentModel
-from zenml.models.pipeline_models import HydratedPipelineModel
 from zenml.models.stack_models import HydratedStackModel
 from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.models import CreatePipelineRequest
+from zenml.zen_server.models.pipeline_models import HydratedPipelineModel
 from zenml.zen_server.models.projects_models import (
     CreateProjectRequest,
     UpdateProjectRequest,
@@ -163,6 +163,7 @@ async def delete_project(project_name_or_id: str) -> None:
 async def list_project_stacks(
     project_name_or_id: str,
     user_name_or_id: Optional[str] = None,
+    component_id: Optional[str] = None,
     stack_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
     hydrated: bool = False,
@@ -174,6 +175,7 @@ async def list_project_stacks(
     Args:
         project_name_or_id: Name or ID of the project.
         user_name_or_id: Optionally filter by name or ID of the user.
+        component_id: Optionally filter by component that is part of the stack.
         stack_name: Optionally filter by stack name
         is_shared: Optionally filter by shared status of the stack
         hydrated: Defines if stack components, users and projects will be
@@ -372,7 +374,7 @@ async def create_flavor(
 
 @router.get(
     "/{project_name_or_id}" + PIPELINES,
-    response_model=Union[List[PipelineModel], List[HydratedPipelineModel]],
+    response_model=Union[List[HydratedPipelineModel], List[PipelineModel]],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -381,7 +383,7 @@ async def list_project_pipelines(
     user_name_or_id: Optional[str] = None,
     name: Optional[str] = None,
     hydrated: bool = False,
-) -> Union[List[PipelineModel], List[HydratedPipelineModel]]:
+) -> Union[List[HydratedPipelineModel], List[PipelineModel]]:
     """Gets pipelines defined for a specific project.
 
     # noqa: DAR401
@@ -402,14 +404,17 @@ async def list_project_pipelines(
         name=name,
     )
     if hydrated:
-        return [pipeline.to_hydrated_model() for pipeline in pipelines_list]
+        return [
+            HydratedPipelineModel.from_model(pipeline)
+            for pipeline in pipelines_list
+        ]
     else:
         return pipelines_list
 
 
 @router.post(
     "/{project_name_or_id}" + PIPELINES,
-    response_model=Union[PipelineModel, HydratedPipelineModel],
+    response_model=Union[HydratedPipelineModel, PipelineModel],
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -418,7 +423,7 @@ async def create_pipeline(
     pipeline: CreatePipelineRequest,
     hydrated: bool = False,
     auth_context: AuthContext = Depends(authorize),
-) -> Union[PipelineModel, HydratedPipelineModel]:
+) -> Union[HydratedPipelineModel, PipelineModel]:
     """Creates a pipeline.
 
     Args:
@@ -438,6 +443,6 @@ async def create_pipeline(
     )
     created_pipeline = zen_store.create_pipeline(pipeline=pipeline)
     if hydrated:
-        return created_pipeline.to_hydrated_model()
+        return HydratedPipelineModel.from_model(created_pipeline)
     else:
         return created_pipeline
