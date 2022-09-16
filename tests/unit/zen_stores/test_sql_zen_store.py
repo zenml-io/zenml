@@ -18,6 +18,8 @@ from contextlib import ExitStack as does_not_raise
 
 import pytest
 
+from zenml.constants import TEST_STEP_INPUT_INT
+from zenml.enums import ExecutionStatus
 from zenml.exceptions import EntityExistsError, StackExistsError
 from zenml.models import ProjectModel, RoleModel, TeamModel, UserModel
 from zenml.models.pipeline_models import PipelineModel, PipelineRunModel
@@ -1115,3 +1117,101 @@ def test_delete_run_succeeds(
         assert len(sql_store["store"].list_runs()) == 0
     with pytest.raises(KeyError):
         sql_store["store"].get_run(run_id=run_id)
+
+
+# ------------------
+# Pipeline run steps
+# ------------------
+
+
+def test_get_run_step_succeeds(
+    sql_store_with_run: BaseZenStore,
+):
+    """Tests getting run step."""
+    pipeline_step = sql_store_with_run["step"]
+    run_step = sql_store_with_run["store"].get_run_step(
+        step_id=pipeline_step.id
+    )
+    assert run_step is not None
+    assert run_step.id == pipeline_step.id
+    assert run_step == pipeline_step
+
+
+def test_get_run_step_fails_when_step_does_not_exist(
+    sql_store: BaseZenStore,
+):
+    """Tests getting run step fails when step does not exist."""
+    with pytest.raises(KeyError):
+        sql_store["store"].get_run_step(step_id=uuid.uuid4())
+
+
+def test_get_run_step_outputs_succeeds(
+    sql_store_with_run: BaseZenStore,
+):
+    """Tests getting run step outputs."""
+    pipeline_step = sql_store_with_run["step"]
+    run_step_outputs = sql_store_with_run["store"].get_run_step_outputs(
+        step_id=pipeline_step.id
+    )
+    assert run_step_outputs is not None
+    assert run_step_outputs == pipeline_step.outputs
+    assert list(run_step_outputs.values())[0] == TEST_STEP_INPUT_INT
+
+
+def test_get_run_step_outputs_fails_when_step_does_not_exist(
+    sql_store: BaseZenStore,
+):
+    """Tests getting run step outputs fails when step does not exist."""
+    with pytest.raises(KeyError):
+        sql_store["store"].get_run_step_outputs(step_id=uuid.uuid4())
+
+
+def test_get_run_step_inputs_succeeds(
+    sql_store_with_run: BaseZenStore,
+):
+    """Tests getting run step inputs."""
+    pipeline_step = sql_store_with_run["step"]
+    run_step_inputs = sql_store_with_run["store"].get_run_step_inputs(
+        step_id=pipeline_step.id
+    )
+    assert run_step_inputs is not None
+    assert run_step_inputs == pipeline_step.inputs
+    assert list(run_step_inputs.values())[0] == TEST_STEP_INPUT_INT
+
+
+def test_get_run_step_inputs_fails_when_step_does_not_exist(
+    sql_store: BaseZenStore,
+):
+    """Tests getting run step inputs fails when step does not exist."""
+    with pytest.raises(KeyError):
+        sql_store["store"].get_run_step_inputs(step_id=uuid.uuid4())
+
+
+def test_get_run_step_status_succeeds(
+    sql_store_with_run: BaseZenStore,
+):
+    """Tests getting run step status."""
+    pipeline_step = sql_store_with_run["step"]
+    run_step_status = sql_store_with_run["store"].get_run_step_status(
+        step_id=pipeline_step.id
+    )
+    assert run_step_status is not None
+    assert run_step_status == pipeline_step.status
+    assert isinstance(run_step_status, ExecutionStatus)
+    assert run_step_status == ExecutionStatus.COMPLETED
+
+
+def test_list_run_steps_succeeds(
+    sql_store_with_run: BaseZenStore,
+):
+    """Tests listing run steps."""
+    run_steps = sql_store_with_run["store"].list_run_steps(
+        run_id=sql_store_with_run["run"].id
+    )
+    assert len(run_steps) == 1
+    assert run_steps[0] == sql_store_with_run["step"]
+
+
+# ----------------
+# Stack components
+# ----------------
