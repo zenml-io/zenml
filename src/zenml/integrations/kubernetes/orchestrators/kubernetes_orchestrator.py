@@ -197,8 +197,7 @@ class KubernetesOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                     )
 
             # Check that all stack components are non-local.
-            for stack_comps in stack.components.values():
-                stack_component = stack_comps[0]
+            for stack_component in stack.components.values():
                 if stack_component.local_path:
                     return False, (
                         f"The Kubernetes orchestrator currently only supports "

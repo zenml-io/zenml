@@ -268,8 +268,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 # go through all stack components and identify those that
                 # advertise a local path where they persist information that
                 # they need to be available when running pipelines.
-                for stack_comps in stack.components.values():
-                    stack_component = stack_comps[0]
+                for stack_component in stack.components.values():
                     local_path = stack_component.local_path
                     if not local_path:
                         continue
@@ -428,10 +427,8 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         # available when running pipelines. For those that do, mount them
         # into the Kubeflow container.
         has_local_repos = False
-        for stack_comps in stack.components.values():
-            stack_component = stack_comps[0]
-            # TODO: [server] make sure ComponentModel have this functionality
-            local_path = stack_component.local_path
+        for stack_comp in stack.components.values():
+            local_path = stack_comp.local_path
             if not local_path:
                 continue
             # double-check this convention, just in case it wasn't respected
@@ -439,14 +436,14 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             if not local_path.startswith(global_cfg_dir):
                 raise ValueError(
                     f"Local path {local_path} for component "
-                    f"{stack_component.name} is not in the global config "
+                    f"{stack_comp.name} is not in the global config "
                     f"directory ({global_cfg_dir})."
                 )
             has_local_repos = True
             host_path = k8s_client.V1HostPathVolumeSource(
                 path=local_path, type="Directory"
             )
-            volume_name = f"{stack_component.TYPE.value}-{stack_component.name}"
+            volume_name = f"{stack_comp.TYPE.value}-{stack_comp.name}"
             volumes[local_path] = k8s_client.V1Volume(
                 name=re.sub(r"[^0-9a-zA-Z-]+", "-", volume_name)
                 .strip("-")
