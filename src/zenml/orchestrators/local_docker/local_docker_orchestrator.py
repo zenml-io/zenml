@@ -15,12 +15,13 @@
 
 import os
 import sys
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List, Type
 
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators.base_orchestrator import BaseOrchestratorFlavor
 from zenml.orchestrators.local_docker.local_docker_entrypoint_configuration import (
     RUN_NAME_OPTION,
     LocalDockerEntrypointConfiguration,
@@ -42,8 +43,6 @@ class LocalDockerOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
     This orchestrator does not allow for concurrent execution of steps and also
     does not support running on a schedule.
     """
-
-    FLAVOR: ClassVar[str] = "local_docker"
 
     def prepare_pipeline_deployment(
         self,
@@ -167,3 +166,15 @@ class LocalDockerOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
             for line in logs:
                 logger.info(line.strip().decode())
+
+
+class LocalDockerOrchestratorFlavor(BaseOrchestratorFlavor):
+    """Flavor for the local Docker orchestrator."""
+
+    @property
+    def name(self) -> str:
+        return "local_docker"
+
+    @property
+    def implementation_class(self) -> Type["LocalDockerOrchestrator"]:
+        return LocalDockerOrchestrator

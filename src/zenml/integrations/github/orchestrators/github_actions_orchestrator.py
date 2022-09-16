@@ -17,7 +17,7 @@ import copy
 import os
 import re
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
 
 from git.exc import InvalidGitRepositoryError
 from git.repo.base import Repo
@@ -39,6 +39,10 @@ from zenml.integrations.github.secrets_managers.github_secrets_manager import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators.base_orchestrator import (
+    BaseOrchestratorConfig,
+    BaseOrchestratorFlavor,
+)
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.stack import Stack
 from zenml.steps import BaseStep
@@ -63,8 +67,8 @@ DOCKER_LOGIN_ACTION = "docker/login-action@v1"
 ENV_ENCODED_ZENML_PIPELINE = "ENCODED_ZENML_PIPELINE"
 
 
-class GitHubActionsOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
-    """Orchestrator responsible for running pipelines using GitHub Actions.
+class GitHubActionsOrchestratorConfig(BaseOrchestratorConfig):
+    """Configuration for the GitHub Actions orchestrator.
 
     Attributes:
         custom_docker_base_image_name: Name of a docker image that should be
@@ -90,14 +94,15 @@ class GitHubActionsOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
     skip_github_repository_check: bool = False
     push: bool = False
 
-    _git_repo: Optional[Repo] = None
-
-    # Class configuration
-    FLAVOR: ClassVar[str] = GITHUB_ORCHESTRATOR_FLAVOR
-
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
         ("custom_docker_base_image_name", "docker_parent_image")
     )
+
+
+class GitHubActionsOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
+    """Orchestrator responsible for running pipelines using GitHub Actions."""
+
+    _git_repo: Optional[Repo] = None
 
     @property
     def git_repo(self) -> Repo:
@@ -124,7 +129,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 remote_url.startswith(prefix)
                 for prefix in GITHUB_REMOTE_URL_PREFIXES
             )
-            if not (is_github_repo or self.skip_github_repository_check):
+            if not (is_github_repo or self.config.skip_github_repository_check):
                 raise RuntimeError(
                     f"The remote URL '{remote_url}' of your git repo "
                     f"({self._git_repo.git_dir}) is not pointing to a GitHub "
@@ -303,8 +308,9 @@ class GitHubActionsOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             RuntimeError: If the orchestrator should only run in a clean git
                 repository and the repository is dirty.
         """
-        if not self.skip_dirty_repository_check and self.git_repo.is_dirty(
-            untracked_files=True
+        if (
+            not self.config.skip_dirty_repository_check
+            and self.git_repo.is_dirty(untracked_files=True)
         ):
             raise RuntimeError(
                 "Trying to run a pipeline from within a dirty (=containing "
@@ -493,7 +499,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         yaml_utils.write_yaml(workflow_path, workflow_dict, sort_keys=False)
         logger.info("Wrote GitHub workflow file to %s", workflow_path)
 
-        if self.push:
+        if self.config.push:
             # Add, commit and push the pipeline workflow yaml
             self.git_repo.index.add(workflow_path)
             self.git_repo.index.commit(
@@ -513,3 +519,19 @@ class GitHubActionsOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 workflow_path,
                 self.name,
             )
+
+
+class GitHubActionsOrchestratorFlavor(BaseOrchestratorFlavor):
+    """GitHub Actions orchestrator flavor."""
+
+    @property
+    def name(self) -> str:
+        return GITHUB_ORCHESTRATOR_FLAVOR
+
+    @property
+    def config_class(self) -> Type[GitHubActionsOrchestratorConfig]:
+        return GitHubActionsOrchestratorConfig
+
+    @property
+    def implementation_class(self) -> Type["GitHubActionsOrchestrator"]:
+        return GitHubActionsOrchestrator

@@ -32,7 +32,7 @@
 import os
 import re
 import sys
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
 from uuid import UUID
 
 import kfp
@@ -42,7 +42,6 @@ from kfp.compiler import Compiler as KFPCompiler
 from kfp_server_api.exceptions import ApiException
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
-from pydantic import root_validator
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
 from zenml.artifact_stores import LocalArtifactStore
@@ -64,6 +63,10 @@ from zenml.integrations.kubeflow.orchestrators.local_deployment_utils import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators.base_orchestrator import (
+    BaseOrchestratorConfig,
+    BaseOrchestratorFlavor,
+)
 from zenml.repository import Repository
 from zenml.stack import StackValidator
 from zenml.utils import deprecation_utils, io_utils, networking_utils
@@ -85,8 +88,8 @@ KFP_POD_LABELS = {
 }
 
 
-class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
-    """Orchestrator responsible for running pipelines using Kubeflow.
+class KubeflowOrchestratorConfig(BaseOrchestratorConfig):
+    """Configuration for the Kubeflow orchestrator.
 
     Attributes:
         custom_docker_base_image_name: Name of a docker image that should be
@@ -124,12 +127,13 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
     skip_cluster_provisioning: bool = False
     skip_ui_daemon_provisioning: bool = False
 
-    # Class Configuration
-    FLAVOR: ClassVar[str] = KUBEFLOW_ORCHESTRATOR_FLAVOR
-
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
         ("custom_docker_base_image_name", "docker_parent_image")
     )
+
+
+class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
+    """Orchestrator responsible for running pipelines using Kubeflow."""
 
     @staticmethod
     def _get_k3d_cluster_name(uuid: UUID) -> str:
@@ -158,29 +162,19 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         """
         return f"k3d-{KubeflowOrchestrator._get_k3d_cluster_name(uuid)}"
 
-    @root_validator(skip_on_failure=True)
-    def set_default_kubernetes_context(
-        cls, values: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Pydantic root_validator.
+    @property
+    def kubernetes_context(self) -> str:
+        """Gets the kubernetes context associated with the orchestrator.
 
         This sets the default `kubernetes_context` value to the value that is
         used to create the locally managed k3d cluster, if not explicitly set.
 
-        Args:
-            values: Values passed to the object constructor
-
         Returns:
-            Values passed to the Pydantic constructor
+            The kubernetes context associated with the orchestrator.
         """
-        if not values.get("kubernetes_context"):
-            # not likely, due to Pydantic validation, but mypy complains
-            assert "uuid" in values
-            values["kubernetes_context"] = cls._get_k3d_kubernetes_context(
-                values["uuid"]
-            )
-
-        return values
+        if self.config.kubernetes_context:
+            return self.config.kubernetes_context
+        return self._get_k3d_kubernetes_context(self.id)
 
     def get_kubernetes_contexts(self) -> Tuple[List[str], Optional[str]]:
         """Get the list of configured Kubernetes contexts and the active context.
@@ -256,7 +250,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 f"--skip_local_validations=True'\n"
             )
 
-            if not self.skip_local_validations and not self.is_local:
+            if not self.config.skip_local_validations and not self.is_local:
 
                 # if the orchestrator is not running in a local k3d cluster,
                 # we cannot have any other local components in our stack,
@@ -306,7 +300,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                         + silence_local_validations_msg
                     )
 
-            if not self.skip_local_validations and self.is_local:
+            if not self.config.skip_local_validations and self.is_local:
 
                 # if the orchestrator is local, the container registry must
                 # also be local.
@@ -707,7 +701,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
             # upload the pipeline to Kubeflow and start it
             client = kfp.Client(
-                host=self.kubeflow_hostname,
+                host=self.config.kubeflow_hostname,
                 kube_context=self.kubernetes_context,
             )
             if runtime_configuration.schedule:
@@ -761,7 +755,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                     "Started one-off pipeline run with ID '%s'.", result.run_id
                 )
 
-                if self.synchronous:
+                if self.config.synchronous:
                     # TODO [ENG-698]: Allow configuration of the timeout as a
                     #  runtime option
                     client.wait_for_run_completion(
@@ -829,7 +823,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         Returns:
             Port to use for the KFP UI daemon.
         """
-        port = self.kubeflow_pipelines_ui_port
+        port = self.config.kubeflow_pipelines_ui_port
         if port == DEFAULT_KFP_UI_PORT and not networking_utils.port_available(
             port
         ):
@@ -864,7 +858,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             f"> kubectl --context {self.kubernetes_context} apply -k github.com/kubeflow/pipelines/manifests/kustomize/cluster-scoped-resources?ref={KFP_VERSION}&timeout=5m",
             f"> kubectl --context {self.kubernetes_context} wait --timeout=60s --for condition=established crd/applications.app.k8s.io",
             f"> kubectl --context {self.kubernetes_context} apply -k github.com/kubeflow/pipelines/manifests/kustomize/env/platform-agnostic-pns?ref={KFP_VERSION}&timeout=5m",
-            f"> kubectl --context {self.kubernetes_context} --namespace kubeflow port-forward svc/ml-pipeline-ui {self.kubeflow_pipelines_ui_port}:80",
+            f"> kubectl --context {self.kubernetes_context} --namespace kubeflow port-forward svc/ml-pipeline-ui {self.config.kubeflow_pipelines_ui_port}:80",
         ]
 
         logger.info(
@@ -881,9 +875,9 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             True if a local k3d cluster exists, False otherwise.
         """
         if not local_deployment_utils.check_prerequisites(
-            skip_k3d=self.skip_cluster_provisioning or not self.is_local,
-            skip_kubectl=self.skip_cluster_provisioning
-            and self.skip_ui_daemon_provisioning,
+            skip_k3d=self.config.skip_cluster_provisioning or not self.is_local,
+            skip_kubectl=self.config.skip_cluster_provisioning
+            and self.config.skip_ui_daemon_provisioning,
         ):
             # if any prerequisites are missing there is certainly no
             # local deployment running
@@ -913,8 +907,14 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         """
         return (
             self.is_provisioned
-            and (self.skip_cluster_provisioning or not self.is_cluster_running)
-            and (self.skip_ui_daemon_provisioning or not self.is_daemon_running)
+            and (
+                self.config.skip_cluster_provisioning
+                or not self.is_cluster_running
+            )
+            and (
+                self.config.skip_ui_daemon_provisioning
+                or not self.is_daemon_running
+            )
         )
 
     @property
@@ -927,7 +927,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         Returns:
             True if the local k3d cluster is provisioned, False otherwise.
         """
-        if self.skip_cluster_provisioning or not self.is_local:
+        if self.config.skip_cluster_provisioning or not self.is_local:
             return True
         return local_deployment_utils.k3d_cluster_exists(
             cluster_name=self._k3d_cluster_name
@@ -943,7 +943,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         Returns:
             True if the local k3d cluster is running, False otherwise.
         """
-        if self.skip_cluster_provisioning or not self.is_local:
+        if self.config.skip_cluster_provisioning or not self.is_local:
             return True
         return local_deployment_utils.k3d_cluster_running(
             cluster_name=self._k3d_cluster_name
@@ -956,7 +956,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         Returns:
             True if the daemon is running, False otherwise.
         """
-        if self.skip_ui_daemon_provisioning:
+        if self.config.skip_ui_daemon_provisioning:
             return True
 
         if sys.platform != "win32":
@@ -972,7 +972,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         Raises:
             ProvisioningError: If the provisioning fails.
         """
-        if self.skip_cluster_provisioning:
+        if self.config.skip_cluster_provisioning:
             return
 
         if self.is_running:
@@ -1047,10 +1047,13 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
     def deprovision(self) -> None:
         """Deprovisions a local Kubeflow Pipelines deployment."""
-        if self.skip_cluster_provisioning:
+        if self.config.skip_cluster_provisioning:
             return
 
-        if not self.skip_ui_daemon_provisioning and self.is_daemon_running:
+        if (
+            not self.config.skip_ui_daemon_provisioning
+            and self.is_daemon_running
+        ):
             local_deployment_utils.stop_kfp_ui_daemon(
                 pid_file_path=self._pid_file_path
             )
@@ -1088,7 +1091,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         assert kubernetes_context is not None
 
         if (
-            not self.skip_cluster_provisioning
+            not self.config.skip_cluster_provisioning
             and self.is_local
             and not self.is_cluster_running
         ):
@@ -1115,13 +1118,16 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             logger.info("Local kubeflow pipelines deployment not provisioned.")
             return
 
-        if not self.skip_ui_daemon_provisioning and self.is_daemon_running:
+        if (
+            not self.config.skip_ui_daemon_provisioning
+            and self.is_daemon_running
+        ):
             local_deployment_utils.stop_kfp_ui_daemon(
                 pid_file_path=self._pid_file_path
             )
 
         if (
-            not self.skip_cluster_provisioning
+            not self.config.skip_cluster_provisioning
             and self.is_local
             and self.is_cluster_running
         ):
@@ -1161,3 +1167,19 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             # No secrets provided by the user.
             pass
         return environment_vars
+
+
+class KubeflowOrchestratorFlavor(BaseOrchestratorFlavor):
+    """Kubeflow orchestrator flavor."""
+
+    @property
+    def name(self) -> str:
+        return KUBEFLOW_ORCHESTRATOR_FLAVOR
+
+    @property
+    def config_class(self) -> Type[KubeflowOrchestratorConfig]:
+        return KubeflowOrchestratorConfig
+
+    @property
+    def implementation_class(self) -> Type["KubeflowOrchestrator"]:
+        return KubeflowOrchestrator
