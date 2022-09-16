@@ -19,9 +19,19 @@ from contextlib import ExitStack as does_not_raise
 import pytest
 
 from zenml.constants import TEST_STEP_INPUT_INT
-from zenml.enums import ExecutionStatus
-from zenml.exceptions import EntityExistsError, StackExistsError
-from zenml.models import ProjectModel, RoleModel, TeamModel, UserModel
+from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.exceptions import (
+    EntityExistsError,
+    StackComponentExistsError,
+    StackExistsError,
+)
+from zenml.models import (
+    ComponentModel,
+    ProjectModel,
+    RoleModel,
+    TeamModel,
+    UserModel,
+)
 from zenml.models.pipeline_models import PipelineModel, PipelineRunModel
 from zenml.models.stack_models import StackModel
 from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -1215,3 +1225,56 @@ def test_list_run_steps_succeeds(
 # ----------------
 # Stack components
 # ----------------
+
+
+def test_create_stack_component_succeeds(
+    sql_store: BaseZenStore,
+):
+    """Tests creating stack component."""
+    stack_component_name = "arias_cat_detection_orchestrator"
+    stack_component = ComponentModel(
+        name=stack_component_name,
+        type=StackComponentType.ORCHESTRATOR,
+        flavor="default",
+        configuration={},
+        project=sql_store["default_project"],
+        user=sql_store["active_user"],
+    )
+    with does_not_raise():
+        sql_store["store"].create_stack_component(
+            stack_component=stack_component
+        )
+        created_stack_component = sql_store["store"].get_stack_component(
+            stack_component_id=stack_component.id
+        )
+        assert created_stack_component.name == stack_component_name
+
+
+def test_create_component_fails_when_same_name(
+    sql_store: BaseZenStore,
+):
+    """Tests creating component fails when same name."""
+    stack_component_name = "default"
+    stack_component = ComponentModel(
+        name=stack_component_name,
+        type=StackComponentType.ORCHESTRATOR,
+        flavor="default",
+        configuration={},
+        project=sql_store["default_project"],
+        user=sql_store["active_user"],
+    )
+    sql_store["store"].create_stack_component(stack_component=stack_component)
+    with pytest.raises(StackComponentExistsError):
+        sql_store["store"].create_stack_component(
+            stack_component=stack_component
+        )
+
+
+def test_get_stack_component(
+    sql_store: BaseZenStore,
+):
+    """Tests getting stack component."""
+    components = sql_store["default_stack"].components
+    component_id = list(components.values())[0][0]
+    with does_not_raise():
+        sql_store["store"].get_stack_component(stack_component_id=component_id)
