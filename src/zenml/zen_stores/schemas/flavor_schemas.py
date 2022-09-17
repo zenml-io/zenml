@@ -14,7 +14,8 @@
 """SQL Model Implementations for Flavors."""
 
 from datetime import datetime
-from uuid import UUID, uuid4
+from typing import Optional
+from uuid import UUID
 
 from sqlmodel import Field, SQLModel
 
@@ -24,7 +25,7 @@ from zenml.enums import StackComponentType
 class FlavorSchema(SQLModel, table=True):
     """SQL Model for flavors."""
 
-    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    id: UUID = Field(primary_key=True)
 
     name: str
 
@@ -33,8 +34,8 @@ class FlavorSchema(SQLModel, table=True):
 
     type: StackComponentType
     source: str
-    git_sha: str
-    integration: str
+    git_sha: Optional[str] = Field(nullable=True)
+    integration: Optional[str] = Field(nullable=True)
 
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)

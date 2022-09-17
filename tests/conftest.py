@@ -208,27 +208,34 @@ def sql_store() -> BaseZenStore:
 @pytest.fixture
 def sql_store_with_run() -> BaseZenStore:
     with tempfile.TemporaryDirectory(suffix="_zenml_sql_test") as temp_dir:
-        store = SqlZenStore(
+
+        GlobalConfiguration().set_store(
             config=SqlZenStoreConfiguration(
                 url=f"sqlite:///{Path(temp_dir) / 'store.db'}"
             ),
-            track_analytics=False,
         )
+        store = GlobalConfiguration().zen_store
+
         default_project = store.list_projects()[0]
         default_stack = store.list_stacks()[0]
         active_user = store.list_users()[0]
 
         @step
-        def step_one(input_one: int) -> int:
-            return input_one
+        def step_one() -> int:
+            return TEST_STEP_INPUT_INT
+
+        @step
+        def step_two(input: int) -> int:
+            return input + 1
 
         @pipeline
-        def test_pipeline(step_one):
-            step_one()
+        def test_pipeline(step_one, step_two):
+            value = step_one()
+            step_two(value)
 
-        test_pipeline(step=step_one(TEST_STEP_INPUT_INT)).run()
+        test_pipeline(step_one=step_one(), step_two=step_two()).run()
         pipeline_run = store.list_runs()[0]
-        pipeline_step = store.list_run_steps(pipeline_run.id)[0]
+        pipeline_step = store.list_run_steps(pipeline_run.id)[1]
 
         yield {
             "store": store,

@@ -740,6 +740,9 @@ class SqlZenStore(BaseZenStore):
                 name=flavor.name,
                 source=flavor.source,
                 type=flavor.type,
+                project=flavor.project,
+                user=flavor.user,
+                integration=flavor.integration,
             )
             flavor_model = FlavorModel(**sql_flavor.dict())
             session.add(sql_flavor)
@@ -758,7 +761,19 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the stack component flavor doesn't exist.
         """
-        # TODO[Baris]: implement this
+        with Session(self.engine) as session:
+
+            flavor = session.exec(
+                select(FlavorSchema).where(FlavorSchema.id == flavor_id)
+            ).first()
+
+            if flavor is None:
+                raise KeyError(f"Flavor with ID {flavor_id} not found.")
+
+        # TODO: add logic to convert to model in schema
+        # return flavor.to_model()
+
+        return FlavorModel(**flavor.dict())
 
     def list_flavors(
         self,
@@ -2187,6 +2202,11 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the object couldn't be found.
         """
+        if object_name_or_id is None:
+            raise ValueError(
+                f"Unable to get {schema_name}: No {schema_name} ID or name "
+                "provided."
+            )
         if uuid_utils.is_valid_uuid(object_name_or_id):
             filter = schema_class.id == object_name_or_id  # type: ignore[attr-defined]
             error_msg = (
