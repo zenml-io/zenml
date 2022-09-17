@@ -48,7 +48,6 @@ if TYPE_CHECKING:
     from zenml.model_deployers import BaseModelDeployer
     from zenml.orchestrators import BaseOrchestrator
     from zenml.pipelines import BasePipeline
-    from zenml.runtime_configuration import RuntimeConfiguration
     from zenml.secrets_managers import BaseSecretsManager
     from zenml.stack import StackComponent
     from zenml.step_operators import BaseStepOperator

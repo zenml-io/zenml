@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for pipelines."""
-from typing import Dict, List, Optional, Union
+from typing import List, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
@@ -20,10 +20,6 @@ from fastapi import APIRouter, Depends
 from zenml.constants import PIPELINES, RUNS, VERSION_1
 from zenml.models import PipelineRunModel
 from zenml.models.pipeline_models import PipelineModel
-from zenml.utils.uuid_utils import (
-    parse_name_or_uuid,
-    parse_optional_name_or_uuid,
-)
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.models import UpdatePipelineRequest
 from zenml.zen_server.models.pipeline_models import HydratedPipelineModel
@@ -44,8 +40,8 @@ router = APIRouter(
 )
 @handle_exceptions
 async def list_pipelines(
-    project_name_or_id: Optional[str] = None,
-    user_name_or_id: Optional[str] = None,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
+    user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
     hydrated: bool = False,
 ) -> Union[List[HydratedPipelineModel], List[PipelineModel]]:
@@ -62,8 +58,8 @@ async def list_pipelines(
         List of pipeline objects.
     """
     pipelines_list = zen_store.list_pipelines(
-        project_name_or_id=parse_name_or_uuid(project_name_or_id),
-        user_name_or_id=parse_name_or_uuid(user_name_or_id),
+        project_name_or_id=project_name_or_id,
+        user_name_or_id=user_name_or_id,
         name=name,
     )
     if hydrated:
@@ -150,16 +146,16 @@ async def delete_pipeline(pipeline_id: UUID) -> None:
 
 @router.get(
     "/{pipeline_id}" + RUNS,
-    response_model=List[Dict],
+    response_model=List[PipelineRunModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 async def list_pipeline_runs(
     pipeline_id: UUID,
-    project_name_or_id: Optional[str] = None,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     stack_id: Optional[UUID] = None,
     run_name: Optional[str] = None,
-    user_name_or_id: Optional[str] = None,
+    user_name_or_id: Optional[Union[str, UUID]] = None,
     component_id: Optional[UUID] = None,
 ) -> List[PipelineRunModel]:
     """Get pipeline runs according to query filters.
@@ -176,10 +172,10 @@ async def list_pipeline_runs(
         The pipeline runs according to query filters.
     """
     return zen_store.list_runs(
-        project_name_or_id=parse_optional_name_or_uuid(project_name_or_id),
+        project_name_or_id=project_name_or_id,
         run_name=run_name,
         stack_id=stack_id,
-        user_name_or_id=parse_optional_name_or_uuid(user_name_or_id),
+        user_name_or_id=user_name_or_id,
         pipeline_id=pipeline_id,
     )
 
@@ -190,7 +186,7 @@ async def list_pipeline_runs(
 )
 @handle_exceptions
 async def create_pipeline_run(
-    pipeline_id: str, pipeline_run: PipelineRunModel
+    pipeline_id: UUID, pipeline_run: PipelineRunModel
 ) -> PipelineRunModel:
     """Create a run for a pipeline.
 

@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Project Models for the API endpoint definitions."""
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import Field
 
@@ -67,17 +67,17 @@ class HydratedPipelineModel(PipelineModel):
         title="A list of the last x Pipeline Runs."
     )
 
-    project: ProjectModel = Field(
+    project: ProjectModel = Field(  # type: ignore[assignment]
         title="The project that contains this pipeline."
     )
-    user: UserModel = Field(
+    user: UserModel = Field(  # type: ignore[assignment]
         title="The user that created this pipeline.",
     )
 
     class Config:
         """Example of a json-serialized instance."""
 
-        schema_extra = {
+        schema_extra: Dict[str, Any] = {
             "example": {
                 "id": "24db6395-669b-4e6d-8e60-cc2c4f6c47cf",
                 "name": "example_pipeline",

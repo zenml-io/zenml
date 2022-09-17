@@ -142,7 +142,6 @@ def _get_stack_component_model(
         indicating whether the component is active or not.
     """
     singular_display_name = _component_display_name(component_type)
-    plural_display_name = _component_display_name(component_type, plural=True)
 
     repo = Repository()
 
@@ -930,11 +929,11 @@ def generate_stack_component_copy_command(
 
             # Copy the existing component but use the new name and generate a
             # new UUID
-            component_config = component.dict(exclude={"uuid"})
+            component_config = component.dict(exclude={"id"})
             component_config["name"] = target_component
             copied_component = component.__class__.parse_obj(component_config)
 
-            repo.register_stack_component(copied_component)
+            repo.zen_store.create_stack_component(copied_component)
 
     return copy_stack_component_command
 

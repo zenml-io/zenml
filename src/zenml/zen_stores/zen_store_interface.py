@@ -431,7 +431,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_flavors(
         self,
-        project_name_or_id: Union[str, UUID],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
         component_type: Optional[StackComponentType] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
@@ -440,7 +440,7 @@ class ZenStoreInterface(ABC):
         """List all stack component flavors matching the given filter criteria.
 
         Args:
-            project_name_or_id: The ID or name of the Project to which the
+            project_name_or_id: Optionally filter by the Project to which the
                 component flavors belong
             component_type: Optionally filter by type of stack component
             flavor_name: Optionally filter by flavor name
@@ -1047,7 +1047,7 @@ class ZenStoreInterface(ABC):
     def get_run_component_side_effects(
         self,
         run_id: UUID,
-        component_id: Optional[str] = None,
+        component_id: Optional[UUID] = None,
     ) -> Dict[str, Any]:
         """Gets the side effects for a component in a pipeline run.
 

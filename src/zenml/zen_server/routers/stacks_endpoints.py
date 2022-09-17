@@ -21,7 +21,6 @@ from fastapi import APIRouter, Depends
 from zenml.constants import STACKS, VERSION_1
 from zenml.models import StackModel
 from zenml.models.stack_models import HydratedStackModel
-from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.models.stack_models import UpdateStackRequest
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
@@ -41,8 +40,8 @@ router = APIRouter(
 )
 @handle_exceptions
 async def list_stacks(
-    project_name_or_id: Optional[str] = None,
-    user_name_or_id: Optional[str] = None,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
+    user_name_or_id: Optional[Union[str, UUID]] = None,
     component_id: Optional[str] = None,
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
@@ -63,8 +62,8 @@ async def list_stacks(
         All stacks.
     """
     stacks_list = zen_store.list_stacks(
-        project_name_or_id=parse_name_or_uuid(project_name_or_id),
-        user_name_or_id=parse_name_or_uuid(user_name_or_id),
+        project_name_or_id=project_name_or_id,
+        user_name_or_id=user_name_or_id,
         is_shared=is_shared,
         name=name,
     )

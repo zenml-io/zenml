@@ -34,6 +34,7 @@ from zenml.zen_server.routers import (
 
 app = FastAPI(title="ZenML", version=zenml.__version__)
 
+
 # Basic Health Endpoint
 @app.head("/health", include_in_schema=False)
 @app.get("/health")

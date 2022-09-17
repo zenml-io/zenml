@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for projects."""
 from typing import List, Optional, Union
+from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
@@ -25,6 +26,7 @@ from zenml.constants import (
     STACKS,
     VERSION_1,
 )
+from zenml.enums import StackComponentType
 from zenml.models import (
     ComponentModel,
     FlavorModel,
@@ -35,7 +37,6 @@ from zenml.models import (
 from zenml.models.component_models import HydratedComponentModel
 from zenml.models.stack_models import HydratedStackModel
 from zenml.models.user_management_models import RoleAssignmentModel
-from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.models import CreatePipelineRequest
 from zenml.zen_server.models.pipeline_models import HydratedPipelineModel
@@ -95,7 +96,7 @@ async def create_project(project: CreateProjectRequest) -> ProjectModel:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_project(project_name_or_id: str) -> ProjectModel:
+async def get_project(project_name_or_id: Union[str, UUID]) -> ProjectModel:
     """Get a project for given name.
 
     # noqa: DAR401
@@ -106,9 +107,7 @@ async def get_project(project_name_or_id: str) -> ProjectModel:
     Returns:
         The requested project.
     """
-    return zen_store.get_project(
-        project_name_or_id=parse_name_or_uuid(project_name_or_id)
-    )
+    return zen_store.get_project(project_name_or_id=project_name_or_id)
 
 
 @router.put(
@@ -118,7 +117,7 @@ async def get_project(project_name_or_id: str) -> ProjectModel:
 )
 @handle_exceptions
 async def update_project(
-    project_name_or_id: str, project_update: UpdateProjectRequest
+    project_name_or_id: Union[str, UUID], project_update: UpdateProjectRequest
 ) -> ProjectModel:
     """Get a project for given name.
 
@@ -131,9 +130,7 @@ async def update_project(
     Returns:
         The updated project.
     """
-    project_in_db = zen_store.get_project(
-        parse_name_or_uuid(project_name_or_id)
-    )
+    project_in_db = zen_store.get_project(project_name_or_id)
 
     return zen_store.update_project(
         project=project_update.apply_to_model(project_in_db),
@@ -145,15 +142,13 @@ async def update_project(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def delete_project(project_name_or_id: str) -> None:
+async def delete_project(project_name_or_id: Union[str, UUID]) -> None:
     """Deletes a project.
 
     Args:
         project_name_or_id: Name or ID of the project.
     """
-    zen_store.delete_project(
-        project_name_or_id=parse_name_or_uuid(project_name_or_id)
-    )
+    zen_store.delete_project(project_name_or_id=project_name_or_id)
 
 
 @router.get(
@@ -163,9 +158,9 @@ async def delete_project(project_name_or_id: str) -> None:
 )
 @handle_exceptions
 async def get_role_assignments_for_project(
-    project_name_or_id: str,
-    user_name_or_id: Optional[str] = None,
-    team_name_or_id: Optional[str] = None,
+    project_name_or_id: Union[str, UUID],
+    user_name_or_id: Optional[Union[str, UUID]] = None,
+    team_name_or_id: Optional[Union[str, UUID]] = None,
 ) -> List[RoleAssignmentModel]:
     """Returns a list of all roles that are assigned to a team.
 
@@ -180,9 +175,9 @@ async def get_role_assignments_for_project(
         A list of all roles that are assigned to a team.
     """
     return zen_store.list_role_assignments(
-        project_name_or_id=parse_name_or_uuid(project_name_or_id),
-        user_name_or_id=parse_name_or_uuid(user_name_or_id),
-        team_name_or_id=parse_name_or_uuid(team_name_or_id),
+        project_name_or_id=project_name_or_id,
+        user_name_or_id=user_name_or_id,
+        team_name_or_id=team_name_or_id,
     )
 
 
@@ -193,8 +188,8 @@ async def get_role_assignments_for_project(
 )
 @handle_exceptions
 async def list_project_stacks(
-    project_name_or_id: str,
-    user_name_or_id: Optional[str] = None,
+    project_name_or_id: Union[str, UUID],
+    user_name_or_id: Optional[Union[str, UUID]] = None,
     component_id: Optional[str] = None,
     stack_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
@@ -217,8 +212,8 @@ async def list_project_stacks(
         All stacks part of the specified project.
     """
     stacks_list = zen_store.list_stacks(
-        project_name_or_id=parse_name_or_uuid(project_name_or_id),
-        user_name_or_id=parse_name_or_uuid(user_name_or_id),
+        project_name_or_id=project_name_or_id,
+        user_name_or_id=user_name_or_id,
         is_shared=is_shared,
         name=stack_name,
     )
@@ -235,7 +230,7 @@ async def list_project_stacks(
 )
 @handle_exceptions
 async def create_stack(
-    project_name_or_id: str,
+    project_name_or_id: Union[str, UUID],
     stack: CreateStackRequest,
     hydrated: bool = False,
     auth_context: AuthContext = Depends(authorize),
@@ -252,7 +247,7 @@ async def create_stack(
     Returns:
         The created stack.
     """
-    project = zen_store.get_project(parse_name_or_uuid(project_name_or_id))
+    project = zen_store.get_project(project_name_or_id)
     full_stack = stack.to_model(
         project=project.id,
         user=auth_context.user.id,
@@ -272,8 +267,8 @@ async def create_stack(
 )
 @handle_exceptions
 async def list_project_stack_components(
-    project_name_or_id: str,
-    user_name_or_id: Optional[str] = None,
+    project_name_or_id: Union[str, UUID],
+    user_name_or_id: Optional[Union[str, UUID]] = None,
     type: Optional[str] = None,
     name: Optional[str] = None,
     flavor_name: Optional[str] = None,
@@ -298,8 +293,8 @@ async def list_project_stack_components(
         All stack components part of the specified project.
     """
     components_list = zen_store.list_stack_components(
-        project_name_or_id=parse_name_or_uuid(project_name_or_id),
-        user_name_or_id=parse_name_or_uuid(user_name_or_id),
+        project_name_or_id=project_name_or_id,
+        user_name_or_id=user_name_or_id,
         type=type,
         is_shared=is_shared,
         name=name,
@@ -318,7 +313,7 @@ async def list_project_stack_components(
 )
 @handle_exceptions
 async def create_stack_component(
-    project_name_or_id: str,
+    project_name_or_id: Union[str, UUID],
     component: ComponentModel,
     hydrated: bool = False,
     auth_context: AuthContext = Depends(authorize),
@@ -335,7 +330,7 @@ async def create_stack_component(
     Returns:
         The created stack component.
     """
-    project = zen_store.get_project(parse_name_or_uuid(project_name_or_id))
+    project = zen_store.get_project(project_name_or_id)
     component.project = project.id
     component.user = auth_context.user.id
     created_component = zen_store.create_stack_component(
@@ -354,9 +349,9 @@ async def create_stack_component(
 )
 @handle_exceptions
 async def list_project_flavors(
-    project_name_or_id: Optional[str] = None,
-    component_type: Optional[str] = None,
-    user_name_or_id: Optional[str] = None,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
+    component_type: Optional[StackComponentType] = None,
+    user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
     hydrated: bool = False,
@@ -378,9 +373,9 @@ async def list_project_flavors(
         All stack components of a certain type that are part of a project.
     """
     flavors_list = zen_store.list_flavors(
-        project_name_or_id=parse_name_or_uuid(project_name_or_id),
+        project_name_or_id=project_name_or_id,
         component_type=component_type,
-        user_name_or_id=parse_name_or_uuid(user_name_or_id),
+        user_name_or_id=user_name_or_id,
         is_shared=is_shared,
         name=name,
     )
@@ -398,7 +393,7 @@ async def list_project_flavors(
 )
 @handle_exceptions
 async def create_flavor(
-    project_name_or_id: str,
+    project_name_or_id: Union[str, UUID],
     flavor: FlavorModel,
     hydrated: bool = False,
     auth_context: AuthContext = Depends(authorize),
@@ -415,7 +410,7 @@ async def create_flavor(
     Returns:
         The created stack component flavor.
     """
-    project = zen_store.get_project(parse_name_or_uuid(project_name_or_id))
+    project = zen_store.get_project(project_name_or_id)
     flavor.project = project.id
     flavor.user = auth_context.user.id
     created_flavor = zen_store.create_flavor(
@@ -435,8 +430,8 @@ async def create_flavor(
 )
 @handle_exceptions
 async def list_project_pipelines(
-    project_name_or_id: Optional[str] = None,
-    user_name_or_id: Optional[str] = None,
+    project_name_or_id: Union[str, UUID],
+    user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
     hydrated: bool = False,
 ) -> Union[List[HydratedPipelineModel], List[PipelineModel]]:
@@ -455,8 +450,8 @@ async def list_project_pipelines(
         All pipelines within the project.
     """
     pipelines_list = zen_store.list_pipelines(
-        project_name_or_id=parse_name_or_uuid(project_name_or_id),
-        user_name_or_id=parse_name_or_uuid(user_name_or_id),
+        project_name_or_id=project_name_or_id,
+        user_name_or_id=user_name_or_id,
         name=name,
     )
     if hydrated:
@@ -475,7 +470,7 @@ async def list_project_pipelines(
 )
 @handle_exceptions
 async def create_pipeline(
-    project_name_or_id: str,
+    project_name_or_id: Union[str, UUID],
     pipeline: CreatePipelineRequest,
     hydrated: bool = False,
     auth_context: AuthContext = Depends(authorize),
@@ -492,12 +487,12 @@ async def create_pipeline(
     Returns:
         The created pipeline.
     """
-    project = zen_store.get_project(parse_name_or_uuid(project_name_or_id))
-    pipeline = pipeline.to_model(
+    project = zen_store.get_project(project_name_or_id)
+    pipeline_model = pipeline.to_model(
         project=project.id,
         user=auth_context.user.id,
     )
-    created_pipeline = zen_store.create_pipeline(pipeline=pipeline)
+    created_pipeline = zen_store.create_pipeline(pipeline=pipeline_model)
     if hydrated:
         return HydratedPipelineModel.from_model(created_pipeline)
     else:

@@ -137,7 +137,7 @@ def handle_exceptions(func: F) -> F:
     """
 
     @wraps(func)
-    async def decorated(*args, **kwargs):
+    async def decorated(*args: Any, **kwargs: Any) -> Any:
         try:
             return await func(*args, **kwargs)
         except NotAuthorizedError as error:

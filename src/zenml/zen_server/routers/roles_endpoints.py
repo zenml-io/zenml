@@ -12,13 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for roles and role assignment."""
-from typing import List
+from typing import List, Union
+from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
 from zenml.constants import ROLES, VERSION_1
 from zenml.models import RoleModel
-from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.models.user_management_models import (
     CreateRoleRequest,
@@ -75,7 +75,7 @@ async def create_role(role: CreateRoleRequest) -> RoleModel:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_role(role_name_or_id: str) -> RoleModel:
+async def get_role(role_name_or_id: Union[str, UUID]) -> RoleModel:
     """Returns a specific role.
 
     Args:
@@ -84,9 +84,7 @@ async def get_role(role_name_or_id: str) -> RoleModel:
     Returns:
         A specific role.
     """
-    return zen_store.get_role(
-        role_name_or_id=parse_name_or_uuid(role_name_or_id)
-    )
+    return zen_store.get_role(role_name_or_id=role_name_or_id)
 
 
 @router.put(
@@ -96,7 +94,7 @@ async def get_role(role_name_or_id: str) -> RoleModel:
 )
 @handle_exceptions
 async def update_role(
-    role_name_or_id: str, role_update: UpdateRoleRequest
+    role_name_or_id: Union[str, UUID], role_update: UpdateRoleRequest
 ) -> RoleModel:
     """Updates a role.
 
@@ -110,7 +108,7 @@ async def update_role(
     Returns:
         The created role.
     """
-    role_in_db = zen_store.get_role(parse_name_or_uuid(role_name_or_id))
+    role_in_db = zen_store.get_role(role_name_or_id)
     return zen_store.update_role(role=role_update.apply_to_model(role_in_db))
 
 
@@ -119,10 +117,10 @@ async def update_role(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def delete_role(role_name_or_id: str) -> None:
+async def delete_role(role_name_or_id: Union[str, UUID]) -> None:
     """Deletes a specific role.
 
     Args:
         role_name_or_id: Name or ID of the role.
     """
-    zen_store.delete_role(role_name_or_id=parse_name_or_uuid(role_name_or_id))
+    zen_store.delete_role(role_name_or_id=role_name_or_id)

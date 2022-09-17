@@ -142,7 +142,7 @@ class StackComponent(BaseModel, ABC):
         # wanted to resolve the secrets in a general way. We therefore
         # limit secret resolving to components of the active stack.
         components = stack.components.get(self.TYPE, None)
-        if not components or components[0].uuid != self.uuid:
+        if not components or components.uuid != self.uuid:
             raise RuntimeError(
                 f"Failed to resolve secret reference for attribute {key} "
                 f"of stack component `{self}`: The stack component is not "

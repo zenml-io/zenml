@@ -148,7 +148,8 @@ class ComponentModel(
 class HydratedComponentModel(ComponentModel):
     """Component model with User and Project fully hydrated."""
 
-    project: ProjectModel = Field(title="The project that contains this stack.")
+    project: ProjectModel = Field(title="The project that contains this stack.")  # type: ignore[assignment]
+    # TODO: before ignoring the typing error, think of a better way to do this
     user: UserModel = Field(
         title="The user that created this stack.",
     )

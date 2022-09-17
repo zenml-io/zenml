@@ -241,7 +241,12 @@ class RestZenStore(BaseZenStore):
         Returns:
             The TFX metadata config of this ZenStore.
         """
-        return self.get(f"{METADATA_CONFIG}")
+        body = self.get(f"{METADATA_CONFIG}")
+        if not isinstance(body, str):
+            raise ValueError(
+                f"Invalid response from server: {body}. Expected string."
+            )
+        return body
 
     # ------
     # Stacks
@@ -533,7 +538,7 @@ class RestZenStore(BaseZenStore):
 
     def list_flavors(
         self,
-        project_name_or_id: Union[str, UUID],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
         component_type: Optional[StackComponentType] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
@@ -542,7 +547,7 @@ class RestZenStore(BaseZenStore):
         """List all stack component flavors matching the given filter criteria.
 
         Args:
-            project_name_or_id: The ID or name of the Project to which the
+            project_name_or_id: Optionally filter by the Project to which the
                 component flavors belong
             component_type: Optionally filter by type of stack component
             flavor_name: Optionally filter by flavor name
@@ -1277,13 +1282,18 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the pipeline run doesn't exist.
         """
-        self.get(f"{RUNS}/{str(run_id)}{GRAPH}")
+        body = self.get(f"{RUNS}/{str(run_id)}{GRAPH}")
+        if not isinstance(body, str):
+            raise ValueError(
+                f"Invalid response from server: {body}. Expected string."
+            )
+        return body
 
     # TODO: Figure out what exactly gets returned from this
     def get_run_component_side_effects(
         self,
         run_id: UUID,
-        component_id: Optional[str] = None,
+        component_id: Optional[UUID] = None,
     ) -> Dict[str, Any]:
         """Gets the side effects for a component in a pipeline run.
 
@@ -1452,7 +1462,7 @@ class RestZenStore(BaseZenStore):
             The authentication token.
         """
         if self._api_token is None:
-            self._api_token = self._handle_response(
+            response = self._handle_response(
                 requests.post(
                     self.url + VERSION_1 + LOGIN,
                     data={
@@ -1460,7 +1470,13 @@ class RestZenStore(BaseZenStore):
                         "password": self.config.password,
                     },
                 )
-            )["access_token"]
+            )
+            if not isinstance(response, dict) or "access_token" not in response:
+                raise ValueError(
+                    f"Bad API Response. Expected access token dict, got "
+                    f"{type(response)}"
+                )
+            self._api_token = response["access_token"]
         return self._api_token
 
     @property

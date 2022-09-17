@@ -635,21 +635,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
     # Pipeline runs
     # -------------
 
-    # TODO: is this really needed ?
-    def get_run_runtime_configuration(
-        self, run_id: UUID
-    ) -> Optional[Dict[str, Any]]:
-        """Gets the runtime configuration for a pipeline run.
-
-        Args:
-            run_id: The ID of the pipeline run to get.
-
-        Returns:
-            The runtime configuration for the pipeline run.
-        """
-        run = self.get_run(run_id)
-        return run.runtime_configuration
-
     # ------------------
     # Pipeline run steps
     # ------------------

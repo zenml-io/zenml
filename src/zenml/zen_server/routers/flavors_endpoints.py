@@ -13,14 +13,14 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for flavors."""
 
-from typing import List, Optional
+from typing import List, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
 from zenml.constants import FLAVORS, VERSION_1
+from zenml.enums import StackComponentType
 from zenml.models import FlavorModel
-from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -39,9 +39,9 @@ router = APIRouter(
 )
 @handle_exceptions
 async def list_flavors(
-    project_name_or_id: Optional[str] = None,
-    component_type: Optional[str] = None,
-    user_name_or_id: Optional[str] = None,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
+    component_type: Optional[StackComponentType] = None,
+    user_name_or_id: Optional[Union[str, UUID]] = None,
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
     hydrated: bool = False,
@@ -50,7 +50,7 @@ async def list_flavors(
 
     Args:
         project_name_or_id: Name or ID of the project.
-        component_type: Optionally filter by component_type.
+        component_type: Optionally filter by component type.
         user_name_or_id: Optionally filter by name or ID of the user.
         name: Optionally filter by flavor name.
         is_shared: Optionally filter by shared status of the flavor.
@@ -61,9 +61,9 @@ async def list_flavors(
         All flavors.
     """
     flavors_list = zen_store.list_flavors(
-        project_name_or_id=parse_name_or_uuid(project_name_or_id),
+        project_name_or_id=project_name_or_id,
         component_type=component_type,
-        user_name_or_id=parse_name_or_uuid(user_name_or_id),
+        user_name_or_id=user_name_or_id,
         is_shared=is_shared,
         name=name,
     )

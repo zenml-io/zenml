@@ -135,12 +135,12 @@ class StackModel(ShareableProjectScopedDomainModel, AnalyticsTrackedModelMixin):
 class HydratedStackModel(StackModel):
     """Stack model with Components, User and Project fully hydrated."""
 
-    components: Dict[StackComponentType, List[ComponentModel]] = Field(
+    components: Dict[StackComponentType, List[ComponentModel]] = Field(  # type: ignore[assignment]
         title="A mapping of stack component types to the actual"
         "instances of components of this type."
     )
-    project: ProjectModel = Field(title="The project that contains this stack.")
-    user: UserModel = Field(
+    project: ProjectModel = Field(title="The project that contains this stack.")  # type: ignore[assignment]
+    user: UserModel = Field(  # type: ignore[assignment]
         title="The user that created this stack.",
     )
 

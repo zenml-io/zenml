@@ -12,14 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for teams and team membership."""
-from typing import List, Optional
+from typing import List, Optional, Union
+from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
 from zenml.constants import ROLES, TEAMS, VERSION_1
 from zenml.models import TeamModel
 from zenml.models.user_management_models import RoleAssignmentModel
-from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.models.user_management_models import (
     CreateTeamRequest,
@@ -76,7 +76,7 @@ async def create_team(team: CreateTeamRequest) -> TeamModel:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_team(team_name_or_id: str) -> TeamModel:
+async def get_team(team_name_or_id: Union[str, UUID]) -> TeamModel:
     """Returns a specific team.
 
     Args:
@@ -85,9 +85,7 @@ async def get_team(team_name_or_id: str) -> TeamModel:
     Returns:
         A specific team.
     """
-    return zen_store.get_team(
-        team_name_or_id=parse_name_or_uuid(team_name_or_id)
-    )
+    return zen_store.get_team(team_name_or_id=team_name_or_id)
 
 
 @router.put(
@@ -97,7 +95,7 @@ async def get_team(team_name_or_id: str) -> TeamModel:
 )
 @handle_exceptions
 async def update_team(
-    team_name_or_id: str, team_update: UpdateTeamRequest
+    team_name_or_id: Union[str, UUID], team_update: UpdateTeamRequest
 ) -> TeamModel:
     """Updates a team.
 
@@ -111,7 +109,7 @@ async def update_team(
     Returns:
         The created team.
     """
-    team_in_db = zen_store.get_team(parse_name_or_uuid(team_name_or_id))
+    team_in_db = zen_store.get_team(team_name_or_id)
     return zen_store.update_team(team=team_update.apply_to_model(team_in_db))
 
 
@@ -120,13 +118,13 @@ async def update_team(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def delete_team(team_name_or_id: str) -> None:
+async def delete_team(team_name_or_id: Union[str, UUID]) -> None:
     """Deletes a specific team.
 
     Args:
         team_name_or_id: Name or ID of the team.
     """
-    zen_store.delete_team(team_name_or_id=parse_name_or_uuid(team_name_or_id))
+    zen_store.delete_team(team_name_or_id=team_name_or_id)
 
 
 @router.get(
@@ -136,8 +134,8 @@ async def delete_team(team_name_or_id: str) -> None:
 )
 @handle_exceptions
 async def get_role_assignments_for_team(
-    team_name_or_id: str,
-    project_name_or_id: Optional[str] = None,
+    team_name_or_id: Union[str, UUID],
+    project_name_or_id: Optional[Union[str, UUID]] = None,
 ) -> List[RoleAssignmentModel]:
     """Returns a list of all roles that are assigned to a team.
 
@@ -150,6 +148,6 @@ async def get_role_assignments_for_team(
         A list of all roles that are assigned to a team.
     """
     return zen_store.list_role_assignments(
-        team_name_or_id=parse_name_or_uuid(team_name_or_id),
-        project_name_or_id=parse_name_or_uuid(project_name_or_id),
+        team_name_or_id=team_name_or_id,
+        project_name_or_id=project_name_or_id,
     )

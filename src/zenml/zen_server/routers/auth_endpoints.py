@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for authentication (login)."""
 
-from typing import Optional
+from typing import Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.param_functions import Form
@@ -73,7 +73,9 @@ class PasswordRequestForm:
     LOGIN,
     responses={401: error_response},
 )
-async def token(auth_form_data: PasswordRequestForm = Depends()):
+async def token(
+    auth_form_data: PasswordRequestForm = Depends(),
+) -> Dict[str, str]:
     """Returns an access token for the given user.
 
     Args:

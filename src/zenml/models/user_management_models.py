@@ -16,7 +16,7 @@
 import re
 from datetime import datetime, timedelta
 from secrets import token_hex
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, cast
 from uuid import UUID
 
 from pydantic import BaseModel, Field, SecretStr, root_validator
@@ -189,7 +189,7 @@ class UserModel(DomainModel, AnalyticsTrackedModelMixin):
         if user is not None and user.password is not None and user.active:
             hash = user.get_hashed_password()
         pwd_context = cls._get_crypt_context()
-        return pwd_context.verify(plain_password, hash)
+        return cast(bool, pwd_context.verify(plain_password, hash))
 
     def get_password(self) -> Optional[str]:
         """Get the password.
@@ -231,7 +231,7 @@ class UserModel(DomainModel, AnalyticsTrackedModelMixin):
         if cls._is_hashed_secret(secret):
             return secret.get_secret_value()
         pwd_context = cls._get_crypt_context()
-        return pwd_context.hash(secret.get_secret_value())
+        return cast(str, pwd_context.hash(secret.get_secret_value()))
 
     def get_hashed_password(self) -> Optional[str]:
         """Returns the hashed password, if configured.
@@ -326,7 +326,7 @@ class UserModel(DomainModel, AnalyticsTrackedModelMixin):
         ):
             hash = user.get_hashed_activation_token()
         pwd_context = cls._get_crypt_context()
-        return pwd_context.verify(activation_token, hash)
+        return cast(bool, pwd_context.verify(activation_token, hash))
 
     def generate_activation_token(self) -> str:
         """Generates and stores a new activation token.
