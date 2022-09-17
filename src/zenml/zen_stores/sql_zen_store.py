@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """SQL Zen Store implementation."""
 
-import os
 from pathlib import Path, PurePath
 from typing import Any, ClassVar, Dict, List, Optional, Type, Union, cast
 from uuid import UUID
@@ -171,11 +170,9 @@ class SqlZenStore(BaseZenStore):
         local_path = self.get_path_from_url(self.config.url)
         if local_path:
             io_utils.create_dir_recursive_if_not_exists(str(local_path.parent))
-
-        metadata_store_path = os.path.join(
-            os.path.dirname(str(local_path)), "metadata.db"
-        )
-        self._metadata_store = SQLiteMetadataStore(uri=metadata_store_path)
+            self._metadata_store = SQLiteMetadataStore(uri=str(local_path))
+        else:
+            raise NotImplementedError("Only SQLite is supported")
 
         self._engine = create_engine(self.config.url, **self.config._sql_kwargs)
         SQLModel.metadata.create_all(self._engine)

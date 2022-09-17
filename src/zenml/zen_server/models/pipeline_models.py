@@ -87,7 +87,8 @@ class HydratedPipelineModel(PipelineModel):
                     "id": "48533493-cb6d-4927-bc72-b8e998503d93",
                     "name": "default",
                     "description": "",
-                    "creation_date": "2022-09-16T14:03:35.567052",
+                    "created": "2022-09-15T11:43:29.994722",
+                    "updated": "2022-09-15T11:43:29.994722",
                 },
                 "user": {
                     "id": "3143dec6-450e-4909-bf3e-a5f389b2a566",
@@ -95,10 +96,11 @@ class HydratedPipelineModel(PipelineModel):
                     "full_name": "",
                     "email": "",
                     "active": "True",
-                    "created_at": "2022-09-16T14:03:35.918900",
-                    "updated_at": "2022-09-16T14:03:35.918930",
+                    "created": "2022-09-15T11:43:29.994722",
+                    "updated": "2022-09-15T11:43:29.994722",
                 },
-                "creation_date": "2022-09-16T14:30:26.023422",
+                "created": "2022-09-15T11:43:29.994722",
+                "updated": "2022-09-15T11:43:29.994722",
                 "runs": [
                     {
                         "id": "c3a15c1e-7f77-4cd7-9fe6-e2fde19b7a39",
@@ -114,7 +116,8 @@ class HydratedPipelineModel(PipelineModel):
                         "git_sha": None,
                         "mlmd_id": 2,
                         "user": "3143dec6-450e-4909-bf3e-a5f389b2a566",
-                        "creation_date": "2022-09-16T14:30:26.119091",
+                        "created": "2022-09-15T11:43:29.994722",
+                        "updated": "2022-09-15T11:43:29.994722",
                     },
                     {
                         "id": "46e1e41f-9436-45ef-a4e8-46976dbbe6b8",
@@ -130,7 +133,8 @@ class HydratedPipelineModel(PipelineModel):
                         "git_sha": None,
                         "mlmd_id": 12,
                         "user": "3143dec6-450e-4909-bf3e-a5f389b2a566",
-                        "creation_date": "2022-09-16T14:30:53.779004",
+                        "created": "2022-09-15T11:43:29.994722",
+                        "updated": "2022-09-15T11:43:29.994722",
                     },
                     {
                         "id": "0c4eac13-4691-4035-8836-ca12b5331eaa",
@@ -146,7 +150,8 @@ class HydratedPipelineModel(PipelineModel):
                         "git_sha": None,
                         "mlmd_id": 15,
                         "user": "3143dec6-450e-4909-bf3e-a5f389b2a566",
-                        "creation_date": "2022-09-16T14:31:05.498228",
+                        "created": "2022-09-15T11:43:29.994722",
+                        "updated": "2022-09-15T11:43:29.994722",
                     },
                 ],
             }
@@ -175,5 +180,6 @@ class HydratedPipelineModel(PipelineModel):
             runs=runs[:num_runs],
             docstring=pipeline_model.docstring,
             configuration=pipeline_model.configuration,
-            creation_date=pipeline_model.creation_date,
+            created=pipeline_model.created,
+            updated=pipeline_model.updated,
         )

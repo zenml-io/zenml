@@ -24,12 +24,18 @@ from pydantic import BaseModel
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     FLAVORS,
+    GRAPH,
+    INPUTS,
     LOGIN,
+    METADATA_CONFIG,
+    OUTPUTS,
     PIPELINES,
     PROJECTS,
     ROLES,
+    RUNS,
     STACK_COMPONENTS,
     STACKS,
+    STEPS,
     TEAMS,
     USERS,
     VERSION_1,
@@ -235,6 +241,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The TFX metadata config of this ZenStore.
         """
+        return self.get(f"{METADATA_CONFIG}")
 
     # ------
     # Stacks
@@ -1233,6 +1240,12 @@ class RestZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If an identical pipeline run already exists.
         """
+        return self._create_resource(
+            resource=pipeline_run,
+            route=f"{PIPELINES}/{str(pipeline_run.pipeline_id)}{RUNS}",
+            # TODO[server]: add request model
+            # request_model=CreatePipelineRunRequest,
+        )
 
     def get_run(self, run_id: UUID) -> PipelineRunModel:
         """Gets a pipeline run.
@@ -1246,6 +1259,11 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the pipeline run doesn't exist.
         """
+        return self._get_resource(
+            resource_id=run_id,
+            route=RUNS,
+            resource_model=PipelineRunModel,
+        )
 
     def get_run_dag(self, run_id: UUID) -> str:
         """Gets the DAG for a pipeline run.
@@ -1259,6 +1277,7 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the pipeline run doesn't exist.
         """
+        self.get(f"{RUNS}/{str(run_id)}{GRAPH}")
 
     # TODO: Figure out what exactly gets returned from this
     def get_run_component_side_effects(
@@ -1302,6 +1321,13 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all pipeline runs.
         """
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=RUNS,
+            resource_model=PipelineRunModel,
+            **filters,
+        )
 
     def update_run(self, run: PipelineRunModel) -> PipelineRunModel:
         """Updates a pipeline run.
@@ -1315,6 +1341,9 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the pipeline run doesn't exist.
         """
+        # TODO[server]: figure out if this should even be
+        # allowed or if we can remove it from the store interface
+        raise NotImplementedError
 
     def delete_run(self, run_id: UUID) -> None:
         """Deletes a pipeline run.
@@ -1325,6 +1354,10 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the pipeline run doesn't exist.
         """
+        self._delete_resource(
+            resource_id=run_id,
+            route=RUNS,
+        )
 
     # ------------------
     # Pipeline run steps
@@ -1342,6 +1375,11 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the step doesn't exist.
         """
+        return self._get_resource(
+            resource_id=step_id,
+            route=STEPS,
+            resource_model=StepRunModel,
+        )
 
     def get_run_step_outputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
         """Get a list of outputs for a specific step.
@@ -1352,6 +1390,14 @@ class RestZenStore(BaseZenStore):
         Returns:
             A dict mapping artifact names to the output artifacts for the step.
         """
+        body = self.get(f"{STEPS}/{str(step_id)}{OUTPUTS}")
+        if not isinstance(body, dict):
+            raise ValueError(
+                f"Bad API Response. Expected dict, got {type(body)}"
+            )
+        return {
+            name: ArtifactModel.parse_obj(entry) for name, entry in body.items()
+        }
 
     def get_run_step_inputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
         """Get a list of inputs for a specific step.
@@ -1362,6 +1408,14 @@ class RestZenStore(BaseZenStore):
         Returns:
             A dict mapping artifact names to the input artifacts for the step.
         """
+        body = self.get(f"{STEPS}/{str(step_id)}{INPUTS}")
+        if not isinstance(body, dict):
+            raise ValueError(
+                f"Bad API Response. Expected dict, got {type(body)}"
+            )
+        return {
+            name: ArtifactModel.parse_obj(entry) for name, entry in body.items()
+        }
 
     def get_run_step_status(self, step_id: UUID) -> ExecutionStatus:
         """Gets the execution status of a single step.
@@ -1382,6 +1436,10 @@ class RestZenStore(BaseZenStore):
         Returns:
             A mapping from step names to step models for all steps in the run.
         """
+        return self._list_resources(
+            route=f"{RUNS}/{str(run_id)}{STEPS}",
+            resource_model=StepRunModel,
+        )
 
     # =======================
     # Internal helper methods

@@ -47,24 +47,33 @@ router = APIRouter(
 @handle_exceptions
 async def list_runs(
     project_name_or_id: Optional[str] = None,
-    stack_id: Optional[str] = None,
-    component_id: Optional[str] = None,
-    pipeline_id: Optional[str] = None,
+    stack_id: Optional[UUID] = None,
+    run_name: Optional[str] = None,
+    user_name_or_id: Optional[str] = None,
+    component_id: Optional[UUID] = None,
+    pipeline_id: Optional[UUID] = None,
+    unlisted: bool = False,
 ) -> List[PipelineRunModel]:
     """Get pipeline runs according to query filters.
 
     Args:
         project_name_or_id: Name or ID of the project for which to filter runs.
         stack_id: ID of the stack for which to filter runs.
-        component_id: Id of a component that where used in the run.
+        run_name: Filter by run name if provided
+        user_name_or_id: If provided, only return runs for this user.
+        component_id: Filter by ID of a component that was used in the run.
         pipeline_id: ID of the pipeline for which to filter runs.
+        unlisted: If True, only return unlisted runs that are not
+            associated with any pipeline.
 
     Returns:
         The pipeline runs according to query filters.
     """
     return zen_store.list_runs(
         project_name_or_id=parse_optional_name_or_uuid(project_name_or_id),
+        run_name=run_name,
         stack_id=stack_id,
+        user_name_or_id=parse_optional_name_or_uuid(user_name_or_id),
         pipeline_id=pipeline_id,
     )
 

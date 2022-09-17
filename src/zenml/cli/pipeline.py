@@ -60,11 +60,15 @@ def list_pipelines() -> None:
     pipelines = Repository().zen_store.list_pipelines(
         project_name_or_id=Repository().active_project.id
     )
-    if not pipelines:
+    hydrated_pipelines = [p.to_hydrated_model() for p in pipelines]
+    if not hydrated_pipelines:
         cli_utils.declare("No piplines registered.")
         return
 
-    cli_utils.print_pydantic_models(pipelines)
+    cli_utils.print_pydantic_models(
+        hydrated_pipelines,
+        exclude_columns=["id", "created", "updated", "user", "project"],
+    )
 
 
 @pipeline.command("delete")
