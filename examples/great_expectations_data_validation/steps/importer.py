@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 
+import os
 import pandas as pd
 from sklearn.datasets import fetch_openml
 
@@ -70,7 +71,7 @@ def importer() -> pd.DataFrame:
     Returns:
         pd.DataFrame: the steel plates fault dataset.
     """
-    plates = fetch_openml(name="steel-plates-fault")
+    plates = fetch_openml(name="steel-plates-fault", data_home=os.getcwd())
     df = pd.DataFrame(data=plates.data, columns=plates.feature_names)
     df["target"] = plates.target
     plates_columns = dict(zip(plates.feature_names, FULL_FEATURE_NAMES))

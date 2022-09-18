@@ -50,14 +50,16 @@ def get_pipeline(
 
     Use it in one of these ways:
     ```python
+    from zenml.post_execution import get_pipeline
+
     # Get the pipeline by name
-    Repository().get_pipeline("first_pipeline")
+    get_pipeline("first_pipeline")
 
     # Get the pipeline by supplying the original pipeline class
-    Repository().get_pipeline(first_pipeline)
+    get_pipeline(first_pipeline)
 
     # Get the pipeline by supplying an instance of the original pipeline class
-    Repository().get_pipeline(first_pipeline())
+    get_pipeline(first_pipeline())
     ```
 
     If the specified pipeline does not (yet) exist within the repository,
