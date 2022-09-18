@@ -140,6 +140,9 @@ USER_MAIN_MODULE: Optional[str] = None
 # Config file name
 CONFIG_FILE_NAME = "config.yaml"
 
+# Default store directory subpath:
+DEFAULT_STORE_DIRECTORY_NAME = "default_zen_store"
+
 # Secrets Manager
 ZENML_SCHEMA_NAME = "zenml_schema_name"
 LOCAL_SECRETS_FILENAME = "secrets.yaml"

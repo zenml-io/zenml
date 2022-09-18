@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base Zen Store implementation."""
-import os
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
 from uuid import UUID
 
@@ -34,7 +33,6 @@ from zenml.models import (
 )
 from zenml.models.pipeline_models import PipelineModel
 from zenml.stack.flavor_registry import flavor_registry
-from zenml.utils import io_utils
 from zenml.utils.analytics_utils import (
     AnalyticsEvent,
     AnalyticsTrackerMixin,
@@ -332,8 +330,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             StackExistsError: If a default stack already exists for the
                 user in the supplied project.
         """
-        from zenml.config.global_config import GlobalConfiguration
-
         project = self.get_project(project_name_or_id=project_name_or_id)
         user = self.get_user(user_name_or_id=user_name_or_id)
         try:
@@ -367,13 +363,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         )
 
         # Register the default artifact store
-        artifact_store_path = os.path.join(
-            GlobalConfiguration().config_directory,
-            "local_stores",
-            "default_local_store",
-        )
-        io_utils.create_dir_recursive_if_not_exists(artifact_store_path)
-
         artifact_store = self.create_stack_component(
             component=ComponentModel(
                 name="default",
@@ -381,7 +370,7 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
                 project=project.id,
                 type=StackComponentType.ARTIFACT_STORE,
                 flavor="local",
-                configuration={"path": artifact_store_path},
+                configuration={},
             ),
         )
 

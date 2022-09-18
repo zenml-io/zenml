@@ -247,14 +247,13 @@ class StackComponent(BaseModel, ABC):
         also need that information to be available during pipeline runs.
 
         IMPORTANT: the path returned by this property must always be a path
-        that is relative to the ZenML global config directory. The local
+        that is relative to the ZenML local stores directory. The local
         Kubeflow orchestrator relies on this convention to correctly mount the
         local folders in the Kubeflow containers. This is an example of a valid
         path:
 
         ```python
-        from zenml.utils.io_utils import get_global_config_directory
-        from zenml.constants import LOCAL_STORES_DIRECTORY_NAME
+        from zenml.config.global_config import GlobalConfiguration
 
         ...
 
@@ -262,9 +261,8 @@ class StackComponent(BaseModel, ABC):
         def local_path(self) -> Optional[str]:
 
             return os.path.join(
-                get_global_config_directory(),
-                LOCAL_STORES_DIRECTORY_NAME,
-                str(uuid),
+                GlobalConfiguration().local_stores_path,
+                str(self.uuid),
             )
         ```
 

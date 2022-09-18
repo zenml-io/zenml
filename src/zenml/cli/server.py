@@ -18,6 +18,7 @@ from importlib import import_module
 from typing import Any, Dict, Optional, Union
 
 import click
+from click_params import IP_ADDRESS
 from rich.errors import MarkupError
 from rich.markdown import Markdown
 
@@ -107,6 +108,7 @@ def explain_server() -> None:
     type=click.BOOL,
 )
 @click.option("--port", type=int, default=None)
+@click.option("--ip-address", type=IP_ADDRESS, default=None)
 @click.option(
     "--username", type=str, default="default", show_default=True, help="The ."
 )

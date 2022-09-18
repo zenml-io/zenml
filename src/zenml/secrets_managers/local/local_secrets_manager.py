@@ -21,7 +21,8 @@ from typing import Any, ClassVar, Dict, List
 from pydantic import root_validator
 
 from zenml.cli.utils import error
-from zenml.constants import LOCAL_SECRETS_FILENAME, LOCAL_STORES_DIRECTORY_NAME
+from zenml.config.global_config import GlobalConfiguration
+from zenml.constants import LOCAL_SECRETS_FILENAME
 from zenml.exceptions import SecretExistsError
 from zenml.io.fileio import remove
 from zenml.logger import get_logger
@@ -30,10 +31,7 @@ from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.secrets_managers.utils import decode_secret_dict, encode_secret
 from zenml.utils import yaml_utils
-from zenml.utils.io_utils import (
-    create_file_if_not_exists,
-    get_global_config_directory,
-)
+from zenml.utils.io_utils import create_file_if_not_exists
 
 logger = get_logger(__name__)
 
@@ -76,8 +74,7 @@ class LocalSecretsManager(BaseSecretsManager):
             The path to the secret store.
         """
         return os.path.join(
-            get_global_config_directory(),
-            LOCAL_STORES_DIRECTORY_NAME,
+            GlobalConfiguration().local_stores_path,
             str(uuid),
             LOCAL_SECRETS_FILENAME,
         )

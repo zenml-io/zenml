@@ -22,7 +22,6 @@ from pydantic import root_validator, validator
 from tfx.orchestration import metadata
 
 from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import LOCAL_STORES_DIRECTORY_NAME
 from zenml.metadata_stores import BaseMetadataStore
 from zenml.utils import io_utils
 
@@ -68,8 +67,7 @@ class SQLiteMetadataStore(BaseMetadataStore):
         metadata_store_id = values.get("uuid")
         if uri == "" and metadata_store_id:
             metadata_store_path = os.path.join(
-                GlobalConfiguration().config_directory,
-                LOCAL_STORES_DIRECTORY_NAME,
+                GlobalConfiguration().local_stores_path,
                 str(metadata_store_id),
             )
             io_utils.create_dir_recursive_if_not_exists(metadata_store_path)
