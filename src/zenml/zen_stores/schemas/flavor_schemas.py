@@ -40,7 +40,7 @@ class FlavorSchema(SQLModel, table=True):
     updated: datetime = Field(default_factory=datetime.now)
 
     @classmethod
-    def from_create_model(cls, flavor: FlavorModel):
+    def from_create_model(cls, flavor: FlavorModel) -> "FlavorSchema":
         return cls(
             id=flavor.id,
             name=flavor.name,
@@ -55,10 +55,10 @@ class FlavorSchema(SQLModel, table=True):
     def from_update_model(
         self,
         flavor: FlavorModel,
-    ):
-        return flavor
+    ) -> "FlavorSchema":
+        return self
 
-    def to_model(self):
+    def to_model(self) -> FlavorModel:
         return FlavorModel(
             id=self.id,
             name=self.name,
