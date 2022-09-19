@@ -748,16 +748,18 @@ def list_stacks() -> None:
     cli_utils.print_active_config()
 
     repo = Repository()
-
+    active_stack_id = repo.active_stack_model.id
     stack_dicts = []
-    for stack_name, stack_configuration in repo.stack_configurations.items():
-        is_active = stack_name == repo.active_stack_model.name
+    # TODO: add filters
+    for stack in repo.stacks:
+        is_active = stack.id == active_stack_id
         stack_config = {
             "ACTIVE": ":point_right:" if is_active else "",
-            "STACK NAME": stack_name,
+            "STACK NAME": stack.name,
+            "SHARED": "Yes" if stack.is_shared else "No",
             **{
-                component_type.upper(): value
-                for component_type, value in stack_configuration.items()
+                component_type.upper(): components[0].name
+                for component_type, components in stack.components.items()
             },
         }
         stack_dicts.append(stack_config)
@@ -783,21 +785,21 @@ def describe_stack(stack_name: Optional[str]) -> None:
     cli_utils.print_active_config()
 
     repo = Repository()
+    active_stack = repo.active_stack_model
 
-    stack_configurations = repo.stack_configurations
-    if len(stack_configurations) == 0:
-        cli_utils.error("No stacks registered.")
-    if stack_name is not None and stack_name not in stack_configurations:
-        cli_utils.error(f"Stack `{stack_name}` does not exist.")
-
-    active_stack_name = repo.active_stack_model.name
-    stack_name = stack_name or active_stack_name
-    stack_configuration = stack_configurations[stack_name]
+    if stack_name:
+        try:
+            stack = repo.get_stack_by_name(stack_name)
+        except KeyError:
+            cli_utils.error(
+                f"Stack `{stack_name}` does not exist.",
+            )
+    else:
+        stack = active_stack
 
     cli_utils.print_stack_configuration(
-        stack_configuration,
-        active=stack_name == active_stack_name,
-        stack_name=stack_name,
+        stack,
+        active=stack.id == active_stack.id,
     )
 
 
@@ -1160,12 +1162,16 @@ def import_stack(
 
     # ask user for new stack_name if current one already exists
     repo = Repository()
-    while stack_name in repo.stack_configurations:
-        stack_name = click.prompt(
-            f"Stack `{stack_name}` already exists. "
-            f"Please choose a different name.",
-            type=str,
-        )
+    while True:
+        try:
+            repo.get_stack_by_name(stack_name)
+            stack_name = click.prompt(
+                f"Stack `{stack_name}` already exists. "
+                f"Please choose a different name.",
+                type=str,
+            )
+        except KeyError:
+            break
 
     # import stack components
     component_names = {}
