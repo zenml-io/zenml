@@ -71,6 +71,7 @@ async def list_runs(
         project_name_or_id=project_name_or_id,
         run_name=run_name,
         stack_id=stack_id,
+        component_id=component_id,
         user_name_or_id=user_name_or_id,
         pipeline_id=pipeline_id,
     )
