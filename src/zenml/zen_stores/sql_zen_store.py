@@ -852,8 +852,8 @@ class SqlZenStore(BaseZenStore):
         return [flavor.to_model() for flavor in list_of_flavors_in_db]
 
     @track(AnalyticsEvent.UPDATED_FLAVOR)
-    def update_flavor(self, flavor: FlavorModel) -> None:
-        """Update a flavor.
+    def update_flavor(self, flavor: FlavorModel) -> FlavorModel:
+        """Update an existing stack component flavor.
 
         Args:
             flavor: The model of the flavor to update.
