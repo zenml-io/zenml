@@ -437,10 +437,9 @@ class SqlZenStore(BaseZenStore):
                 user = self._get_user_schema(user_name_or_id)
                 query = query.where(StackSchema.user == user.id)
             if component_id:
-                query = (
-                    query
-                    .where(StackCompositionSchema.stack_id == StackSchema.id)
-                    .where(StackCompositionSchema.component_id == component_id))
+                query = query.where(
+                    StackCompositionSchema.stack_id == StackSchema.id
+                ).where(StackCompositionSchema.component_id == component_id)
             if name:
                 query = query.where(StackSchema.name == name)
             if is_shared is not None:
@@ -824,7 +823,7 @@ class SqlZenStore(BaseZenStore):
             query = select(FlavorSchema)
             if project_name_or_id:
                 project = self._get_project_schema(project_name_or_id)
-                query=query.where(FlavorSchema.project == project.id)
+                query = query.where(FlavorSchema.project == project.id)
             if component_type:
                 query = query.where(FlavorSchema.type == component_type)
             if name:
@@ -838,8 +837,8 @@ class SqlZenStore(BaseZenStore):
         return [flavor.to_model() for flavor in list_of_flavors_in_db]
 
     @track(AnalyticsEvent.UPDATED_FLAVOR)
-    def update_flavor(self, flavor: FlavorModel) -> None:
-        """Update a flavor.
+    def update_flavor(self, flavor: FlavorModel) -> FlavorModel:
+        """Update an existing stack component flavor.
 
         Args:
             flavor: The model of the flavor to update.
@@ -2015,11 +2014,10 @@ class SqlZenStore(BaseZenStore):
             if stack_id is not None:
                 query = query.where(PipelineRunSchema.stack_id == stack_id)
             if component_id:
-                query = (
-                    query
-                    .where(StackCompositionSchema.stack_id
-                           == PipelineRunSchema.stack_id)
-                    .where(StackCompositionSchema.component_id == component_id))
+                query = query.where(
+                    StackCompositionSchema.stack_id
+                    == PipelineRunSchema.stack_id
+                ).where(StackCompositionSchema.component_id == component_id)
             if run_name is not None:
                 query = query.where(PipelineRunSchema.name == run_name)
             if pipeline_id is not None:

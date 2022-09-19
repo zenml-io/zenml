@@ -540,8 +540,8 @@ class RestZenStore(BaseZenStore):
     def list_flavors(
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
-        component_type: Optional[StackComponentType] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
+        component_type: Optional[StackComponentType] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
     ) -> List[FlavorModel]:
@@ -550,8 +550,8 @@ class RestZenStore(BaseZenStore):
         Args:
             project_name_or_id: Optionally filter by the Project to which the
                 component flavors belong
-            component_type: Optionally filter by type of stack component
             user_name_or_id: Optionally filter by the owner
+            component_type: Optionally filter by type of stack component
             name: Optionally filter flavors by name
             is_shared: Optionally filter out flavors by whether they are
                 shared or not
