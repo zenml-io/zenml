@@ -35,6 +35,10 @@ def get_run(name: str) -> "PipelineRunView":
 
     Returns:
         The post-execution view of the run with the given name.
+
+    Raises:
+        KeyError: If no run with the given name exists.
+        RuntimeError: If multiple runs with the given name exist.
     """
     repo = Repository()
     active_project_id = repo.active_project.id

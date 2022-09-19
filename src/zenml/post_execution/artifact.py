@@ -55,6 +55,15 @@ class ArtifactView:
         return self._model.id
 
     @property
+    def name(self) -> str:
+        """Returns the name of the artifact (output name in the parent step).
+
+        Returns:
+            The name of the artifact.
+        """
+        return self._model.name
+
+    @property
     def type(self) -> str:
         """Returns the artifact type.
 

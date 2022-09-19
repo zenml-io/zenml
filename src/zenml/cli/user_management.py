@@ -608,7 +608,14 @@ def list_role_assignments(
     team_name_or_id: Optional[str] = None,
     project_name_or_id: Optional[str] = None,
 ) -> None:
-    """List all role assignments."""
+    """List all role assignments.
+
+    Args:
+        user_name_or_id: Name or ID of a user to list role assignments for.
+        team_name_or_id: Name or ID of a team to list role assignments for.
+        project_name_or_id: Name or ID of a project to list role assignments
+            for.
+    """
     cli_utils.print_active_config()
     role_assignments = Repository().zen_store.list_role_assignments(
         user_name_or_id=user_name_or_id,

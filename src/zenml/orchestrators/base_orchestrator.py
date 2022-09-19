@@ -197,7 +197,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
     @staticmethod
     def get_mlmd_connection_config() -> metadata.ConnectionConfigType:
-        """Returns the MLMD database connection configuratino.
+        """Returns the MLMD database connection configuration.
 
         Returns:
             The MLMD database connection configuration.
