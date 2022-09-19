@@ -14,36 +14,22 @@
 """Implementation of a Terraform ZenML service."""
 
 import os
-from pathlib import Path
 import shutil
-import python_terraform
 import tempfile
-import time
-from abc import abstractmethod
-from typing import Any, Dict, Generator, List, Optional, Tuple
+from pathlib import Path
+from typing import Any, Generator, Optional, Tuple
 
 import docker.errors as docker_errors
-from docker.client import DockerClient
+import python_terraform
 from docker.models.containers import Container
 from pydantic import Field
 
-import zenml
-from zenml.constants import ENV_ZENML_CONFIG_PATH
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.services.container.container_service_endpoint import (
-    ContainerServiceEndpoint,
-)
-from zenml.services.container.entrypoint import (
-    SERVICE_CONTAINER_PATH,
-    SERVICE_LOG_FILE_NAME,
-)
+from zenml.services.container.entrypoint import SERVICE_LOG_FILE_NAME
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.services.service_status import ServiceState, ServiceStatus
-from zenml.utils.io_utils import (
-    create_dir_recursive_if_not_exists,
-    get_global_config_directory,
-)
+from zenml.utils.io_utils import create_dir_recursive_if_not_exists
 
 logger = get_logger(__name__)
 
@@ -53,15 +39,13 @@ SERVICE_CONTAINER_GLOBAL_CONFIG_DIR = "zenconfig"
 SERVICE_CONTAINER_GLOBAL_CONFIG_PATH = os.path.join(
     "/", SERVICE_CONTAINER_GLOBAL_CONFIG_DIR
 )
-DOCKER_ZENML_SERVER_DEFAULT_IMAGE = "zenmldocker/zenml"
-ENV_ZENML_SERVICE_CONTAINER = "ZENML_SERVICE_CONTAINER"
 
 
 class TerraformServiceConfig(ServiceConfig):
-    """containerized service configuration.
+    """Terraform service configuration.
 
     Attributes:
-        root_runtime_path: the root path where the service stores its files. 
+        root_runtime_path: the root path where the service stores its files.
         singleton: set to True to store the service files directly in the
             `root_runtime_path` directory instead of creating a subdirectory for
             each service instance. Only has effect if the `root_runtime_path` is
@@ -76,11 +60,11 @@ class TerraformServiceConfig(ServiceConfig):
     singleton: bool = False
     directory_path: str
     log_level: str = "ERROR"
-    variables_file_path: str = "values.tfvars.json" 
+    variables_file_path: str = "values.tfvars.json"
 
 
 class TerraformServiceStatus(ServiceStatus):
-    """containerized service status.
+    """Terraform service status.
 
     Attributes:
         runtime_path: the path where the service files (e.g. the configuration
@@ -242,15 +226,19 @@ class TerraformService(BaseService):
                 f"Docker container is {container.status}",
             )
 
-
     def _init_and_apply(self) -> None:
         """Function to call terraform init and terraform apply.
-        
+
         The init call is not repeated if any successful execution has
         happened already, to save time.
+
+        Raises:
+            RuntimeError: if init or apply function fails.
         """
         # this directory gets created after a successful init
-        previous_run_dir = os.path.join(self.terraform_client.working_dir, ".ignoreme")
+        previous_run_dir = os.path.join(
+            self.terraform_client.working_dir, ".ignoreme"
+        )
         if fileio.exists(previous_run_dir):
             logger.info(
                 "Terraform already initialized, "
@@ -281,18 +269,23 @@ class TerraformService(BaseService):
 
     def _get_vars(self, path: str) -> Any:
         """Get variables as a dictionary from values.tfvars.json.
+
         Args:
             path: the path to the stack recipe.
+
         Returns:
             A dictionary of variables to use for the stack recipes
             derived from the tfvars.json file.
+
         Raises:
             FileNotFoundError: if the values.tfvars.json file is not
                 found in the stack recipe.
         """
         import json
 
-        variables_file_path = os.path.join(path, self.config.variables_file_path)
+        variables_file_path = os.path.join(
+            path, self.config.variables_file_path
+        )
         if not fileio.exists(variables_file_path):
             raise FileNotFoundError(
                 "The file values.tfvars.json was not found in the "
@@ -305,10 +298,8 @@ class TerraformService(BaseService):
             variables = json.load(f)
         return variables
 
-
     def _destroy(self) -> None:
         """Function to call terraform destroy on the given path."""
-
         self.terraform_client.destroy(
             capture_output=False,
             raise_on_error=True,
@@ -333,7 +324,9 @@ class TerraformService(BaseService):
                         self.config.root_runtime_path,
                         str(self.uuid),
                     )
-                create_dir_recursive_if_not_exists(str(self.status.runtime_path))
+                create_dir_recursive_if_not_exists(
+                    str(self.status.runtime_path)
+                )
             else:
                 self.status.runtime_path = tempfile.mkdtemp(
                     prefix="zenml-service-"
@@ -346,9 +339,12 @@ class TerraformService(BaseService):
         self._set_log_level()
         self._init_and_apply()
 
-    def deprovision(self) -> None:
+    def deprovision(self, force: bool = False) -> None:
         """Deprovision the service.
 
+        Args:
+            force: if True, the service will be deprovisioned even if it is
+                in a failed state.
         """
         self.check_installation()
         self._set_log_level()
@@ -410,15 +406,11 @@ class TerraformService(BaseService):
         Args:
             follow: if True, the logs will be streamed as they are written
             tail: only retrieve the last NUM lines of log output.
-
-        Yields:
-            A generator that can be accessed to get the service logs.
         """
-        pass
 
     def check_installation(self) -> None:
         """Checks if necessary tools are installed on the host system.
-        
+
         Raises:
             RuntimeError: if any required tool is not installed.
         """
@@ -430,9 +422,10 @@ class TerraformService(BaseService):
                 "https://learn.hashicorp.com/tutorials/terraform/install-cli "
                 "to install it."
             )
-    
+
     def _is_terraform_installed(self) -> bool:
         """Checks if terraform is installed on the host system.
+
         Returns:
             True if terraform is installed, false otherwise.
         """
@@ -445,9 +438,5 @@ class TerraformService(BaseService):
         return True
 
     def _set_log_level(self) -> None:
-        """Set TF_LOG env var to the log_level provided by the user.
-        Args:
-            log_level: One of TRACE, DEBUG, INFO, WARN or ERROR to set
-                as the log level for terraform CLI.
-        """
+        """Set TF_LOG env var to the log_level provided by the user."""
         os.environ["TF_LOG"] = self.config.log_level
