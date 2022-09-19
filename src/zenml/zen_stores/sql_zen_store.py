@@ -2074,7 +2074,9 @@ class SqlZenStore(BaseZenStore):
             query = select(PipelineRunSchema)
             if project_name_or_id is not None:
                 project = self._get_project_schema(project_name_or_id)
-                query = query.where(StackSchema.project == project.id)
+                query = query.where(StackSchema.project == project.id).where(
+                    PipelineRunSchema.stack_id == StackSchema.id
+                )
             if stack_id is not None:
                 query = query.where(PipelineRunSchema.stack_id == stack_id)
             if component_id:
