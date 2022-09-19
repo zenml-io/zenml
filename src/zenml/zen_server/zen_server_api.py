@@ -67,6 +67,7 @@ templates = Jinja2Templates(directory=relative_path(DASHBOARD_DIRECTORY))
 
 @app.get("/")
 async def dashboard(request: Request):
+    """Dashboard endpoint."""
     return templates.TemplateResponse("index.html", {"request": request})
 
 
