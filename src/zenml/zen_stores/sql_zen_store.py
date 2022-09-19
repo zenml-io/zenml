@@ -1417,11 +1417,11 @@ class SqlZenStore(BaseZenStore):
         """Assigns a role to a team, potentially scoped to a specific project.
 
         Args:
+            role_name_or_id: Name or ID of the role to assign.
+            team_name_or_id: Name or ID of the team to which to assign the role.
             project_name_or_id: Optional ID of a project in which to assign the
                 role. If this is not provided, the role will be assigned
                 globally.
-            role_name_or_id: Name or ID of the role to assign.
-            team_name_or_id: Name or ID of the team to which to assign the role.
 
         Raises:
             EntityExistsError: If the role assignment already exists.
@@ -1948,10 +1948,8 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The DAG for the pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
         """
+        # TODO: raise KeyError if run doesn't exist
         pass  # TODO
 
     def get_run_component_side_effects(
@@ -1967,10 +1965,8 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The side effects for the component in the pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
         """
+        # TODO: raise KeyError if run doesn't exist
         pass  # TODO
 
     def list_runs(
@@ -2056,7 +2052,7 @@ class SqlZenStore(BaseZenStore):
             run_id: The ID of the pipeline run to delete.
 
         Raises:
-            KeyError: if the pipeline run doesn't exist.
+            NotImplementedError: this method is not implemented.
         """
         raise NotImplementedError(
             "Deleting pipeline runs is currently not supported."
@@ -2207,6 +2203,7 @@ class SqlZenStore(BaseZenStore):
             schema_class: The schema class to query. E.g., `ProjectSchema`.
             schema_name: The name of the schema used for error messages.
                 E.g., "project".
+            session: The database session to use.
 
         Returns:
             The schema object.
@@ -2257,6 +2254,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             project_name_or_id: The name or ID of the project to get.
+            session: The database session to use.
 
         Returns:
             The project schema.
@@ -2283,6 +2281,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             user_name_or_id: The name or ID of the user to get.
+            session: The database session to use.
 
         Returns:
             The user schema.
@@ -2309,6 +2308,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             team_name_or_id: The name or ID of the team to get.
+            session: The database session to use.
 
         Returns:
             The team schema.
@@ -2335,6 +2335,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             role_name_or_id: The name or ID of the role to get.
+            session: The database session to use.
 
         Returns:
             The role schema.
