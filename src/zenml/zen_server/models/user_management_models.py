@@ -14,116 +14,288 @@
 """REST API user management models implementation."""
 
 
-from typing import Optional
+from typing import Any, Optional, cast
 
-from pydantic import BaseModel, SecretStr
+from pydantic import Field
 
-from zenml.models.user_management_models import UserModel
-
-
-class CreateUserModel(BaseModel):
-    """Pydantic object representing a user create request.
-
-    Attributes:
-        name: Name of the user.
-        full_name: Full name for the user account.
-        email: Email address for the user account.
-        password: Password for the user account.
-    """
-
-    name: str
-    full_name: Optional[str] = None
-    email: Optional[str] = None
-    password: Optional[SecretStr] = None
-
-    def to_model(self) -> UserModel:
-        """Convert to a user model."""
-        return UserModel(
-            **self.dict(exclude_none=True),
-        )
+from zenml.models.constants import (
+    MODEL_NAME_FIELD_MAX_LENGTH,
+    USER_ACTIVATION_TOKEN_LENGTH,
+    USER_PASSWORD_MAX_LENGTH,
+)
+from zenml.models.user_management_models import RoleModel, TeamModel, UserModel
+from zenml.zen_server.models.base_models import (
+    CreateRequest,
+    CreateResponse,
+    UpdateRequest,
+    UpdateResponse,
+)
 
 
-class CreateUserResponse(UserModel):
-    """Pydantic object representing a user create response.
+class CreateUserRequest(CreateRequest[UserModel]):
+    """Model for user creation requests."""
 
-    The activation token is included in the response.
-    """
+    _MODEL_TYPE = UserModel
 
-    activation_token: Optional[str] = None
+    name: str = Field(
+        title="The unique username for the account.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+    full_name: Optional[str] = Field(
+        default=None,
+        title="The full name for the account owner.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+    email: Optional[str] = Field(
+        default=None,
+        title="The email address associated with the account.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+    password: Optional[str] = Field(
+        default=None,
+        title="Account password.",
+        max_length=USER_PASSWORD_MAX_LENGTH,
+    )
 
     @classmethod
-    def from_model(cls, user: UserModel) -> "CreateUserResponse":
-        """Convert from a user model."""
-        response = cls(
-            **user.dict(), activation_token=user.get_activation_token()
+    def from_model(cls, model: UserModel, **kwargs: Any) -> "CreateUserRequest":
+        """Convert a user domain model into a user create request.
+
+        Args:
+            model: The user domain model to convert.
+            kwargs: Additional keyword arguments to pass to the user create
+                request.
+
+        Returns:
+            The user create request.
+        """
+        return cast(
+            CreateUserRequest,
+            super().from_model(model, **kwargs, password=model.get_password()),
         )
-        return response
 
 
-class UpdateUserRequest(BaseModel):
-    """Pydantic object representing a user update request.
+class CreateUserResponse(UserModel, CreateResponse[UserModel]):
+    """Model for user creation responses."""
 
-    Attributes:
-        name: Name of the user.
-        full_name: Full name for the user account.
-        email: Email address for the user account.
-        password: Password for the user account.
-    """
+    _MODEL_TYPE = UserModel
 
-    name: Optional[str] = None
-    full_name: Optional[str] = None
-    email: Optional[str] = None
-    password: Optional[SecretStr] = None
+    activation_token: Optional[str] = Field(  # type: ignore[assignment]
+        default=None, title="Account activation token."
+    )
 
-    def to_model(self, user: UserModel) -> UserModel:
-        """Convert to a user model."""
-        for k, v in self.dict(exclude_none=True).items():
-            setattr(user, k, v)
+    @classmethod
+    def from_model(
+        cls, model: UserModel, **kwargs: Any
+    ) -> "CreateUserResponse":
+        """Convert a user domain model into a user create response.
+
+        Args:
+            model: The user domain model to convert.
+            kwargs: Additional keyword arguments to pass to the user create
+                response.
+
+        Returns:
+            The user create response.
+        """
+        return cast(
+            CreateUserResponse,
+            super().from_model(
+                model, **kwargs, activation_token=model.get_activation_token()
+            ),
+        )
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # Validate attributes when assigning them
+        validate_assignment = True
+        underscore_attrs_are_private = True
+
+
+class UpdateUserRequest(UpdateRequest[UserModel]):
+    """Model for user update requests."""
+
+    _MODEL_TYPE = UserModel
+
+    name: Optional[str] = Field(
+        default=None,
+        title="Updated username for the account.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+    full_name: Optional[str] = Field(
+        default=None,
+        title="Updated full name for the account owner.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+    email: Optional[str] = Field(
+        default=None,
+        title="Updated email address associated with the account.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+    password: Optional[str] = Field(
+        default=None,
+        title="Updated account password.",
+        max_length=USER_PASSWORD_MAX_LENGTH,
+    )
+
+    def apply_to_model(self, model: UserModel) -> UserModel:
+        """Apply the update changes to a user domain model.
+
+        Args:
+            model: The user domain model to update.
+
+        Returns:
+            The updated user domain model.
+        """
+        user = super().apply_to_model(model)
         if self.password is not None:
-            user.password = self.password.get_secret_value()
+            user.password = self.password
         return user
 
+    @classmethod
+    def from_model(cls, model: UserModel, **kwargs: Any) -> "UpdateUserRequest":
+        """Convert a user domain model into an update request.
 
-class ActivateUserRequest(BaseModel):
-    """Pydantic object representing a user activation request.
+        Args:
+            model: The user domain model to convert.
+            kwargs: Additional keyword arguments to pass to the user update
+                response.
 
-    Attributes:
-        name: Name of the user.
-        full_name: Full name for the user account.
-        email: Email address for the user account.
-        password: Password for the user account.
-        activation_token: Activation token for the user account.
-    """
+        Returns:
+            The update request.
+        """
+        return cast(
+            UpdateUserRequest,
+            super().from_model(model, **kwargs, password=model.get_password()),
+        )
 
-    name: Optional[str] = None
-    full_name: Optional[str] = None
-    email: Optional[str] = None
-    password: SecretStr
-    activation_token: SecretStr
 
-    def to_model(self, user: UserModel) -> UserModel:
-        """Convert to a user model."""
+class ActivateUserRequest(UpdateRequest[UserModel]):
+    """Model for user activation requests."""
+
+    _MODEL_TYPE = UserModel
+
+    name: Optional[str] = Field(
+        default=None,
+        title="Unique username for the account.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+    full_name: Optional[str] = Field(
+        default=None,
+        title="Full name for the account owner.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+    email: Optional[str] = Field(
+        default=None,
+        title="Email address associated with the account.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+    password: str = Field(
+        title="Account password.", max_length=USER_PASSWORD_MAX_LENGTH
+    )
+    activation_token: str = Field(
+        title="Account activation token.",
+        min_length=USER_ACTIVATION_TOKEN_LENGTH,
+        max_length=USER_ACTIVATION_TOKEN_LENGTH,
+    )
+
+    def apply_to_model(self, model: UserModel) -> UserModel:
+        """Apply the update changes to a user domain model.
+
+        Args:
+            model: The user domain model to update.
+
+        Returns:
+            The updated user domain model.
+        """
         for k, v in self.dict(exclude_none=True).items():
             if k in ["activation_token", "password"]:
                 continue
-            setattr(user, k, v)
-        user.password = self.password.get_secret_value()
-        return user
+            setattr(model, k, v)
+        model.password = self.password
+        # skip the activation token intentionally, because it is validated
+        # separately
+        return model
 
 
-class DeactivateUserResponse(UserModel):
-    """Pydantic object representing a user deactivation response.
+class DeactivateUserResponse(UserModel, UpdateResponse[UserModel]):
+    """Model for user deactivation requests."""
 
-    Attributes:
-        activation_token: Activation token for the user account.
-    """
+    _MODEL_TYPE = UserModel
 
-    activation_token: str
+    activation_token: str = Field(..., title="Account activation token.")
 
     @classmethod
-    def from_model(cls, user: UserModel) -> "DeactivateUserResponse":
-        """Convert from a user model."""
-        response = cls(
-            **user.dict(), activation_token=user.get_activation_token()
+    def from_model(
+        cls, model: UserModel, **kwargs: Any
+    ) -> "DeactivateUserResponse":
+        """Convert a domain model into a user deactivation response.
+
+        Args:
+            model: The domain model to convert.
+            kwargs: Additional keyword arguments to pass to the user
+                deactivation response.
+
+        Returns:
+            The user deactivation response.
+        """
+        return cast(
+            DeactivateUserResponse,
+            super().from_model(
+                model, **kwargs, activation_token=model.get_activation_token()
+            ),
         )
-        return response
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # Validate attributes when assigning them
+        validate_assignment = True
+        underscore_attrs_are_private = True
+
+
+class CreateRoleRequest(CreateRequest[RoleModel]):
+    """Model for role creation requests."""
+
+    _MODEL_TYPE = RoleModel
+
+    name: str = Field(
+        title="The unique name of the role.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+
+
+class UpdateRoleRequest(UpdateRequest[RoleModel]):
+    """Model for role update requests."""
+
+    _MODEL_TYPE = RoleModel
+
+    name: Optional[str] = Field(
+        default=None,
+        title="Updated role name.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+
+
+class CreateTeamRequest(CreateRequest[TeamModel]):
+    """Model for team creation requests."""
+
+    _MODEL_TYPE = TeamModel
+
+    name: str = Field(
+        title="The unique name of the team.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+
+
+class UpdateTeamRequest(UpdateRequest[TeamModel]):
+    """Model for team update requests."""
+
+    _MODEL_TYPE = TeamModel
+
+    name: Optional[str] = Field(
+        default=None,
+        title="Updated team name.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )

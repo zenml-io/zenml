@@ -15,64 +15,69 @@
 from typing import Dict, List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from zenml.enums import StackComponentType
 from zenml.models import StackModel
+from zenml.models.constants import (
+    MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
+    MODEL_NAME_FIELD_MAX_LENGTH,
+)
+from zenml.zen_server.models.base_models import (
+    ProjectScopedCreateRequest,
+    UpdateRequest,
+)
 
 
-class CreateStackModel(BaseModel):
-    """Model used for all update operations on stacks."""
+class CreateStackRequest(ProjectScopedCreateRequest[StackModel]):
+    """Stack model for create requests."""
 
-    name: str
+    _MODEL_TYPE = StackModel
+
+    name: str = Field(
+        title="The stack name.", max_length=MODEL_NAME_FIELD_MAX_LENGTH
+    )
     description: Optional[str] = Field(
-        default=None, title="The description of the stack", max_length=300
+        default=None,
+        title="The description of the stack",
+        max_length=MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
     )
     components: Dict[StackComponentType, List[UUID]] = Field(
         default=None,
-        title="A mapping of stack component types to the id's of"
-        "instances of components of this type.",
+        title=(
+            "A mapping of stack component types to the id's of"
+            "instances of components of this type."
+        ),
     )
     is_shared: bool = Field(
         default=False,
         title="Flag describing if this stack is shared.",
     )
 
-    def to_model(self, project: UUID, user: UUID) -> "StackModel":
-        """Applies user defined changes to this model.
 
-        Args:
-            project: Project context of the stack.
-            user: User context of the stack
-        """
-        return StackModel(project=project, user=user, **self.dict())
+class UpdateStackRequest(UpdateRequest[StackModel]):
+    """Stack model for update requests."""
 
+    _MODEL_TYPE = StackModel
 
-class UpdateStackModel(BaseModel):
-    """Model used for all update operations on stacks."""
-
-    name: Optional[str]
+    name: Optional[str] = Field(
+        default=None,
+        title="The stack name.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
     description: Optional[str] = Field(
-        default=None, title="The description of the stack", max_length=300
+        default=None,
+        title="The updated description of the stack",
+        max_length=300,
     )
     components: Optional[Dict[StackComponentType, List[UUID]]] = Field(
         default=None,
-        title="A mapping of stack component types to the id's of"
-        "instances of components of this type.",
+        title=(
+            "An updated mapping of stack component types to the id's of"
+            "instances of components of this type."
+        ),
     )
     is_shared: Optional[bool] = Field(
-        default=False,
-        title="Flag describing if this stack is shared.",
+        default=None,
+        title="Updated flag describing if this stack is shared.",
     )
-
-    def apply_to_model(self, stack: "StackModel") -> "StackModel":
-        """Applies user defined changes to this model.
-
-        Args:
-            stack: Stack model the changes will be applied to
-        """
-        for key, value in self.dict().items():
-            if value is not None:
-                setattr(stack, key, value)
-
-        return stack

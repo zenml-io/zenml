@@ -164,10 +164,10 @@ action. If you want to train on the full datasets, just pass `--full_set` as a f
 ```python
 from zenml.repository import Repository
 from transformers import pipeline
+from zenml.post_execution import get_pipeline
 
 # 1. Load sequence-classification and inference
-repo = Repository()
-pipeline_instance = repo.get_pipeline(
+pipeline_instance = get_pipeline(
     pipeline="seq_classifier_train_eval_pipeline"
 )
 runs = pipeline_instance.runs
@@ -186,8 +186,7 @@ sentiment_classifier = pipeline(
 print(sentiment_classifier("MLOps movie by Zenml-io was awesome."))
 
 # 2. Load token-classification and inference
-repo = Repository()
-pipeline_instance = repo.get_pipeline(
+pipeline_instance = get_pipeline(
   pipeline="token_classifier_train_eval_pipeline"
 )
 runs = pipeline_instance.runs

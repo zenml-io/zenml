@@ -52,7 +52,6 @@ from pydantic import root_validator, validator
 
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import LOCAL_STORES_DIRECTORY_NAME
 from zenml.exceptions import ArtifactStoreInterfaceError
 from zenml.utils import io_utils
 
@@ -262,8 +261,7 @@ class LocalArtifactStore(BaseArtifactStore):
         artifact_store_id = values.get("uuid")
         if path == "" and artifact_store_id:
             artifact_store_path = os.path.join(
-                GlobalConfiguration().config_directory,
-                LOCAL_STORES_DIRECTORY_NAME,
+                GlobalConfiguration().local_stores_path,
                 str(artifact_store_id),
             )
             io_utils.create_dir_recursive_if_not_exists(artifact_store_path)

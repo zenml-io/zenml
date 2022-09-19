@@ -32,8 +32,7 @@ from zenml.integrations.tensorboard.services.tensorboard_service import (
     TensorboardServiceConfig,
 )
 from zenml.logger import get_logger
-from zenml.post_execution import StepView
-from zenml.repository import Repository
+from zenml.post_execution import StepView, get_pipeline
 from zenml.visualizers import BaseVisualizer
 
 logger = get_logger(__name__)
@@ -192,8 +191,7 @@ def get_step(pipeline_name: str, step_name: str) -> StepView:
     Raises:
         RuntimeError: If the step is not found.
     """
-    repo = Repository()
-    pipeline = repo.get_pipeline(pipeline_name)
+    pipeline = get_pipeline(pipeline_name)
     if pipeline is None:
         raise RuntimeError(f"No pipeline with name `{pipeline_name}` was found")
 

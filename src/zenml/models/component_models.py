@@ -14,15 +14,15 @@
 """Model definition for stack components."""
 
 import json
-from datetime import datetime
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
-from uuid import UUID
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List
 
 from pydantic import Field
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
+from zenml.models.base_models import ShareableProjectScopedDomainModel
+from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.models.project_models import ProjectModel
 from zenml.models.user_management_models import UserModel
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
@@ -33,16 +33,10 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class ComponentModel(AnalyticsTrackedModelMixin):
-    """Network Serializable Model describing the StackComponent.
-
-    name, type, flavor and config are specified explicitly by the user
-    through the user interface. These values + owner can be updated.
-
-    owner, created_by, created_at are added implicitly set within domain logic
-
-    id is set when the database entry is created
-    """
+class ComponentModel(
+    ShareableProjectScopedDomainModel, AnalyticsTrackedModelMixin
+):
+    """Domain Model describing the Stack Component."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "id",
@@ -53,41 +47,45 @@ class ComponentModel(AnalyticsTrackedModelMixin):
         "is_shared",
     ]
 
-    id: Optional[UUID] = Field(
-        default=None,
-        title="The id of the Stack Component.",
-    )
     name: str = Field(
-        title="The name of the Stack Component.",
+        title="The name of the stack component.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
     type: StackComponentType = Field(
-        title="The type of the Stack Component.",
+        title="The type of the stack component.",
     )
-    flavor: Optional[str] = Field(
-        title="The flavor of the Stack Component.",
+    flavor: str = Field(
+        title="The flavor of the stack component.",
     )
     configuration: Dict[
         str, Any
     ] = Field(  # Json representation of the configuration
-        title="The id of the Stack Component.",
-    )
-    user: Optional[UUID] = Field(
-        default=None,
-        title="The id of the user that owns this component.",
-    )
-    is_shared: bool = Field(
-        default=False,
-        title="Flag describing if this component is shared.",
-    )
-    project: Optional[UUID] = Field(
-        default=None, title="The project that contains this component."
-    )
-    creation_date: Optional[datetime] = Field(
-        default=None,
-        title="The time at which the component was registered.",
+        title="The stack component configuration.",
     )
 
+    class Config:
+        """Example of a json-serialized instance."""
+
+        schema_extra = {
+            "example": {
+                "id": "5e4286b5-51f4-4286-b1f8-b0143e9a27ce",
+                "name": "vertex_prd_orchestrator",
+                "type": "orchestrator",
+                "flavor": "vertex",
+                "configuration": {"location": "europe-west3"},
+                "project": "da63ad01-9117-4082-8a99-557ca5a7d324",
+                "user": "43d73159-04fe-418b-b604-b769dd5b771b",
+                "created": "2022-08-12T07:12:44.931Z",
+                "updated": "2022-08-12T07:12:44.931Z",
+            }
+        }
+
     def to_hydrated_model(self) -> "HydratedComponentModel":
+        """Converts the `ComponentModel` into a `HydratedComponentModel`.
+
+        Returns:
+            The hydrated component model.
+        """
         zen_store = GlobalConfiguration().zen_store
 
         project = zen_store.get_project(self.project)
@@ -101,13 +99,13 @@ class ComponentModel(AnalyticsTrackedModelMixin):
             configuration=self.configuration,
             project=project,
             user=user,
-            is_shared=self.is_shared,
-            creation_date=self.creation_date,
+            created=self.created,
+            updated=self.updated,
         )
 
     @classmethod
     def from_component(cls, component: "StackComponent") -> "ComponentModel":
-        """Creates a ComponentModel from an instance of a Stack Component.
+        """Creates a ComponentModel from an instance of a stack component.
 
         Args:
             component: the instance of a StackComponent
@@ -115,23 +113,28 @@ class ComponentModel(AnalyticsTrackedModelMixin):
         Returns:
             a ComponentModel
         """
+        from zenml.repository import Repository
+
+        repo = Repository()
+
         return cls(
             type=component.TYPE,
             flavor=component.FLAVOR,
             name=component.name,
             id=component.uuid,
+            project=repo.active_project.id,
+            user=repo.active_user.id,
             configuration=json.loads(component.json()),
         )
 
     def to_component(self) -> "StackComponent":
-        """Converts the ComponentModel into an instance of a Stack Component.
+        """Converts the ComponentModel into an instance of a stack component.
 
         Returns:
             a StackComponent
         """
         from zenml.repository import Repository
 
-        assert self.flavor is not None
         flavor = Repository(skip_repository_check=True).get_flavor(  # type: ignore[call-arg]
             name=self.flavor, component_type=self.type
         )
@@ -143,20 +146,16 @@ class ComponentModel(AnalyticsTrackedModelMixin):
 
 
 class HydratedComponentModel(ComponentModel):
-    """Network Serializable Model describing the Component with User and Project
-    fully hydrated.
-    """
+    """Component model with User and Project fully hydrated."""
 
-    project: ProjectModel = Field(
-        default=None, title="The project that contains this stack."
-    )
+    project: ProjectModel = Field(title="The project that contains this stack.")  # type: ignore[assignment]
+    # TODO: before ignoring the typing error, think of a better way to do this
     user: UserModel = Field(
-        default=None,
-        title="The id of the user, that created this stack.",
+        title="The user that created this stack.",
     )
 
     class Config:
-        """Pydantic config."""
+        """Example of a json-serialized instance."""
 
         schema_extra = {
             "example": {
@@ -169,13 +168,16 @@ class HydratedComponentModel(ComponentModel):
                     "id": "da63ad01-9117-4082-8a99-557ca5a7d324",
                     "name": "default",
                     "description": "Best project.",
-                    "creation_date": "2022-09-13T16:03:52.317039",
+                    "created": "2022-09-15T11:43:29.987627",
+                    "updated": "2022-09-15T11:43:29.987627",
                 },
                 "user": {
                     "id": "43d73159-04fe-418b-b604-b769dd5b771b",
                     "name": "default",
-                    "creation_date": "2022-09-13T16:03:52.329928",
+                    "created": "2022-09-15T11:43:29.987627",
+                    "updated": "2022-09-15T11:43:29.987627",
                 },
-                "created_at": "2022-08-12T07:12:44.931Z",
+                "created": "2022-09-15T11:43:29.987627",
+                "updated": "2022-09-15T11:43:29.987627",
             }
         }

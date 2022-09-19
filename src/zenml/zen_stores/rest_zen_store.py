@@ -15,14 +15,31 @@
 
 import re
 from pathlib import Path, PurePath
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar, Union
 from uuid import UUID
 
 import requests
 from pydantic import BaseModel
 
 from zenml.config.store_config import StoreConfiguration
-from zenml.constants import LOGIN, PROJECTS, STACKS, USERS, VERSION_1
+from zenml.constants import (
+    FLAVORS,
+    GRAPH,
+    INPUTS,
+    LOGIN,
+    METADATA_CONFIG,
+    OUTPUTS,
+    PIPELINES,
+    PROJECTS,
+    ROLES,
+    RUNS,
+    STACK_COMPONENTS,
+    STACKS,
+    STEPS,
+    TEAMS,
+    USERS,
+    VERSION_1,
+)
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.exceptions import (
     AuthorizationException,
@@ -34,7 +51,6 @@ from zenml.exceptions import (
 from zenml.logger import get_logger
 from zenml.models import (
     ArtifactModel,
-    CodeRepositoryModel,
     ComponentModel,
     FlavorModel,
     PipelineModel,
@@ -47,12 +63,45 @@ from zenml.models import (
     TeamModel,
     UserModel,
 )
+from zenml.models.base_models import DomainModel, ProjectScopedDomainModel
+from zenml.zen_server.models.base_models import (
+    CreateRequest,
+    CreateResponse,
+    UpdateRequest,
+    UpdateResponse,
+)
+from zenml.zen_server.models.pipeline_models import (
+    CreatePipelineRequest,
+    UpdatePipelineRequest,
+)
+from zenml.zen_server.models.projects_models import (
+    CreateProjectRequest,
+    UpdateProjectRequest,
+)
+from zenml.zen_server.models.stack_models import (
+    CreateStackRequest,
+    UpdateStackRequest,
+)
+from zenml.zen_server.models.user_management_models import (
+    CreateRoleRequest,
+    CreateTeamRequest,
+    CreateUserRequest,
+    CreateUserResponse,
+    UpdateRoleRequest,
+    UpdateTeamRequest,
+    UpdateUserRequest,
+)
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
 
 # type alias for possible json payloads (the Anys are recursive Json instances)
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
+
+AnyModel = TypeVar("AnyModel", bound=DomainModel)
+AnyProjectScopedModel = TypeVar(
+    "AnyProjectScopedModel", bound=ProjectScopedDomainModel
+)
 
 
 class RestZenStoreConfiguration(StoreConfiguration):
@@ -192,15 +241,19 @@ class RestZenStore(BaseZenStore):
         Returns:
             The TFX metadata config of this ZenStore.
         """
+        body = self.get(f"{METADATA_CONFIG}")
+        if not isinstance(body, str):
+            raise ValueError(
+                f"Invalid response from server: {body}. Expected string."
+            )
+        return body
 
     # ------
     # Stacks
     # ------
 
-    def register_stack(
+    def create_stack(
         self,
-        user_name_or_id: Union[str, UUID],
-        project_name_or_id: Union[str, UUID],
         stack: StackModel,
     ) -> StackModel:
         """Register a new stack.
@@ -217,6 +270,11 @@ class RestZenStore(BaseZenStore):
             StackExistsError: If a stack with the same name is already owned
                 by this user in this project.
         """
+        return self._create_project_scoped_resource(
+            resource=stack,
+            route=STACKS,
+            request_model=CreateStackRequest,
+        )
 
     def get_stack(self, stack_id: UUID) -> StackModel:
         """Get a stack by its unique ID.
@@ -230,12 +288,15 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the stack doesn't exist.
         """
-        body = self.get(f"{STACKS}/{str(stack_id)}")
-        return StackModel.parse_obj(body)
+        return self._get_resource(
+            resource_id=stack_id,
+            route=STACKS,
+            resource_model=StackModel,
+        )
 
     def list_stacks(
         self,
-        project_name_or_id: Union[str, UUID] = None,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
@@ -249,19 +310,19 @@ class RestZenStore(BaseZenStore):
             is_shared: Optionally filter out stacks by whether they are shared
                 or not
 
-
         Returns:
             A list of all stacks matching the filter criteria.
 
         Raises:
             KeyError: if the project doesn't exist.
         """
-        body = self.get(STACKS)
-        if not isinstance(body, list):
-            raise ValueError(
-                f"Bad API Response. Expected list, got {type(body)}"
-            )
-        return [StackModel.parse_obj(s) for s in body]
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=STACKS,
+            resource_model=StackModel,
+            **filters,
+        )
 
     def update_stack(
         self,
@@ -278,6 +339,11 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the stack doesn't exist.
         """
+        return self._update_resource(
+            resource=stack,
+            route=STACKS,
+            request_model=UpdateStackRequest,
+        )
 
     def delete_stack(self, stack_id: UUID) -> None:
         """Delete a stack.
@@ -288,22 +354,22 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the stack doesn't exist.
         """
+        self._delete_resource(
+            resource_id=stack_id,
+            route=STACKS,
+        )
 
     # ----------------
     # Stack components
     # ----------------
 
-    def register_stack_component(
+    def create_stack_component(
         self,
-        user_name_or_id: Union[str, UUID],
-        project_name_or_id: Union[str, UUID],
         component: ComponentModel,
     ) -> ComponentModel:
         """Create a stack component.
 
         Args:
-            user_name_or_id: The stack component owner.
-            project_name_or_id: The project the stack component is created in.
             component: The stack component to create.
 
         Returns:
@@ -313,6 +379,12 @@ class RestZenStore(BaseZenStore):
             StackComponentExistsError: If a stack component with the same name
                 and type is already owned by this user in this project.
         """
+        return self._create_project_scoped_resource(
+            resource=component,
+            route=STACK_COMPONENTS,
+            # TODO[Stefan]: for when the request model is ready
+            # request_model=CreateStackComponentRequest,
+        )
 
     def get_stack_component(self, component_id: UUID) -> ComponentModel:
         """Get a stack component by ID.
@@ -326,10 +398,15 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the stack component doesn't exist.
         """
+        return self._get_resource(
+            resource_id=component_id,
+            route=STACK_COMPONENTS,
+            resource_model=ComponentModel,
+        )
 
     def list_stack_components(
         self,
-        project_name_or_id: Union[str, UUID],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
         type: Optional[str] = None,
         flavor_name: Optional[str] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
@@ -354,10 +431,16 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the project doesn't exist.
         """
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=STACK_COMPONENTS,
+            resource_model=ComponentModel,
+            **filters,
+        )
 
     def update_stack_component(
         self,
-        component_id: UUID,
         component: ComponentModel,
     ) -> ComponentModel:
         """Update an existing stack component.
@@ -371,6 +454,12 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the stack component doesn't exist.
         """
+        return self._update_resource(
+            resource=component,
+            route=STACK_COMPONENTS,
+            # TODO[Stefan]: for when the request model is ready
+            # request_model=UpdateComponentRequest,
+        )
 
     def delete_stack_component(self, component_id: UUID) -> None:
         """Delete a stack component.
@@ -381,6 +470,10 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the stack component doesn't exist.
         """
+        self._delete_resource(
+            resource_id=component_id,
+            route=STACK_COMPONENTS,
+        )
 
     def get_stack_component_side_effects(
         self,
@@ -404,16 +497,11 @@ class RestZenStore(BaseZenStore):
 
     def create_flavor(
         self,
-        user_name_or_id: Union[str, UUID],
-        project_name_or_id: Union[str, UUID],
         flavor: FlavorModel,
     ) -> FlavorModel:
         """Creates a new stack component flavor.
 
         Args:
-            user_name_or_id: The stack component flavor owner.
-            project_name_or_id: The project in which the stack component flavor
-                is created.
             flavor: The stack component flavor to create.
 
         Returns:
@@ -423,6 +511,12 @@ class RestZenStore(BaseZenStore):
             EntityExistsError: If a flavor with the same name and type
                 is already owned by this user in this project.
         """
+        return self._create_project_scoped_resource(
+            resource=flavor,
+            route=FLAVORS,
+            # TODO[Stefan]: for when the request model is ready
+            # request_model=CreateFlavorRequest,
+        )
 
     def get_flavor(self, flavor_id: UUID) -> FlavorModel:
         """Get a stack component flavor by ID.
@@ -436,10 +530,15 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the stack component flavor doesn't exist.
         """
+        return self._get_resource(
+            resource_id=flavor_id,
+            route=FLAVORS,
+            resource_model=FlavorModel,
+        )
 
     def list_flavors(
         self,
-        project_name_or_id: Union[str, UUID],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
         component_type: Optional[StackComponentType] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
@@ -448,7 +547,7 @@ class RestZenStore(BaseZenStore):
         """List all stack component flavors matching the given filter criteria.
 
         Args:
-            project_name_or_id: The ID or name of the Project to which the
+            project_name_or_id: Optionally filter by the Project to which the
                 component flavors belong
             component_type: Optionally filter by type of stack component
             flavor_name: Optionally filter by flavor name
@@ -463,6 +562,46 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the project doesn't exist.
         """
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=FLAVORS,
+            resource_model=FlavorModel,
+            **filters,
+        )
+
+    def update_flavor(self, flavor: FlavorModel) -> FlavorModel:
+        """Update an existing stack component flavor.
+
+        Args:
+            component: The stack component flavor to use for the update.
+
+        Returns:
+            The updated stack component flavor.
+
+        Raises:
+            KeyError: if the stack component flavor doesn't exist.
+        """
+        return self._update_resource(
+            resource=flavor,
+            route=FLAVORS,
+            # TODO[Stefan]: for when the request model is ready
+            # request_model=UpdateFlavorRequest,
+        )
+
+    def delete_flavor(self, flavor_id: UUID) -> None:
+        """Delete a stack component flavor.
+
+        Args:
+            component_id: The ID of the stack component flavor to delete.
+
+        Raises:
+            KeyError: if the stack component flavor doesn't exist.
+        """
+        self._delete_resource(
+            resource_id=flavor_id,
+            route=FLAVORS,
+        )
 
     # -----
     # Users
@@ -489,6 +628,12 @@ class RestZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If a user with the given name already exists.
         """
+        return self._create_resource(
+            resource=user,
+            route=USERS,
+            request_model=CreateUserRequest,
+            response_model=CreateUserResponse,
+        )
 
     def get_user(self, user_name_or_id: Union[str, UUID]) -> UserModel:
         """Gets a specific user.
@@ -502,6 +647,11 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If no user with the given name or ID exists.
         """
+        return self._get_resource(
+            resource_id=user_name_or_id,
+            route=USERS,
+            resource_model=UserModel,
+        )
         return UserModel.parse_obj(self.get(f"{USERS}/{str(user_name_or_id)}"))
 
     # TODO: [ALEX] add filtering param(s)
@@ -511,14 +661,18 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all users.
         """
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=USERS,
+            resource_model=UserModel,
+            **filters,
+        )
 
-    def update_user(
-        self, user_name_or_id: Union[str, UUID], user: UserModel
-    ) -> UserModel:
+    def update_user(self, user: UserModel) -> UserModel:
         """Updates an existing user.
 
         Args:
-            user_name_or_id: The name or ID of the user to update.
             user: The user model to use for the update.
 
         Returns:
@@ -527,6 +681,11 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If no user with the given name exists.
         """
+        return self._update_resource(
+            resource=user,
+            route=USERS,
+            request_model=UpdateUserRequest,
+        )
 
     def delete_user(self, user_name_or_id: Union[str, UUID]) -> None:
         """Deletes a user.
@@ -537,6 +696,10 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If no user with the given ID exists.
         """
+        self._delete_resource(
+            resource_id=user_name_or_id,
+            route=USERS,
+        )
 
     # -----
     # Teams
@@ -551,6 +714,11 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created team.
         """
+        return self._create_resource(
+            resource=team,
+            route=TEAMS,
+            request_model=CreateTeamRequest,
+        )
 
     def get_team(self, team_name_or_id: Union[str, UUID]) -> TeamModel:
         """Gets a specific team.
@@ -564,6 +732,11 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If no team with the given name or ID exists.
         """
+        return self._get_resource(
+            resource_id=team_name_or_id,
+            route=TEAMS,
+            resource_model=TeamModel,
+        )
 
     def list_teams(self) -> List[TeamModel]:
         """List all teams.
@@ -571,6 +744,31 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all teams.
         """
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=TEAMS,
+            resource_model=TeamModel,
+            **filters,
+        )
+
+    def update_team(self, team: TeamModel) -> TeamModel:
+        """Update an existing team.
+
+        Args:
+            team: The team to use for the update.
+
+        Returns:
+            The updated team.
+
+        Raises:
+            KeyError: if the team does not exist.
+        """
+        return self._update_resource(
+            resource=team,
+            route=TEAMS,
+            request_model=UpdateTeamRequest,
+        )
 
     def delete_team(self, team_name_or_id: Union[str, UUID]) -> None:
         """Deletes a team.
@@ -581,6 +779,10 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If no team with the given ID exists.
         """
+        self._delete_resource(
+            resource_id=team_name_or_id,
+            route=TEAMS,
+        )
 
     # ---------------
     # Team membership
@@ -592,7 +794,7 @@ class RestZenStore(BaseZenStore):
         """Fetches all users of a team.
 
         Args:
-            team_id: The name or ID of the team for which to get users.
+            team_name_or_id: The name or ID of the team for which to get users.
 
         Returns:
             A list of all users that are part of the team.
@@ -664,6 +866,11 @@ class RestZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If a role with the given name already exists.
         """
+        return self._create_resource(
+            resource=role,
+            route=ROLES,
+            request_model=CreateRoleRequest,
+        )
 
     # TODO: consider using team_id instead
     def get_role(self, role_name_or_id: Union[str, UUID]) -> RoleModel:
@@ -678,6 +885,11 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If no role with the given name exists.
         """
+        return self._get_resource(
+            resource_id=role_name_or_id,
+            route=ROLES,
+            resource_model=RoleModel,
+        )
 
     # TODO: [ALEX] add filtering param(s)
     def list_roles(self) -> List[RoleModel]:
@@ -686,6 +898,31 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all roles.
         """
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=ROLES,
+            resource_model=RoleModel,
+            **filters,
+        )
+
+    def update_role(self, role: RoleModel) -> RoleModel:
+        """Update an existing role.
+
+        Args:
+            role: The role to use for the update.
+
+        Returns:
+            The updated role.
+
+        Raises:
+            KeyError: if the role does not exist.
+        """
+        return self._update_resource(
+            resource=role,
+            route=ROLES,
+            request_model=UpdateRoleRequest,
+        )
 
     def delete_role(self, role_name_or_id: Union[str, UUID]) -> None:
         """Deletes a role.
@@ -696,6 +933,10 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If no role with the given ID exists.
         """
+        self._delete_resource(
+            resource_id=role_name_or_id,
+            route=ROLES,
+        )
 
     # ----------------
     # Role assignments
@@ -720,6 +961,24 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all role assignments.
         """
+        roles: List[RoleAssignmentModel] = []
+        if user_name_or_id:
+            roles.extend(
+                self._list_resources(
+                    route=f"{USERS}/{user_name_or_id}{ROLES}",
+                    resource_model=RoleAssignmentModel,
+                    project_name_or_id=project_name_or_id,
+                )
+            )
+        if team_name_or_id:
+            roles.extend(
+                self._list_resources(
+                    route=f"{TEAMS}/{team_name_or_id}{ROLES}",
+                    resource_model=RoleAssignmentModel,
+                    project_name_or_id=project_name_or_id,
+                )
+            )
+        return roles
 
     def assign_role(
         self,
@@ -781,6 +1040,11 @@ class RestZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If a project with the given name already exists.
         """
+        return self._create_resource(
+            resource=project,
+            route=PROJECTS,
+            request_model=CreateProjectRequest,
+        )
 
     def get_project(self, project_name_or_id: Union[UUID, str]) -> ProjectModel:
         """Get an existing project by name or ID.
@@ -794,8 +1058,11 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If there is no such project.
         """
-        body = self.get(f"{PROJECTS}/{str(project_name_or_id)}")
-        return ProjectModel.parse_obj(body)
+        return self._get_resource(
+            resource_id=project_name_or_id,
+            route=PROJECTS,
+            resource_model=ProjectModel,
+        )
 
     # TODO: [ALEX] add filtering param(s)
     def list_projects(self) -> List[ProjectModel]:
@@ -804,6 +1071,13 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all projects.
         """
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=PROJECTS,
+            resource_model=ProjectModel,
+            **filters,
+        )
 
     def update_project(self, project: ProjectModel) -> ProjectModel:
         """Update an existing project.
@@ -817,6 +1091,11 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the project does not exist.
         """
+        return self._update_resource(
+            resource=project,
+            route=PROJECTS,
+            request_model=UpdateProjectRequest,
+        )
 
     def delete_project(self, project_name_or_id: Union[str, UUID]) -> None:
         """Deletes a project.
@@ -827,97 +1106,19 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If no project with the given name exists.
         """
-
-    # ------------
-    # Repositories
-    # ------------
-
-    # TODO: create repository?
-
-    def connect_project_repository(
-        self,
-        project_name_or_id: Union[str, UUID],
-        repository: CodeRepositoryModel,
-    ) -> CodeRepositoryModel:
-        """Connects a repository to a project.
-
-        Args:
-            project_name_or_id: Name or ID of the project to connect the
-                repository to.
-            repository: The repository to connect.
-
-        Returns:
-            The connected repository.
-
-        Raises:
-            KeyError: if the project or repository doesn't exist.
-        """
-
-    def get_repository(self, repository_id: UUID) -> CodeRepositoryModel:
-        """Get a repository by ID.
-
-        Args:
-            repository_id: The ID of the repository to get.
-
-        Returns:
-            The repository.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
-
-    def list_repositories(
-        self, project_name_or_id: Union[str, UUID]
-    ) -> List[CodeRepositoryModel]:
-        """Get all repositories in a given project.
-
-        Args:
-            project_name_or_id: The name or ID of the project.
-
-        Returns:
-            A list of all repositories in the project.
-
-        Raises:
-            KeyError: if the project doesn't exist.
-        """
-
-    def update_repository(
-        self, repository_id: UUID, repository: CodeRepositoryModel
-    ) -> CodeRepositoryModel:
-        """Update a repository.
-
-        Args:
-            repository_id: The ID of the repository to update.
-            repository: The repository to use for the update.
-
-        Returns:
-            The updated repository.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
-
-    def delete_repository(self, repository_id: UUID) -> None:
-        """Delete a repository.
-
-        Args:
-            repository_id: The ID of the repository to delete.
-
-        Raises:
-            KeyError: if the repository doesn't exist.
-        """
+        self._delete_resource(
+            resource_id=project_name_or_id,
+            route=PROJECTS,
+        )
 
     # ---------
     # Pipelines
     # ---------
 
-    def create_pipeline(
-        self, project_name_or_id: Union[str, UUID], pipeline: PipelineModel
-    ) -> PipelineModel:
+    def create_pipeline(self, pipeline: PipelineModel) -> PipelineModel:
         """Creates a new pipeline in a project.
 
         Args:
-            project_name_or_id: ID of the project to create the pipeline in.
             pipeline: The pipeline to create.
 
         Returns:
@@ -927,6 +1128,11 @@ class RestZenStore(BaseZenStore):
             KeyError: if the project does not exist.
             EntityExistsError: If an identical pipeline already exists.
         """
+        return self._create_project_scoped_resource(
+            resource=pipeline,
+            route=PIPELINES,
+            request_model=CreatePipelineRequest,
+        )
 
     def get_pipeline(self, pipeline_id: UUID) -> PipelineModel:
         """Get a pipeline with a given ID.
@@ -940,31 +1146,24 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the pipeline does not exist.
         """
-
-    def get_pipeline_in_project(
-        self, pipeline_name: str, project_name_or_id: Union[str, UUID]
-    ) -> PipelineModel:
-        """Get a pipeline with a given name in a project.
-
-        Args:
-            pipeline_name: Name of the pipeline.
-            project_name_or_id: ID of the project.
-
-        Returns:
-            The pipeline.
-
-        Raises:
-            KeyError: if the pipeline does not exist.
-        """
+        return self._get_resource(
+            resource_id=pipeline_id,
+            route=PIPELINES,
+            resource_model=PipelineModel,
+        )
 
     def list_pipelines(
         self,
-        project_name_or_id: Optional[Union[str, UUID]],
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        name: Optional[str] = None,
     ) -> List[PipelineModel]:
         """List all pipelines in the project.
 
         Args:
             project_name_or_id: If provided, only list pipelines in this project.
+            user_name_or_id: If provided, only list pipelines from this user.
+            name: If provided, only list pipelines with this name.
 
         Returns:
             A list of pipelines.
@@ -972,6 +1171,13 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the project does not exist.
         """
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=PIPELINES,
+            resource_model=PipelineModel,
+            **filters,
+        )
 
     def update_pipeline(self, pipeline: PipelineModel) -> PipelineModel:
         """Updates a pipeline.
@@ -985,6 +1191,11 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the pipeline doesn't exist.
         """
+        return self._update_resource(
+            resource=pipeline,
+            route=PIPELINES,
+            request_model=UpdatePipelineRequest,
+        )
 
     def delete_pipeline(self, pipeline_id: UUID) -> None:
         """Deletes a pipeline.
@@ -995,12 +1206,15 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the pipeline doesn't exist.
         """
+        self._delete_resource(
+            resource_id=pipeline_id,
+            route=PIPELINES,
+        )
 
     # --------------
     # Pipeline steps
     # --------------
 
-    # TODO: change into an abstract method
     # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
     # TODO: Discuss whether we even need this, given that the endpoint is on
     # pipeline runs
@@ -1031,6 +1245,12 @@ class RestZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If an identical pipeline run already exists.
         """
+        return self._create_resource(
+            resource=pipeline_run,
+            route=f"{PIPELINES}/{str(pipeline_run.pipeline_id)}{RUNS}",
+            # TODO[server]: add request model
+            # request_model=CreatePipelineRunRequest,
+        )
 
     def get_run(self, run_id: UUID) -> PipelineRunModel:
         """Gets a pipeline run.
@@ -1044,24 +1264,12 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the pipeline run doesn't exist.
         """
+        return self._get_resource(
+            resource_id=run_id,
+            route=RUNS,
+            resource_model=PipelineRunModel,
+        )
 
-    def get_run_in_project(
-        self, run_name: str, project_name_or_id: Union[str, UUID]
-    ) -> PipelineRunModel:
-        """Get a pipeline run with a given name in a project.
-
-        Args:
-            run_name: Name of the pipeline run.
-            project_name_or_id: ID or name of the project.
-
-        Returns:
-            The pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
-        """
-
-    # TODO: figure out args and output for this
     def get_run_dag(self, run_id: UUID) -> str:
         """Gets the DAG for a pipeline run.
 
@@ -1074,12 +1282,18 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the pipeline run doesn't exist.
         """
+        body = self.get(f"{RUNS}/{str(run_id)}{GRAPH}")
+        if not isinstance(body, str):
+            raise ValueError(
+                f"Invalid response from server: {body}. Expected string."
+            )
+        return body
 
     # TODO: Figure out what exactly gets returned from this
     def get_run_component_side_effects(
         self,
         run_id: UUID,
-        component_id: Optional[str] = None,
+        component_id: Optional[UUID] = None,
     ) -> Dict[str, Any]:
         """Gets the side effects for a component in a pipeline run.
 
@@ -1098,6 +1312,7 @@ class RestZenStore(BaseZenStore):
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[UUID] = None,
+        run_name: Optional[str] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[UUID] = None,
         unlisted: bool = False,
@@ -1107,6 +1322,7 @@ class RestZenStore(BaseZenStore):
         Args:
             project_name_or_id: If provided, only return runs for this project.
             stack_id: If provided, only return runs for this stack.
+            run_name: Run name if provided
             user_name_or_id: If provided, only return runs for this user.
             pipeline_id: If provided, only return runs for this pipeline.
             unlisted: If True, only return unlisted runs that are not
@@ -1115,14 +1331,18 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of all pipeline runs.
         """
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=RUNS,
+            resource_model=PipelineRunModel,
+            **filters,
+        )
 
-    def update_run(
-        self, run_id: UUID, run: PipelineRunModel
-    ) -> PipelineRunModel:
+    def update_run(self, run: PipelineRunModel) -> PipelineRunModel:
         """Updates a pipeline run.
 
         Args:
-            run_id: The ID of the pipeline run to update.
             run: The pipeline run to use for the update.
 
         Returns:
@@ -1131,6 +1351,9 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the pipeline run doesn't exist.
         """
+        # TODO[server]: figure out if this should even be
+        # allowed or if we can remove it from the store interface
+        raise NotImplementedError
 
     def delete_run(self, run_id: UUID) -> None:
         """Deletes a pipeline run.
@@ -1141,47 +1364,80 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: if the pipeline run doesn't exist.
         """
+        self._delete_resource(
+            resource_id=run_id,
+            route=RUNS,
+        )
 
     # ------------------
     # Pipeline run steps
     # ------------------
 
-    def get_run_step(self, step_id: int) -> StepRunModel:
-        """Get a pipeline run step by ID.
+    def get_run_step(self, step_id: UUID) -> StepRunModel:
+        """Get a step by ID.
 
         Args:
             step_id: The ID of the step to get.
 
         Returns:
-            The pipeline run step.
-        """
+            The step.
 
-    # TODO: Note that this doesn't have a corresponding API endpoint (consider adding?)
-    def get_run_step_artifacts(
-        self, step: StepRunModel
-    ) -> Tuple[Dict[str, ArtifactModel], Dict[str, ArtifactModel]]:
-        """Returns input and output artifacts for the given pipeline run step.
+        Raises:
+            KeyError: if the step doesn't exist.
+        """
+        return self._get_resource(
+            resource_id=step_id,
+            route=STEPS,
+            resource_model=StepRunModel,
+        )
+
+    def get_run_step_outputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
+        """Get a list of outputs for a specific step.
 
         Args:
-            step: The pipeline run step for which to get the artifacts.
+            step_id: The id of the step to get outputs for.
 
         Returns:
-            A tuple (inputs, outputs) where inputs and outputs
-            are both Dicts mapping artifact names
-            to the input and output artifacts respectively.
+            A dict mapping artifact names to the output artifacts for the step.
         """
+        body = self.get(f"{STEPS}/{str(step_id)}{OUTPUTS}")
+        if not isinstance(body, dict):
+            raise ValueError(
+                f"Bad API Response. Expected dict, got {type(body)}"
+            )
+        return {
+            name: ArtifactModel.parse_obj(entry) for name, entry in body.items()
+        }
 
-    def get_run_step_status(self, step_id: int) -> ExecutionStatus:
-        """Gets the execution status of a single pipeline run  step.
+    def get_run_step_inputs(self, step_id: UUID) -> Dict[str, ArtifactModel]:
+        """Get a list of inputs for a specific step.
 
         Args:
-            step_id: The ID of the pipeline run step to get the status for.
+            step_id: The id of the step to get inputs for.
 
         Returns:
-            ExecutionStatus: The status of the pipeline run step.
+            A dict mapping artifact names to the input artifacts for the step.
+        """
+        body = self.get(f"{STEPS}/{str(step_id)}{INPUTS}")
+        if not isinstance(body, dict):
+            raise ValueError(
+                f"Bad API Response. Expected dict, got {type(body)}"
+            )
+        return {
+            name: ArtifactModel.parse_obj(entry) for name, entry in body.items()
+        }
+
+    def get_run_step_status(self, step_id: UUID) -> ExecutionStatus:
+        """Gets the execution status of a single step.
+
+        Args:
+            step_id: The ID of the step to get the status for.
+
+        Returns:
+            ExecutionStatus: The status of the step.
         """
 
-    def list_run_steps(self, run_id: int) -> Dict[str, StepRunModel]:
+    def list_run_steps(self, run_id: UUID) -> List[StepRunModel]:
         """Gets all steps in a pipeline run.
 
         Args:
@@ -1190,6 +1446,10 @@ class RestZenStore(BaseZenStore):
         Returns:
             A mapping from step names to step models for all steps in the run.
         """
+        return self._list_resources(
+            route=f"{RUNS}/{str(run_id)}{STEPS}",
+            resource_model=StepRunModel,
+        )
 
     # =======================
     # Internal helper methods
@@ -1202,7 +1462,7 @@ class RestZenStore(BaseZenStore):
             The authentication token.
         """
         if self._api_token is None:
-            self._api_token = self._handle_response(
+            response = self._handle_response(
                 requests.post(
                     self.url + VERSION_1 + LOGIN,
                     data={
@@ -1210,7 +1470,13 @@ class RestZenStore(BaseZenStore):
                         "password": self.config.password,
                     },
                 )
-            )["access_token"]
+            )
+            if not isinstance(response, dict) or "access_token" not in response:
+                raise ValueError(
+                    f"Bad API Response. Expected access token dict, got "
+                    f"{type(response)}"
+                )
+            self._api_token = response["access_token"]
         return self._api_token
 
     @property
@@ -1288,24 +1554,32 @@ class RestZenStore(BaseZenStore):
         elif response.status_code == 422:
             raise RuntimeError(*response.json().get("detail", (response.text,)))
         elif response.status_code == 500:
-            raise KeyError(response.text)
+            raise RuntimeError(response.text)
         else:
             raise RuntimeError(
                 "Error retrieving from API. Got response "
                 f"{response.status_code} with body:\n{response.text}"
             )
 
-    def _request(self, method: str, url: str, **kwargs) -> Json:
+    def _request(
+        self,
+        method: str,
+        url: str,
+        params: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
+    ) -> Json:
         """Make a request to the REST API.
 
         Args:
             method: The HTTP method to use.
             url: The URL to request.
+            params: The query parameters to pass to the endpoint.
             kwargs: Additional keyword arguments to pass to the request.
         """
+        params = {k: str(v) for k, v in params.items()} if params else {}
         try:
             return self._handle_response(
-                self.session.request(method, url, **kwargs)
+                self.session.request(method, url, params=params, **kwargs)
             )
         except AuthorizationException:
             # The authentication token could have expired; refresh it and try
@@ -1315,52 +1589,240 @@ class RestZenStore(BaseZenStore):
                 self.session.request(method, url, **kwargs)
             )
 
-    def get(self, path: str) -> Json:
+    def get(
+        self, path: str, params: Optional[Dict[str, Any]] = None, **kwargs: Any
+    ) -> Json:
         """Make a GET request to the given endpoint path.
 
         Args:
             path: The path to the endpoint.
+            params: The query parameters to pass to the endpoint.
+            kwargs: Additional keyword arguments to pass to the request.
 
         Returns:
             The response body.
         """
-        return self._request("GET", self.url + VERSION_1 + path)
+        return self._request(
+            "GET", self.url + VERSION_1 + path, params=params, **kwargs
+        )
 
-    def delete(self, path: str) -> Json:
+    def delete(
+        self, path: str, params: Optional[Dict[str, Any]] = None, **kwargs: Any
+    ) -> Json:
         """Make a DELETE request to the given endpoint path.
 
         Args:
             path: The path to the endpoint.
+            params: The query parameters to pass to the endpoint.
+            kwargs: Additional keyword arguments to pass to the request.
 
         Returns:
             The response body.
         """
-        return self._request("DELETE", self.url + VERSION_1 + path)
+        return self._request(
+            "DELETE", self.url + VERSION_1 + path, params=params, **kwargs
+        )
 
-    def post(self, path: str, body: BaseModel) -> Json:
+    def post(
+        self,
+        path: str,
+        body: BaseModel,
+        params: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
+    ) -> Json:
         """Make a POST request to the given endpoint path.
 
         Args:
             path: The path to the endpoint.
             body: The body to send.
+            params: The query parameters to pass to the endpoint.
+            kwargs: Additional keyword arguments to pass to the request.
 
         Returns:
             The response body.
         """
         return self._request(
-            "POST", self.url + VERSION_1 + path, data=body.json()
+            "POST",
+            self.url + VERSION_1 + path,
+            data=body.json(),
+            params=params,
+            **kwargs,
         )
 
-    def put(self, path: str, body: BaseModel) -> Json:
+    def put(
+        self,
+        path: str,
+        body: BaseModel,
+        params: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
+    ) -> Json:
         """Make a PUT request to the given endpoint path.
 
         Args:
             path: The path to the endpoint.
             body: The body to send.
+            params: The query parameters to pass to the endpoint.
+            kwargs: Additional keyword arguments to pass to the request.
 
         Returns:
             The response body.
         """
         return self._request(
-            "PUT", self.url + VERSION_1 + path, data=body.json()
+            "PUT",
+            self.url + VERSION_1 + path,
+            data=body.json(),
+            params=params,
+            **kwargs,
         )
+
+    def _create_resource(
+        self,
+        resource: AnyModel,
+        route: str,
+        request_model: Optional[Type[CreateRequest[AnyModel]]] = None,
+        response_model: Optional[Type[CreateResponse[AnyModel]]] = None,
+    ) -> AnyModel:
+        """Create a new resource.
+
+        Args:
+            resource: The resource to create.
+            route: The resource REST API route to use.
+            request_model: Optional model to use to serialize the request body.
+                If not provided, the resource object itself will be used.
+            response_model: Optional model to use to deserialize the response
+                body. If not provided, the resource class itself will be used.
+
+        Returns:
+            The created resource.
+        """
+        request: BaseModel = resource
+        if request_model is not None:
+            request = request_model.from_model(resource)
+        response_body = self.post(f"{route}/", body=request)
+        if response_model is not None:
+            response = response_model.parse_obj(response_body)
+            created_resource = response.to_model()
+        else:
+            created_resource = resource.parse_obj(response_body)
+        return created_resource
+
+    def _create_project_scoped_resource(
+        self,
+        resource: AnyProjectScopedModel,
+        route: str,
+        request_model: Optional[
+            Type[CreateRequest[AnyProjectScopedModel]]
+        ] = None,
+        response_model: Optional[
+            Type[CreateResponse[AnyProjectScopedModel]]
+        ] = None,
+    ) -> AnyProjectScopedModel:
+        """Create a new project scoped resource.
+
+        Args:
+            resource: The resource to create.
+            route: The resource REST API route to use.
+            request_model: Optional model to use to serialize the request body.
+                If not provided, the resource object itself will be used.
+            response_model: Optional model to use to deserialize the response
+                body. If not provided, the resource class itself will be used.
+
+        Returns:
+            The created resource.
+        """
+        return self._create_resource(
+            resource=resource,
+            route=f"{PROJECTS}/{str(resource.project)}{route}",
+            request_model=request_model,
+            response_model=response_model,
+        )
+
+    def _get_resource(
+        self,
+        resource_id: Union[str, UUID],
+        route: str,
+        resource_model: Type[AnyModel],
+    ) -> AnyModel:
+        """Retrieve a single resource.
+
+        Args:
+            resource_id: The ID of the resource to retrieve.
+            route: The resource REST API route to use.
+            resource_model: Model to use to serialize the response body.
+
+        Returns:
+            The retrieved resource.
+        """
+        body = self.get(f"{route}/{str(resource_id)}")
+        return resource_model.parse_obj(body)
+
+    def _list_resources(
+        self,
+        route: str,
+        resource_model: Type[AnyModel],
+        **filters: Any,
+    ) -> List[AnyModel]:
+        """Retrieve a list of resources filtered by some criteria.
+
+        Args:
+            route: The resource REST API route to use.
+            resource_model: Model to use to serialize the response body.
+            filters: Filter parameters to use in the query.
+
+        Returns:
+            List of retrieved resources matching the filter criteria.
+
+        Raises:
+            ValueError: If the value returned by the server is not a list.
+        """
+        # leave out filter params that are not supplied
+        params = dict(filter(lambda x: x[1] is not None, filters.items()))
+        body = self.get(f"{route}/", params=params)
+        if not isinstance(body, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+        return [resource_model.parse_obj(entry) for entry in body]
+
+    def _update_resource(
+        self,
+        resource: AnyModel,
+        route: str,
+        request_model: Optional[Type[UpdateRequest[AnyModel]]] = None,
+        response_model: Optional[Type[UpdateResponse[AnyModel]]] = None,
+    ) -> AnyModel:
+        """Update an existing resource.
+
+        Args:
+            resource: The resource to update.
+            route: The resource REST API route to use.
+            request_model: Optional model to use to serialize the request body.
+                If not provided, the resource object itself will be used.
+            response_model: Optional model to use to deserialize the response
+                body. If not provided, the resource class itself will be used.
+
+        Returns:
+            The updated resource.
+        """
+        request: BaseModel = resource
+        if request_model is not None:
+            request = request_model.from_model(resource)
+        response_body = self.put(f"{route}/{str(resource.id)}", body=request)
+        if response_model is not None:
+            response = response_model.parse_obj(response_body)
+            updated_resource = response.to_model()
+        else:
+            updated_resource = resource.parse_obj(response_body)
+
+        return updated_resource
+
+    def _delete_resource(
+        self, resource_id: Union[str, UUID], route: str
+    ) -> None:
+        """Delete a resource.
+
+        Args:
+            resource_id: The ID of the resource to delete.
+            route: The resource REST API route to use.
+        """
+        self.delete(f"{route}/{str(resource_id)}")

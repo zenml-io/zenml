@@ -38,12 +38,19 @@ def get_run(name: str) -> "PipelineRunView":
     """
     repo = Repository()
     active_project_id = repo.active_project.id
-    assert active_project_id is not None
-    run = repo.zen_store.get_run_in_project(
+    runs = repo.zen_store.list_runs(
         run_name=name,
         project_name_or_id=active_project_id,
     )
-    return PipelineRunView(run)
+
+    # TODO: [server] this error handling could be improved
+    if not runs:
+        raise KeyError(f"No run with name '{name}' exists.")
+    elif len(runs) > 1:
+        raise RuntimeError(
+            f"Multiple runs have been found for name  '{name}'.", runs
+        )
+    return PipelineRunView(runs[0])
 
 
 def get_unlisted_runs() -> List["PipelineRunView"]:

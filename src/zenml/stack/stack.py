@@ -48,7 +48,6 @@ if TYPE_CHECKING:
     from zenml.model_deployers import BaseModelDeployer
     from zenml.orchestrators import BaseOrchestrator
     from zenml.pipelines import BasePipeline
-    from zenml.runtime_configuration import RuntimeConfiguration
     from zenml.secrets_managers import BaseSecretsManager
     from zenml.stack import StackComponent
     from zenml.step_operators import BaseStepOperator
@@ -132,10 +131,9 @@ class Stack:
             The created Stack instance.
         """
         stack_components = {
-            type_: model[0].to_component()
-            for type_, model in stack_model.components.items()
+            type_: models[0].to_component()
+            for type_, models in stack_model.components.items()
         }
-        assert stack_model.id is not None
         return Stack.from_components(
             id=stack_model.id,
             name=stack_model.name,

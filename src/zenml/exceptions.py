@@ -223,15 +223,15 @@ class EntityExistsError(ZenMLBaseException):
 
 
 class StackExistsError(EntityExistsError):
-    """Raised when trying to register a stack with a name that already exists."""
+    """Raised when trying to register a stack with name that already exists."""
 
 
 class StackComponentExistsError(EntityExistsError):
-    """Raised when trying to register a stack component with a name that already exists."""
+    """Raised when trying to register a stack component with existing name."""
 
 
 class SecretExistsError(EntityExistsError):
-    """Raised when trying to register a secret with a name that already exists."""
+    """Raised when trying to register a secret with existing name."""
 
 
 class StackValidationError(ZenMLBaseException):

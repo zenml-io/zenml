@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Authentication module for ZenML server."""
 
 import os
 from typing import Callable, Optional, Union
@@ -43,11 +44,17 @@ class AuthScheme(StrEnum):
 
 
 class AuthContext(BaseModel):
+    """The authentication context."""
+
     user: UserModel
 
 
 def authentication_scheme() -> AuthScheme:
-    """Returns the authentication type."""
+    """Returns the authentication type.
+
+    Returns:
+        The authentication type.
+    """
     auth_scheme = AuthScheme(
         os.environ.get(ENV_ZENML_AUTH_TYPE, AuthScheme.OAUTH2_PASSWORD_BEARER)
     )
@@ -73,6 +80,7 @@ def authenticate_credentials(
         user_name_or_id: The username or user ID.
         password: The password.
         access_token: The access token.
+        activation_token: The activation token.
 
     Returns:
         The authenticated account details, if the account is valid, otherwise
@@ -105,7 +113,7 @@ def authenticate_credentials(
 
 def http_authentication(
     credentials: HTTPBasicCredentials = Depends(HTTPBasic()),
-) -> None:
+) -> AuthContext:
     """Authenticates any request to the ZenServer with basic HTTP authentication.
 
     Args:
@@ -123,8 +131,10 @@ def http_authentication(
             detail="Invalid authentication credentials",
         )
 
+    return auth_context
 
-async def oauth2_password_bearer_authentication(
+
+def oauth2_password_bearer_authentication(
     token: str = Depends(OAuth2PasswordBearer(tokenUrl=VERSION_1 + LOGIN)),
 ) -> AuthContext:
     """Authenticates any request to the ZenML server with OAuth2 password bearer JWT tokens.
@@ -165,9 +175,18 @@ def no_authentication() -> AuthContext:
             detail="Invalid authentication credentials",
         )
 
+    return auth_context
 
-def authentication_provider() -> Callable[[], AuthContext]:
-    """Returns the authentication provider."""
+
+def authentication_provider() -> Callable[..., AuthContext]:
+    """Returns the authentication provider.
+
+    Returns:
+        The authentication provider.
+
+    Raises:
+        ValueError: If the authentication scheme is not supported.
+    """
     auth_scheme = authentication_scheme()
     if auth_scheme == AuthScheme.NO_AUTH:
         return no_authentication

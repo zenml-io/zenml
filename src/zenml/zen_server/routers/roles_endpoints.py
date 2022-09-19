@@ -12,26 +12,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for roles and role assignment."""
-from typing import List
+from typing import List, Union
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from zenml.constants import ROLES, VERSION_1
-from zenml.exceptions import (
-    EntityExistsError,
-    NotAuthorizedError,
-    ValidationError,
-)
 from zenml.models import RoleModel
-from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import authorize
-from zenml.zen_server.utils import (
-    conflict,
-    error_detail,
-    error_response,
-    not_found,
-    zen_store,
+from zenml.zen_server.models.user_management_models import (
+    CreateRoleRequest,
+    UpdateRoleRequest,
 )
+from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
     prefix=VERSION_1,
@@ -46,25 +39,14 @@ router = APIRouter(
     response_model=List[RoleModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@handle_exceptions
 async def list_roles() -> List[RoleModel]:
     """Returns a list of all roles.
 
     Returns:
         List of all roles.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
-    try:
-        return zen_store.list_roles()
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    return zen_store.list_roles()
 
 
 @router.post(
@@ -72,7 +54,8 @@ async def list_roles() -> List[RoleModel]:
     response_model=RoleModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-async def create_role(role: RoleModel) -> RoleModel:
+@handle_exceptions
+async def create_role(role: CreateRoleRequest) -> RoleModel:
     """Creates a role.
 
     # noqa: DAR401
@@ -82,22 +65,8 @@ async def create_role(role: RoleModel) -> RoleModel:
 
     Returns:
         The created role.
-
-    Raises:
-        401 error: when not authorized to login
-        409 error: when trigger does not exist
-        422 error: when unable to validate input
     """
-    try:
-        return zen_store.create_role(role=role)
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=409, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
-    except EntityExistsError as error:
-        raise conflict(error) from error
+    return zen_store.create_role(role=role.to_model())
 
 
 @router.get(
@@ -105,7 +74,8 @@ async def create_role(role: RoleModel) -> RoleModel:
     response_model=RoleModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_role(role_name_or_id: str) -> RoleModel:
+@handle_exceptions
+async def get_role(role_name_or_id: Union[str, UUID]) -> RoleModel:
     """Returns a specific role.
 
     Args:
@@ -113,22 +83,8 @@ async def get_role(role_name_or_id: str) -> RoleModel:
 
     Returns:
         A specific role.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
-    try:
-        return zen_store.get_role(
-            role_name_or_id=parse_name_or_uuid(role_name_or_id)
-        )
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    return zen_store.get_role(role_name_or_id=role_name_or_id)
 
 
 @router.put(
@@ -136,7 +92,10 @@ async def get_role(role_name_or_id: str) -> RoleModel:
     response_model=RoleModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-async def update_role(role_name_or_id: str, role: RoleModel) -> RoleModel:
+@handle_exceptions
+async def update_role(
+    role_name_or_id: Union[str, UUID], role_update: UpdateRoleRequest
+) -> RoleModel:
     """Updates a role.
 
     # noqa: DAR401
@@ -148,50 +107,20 @@ async def update_role(role_name_or_id: str, role: RoleModel) -> RoleModel:
 
     Returns:
         The created role.
-
-    Raises:
-        401 error: when not authorized to login
-        409 error: when trigger does not exist
-        422 error: when unable to validate input
     """
-    try:
-        # TODO: [server] this zen_store endpoint needs to be implemented
-        return zen_store.update_role(
-            role_name_or_id=parse_name_or_uuid(role_name_or_id), role=role
-        )
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as error:
-        raise HTTPException(status_code=409, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
-    except EntityExistsError as error:
-        raise conflict(error) from error
+    role_in_db = zen_store.get_role(role_name_or_id)
+    return zen_store.update_role(role=role_update.apply_to_model(role_in_db))
 
 
 @router.delete(
     ROLES + "/{role_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def delete_role(role_name_or_id: str) -> None:
+@handle_exceptions
+async def delete_role(role_name_or_id: Union[str, UUID]) -> None:
     """Deletes a specific role.
 
     Args:
         role_name_or_id: Name or ID of the role.
-
-    Raises:
-        not_found: when role does not exist
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
-    try:
-        zen_store.delete_role(
-            role_name_or_id=parse_name_or_uuid(role_name_or_id)
-        )
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
-    except KeyError as error:
-        raise not_found(error) from error
+    zen_store.delete_role(role_name_or_id=role_name_or_id)

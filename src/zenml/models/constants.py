@@ -11,25 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Model definitions for code repositories."""
+"""Constants used by ZenML domain models."""
 
-from datetime import datetime
-from typing import ClassVar, List, Optional
-from uuid import UUID
+# The maximum length of a name string fields in models.
+MODEL_NAME_FIELD_MAX_LENGTH = 128
+# The maximum length of description string fields in models.
+MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH = 300
+# The maximum length of a password
+# NOTE: this should be kept under 50 characters to avoid problems with
+# the hashing algorithm (https://security.stackexchange.com/questions/39849/does-bcrypt-have-a-maximum-password-length).
+USER_PASSWORD_MAX_LENGTH = 50
 
-from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
-
-
-class CodeRepositoryModel(AnalyticsTrackedModelMixin):
-    """The representation of a code repository.
-
-    Attributes:
-        name: Step name
-    """
-
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id", "project_id"]
-
-    id: Optional[UUID] = None
-    name: str
-    project_id: Optional[UUID] = None
-    created_at: Optional[datetime] = None
+USER_ACTIVATION_TOKEN_LENGTH = 64

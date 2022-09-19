@@ -14,10 +14,11 @@
 """Model definitions for stack component flavors."""
 
 from typing import TYPE_CHECKING, Optional, Type
-
-from pydantic import BaseModel
+from uuid import UUID
 
 from zenml.enums import StackComponentType
+from zenml.models.base_models import ShareableProjectScopedDomainModel
+from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 from zenml.utils.source_utils import (
     load_source_path_class,
     validate_flavor_source,
@@ -27,13 +28,15 @@ if TYPE_CHECKING:
     from zenml.stack import StackComponent
 
 
-class FlavorModel(BaseModel):
-    """Network serializable wrapper.
+class FlavorModel(
+    ShareableProjectScopedDomainModel, AnalyticsTrackedModelMixin
+):
+    """Domain model representing the custom implementation of a stack component flavor."""
 
-    This represents the custom implementation of a stack component flavor.
-    """
+    # TODO[Stefan]: these are here just until the new model is ready
+    user: Optional[UUID] = None
+    project: Optional[UUID] = None
 
-    id: Optional[str]
     name: str
     type: StackComponentType
     source: str

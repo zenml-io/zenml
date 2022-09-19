@@ -110,7 +110,7 @@ dataset profiles generated in two different steps:
 ```python
 from zenml.integrations.whylogs.visualizers import WhylogsVisualizer
 from zenml.logger import get_logger
-from zenml.repository import Repository
+from zenml.post_execution import get_pipeline
 
 def visualize_statistics(
     step_name: str, reference_step_name: str = None
@@ -123,8 +123,7 @@ def visualize_statistics(
             profile to use for data drift visualization where two whylogs
             profiles are required.
     """
-    repo = Repository()
-    pipe = repo.get_pipeline(pipeline="data_profiling_pipeline")
+    pipe = get_pipeline(pipeline="data_profiling_pipeline")
     whylogs_step = pipe.runs[-1].get_step(step=step_name)
     whylogs_reference_step = None
     if reference_step_name:

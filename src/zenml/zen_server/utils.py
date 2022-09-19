@@ -13,14 +13,24 @@
 #  permissions and limitations under the License.
 """Util functions for the ZenServer."""
 
-from typing import Any, List
+from functools import wraps
+from typing import Any, Callable, List, TypeVar, cast
 
 from fastapi import HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StoreType
+from zenml.exceptions import (
+    EntityExistsError,
+    NotAuthorizedError,
+    StackComponentExistsError,
+    StackExistsError,
+)
+from zenml.logger import get_logger
 from zenml.zen_stores.base_zen_store import BaseZenStore
+
+logger = get_logger(__name__)
 
 # TODO(Stefan): figure out how not to populate the ZenStore with default
 # user/stack and make this a method instead of a global variable
@@ -58,6 +68,18 @@ def error_detail(error: Exception) -> List[str]:
     return [type(error).__name__] + [str(a) for a in error.args]
 
 
+def not_authorized(error: Exception) -> HTTPException:
+    """Convert an Exception to a HTTP 401 response.
+
+    Args:
+        error: Exception to convert.
+
+    Returns:
+        HTTPException with status code 401.
+    """
+    return HTTPException(status_code=401, detail=error_detail(error))
+
+
 def not_found(error: Exception) -> HTTPException:
     """Convert an Exception to a HTTP 404 response.
 
@@ -80,3 +102,59 @@ def conflict(error: Exception) -> HTTPException:
         HTTPException with status code 409.
     """
     return HTTPException(status_code=409, detail=error_detail(error))
+
+
+def unprocessable(error: Exception) -> HTTPException:
+    """Convert an Exception to a HTTP 409 response.
+
+    Args:
+        error: Exception to convert.
+
+    Returns:
+        HTTPException with status code 422.
+    """
+    return HTTPException(status_code=422, detail=error_detail(error))
+
+
+F = TypeVar("F", bound=Callable[..., Any])
+
+
+def handle_exceptions(func: F) -> F:
+    """Decorator to handle exceptions in the API.
+
+    Args:
+        func: Function to decorate.
+
+    Returns:
+        Decorated function.
+
+    Raises:
+        HTTPException:
+            - 401: if the user is not authorized.
+            - 404: if the entity is not found.
+            - 409: if the entity already exists.
+            - 422: if the request is unprocessable.
+    """
+
+    @wraps(func)
+    async def decorated(*args: Any, **kwargs: Any) -> Any:
+        try:
+            return await func(*args, **kwargs)
+        except NotAuthorizedError as error:
+            logger.exception("Authorization error")
+            raise not_authorized(error) from error
+        except KeyError as error:
+            logger.exception("Entity not found")
+            raise not_found(error) from error
+        except (
+            StackExistsError,
+            StackComponentExistsError,
+            EntityExistsError,
+        ) as error:
+            logger.exception("Entity already exists")
+            raise conflict(error) from error
+        except ValidationError as error:
+            logger.exception("Validation error")
+            raise unprocessable(error) from error
+
+    return cast(F, decorated)

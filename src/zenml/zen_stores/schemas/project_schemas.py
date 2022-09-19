@@ -14,7 +14,7 @@
 """SQL Model Implementations for Projects."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List
 from uuid import UUID
 
 from sqlmodel import Field, Relationship, SQLModel
@@ -33,8 +33,9 @@ class ProjectSchema(SQLModel, table=True):
 
     id: UUID = Field(primary_key=True)
     name: str
-    description: Optional[str] = Field(nullable=True)
-    creation_date: datetime
+    description: str
+    created: datetime = Field(default_factory=datetime.now)
+    updated: datetime = Field(default_factory=datetime.now)
 
     user_role_assignments: List["UserRoleAssignmentSchema"] = Relationship(
         back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
@@ -53,7 +54,9 @@ class ProjectSchema(SQLModel, table=True):
         Returns:
             The created `ProjectSchema`.
         """
-        return cls(**project.dict())
+        return cls(
+            id=project.id, name=project.name, description=project.description
+        )
 
     def from_update_model(self, model: ProjectModel) -> "ProjectSchema":
         """Update a `ProjectSchema` from a `ProjectModel`.
@@ -66,6 +69,7 @@ class ProjectSchema(SQLModel, table=True):
         """
         self.name = model.name
         self.description = model.description
+        self.updated = datetime.now()
         return self
 
     def to_model(self) -> ProjectModel:

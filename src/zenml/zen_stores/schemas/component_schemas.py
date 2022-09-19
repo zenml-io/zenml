@@ -17,7 +17,7 @@ import base64
 import json
 from datetime import datetime
 from typing import List
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -32,7 +32,7 @@ from zenml.zen_stores.schemas.stack_schemas import (
 class StackComponentSchema(SQLModel, table=True):
     """SQL Model for stack components."""
 
-    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    id: UUID = Field(primary_key=True)
 
     name: str
     is_shared: bool
@@ -46,7 +46,8 @@ class StackComponentSchema(SQLModel, table=True):
 
     configuration: bytes
 
-    creation_date: datetime = Field(default_factory=datetime.now)
+    created: datetime = Field(default_factory=datetime.now)
+    updated: datetime = Field(default_factory=datetime.now)
 
     stacks: List["StackSchema"] = Relationship(
         back_populates="components", link_model=StackCompositionSchema
@@ -54,22 +55,21 @@ class StackComponentSchema(SQLModel, table=True):
 
     @classmethod
     def from_create_model(
-        cls, user_id: UUID, project_id: UUID, component: ComponentModel
+        cls, component: ComponentModel
     ) -> "StackComponentSchema":
-        """Create a `StackComponentSchema` with `id` and `created_at` missing.
+        """Create a `StackComponentSchema`.
 
         Args:
-            user_id: The ID of the user creating the component.
-            project_id: The ID of the project the component belongs to.
             component: The component model from which to create the schema.
 
         Returns:
             The created `StackComponentSchema`.
         """
         return cls(
+            id=component.id,
             name=component.name,
-            project=project_id,
-            user=user_id,
+            project=component.project,
+            user=component.user,
             is_shared=component.is_shared,
             type=component.type,
             flavor_name=component.flavor,
@@ -114,5 +114,6 @@ class StackComponentSchema(SQLModel, table=True):
             configuration=json.loads(
                 base64.b64decode(self.configuration).decode()
             ),
-            creation_date=self.creation_date,
+            created=self.created,
+            updated=self.updated,
         )

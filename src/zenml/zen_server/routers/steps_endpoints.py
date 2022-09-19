@@ -14,19 +14,14 @@
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
 from typing import Dict
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from zenml.constants import INPUTS, OUTPUTS, STEPS, VERSION_1
-from zenml.exceptions import NotAuthorizedError, ValidationError
 from zenml.models.pipeline_models import ArtifactModel, StepRunModel
 from zenml.zen_server.auth import authorize
-from zenml.zen_server.utils import (
-    error_detail,
-    error_response,
-    not_found,
-    zen_store,
-)
+from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
     prefix=VERSION_1 + STEPS,
@@ -41,7 +36,8 @@ router = APIRouter(
     response_model=StepRunModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_step(step_id: str) -> StepRunModel:
+@handle_exceptions
+async def get_step(step_id: UUID) -> StepRunModel:
     """Get one specific step.
 
     Args:
@@ -49,21 +45,8 @@ async def get_step(step_id: str) -> StepRunModel:
 
     Returns:
         The step.
-
-    Raises:
-        not_found: If the step does not exist.
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
-    try:
-        return zen_store.get_run_step(step_id)
-    except KeyError as e:
-        raise not_found(e) from e
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    return zen_store.get_run_step(step_id)
 
 
 @router.get(
@@ -71,7 +54,8 @@ async def get_step(step_id: str) -> StepRunModel:
     response_model=Dict[str, ArtifactModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_step_outputs(step_id: str) -> Dict[str, ArtifactModel]:
+@handle_exceptions
+async def get_step_outputs(step_id: UUID) -> Dict[str, ArtifactModel]:
     """Get the outputs of a specific step.
 
     Args:
@@ -79,20 +63,8 @@ async def get_step_outputs(step_id: str) -> Dict[str, ArtifactModel]:
 
     Returns:
         All outputs of the step, mapping from output name to artifact model.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
-    try:
-        return zen_store.get_run_step_outputs(step_id)
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as e:
-        raise not_found(error_detail(e)) from e
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    return zen_store.get_run_step_outputs(step_id)
 
 
 @router.get(
@@ -100,7 +72,8 @@ async def get_step_outputs(step_id: str) -> Dict[str, ArtifactModel]:
     response_model=Dict[str, ArtifactModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-async def get_step_inputs(step_id: str) -> Dict[str, ArtifactModel]:
+@handle_exceptions
+async def get_step_inputs(step_id: UUID) -> Dict[str, ArtifactModel]:
     """Get the inputs of a specific step.
 
     Args:
@@ -108,17 +81,5 @@ async def get_step_inputs(step_id: str) -> Dict[str, ArtifactModel]:
 
     Returns:
         All inputs of the step, mapping from input name to artifact model.
-
-    Raises:
-        401 error: when not authorized to login
-        404 error: when trigger does not exist
-        422 error: when unable to validate input
     """
-    try:
-        return zen_store.get_run_step_inputs(step_id)
-    except NotAuthorizedError as error:
-        raise HTTPException(status_code=401, detail=error_detail(error))
-    except KeyError as e:
-        raise not_found(error_detail(e)) from e
-    except ValidationError as error:
-        raise HTTPException(status_code=422, detail=error_detail(error))
+    return zen_store.get_run_step_inputs(step_id)

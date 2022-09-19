@@ -22,10 +22,8 @@ from uuid import UUID
 
 from pydantic import root_validator
 
-from zenml.constants import (
-    DEFAULT_SERVICE_START_STOP_TIMEOUT,
-    LOCAL_STORES_DIRECTORY_NAME,
-)
+from zenml.config.global_config import GlobalConfiguration
+from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
 from zenml.integrations.mlflow import MLFLOW_MODEL_DEPLOYER_FLAVOR
 from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentConfig,
@@ -37,10 +35,7 @@ from zenml.repository import Repository
 from zenml.services import ServiceRegistry
 from zenml.services.local.local_service import SERVICE_DAEMON_CONFIG_FILE_NAME
 from zenml.services.service import BaseService, ServiceConfig
-from zenml.utils.io_utils import (
-    create_dir_recursive_if_not_exists,
-    get_global_config_directory,
-)
+from zenml.utils.io_utils import create_dir_recursive_if_not_exists
 
 logger = get_logger(__name__)
 
@@ -90,8 +85,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
             The service path.
         """
         service_path = os.path.join(
-            get_global_config_directory(),
-            LOCAL_STORES_DIRECTORY_NAME,
+            GlobalConfiguration().local_stores_path,
             str(uuid),
         )
         create_dir_recursive_if_not_exists(service_path)

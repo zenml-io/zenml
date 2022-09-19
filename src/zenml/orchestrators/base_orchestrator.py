@@ -195,6 +195,18 @@ class BaseOrchestrator(StackComponent, ABC):
     # Class Configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.ORCHESTRATOR
 
+    @staticmethod
+    def get_mlmd_connection_config() -> metadata.ConnectionConfigType:
+        """Returns the MLMD database connection configuratino.
+
+        Returns:
+            The MLMD database connection configuration.
+        """
+        # Query the ZenStore for the metadata connection
+        metadata_config = Repository().zen_store.get_metadata_config()
+        metadata_config_pb = Parse(metadata_config, ConnectionConfig())
+        return metadata_config_pb
+
     @abstractmethod
     def prepare_or_run_pipeline(
         self,
@@ -361,11 +373,7 @@ class BaseOrchestrator(StackComponent, ABC):
             deployment_config, step.name
         )
 
-        # Query the ZenStore for the metadata connection
-        repo = Repository()
-        metadata_config = Repository().zen_store.get_metadata_config()
-        metadata_config_pb = Parse(metadata_config, ConnectionConfig())
-        metadata_connection = metadata.Metadata(metadata_config_pb)
+        metadata_connection_cfg = self.get_mlmd_connection_config()
 
         custom_executor_operators = {
             executable_spec_pb2.PythonClassExecutableSpec: step.executor_operator
@@ -379,7 +387,7 @@ class BaseOrchestrator(StackComponent, ABC):
         # Create the tfx launcher responsible for executing the step.
         component_launcher = launcher.Launcher(
             pipeline_node=pipeline_node,
-            mlmd_connection=metadata_connection,
+            mlmd_connection=metadata.Metadata(metadata_connection_cfg),
             pipeline_info=pb2_pipeline.pipeline_info,
             pipeline_runtime_spec=pb2_pipeline.runtime_spec,
             executor_spec=executor_spec,
@@ -391,7 +399,7 @@ class BaseOrchestrator(StackComponent, ABC):
         # trackers) will run some code before and after the actual step run.
         # This is where the step actually gets executed using the
         # component_launcher
-        active_stack = repo.active_stack
+        active_stack = Repository().active_stack
         active_stack.prepare_step_run()
         execution_info = self._execute_step(component_launcher)
         active_stack.cleanup_step_run()
