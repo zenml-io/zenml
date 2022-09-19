@@ -70,6 +70,8 @@ PathType = Union[bytes, str]
 class LocalArtifactStoreConfig(BaseArtifactStoreConfig):
     SUPPORTED_SCHEMES: ClassVar[Set[str]] = {""}
 
+    path: str = ""
+
     @validator("path")
     def ensure_path_local(cls, path: str) -> str:
         """Pydantic validator which ensures that the given path is a local path.

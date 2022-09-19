@@ -843,13 +843,17 @@ def generate_stack_component_flavor_register_command(
             cli_utils.print_active_config()
             cli_utils.print_active_stack()
 
+            repo = Repository()
+
             # Create a new model
             flavor_create_model = FlavorModel(
-                source=source, type=component_type
+                source=source,
+                type=component_type,
+                user=repo.active_user.id,
+                project=repo.active_project.id,
             )
 
             # Register the new model
-            repo = Repository()
             new_flavor = repo.create_flavor(flavor_create_model)
 
             cli_utils.declare(

@@ -15,7 +15,6 @@
 
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
-from mlflow.store.db.db_types import DATABASE_ENGINES  # type: ignore[import]
 from pydantic import root_validator, validator
 
 from zenml.experiment_trackers.base_experiment_tracker import (
@@ -106,6 +105,9 @@ class MLFlowExperimentTrackerConfig(BaseExperimentTrackerConfig):
         Raises:
             ValueError: If the tracking uri is not valid.
         """
+        # TODO: refactor this into the actual implementation
+        from mlflow.store.db.db_types import DATABASE_ENGINES  # type: ignore[import]
+
         if tracking_uri:
             valid_schemes = DATABASE_ENGINES + ["http", "https", "file"]
             if not any(

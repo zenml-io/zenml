@@ -17,7 +17,8 @@ The Feast integration offers a way to connect to a Feast Feature Store. ZenML
 implements a dedicated stack component that you can access as part of your ZenML
 steps in the usual ways.
 """
-from typing import List
+from typing import List, Type
+from zenml.stack import Flavor
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import FEAST
@@ -34,20 +35,16 @@ class FeastIntegration(Integration):
     REQUIREMENTS = ["feast[redis]>=0.19.4", "redis-server"]
 
     @classmethod
-    def flavors(cls) -> List[FlavorModel]:
+    def flavors(cls) -> List[Type[Flavor]]:
         """Declare the stack component flavors for the Feast integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
-        return [
-            FlavorModel(
-                name=FEAST_FEATURE_STORE_FLAVOR,
-                source="zenml.integrations.feast.flavors.FeastFeatureStoreFlavor",
-                type=StackComponentType.FEATURE_STORE,
-                integration=cls.NAME,
-            )
-        ]
+
+        from zenml.integrations.feast.flavors import FeastFeatureStoreFlavor
+
+        return [FeastFeatureStoreFlavor]
 
 
 FeastIntegration.check_installation()

@@ -22,13 +22,12 @@ a visualizer to visualize the results in an easy way on a notebook and in your
 browser.
 """
 
-from typing import List
-
+from typing import List, Type
+from zenml.stack import Flavor
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import DEEPCHECKS
 from zenml.integrations.integration import Integration
 from zenml.models import FlavorModel
-
 DEEPCHECKS_DATA_VALIDATOR_FLAVOR = "deepchecks"
 
 
@@ -45,20 +44,17 @@ class DeepchecksIntegration(Integration):
         from zenml.integrations.deepchecks import visualizers  # noqa
 
     @classmethod
-    def flavors(cls) -> List[FlavorModel]:
+    def flavors(cls) -> List[Type[Flavor]]:
         """Declare the stack component flavors for the Deepchecks integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
-        return [
-            FlavorModel(
-                name=DEEPCHECKS_DATA_VALIDATOR_FLAVOR,
-                source="zenml.integrations.deepchecks.flavors.DeepchecksDataValidatorFlavor",
-                type=StackComponentType.DATA_VALIDATOR,
-                integration=cls.NAME,
-            ),
-        ]
+
+        from zenml.integrations.deepchecks.flavors import (
+            DeepchecksDataValidatorFlavor
+        )
+        return [DeepchecksDataValidatorFlavor        ]
 
 
 DeepchecksIntegration.check_installation()

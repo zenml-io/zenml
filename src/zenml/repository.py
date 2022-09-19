@@ -909,9 +909,7 @@ class Repository(metaclass=RepositoryMetaClass):
 
         flavor_model = flavor_class().to_model()
 
-        return self.zen_store.create_stack_component(
-            component=ComponentModel.from_component(flavor_model),
-        )
+        return self.zen_store.create_flavor(flavor=flavor_model)
 
     def delete_flavor(self, flavor: FlavorModel) -> None:
         try:

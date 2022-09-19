@@ -74,12 +74,11 @@ class FlavorRegistry:
 
     def register_integration_flavors(self) -> None:
         """Registers the flavors implemented by integrations."""
-
-        for integration in integration_registry.integrations.values():
+        for name, integration in integration_registry.integrations.items():
             integrated_flavors = integration.flavors()
             if integrated_flavors:
                 for flavor in integrated_flavors:
-                    self._register_flavor(flavor)
+                    self._register_flavor(flavor().to_model(integration=name))
 
     def _register_flavor(
         self,
