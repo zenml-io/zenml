@@ -14,7 +14,11 @@
 """Zen Server API."""
 
 
-from fastapi import FastAPI
+from http.client import HTTPResponse
+import os
+from fastapi import FastAPI, Request
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
 import zenml
 from zenml.zen_server.routers import (
@@ -32,7 +36,38 @@ from zenml.zen_server.routers import (
     users_endpoints,
 )
 
+DASHBOARD_DIRECTORY = "dashboard"
+
+
+def relative_path(rel: str) -> str:
+    """Get the absolute path of a path relative to the ZenML server module.
+
+    Args:
+        rel: Relative path.
+
+    Returns:
+        Absolute path.
+    """
+    return os.path.join(os.path.dirname(__file__), rel)
+
+
 app = FastAPI(title="ZenML", version=zenml.__version__)
+
+
+app.mount(
+    "/dashboard/static",
+    StaticFiles(
+        directory=relative_path(os.path.join(DASHBOARD_DIRECTORY, "static")),
+        check_dir=False,
+    ),
+)
+
+templates = Jinja2Templates(directory=relative_path(DASHBOARD_DIRECTORY))
+
+
+@app.get("/")
+async def dashboard(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 
 # Basic Health Endpoint
@@ -45,6 +80,11 @@ async def health() -> str:
         String representing the health status of the server.
     """
     return "OK"
+
+
+# @app.get("/dashboard", include_in_schema=False)
+# def root():
+#     return HTMLResponse('/home/htahir1/workspace/zenml_io/zenml/dashboard/build/index.html')
 
 
 # to run this file locally, execute:
