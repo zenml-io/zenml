@@ -15,23 +15,19 @@
 
 import base64
 import json
-import re
-from typing import Any, ClassVar, List, Optional, Type
+from typing import Any, ClassVar, List, Optional
 
 from azure.core.exceptions import ResourceNotFoundError
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 
 from zenml.exceptions import SecretExistsError
-from zenml.integrations.azure import AZURE_SECRETS_MANAGER_FLAVOR
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
 from zenml.secrets_managers.base_secrets_manager import (
     ZENML_SECRET_NAME_LABEL,
     BaseSecretsManager,
-    BaseSecretsManagerConfig,
-    BaseSecretsManagerFlavor,
     SecretsManagerScope,
 )
 from zenml.secrets_managers.utils import secret_from_dict, secret_to_dict
@@ -42,73 +38,6 @@ ZENML_SCHEMA_NAME = "zenml-schema-name"
 ZENML_GROUP_KEY = "zenml-group-key"
 ZENML_KEY_NAME = "zenml-key-name"
 ZENML_AZURE_SECRET_SCOPE_PATH_SEPARATOR = "-"
-
-
-def validate_azure_secret_name_or_namespace(
-    name: str,
-    scope: SecretsManagerScope,
-) -> None:
-    """Validate a secret name or namespace.
-
-    Azure secret names must contain only alphanumeric characters and the
-    character `-`.
-
-    Given that we also save secret names and namespaces as labels, we are
-    also limited by the 256 maximum size limitation that Azure imposes on
-    label values. An arbitrary length of 100 characters is used here for
-    the maximum size for the secret name and namespace.
-
-    Args:
-        name: the secret name or namespace
-        scope: the current scope
-
-    Raises:
-        ValueError: if the secret name or namespace is invalid
-    """
-    if scope == SecretsManagerScope.NONE:
-        # to preserve backwards compatibility, we don't validate the
-        # secret name for unscoped secrets.
-        return
-
-    if not re.fullmatch(r"[0-9a-zA-Z-]+", name):
-        raise ValueError(
-            f"Invalid secret name or namespace '{name}'. Must contain "
-            f"only alphanumeric characters and the character -."
-        )
-
-    if len(name) > 100:
-        raise ValueError(
-            f"Invalid secret name or namespace '{name}'. The length is "
-            f"limited to maximum 100 characters."
-        )
-
-
-class AzureSecretsManagerConfig(BaseSecretsManagerConfig):
-    """Configuration for the Azure Secrets Manager.
-
-    Attributes:
-        key_vault_name: Name of an Azure Key Vault that this secrets manager
-            will use to store secrets.
-    """
-
-    SUPPORTS_SCOPING: ClassVar[bool] = True
-
-    key_vault_name: str
-
-    @classmethod
-    def _validate_scope(
-        cls,
-        scope: SecretsManagerScope,
-        namespace: Optional[str],
-    ) -> None:
-        """Validate the scope and namespace value.
-
-        Args:
-            scope: Scope value.
-            namespace: Optional namespace value.
-        """
-        if namespace:
-            validate_azure_secret_name_or_namespace(namespace, scope)
 
 
 class AzureSecretsManager(BaseSecretsManager):
@@ -381,15 +310,3 @@ class AzureSecretsManager(BaseSecretsManager):
             # otherwise the secret does not belong to the current scope
             if scope_tags.items() <= tags.items():
                 self.CLIENT.begin_delete_secret(secret_property.name).result()
-
-
-class AzureSecretsManagerFlavor(BaseSecretsManagerFlavor):
-    @property
-    def name(self) -> str:
-        return AZURE_SECRETS_MANAGER_FLAVOR
-
-    def config_class(self) -> Type[AzureSecretsManagerConfig]:
-        return AzureSecretsManagerConfig
-
-    def implementation_class(self) -> Type["AzureSecretsManager"]:
-        return AzureSecretsManager

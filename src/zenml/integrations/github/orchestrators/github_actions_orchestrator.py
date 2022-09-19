@@ -17,7 +17,7 @@ import copy
 import os
 import re
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from git.exc import InvalidGitRepositoryError
 from git.repo.base import Repo
@@ -42,15 +42,16 @@ from zenml.orchestrators import BaseOrchestrator
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.stack import Stack
 from zenml.steps import BaseStep
-from zenml.utils import deprecation_utils, string_utils, yaml_utils
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils import string_utils, yaml_utils
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilderMixin,
+)
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
 
 from zenml.enums import StackComponentType
-from zenml.integrations.github import GITHUB_ORCHESTRATOR_FLAVOR
 from zenml.stack import StackValidator
 
 logger = get_logger(__name__)
@@ -63,41 +64,12 @@ DOCKER_LOGIN_ACTION = "docker/login-action@v1"
 ENV_ENCODED_ZENML_PIPELINE = "ENCODED_ZENML_PIPELINE"
 
 
-class GitHubActionsOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
-    """Orchestrator responsible for running pipelines using GitHub Actions.
-
-    Attributes:
-        custom_docker_base_image_name: Name of a docker image that should be
-            used as the base for the image that will be run on GitHub Action
-            runners. If no custom image is given, a basic image of the active
-            ZenML version will be used. **Note**: This image needs to have
-            ZenML installed, otherwise the pipeline execution will fail. For
-            that reason, you might want to extend the ZenML docker images
-            found here: https://hub.docker.com/r/zenmldocker/zenml/
-        skip_dirty_repository_check: If `True`, this orchestrator will not
-            raise an exception when trying to run a pipeline while there are
-            still untracked/uncommitted files in the git repository.
-        skip_github_repository_check: If `True`, the orchestrator will not check
-            if your git repository is pointing to a GitHub remote.
-        push: If `True`, this orchestrator will automatically commit and push
-            the GitHub workflow file when running a pipeline. If `False`, the
-            workflow file will be written to the correct location but needs to
-            be committed and pushed manually.
-    """
-
-    custom_docker_base_image_name: Optional[str] = None
-    skip_dirty_repository_check: bool = False
-    skip_github_repository_check: bool = False
-    push: bool = False
+class GitHubActionsOrchestrator(
+    BaseOrchestrator, PipelineDockerImageBuilderMixin
+):
+    """Orchestrator responsible for running pipelines using GitHub Actions."""
 
     _git_repo: Optional[Repo] = None
-
-    # Class configuration
-    FLAVOR: ClassVar[str] = GITHUB_ORCHESTRATOR_FLAVOR
-
-    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        ("custom_docker_base_image_name", "docker_parent_image")
-    )
 
     @property
     def git_repo(self) -> Repo:
@@ -124,7 +96,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 remote_url.startswith(prefix)
                 for prefix in GITHUB_REMOTE_URL_PREFIXES
             )
-            if not (is_github_repo or self.skip_github_repository_check):
+            if not (is_github_repo or self.config.skip_github_repository_check):
                 raise RuntimeError(
                     f"The remote URL '{remote_url}' of your git repo "
                     f"({self._git_repo.git_dir}) is not pointing to a GitHub "
@@ -303,8 +275,9 @@ class GitHubActionsOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             RuntimeError: If the orchestrator should only run in a clean git
                 repository and the repository is dirty.
         """
-        if not self.skip_dirty_repository_check and self.git_repo.is_dirty(
-            untracked_files=True
+        if (
+            not self.config.skip_dirty_repository_check
+            and self.git_repo.is_dirty(untracked_files=True)
         ):
             raise RuntimeError(
                 "Trying to run a pipeline from within a dirty (=containing "
@@ -493,7 +466,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         yaml_utils.write_yaml(workflow_path, workflow_dict, sort_keys=False)
         logger.info("Wrote GitHub workflow file to %s", workflow_path)
 
-        if self.push:
+        if self.config.push:
             # Add, commit and push the pipeline workflow yaml
             self.git_repo.index.add(workflow_path)
             self.git_repo.index.commit(

@@ -43,7 +43,7 @@ class KubeflowIntegration(Integration):
         return [
             FlavorModel(
                 name=KUBEFLOW_ORCHESTRATOR_FLAVOR,
-                source="zenml.integrations.kubeflow.orchestrators.KubeflowOrchestrator",
+                source="zenml.integrations.kubeflow.flavors.KubeflowOrchestratorFlavor",
                 type=StackComponentType.ORCHESTRATOR,
                 integration=cls.NAME,
             ),

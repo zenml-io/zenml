@@ -14,7 +14,7 @@
 """Implementation of the KServe Model Deployer."""
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 from uuid import UUID
 
 from kserve import KServeClient, V1beta1InferenceService, constants, utils
@@ -28,17 +28,15 @@ from zenml.integrations.kserve.services.kserve_deployment import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.model_deployers.base_model_deployer import (
-    BaseModelDeployer,
-    BaseModelDeployerConfig,
-    BaseModelDeployerFlavor,
-)
+from zenml.model_deployers.base_model_deployer import BaseModelDeployer
 from zenml.repository import Repository
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.stack.stack import Stack
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilderMixin,
+)
 
 if TYPE_CHECKING:
     from zenml.config.docker_configuration import DockerConfiguration
@@ -49,36 +47,7 @@ logger = get_logger(__name__)
 DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT = 300
 
 
-class KServeModelDeployerConfig(BaseModelDeployerConfig):
-    """Configuration for the KServeModelDeployer.
-
-    Attributes:
-        kubernetes_context: the Kubernetes context to use to contact the remote
-            KServe installation. If not specified, the current
-            configuration is used. Depending on where the KServe model deployer
-            is being used, this can be either a locally active context or an
-            in-cluster Kubernetes configuration (if running inside a pod).
-        kubernetes_namespace: the Kubernetes namespace where the KServe
-            inference service CRDs are provisioned and managed by ZenML. If not
-            specified, the namespace set in the current configuration is used.
-            Depending on where the KServe model deployer is being used, this can
-            be either the current namespace configured in the locally active
-            context or the namespace in the context of which the pod is running
-            (if running inside a pod).
-        base_url: the base URL of the Kubernetes ingress used to expose the
-            KServe inference services.
-        secret: the name of the secret containing the credentials for the
-            KServe inference services.
-    """
-
-    kubernetes_context: Optional[str]
-    kubernetes_namespace: Optional[str]
-    base_url: str  # TODO: unused?
-    secret: Optional[str]
-    custom_domain: Optional[str]  # TODO: unused?
-
-
-class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
+class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilderMixin):
     """KServe model deployer stack component implementation."""
 
     _client: Optional[KServeClient] = None
@@ -579,19 +548,3 @@ class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
             custom_docker_image_name = runtime_configuration["docker_image"]
 
         return custom_docker_image_name
-
-
-class KServeModelDeployerFlavor(BaseModelDeployerFlavor):
-    """Flavor for the KServe model deployer."""
-
-    @property
-    def name(self) -> str:
-        return KSERVE_MODEL_DEPLOYER_FLAVOR
-
-    @property
-    def config_class(self) -> Type[KServeModelDeployerConfig]:
-        return KServeModelDeployerConfig
-
-    @property
-    def implementation_class(self) -> Type[KServeModelDeployer]:
-        return KServeModelDeployer

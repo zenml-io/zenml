@@ -15,19 +15,26 @@
 
 import os
 import sys
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List, Type
 
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators.base_orchestrator import (
+    BaseOrchestratorConfig,
+    BaseOrchestratorFlavor,
+)
 from zenml.orchestrators.local_docker.local_docker_entrypoint_configuration import (
     RUN_NAME_OPTION,
     LocalDockerEntrypointConfiguration,
 )
 from zenml.stack import Stack
 from zenml.steps import BaseStep
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilderConfigMixin,
+    PipelineDockerImageBuilderMixin,
+)
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
@@ -36,14 +43,20 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class LocalDockerOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
+class LocalDockerOrchestratorConfig(
+    BaseOrchestratorConfig, PipelineDockerImageBuilderConfigMixin
+):
+    """Config for the local Docker orchestrator."""
+
+
+class LocalDockerOrchestrator(
+    BaseOrchestrator, PipelineDockerImageBuilderMixin
+):
     """Orchestrator responsible for running pipelines locally using Docker.
 
     This orchestrator does not allow for concurrent execution of steps and also
     does not support running on a schedule.
     """
-
-    FLAVOR: ClassVar[str] = "local_docker"
 
     def prepare_pipeline_deployment(
         self,
@@ -167,3 +180,19 @@ class LocalDockerOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
             for line in logs:
                 logger.info(line.strip().decode())
+
+
+class LocalDockerOrchestratorFlavor(BaseOrchestratorFlavor):
+    """Flavor for the local Docker orchestrator."""
+
+    @property
+    def name(self) -> str:
+        return "local_docker"
+
+    @property
+    def config_class(self) -> Type[LocalDockerOrchestratorConfig]:
+        return LocalDockerOrchestratorConfig
+
+    @property
+    def implementation_class(self) -> Type["LocalDockerOrchestrator"]:
+        return LocalDockerOrchestrator

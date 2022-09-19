@@ -42,7 +42,7 @@ class SlackIntegration(Integration):
         return [
             FlavorModel(
                 name=SLACK_ALERTER_FLAVOR,
-                source="zenml.integrations.slack.alerters.slack_alerter.SlackAlerter",
+                source="zenml.integrations.slack.flavors.SlackAlerterFlavor",
                 type=StackComponentType.ALERTER,
                 integration=cls.NAME,
             )

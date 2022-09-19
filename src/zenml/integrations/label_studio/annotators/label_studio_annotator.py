@@ -17,20 +17,15 @@ import os
 import subprocess
 import sys
 import webbrowser
-from typing import Any, Dict, List, Optional, Tuple, Type, cast
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 from label_studio_sdk import Client, Project  # type: ignore[import]
 
-from zenml.annotators.base_annotator import (
-    BaseAnnotator,
-    BaseAnnotatorConfig,
-    BaseAnnotatorFlavor,
-)
+from zenml.annotators.base_annotator import BaseAnnotator
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError
 from zenml.integrations.azure import AZURE_ARTIFACT_STORE_FLAVOR
 from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
-from zenml.integrations.label_studio import LABEL_STUDIO_ANNOTATOR_FLAVOR
 from zenml.integrations.label_studio.steps.label_studio_standard_steps import (
     LabelStudioDatasetRegistrationConfig,
     LabelStudioDatasetSyncConfig,
@@ -40,27 +35,10 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.secret.arbitrary_secret_schema import ArbitrarySecretSchema
 from zenml.stack import Stack, StackValidator
-from zenml.stack.authentication_mixin import (
-    AuthenticationConfigMixin,
-    AuthenticationMixin,
-)
+from zenml.stack.authentication_mixin import AuthenticationMixin
 from zenml.utils import io_utils, networking_utils
 
 logger = get_logger(__name__)
-
-DEFAULT_LABEL_STUDIO_PORT = 8093
-
-
-class LabelStudioAnnotatorConfig(
-    BaseAnnotatorConfig, AuthenticationConfigMixin
-):
-    """Config for the Label Studio annotator
-
-    Attributes:
-        port: The port to use for the annotation interface.
-    """
-
-    port: int = DEFAULT_LABEL_STUDIO_PORT
 
 
 class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
@@ -739,19 +717,3 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
 
                 daemon.stop_daemon(self._pid_file_path)
                 fileio.remove(self._pid_file_path)
-
-
-class LabelStudioAnnotatorFlavor(BaseAnnotatorFlavor):
-    """Label Studio annotator flavor."""
-
-    @property
-    def name(self) -> str:
-        return LABEL_STUDIO_ANNOTATOR_FLAVOR
-
-    @property
-    def config_class(self) -> Type[LabelStudioAnnotatorConfig]:
-        return LabelStudioAnnotatorConfig
-
-    @property
-    def implementation_class(self) -> Type[LabelStudioAnnotator]:
-        return LabelStudioAnnotator

@@ -43,7 +43,7 @@ class VaultSecretsManagerIntegration(Integration):
         return [
             FlavorModel(
                 name=VAULT_SECRETS_MANAGER_FLAVOR,
-                source="zenml.integrations.vault.secrets_manager.VaultSecretsManager",
+                source="zenml.integrations.vault.flavors.VaultSecretsManagerFlavor",
                 type=StackComponentType.SECRETS_MANAGER,
                 integration=cls.NAME,
             )

@@ -54,7 +54,7 @@ class EvidentlyIntegration(Integration):
         return [
             FlavorModel(
                 name=EVIDENTLY_DATA_VALIDATOR_FLAVOR,
-                source="zenml.integrations.evidently.data_validators.EvidentlyDataValidator",
+                source="zenml.integrations.evidently.flavors.EvidentlyDataValidatorFlavor",
                 type=StackComponentType.DATA_VALIDATOR,
                 integration=cls.NAME,
             ),

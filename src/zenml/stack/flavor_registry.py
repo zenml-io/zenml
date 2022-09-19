@@ -17,6 +17,7 @@ from collections import defaultdict
 from typing import DefaultDict, Dict, List
 
 from zenml.enums import StackComponentType
+from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.models import FlavorModel
 
@@ -48,12 +49,16 @@ class FlavorRegistry:
             GCPContainerRegistryFlavor,
             GitHubContainerRegistryFlavor,
         )
-        from zenml.orchestrators import LocalOrchestratorFlavor
+        from zenml.orchestrators import (
+            LocalDockerOrchestratorFlavor,
+            LocalOrchestratorFlavor,
+        )
         from zenml.secrets_managers import LocalSecretsManagerFlavor
 
         default_flavors = [
             LocalArtifactStoreFlavor,
             LocalOrchestratorFlavor,
+            LocalDockerOrchestratorFlavor,
             DefaultContainerRegistryFlavor,
             AzureContainerRegistryFlavor,
             DockerHubContainerRegistryFlavor,
@@ -70,11 +75,11 @@ class FlavorRegistry:
     def register_integration_flavors(self) -> None:
         """Registers the flavors implemented by integrations."""
 
-        # for integration in integration_registry.integrations.values():
-        #     integrated_flavors = integration.flavors()
-        #     if integrated_flavors:
-        #         for flavor in integrated_flavors:
-        #             self._register_flavor(flavor)
+        for integration in integration_registry.integrations.values():
+            integrated_flavors = integration.flavors()
+            if integrated_flavors:
+                for flavor in integrated_flavors:
+                    self._register_flavor(flavor)
 
     def _register_flavor(
         self,

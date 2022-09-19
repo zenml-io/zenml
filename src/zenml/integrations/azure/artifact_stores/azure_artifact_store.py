@@ -16,14 +16,11 @@
 from typing import (
     Any,
     Callable,
-    ClassVar,
     Dict,
     Iterable,
     List,
     Optional,
-    Set,
     Tuple,
-    Type,
     Union,
     cast,
 )
@@ -31,27 +28,11 @@ from typing import (
 import adlfs
 
 from zenml.artifact_stores import BaseArtifactStore
-from zenml.artifact_stores.base_artifact_store import (
-    BaseArtifactStoreConfig,
-    BaseArtifactStoreFlavor,
-)
-from zenml.integrations.azure import AZURE_ARTIFACT_STORE_FLAVOR
 from zenml.secret.schemas import AzureSecretSchema
-from zenml.stack.authentication_mixin import (
-    AuthenticationConfigMixin,
-    AuthenticationMixin,
-)
+from zenml.stack.authentication_mixin import AuthenticationMixin
 from zenml.utils.io_utils import convert_to_str
 
 PathType = Union[bytes, str]
-
-
-class AzureArtfactStoreConfig(
-    BaseArtifactStoreConfig, AuthenticationConfigMixin
-):
-    """Configuration class for Azure Artifact Store."""
-
-    SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"abfs://", "az://"}
 
 
 class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
@@ -313,19 +294,3 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
             files,
         ) in self.filesystem.walk(path=top):
             yield f"{prefix}{directory}", subdirectories, files
-
-
-class AzureArtifactStoreFlavor(BaseArtifactStoreFlavor):
-    """Azure Artifact Store flavor."""
-
-    @property
-    def name(self) -> str:
-        return AZURE_ARTIFACT_STORE_FLAVOR
-
-    @property
-    def config_class(self) -> Type[AzureArtfactStoreConfig]:
-        return AzureArtfactStoreConfig
-
-    @property
-    def implementation_class(self) -> Type["AzureArtifactStore"]:
-        return AzureArtifactStore

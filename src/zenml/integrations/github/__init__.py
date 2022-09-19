@@ -43,13 +43,13 @@ class GitHubIntegration(Integration):
         return [
             FlavorModel(
                 name=GITHUB_ORCHESTRATOR_FLAVOR,
-                source="zenml.integrations.github.orchestrators.GitHubActionsOrchestrator",
+                source="zenml.integrations.github.flavors.GitHubActionsOrchestratorFlavor",
                 type=StackComponentType.ORCHESTRATOR,
                 integration=cls.NAME,
             ),
             FlavorModel(
                 name=GITHUB_SECRET_MANAGER_FLAVOR,
-                source="zenml.integrations.github.secrets_managers.GitHubSecretsManager",
+                source="zenml.integrations.github.flavors.GitHubSecretsManagerFlavor",
                 type=StackComponentType.SECRETS_MANAGER,
                 integration=cls.NAME,
             ),

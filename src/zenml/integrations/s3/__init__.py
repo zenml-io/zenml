@@ -42,7 +42,7 @@ class S3Integration(Integration):
         return [
             FlavorModel(
                 name=S3_ARTIFACT_STORE_FLAVOR,
-                source="zenml.integrations.s3.artifact_stores.S3ArtifactStore",
+                source="zenml.integrations.s3.flavors.S3ArtifactStoreFlavor",
                 type=StackComponentType.ARTIFACT_STORE,
                 integration=cls.NAME,
             )

@@ -19,14 +19,12 @@ google_cloud_ai_platform/training_clients.py
 """
 
 import time
-from typing import TYPE_CHECKING, List, Optional, Tuple, Type
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 from google.cloud import aiplatform
-from pydantic import validator as property_validator
 
 from zenml import __version__
 from zenml.enums import StackComponentType
-from zenml.integrations.gcp import GCP_VERTEX_STEP_OPERATOR_FLAVOR
 from zenml.integrations.gcp.constants import (
     CONNECTION_ERROR_RETRY_LIMIT,
     POLLING_INTERVAL_IN_SECONDS,
@@ -42,12 +40,9 @@ from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
-from zenml.step_operators.base_step_operator import (
-    BaseStepOperatorConfig,
-    BaseStepOperatorFlavor,
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilderMixin,
 )
-from zenml.utils import deprecation_utils
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
     from zenml.config.docker_configuration import DockerConfiguration
@@ -56,57 +51,8 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class VertexStepOperatorConfig(BaseStepOperatorConfig):
-    """Configuration for the Vertex step operator.
-
-    Attributes:
-        region: Region name, e.g., `europe-west1`.
-        project: GCP project name. If left None, inferred from the
-            environment.
-        accelerator_type: Accelerator type from list: https://cloud.google.com/vertex-ai/docs/reference/rest/v1/MachineSpec#AcceleratorType
-        accelerator_count: Defines number of accelerators to be
-            used for the job.
-        machine_type: Machine type specified here: https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
-        base_image: Base image for building the custom job container.
-        encryption_spec_key_name: Encryption spec key name.
-    """
-
-    region: str
-    project: Optional[str] = None
-    accelerator_type: Optional[str] = None
-    accelerator_count: int = 0
-    machine_type: str = "n1-standard-4"
-    base_image: Optional[str] = None
-
-    # customer managed encryption key resource name
-    # will be applied to all Vertex AI resources if set
-    encryption_spec_key_name: Optional[str] = None
-
-    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        ("base_image", "docker_parent_image")
-    )
-
-    @property_validator("accelerator_type")
-    def validate_accelerator_enum(cls, accelerator_type: Optional[str]) -> None:
-        """Validates that the accelerator type is valid.
-
-        Args:
-            accelerator_type: Accelerator type
-
-        Raises:
-            ValueError: If the accelerator type is not valid.
-        """
-        accepted_vals = list(
-            aiplatform.gapic.AcceleratorType.__members__.keys()
-        )
-        if accelerator_type and accelerator_type.upper() not in accepted_vals:
-            raise ValueError(
-                f"Accelerator must be one of the following: {accepted_vals}"
-            )
-
-
 class VertexStepOperator(
-    BaseStepOperator, PipelineDockerImageBuilder, GoogleCredentialsMixin
+    BaseStepOperator, PipelineDockerImageBuilderMixin, GoogleCredentialsMixin
 ):
     """Step operator to run a step on Vertex AI.
 
@@ -313,19 +259,3 @@ class VertexStepOperator(
 
         # Cloud training complete
         logger.info("Job '%s' successful.", job_id)
-
-
-class VertexStepOperatorFlavor(BaseStepOperatorFlavor):
-    """Vertex Step Operator flavor."""
-
-    @property
-    def name(self) -> str:
-        return GCP_VERTEX_STEP_OPERATOR_FLAVOR
-
-    @property
-    def config_class(self) -> Type[VertexStepOperatorConfig]:
-        return VertexStepOperatorConfig
-
-    @property
-    def implementation_class(self) -> Type["VertexStepOperator"]:
-        return VertexStepOperator

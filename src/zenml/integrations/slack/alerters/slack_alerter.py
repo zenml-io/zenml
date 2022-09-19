@@ -14,21 +14,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Any, List, Optional, Type
+from typing import Any, List, Optional
 
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from slack_sdk.rtm import RTMClient
 
-from zenml.alerter.base_alerter import (
-    BaseAlerter,
-    BaseAlerterConfig,
-    BaseAlerterFlavor,
-)
-from zenml.integrations.slack import SLACK_ALERTER_FLAVOR
+from zenml.alerter.base_alerter import BaseAlerter
 from zenml.logger import get_logger
 from zenml.steps.step_interfaces.base_alerter_step import BaseAlerterStepConfig
-from zenml.utils.secret_utils import SecretField
 
 logger = get_logger(__name__)
 
@@ -48,20 +42,6 @@ class SlackAlerterStepConfig(BaseAlerterStepConfig):
 
     # Set of messages that lead to disapproval in alerter.ask()
     disapprove_msg_options: Optional[List[str]] = None
-
-
-class SlackAlerterConfig(BaseAlerterConfig):
-    """Slack alerter config.
-
-    Attributes:
-        slack_token: The Slack token tied to the Slack account to be used.
-        default_slack_channel_id: The ID of the Slack channel to use for
-            communication if no channel ID is provided in the step config.
-
-    """
-
-    slack_token: str = SecretField()
-    default_slack_channel_id: Optional[str] = None
 
 
 class SlackAlerter(BaseAlerter):
@@ -215,19 +195,3 @@ class SlackAlerter(BaseAlerter):
         rtm.start()
 
         return approved
-
-
-class SlackAlerterFlavor(BaseAlerterFlavor):
-    """Slack alerter flavor."""
-
-    @property
-    def name(self) -> str:
-        return SLACK_ALERTER_FLAVOR
-
-    @property
-    def config_class(self) -> Type[SlackAlerterConfig]:
-        return SlackAlerterConfig
-
-    @property
-    def implementation_class(self) -> Type[SlackAlerter]:
-        return SlackAlerter

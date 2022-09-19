@@ -38,7 +38,7 @@ class LabelStudioIntegration(Integration):
         return [
             FlavorModel(
                 name=LABEL_STUDIO_ANNOTATOR_FLAVOR,
-                source="zenml.integrations.label_studio.annotators.LabelStudioAnnotator",
+                source="zenml.integrations.label_studio.flavors.LabelStudioAnnotatorFlavor",
                 type=StackComponentType.ANNOTATOR,
                 integration=cls.NAME,
             ),

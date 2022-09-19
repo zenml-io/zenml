@@ -45,7 +45,7 @@ class SparkIntegration(Integration):
         return [
             FlavorModel(
                 name=SPARK_KUBERNETES_STEP_OPERATOR,
-                source="zenml.integrations.spark.step_operators.KubernetesSparkStepOperator",
+                source="zenml.integrations.spark.flavors.KubernetesSparkStepOperatorFlavor",
                 type=StackComponentType.STEP_OPERATOR,
                 integration=cls.NAME,
             ),

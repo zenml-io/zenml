@@ -80,16 +80,11 @@ def _include_global_config(
         fileio.rmtree(config_path)
 
 
-class PipelineDockerImageBuilder(BaseModel):
-    """Builds Docker images to run a ZenML pipeline.
+class PipelineDockerImageBuilderConfigMixin(BaseModel):
+    """Config mixin for building Docker images to run pipelines.
 
-    **Usage**:
-    ```python
-    class MyStackComponent(StackComponent, PipelineDockerImageBuilder):
-        def method_that_requires_docker_image(self):
-            image_identifier = self.build_and_push_docker_image(...)
-            # use the image ID
-    ```
+    Any stack component that implements `PipelineDockerImageBuilderMixin` should
+    have a config that inherits from this class.
 
     Attributes:
         docker_parent_image: Full name of the Docker image that should be
@@ -105,6 +100,22 @@ class PipelineDockerImageBuilder(BaseModel):
     """
 
     docker_parent_image: Optional[str] = None
+
+
+class PipelineDockerImageBuilderMixin:
+    """StackComponent mixin to build Docker images to run a ZenML pipeline.
+
+    Any stack component that implements this mixin should have a config that
+    inherits from `PipelineDockerImageBuilderConfigMixin`.
+
+    **Usage**:
+    ```python
+    class MyStackComponent(StackComponent, PipelineDockerImageBuilder):
+        def method_that_requires_docker_image(self):
+            image_identifier = self.build_and_push_docker_image(...)
+            # use the image ID
+    ```
+    """
 
     @staticmethod
     def _gather_requirements_files(
@@ -292,7 +303,7 @@ class PipelineDockerImageBuilder(BaseModel):
         # pipeline configuration doesn't have a configured value
         parent_image = (
             docker_configuration.parent_image
-            or self.docker_parent_image
+            or self.config.docker_parent_image
             or DEFAULT_DOCKER_PARENT_IMAGE
         )
 

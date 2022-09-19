@@ -15,7 +15,7 @@
 
 import re
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Dict, List, Optional, cast
 from uuid import UUID
 
 from zenml.integrations.seldon import SELDON_MODEL_DEPLOYER_FLAVOR
@@ -25,17 +25,15 @@ from zenml.integrations.seldon.services.seldon_deployment import (
     SeldonDeploymentService,
 )
 from zenml.logger import get_logger
-from zenml.model_deployers.base_model_deployer import (
-    BaseModelDeployer,
-    BaseModelDeployerConfig,
-    BaseModelDeployerFlavor,
-)
+from zenml.model_deployers.base_model_deployer import BaseModelDeployer
 from zenml.repository import Repository
 from zenml.secrets_managers import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.stack.stack import Stack
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
-from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilderMixin,
+)
 
 if TYPE_CHECKING:
     from zenml.config.docker_configuration import DockerConfiguration
@@ -46,37 +44,7 @@ logger = get_logger(__name__)
 DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT = 300
 
 
-class SeldonModelDeployerConfig(BaseModelDeployerConfig):
-    """Config for the Seldon Model Deployer.
-
-    Attributes:
-        kubernetes_context: the Kubernetes context to use to contact the remote
-            Seldon Core installation. If not specified, the current
-            configuration is used. Depending on where the Seldon model deployer
-            is being used, this can be either a locally active context or an
-            in-cluster Kubernetes configuration (if running inside a pod).
-        kubernetes_namespace: the Kubernetes namespace where the Seldon Core
-            deployment servers are provisioned and managed by ZenML. If not
-            specified, the namespace set in the current configuration is used.
-            Depending on where the Seldon model deployer is being used, this can
-            be either the current namespace configured in the locally active
-            context or the namespace in the context of which the pod is running
-            (if running inside a pod).
-        base_url: the base URL of the Kubernetes ingress used to expose the
-            Seldon Core deployment servers.
-        secret: the name of a ZenML secret containing the credentials used by
-            Seldon Core storage initializers to authenticate to the Artifact
-            Store (i.e. the storage backend where models are stored - see
-            https://docs.seldon.io/projects/seldon-core/en/latest/servers/overview.html#handling-credentials).
-    """
-
-    kubernetes_context: Optional[str]
-    kubernetes_namespace: Optional[str]
-    base_url: str  # TODO: unused?
-    secret: Optional[str]
-
-
-class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
+class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilderMixin):
     """Seldon Core model deployer stack component implementation."""
 
     _client: Optional[SeldonClient] = None
@@ -543,16 +511,3 @@ class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
             custom_docker_image_name = runtime_configuration["docker_image"]
 
         return custom_docker_image_name
-
-
-class SeldonModelDeployerFlavor(BaseModelDeployerFlavor):
-    """Seldon Core model deployer flavor."""
-
-    def name(self) -> str:
-        return SELDON_MODEL_DEPLOYER_FLAVOR
-
-    def config_class(self) -> Type[SeldonModelDeployerConfig]:
-        return SeldonModelDeployerConfig
-
-    def implementation_class(self) -> Type[SeldonModelDeployer]:
-        return SeldonModelDeployer

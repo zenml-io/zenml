@@ -30,16 +30,6 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class LocalOrchestratorFlavor(BaseOrchestratorFlavor):
-    @property
-    def name(self) -> str:
-        return "local"
-
-    @property
-    def implementation_class(self):
-        return LocalOrchestrator
-
-
 class LocalOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines locally.
 
@@ -87,3 +77,13 @@ class LocalOrchestrator(BaseOrchestrator):
                 run_name=runtime_configuration.run_name,
                 pb2_pipeline=pb2_pipeline,
             )
+
+
+class LocalOrchestratorFlavor(BaseOrchestratorFlavor):
+    @property
+    def name(self) -> str:
+        return "local"
+
+    @property
+    def implementation_class(self):
+        return LocalOrchestrator

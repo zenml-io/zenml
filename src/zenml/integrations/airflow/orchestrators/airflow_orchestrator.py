@@ -34,13 +34,11 @@ import datetime
 import functools
 import os
 import time
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from pydantic import root_validator
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
 from zenml.environment import Environment
-from zenml.integrations.airflow import AIRFLOW_ORCHESTRATOR_FLAVOR
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
@@ -63,11 +61,6 @@ DAG_FILEPATH_OPTION_KEY = "dag_filepath"
 class AirflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Airflow."""
 
-    airflow_home: str = ""
-
-    # Class Configuration
-    FLAVOR: ClassVar[str] = AIRFLOW_ORCHESTRATOR_FLAVOR
-
     def __init__(self, **values: Any):
         """Sets environment variables to configure airflow.
 
@@ -75,6 +68,11 @@ class AirflowOrchestrator(BaseOrchestrator):
             **values: Values to set in the orchestrator.
         """
         super().__init__(**values)
+        self.airflow_home = os.path.join(
+            io_utils.get_global_config_directory(),
+            AIRFLOW_ROOT_DIR,
+            str(self.id),
+        )
         self._set_env()
 
     @staticmethod
@@ -207,28 +205,6 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         # Return the finished airflow dag
         return airflow_dag
-
-    @root_validator(skip_on_failure=True)
-    def set_airflow_home(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Sets Airflow home according to orchestrator UUID.
-
-        Args:
-            values: Dictionary containing all orchestrator attributes values.
-
-        Returns:
-            Dictionary containing all orchestrator attributes values and the airflow home.
-
-        Raises:
-            ValueError: If the orchestrator UUID is not set.
-        """
-        if "uuid" not in values:
-            raise ValueError("`uuid` needs to exist for AirflowOrchestrator.")
-        values["airflow_home"] = os.path.join(
-            io_utils.get_global_config_directory(),
-            AIRFLOW_ROOT_DIR,
-            str(values["uuid"]),
-        )
-        return values
 
     @property
     def dags_directory(self) -> str:

@@ -153,7 +153,7 @@ setattr(
 
 
 class BaseOrchestratorConfig(StackComponentConfig):
-    pass
+    """Base orchestrator config."""
 
 
 class BaseOrchestrator(StackComponent, ABC):
@@ -583,10 +583,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
 
 class BaseOrchestratorFlavor(Flavor):
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        """"""
+    """Base orchestrator flavor class."""
 
     @property
     def type(self) -> StackComponentType:
