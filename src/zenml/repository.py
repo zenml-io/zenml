@@ -556,14 +556,12 @@ class Repository(metaclass=RepositoryMetaClass):
         return self.zen_store.active_user
 
     @property
-    def stack_models(self) -> List["HydratedStackModel"]:
+    def stacks(self) -> List["HydratedStackModel"]:
         """All stack models in the current project, owned by the current user.
 
         This property is intended as a quick way to get information about the
         components of the registered stacks without loading all installed
-        integrations. The contained stack configurations might be invalid if
-        they were modified by hand, to ensure you get valid stacks use
-        `repo.stacks()` instead.
+        integrations.
 
         Returns:
             A list of all stacks available in the current project and owned by
@@ -574,51 +572,6 @@ class Repository(metaclass=RepositoryMetaClass):
                 user_name_or_id=self.active_user.id,
             )
         return [s.to_hydrated_model() for s in stacks]
-
-    @property
-    def stacks(self) -> List["Stack"]:
-        """All stacks in the current project, owned by the current user.
-
-        Returns:
-            A list of all stacks available in the current project and owned by
-            the current user.
-        """
-        from zenml.stack.stack import Stack
-
-        return [
-            Stack.from_model(stack_model) for stack_model in self.stack_models
-        ]
-
-    @property
-    def stack_configurations(self) -> Dict[str, Dict[str, str]]:
-        """Configuration stack dicts in the current project, owned by the user.
-
-        This property is intended as a quick way to get information about the
-        components of the registered stacks without loading all installed
-        integrations. The contained stack configurations might be invalid if
-        they were modified by hand, to ensure you get valid stacks use
-        `repo.stacks()` instead.
-
-        Modifying the contents of the returned dictionary does not actually
-        register/deregister stacks, use `repo.register_stack(...)` or
-        `repo.deregister_stack(...)` instead.
-
-        Returns:
-            A dictionary containing the configuration of all stacks available in
-            the current project and owned by the current user.
-        """
-        stacks = self.zen_store.list_stacks(
-            project_name_or_id=self.active_project_name,
-            user_name_or_id=self.active_user.id,
-        )
-
-        dict_of_stacks = dict()
-        for stack in stacks:
-            dict_of_stacks[stack.name] = {"shared": str(stack.is_shared)}
-            for com_type, comps in stack.to_hydrated_model().components.items():
-                dict_of_stacks[stack.name][str(com_type)] = comps[0].name
-
-        return dict_of_stacks
 
     @property
     def active_stack_model(self) -> "HydratedStackModel":

@@ -99,7 +99,7 @@ def _delete_local_files(force_delete: bool = False) -> None:
     if repo.active_stack_model:
         stack_components = repo.active_stack_model.components
         for _, components in stack_components.items():
-            # TODO: [server] this needs to be adjustes as the ComponentModel
+            # TODO: [server] this needs to be adjusted as the ComponentModel
             #  does not have the local_path property anymore
             local_path = components[0].local_path
             if local_path:

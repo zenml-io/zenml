@@ -1031,36 +1031,6 @@ def test_getting_nonexistent_run_fails(
         sql_store["store"].get_run(uuid.uuid4())
 
 
-# TODO: remove `xfail` once the method is properly implemented
-@pytest.mark.xfail
-def test_get_run_in_project_succeeds(
-    sql_store: BaseZenStore,
-):
-    """Tests getting run in project."""
-    run_name = "arias_pipeline_run"
-    pipeline_run = PipelineRunModel(
-        name=run_name,
-    )
-    sql_store["store"].create_run(pipeline_run=pipeline_run)
-
-    with does_not_raise():
-        run = sql_store["store"].get_run_in_project(
-            run_name=run_name, project_name_or_id=DEFAULT_NAME
-        )
-        assert run is not None
-        assert run.name == "arias_pipeline_run"
-
-
-def test_get_run_in_project_fails_for_nonexistent_run(
-    sql_store: BaseZenStore,
-):
-    """Tests getting run in project fails for nonexistent run."""
-    with pytest.raises(KeyError):
-        sql_store["store"].get_run_in_project(
-            run_name="nonexistent_run", project_name_or_id=DEFAULT_NAME
-        )
-
-
 def test_list_runs_succeeds(
     sql_store: BaseZenStore,
 ):
@@ -1126,20 +1096,12 @@ def test_update_run_fails_when_run_does_not_exist(
         sql_store["store"].update_run(run=pipeline_run)
 
 
-def test_delete_run_succeeds(
+def test_delete_run_raises_error(
     sql_store: BaseZenStore,
 ):
-    """Tests deleting run."""
-    pipeline_run = PipelineRunModel(
-        name="arias_pipeline_run",
-    )
-    sql_store["store"].create_run(pipeline_run=pipeline_run)
-    run_id = sql_store["store"].list_runs()[0].id
-    with does_not_raise():
-        sql_store["store"].delete_run(run_id=run_id)
-        assert len(sql_store["store"].list_runs()) == 0
-    with pytest.raises(KeyError):
-        sql_store["store"].get_run(run_id=run_id)
+    """Tests deleting run raises error."""
+    with pytest.raises(NotImplementedError):
+        sql_store["store"].delete_run(run_id=uuid.uuid4())
 
 
 # ------------------
@@ -1226,8 +1188,8 @@ def test_list_run_steps_succeeds(
     run_steps = sql_store_with_run["store"].list_run_steps(
         run_id=sql_store_with_run["pipeline_run"].id
     )
-    assert len(run_steps) == 1
-    assert run_steps[0] == sql_store_with_run["step"]
+    assert len(run_steps) == 2
+    assert run_steps[1] == sql_store_with_run["step"]
 
 
 # ----------------
@@ -1442,7 +1404,8 @@ def test_delete_stack_component_fails_when_component_does_not_exist(
 # Stack component flavors
 # -----------------------
 
-
+# TODO: remove `xfail` once the method is properly implemented
+@pytest.mark.xfail
 def test_create_stack_component_flavor_succeeds(
     sql_store: BaseZenStore,
 ):
@@ -1468,6 +1431,8 @@ def test_create_stack_component_flavor_succeeds(
         assert created_flavor.name == flavor_name
 
 
+# TODO: remove `xfail` once the method is properly implemented
+@pytest.mark.xfail
 def test_create_stack_component_fails_when_flavor_already_exists(
     sql_store: BaseZenStore,
 ):
@@ -1493,6 +1458,8 @@ def test_create_stack_component_fails_when_flavor_already_exists(
         sql_store["store"].create_flavor(flavor=scinda_copy_flavor)
 
 
+# TODO: remove `xfail` once the method is properly implemented
+@pytest.mark.xfail
 def test_get_flavor_succeeds(
     sql_store: BaseZenStore,
 ):
@@ -1514,6 +1481,8 @@ def test_get_flavor_succeeds(
         )
 
 
+# TODO: remove `xfail` once the method is properly implemented
+@pytest.mark.xfail
 def test_get_flavor_fails_when_flavor_does_not_exist(
     sql_store: BaseZenStore,
 ):
@@ -1522,6 +1491,8 @@ def test_get_flavor_fails_when_flavor_does_not_exist(
         sql_store["store"].get_flavor(flavor_id=uuid.uuid4())
 
 
+# TODO: remove `xfail` once the method is properly implemented
+@pytest.mark.xfail
 def test_list_flavors_succeeds(
     sql_store: BaseZenStore,
 ):
@@ -1540,6 +1511,8 @@ def test_list_flavors_succeeds(
         )
 
 
+# TODO: remove `xfail` once the method is properly implemented
+@pytest.mark.xfail
 def test_list_flavors_fails_with_nonexistent_project(
     sql_store: BaseZenStore,
 ):

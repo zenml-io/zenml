@@ -84,6 +84,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     """SQL ZenML store configuration.
 
     Attributes:
+        type: The type of the store.
         _sql_kwargs: Additional keyword arguments to pass to the SQLAlchemy
             engine.
     """
@@ -118,7 +119,15 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
 
 class SqlZenStore(BaseZenStore):
-    """Store Implementation that uses SQL database backend."""
+    """Store Implementation that uses SQL database backend.
+
+    Attributes:
+        config: The configuration of the SQL ZenML store.
+        TYPE: The type of the store.
+        CONFIG_TYPE: The type of the store configuration.
+        _engine: The SQLAlchemy engine.
+        _metadata_store: The metadata store.
+    """
 
     config: SqlZenStoreConfiguration
     TYPE: ClassVar[StoreType] = StoreType.SQL
@@ -164,7 +173,11 @@ class SqlZenStore(BaseZenStore):
     # --------------------------------
 
     def _initialize(self) -> None:
-        """Initialize the SQL store."""
+        """Initialize the SQL store.
+
+        Raises:
+            NotImplementedError: If you try to use anything besides SQLite.
+        """
         logger.debug("Initializing SqlZenStore at %s", self.config.url)
 
         local_path = self.get_path_from_url(self.config.url)
@@ -794,6 +807,7 @@ class SqlZenStore(BaseZenStore):
         Args:
             project_name_or_id: Optionally filter by the Project to which the
                 component flavors belong
+            component_type: Optionally filter by type of stack component
             user_name_or_id: Optionally filter by the owner
             component_type: Optionally filter by type of stack component
             name: Optionally filter flavors by name
@@ -801,10 +815,7 @@ class SqlZenStore(BaseZenStore):
                 shared or not
 
         Returns:
-            List of all the stack component flavors matching the given criteria.
-
-        Raises:
-            KeyError: if the flavor doesn't exist.
+            List of all the stack component flavors matching the given criteria
         """
         with Session(self.engine) as session:
             project = self._get_project_schema(project_name_or_id)
@@ -1424,11 +1435,11 @@ class SqlZenStore(BaseZenStore):
         """Assigns a role to a team, potentially scoped to a specific project.
 
         Args:
+            role_name_or_id: Name or ID of the role to assign.
+            team_name_or_id: Name or ID of the team to which to assign the role.
             project_name_or_id: Optional ID of a project in which to assign the
                 role. If this is not provided, the role will be assigned
                 globally.
-            role_name_or_id: Name or ID of the role to assign.
-            team_name_or_id: Name or ID of the team to which to assign the role.
 
         Raises:
             EntityExistsError: If the role assignment already exists.
@@ -1850,9 +1861,6 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             pipeline_id: The ID of the pipeline to list steps for.
-
-        Returns:
-            A list of all steps.
         """
         pass  # TODO
 
@@ -1952,13 +1960,8 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             run_id: The ID of the pipeline run to get.
-
-        Returns:
-            The DAG for the pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
         """
+        # TODO: raise KeyError if run doesn't exist
         pass  # TODO
 
     def get_run_component_side_effects(
@@ -1971,13 +1974,8 @@ class SqlZenStore(BaseZenStore):
         Args:
             run_id: The ID of the pipeline run to get.
             component_id: The ID of the component to get.
-
-        Returns:
-            The side effects for the component in the pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
         """
+        # TODO: raise KeyError if run doesn't exist
         pass  # TODO
 
     def list_runs(
@@ -2063,7 +2061,7 @@ class SqlZenStore(BaseZenStore):
             run_id: The ID of the pipeline run to delete.
 
         Raises:
-            KeyError: if the pipeline run doesn't exist.
+            NotImplementedError: this method is not implemented.
         """
         raise NotImplementedError(
             "Deleting pipeline runs is currently not supported."
@@ -2214,12 +2212,14 @@ class SqlZenStore(BaseZenStore):
             schema_class: The schema class to query. E.g., `ProjectSchema`.
             schema_name: The name of the schema used for error messages.
                 E.g., "project".
+            session: The database session to use.
 
         Returns:
             The schema object.
 
         Raises:
             KeyError: if the object couldn't be found.
+            ValueError: if the schema_name isn't provided.
         """
         if object_name_or_id is None:
             raise ValueError(
@@ -2264,6 +2264,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             project_name_or_id: The name or ID of the project to get.
+            session: The database session to use.
 
         Returns:
             The project schema.
@@ -2290,6 +2291,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             user_name_or_id: The name or ID of the user to get.
+            session: The database session to use.
 
         Returns:
             The user schema.
@@ -2316,6 +2318,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             team_name_or_id: The name or ID of the team to get.
+            session: The database session to use.
 
         Returns:
             The team schema.
@@ -2342,6 +2345,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             role_name_or_id: The name or ID of the role to get.
+            session: The database session to use.
 
         Returns:
             The role schema.

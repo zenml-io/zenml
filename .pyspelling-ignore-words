@@ -44,6 +44,7 @@ AzureContainerRegistry
 AzureML
 Backend
 Backpropagation
+Baris
 BaseAlerter
 BaseAlerterStepConfig
 BaseArtifact
@@ -114,8 +115,13 @@ ConnectionError
 ContainerOp
 ContainerOps
 ContainerRegistryReadOnly
+ContainerService
+ContainerServiceConfig
 Containerise
 Contextmanager
+CreateFlavorRequest
+CreatePipelineRunRequest
+CreateStackComponentRequest
 Cron
 CustomDeployParameters
 CustomFormatter
@@ -128,6 +134,7 @@ DataFrame's
 DataFrames
 DataLoader
 DataQualityProfileSection
+Databricks
 Databricks
 DatasetProfile
 DatasetProfileView
@@ -150,6 +157,7 @@ Deregisters
 DockerConfiguration
 DockerHub
 DockerHubContainerRegistry
+DockerZenServer
 Dockerfile
 Docstring
 DoesNotExistException
@@ -189,6 +197,7 @@ Filesync
 FirstPipeline
 FixtureRequest
 FlavorModel
+FlavorSchema
 FlavorWrapper
 Flyte
 Formatter
@@ -257,8 +266,8 @@ Istio
 Itemwise
 Iterable
 JSONDecodeError
-Jupyter
 JWT
+Jupyter
 KFP
 KFPCompiler
 KMS
@@ -295,6 +304,7 @@ LocalDockerOrchestrator
 LocalExample
 LocalOrchestrator
 LocalStack
+LocalZenServer
 LocationConstraint
 LogRecord
 LookupError
@@ -486,6 +496,11 @@ SeldonModelDeployer
 Semeion
 SequentialExecutor
 Sersale
+ServerDeploymentConfigurationError
+ServerDeploymentError
+ServerDeploymentExistsError
+ServerDeploymentNotFoundError
+ServerProviderNotFoundError
 ServiceAccount
 ServiceAccounts
 ServiceAgent
@@ -498,6 +513,8 @@ SingletonMetaClass
 SlackAlerter
 SleepingDaemon
 SleepingDaemonConfig
+SleepingService
+SleepingServiceConfig
 SparkConf
 SparkConf
 SparkConf
@@ -581,12 +598,15 @@ UUID
 UUIDs
 Uncategorized
 Unregistering
+UpdateComponentRequest
+UpdateFlavorRequest
 UserConfigurableProfiler
 UserGuide
 UsingWithRDS
 Util
 VPC
 VRAM
+ValidationError
 ValidationError
 ValueError
 VertexAI
@@ -737,6 +757,7 @@ configmaps
 configs
 conll
 containerise
+containerise
 containerregistry
 copyfile
 cp
@@ -763,6 +784,7 @@ daemonization
 daemonize
 daemonizer
 dango
+databricks
 databricks
 datadir
 datadrift
@@ -1269,6 +1291,7 @@ unhashed
 uninstallation
 unix
 unlinking
+unmanaged
 unprovisioned
 unregister
 unregistering
@@ -1321,19 +1344,3 @@ zenml
 zenmldocker
 zenmlregistry
 zenserver
-ValidationError
-containerise
-ServerDeploymentConfigurationError
-ServerDeploymentNotFoundError
-ServerProviderNotFoundError
-ServerDeploymentExistsError
-ServerDeploymentError
-unmanaged
-ContainerService
-ContainerServiceConfig
-SleepingService
-SleepingServiceConfig
-LocalZenServer
-DockerZenServer
-databricks
-Databricks
