@@ -95,70 +95,18 @@ class StackComponentConfig(BaseModel, ABC):
 
         super().__init__(**kwargs)
 
+    @property
+    def required_secrets(self) -> Set[secret_utils.SecretReference]:
+        """All required secrets for this stack component.
 
-class StackComponent:
-    """Abstract StackComponent class for all components of a ZenML stack."""
-
-    def __init__(
-        self,
-        name: str,
-        id: UUID,
-        config: StackComponentConfig,
-        flavor: str,
-        type: StackComponentType,
-        user: UUID,
-        project: UUID,
-        *args,
-        **kwargs,
-    ):
-        self.id = id
-        self.name = name
-        self.config = config
-        self.flavor = flavor
-        self.type = type
-        self.user = user
-        self.project = project
-
-    @classmethod
-    def from_model(cls, component_model: "ComponentModel") -> "StackComponent":
-        from zenml.repository import Repository
-
-        flavor_model = Repository(
-            skip_repository_check=True  # noqa
-        ).get_flavor_by_name_and_type(
-            name=component_model.flavor,
-            component_type=component_model.type,
-        )
-
-        try:
-            from zenml.stack import Flavor
-
-            flavor = Flavor.from_model(flavor_model)
-        except (ModuleNotFoundError, ImportError, NotImplementedError):
-            raise ImportError(f"tmp")
-
-        configuration = flavor.config_class(**component_model.configuration)
-
-        return flavor.implementation_class(
-            user=component_model.user,
-            project=component_model.project,
-            name=component_model.name,
-            id=component_model.id,
-            config=configuration,
-            flavor=component_model.flavor,
-            type=component_model.type,
-        )
-
-    def to_model(self) -> "ComponentModel":
-        return ComponentModel(
-            user=self.user,
-            project=self.project,
-            id=self.id,
-            type=self.type,
-            flavor_name=self.flavor,
-            name=self.name,
-            configuration=self.config.dict(),
-        )
+        Returns:
+            The required secrets of this stack component.
+        """
+        return {
+            secret_utils.parse_secret_reference(v)
+            for v in self.dict().values()
+            if secret_utils.is_secret_reference(v)
+        }
 
     def __custom_getattribute__(self, key: str) -> Any:
         """Returns the (potentially resolved) attribute value for the given key.
@@ -240,18 +188,70 @@ class StackComponent:
         # (see https://github.com/python/mypy/issues/13319).
         __getattribute__ = __custom_getattribute__
 
-    @property
-    def required_secrets(self) -> Set[secret_utils.SecretReference]:
-        """All required secrets for this stack component.
 
-        Returns:
-            The required secrets of this stack component.
-        """
-        return {
-            secret_utils.parse_secret_reference(v)
-            for v in self.dict().values()
-            if secret_utils.is_secret_reference(v)
-        }
+class StackComponent:
+    """Abstract StackComponent class for all components of a ZenML stack."""
+
+    def __init__(
+        self,
+        name: str,
+        id: UUID,
+        config: StackComponentConfig,
+        flavor: str,
+        type: StackComponentType,
+        user: UUID,
+        project: UUID,
+        *args,
+        **kwargs,
+    ):
+        self.id = id
+        self.name = name
+        self.config = config
+        self.flavor = flavor
+        self.type = type
+        self.user = user
+        self.project = project
+
+    @classmethod
+    def from_model(cls, component_model: "ComponentModel") -> "StackComponent":
+        from zenml.repository import Repository
+
+        flavor_model = Repository(
+            skip_repository_check=True  # noqa
+        ).get_flavor_by_name_and_type(
+            name=component_model.flavor,
+            component_type=component_model.type,
+        )
+
+        try:
+            from zenml.stack import Flavor
+
+            flavor = Flavor.from_model(flavor_model)
+        except (ModuleNotFoundError, ImportError, NotImplementedError):
+            raise ImportError(f"tmp")
+
+        configuration = flavor.config_class(**component_model.configuration)
+
+        return flavor.implementation_class(
+            user=component_model.user,
+            project=component_model.project,
+            name=component_model.name,
+            id=component_model.id,
+            config=configuration,
+            flavor=component_model.flavor,
+            type=component_model.type,
+        )
+
+    def to_model(self) -> "ComponentModel":
+        return ComponentModel(
+            user=self.user,
+            project=self.project,
+            id=self.id,
+            type=self.type,
+            flavor_name=self.flavor,
+            name=self.name,
+            configuration=self.config.dict(),
+        )
 
     @property
     def log_file(self) -> Optional[str]:

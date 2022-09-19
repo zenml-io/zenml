@@ -466,7 +466,7 @@ class Stack:
             A dictionary containing the stack components.
         """
         component_dict = {
-            component_type.value: component.json(sort_keys=True)
+            component_type.value: component.config.json(sort_keys=True)
             for component_type, component in self.components.items()
         }
         component_dict.update({"name": self.name})
@@ -504,7 +504,8 @@ class Stack:
             The required secrets of this stack.
         """
         secrets = [
-            component.required_secrets for component in self.components.values()
+            component.config.required_secrets for
+            component in self.components.values()
         ]
         return set.union(*secrets) if secrets else set()
 
