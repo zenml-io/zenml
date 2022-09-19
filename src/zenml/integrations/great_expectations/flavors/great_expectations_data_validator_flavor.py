@@ -17,12 +17,7 @@ import os
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
 import yaml
-from great_expectations.data_context.data_context import (  # type: ignore[import]
-    BaseDataContext,
-)
-from great_expectations.data_context.types.base import (  # type: ignore[import]
-    DataContextConfig,
-)
+
 from pydantic import root_validator, validator
 
 from zenml.data_validators.base_data_validator import (
@@ -99,6 +94,14 @@ class GreatExpectationsDataValidatorConfig(BaseDataValidatorConfig):
             ValueError: If the context_config value is not a valid JSON/YAML or
                 if the GE configuration extracted from it fails GE validation.
         """
+        # TODO: refactor this into the actual implementation
+        from great_expectations.data_context.data_context import (  # type: ignore[import]
+            BaseDataContext,
+        )
+        from great_expectations.data_context.types.base import (  # type: ignore[import]
+            DataContextConfig,
+        )
+
         context_config = values.get("context_config")
         if context_config and not isinstance(context_config, dict):
             try:
