@@ -763,9 +763,7 @@ class SqlZenStore(BaseZenStore):
                     f"'{flavor.project}' project owned by the same "
                     f"'{flavor.user}' user."
                 )
-            flavor_in_db = FlavorSchema.from_create_model(
-                flavor=flavor, user_id=flavor.user, project_id=flavor.project
-            )
+            flavor_in_db = FlavorSchema.from_create_model(flavor=flavor)
 
             session.add(flavor_in_db)
             session.commit()
@@ -816,11 +814,10 @@ class SqlZenStore(BaseZenStore):
             List of all the stack component flavors matching the given criteria
         """
         with Session(self.engine) as session:
-            project = self._get_project_schema(project_name_or_id)
-            # Get a list of all flavors
-            query = select(FlavorSchema).where(
-                FlavorSchema.project == project.id
-            )
+            query = select(FlavorSchema)
+            if project_name_or_id:
+                project = self._get_project_schema(project_name_or_id)
+                query=query.where(FlavorSchema.project == project.id)
             if component_type:
                 query = query.where(FlavorSchema.type == component_type)
             if name:

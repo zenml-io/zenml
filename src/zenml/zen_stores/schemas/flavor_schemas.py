@@ -40,20 +40,16 @@ class FlavorSchema(SQLModel, table=True):
     updated: datetime = Field(default_factory=datetime.now)
 
     @classmethod
-    def from_create_model(
-        cls,
-        flavor: FlavorModel,
-        user_id: UUID,
-        project_id: UUID,
-    ):
+    def from_create_model(cls, flavor: FlavorModel):
         return cls(
+            id=flavor.id,
             name=flavor.name,
             type=flavor.type,
             source=flavor.source,
             config_schema=flavor.config_schema,
             integration=flavor.integration,
-            user_id=user_id,
-            project_id=project_id,
+            user=flavor.user,
+            project=flavor.project,
         )
 
     def from_update_model(
@@ -70,7 +66,8 @@ class FlavorSchema(SQLModel, table=True):
             source=self.source,
             config_schema=self.config_schema,
             integration=self.integration,
-            user_id=self.user_id,
-            project_id=self.project_id,
-            created_at=self.created_at,
+            user=self.user,
+            project=self.project,
+            created=self.created,
+            updated=self.updated,
         )
