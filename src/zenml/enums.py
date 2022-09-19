@@ -131,3 +131,4 @@ class ServerProviderType(StrEnum):
 
     LOCAL = "local"
     DOCKER = "docker"
+    TERRAFORM = "terraform"
