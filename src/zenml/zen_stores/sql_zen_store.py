@@ -84,6 +84,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     """SQL ZenML store configuration.
 
     Attributes:
+        type: The type of the store.
         _sql_kwargs: Additional keyword arguments to pass to the SQLAlchemy
             engine.
     """
@@ -118,7 +119,15 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
 
 class SqlZenStore(BaseZenStore):
-    """Store Implementation that uses SQL database backend."""
+    """Store Implementation that uses SQL database backend.
+
+    Attributes:
+        config: The configuration of the SQL ZenML store.
+        TYPE: The type of the store.
+        CONFIG_TYPE: The type of the store configuration.
+        _engine: The SQLAlchemy engine.
+        _metadata_store: The metadata store.
+    """
 
     config: SqlZenStoreConfiguration
     TYPE: ClassVar[StoreType] = StoreType.SQL
@@ -164,7 +173,11 @@ class SqlZenStore(BaseZenStore):
     # --------------------------------
 
     def _initialize(self) -> None:
-        """Initialize the SQL store."""
+        """Initialize the SQL store.
+
+        Raises:
+            NotImplementedError: If you try to use anything besides SQLite.
+        """
         logger.debug("Initializing SqlZenStore at %s", self.config.url)
 
         local_path = self.get_path_from_url(self.config.url)

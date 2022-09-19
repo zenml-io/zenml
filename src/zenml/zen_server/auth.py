@@ -119,6 +119,9 @@ def http_authentication(
     Args:
         credentials: HTTP basic auth credentials passed to the request.
 
+    Returns:
+        The authentication context reflecting the authenticated user.
+
     Raises:
         HTTPException: If the user credentials could not be authenticated.
     """
