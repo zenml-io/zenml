@@ -3,10 +3,10 @@ from typing import Dict, List
 import torch
 from steps.pytorch_trainer import LABEL_MAPPING, load_mobilenetv3_transforms
 
+from zenml.post_execution import get_pipeline
 from zenml.steps import Output, step
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_context import StepContext
-from zenml.post_execution import get_pipeline
 
 REVERSE_LABEL_MAPPING = {value: key for key, value in LABEL_MAPPING.items()}
 PIPELINE_NAME = "training_pipeline"
@@ -22,9 +22,7 @@ class PredictionServiceLoaderConfig(BaseStepConfig):
 def prediction_service_loader(
     config: PredictionServiceLoaderConfig, context: StepContext
 ) -> torch.nn.Module:
-    train_run = (
-        get_pipeline(config.training_pipeline_name).runs[-1]
-    )
+    train_run = get_pipeline(config.training_pipeline_name).runs[-1]
     return train_run.get_step(config.training_pipeline_step_name).output.read()
 
 
