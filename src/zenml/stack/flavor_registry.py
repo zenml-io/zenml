@@ -78,7 +78,6 @@ class FlavorRegistry:
             integrated_flavors = integration.flavors()
             if integrated_flavors:
                 for flavor in integrated_flavors:
-                    print(name, flavor.name)
                     self._register_flavor(flavor().to_model(integration=name))
 
     def _register_flavor(
