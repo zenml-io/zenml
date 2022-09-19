@@ -26,6 +26,7 @@ from zenml.utils.source_utils import load_source_path_class, resolve_class
 
 
 class Flavor:
+
     @property
     @abstractmethod
     def name(self) -> str:
@@ -56,7 +57,13 @@ class Flavor:
         return load_source_path_class(flavor_model.source)()  # noqa
 
     def to_model(self, integration: Optional[str] = None) -> FlavorModel:
+        from zenml.repository import Repository
+
+        repo = Repository()
+
         model = FlavorModel(
+            user=repo.active_user.id,
+            project=repo.active_project.id,
             name=self.name,
             type=self.type,
             source=resolve_class(self.__class__),  # noqa

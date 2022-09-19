@@ -19,27 +19,21 @@ from uuid import UUID
 from pydantic import Field
 
 from zenml.enums import StackComponentType
-from zenml.models.base_models import ShareableProjectScopedDomainModel
+from zenml.models.base_models import ProjectScopedDomainModel
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 
-class FlavorModel(
-    ShareableProjectScopedDomainModel, AnalyticsTrackedModelMixin
-):
+class FlavorModel(ProjectScopedDomainModel, AnalyticsTrackedModelMixin):
     """Domain model representing the custom implementation of a flavor."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "id",
         "type",
         "integration",
-        "project_id",
-        "user_id",
+        "project",
+        "user",
     ]
 
-    id: UUID = Field(
-        default=None,
-        title="The ID of the Flavor.",
-    )
     name: str = Field(
         title="The name of the Flavor.",
     )
