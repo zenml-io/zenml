@@ -21,20 +21,14 @@ from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
-from zenml.orchestrators.base_orchestrator import (
-    BaseOrchestratorConfig,
-    BaseOrchestratorFlavor,
-)
+from zenml.orchestrators.base_orchestrator import BaseOrchestratorFlavor
 from zenml.orchestrators.local_docker.local_docker_entrypoint_configuration import (
     RUN_NAME_OPTION,
     LocalDockerEntrypointConfiguration,
 )
 from zenml.stack import Stack
 from zenml.steps import BaseStep
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilderConfigMixin,
-    PipelineDockerImageBuilderMixin,
-)
+from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
@@ -43,15 +37,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class LocalDockerOrchestratorConfig(
-    BaseOrchestratorConfig, PipelineDockerImageBuilderConfigMixin
-):
-    """Config for the local Docker orchestrator."""
-
-
-class LocalDockerOrchestrator(
-    BaseOrchestrator, PipelineDockerImageBuilderMixin
-):
+class LocalDockerOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines locally using Docker.
 
     This orchestrator does not allow for concurrent execution of steps and also
@@ -73,8 +59,9 @@ class LocalDockerOrchestrator(
             stack: The stack to be deployed.
             runtime_configuration: The runtime configuration to be used.
         """
+        docker_image_builder = PipelineDockerImageBuilder()
         if stack.container_registry:
-            self.build_and_push_docker_image(
+            docker_image_builder.build_and_push_docker_image(
                 pipeline_name=pipeline.name,
                 docker_configuration=pipeline.docker_configuration,
                 stack=stack,
@@ -86,7 +73,7 @@ class LocalDockerOrchestrator(
                 f"{pipeline.docker_configuration.target_repository}:"
                 f"{pipeline.name}"
             )
-            self.build_docker_image(
+            docker_image_builder.build_docker_image(
                 target_image_name=target_image_name,
                 pipeline_name=pipeline.name,
                 docker_configuration=pipeline.docker_configuration,
@@ -188,10 +175,6 @@ class LocalDockerOrchestratorFlavor(BaseOrchestratorFlavor):
     @property
     def name(self) -> str:
         return "local_docker"
-
-    @property
-    def config_class(self) -> Type[LocalDockerOrchestratorConfig]:
-        return LocalDockerOrchestratorConfig
 
     @property
     def implementation_class(self) -> Type["LocalDockerOrchestrator"]:

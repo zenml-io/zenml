@@ -21,17 +21,12 @@ from zenml.step_operators.base_step_operator import (
     BaseStepOperatorFlavor,
 )
 from zenml.utils import deprecation_utils
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilderConfigMixin,
-)
 
 if TYPE_CHECKING:
     from zenml.integrations.aws.step_operators import SagemakerStepOperator
 
 
-class SagemakerStepOperatorConfig(
-    BaseStepOperatorConfig, PipelineDockerImageBuilderConfigMixin
-):
+class SagemakerStepOperatorConfig(BaseStepOperatorConfig):
     """Config for the Sagemaker step operator.
 
     Attributes:

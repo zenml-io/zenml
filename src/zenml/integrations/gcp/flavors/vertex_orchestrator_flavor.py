@@ -21,9 +21,6 @@ from zenml.integrations.gcp.google_credentials_mixin import (
 )
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 from zenml.utils import deprecation_utils
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilderConfigMixin,
-)
 
 if TYPE_CHECKING:
     from zenml.integrations.gcp.orchestrators import VertexOrchestrator
@@ -31,7 +28,6 @@ if TYPE_CHECKING:
 
 class VertexOrchestratorConfig(
     BaseOrchestratorConfig,
-    PipelineDockerImageBuilderConfigMixin,
     GoogleCredentialsConfigMixin,
 ):
     """Configuration for the Vertex orchestrator.

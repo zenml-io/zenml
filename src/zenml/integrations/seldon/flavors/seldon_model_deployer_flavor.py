@@ -20,17 +20,12 @@ from zenml.model_deployers.base_model_deployer import (
     BaseModelDeployerConfig,
     BaseModelDeployerFlavor,
 )
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilderConfigMixin,
-)
 
 if TYPE_CHECKING:
     from zenml.integrations.seldon.model_deployers import SeldonModelDeployer
 
 
-class SeldonModelDeployerConfig(
-    BaseModelDeployerConfig, PipelineDockerImageBuilderConfigMixin
-):
+class SeldonModelDeployerConfig(BaseModelDeployerConfig):
     """Config for the Seldon Model Deployer.
 
     Attributes:

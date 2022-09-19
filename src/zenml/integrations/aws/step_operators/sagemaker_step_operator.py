@@ -23,9 +23,7 @@ from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilderMixin,
-)
+from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
     from zenml.config.docker_configuration import DockerConfiguration
@@ -35,7 +33,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilderMixin):
+class SagemakerStepOperator(BaseStepOperator):
     """Step operator to run a step on Sagemaker.
 
     This class defines code that builds an image with the ZenML entrypoint
@@ -80,7 +78,8 @@ class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilderMixin):
             entrypoint_command: Command that executes the step.
             resource_configuration: The resource configuration for this step.
         """
-        image_name = self.build_and_push_docker_image(
+        docker_image_builder = PipelineDockerImageBuilder()
+        image_name = docker_image_builder.build_and_push_docker_image(
             pipeline_name=pipeline_name,
             docker_configuration=docker_configuration,
             stack=Repository().active_stack,

@@ -39,7 +39,7 @@ from zenml.repository import Repository
 from zenml.step_operators import BaseStepOperator
 from zenml.utils.pipeline_docker_image_builder import (
     DOCKER_IMAGE_ZENML_CONFIG_DIR,
-    PipelineDockerImageBuilderMixin,
+    PipelineDockerImageBuilder,
     _include_global_config,
 )
 from zenml.utils.source_utils import get_source_root_path
@@ -51,7 +51,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilderMixin):
+class AzureMLStepOperator(BaseStepOperator):
     """Step operator to run a step on AzureML.
 
     This class defines code that can set up an AzureML environment and run the
@@ -95,7 +95,8 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilderMixin):
         Returns:
             The AzureML Environment object.
         """
-        requirements_files = self._gather_requirements_files(
+        docker_image_builder = PipelineDockerImageBuilder()
+        requirements_files = docker_image_builder._gather_requirements_files(
             docker_configuration=docker_configuration,
             stack=Repository().active_stack,
         )

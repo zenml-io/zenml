@@ -18,9 +18,6 @@ from typing import TYPE_CHECKING, Optional, Type
 from zenml.integrations.github import GITHUB_ORCHESTRATOR_FLAVOR
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 from zenml.utils import deprecation_utils
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilderConfigMixin,
-)
 
 if TYPE_CHECKING:
     from zenml.integrations.github.orchestrators import (
@@ -28,9 +25,7 @@ if TYPE_CHECKING:
     )
 
 
-class GitHubActionsOrchestratorConfig(
-    BaseOrchestratorConfig, PipelineDockerImageBuilderConfigMixin
-):
+class GitHubActionsOrchestratorConfig(BaseOrchestratorConfig):
     """Configuration for the GitHub Actions orchestrator.
 
     Attributes:

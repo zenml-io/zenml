@@ -20,17 +20,12 @@ from zenml.model_deployers.base_model_deployer import (
     BaseModelDeployerConfig,
     BaseModelDeployerFlavor,
 )
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilderConfigMixin,
-)
 
 if TYPE_CHECKING:
     from zenml.integrations.kserve.model_deployers import KServeModelDeployer
 
 
-class KServeModelDeployerConfig(
-    BaseModelDeployerConfig, PipelineDockerImageBuilderConfigMixin
-):
+class KServeModelDeployerConfig(BaseModelDeployerConfig):
     """Configuration for the KServeModelDeployer.
 
     Attributes:

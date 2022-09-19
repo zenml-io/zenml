@@ -49,9 +49,7 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.stack import StackValidator
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilderMixin,
-)
+from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
@@ -62,7 +60,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class KubernetesOrchestrator(BaseOrchestrator, PipelineDockerImageBuilderMixin):
+class KubernetesOrchestrator(BaseOrchestrator):
     """Orchestrator for running ZenML pipelines using native Kubernetes."""
 
     _k8s_core_api: k8s_client.CoreV1Api = None
@@ -207,7 +205,8 @@ class KubernetesOrchestrator(BaseOrchestrator, PipelineDockerImageBuilderMixin):
             stack: A ZenML stack.
             runtime_configuration: The runtime configuration of the pipeline.
         """
-        self.build_and_push_docker_image(
+        docker_image_builder = PipelineDockerImageBuilder()
+        docker_image_builder.build_and_push_docker_image(
             pipeline_name=pipeline.name,
             docker_configuration=pipeline.docker_configuration,
             stack=stack,

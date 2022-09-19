@@ -17,9 +17,6 @@ from typing import TYPE_CHECKING, Type
 
 from zenml.integrations.tekton import TEKTON_ORCHESTRATOR_FLAVOR
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilderConfigMixin,
-)
 
 if TYPE_CHECKING:
     from zenml.integrations.tekton.orchestrators import TektonOrchestrator
@@ -28,9 +25,7 @@ if TYPE_CHECKING:
 DEFAULT_TEKTON_UI_PORT = 8080
 
 
-class TektonOrchestratorConfig(
-    BaseOrchestratorConfig, PipelineDockerImageBuilderConfigMixin
-):
+class TektonOrchestratorConfig(BaseOrchestratorConfig):
     """Configuration for the Tekton orchestrator.
 
     Attributes:

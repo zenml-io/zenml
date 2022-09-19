@@ -28,7 +28,7 @@ from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.utils.pipeline_docker_image_builder import (
     DOCKER_IMAGE_WORKDIR,
-    PipelineDockerImageBuilderMixin,
+    PipelineDockerImageBuilder,
 )
 from zenml.utils.source_utils import get_source_root_path
 
@@ -38,9 +38,7 @@ LOCAL_ENTRYPOINT = spark_entrypoint.__file__
 ENTRYPOINT_NAME = "zenml_spark_entrypoint.py"
 
 
-class KubernetesSparkStepOperator(
-    SparkStepOperator, PipelineDockerImageBuilderMixin
-):
+class KubernetesSparkStepOperator(SparkStepOperator):
     """Step operator which runs Steps with Spark on Kubernetes."""
 
     @property
@@ -88,7 +86,8 @@ class KubernetesSparkStepOperator(
 
         try:
             # Build and push the image
-            image_name = self.build_and_push_docker_image(
+            docker_image_builder = PipelineDockerImageBuilder()
+            image_name = docker_image_builder.build_and_push_docker_image(
                 pipeline_name=pipeline_name,
                 docker_configuration=docker_configuration,
                 stack=Repository().active_stack,
