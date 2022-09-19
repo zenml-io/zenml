@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Class for lineage graph generation."""
 
 from typing import List, Optional
 
@@ -39,6 +40,11 @@ class LineageGraph(BaseModel):
     root_step_id: Optional[str]
 
     def generate_step_nodes_and_edges(self, step: StepView):
+        """Generates the step nodes and the edges between them.
+
+        Args:
+            step: The step to generate the nodes and edges for.
+        """
         step_output_artifacts = list(step.outputs.values())
         execution_id = str(
             step_output_artifacts[0].producer_step_id
@@ -100,5 +106,10 @@ class LineageGraph(BaseModel):
             )
 
     def generate_run_nodes_and_edges(self, run: PipelineRunView):
+        """Generates the run nodes and the edges between them.
+
+        Args:
+            run: The PipelineRunView to generate the lineage graph for.
+        """
         for step in run.steps:
             self.generate_step_nodes_and_edges(step)
