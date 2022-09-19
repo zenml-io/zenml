@@ -242,7 +242,7 @@ async def create_stack(
         stack: Stack to register.
         hydrated: Defines if stack components, users and projects will be
             included by reference (FALSE) or as model (TRUE)
-        auth_context: The authentification context.
+        auth_context: The authentication context.
 
     Returns:
         The created stack.
