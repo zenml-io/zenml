@@ -19,9 +19,14 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from zenml.constants import ACTIVATE, DEACTIVATE, ROLES, USERS, VERSION_1
+from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import RoleAssignmentModel, UserModel
-from zenml.zen_server.auth import authenticate_credentials, authorize
+from zenml.zen_server.auth import (
+    AuthContext,
+    authenticate_credentials,
+    authorize,
+)
 from zenml.zen_server.models.user_management_models import (
     ActivateUserRequest,
     CreateUserRequest,
@@ -205,12 +210,22 @@ async def deactivate_user(user_name_or_id: Union[str, UUID]) -> UserModel:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def delete_user(user_name_or_id: Union[str, UUID]) -> None:
+async def delete_user(
+    user_name_or_id: Union[str, UUID],
+    auth_context: AuthContext = Depends(authorize),
+) -> None:
     """Deletes a specific user.
 
     Args:
         user_name_or_id: Name or ID of the user.
     """
+    user = zen_store.get_user(user_name_or_id)
+
+    if auth_context.user.name == user.name:
+        raise IllegalOperationError(
+            "You cannot delete yourself. If you wish to delete your active "
+            "user account, please contact your ZenML administrator."
+        )
     zen_store.delete_user(user_name_or_id=user_name_or_id)
 
 

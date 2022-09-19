@@ -18,12 +18,12 @@ orchestrator. You can enable it by registering the Kubernetes orchestrator with
 the CLI tool.
 """
 from typing import List, Type
-from zenml.stack import Flavor
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import KUBERNETES
 from zenml.integrations.integration import Integration
 from zenml.models import FlavorModel
+from zenml.stack import Flavor
 
 KUBERNETES_ORCHESTRATOR_FLAVOR = "kubernetes"
 
@@ -43,8 +43,9 @@ class KubernetesIntegration(Integration):
         """
 
         from zenml.integrations.kubernetes.flavors import (
-            KubernetesOrchestratorFlavor
+            KubernetesOrchestratorFlavor,
         )
+
         return [KubernetesOrchestratorFlavor]
 
 

@@ -17,12 +17,12 @@ The S3 integration allows the use of cloud artifact stores and file
 operations on S3 buckets.
 """
 from typing import List, Type
-from zenml.stack import Flavor
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import S3
 from zenml.integrations.integration import Integration
 from zenml.models import FlavorModel
+from zenml.stack import Flavor
 
 S3_ARTIFACT_STORE_FLAVOR = "s3"
 
@@ -42,7 +42,8 @@ class S3Integration(Integration):
         """
 
         from zenml.integrations.s3.flavors import S3ArtifactStoreFlavor
-        return [S3ArtifactStoreFlavor        ]
+
+        return [S3ArtifactStoreFlavor]
 
 
 S3Integration.check_installation()

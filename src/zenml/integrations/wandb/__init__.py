@@ -17,12 +17,12 @@ The wandb integrations currently enables you to use wandb tracking as a
 convenient way to visualize your experiment runs within the wandb ui.
 """
 from typing import List, Type
-from zenml.stack import Flavor
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import WANDB
 from zenml.integrations.integration import Integration
 from zenml.models import FlavorModel
+from zenml.stack import Flavor
 
 WANDB_EXPERIMENT_TRACKER_FLAVOR = "wandb"
 
@@ -42,9 +42,10 @@ class WandbIntegration(Integration):
         """
 
         from zenml.integrations.wandb.flavors import (
-            WandbExperimentTrackerFlavor
+            WandbExperimentTrackerFlavor,
         )
-        return [            WandbExperimentTrackerFlavor]
+
+        return [WandbExperimentTrackerFlavor]
 
 
 WandbIntegration.check_installation()

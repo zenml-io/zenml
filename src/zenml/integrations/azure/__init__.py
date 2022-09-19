@@ -20,11 +20,13 @@ The Azure Step Operator integration submodule provides a way to run ZenML steps
 in AzureML.
 """
 from typing import List, Type
-from zenml.stack import Flavor
+
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import AZURE
 from zenml.integrations.integration import Integration
 from zenml.models import FlavorModel
+from zenml.stack import Flavor
+
 AZURE_ARTIFACT_STORE_FLAVOR = "azure"
 AZURE_SECRETS_MANAGER_FLAVOR = "azure_key_vault"
 AZUREML_STEP_OPERATOR_FLAVOR = "azureml"
@@ -51,14 +53,14 @@ class AzureIntegration(Integration):
         """
         from zenml.integrations.azure.flavors import (
             AzureArtifactStoreFlavor,
-            AzureSecretsManagerFlavor,
             AzureMLStepOperatorFlavor,
+            AzureSecretsManagerFlavor,
         )
 
         return [
             AzureArtifactStoreFlavor,
             AzureSecretsManagerFlavor,
-            AzureMLStepOperatorFlavor
+            AzureMLStepOperatorFlavor,
         ]
 
 

@@ -17,11 +17,12 @@ The MLflow integrations currently enables you to use MLflow tracking as a
 convenient way to visualize your experiment runs within the MLflow UI.
 """
 from typing import List, Type
-from zenml.stack import Flavor
+
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import MLFLOW
 from zenml.integrations.integration import Integration
 from zenml.models import FlavorModel
+from zenml.stack import Flavor
 
 MLFLOW_MODEL_DEPLOYER_FLAVOR = "mlflow"
 MLFLOW_MODEL_EXPERIMENT_TRACKER_FLAVOR = "mlflow"
@@ -51,9 +52,10 @@ class MlflowIntegration(Integration):
         """
         from zenml.integrations.mlflow.flavors import (
             MLFlowExperimentTrackerFlavor,
-            MLFlowModelDeployerFlavor
-)
-        return [MLFlowModelDeployerFlavor, MLFlowExperimentTrackerFlavor        ]
+            MLFlowModelDeployerFlavor,
+        )
+
+        return [MLFlowModelDeployerFlavor, MLFlowExperimentTrackerFlavor]
 
 
 MlflowIntegration.check_installation()

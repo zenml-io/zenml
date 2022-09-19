@@ -19,7 +19,6 @@ the CLI tool, then bootstrap using the ``zenml orchestrator up`` command.
 """
 from typing import List, Type
 
-
 from zenml.integrations.constants import AIRFLOW
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor

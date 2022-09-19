@@ -215,6 +215,7 @@ async def list_project_stacks(
     stacks_list = zen_store.list_stacks(
         project_name_or_id=project_name_or_id,
         user_name_or_id=user_name_or_id,
+        component_id=component_id,
         is_shared=is_shared,
         name=stack_name,
     )

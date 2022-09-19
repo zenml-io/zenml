@@ -17,12 +17,12 @@ The GitHub integration provides a way to orchestrate pipelines using GitHub
 Actions.
 """
 from typing import List, Type
-from zenml.stack import Flavor
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import GITHUB
 from zenml.integrations.integration import Integration
 from zenml.models import FlavorModel
+from zenml.stack import Flavor
 
 GITHUB_SECRET_MANAGER_FLAVOR = "github"
 GITHUB_ORCHESTRATOR_FLAVOR = "github"
@@ -46,10 +46,7 @@ class GitHubIntegration(Integration):
             GitHubSecretsManagerFlavor,
         )
 
-        return [
-            GitHubActionsOrchestratorFlavor,
-            GitHubSecretsManagerFlavor
-        ]
+        return [GitHubActionsOrchestratorFlavor, GitHubSecretsManagerFlavor]
 
 
 GitHubIntegration.check_installation()

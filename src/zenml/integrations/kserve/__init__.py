@@ -17,12 +17,12 @@ The KServe integration allows you to use the KServe model serving
 platform to implement continuous model deployment.
 """
 from typing import List, Type
-from zenml.stack import Flavor
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import KSERVE
 from zenml.integrations.integration import Integration
 from zenml.models import FlavorModel
+from zenml.stack import Flavor
 
 KSERVE_MODEL_DEPLOYER_FLAVOR = "kserve"
 
