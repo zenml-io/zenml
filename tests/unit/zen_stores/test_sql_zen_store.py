@@ -1188,8 +1188,8 @@ def test_list_run_steps_succeeds(
     run_steps = sql_store_with_run["store"].list_run_steps(
         run_id=sql_store_with_run["pipeline_run"].id
     )
-    assert len(run_steps) == 1
-    assert run_steps[0] == sql_store_with_run["step"]
+    assert len(run_steps) == 2
+    assert run_steps[1] == sql_store_with_run["step"]
 
 
 # ----------------
