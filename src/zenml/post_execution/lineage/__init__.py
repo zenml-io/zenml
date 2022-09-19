@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Initialization of lineage generation module."""
 
 from zenml.post_execution.lineage.edge import Edge  # noqa
 from zenml.post_execution.lineage.lineage_graph import LineageGraph  # noqa

@@ -195,7 +195,7 @@ async def deactivate_user(user_name_or_id: Union[str, UUID]) -> UserModel:
     user.active = False
     token = user.generate_activation_token()
     user = zen_store.update_user(user=user)
-    # add back the original un-hashed activation token
+    # add back the original unhashed activation token
     user.activation_token = token
     return DeactivateUserResponse.from_model(user)
 

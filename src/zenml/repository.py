@@ -476,9 +476,9 @@ class Repository(metaclass=RepositoryMetaClass):
             the current user.
         """
         return self.zen_store.list_stacks(
-                project_name_or_id=self.active_project_name,
-                user_name_or_id=self.active_user.id,
-            )
+            project_name_or_id=self.active_project_name,
+            user_name_or_id=self.active_user.id,
+        )
 
     @property
     def stack_configurations(self) -> Dict[str, Dict[str, str]]:
