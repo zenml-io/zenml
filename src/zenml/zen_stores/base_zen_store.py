@@ -30,9 +30,7 @@ from zenml.models import (
     TeamModel,
     UserModel,
 )
-from zenml.utils import io_utils
 from zenml.models.pipeline_models import PipelineModel
-from zenml.stack.flavor_registry import flavor_registry
 from zenml.utils.analytics_utils import (
     AnalyticsEvent,
     AnalyticsTrackerMixin,

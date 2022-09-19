@@ -13,11 +13,8 @@
 #  permissions and limitations under the License.
 """Model definition for stack components."""
 
-from datetime import datetime
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from uuid import UUID, uuid4
-import json
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List
 
 from pydantic import Field
 

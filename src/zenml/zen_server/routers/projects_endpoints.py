@@ -38,8 +38,8 @@ from zenml.models.component_model import HydratedComponentModel
 from zenml.models.stack_models import HydratedStackModel
 from zenml.models.user_management_models import RoleAssignmentModel
 from zenml.zen_server.auth import AuthContext, authorize
-from zenml.zen_server.models.component_models import CreateComponentModel
 from zenml.zen_server.models import CreatePipelineRequest
+from zenml.zen_server.models.component_models import CreateComponentModel
 from zenml.zen_server.models.pipeline_models import HydratedPipelineModel
 from zenml.zen_server.models.projects_models import (
     CreateProjectRequest,

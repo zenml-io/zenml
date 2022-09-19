@@ -637,9 +637,7 @@ class SqlZenStore(BaseZenStore):
             if type:
                 query = query.where(StackComponentSchema.type == type)
             if flavor_name:
-                query = query.where(
-                    StackComponentSchema.flavor == flavor_name
-                )
+                query = query.where(StackComponentSchema.flavor == flavor_name)
             if name:
                 query = query.where(StackComponentSchema.name == name)
             if is_shared is not None:

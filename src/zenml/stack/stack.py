@@ -502,8 +502,8 @@ class Stack:
             The required secrets of this stack.
         """
         secrets = [
-            component.config.required_secrets for
-            component in self.components.values()
+            component.config.required_secrets
+            for component in self.components.values()
         ]
         return set.union(*secrets) if secrets else set()
 

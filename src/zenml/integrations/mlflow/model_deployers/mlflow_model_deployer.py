@@ -19,12 +19,6 @@ from pathlib import Path
 from typing import Dict, List, Optional, cast
 from uuid import UUID
 
-from zenml.constants import (
-    DEFAULT_SERVICE_START_STOP_TIMEOUT,
-    LOCAL_STORES_DIRECTORY_NAME,
-)
-from pydantic import root_validator
-
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
 from zenml.integrations.mlflow import MLFLOW_MODEL_DEPLOYER_FLAVOR

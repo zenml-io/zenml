@@ -568,9 +568,9 @@ class Repository(metaclass=RepositoryMetaClass):
             the current user.
         """
         stacks = self.zen_store.list_stacks(
-                project_name_or_id=self.active_project_name,
-                user_name_or_id=self.active_user.id,
-            )
+            project_name_or_id=self.active_project_name,
+            user_name_or_id=self.active_user.id,
+        )
         return [s.to_hydrated_model() for s in stacks]
 
     @property

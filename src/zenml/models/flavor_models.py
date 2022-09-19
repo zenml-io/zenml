@@ -13,24 +13,14 @@
 #  permissions and limitations under the License.
 """Model definitions for stack component flavors."""
 
-from datetime import datetime
 from typing import ClassVar, List, Optional
 from uuid import UUID
 
 from pydantic import Field
 
 from zenml.enums import StackComponentType
-from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
-from typing import TYPE_CHECKING, Optional, Type
-from uuid import UUID
-
-from zenml.enums import StackComponentType
 from zenml.models.base_models import ShareableProjectScopedDomainModel
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
-from zenml.utils.source_utils import (
-    load_source_path_class,
-    validate_flavor_source,
-)
 
 
 class FlavorModel(
