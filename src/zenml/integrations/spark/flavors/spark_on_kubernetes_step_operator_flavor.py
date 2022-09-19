@@ -20,9 +20,6 @@ from zenml.integrations.spark.flavors.spark_step_operator_flavor import (
     SparkStepOperatorConfig,
     SparkStepOperatorFlavor,
 )
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilderConfigMixin,
-)
 
 if TYPE_CHECKING:
     from zenml.integrations.spark.step_operators import (
@@ -30,9 +27,7 @@ if TYPE_CHECKING:
     )
 
 
-class KubernetesSparkStepOperatorConfig(
-    SparkStepOperatorConfig, PipelineDockerImageBuilderConfigMixin
-):
+class KubernetesSparkStepOperatorConfig(SparkStepOperatorConfig):
     """Config for the Kubernetes Spark step operator.
 
     Attributes:

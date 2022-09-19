@@ -34,9 +34,7 @@ from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.stack.stack import Stack
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilderMixin,
-)
+from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
     from zenml.config.docker_configuration import DockerConfiguration
@@ -47,7 +45,7 @@ logger = get_logger(__name__)
 DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT = 300
 
 
-class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilderMixin):
+class KServeModelDeployer(BaseModelDeployer):
     """KServe model deployer stack component implementation."""
 
     _client: Optional[KServeClient] = None
@@ -537,12 +535,15 @@ class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilderMixin):
         # if the orchestrator is remote, then we can use the same image used to run the pipeline.
         if stack.orchestrator.flavor == "local":
             # more information about stack ..
-            custom_docker_image_name = self.build_and_push_docker_image(
-                pipeline_name=pipeline_name,
-                docker_configuration=docker_configuration,
-                stack=stack,
-                runtime_configuration=runtime_configuration,
-                entrypoint=" ".join(entrypoint),
+            docker_image_builder = PipelineDockerImageBuilder()
+            custom_docker_image_name = (
+                docker_image_builder.build_and_push_docker_image(
+                    pipeline_name=pipeline_name,
+                    docker_configuration=docker_configuration,
+                    stack=stack,
+                    runtime_configuration=runtime_configuration,
+                    entrypoint=" ".join(entrypoint),
+                )
             )
         else:
             custom_docker_image_name = runtime_configuration["docker_image"]

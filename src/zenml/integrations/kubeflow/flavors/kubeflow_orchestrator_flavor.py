@@ -18,9 +18,6 @@ from typing import TYPE_CHECKING, Optional, Type
 from zenml.integrations.kubeflow import KUBEFLOW_ORCHESTRATOR_FLAVOR
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 from zenml.utils import deprecation_utils
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilderConfigMixin,
-)
 
 if TYPE_CHECKING:
     from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
@@ -29,9 +26,7 @@ if TYPE_CHECKING:
 DEFAULT_KFP_UI_PORT = 8080
 
 
-class KubeflowOrchestratorConfig(
-    BaseOrchestratorConfig, PipelineDockerImageBuilderConfigMixin
-):
+class KubeflowOrchestratorConfig(BaseOrchestratorConfig):
     """Configuration for the Kubeflow orchestrator.
 
     Attributes:

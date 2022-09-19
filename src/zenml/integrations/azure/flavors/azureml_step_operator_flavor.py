@@ -21,18 +21,13 @@ from zenml.step_operators.base_step_operator import (
     BaseStepOperatorFlavor,
 )
 from zenml.utils import deprecation_utils
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilderConfigMixin,
-)
 from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.azure.step_operators import AzureMLStepOperator
 
 
-class AzureMLStepOperatorConfig(
-    BaseStepOperatorConfig, PipelineDockerImageBuilderConfigMixin
-):
+class AzureMLStepOperatorConfig(BaseStepOperatorConfig):
     """Config for the AzureML step operator.
 
     Attributes:
