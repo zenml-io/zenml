@@ -110,9 +110,10 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             from zenml.zen_stores.sql_zen_store import SqlZenStore
 
             return SqlZenStore
-        # elif store_type == StoreType.REST:
-        # from zenml.zen_stores.rest_zen_store import RestZenStore
-        # return RestZenStore
+        elif store_type == StoreType.REST:
+            from zenml.zen_stores.rest_zen_store import RestZenStore
+
+            return RestZenStore
         else:
             raise TypeError(
                 f"No store implementation found for store type "
