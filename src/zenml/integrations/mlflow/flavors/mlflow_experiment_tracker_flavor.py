@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
-from pydantic import root_validator, validator
+from pydantic import root_validator
 
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTrackerConfig,
@@ -89,40 +89,6 @@ class MLFlowExperimentTrackerConfig(BaseExperimentTrackerConfig):
     tracking_token: Optional[str] = SecretField()
     tracking_insecure_tls: bool = False
     databricks_host: Optional[str] = None
-
-    @validator("tracking_uri")
-    def _ensure_valid_tracking_uri(
-        cls, tracking_uri: Optional[str] = None
-    ) -> Optional[str]:
-        """Ensures that the tracking uri is a valid mlflow tracking uri.
-
-        Args:
-            tracking_uri: The tracking uri to validate.
-
-        Returns:
-            The tracking uri if it is valid.
-
-        Raises:
-            ValueError: If the tracking uri is not valid.
-        """
-        # TODO: refactor this into the actual implementation
-        from mlflow.store.db.db_types import (
-            DATABASE_ENGINES,  # type: ignore[import]
-        )
-
-        if tracking_uri:
-            valid_schemes = DATABASE_ENGINES + ["http", "https", "file"]
-            if not any(
-                tracking_uri.startswith(scheme) for scheme in valid_schemes
-            ) and not is_databricks_tracking_uri(tracking_uri):
-                raise ValueError(
-                    f"MLflow tracking uri does not start with one of the valid "
-                    f"schemes {valid_schemes} or its value is not set to "
-                    f"'databricks'. See "
-                    f"https://www.mlflow.org/docs/latest/tracking.html#where-runs-are-recorded "
-                    f"for more information."
-                )
-        return tracking_uri
 
     @root_validator(skip_on_failure=True)
     def _ensure_authentication_if_necessary(

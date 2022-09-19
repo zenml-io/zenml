@@ -56,6 +56,26 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
     ZenML entrypoint command in it.
     """
 
+    def __init__(self, *args, **kwargs):
+        """Initializes the step operator and validates the accelerator type."""
+        super().__init__(*args, **kwargs)
+        self._validate_accelerator_type()
+
+    def _validate_accelerator_type(self) -> None:
+        """Validates that the accelerator type is valid.
+
+        Raises:
+            ValueError: If the accelerator type is not valid.
+        """
+        accepted_vals = list(
+            aiplatform.gapic.AcceleratorType.__members__.keys()
+        )
+        accelerator_type = self.config.accelerator_type
+        if accelerator_type and accelerator_type.upper() not in accepted_vals:
+            raise ValueError(
+                f"Accelerator must be one of the following: {accepted_vals}"
+            )
+
     @property
     def validator(self) -> Optional[StackValidator]:
         """Validates that the stack contains a container registry.
