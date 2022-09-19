@@ -1857,6 +1857,9 @@ class SqlZenStore(BaseZenStore):
                 user = self._get_user_schema(user_name_or_id)
                 query = query.where(PipelineSchema.user == user.id)
 
+            if name:
+                query = query.where(PipelineSchema.name == name)
+
             # Get all pipelines in the project
             pipelines = session.exec(query).all()
             return [pipeline.to_model() for pipeline in pipelines]

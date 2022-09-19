@@ -74,7 +74,7 @@ class LineageGraph(BaseModel):
             self.nodes.append(
                 ArtifactNode(
                     id=artifact_id,
-                    type="artifact",
+                    status=step.status,
                     data=ArtifactNodeDetails(
                         execution_id=str(artifact.id),
                         name=artifact_name,
