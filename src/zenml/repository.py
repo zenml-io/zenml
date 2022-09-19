@@ -462,7 +462,7 @@ class Repository(metaclass=RepositoryMetaClass):
         return self.zen_store.active_user
 
     @property
-    def stack_models(self) -> List["HydratedStackModel"]:
+    def stack_models(self) -> List["StackModel"]:
         """All stack models available in the current project and owned by the current user.
 
         This property is intended as a quick way to get information about the
@@ -475,27 +475,10 @@ class Repository(metaclass=RepositoryMetaClass):
             A list of all stacks available in the current project and owned by
             the current user.
         """
-        return [
-            stack.to_hydrated_model()
-            for stack in self.zen_store.list_stacks(
+        return self.zen_store.list_stacks(
                 project_name_or_id=self.active_project_name,
                 user_name_or_id=self.active_user.id,
             )
-        ]
-
-    @property
-    def stacks(self) -> List["Stack"]:
-        """All stacks available in the current project and owned by the current user.
-
-        Returns:
-            A list of all stacks available in the current project and owned by
-            the current user.
-        """
-        from zenml.stack.stack import Stack
-
-        return [
-            Stack.from_model(stack_model) for stack_model in self.stack_models
-        ]
 
     @property
     def stack_configurations(self) -> Dict[str, Dict[str, str]]:

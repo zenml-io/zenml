@@ -1212,6 +1212,8 @@ def copy_stack(
                 "already exists."
             )
         stack_model.name = target_stack
+        stack_model.user = repo.active_user.id
+        stack_model.project = repo.active_project.id
 
         copied_stack = StackModel.parse_obj(
             stack_model.dict(exclude={"id", "created", "updated"})
