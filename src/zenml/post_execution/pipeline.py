@@ -88,25 +88,24 @@ def get_pipeline(
     ):
         logger.warning(
             "Using 'pipeline_name' to get a pipeline from "
-            "'Repository().get_pipeline()' is deprecated and "
+            "'get_pipeline()' is deprecated and "
             "will be removed in the future. Instead please "
             "use 'pipeline' to access a pipeline in your Repository based "
             "on the name of the pipeline or even the class or instance "
             "of the pipeline. Learn more in our API docs: %s",
             get_apidocs_link(
-                "repository", "zenml.repository.Repository.get_pipeline"
+                "repository", "zenml.post_execution.pipeline.get_pipeline"
             ),
         )
 
         pipeline_name = kwargs.pop("pipeline_name")
     else:
         raise RuntimeError(
-            "No pipeline specified to get from "
-            "`Repository()`. Please set a `pipeline` "
+            "No pipeline specified. Please set a `pipeline` "
             "within the `get_pipeline()` method. Learn more "
             "in our API docs: %s",
             get_apidocs_link(
-                "repository", "zenml.repository.Repository.get_pipeline"
+                "repository", "zenml.post_execution.pipeline.get_pipeline"
             ),
         )
 
@@ -130,8 +129,8 @@ class PipelineView:
         """Initializes a post-execution pipeline object.
 
         In most cases `PipelineView` objects should not be created manually
-        but retrieved using the `get_pipelines()` method of a
-        `zenml.repository.Repository` instead.
+        but retrieved using the `get_pipelines()` utility from
+        `zenml.post_execution` instead.
 
         Args:
             model: The model to initialize this pipeline view from.

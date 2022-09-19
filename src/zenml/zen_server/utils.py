@@ -153,7 +153,7 @@ def handle_exceptions(func: F) -> F:
         ) as error:
             logger.exception("Entity already exists")
             raise conflict(error) from error
-        except ValidationError as error:
+        except ValueError as error:
             logger.exception("Validation error")
             raise unprocessable(error) from error
 
