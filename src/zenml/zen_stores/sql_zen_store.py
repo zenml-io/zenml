@@ -707,6 +707,9 @@ class SqlZenStore(BaseZenStore):
             run_id: The id of the run to get side effects for.
             pipeline_id: The id of the pipeline to get side effects for.
             stack_id: The id of the stack to get side effects for.
+
+        Returns:
+            The side effects of the stack component.
         """
         pass  # TODO: implement this
 
@@ -766,7 +769,7 @@ class SqlZenStore(BaseZenStore):
         """Get a stack component flavor by ID.
 
         Args:
-            component_id: The ID of the stack component flavor to get.
+            flavor_id: The ID of the stack component flavor to get.
 
         Returns:
             The stack component flavor.
@@ -802,7 +805,6 @@ class SqlZenStore(BaseZenStore):
             project_name_or_id: Optionally filter by the Project to which the
                 component flavors belong
             component_type: Optionally filter by type of stack component
-            flavor_name: Optionally filter by flavor name
             user_name_or_id: Optionally filter by the owner
             name: Optionally filter flavors by name
             is_shared: Optionally filter out flavors by whether they are
@@ -810,9 +812,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             List of all the stack component flavors matching the given criteria.
-
-        Raises:
-            KeyError: if the project doesn't exist.
         """
         with Session(self.engine) as session:
 
@@ -851,13 +850,13 @@ class SqlZenStore(BaseZenStore):
         """Update an existing stack component flavor.
 
         Args:
-            component: The stack component flavor to use for the update.
+            flavor: The stack component flavor to use for the update.
 
         Returns:
             The updated stack component flavor.
 
         Raises:
-            KeyError: if the stack component flavor doesn't exist.
+            NotImplementedError: This method is not implemented.
         """
         # TODO: implement this
         raise NotImplementedError
@@ -867,10 +866,10 @@ class SqlZenStore(BaseZenStore):
         """Delete a stack component flavor.
 
         Args:
-            component_id: The ID of the stack component flavor to delete.
+            flavor_id: The ID of the stack component flavor to delete.
 
         Raises:
-            KeyError: if the stack component flavor doesn't exist.
+            NotImplementedError: This method is not implemented.
         """
         # TODO: implement this
         raise NotImplementedError
