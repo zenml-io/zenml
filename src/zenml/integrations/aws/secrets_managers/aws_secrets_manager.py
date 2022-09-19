@@ -13,13 +13,14 @@
 #  permissions and limitations under the License.
 """Implementation of the AWS Secrets Manager integration."""
 import json
-import re
 from typing import Any, ClassVar, Dict, List, Optional
 
 import boto3
 
 from zenml.exceptions import SecretExistsError
-from zenml.integrations.aws import AWS_SECRET_MANAGER_FLAVOR
+from zenml.integrations.aws.flavors.aws_secrets_manager_flavor import (
+    validate_aws_secret_name_or_namespace,
+)
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secrets_managers.base_secrets_manager import (
@@ -34,27 +35,7 @@ logger = get_logger(__name__)
 class AWSSecretsManager(BaseSecretsManager):
     """Class to interact with the AWS secrets manager."""
 
-    region_name: str
-
-    # Class configuration
-    FLAVOR: ClassVar[str] = AWS_SECRET_MANAGER_FLAVOR
-    SUPPORTS_SCOPING: ClassVar[bool] = True
     CLIENT: ClassVar[Any] = None
-
-    @classmethod
-    def _validate_scope(
-        cls,
-        scope: SecretsManagerScope,
-        namespace: Optional[str],
-    ) -> None:
-        """Validate the scope and namespace value.
-
-        Args:
-            scope: Scope value.
-            namespace: Optional namespace value.
-        """
-        if namespace:
-            cls.validate_secret_name_or_namespace(namespace)
 
     @classmethod
     def _ensure_client_connected(cls, region_name: str) -> None:
@@ -68,26 +49,6 @@ class AWSSecretsManager(BaseSecretsManager):
             session = boto3.session.Session()
             cls.CLIENT = session.client(
                 service_name="secretsmanager", region_name=region_name
-            )
-
-    @classmethod
-    def validate_secret_name_or_namespace(cls, name: str) -> None:
-        """Validate a secret name or namespace.
-
-        AWS secret names must contain only alphanumeric characters and the
-        characters /_+=.@-. The `/` character is only used internally to delimit
-        scopes.
-
-        Args:
-            name: the secret name or namespace
-
-        Raises:
-            ValueError: if the secret name or namespace is invalid
-        """
-        if not re.fullmatch(r"[a-zA-Z0-9_+=\.@\-]*", name):
-            raise ValueError(
-                f"Invalid secret name or namespace '{name}'. Must contain "
-                f"only alphanumeric characters and the characters _+=.@-."
             )
 
     def _get_secret_tags(
@@ -212,11 +173,11 @@ class AWSSecretsManager(BaseSecretsManager):
             A list of secret names in the current scope and the optional
             secret name.
         """
-        self._ensure_client_connected(self.region_name)
+        self._ensure_client_connected(self.config.region_name)
 
         filters: List[Dict[str, Any]] = []
         prefix: Optional[str] = None
-        if self.scope == SecretsManagerScope.NONE:
+        if self.config.scope == SecretsManagerScope.NONE:
             # unscoped (legacy) secrets don't have tags. We want to filter out
             # non-legacy secrets
             filters = [
@@ -272,8 +233,8 @@ class AWSSecretsManager(BaseSecretsManager):
         Raises:
             SecretExistsError: if the secret already exists
         """
-        self.validate_secret_name_or_namespace(secret.name)
-        self._ensure_client_connected(self.region_name)
+        validate_aws_secret_name_or_namespace(secret.name)
+        self._ensure_client_connected(self.config.region_name)
 
         if self._list_secrets(secret.name):
             raise SecretExistsError(
@@ -303,8 +264,8 @@ class AWSSecretsManager(BaseSecretsManager):
         Raises:
             KeyError: if the secret does not exist
         """
-        self.validate_secret_name_or_namespace(secret_name)
-        self._ensure_client_connected(self.region_name)
+        validate_aws_secret_name_or_namespace(secret_name)
+        self._ensure_client_connected(self.config.region_name)
 
         if not self._list_secrets(secret_name):
             raise KeyError(f"Can't find the specified secret '{secret_name}'")
@@ -338,8 +299,8 @@ class AWSSecretsManager(BaseSecretsManager):
         Raises:
             KeyError: if the secret does not exist
         """
-        self.validate_secret_name_or_namespace(secret.name)
-        self._ensure_client_connected(self.region_name)
+        validate_aws_secret_name_or_namespace(secret.name)
+        self._ensure_client_connected(self.config.region_name)
 
         if not self._list_secrets(secret.name):
             raise KeyError(f"Can't find the specified secret '{secret.name}'")
@@ -362,7 +323,7 @@ class AWSSecretsManager(BaseSecretsManager):
         Raises:
             KeyError: if the secret does not exist
         """
-        self._ensure_client_connected(self.region_name)
+        self._ensure_client_connected(self.config.region_name)
 
         if not self._list_secrets(secret_name):
             raise KeyError(f"Can't find the specified secret '{secret_name}'")
@@ -378,7 +339,7 @@ class AWSSecretsManager(BaseSecretsManager):
         This method will force delete all your secrets. You will not be able to
         recover them once this method is called.
         """
-        self._ensure_client_connected(self.region_name)
+        self._ensure_client_connected(self.config.region_name)
         for secret_name in self._list_secrets():
             self.CLIENT.delete_secret(
                 SecretId=self._get_scoped_secret_name(secret_name),

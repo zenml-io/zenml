@@ -13,14 +13,15 @@
 #  permissions and limitations under the License.
 """Implementation of the GCP Secrets Manager."""
 import json
-import re
 from typing import Any, ClassVar, Dict, List, Optional, Tuple
 
 from google.api_core import exceptions as google_exceptions
 from google.cloud import secretmanager
 
 from zenml.exceptions import SecretExistsError
-from zenml.integrations.gcp import GCP_SECRETS_MANAGER_FLAVOR
+from zenml.integrations.gcp.flavors.gcp_secrets_manager_flavor import (
+    validate_gcp_secret_name_or_namespace,
+)
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
@@ -62,77 +63,14 @@ def remove_group_name_from_key(combined_key_name: str, group_name: str) -> str:
 
 
 class GCPSecretsManager(BaseSecretsManager):
-    """Class to interact with the GCP secrets manager.
+    """Class to interact with the GCP secrets manager."""
 
-    Attributes:
-        project_id:  This is necessary to access the correct GCP project.
-                     The project_id of your GCP project space that contains
-                     the Secret Manager.
-    """
-
-    project_id: str
-
-    # Class configuration
-    FLAVOR: ClassVar[str] = GCP_SECRETS_MANAGER_FLAVOR
-    SUPPORTS_SCOPING: ClassVar[bool] = True
     CLIENT: ClassVar[Any] = None
 
     @classmethod
     def _ensure_client_connected(cls) -> None:
         if cls.CLIENT is None:
             cls.CLIENT = secretmanager.SecretManagerServiceClient()
-
-    @classmethod
-    def _validate_scope(
-        cls,
-        scope: SecretsManagerScope,
-        namespace: Optional[str],
-    ) -> None:
-        """Validate the scope and namespace value.
-
-        Args:
-            scope: Scope value.
-            namespace: Optional namespace value.
-        """
-        if namespace:
-            cls.validate_secret_name_or_namespace(namespace)
-
-    @classmethod
-    def validate_secret_name_or_namespace(
-        cls,
-        name: str,
-    ) -> None:
-        """Validate a secret name or namespace.
-
-        A Google secret ID is a string with a maximum length of 255 characters
-        and can contain uppercase and lowercase letters, numerals, and the
-        hyphen (-) and underscore (_) characters. For scoped secrets, we have to
-        limit the size of the name and namespace even further to allow space for
-        both in the Google secret ID.
-
-        Given that we also save secret names and namespaces as labels, we are
-        also limited by the limitation that Google imposes on label values: max
-        63 characters and must only contain lowercase letters, numerals
-        and the hyphen (-) and underscore (_) characters
-
-        Args:
-            name: the secret name or namespace
-
-        Raises:
-            ValueError: if the secret name or namespace is invalid
-        """
-        if not re.fullmatch(r"[a-z0-9_\-]+", name):
-            raise ValueError(
-                f"Invalid secret name or namespace '{name}'. Must contain "
-                f"only lowercase alphanumeric characters and the hyphen (-) and "
-                f"underscore (_) characters."
-            )
-
-        if name and len(name) > 63:
-            raise ValueError(
-                f"Invalid secret name or namespace '{name}'. The length is "
-                f"limited to maximum 63 characters."
-            )
 
     @property
     def parent_name(self) -> str:
@@ -141,7 +79,7 @@ class GCPSecretsManager(BaseSecretsManager):
         Returns:
             The parent path to the secret manager
         """
-        return f"projects/{self.project_id}"
+        return f"projects/{self.config.project_id}"
 
     def _convert_secret_content(
         self, secret: BaseSecretSchema
@@ -168,7 +106,7 @@ class GCPSecretsManager(BaseSecretsManager):
             A dictionary with the Google secret name as key and the secret
             contents as value.
         """
-        if self.scope == SecretsManagerScope.NONE:
+        if self.config.scope == SecretsManagerScope.NONE:
             # legacy per-key secret mapping
             return {f"{secret.name}_{k}": v for k, v in secret.content.items()}
 
@@ -189,7 +127,7 @@ class GCPSecretsManager(BaseSecretsManager):
         Returns:
             A list of Google secret label values
         """
-        if self.scope == SecretsManagerScope.NONE:
+        if self.config.scope == SecretsManagerScope.NONE:
             # legacy per-key secret labels
             return [
                 (ZENML_GROUP_KEY, secret.name),
@@ -216,7 +154,7 @@ class GCPSecretsManager(BaseSecretsManager):
             Google filter expression uniquely identifying all secrets
             or a named secret within the configured scope.
         """
-        if self.scope == SecretsManagerScope.NONE:
+        if self.config.scope == SecretsManagerScope.NONE:
             # legacy per-key secret label filters
             if secret_name:
                 return f"labels.{ZENML_GROUP_KEY}={secret_name}"
@@ -255,7 +193,7 @@ class GCPSecretsManager(BaseSecretsManager):
                 "filter": self._get_secret_scope_filters(secret_name),
             }
         ):
-            if self.scope == SecretsManagerScope.NONE:
+            if self.config.scope == SecretsManagerScope.NONE:
                 name = secret.labels[ZENML_GROUP_KEY]
             else:
                 name = secret.labels[ZENML_SECRET_NAME_LABEL]
@@ -275,7 +213,7 @@ class GCPSecretsManager(BaseSecretsManager):
         Raises:
             SecretExistsError: if the secret already exists
         """
-        self.validate_secret_name_or_namespace(secret.name)
+        validate_gcp_secret_name_or_namespace(secret.name)
         self._ensure_client_connected()
 
         if self._list_secrets(secret.name):
@@ -321,12 +259,12 @@ class GCPSecretsManager(BaseSecretsManager):
         Raises:
             KeyError: if the secret does not exist
         """
-        self.validate_secret_name_or_namespace(secret_name)
+        validate_gcp_secret_name_or_namespace(secret_name)
         self._ensure_client_connected()
 
         zenml_secret: Optional[BaseSecretSchema] = None
 
-        if self.scope == SecretsManagerScope.NONE:
+        if self.config.scope == SecretsManagerScope.NONE:
             # Legacy secrets are mapped to multiple Google secrets, one for
             # each secret key
 
@@ -372,7 +310,7 @@ class GCPSecretsManager(BaseSecretsManager):
             # Scoped secrets are mapped 1-to-1 with Google secrets
 
             google_secret_name = self.CLIENT.secret_path(
-                self.project_id,
+                self.config.project_id,
                 self._get_scoped_secret_name(
                     secret_name, separator=ZENML_GCP_SECRET_SCOPE_PATH_SEPARATOR
                 ),
@@ -430,7 +368,7 @@ class GCPSecretsManager(BaseSecretsManager):
         Raises:
             KeyError: if the secret does not exist
         """
-        self.validate_secret_name_or_namespace(secret.name)
+        validate_gcp_secret_name_or_namespace(secret.name)
         self._ensure_client_connected()
 
         if not self._list_secrets(secret.name):
@@ -441,7 +379,9 @@ class GCPSecretsManager(BaseSecretsManager):
         for k, v in adjusted_content.items():
             # Create the secret, this only creates an empty secret with the
             #  supplied name.
-            google_secret_name = self.CLIENT.secret_path(self.project_id, k)
+            google_secret_name = self.CLIENT.secret_path(
+                self.config.project_id, k
+            )
             payload = {"data": str(v).encode()}
 
             self.CLIENT.add_secret_version(
@@ -457,7 +397,7 @@ class GCPSecretsManager(BaseSecretsManager):
         Raises:
             KeyError: if the secret no longer exists
         """
-        self.validate_secret_name_or_namespace(secret_name)
+        validate_gcp_secret_name_or_namespace(secret_name)
         self._ensure_client_connected()
 
         if not self._list_secrets(secret_name):

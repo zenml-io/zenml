@@ -24,12 +24,15 @@ A stack is made up of multiple components. Some examples are:
 - A Container Registry (Optional)
 """
 
+from zenml.stack.flavor import Flavor
 from zenml.stack.stack import Stack
-from zenml.stack.stack_component import StackComponent
+from zenml.stack.stack_component import StackComponent, StackComponentConfig
 from zenml.stack.stack_validator import StackValidator
 
 __all__ = [
+    "Flavor",
     "Stack",
     "StackComponent",
     "StackValidator",
+    "StackComponentConfig",
 ]

@@ -308,6 +308,35 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
+    def list_stack_components(
+        self,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
+        type: Optional[str] = None,
+        flavor_name: Optional[str] = None,
+        name: Optional[str] = None,
+        is_shared: Optional[bool] = None,
+    ) -> List[ComponentModel]:
+        """List all stack components matching the given filter criteria.
+
+        Args:
+            project_name_or_id: The ID or name of the Project to which the stack
+                components belong
+            user_name_or_id: Optionally filter stack components by the owner
+            type: Optionally filter by type of stack component
+            flavor_name: Optionally filter by flavor
+            name: Optionally filter stack component by name
+            is_shared: Optionally filter out stack component by whether they are
+                shared or not
+
+        Returns:
+            A list of all stack components matching the filter criteria.
+
+        Raises:
+            KeyError: if the project doesn't exist.
+        """
+
+    @abstractmethod
     def get_stack_component(self, component_id: UUID) -> ComponentModel:
         """Get a stack component by ID.
 
@@ -319,35 +348,6 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: if the stack component doesn't exist.
-        """
-
-    @abstractmethod
-    def list_stack_components(
-        self,
-        project_name_or_id: Optional[Union[str, UUID]] = None,
-        type: Optional[str] = None,
-        flavor_name: Optional[str] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
-        name: Optional[str] = None,
-        is_shared: Optional[bool] = None,
-    ) -> List[ComponentModel]:
-        """List all stack components matching the given filter criteria.
-
-        Args:
-            project_name_or_id: The ID or name of the Project to which the stack
-                components belong
-            type: Optionally filter by type of stack component
-            flavor_name: Optionally filter by flavor
-            user_name_or_id: Optionally filter stack components by the owner
-            name: Optionally filter stack component by name
-            is_shared: Optionally filter out stack component by whether they are
-                shared or not
-
-        Returns:
-            A list of all stack components matching the filter criteria.
-
-        Raises:
-            KeyError: if the project doesn't exist.
         """
 
     @abstractmethod
@@ -419,10 +419,11 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def get_flavor(self, flavor_id: UUID) -> FlavorModel:
+
         """Get a stack component flavor by ID.
 
         Args:
-            component_id: The ID of the stack component flavor to get.
+            flavor_id: The ID of the stack component flavor to get.
 
         Returns:
             The stack component flavor.
@@ -446,7 +447,6 @@ class ZenStoreInterface(ABC):
             project_name_or_id: Optionally filter by the Project to which the
                 component flavors belong
             component_type: Optionally filter by type of stack component
-            flavor_name: Optionally filter by flavor name
             user_name_or_id: Optionally filter by the owner
             name: Optionally filter flavors by name
             is_shared: Optionally filter out flavors by whether they are
@@ -464,7 +464,7 @@ class ZenStoreInterface(ABC):
         """Update an existing stack component flavor.
 
         Args:
-            component: The stack component flavor to use for the update.
+            flavor: The stack component flavor to use for the update.
 
         Returns:
             The updated stack component flavor.
@@ -478,7 +478,7 @@ class ZenStoreInterface(ABC):
         """Delete a stack component flavor.
 
         Args:
-            component_id: The ID of the stack component flavor to delete.
+            flavor_id: The ID of the stack component flavor to delete.
 
         Raises:
             KeyError: if the stack component flavor doesn't exist.
@@ -894,10 +894,6 @@ class ZenStoreInterface(ABC):
         Raises:
             KeyError: If no project with the given name exists.
         """
-
-    # ------------
-    # Repositories
-    # ------------
 
     # ---------
     # Pipelines

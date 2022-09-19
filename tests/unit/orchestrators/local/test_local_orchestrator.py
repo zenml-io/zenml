@@ -20,4 +20,4 @@ def test_local_orchestrator_attributes():
     correctly."""
     orchestrator = LocalOrchestrator(name="")
     assert orchestrator.TYPE == StackComponentType.ORCHESTRATOR
-    assert orchestrator.FLAVOR == "local"
+    assert orchestrator.flavor == "local"

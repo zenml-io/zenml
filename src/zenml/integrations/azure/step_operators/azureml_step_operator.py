@@ -16,7 +16,7 @@
 import itertools
 import os
 from pathlib import PurePosixPath
-from typing import TYPE_CHECKING, ClassVar, List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from azureml.core import (
     ComputeTarget,
@@ -34,17 +34,14 @@ from azureml.core.conda_dependencies import CondaDependencies
 import zenml
 from zenml.constants import ENV_ZENML_CONFIG_PATH
 from zenml.environment import Environment as ZenMLEnvironment
-from zenml.integrations.azure import AZUREML_STEP_OPERATOR_FLAVOR
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.step_operators import BaseStepOperator
-from zenml.utils import deprecation_utils
 from zenml.utils.pipeline_docker_image_builder import (
     DOCKER_IMAGE_ZENML_CONFIG_DIR,
     PipelineDockerImageBuilder,
     _include_global_config,
 )
-from zenml.utils.secret_utils import SecretField
 from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
@@ -54,51 +51,12 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
+class AzureMLStepOperator(BaseStepOperator):
     """Step operator to run a step on AzureML.
 
     This class defines code that can set up an AzureML environment and run the
     ZenML entrypoint command in it.
-
-    Attributes:
-        subscription_id: The Azure account's subscription ID
-        resource_group: The resource group to which the AzureML workspace
-            is deployed.
-        workspace_name: The name of the AzureML Workspace.
-        compute_target_name: The name of the configured ComputeTarget.
-            An instance of it has to be created on the portal if it doesn't
-            exist already.
-        environment_name: The name of the environment if there
-            already exists one.
-        docker_base_image: The custom docker base image that the
-            environment should use.
-        tenant_id: The Azure Tenant ID.
-        service_principal_id: The ID for the service principal that is created
-            to allow apps to access secure resources.
-        service_principal_password: Password for the service principal.
     """
-
-    subscription_id: str
-    resource_group: str
-    workspace_name: str
-    compute_target_name: str
-
-    # Environment
-    environment_name: Optional[str] = None
-    docker_base_image: Optional[str] = None
-
-    # Service principal authentication
-    # https://docs.microsoft.com/en-us/azure/machine-learning/how-to-setup-authentication#configure-a-service-principal
-    tenant_id: Optional[str] = SecretField()
-    service_principal_id: Optional[str] = SecretField()
-    service_principal_password: Optional[str] = SecretField()
-
-    # Class Configuration
-    FLAVOR: ClassVar[str] = AZUREML_STEP_OPERATOR_FLAVOR
-
-    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        ("docker_base_image", "docker_parent_image")
-    )
 
     def _get_authentication(self) -> Optional[AbstractAuthentication]:
         """Returns the authentication object for the AzureML environment.
@@ -107,14 +65,14 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
             The authentication object for the AzureML environment.
         """
         if (
-            self.tenant_id
-            and self.service_principal_id
-            and self.service_principal_password
+            self.config.tenant_id
+            and self.config.service_principal_id
+            and self.config.service_principal_password
         ):
             return ServicePrincipalAuthentication(
-                tenant_id=self.tenant_id,
-                service_principal_id=self.service_principal_id,
-                service_principal_password=self.service_principal_password,
+                tenant_id=self.config.tenant_id,
+                service_principal_id=self.config.service_principal_id,
+                service_principal_password=self.config.service_principal_password,
             )
         return None
 
@@ -137,7 +95,8 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
         Returns:
             The AzureML Environment object.
         """
-        requirements_files = self._gather_requirements_files(
+        docker_image_builder = PipelineDockerImageBuilder()
+        requirements_files = docker_image_builder._gather_requirements_files(
             docker_configuration=docker_configuration,
             stack=Repository().active_stack,
         )
@@ -151,9 +110,9 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
             "Using requirements for AzureML step operator environment: %s",
             requirements,
         )
-        if self.environment_name:
+        if self.config.environment_name:
             environment = Environment.get(
-                workspace=workspace, name=self.environment_name
+                workspace=workspace, name=self.config.environment_name
             )
             if not environment.python.conda_dependencies:
                 environment.python.conda_dependencies = (
@@ -174,7 +133,8 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
             )
 
             parent_image = (
-                docker_configuration.parent_image or self.docker_parent_image
+                docker_configuration.parent_image
+                or self.config.docker_parent_image
             )
 
             if parent_image:
@@ -258,9 +218,9 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
             )
 
         workspace = Workspace.get(
-            subscription_id=self.subscription_id,
-            resource_group=self.resource_group,
-            name=self.workspace_name,
+            subscription_id=self.config.subscription_id,
+            resource_group=self.config.resource_group,
+            name=self.config.workspace_name,
             auth=self._get_authentication(),
         )
 
@@ -277,7 +237,7 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
                 run_name=run_name,
             )
             compute_target = ComputeTarget(
-                workspace=workspace, name=self.compute_target_name
+                workspace=workspace, name=self.config.compute_target_name
             )
 
             run_config = ScriptRunConfig(

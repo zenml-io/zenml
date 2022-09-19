@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Feast Feature Store for ZenML."""
 
-from typing import Any, ClassVar, Dict, List, Union
+from typing import Any, Dict, List, Union
 
 import pandas as pd
 import redis
@@ -21,7 +21,6 @@ from feast import FeatureStore  # type: ignore[import]
 from feast.registry import Registry  # type: ignore[import]
 
 from zenml.feature_stores.base_feature_store import BaseFeatureStore
-from zenml.integrations.feast import FEAST_FEATURE_STORE_FLAVOR
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -30,19 +29,15 @@ logger = get_logger(__name__)
 class FeastFeatureStore(BaseFeatureStore):
     """Class to interact with the Feast feature store."""
 
-    FLAVOR: ClassVar[str] = FEAST_FEATURE_STORE_FLAVOR
-
-    online_host: str = "localhost"
-    online_port: int = 6379
-    feast_repo: str
-
     def _validate_connection(self) -> None:
         """Validates the connection to the feature store.
 
         Raises:
             ConnectionError: If the online component (Redis) is not available.
         """
-        client = redis.Redis(host=self.online_host, port=self.online_port)
+        client = redis.Redis(
+            host=self.config.online_host, port=self.config.online_port
+        )
         try:
             client.ping()
         except redis.exceptions.ConnectionError as e:
@@ -70,7 +65,7 @@ class FeastFeatureStore(BaseFeatureStore):
         Returns:
             The historical features as a Pandas DataFrame.
         """
-        fs = FeatureStore(repo_path=self.feast_repo)
+        fs = FeatureStore(repo_path=self.config.feast_repo)
 
         return fs.get_historical_features(
             entity_df=entity_df,
@@ -98,7 +93,7 @@ class FeastFeatureStore(BaseFeatureStore):
             The latest online feature data as a dictionary.
         """
         self._validate_connection()
-        fs = FeatureStore(repo_path=self.feast_repo)
+        fs = FeatureStore(repo_path=self.config.feast_repo)
 
         return fs.get_online_features(  # type: ignore[no-any-return]
             entity_rows=entity_rows,
@@ -116,7 +111,7 @@ class FeastFeatureStore(BaseFeatureStore):
             The data sources' names.
         """
         self._validate_connection()
-        fs = FeatureStore(repo_path=self.feast_repo)
+        fs = FeatureStore(repo_path=self.config.feast_repo)
         return [ds.name for ds in fs.list_data_sources()]
 
     def get_entities(self) -> List[str]:
@@ -129,7 +124,7 @@ class FeastFeatureStore(BaseFeatureStore):
             The entity names.
         """
         self._validate_connection()
-        fs = FeatureStore(repo_path=self.feast_repo)
+        fs = FeatureStore(repo_path=self.config.feast_repo)
         return [ds.name for ds in fs.list_entities()]
 
     def get_feature_services(self) -> List[str]:
@@ -142,7 +137,7 @@ class FeastFeatureStore(BaseFeatureStore):
             The feature service names.
         """
         self._validate_connection()
-        fs = FeatureStore(repo_path=self.feast_repo)
+        fs = FeatureStore(repo_path=self.config.feast_repo)
         return [ds.name for ds in fs.list_feature_services()]
 
     def get_feature_views(self) -> List[str]:
@@ -155,7 +150,7 @@ class FeastFeatureStore(BaseFeatureStore):
             The feature view names.
         """
         self._validate_connection()
-        fs = FeatureStore(repo_path=self.feast_repo)
+        fs = FeatureStore(repo_path=self.config.feast_repo)
         return [ds.name for ds in fs.list_feature_views()]
 
     def get_project(self) -> str:
@@ -167,7 +162,7 @@ class FeastFeatureStore(BaseFeatureStore):
         Returns:
             The project name.
         """
-        fs = FeatureStore(repo_path=self.feast_repo)
+        fs = FeatureStore(repo_path=self.config.feast_repo)
         return str(fs.project)
 
     def get_registry(self) -> Registry:
@@ -179,7 +174,7 @@ class FeastFeatureStore(BaseFeatureStore):
         Returns:
             The registry.
         """
-        fs: FeatureStore = FeatureStore(repo_path=self.feast_repo)
+        fs: FeatureStore = FeatureStore(repo_path=self.config.feast_repo)
         return fs.registry
 
     def get_feast_version(self) -> str:
@@ -191,5 +186,5 @@ class FeastFeatureStore(BaseFeatureStore):
         Returns:
             The version of Feast currently being used.
         """
-        fs = FeatureStore(repo_path=self.feast_repo)
+        fs = FeatureStore(repo_path=self.config.feast_repo)
         return str(fs.version())

@@ -23,7 +23,6 @@ from zenml.exceptions import StackExistsError
 from zenml.logger import get_logger
 from zenml.models import (
     ComponentModel,
-    FlavorModel,
     ProjectModel,
     RoleAssignmentModel,
     RoleModel,
@@ -32,7 +31,6 @@ from zenml.models import (
     UserModel,
 )
 from zenml.models.pipeline_models import PipelineModel
-from zenml.stack.flavor_registry import flavor_registry
 from zenml.utils.analytics_utils import (
     AnalyticsEvent,
     AnalyticsTrackerMixin,
@@ -96,11 +94,11 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
             self._initialize_database()
 
     @staticmethod
-    def get_store_class(type: StoreType) -> Type["BaseZenStore"]:
+    def get_store_class(store_type: StoreType) -> Type["BaseZenStore"]:
         """Returns the class of the given store type.
 
         Args:
-            type: The type of the store to get the class for.
+            store_type: The type of the store to get the class for.
 
         Returns:
             The class of the given store type or None if the type is unknown.
@@ -108,21 +106,19 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         Raises:
             TypeError: If the store type is unsupported.
         """
-        from zenml.zen_stores.rest_zen_store import RestZenStore
-        from zenml.zen_stores.sql_zen_store import SqlZenStore
+        if store_type == StoreType.SQL:
+            from zenml.zen_stores.sql_zen_store import SqlZenStore
 
-        store_class = {
-            StoreType.SQL: SqlZenStore,
-            StoreType.REST: RestZenStore,
-        }.get(type)
+            return SqlZenStore
+        elif store_type == StoreType.REST:
+            from zenml.zen_stores.rest_zen_store import RestZenStore
 
-        if store_class is None:
+            return RestZenStore
+        else:
             raise TypeError(
                 f"No store implementation found for store type "
-                f"`{type.value}`."
+                f"`{store_type.value}`."
             )
-
-        return store_class
 
     @staticmethod
     def create_store(
@@ -353,9 +349,9 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         # Register the default orchestrator
         orchestrator = self.create_stack_component(
             component=ComponentModel(
-                name="default",
                 user=user.id,
                 project=project.id,
+                name="default",
                 type=StackComponentType.ORCHESTRATOR,
                 flavor="local",
                 configuration={},
@@ -365,9 +361,9 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         # Register the default artifact store
         artifact_store = self.create_stack_component(
             component=ComponentModel(
-                name="default",
                 user=user.id,
                 project=project.id,
+                name="default",
                 type=StackComponentType.ARTIFACT_STORE,
                 flavor="local",
                 configuration={},
@@ -413,50 +409,6 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
                 f"project {str(project_name_or_id)}"
             )
         return default_stacks[0]
-
-    # ----------------
-    # Stack components
-    # ----------------
-
-    # -----------------------
-    # Stack component flavors
-    # -----------------------
-
-    @property
-    def flavors(self) -> List[FlavorModel]:
-        """All existing flavors.
-
-        Returns:
-            A list of all existing flavors.
-        """
-        return self.list_flavors()
-
-    # TODO [Baris]: clarify how core and integration flavors are shared and/or
-    #   mixed with custom flavors. Shouldn't this be a Repository() method ?
-    def list_stack_component_flavors_by_type(
-        self,
-        component_type: StackComponentType,
-    ) -> List[FlavorModel]:
-        """List all stack component flavors by type.
-
-        Args:
-            component_type: The stack component for which to get flavors.
-
-        Returns:
-            List of stack component flavors.
-        """
-        # List all the flavors of the component type
-        zenml_flavors = [
-            f
-            for f in flavor_registry.get_flavors_by_type(
-                component_type=component_type
-            ).values()
-        ]
-
-        # TODO: call this with the right arguments
-        custom_flavors = self.list_flavors(component_type=component_type)
-
-        return zenml_flavors + custom_flavors
 
     # -----
     # Users

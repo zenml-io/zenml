@@ -16,7 +16,7 @@
 import os
 from abc import ABCMeta
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 from uuid import UUID
 
 from zenml.config.global_config import GlobalConfiguration
@@ -26,6 +26,7 @@ from zenml.constants import (
     REPOSITORY_DIRECTORY_NAME,
     handle_bool_env_var,
 )
+from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.exceptions import (
     AlreadyExistsException,
@@ -34,7 +35,9 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.models import ComponentModel, FlavorModel, ProjectModel, StackModel
 from zenml.models.pipeline_models import PipelineModel, PipelineRunModel
+from zenml.stack import Flavor
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
@@ -49,7 +52,7 @@ if TYPE_CHECKING:
         UserModel,
     )
     from zenml.runtime_configuration import RuntimeConfiguration
-    from zenml.stack import Stack, StackComponent
+    from zenml.stack import Stack
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
@@ -269,6 +272,7 @@ class Repository(metaclass=RepositoryMetaClass):
         doesn't contain outdated information, such as an active stack or
         project that no longer exists.
         """
+
         if not self._config:
             return
 
@@ -343,6 +347,96 @@ class Repository(metaclass=RepositoryMetaClass):
             False otherwise.
         """
         return self._config is not None
+
+    @staticmethod
+    def is_repository_directory(path: Path) -> bool:
+        """Checks whether a ZenML repository exists at the given path.
+
+        Args:
+            path: The path to check.
+
+        Returns:
+            True if a ZenML repository exists at the given path,
+            False otherwise.
+        """
+        config_dir = path / REPOSITORY_DIRECTORY_NAME
+        return fileio.isdir(str(config_dir))
+
+    @staticmethod
+    def find_repository(
+        path: Optional[Path] = None, enable_warnings: bool = False
+    ) -> Optional[Path]:
+        """Search for a ZenML repository directory.
+
+        Args:
+            path: Optional path to look for the repository. If no path is
+                given, this function tries to find the repository using the
+                environment variable `ZENML_REPOSITORY_PATH` (if set) and
+                recursively searching in the parent directories of the current
+                working directory.
+            enable_warnings: If `True`, warnings are printed if the repository
+                root cannot be found.
+
+        Returns:
+            Absolute path to a ZenML repository directory or None if no
+            repository directory was found.
+        """
+        if not path:
+            # try to get path from the environment variable
+            env_var_path = os.getenv(ENV_ZENML_REPOSITORY_PATH)
+            if env_var_path:
+                path = Path(env_var_path)
+
+        if path:
+            # explicit path via parameter or environment variable, don't search
+            # parent directories
+            search_parent_directories = False
+            warning_message = (
+                f"Unable to find ZenML repository at path '{path}'. Make sure "
+                f"to create a ZenML repository by calling `zenml init` when "
+                f"specifying an explicit repository path in code or via the "
+                f"environment variable '{ENV_ZENML_REPOSITORY_PATH}'."
+            )
+        else:
+            # try to find the repo in the parent directories of the current
+            # working directory
+            path = Path.cwd()
+            search_parent_directories = True
+            warning_message = (
+                f"Unable to find ZenML repository in your current working "
+                f"directory ({path}) or any parent directories. If you "
+                f"want to use an existing repository which is in a different "
+                f"location, set the environment variable "
+                f"'{ENV_ZENML_REPOSITORY_PATH}'. If you want to create a new "
+                f"repository, run `zenml init`."
+            )
+
+        def _find_repo_helper(path_: Path) -> Optional[Path]:
+            """Helper function to recursively search parent directories for a
+            ZenML repository.
+
+            Args:
+                path_: The path to search.
+
+            Returns:
+                Absolute path to a ZenML repository directory or None if no
+                repository directory was found.
+            """
+            if Repository.is_repository_directory(path_):
+                return path_
+
+            if not search_parent_directories or io_utils.is_root(str(path_)):
+                return None
+
+            return _find_repo_helper(path_.parent)
+
+        repo_path = _find_repo_helper(path)
+
+        if repo_path:
+            return repo_path.resolve()
+        if enable_warnings:
+            logger.warning(warning_message)
+        return None
 
     @property
     def zen_store(self) -> "BaseZenStore":
@@ -462,54 +556,22 @@ class Repository(metaclass=RepositoryMetaClass):
         return self.zen_store.active_user
 
     @property
-    def stack_models(self) -> List["StackModel"]:
-        """All stack models available in the current project and owned by the current user.
+    def stacks(self) -> List["HydratedStackModel"]:
+        """All stack models in the current project, owned by the current user.
 
         This property is intended as a quick way to get information about the
         components of the registered stacks without loading all installed
-        integrations. The contained stack configurations might be invalid if
-        they were modified by hand, to ensure you get valid stacks use
-        `repo.stacks()` instead.
+        integrations.
 
         Returns:
             A list of all stacks available in the current project and owned by
             the current user.
         """
-        return self.zen_store.list_stacks(
-            project_name_or_id=self.active_project_name,
-            user_name_or_id=self.active_user.id,
-        )
-
-    @property
-    def stack_configurations(self) -> Dict[str, Dict[str, str]]:
-        """Configuration dicts for all stacks available in the current project and owned by the current user.
-
-        This property is intended as a quick way to get information about the
-        components of the registered stacks without loading all installed
-        integrations. The contained stack configurations might be invalid if
-        they were modified by hand, to ensure you get valid stacks use
-        `repo.stacks()` instead.
-
-        Modifying the contents of the returned dictionary does not actually
-        register/deregister stacks, use `repo.register_stack(...)` or
-        `repo.deregister_stack(...)` instead.
-
-        Returns:
-            A dictionary containing the configuration of all stacks available in
-            the current project and owned by the current user.
-        """
         stacks = self.zen_store.list_stacks(
             project_name_or_id=self.active_project_name,
             user_name_or_id=self.active_user.id,
         )
-
-        dict_of_stacks = dict()
-        for stack in stacks:
-            dict_of_stacks[stack.name] = {"shared": str(stack.is_shared)}
-            for com_type, comps in stack.to_hydrated_model().components.items():
-                dict_of_stacks[stack.name][str(com_type)] = comps[0].name
-
-        return dict_of_stacks
+        return [s.to_hydrated_model() for s in stacks]
 
     @property
     def active_stack_model(self) -> "HydratedStackModel":
@@ -590,7 +652,7 @@ class Repository(metaclass=RepositoryMetaClass):
         else:
             stacks = self.zen_store.list_stacks(
                 project_name_or_id=self.active_project.name,
-                user_name_or_id=self.zen_store.active_user.name,
+                user_name_or_id=self.active_user.name,
                 name=name,
             )
 
@@ -674,50 +736,133 @@ class Repository(metaclass=RepositoryMetaClass):
                 stack.name,
             )
 
+    # .------------.
+    # | COMPONENTS |
+    # '------------'
+    @property
+    def stack_components(self) -> List[ComponentModel]:
+        return self.get_stack_components()
+
+    def register_stack_component(
+        self,
+        component: "ComponentModel",
+    ) -> "ComponentModel":
+        """Registers a stack component.
+
+        Args:
+            component: The component to register.
+        """
+        # Get the flavor model
+        flavor_model = self.get_flavor_by_name_and_type(
+            name=component.flavor, component_type=component.type
+        )
+
+        # Create and validate the configuration
+        flavor_class = Flavor.from_model(flavor_model)
+        configuration = flavor_class.config_class(
+            **component.configuration
+        ).dict()
+
+        # Update the configuration in the model
+        component.configuration = configuration
+
+        # Register the new model
+        return self.zen_store.create_stack_component(component=component)
+
     def update_stack_component(
         self,
         component: "ComponentModel",
-    ) -> None:
+    ) -> "ComponentModel":
         """Updates a stack component.
 
         Args:
             component: The new component to update with.
         """
-        self.zen_store.update_stack_component(component=component)
-
-    def list_stack_components(
-        self, component_type: "StackComponentType"
-    ) -> List["ComponentModel"]:
-        """Fetches all registered stack components of the given type.
-
-        Args:
-            component_type: The type of the components to fetch.
-
-        Returns:
-            A list of all registered stack components of the given type.
-        """
-        return self.zen_store.list_stack_components(
-            project_name_or_id=self.active_project.name, type=component_type
+        # Get the existing component model
+        existing_component_model = self.get_stack_component_by_id(
+            component.id,
         )
 
-    def get_stack_component_by_name_and_type(
-        self, type: "StackComponentType", name: str, is_shared: bool = False
-    ) -> "ComponentModel":
-        """Fetches a stack component by name and type within the active stack.
+        # Get the flavor model of the existing component
+        flavor_model = self.get_flavor_by_name_and_type(
+            name=existing_component_model.flavor,
+            component_type=existing_component_model.type,
+        )
+
+        # Use the flavor class to validate the new configuration
+        flavor = Flavor.from_model(flavor_model)
+        _ = flavor.config_class(**component.configuration)
+
+        # Send the updated component to the ZenStore
+        return self.zen_store.update_stack_component(component=component)
+
+    def deregister_stack_component(self, component: ComponentModel) -> None:
+        """Deletes a registered stack component.
 
         Args:
-            type: The type of the stack component
-            name: The name of the stack to fetch.
-            is_shared: Boolean whether to get a shared stack or a private stack
-
-        Returns:
-            The stack component with the given name and type.
+            component: The model of the component to delete.
 
         Raises:
-            KeyError: If no stack component with the given name and type exists.
-            RuntimeError: If multiple stack components with the given name and
-                type exist.
+            KeyError: If the component does not exist.
         """
+        try:
+            self.zen_store.delete_stack_component(component_id=component.id)
+            logger.info(
+                "Deregistered stack component (type: %s) with name '%s'.",
+                component.type,
+                component.name,
+            )
+        except KeyError:
+            logger.warning(
+                "Unable to deregister stack component (type: %s) with name "
+                "'%s': No stack component with this name could be found.",
+                component.type,
+                component.name,
+            )
+
+    def get_stack_components(self) -> List[ComponentModel]:
+        return self.zen_store.list_stack_components(
+            project_name_or_id=self.active_project.id,
+            user_name_or_id=self.active_user.id,
+        )
+
+    def get_stack_component_by_id(self, component_id: UUID) -> ComponentModel:
+        """Fetches a registered stack component.
+
+        Args:
+            component_id: The id of the component to fetch.
+
+        Returns:
+            The registered stack component.
+        """
+        logger.debug(
+            "Fetching stack component with id '%s'.",
+            id,
+        )
+        return self.zen_store.get_stack_component(component_id=component_id)
+
+    def get_stack_components_by_type(
+        self, type: StackComponentType, is_shared: bool = False
+    ) -> List[ComponentModel]:
+        """ """
+        if is_shared:
+            return self.zen_store.list_stack_components(
+                project_name_or_id=self.active_project.id,
+                type=type,
+                is_shared=True,
+            )
+        else:
+            return self.zen_store.list_stack_components(
+                project_name_or_id=self.active_project.id,
+                user_name_or_id=self.active_user.id,
+                type=type,
+            )
+
+    def get_stack_component_by_name_and_type(
+        self, type: StackComponentType, name: str, is_shared: bool = False
+    ) -> ComponentModel:
+        """Fetches a stack by name within the active stack"""
+
         if is_shared:
             components = self.zen_store.list_stack_components(
                 project_name_or_id=self.active_project.name,
@@ -730,13 +875,13 @@ class Repository(metaclass=RepositoryMetaClass):
                 project_name_or_id=self.active_project.name,
                 name=name,
                 type=type,
-                user_name_or_id=self.zen_store.active_user.name,
+                user_name_or_id=self.active_user.name,
             )
 
-        # TODO: [server] this error handling could be improved
         if not components:
             raise KeyError(
-                f"No stack component of type '{type}' with the name '{name}' exists."
+                f"No stack component of type '{type}' with the name "
+                f"'{name}' exists."
             )
         elif len(components) > 1:
             raise RuntimeError(
@@ -746,160 +891,77 @@ class Repository(metaclass=RepositoryMetaClass):
 
         return components[0]
 
-    def get_stack_component(self, component_id: UUID) -> "StackComponent":
-        """Fetches a registered stack component.
+    # .---------.
+    # | FLAVORS |
+    # '---------'
+    @property
+    def flavors(self) -> List[FlavorModel]:
+        """Fetches all the flavor models."""
+        return self.get_flavors()
 
-        Args:
-            component_id: The id of the component to fetch.
+    def create_flavor(self, flavor: "FlavorModel") -> "FlavorModel":
+        from zenml.utils.source_utils import validate_flavor_source
 
-        Returns:
-            The registered stack component.
-        """
-        # TODO: [server] this returns the implementation rather than the model
-        logger.debug(
-            "Fetching stack component with id '%s'.",
-            id,
+        flavor_class = validate_flavor_source(
+            source=flavor.source,
+            component_type=flavor.type,
         )
-        return self.zen_store.get_stack_component(
-            component_id=component_id
-        ).to_component()
 
-    def register_stack_component(
-        self,
-        component: "StackComponent",
-    ) -> None:
-        """Registers a stack component.
+        flavor_model = flavor_class().to_model()
 
-        Args:
-            component: The component to register.
-        """
-        from zenml.models import ComponentModel
+        return self.zen_store.create_flavor(flavor=flavor_model)
 
-        # TODO: [server] this uses the implementation rather than the model
-
-        self.zen_store.create_stack_component(
-            component=ComponentModel.from_component(component),
-        )
-        if component.post_registration_message:
-            logger.info(component.post_registration_message)
-
-    def deregister_stack_component(
-        self, stack_component: "ComponentModel"
-    ) -> None:
-        """Deregisters a stack component.
-
-        Args:
-            stack_component: The component to deregister.
-        """
+    def delete_flavor(self, flavor: FlavorModel) -> None:
         try:
-            self.zen_store.delete_stack_component(
-                component_id=stack_component.id
-            )
+            self.zen_store.delete_flavor(flavor_id=flavor.id)
             logger.info(
-                "Deregistered stack component (type: %s) with name '%s'.",
-                stack_component.type,
-                stack_component.name,
+                f"Deleted flavor '{flavor.name}' of type '{flavor.type}'.",
             )
         except KeyError:
             logger.warning(
-                "Unable to deregister stack component (type: %s) with name "
-                "'%s': No stack component with this name could be found.",
-                stack_component.type,
-                stack_component.name,
+                f"Unable to delete flavor '{flavor.name}' of type "
+                f"'{flavor.type}': No flavor with this name could be found.",
             )
 
-    @staticmethod
-    def is_repository_directory(path: Path) -> bool:
-        """Checks whether a ZenML repository exists at the given path.
+    def get_flavors(self):
+        from zenml.stack.flavor_registry import flavor_registry
+
+        zenml_flavors = flavor_registry.flavors
+        custom_flavors = self.zen_store.list_flavors(
+            user_name_or_id=self.active_user.id,
+            project_name_or_id=self.active_project.id,
+        )
+        return zenml_flavors + custom_flavors
+
+    def get_flavors_by_type(
+        self, component_type: StackComponentType
+    ) -> List[FlavorModel]:
+        """Fetches the list of flavor for a stack component type.
 
         Args:
-            path: The path to check.
+            component_type: The type of the component to fetch.
 
         Returns:
-            True if a ZenML repository exists at the given path,
-            False otherwise.
+            The list of flavors.
         """
-        config_dir = path / REPOSITORY_DIRECTORY_NAME
-        return fileio.isdir(str(config_dir))
+        logger.debug(f"Fetching the flavors of type {component_type}.")
 
-    @staticmethod
-    def find_repository(
-        path: Optional[Path] = None, enable_warnings: bool = False
-    ) -> Optional[Path]:
-        """Search for a ZenML repository directory.
+        from zenml.stack.flavor_registry import flavor_registry
 
-        Args:
-            path: Optional path to look for the repository. If no path is
-                given, this function tries to find the repository using the
-                environment variable `ZENML_REPOSITORY_PATH` (if set) and
-                recursively searching in the parent directories of the current
-                working directory.
-            enable_warnings: If `True`, warnings are printed if the repository
-                root cannot be found.
+        zenml_flavors = flavor_registry.get_flavors_by_type(
+            component_type=component_type
+        )
 
-        Returns:
-            Absolute path to a ZenML repository directory or None if no
-            repository directory was found.
-        """
-        if not path:
-            # try to get path from the environment variable
-            env_var_path = os.getenv(ENV_ZENML_REPOSITORY_PATH)
-            if env_var_path:
-                path = Path(env_var_path)
+        custom_flavors = self.zen_store.list_flavors(
+            project_name_or_id=self.active_project.id,
+            component_type=component_type,
+        )
 
-        if path:
-            # explicit path via parameter or environment variable, don't search
-            # parent directories
-            search_parent_directories = False
-            warning_message = (
-                f"Unable to find ZenML repository at path '{path}'. Make sure "
-                f"to create a ZenML repository by calling `zenml init` when "
-                f"specifying an explicit repository path in code or via the "
-                f"environment variable '{ENV_ZENML_REPOSITORY_PATH}'."
-            )
-        else:
-            # try to find the repo in the parent directories of the current
-            # working directory
-            path = Path.cwd()
-            search_parent_directories = True
-            warning_message = (
-                f"Unable to find ZenML repository in your current working "
-                f"directory ({path}) or any parent directories. If you "
-                f"want to use an existing repository which is in a different "
-                f"location, set the environment variable "
-                f"'{ENV_ZENML_REPOSITORY_PATH}'. If you want to create a new "
-                f"repository, run `zenml init`."
-            )
+        return zenml_flavors + custom_flavors
 
-        def _find_repo_helper(path_: Path) -> Optional[Path]:
-            """Recursively search parent directories for a ZenML repository.
-
-            Args:
-                path_: The path to search.
-
-            Returns:
-                Absolute path to a ZenML repository directory or None if no
-                repository directory was found.
-            """
-            if Repository.is_repository_directory(path_):
-                return path_
-
-            if not search_parent_directories or io_utils.is_root(str(path_)):
-                return None
-
-            return _find_repo_helper(path_.parent)
-
-        repo_path = _find_repo_helper(path)
-
-        if repo_path:
-            return repo_path.resolve()
-        if enable_warnings:
-            logger.warning(warning_message)
-        return None
-
-    def get_flavor(
-        self, name: str, component_type: "StackComponentType"
-    ) -> Type["StackComponent"]:
+    def get_flavor_by_name_and_type(
+        self, name: str, component_type: StackComponentType
+    ) -> FlavorModel:
         """Fetches a registered flavor.
 
         Args:
@@ -913,43 +975,43 @@ class Repository(metaclass=RepositoryMetaClass):
             KeyError: If no flavor exists for the given type and name.
         """
         logger.debug(
-            "Fetching the flavor of type '%s' with name '%s'.",
-            component_type,
-            name,
+            f"Fetching the flavor of type {component_type} with name {name}."
         )
 
         from zenml.stack.flavor_registry import flavor_registry
 
-        zenml_flavors = flavor_registry.get_flavors_by_type(
-            component_type=component_type
-        )
-
-        # Try to find if there are any custom flavor implementations
-        custom_flavors = self.zen_store.list_flavors(
-            project_name_or_id=self.active_project_name,
-            name=name,
-            component_type=component_type,
-        )
-
-        # If there is one, check whether the same flavor exists as a default
-        # flavor to give out a warning
-        if custom_flavors and name in zenml_flavors:
-            logger.warning(
-                f"There is a custom implementation for the flavor "
-                f"'{name}' of a {component_type}, which is currently "
-                f"overwriting the same flavor provided by ZenML."
+        try:
+            zenml_flavor = flavor_registry.get_flavor_by_name_and_type(
+                component_type=component_type,
+                name=name,
             )
+        except KeyError:
+            zenml_flavor = None
 
-        else:
-            if name in zenml_flavors:
-                flavor_wrapper = zenml_flavors[name]
-            else:
-                raise KeyError(
-                    f"There is no flavor '{name}' for the type "
-                    f"{component_type}"
+        custom_flavors = self.zen_store.list_flavors(
+            project_name_or_id=self.active_project.id,
+            component_type=component_type,
+            name=name,
+        )
+
+        if custom_flavors:
+            if len(custom_flavors) > 1:
+                raise KeyError("More than one flavor by this name exist!")
+
+            if zenml_flavor:
+                # If there is one, check whether the same flavor exists as
+                # a ZenML flavor to give out a warning
+                logger.warning(
+                    f"There is a custom implementation for the flavor "
+                    f"'{name}' of a {component_type}, which is currently "
+                    f"overwriting the same flavor provided by ZenML."
                 )
-
-        return flavor_wrapper.to_flavor()
+            return custom_flavors[0]
+        else:
+            if zenml_flavor:
+                return zenml_flavor
+            else:
+                raise KeyError("bir şey barış!")
 
     def _register_pipeline(
         self, pipeline_name: str, pipeline_configuration: Dict[str, str]

@@ -17,7 +17,7 @@ import os
 import subprocess
 import sys
 import webbrowser
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 from label_studio_sdk import Client, Project  # type: ignore[import]
 
@@ -26,7 +26,6 @@ from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError
 from zenml.integrations.azure import AZURE_ARTIFACT_STORE_FLAVOR
 from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
-from zenml.integrations.label_studio import LABEL_STUDIO_ANNOTATOR_FLAVOR
 from zenml.integrations.label_studio.steps.label_studio_standard_steps import (
     LabelStudioDatasetRegistrationConfig,
     LabelStudioDatasetSyncConfig,
@@ -41,20 +40,9 @@ from zenml.utils import io_utils, networking_utils
 
 logger = get_logger(__name__)
 
-DEFAULT_LABEL_STUDIO_PORT = 8093
-
 
 class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
-    """Class to interact with the Label Studio annotation interface.
-
-    Attributes:
-        port: The port to use for the annotation interface.
-        api_key: The API key to use for authentication.
-    """
-
-    port: int = DEFAULT_LABEL_STUDIO_PORT
-
-    FLAVOR: ClassVar[str] = LABEL_STUDIO_ANNOTATOR_FLAVOR
+    """Class to interact with the Label Studio annotation interface."""
 
     @property
     def validator(self) -> Optional["StackValidator"]:
@@ -67,7 +55,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         def _ensure_cloud_artifact_stores(stack: Stack) -> Tuple[bool, str]:
             # For now this only works on cloud artifact stores.
             return (
-                stack.artifact_store.FLAVOR
+                stack.artifact_store.flavor
                 in [
                     AZURE_ARTIFACT_STORE_FLAVOR,
                     GCP_ARTIFACT_STORE_FLAVOR,
@@ -87,7 +75,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         Returns:
             The URL of the annotation interface.
         """
-        return f"http://localhost:{self.port}"
+        return f"http://localhost:{self.config.port}"
 
     def get_url_for_dataset(self, dataset_name: str) -> str:
         """Gets the URL of the annotation interface for the given dataset.
@@ -591,7 +579,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         return os.path.join(
             io_utils.get_global_config_directory(),
             "annotators",
-            str(self.uuid),
+            str(self.id),
         )
 
     @property
@@ -678,7 +666,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
             "start",
             "--no-browser",
             "--port",
-            f"{self.port}",
+            f"{self.config.port}",
         ]
 
         if sys.platform == "win32":
@@ -686,13 +674,13 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
                 "Daemon functionality not supported on Windows. "
                 "In order to access the Label Studio server locally, "
                 "please run '%s' in a separate command line shell.",
-                self.port,
+                self.config.port,
                 " ".join(command),
             )
-        elif not networking_utils.port_available(self.port):
+        elif not networking_utils.port_available(self.config.port):
             raise ProvisioningError(
                 f"Unable to port-forward Label Studio to local "
-                f"port {self.port} because the port is occupied. In order to "
+                f"port {self.config.port} because the port is occupied. In order to "
                 f"access Label Studio locally, please "
                 f"change the configuration to use an available "
                 f"port or stop the other process currently using the port."

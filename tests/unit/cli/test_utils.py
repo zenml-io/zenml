@@ -42,17 +42,3 @@ def test_parse_unknown_options_returns_a_dict_of_known_options() -> None:
     assert isinstance(parsed_sample_args, dict)
     assert len(parsed_sample_args.values()) == 3
     assert parsed_sample_args["best_cat"] == '"aria"'
-
-
-def test_stack_config_has_right_contents_for_printing() -> None:
-    """Check that the stack config has the right components for printing"""
-    repo = Repository()
-    active_stack_name = repo.active_stack_model.name
-    stack_config = repo.stack_configurations[active_stack_name]
-    items = [[typ, name] for typ, name in stack_config.items()]
-    assert len(items) != 0
-    assert items is not None
-    for item in items:
-        assert isinstance(item, list)
-        for kv_pair in item:
-            assert isinstance(kv_pair, str)

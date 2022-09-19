@@ -17,7 +17,7 @@ from uuid import uuid4
 import pytest
 
 from zenml.artifact_stores import LocalArtifactStore
-from zenml.container_registries import DefaultContainerRegistry
+from zenml.container_registries import DefaultContainerRegistryFlavor
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.orchestrators import LocalOrchestrator
@@ -42,7 +42,7 @@ def test_initializing_a_stack_from_components():
     assert stack.container_registry is None
 
     # check that it also works with optional container registry
-    container_registry = DefaultContainerRegistry(name="", uri="")
+    container_registry = DefaultContainerRegistryFlavor(name="", uri="")
     components[StackComponentType.CONTAINER_REGISTRY] = container_registry
 
     stack = Stack.from_components(id=uuid4(), name="", components=components)
@@ -88,7 +88,7 @@ def test_stack_returns_all_its_components():
     assert stack.components == expected_components
 
     # check that it also works with optional container registry
-    container_registry = DefaultContainerRegistry(name="", uri="")
+    container_registry = DefaultContainerRegistryFlavor(name="", uri="")
     stack = Stack(
         id=uuid4(),
         name="",

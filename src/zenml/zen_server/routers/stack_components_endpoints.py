@@ -20,8 +20,9 @@ from fastapi import APIRouter, Depends
 from zenml.constants import STACK_COMPONENTS, TYPES, VERSION_1
 from zenml.enums import StackComponentType
 from zenml.models import ComponentModel
-from zenml.models.component_models import HydratedComponentModel
+from zenml.models.component_model import HydratedComponentModel
 from zenml.zen_server.auth import authorize
+from zenml.zen_server.models.component_models import UpdateComponentModel
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
 router = APIRouter(
@@ -109,21 +110,26 @@ async def get_stack_component(
 )
 @handle_exceptions
 async def update_stack_component(
-    component_id: UUID, component: ComponentModel, hydrated: bool = False
+    component_id: UUID,
+    component_update: UpdateComponentModel,
+    hydrated: bool = False,
 ) -> Union[ComponentModel, HydratedComponentModel]:
     """Updates a stack component.
 
     Args:
         component_id: ID of the stack component.
-        component: Stack component to use to update.
+        component_update: Stack component to use to update.
         hydrated: Defines if stack components, users and projects will be
                   included by reference (FALSE) or as model (TRUE)
 
     Returns:
         Updated stack component.
     """
-    component.id = component_id
-    updated_component = zen_store.update_stack_component(component=component)
+    component_in_db = zen_store.get_stack_component(component_id)
+
+    updated_component = zen_store.update_stack_component(
+        component=component_update.apply_to_model(component_in_db)
+    )
     if hydrated:
         return updated_component.to_hydrated_model()
     else:

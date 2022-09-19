@@ -14,9 +14,10 @@
 """Implementation of the ZenML flavor registry."""
 
 from collections import defaultdict
-from typing import DefaultDict, Dict
+from typing import DefaultDict, Dict, List
 
 from zenml.enums import StackComponentType
+from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.models import FlavorModel
 
@@ -40,50 +41,44 @@ class FlavorRegistry:
 
     def register_default_flavors(self) -> None:
         """Registers the default built-in flavors."""
-        from zenml.artifact_stores import LocalArtifactStore
+        from zenml.artifact_stores import LocalArtifactStoreFlavor
         from zenml.container_registries import (
-            AzureContainerRegistry,
-            DefaultContainerRegistry,
-            DockerHubContainerRegistry,
-            GCPContainerRegistry,
-            GitHubContainerRegistry,
+            AzureContainerRegistryFlavor,
+            DefaultContainerRegistryFlavor,
+            DockerHubContainerRegistryFlavor,
+            GCPContainerRegistryFlavor,
+            GitHubContainerRegistryFlavor,
         )
         from zenml.orchestrators import (
-            LocalDockerOrchestrator,
-            LocalOrchestrator,
+            LocalDockerOrchestratorFlavor,
+            LocalOrchestratorFlavor,
         )
-        from zenml.secrets_managers import LocalSecretsManager
+        from zenml.secrets_managers import LocalSecretsManagerFlavor
 
         default_flavors = [
-            LocalOrchestrator,
-            LocalDockerOrchestrator,
-            LocalArtifactStore,
-            DefaultContainerRegistry,
-            AzureContainerRegistry,
-            DockerHubContainerRegistry,
-            GCPContainerRegistry,
-            GitHubContainerRegistry,
-            LocalSecretsManager,
+            LocalArtifactStoreFlavor,
+            LocalOrchestratorFlavor,
+            LocalDockerOrchestratorFlavor,
+            DefaultContainerRegistryFlavor,
+            AzureContainerRegistryFlavor,
+            DockerHubContainerRegistryFlavor,
+            GCPContainerRegistryFlavor,
+            GitHubContainerRegistryFlavor,
+            LocalSecretsManagerFlavor,
         ]
         for flavor in default_flavors:
+            flavor_instance = flavor()
             self._register_flavor(
-                FlavorModel(
-                    name=flavor.FLAVOR,  # type: ignore[attr-defined]
-                    type=flavor.TYPE,  # type: ignore[attr-defined]
-                    source=flavor.__module__ + "." + flavor.__name__,
-                    integration="built-in",
-                )
+                flavor_instance.to_model(integration="built-in")
             )
 
     def register_integration_flavors(self) -> None:
         """Registers the flavors implemented by integrations."""
-        from zenml.integrations.registry import integration_registry
-
-        for integration in integration_registry.integrations.values():
+        for name, integration in integration_registry.integrations.items():
             integrated_flavors = integration.flavors()
             if integrated_flavors:
                 for flavor in integrated_flavors:
-                    self._register_flavor(flavor)
+                    self._register_flavor(flavor().to_model(integration=name))
 
     def _register_flavor(
         self,
@@ -110,9 +105,17 @@ class FlavorRegistry:
             f"Registered flavor for '{flavor.name}' and type '{flavor.type}'.",
         )
 
+    @property
+    def flavors(self) -> List[FlavorModel]:
+        flavors = list()
+        for flavors_by_type in self._flavors.values():
+            for flavor in flavors_by_type.values():
+                flavors.append(flavor)
+        return flavors
+
     def get_flavors_by_type(
         self, component_type: StackComponentType
-    ) -> Dict[str, FlavorModel]:
+    ) -> List[FlavorModel]:
         """Return the list of flavors with given type.
 
         Args:
@@ -121,7 +124,12 @@ class FlavorRegistry:
         Returns:
             The list of flavors with the given type.
         """
-        return self._flavors[component_type]
+        return list(self._flavors[component_type].values())
+
+    def get_flavor_by_name_and_type(
+        self, name: str, component_type: StackComponentType
+    ) -> FlavorModel:
+        return self._flavors[component_type][name]
 
 
 # Create the instance of the registry

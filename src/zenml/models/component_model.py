@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 """Model definition for stack components."""
 
-import json
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List
+from typing import Any, ClassVar, Dict, List
+from uuid import UUID, uuid4
 
 from pydantic import Field
 
@@ -26,9 +26,6 @@ from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.models.project_models import ProjectModel
 from zenml.models.user_management_models import UserModel
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
-
-if TYPE_CHECKING:
-    from zenml.stack import StackComponent
 
 logger = get_logger(__name__)
 
@@ -47,6 +44,9 @@ class ComponentModel(
         "is_shared",
     ]
 
+    id: UUID = Field(
+        default_factory=uuid4, title="The unique id of the component."
+    )
     name: str = Field(
         title="The name of the stack component.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
@@ -102,47 +102,6 @@ class ComponentModel(
             created=self.created,
             updated=self.updated,
         )
-
-    @classmethod
-    def from_component(cls, component: "StackComponent") -> "ComponentModel":
-        """Creates a ComponentModel from an instance of a stack component.
-
-        Args:
-            component: the instance of a StackComponent
-
-        Returns:
-            a ComponentModel
-        """
-        from zenml.repository import Repository
-
-        repo = Repository()
-
-        return cls(
-            type=component.TYPE,
-            flavor=component.FLAVOR,
-            name=component.name,
-            id=component.uuid,
-            project=repo.active_project.id,
-            user=repo.active_user.id,
-            configuration=json.loads(component.json()),
-        )
-
-    def to_component(self) -> "StackComponent":
-        """Converts the ComponentModel into an instance of a stack component.
-
-        Returns:
-            a StackComponent
-        """
-        from zenml.repository import Repository
-
-        flavor = Repository(skip_repository_check=True).get_flavor(  # type: ignore[call-arg]
-            name=self.flavor, component_type=self.type
-        )
-
-        config = self.configuration
-        config["uuid"] = self.id
-        config["name"] = self.name
-        return flavor.parse_obj(config)
 
 
 class HydratedComponentModel(ComponentModel):

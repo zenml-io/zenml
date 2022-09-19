@@ -13,12 +13,13 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML local orchestrator."""
 
-from typing import TYPE_CHECKING, Any, ClassVar, List
+from typing import TYPE_CHECKING, Any, List
 
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators.base_orchestrator import BaseOrchestratorFlavor
 from zenml.stack import Stack
 from zenml.steps import BaseStep
 
@@ -35,8 +36,6 @@ class LocalOrchestrator(BaseOrchestrator):
     This orchestrator does not allow for concurrent execution of steps and also
     does not support running on a schedule.
     """
-
-    FLAVOR: ClassVar[str] = "local"
 
     def prepare_or_run_pipeline(
         self,
@@ -78,3 +77,13 @@ class LocalOrchestrator(BaseOrchestrator):
                 run_name=runtime_configuration.run_name,
                 pb2_pipeline=pb2_pipeline,
             )
+
+
+class LocalOrchestratorFlavor(BaseOrchestratorFlavor):
+    @property
+    def name(self) -> str:
+        return "local"
+
+    @property
+    def implementation_class(self):
+        return LocalOrchestrator

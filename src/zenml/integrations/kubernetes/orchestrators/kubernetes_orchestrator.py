@@ -30,7 +30,7 @@
 # inspired by the Kubernetes dag runner implementation of tfx
 """Kubernetes-native orchestrator."""
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -38,7 +38,6 @@ from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
-from zenml.integrations.kubernetes import KUBERNETES_ORCHESTRATOR_FLAVOR
 from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator_entrypoint_configuration import (
     KubernetesOrchestratorEntrypointConfiguration,
@@ -50,7 +49,6 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.stack import StackValidator
-from zenml.utils import deprecation_utils
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
@@ -62,47 +60,15 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class KubernetesOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
-    """Orchestrator for running ZenML pipelines using native Kubernetes.
+class KubernetesOrchestrator(BaseOrchestrator):
+    """Orchestrator for running ZenML pipelines using native Kubernetes."""
 
-    Attributes:
-        custom_docker_base_image_name: Name of a Docker image that should be
-            used as the base for the image that will be run on Kubernetes pods.
-            If no custom image is given, a basic image of the active ZenML
-            version will be used.
-            **Note**: This image needs to have ZenML installed,
-            otherwise the pipeline execution will fail. For that reason, you
-            might want to extend the ZenML Docker images found here:
-            https://hub.docker.com/r/zenmldocker/zenml/
-        kubernetes_context: Optional name of a Kubernetes context to run
-            pipelines in. If not set, the current active context will be used.
-            You can find the active context by running `kubectl config
-            current-context`.
-        kubernetes_namespace: Name of the Kubernetes namespace to be used.
-            If not provided, `default` namespace will be used.
-        synchronous: If `True`, running a pipeline using this orchestrator will
-            block until all steps finished running on Kubernetes.
-        skip_config_loading: If `True`, don't load the Kubernetes context and
-            clients. This is only useful for unit testing.
-    """
-
-    custom_docker_base_image_name: Optional[str] = None
-    kubernetes_context: Optional[str] = None
-    kubernetes_namespace: str = "zenml"
-    synchronous: bool = False
-    skip_config_loading: bool = False
     _k8s_core_api: k8s_client.CoreV1Api = None
     _k8s_batch_api: k8s_client.BatchV1beta1Api = None
     _k8s_rbac_api: k8s_client.RbacAuthorizationV1Api = None
 
-    FLAVOR: ClassVar[str] = KUBERNETES_ORCHESTRATOR_FLAVOR
-
-    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        ("custom_docker_base_image_name", "docker_parent_image")
-    )
-
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Initialize the Pydantic object the Kubernetes clients.
+        """Initialize the class and the Kubernetes clients.
 
         Args:
             *args: The positional arguments to pass to the Pydantic object.
@@ -113,9 +79,9 @@ class KubernetesOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
     def _initialize_k8s_clients(self) -> None:
         """Initialize the Kubernetes clients."""
-        if self.skip_config_loading:
+        if self.config.skip_config_loading:
             return
-        kube_utils.load_kube_config(context=self.kubernetes_context)
+        kube_utils.load_kube_config(context=self.config.kubernetes_context)
         self._k8s_core_api = k8s_client.CoreV1Api()
         self._k8s_batch_api = k8s_client.BatchV1beta1Api()
         self._k8s_rbac_api = k8s_client.RbacAuthorizationV1Api()
@@ -165,21 +131,21 @@ class KubernetesOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             # this, but just in case
             assert container_registry is not None
 
-            if not self.skip_config_loading:
+            if not self.config.skip_config_loading:
                 contexts, active_context = self.get_kubernetes_contexts()
-                if self.kubernetes_context not in contexts:
+                if self.config.kubernetes_context not in contexts:
                     return False, (
                         f"Could not find a Kubernetes context named "
-                        f"'{self.kubernetes_context}' in the local Kubernetes "
+                        f"'{self.config.kubernetes_context}' in the local Kubernetes "
                         f"configuration. Please make sure that the Kubernetes "
                         f"cluster is running and that the kubeconfig file is "
                         f"configured correctly. To list all configured "
                         f"contexts, run:\n\n"
                         f"  `kubectl config get-contexts`\n"
                     )
-                if self.kubernetes_context != active_context:
+                if self.config.kubernetes_context != active_context:
                     logger.warning(
-                        f"The Kubernetes context '{self.kubernetes_context}' "
+                        f"The Kubernetes context '{self.config.kubernetes_context}' "
                         f"configured for the Kubernetes orchestrator is not "
                         f"the same as the active context in the local "
                         f"Kubernetes configuration. If this is not deliberate,"
@@ -193,7 +159,7 @@ class KubernetesOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                         f"configured in the Kubernetes orchestrator and "
                         f"silence this warning, run:\n\n"
                         f"  `kubectl config use-context "
-                        f"{self.kubernetes_context}`\n"
+                        f"{self.config.kubernetes_context}`\n"
                     )
 
             # Check that all stack components are non-local.
@@ -202,7 +168,7 @@ class KubernetesOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                     return False, (
                         f"The Kubernetes orchestrator currently only supports "
                         f"remote stacks, but the '{stack_component.name}' "
-                        f"{stack_component.TYPE.value} is a local component. "
+                        f"{stack_component.type.value} is a local component. "
                         f"Please make sure to only use non-local stack "
                         f"components with a Kubernetes orchestrator."
                     )
@@ -239,7 +205,8 @@ class KubernetesOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             stack: A ZenML stack.
             runtime_configuration: The runtime configuration of the pipeline.
         """
-        self.build_and_push_docker_image(
+        docker_image_builder = PipelineDockerImageBuilder()
+        docker_image_builder.build_and_push_docker_image(
             pipeline_name=pipeline.name,
             docker_configuration=pipeline.docker_configuration,
             stack=stack,
@@ -310,7 +277,7 @@ class KubernetesOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             run_name=run_name,
             pipeline_name=pipeline_name,
             image_name=image_name,
-            kubernetes_namespace=self.kubernetes_namespace,
+            kubernetes_namespace=self.config.kubernetes_namespace,
             pb2_pipeline=pb2_pipeline,
             sorted_steps=sorted_steps,
             pipeline_dag=pipeline_dag,
@@ -322,7 +289,7 @@ class KubernetesOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             core_api=self._k8s_core_api,
             rbac_api=self._k8s_rbac_api,
             service_account_name=service_account_name,
-            namespace=self.kubernetes_namespace,
+            namespace=self.config.kubernetes_namespace,
         )
 
         # Schedule as CRON job if CRON schedule is given.
@@ -345,7 +312,8 @@ class KubernetesOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 service_account_name=service_account_name,
             )
             self._k8s_batch_api.create_namespaced_cron_job(
-                body=cron_job_manifest, namespace=self.kubernetes_namespace
+                body=cron_job_manifest,
+                namespace=self.config.kubernetes_namespace,
             )
             logger.info(
                 f"Scheduling Kubernetes run `{pod_name}` with CRON expression "
@@ -364,24 +332,24 @@ class KubernetesOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             service_account_name=service_account_name,
         )
         self._k8s_core_api.create_namespaced_pod(
-            namespace=self.kubernetes_namespace,
+            namespace=self.config.kubernetes_namespace,
             body=pod_manifest,
         )
 
         # Wait for the orchestrator pod to finish and stream logs.
-        if self.synchronous:
+        if self.config.synchronous:
             logger.info("Waiting for Kubernetes orchestrator pod...")
             kube_utils.wait_pod(
                 core_api=self._k8s_core_api,
                 pod_name=pod_name,
-                namespace=self.kubernetes_namespace,
+                namespace=self.config.kubernetes_namespace,
                 exit_condition_lambda=kube_utils.pod_is_done,
                 stream_logs=True,
             )
         else:
             logger.info(
                 f"Orchestration started asynchronously in pod "
-                f"`{self.kubernetes_namespace}:{pod_name}`. "
+                f"`{self.config.kubernetes_namespace}:{pod_name}`. "
                 f"Run the following command to inspect the logs: "
-                f"`kubectl logs {pod_name} -n {self.kubernetes_namespace}`."
+                f"`kubectl logs {pod_name} -n {self.config.kubernetes_namespace}`."
             )

@@ -36,45 +36,104 @@ import glob
 import os
 import shutil
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     ClassVar,
-    Dict,
     Iterable,
     List,
     Optional,
     Set,
     Tuple,
+    Type,
     Union,
 )
 
-from pydantic import root_validator, validator
+from pydantic import validator
 
-from zenml.artifact_stores import BaseArtifactStore
+from zenml.artifact_stores import (
+    BaseArtifactStore,
+    BaseArtifactStoreConfig,
+    BaseArtifactStoreFlavor,
+)
 from zenml.config.global_config import GlobalConfiguration
+from zenml.constants import LOCAL_STORES_DIRECTORY_NAME
 from zenml.exceptions import ArtifactStoreInterfaceError
 from zenml.utils import io_utils
 
+if TYPE_CHECKING:
+    from uuid import UUID
+
 PathType = Union[bytes, str]
+
+
+class LocalArtifactStoreConfig(BaseArtifactStoreConfig):
+    SUPPORTED_SCHEMES: ClassVar[Set[str]] = {""}
+
+    path: str = ""
+
+    @validator("path")
+    def ensure_path_local(cls, path: str) -> str:
+        """Pydantic validator which ensures that the given path is a local path.
+
+        Args:
+            path: The path to validate.
+
+        Returns:
+            str: The validated (local) path.
+
+        Raises:
+            ArtifactStoreInterfaceError: If the given path is not a local path.
+        """
+        remote_prefixes = ["gs://", "hdfs://", "s3://", "az://", "abfs://"]
+        if any(path.startswith(prefix) for prefix in remote_prefixes):
+            raise ArtifactStoreInterfaceError(
+                f"The path '{path}' you defined for your local artifact store "
+                f"starts with a remote prefix."
+            )
+        return path
 
 
 class LocalArtifactStore(BaseArtifactStore):
     """Artifact Store for local artifacts."""
 
-    path: str = ""
+    _path: Optional[str] = None
 
-    # Class Configuration
-    FLAVOR: ClassVar[str] = "local"
-    SUPPORTED_SCHEMES: ClassVar[Set[str]] = {""}
+    @staticmethod
+    def get_default_local_path(id_: "UUID") -> str:
+        """Returns the default local path for a local artifact store.
 
-    @property
-    def local_path(self) -> str:
-        """Path to the local directory where the artifacts are stored.
+        Args:
+            id_: The id of the local artifact store.
 
         Returns:
-            str: The path to the local directory where the artifacts are stored.
+            str: The default local path.
         """
-        return self.path
+        return os.path.join(
+            GlobalConfiguration().config_directory,
+            LOCAL_STORES_DIRECTORY_NAME,
+            str(id_),
+        )
+
+    @property
+    def path(self):
+        """Returns the path to the local artifact store.
+
+        If the user has not defined a path in the config, this will create a
+        sub-folder in the global config directory.
+
+        Returns:
+            The path to the local artifact store.
+        """
+        if self._path:
+            return self._path
+
+        if self.config.path:
+            self._path = self.config.path
+        else:
+            self._path = self.get_default_local_path(self.id)
+        io_utils.create_dir_recursive_if_not_exists(self._path)
+        return self._path
 
     @staticmethod
     def open(name: PathType, mode: str = "r") -> Any:
@@ -245,47 +304,20 @@ class LocalArtifactStore(BaseArtifactStore):
             current directory and a list of files inside the current
             directory.
         """
-        yield from os.walk(top, topdown=topdown, onerror=onerror)  # type: ignore[type-var, misc]
+        yield from os.walk(
+            top, topdown=topdown, onerror=onerror
+        )  # type: ignore[type-var, misc]
 
-    @root_validator
-    def _default_local_path(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Generates a local artifact store path if not configured.
 
-        Args:
-            values: The values to validate.
+class LocalArtifactStoreFlavor(BaseArtifactStoreFlavor):
+    @property
+    def name(self) -> str:
+        return "local"
 
-        Returns:
-            The validated values.
-        """
-        path = values.get("path")
-        artifact_store_id = values.get("uuid")
-        if path == "" and artifact_store_id:
-            artifact_store_path = os.path.join(
-                GlobalConfiguration().local_stores_path,
-                str(artifact_store_id),
-            )
-            io_utils.create_dir_recursive_if_not_exists(artifact_store_path)
-            values["path"] = artifact_store_path
+    @property
+    def config_class(self) -> Type[LocalArtifactStoreConfig]:
+        return LocalArtifactStoreConfig
 
-        return values
-
-    @validator("path")
-    def ensure_path_local(cls, path: str) -> str:
-        """Pydantic validator which ensures that the given path is a local path.
-
-        Args:
-            path: The path to validate.
-
-        Returns:
-            str: The validated (local) path.
-
-        Raises:
-            ArtifactStoreInterfaceError: If the given path is not a local path.
-        """
-        remote_prefixes = ["gs://", "hdfs://", "s3://", "az://", "abfs://"]
-        if any(path.startswith(prefix) for prefix in remote_prefixes):
-            raise ArtifactStoreInterfaceError(
-                f"The path:{path} you defined for your local artifact store "
-                f"start with one of the remote prefixes."
-            )
-        return path
+    @property
+    def implementation_class(self) -> Type[LocalArtifactStore]:
+        return LocalArtifactStore

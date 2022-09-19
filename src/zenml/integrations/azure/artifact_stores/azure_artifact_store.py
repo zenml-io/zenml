@@ -16,12 +16,10 @@
 from typing import (
     Any,
     Callable,
-    ClassVar,
     Dict,
     Iterable,
     List,
     Optional,
-    Set,
     Tuple,
     Union,
     cast,
@@ -30,7 +28,6 @@ from typing import (
 import adlfs
 
 from zenml.artifact_stores import BaseArtifactStore
-from zenml.integrations.azure import AZURE_ARTIFACT_STORE_FLAVOR
 from zenml.secret.schemas import AzureSecretSchema
 from zenml.stack.authentication_mixin import AuthenticationMixin
 from zenml.utils.io_utils import convert_to_str
@@ -42,10 +39,6 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
     """Artifact Store for Microsoft Azure based artifacts."""
 
     _filesystem: Optional[adlfs.AzureBlobFileSystem] = None
-
-    # Class Configuration
-    FLAVOR: ClassVar[str] = AZURE_ARTIFACT_STORE_FLAVOR
-    SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"abfs://", "az://"}
 
     @property
     def filesystem(self) -> adlfs.AzureBlobFileSystem:

@@ -13,16 +13,16 @@
 #  permissions and limitations under the License.
 """Implementation of the GitHub Container Registry."""
 
-from typing import ClassVar
 
 from zenml.container_registries.base_container_registry import (
-    BaseContainerRegistry,
+    BaseContainerRegistryConfig,
+    BaseContainerRegistryFlavor,
 )
 from zenml.enums import ContainerRegistryFlavor
 
 
-class GitHubContainerRegistry(BaseContainerRegistry):
-    """Class for GitHub Container Registry.
+class GitHubContainerRegistryConfig(BaseContainerRegistryConfig):
+    """Configuration for the GitHub Container Registry.
 
     Attributes:
         automatic_token_authentication: If `True`, use automatic token
@@ -33,5 +33,10 @@ class GitHubContainerRegistry(BaseContainerRegistry):
 
     automatic_token_authentication: bool = False
 
-    # Class Configuration
-    FLAVOR: ClassVar[str] = ContainerRegistryFlavor.GITHUB
+
+class GitHubContainerRegistryFlavor(BaseContainerRegistryFlavor):
+    """Class for GitHub Container Registry."""
+
+    @property
+    def name(self) -> str:
+        return ContainerRegistryFlavor.GITHUB

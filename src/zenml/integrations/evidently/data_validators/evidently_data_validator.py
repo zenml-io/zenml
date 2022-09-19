@@ -43,7 +43,6 @@ from evidently.model_profile.sections.base_profile_section import (  # type: ign
 from evidently.pipeline.column_mapping import ColumnMapping  # type: ignore
 
 from zenml.data_validators import BaseDataValidator
-from zenml.integrations.evidently import EVIDENTLY_DATA_VALIDATOR_FLAVOR
 from zenml.logger import get_logger
 from zenml.utils.source_utils import load_source_path_class
 
@@ -109,8 +108,6 @@ def get_profile_sections_and_tabs(
 class EvidentlyDataValidator(BaseDataValidator):
     """Evidently data validator stack component."""
 
-    # Class Configuration
-    FLAVOR: ClassVar[str] = EVIDENTLY_DATA_VALIDATOR_FLAVOR
     NAME: ClassVar[str] = "Evidently"
 
     @classmethod

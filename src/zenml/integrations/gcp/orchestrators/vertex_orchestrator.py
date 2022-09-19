@@ -30,7 +30,7 @@
 """Implementation of the VertexAI orchestrator."""
 
 import os
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import kfp
 from google.api_core import exceptions as google_exceptions
@@ -40,10 +40,7 @@ from kfp.v2 import dsl as dslv2
 from kfp.v2.compiler import Compiler as KFPV2Compiler
 
 from zenml.enums import StackComponentType
-from zenml.integrations.gcp import (
-    GCP_ARTIFACT_STORE_FLAVOR,
-    GCP_VERTEX_ORCHESTRATOR_FLAVOR,
-)
+from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsMixin,
 )
@@ -55,7 +52,6 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.stack.stack_validator import StackValidator
-from zenml.utils import deprecation_utils
 from zenml.utils.io_utils import get_global_config_directory
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
@@ -82,95 +78,10 @@ def _clean_pipeline_name(pipeline_name: str) -> str:
     return pipeline_name.replace("_", "-").lower()
 
 
-class VertexOrchestrator(
-    BaseOrchestrator, GoogleCredentialsMixin, PipelineDockerImageBuilder
-):
-    """Orchestrator responsible for running pipelines on Vertex AI.
-
-    Attributes:
-        custom_docker_base_image_name: Name of the Docker image that should be
-            used as the base for the image that will be used to execute each of
-            the steps. If no custom base image is given, a basic image of the
-            active ZenML version will be used. **Note**: This image needs to
-            have ZenML installed, otherwise the pipeline execution will fail.
-            For that reason, you might want to extend the ZenML Docker images found
-            here: https://hub.docker.com/r/zenmldocker/zenml/
-        project: GCP project name. If `None`, the project will be inferred from
-            the environment.
-        location: Name of GCP region where the pipeline job will be executed.
-            Vertex AI Pipelines is available in the following regions:
-            https://cloud.google.com/vertex-ai/docs/general/locations#feature
-            -availability
-        pipeline_root: a Cloud Storage URI that will be used by the Vertex AI
-        Pipelines.
-            If not provided but the artifact store in the stack used to execute
-            the pipeline is a
-            `zenml.integrations.gcp.artifact_stores.GCPArtifactStore`,
-            then a subdirectory of the artifact store will be used.
-        encryption_spec_key_name: The Cloud KMS resource identifier of the
-        customer
-            managed encryption key used to protect the job. Has the form:
-            `projects/<PRJCT>/locations/<REGION>/keyRings/<KR>/cryptoKeys/<KEY>`
-            . The key needs to be in the same region as where the compute
-            resource is created.
-        workload_service_account: the service account for workload run-as
-            account. Users submitting jobs must have act-as permission on this
-            run-as account.
-            If not provided, the default service account will be used.
-        network: the full name of the Compute Engine Network to which the job
-        should
-            be peered. For example, `projects/12345/global/networks/myVPC`
-            If not provided, the job will not be peered with any network.
-        synchronous: If `True`, running a pipeline using this orchestrator will
-            block until all steps finished running on Vertex AI Pipelines
-            service.
-        cpu_limit: The maximum CPU limit for this operator. This string value
-            can be a number (integer value for number of CPUs) as string,
-            or a number followed by "m", which means 1/1000. You can specify
-            at most 96 CPUs.
-            (see. https://cloud.google.com/vertex-ai/docs/pipelines/machine-types)
-        memory_limit: The maximum memory limit for this operator. This string
-            value can be a number, or a number followed by "K" (kilobyte),
-            "M" (megabyte), or "G" (gigabyte). At most 624GB is supported.
-        node_selector_constraint: Each constraint is a key-value pair label.
-            For the container to be eligible to run on a node, the node must have
-            each of the constraints appeared as labels.
-            For example a GPU type can be providing by one of the following tuples:
-                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_A100")
-                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_K80")
-                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_P4")
-                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_P100")
-                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_T4")
-                - ("cloud.google.com/gke-accelerator", "NVIDIA_TESLA_V100")
-            Hint: the selected region (location) must provide the requested accelerator
-            (see https://cloud.google.com/compute/docs/gpus/gpu-regions-zones).
-        gpu_limit: The GPU limit (positive number) for the operator.
-            For more information about GPU resources, see:
-            https://cloud.google.com/vertex-ai/docs/training/configure-compute#specifying_gpus
-    """
-
-    custom_docker_base_image_name: Optional[str] = None
-    project: Optional[str] = None
-    location: str
-    pipeline_root: Optional[str] = None
-    labels: Dict[str, str] = {}
-    encryption_spec_key_name: Optional[str] = None
-    workload_service_account: Optional[str] = None
-    network: Optional[str] = None
-    synchronous: bool = False
-
-    cpu_limit: Optional[str] = None
-    memory_limit: Optional[str] = None
-    node_selector_constraint: Optional[Tuple[str, str]] = None
-    gpu_limit: Optional[int] = None
+class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
+    """Orchestrator responsible for running pipelines on Vertex AI."""
 
     _pipeline_root: str
-
-    FLAVOR: ClassVar[str] = GCP_VERTEX_ORCHESTRATOR_FLAVOR
-
-    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        ("custom_docker_base_image_name", "docker_parent_image")
-    )
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -211,22 +122,22 @@ class VertexOrchestrator(
                 if not local_path:
                     continue
                 return False, (
-                    f"The '{stack_comp.name}' {stack_comp.TYPE.value} "
-                    f"is a local stack component. The Vertex AI Pipelines "
+                    f"The '{stack_comp.name}' {stack_comp.type.value} is a "
+                    f"local stack component. The Vertex AI Pipelines "
                     f"orchestrator requires that all the components in the "
                     f"stack used to execute the pipeline have to be not local, "
                     f"because there is no way for Vertex to connect to your "
                     f"local machine. You should use a flavor of "
-                    f"{stack_comp.TYPE.value} other than '"
-                    f"{stack_comp.FLAVOR}'."
+                    f"{stack_comp.type.value} other than '"
+                    f"{stack_comp.flavor}'."
                 )
 
             # If the `pipeline_root` has not been defined in the orchestrator
             # configuration, and the artifact store is not a GCP artifact store,
             # then raise an error.
             if (
-                not self.pipeline_root
-                and stack.artifact_store.FLAVOR != GCP_ARTIFACT_STORE_FLAVOR
+                not self.config.pipeline_root
+                and stack.artifact_store.flavor != GCP_ARTIFACT_STORE_FLAVOR
             ):
                 return False, (
                     f"The attribute `pipeline_root` has not been set and it "
@@ -282,7 +193,8 @@ class VertexOrchestrator(
             stack: The stack that will be used to deploy the pipeline.
             runtime_configuration: The runtime configuration for the pipeline.
         """
-        self.build_and_push_docker_image(
+        docker_image_builder = PipelineDockerImageBuilder()
+        docker_image_builder.build_and_push_docker_image(
             pipeline_name=pipeline.name,
             docker_configuration=pipeline.docker_configuration,
             stack=stack,
@@ -302,25 +214,25 @@ class VertexOrchestrator(
                 container.
         """
         # Set optional CPU, RAM and GPU constraints for the pipeline
-        cpu_limit = resource_configuration.cpu_count or self.cpu_limit
+        cpu_limit = resource_configuration.cpu_count or self.config.cpu_limit
         if cpu_limit is not None:
             container_op = container_op.set_cpu_limit(str(cpu_limit))
 
         memory_limit = (
             resource_configuration.memory[:-1]
             if resource_configuration.memory
-            else self.memory_limit
+            else self.config.memory_limit
         )
         if memory_limit is not None:
             container_op = container_op.set_memory_limit(memory_limit)
 
-        if self.node_selector_constraint is not None:
+        if self.config.node_selector_constraint is not None:
             container_op = container_op.add_node_selector_constraint(
-                label_name=self.node_selector_constraint[0],
-                value=self.node_selector_constraint[1],
+                label_name=self.config.node_selector_constraint[0],
+                value=self.config.node_selector_constraint[1],
             )
 
-        gpu_limit = resource_configuration.gpu_count or self.gpu_limit
+        gpu_limit = resource_configuration.gpu_count or self.config.gpu_limit
         if gpu_limit is not None:
             container_op = container_op.set_gpu_limit(gpu_limit)
 
@@ -376,7 +288,7 @@ class VertexOrchestrator(
         # configuration,
         # try to create it from the artifact store if it is a
         # `GCPArtifactStore`.
-        if not self.pipeline_root:
+        if not self.config.pipeline_root:
             artifact_store = stack.artifact_store
             self._pipeline_root = f"{artifact_store.path.rstrip('/')}/vertex_pipeline_root/{pipeline.name}/{runtime_configuration.run_name}"
             logger.info(
@@ -388,7 +300,7 @@ class VertexOrchestrator(
                 self._pipeline_root,
             )
         else:
-            self._pipeline_root = self.pipeline_root
+            self._pipeline_root = self.config.pipeline_root
 
         # Build the Docker image that will be used to run the steps of the
         # pipeline.
@@ -518,17 +430,17 @@ class VertexOrchestrator(
         # Pipelines
         # job.
         credentials, project_id = self._get_authentication()
-        if self.project and self.project != project_id:
+        if self.config.project and self.config.project != project_id:
             logger.warning(
                 "Authenticated with project `%s`, but this orchestrator is "
                 "configured to use the project `%s`.",
                 project_id,
-                self.project,
+                self.config.project,
             )
 
         # If the project was set in the configuration, use it. Otherwise, use
         # the project that was used to authenticate.
-        project_id = self.project if self.project else project_id
+        project_id = self.config.project if self.config.project else project_id
 
         # Instantiate the Vertex AI Pipelines job
         run = aiplatform.PipelineJob(
@@ -538,11 +450,11 @@ class VertexOrchestrator(
             pipeline_root=self._pipeline_root,
             parameter_values=None,
             enable_caching=enable_cache,
-            encryption_spec_key_name=self.encryption_spec_key_name,
-            labels=self.labels,
+            encryption_spec_key_name=self.config.encryption_spec_key_name,
+            labels=self.config.labels,
             credentials=credentials,
-            project=self.project,
-            location=self.location,
+            project=self.config.project,
+            location=self.config.location,
         )
 
         logger.info(
@@ -553,30 +465,30 @@ class VertexOrchestrator(
 
         # Submit the job to Vertex AI Pipelines service.
         try:
-            if self.workload_service_account:
+            if self.config.workload_service_account:
                 logger.info(
                     "The Vertex AI Pipelines job workload will be executed "
                     "using `%s` "
                     "service account.",
-                    self.workload_service_account,
+                    self.config.workload_service_account,
                 )
 
-            if self.network:
+            if self.config.network:
                 logger.info(
                     "The Vertex AI Pipelines job will be peered with `%s` "
                     "network.",
-                    self.network,
+                    self.config.network,
                 )
 
             run.submit(
-                service_account=self.workload_service_account,
-                network=self.network,
+                service_account=self.config.workload_service_account,
+                network=self.config.network,
             )
             logger.info(
                 "View the Vertex AI Pipelines job at %s", run._dashboard_uri()
             )
 
-            if self.synchronous:
+            if self.config.synchronous:
                 logger.info(
                     "Waiting for the Vertex AI Pipelines job to finish..."
                 )

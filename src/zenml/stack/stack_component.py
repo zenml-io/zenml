@@ -12,17 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the ZenML Stack Component class."""
-
 import textwrap
 from abc import ABC
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Set
-from uuid import UUID, uuid4
+from typing import TYPE_CHECKING, Any, Dict, Optional, Set
+from uuid import UUID
 
-from pydantic import BaseModel, Extra, Field, root_validator
+from pydantic import BaseModel, Extra, root_validator
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackComponentInterfaceError
 from zenml.logger import get_logger
+from zenml.models import ComponentModel
 from zenml.utils import secret_utils
 
 if TYPE_CHECKING:
@@ -33,21 +33,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class StackComponent(BaseModel, ABC):
-    """Abstract StackComponent class for all components of a ZenML stack.
-
-    Attributes:
-        name: The name of the component.
-        uuid: Unique identifier of the component.
-    """
-
-    name: str
-    uuid: UUID = Field(default_factory=uuid4)
-
-    # Class Configuration
-    TYPE: ClassVar[StackComponentType]
-    FLAVOR: ClassVar[str]
-
+class StackComponentConfig(BaseModel, ABC):
     def __init__(self, **kwargs: Any) -> None:
         """Ensures that secret references don't clash with pydantic validation.
 
@@ -86,7 +72,7 @@ class StackComponent(BaseModel, ABC):
                         f"attribute `{key}` for a `{self.__class__.__name__}` "
                         "stack component. This is currently only a warning, "
                         "but future versions of ZenML will require you to pass "
-                        "in senstive information as secrets. Check out the "
+                        "in sensitive information as secrets. Check out the "
                         "documentation on how to configure your stack "
                         "components with secrets here: "
                         "https://docs.zenml.io/developer-guide/advanced-usage/secret-references"
@@ -108,6 +94,19 @@ class StackComponent(BaseModel, ABC):
                 )
 
         super().__init__(**kwargs)
+
+    @property
+    def required_secrets(self) -> Set[secret_utils.SecretReference]:
+        """All required secrets for this stack component.
+
+        Returns:
+            The required secrets of this stack component.
+        """
+        return {
+            secret_utils.parse_secret_reference(v)
+            for v in self.dict().values()
+            if secret_utils.is_secret_reference(v)
+        }
 
     def __custom_getattribute__(self, key: str) -> Any:
         """Returns the (potentially resolved) attribute value for the given key.
@@ -141,8 +140,8 @@ class StackComponent(BaseModel, ABC):
         # not able to identify the 'correct' secrets manager that the user
         # wanted to resolve the secrets in a general way. We therefore
         # limit secret resolving to components of the active stack.
-        components = stack.components.get(self.TYPE, None)
-        if not components or components.uuid != self.uuid:
+        component = stack.components.get(self.type, None)
+        if not component or component.id != self.id:
             raise RuntimeError(
                 f"Failed to resolve secret reference for attribute {key} "
                 f"of stack component `{self}`: The stack component is not "
@@ -189,18 +188,70 @@ class StackComponent(BaseModel, ABC):
         # (see https://github.com/python/mypy/issues/13319).
         __getattribute__ = __custom_getattribute__
 
-    @property
-    def required_secrets(self) -> Set[secret_utils.SecretReference]:
-        """All required secrets for this stack component.
 
-        Returns:
-            The required secrets of this stack component.
-        """
-        return {
-            secret_utils.parse_secret_reference(v)
-            for v in self.dict().values()
-            if secret_utils.is_secret_reference(v)
-        }
+class StackComponent:
+    """Abstract StackComponent class for all components of a ZenML stack."""
+
+    def __init__(
+        self,
+        name: str,
+        id: UUID,
+        config: StackComponentConfig,
+        flavor: str,
+        type: StackComponentType,
+        user: UUID,
+        project: UUID,
+        *args,
+        **kwargs,
+    ):
+        self.id = id
+        self.name = name
+        self.config = config
+        self.flavor = flavor
+        self.type = type
+        self.user = user
+        self.project = project
+
+    @classmethod
+    def from_model(cls, component_model: "ComponentModel") -> "StackComponent":
+        from zenml.repository import Repository
+
+        flavor_model = Repository(
+            skip_repository_check=True  # noqa
+        ).get_flavor_by_name_and_type(
+            name=component_model.flavor,
+            component_type=component_model.type,
+        )
+
+        try:
+            from zenml.stack import Flavor
+
+            flavor = Flavor.from_model(flavor_model)
+        except (ModuleNotFoundError, ImportError, NotImplementedError):
+            raise ImportError(f"tmp")
+
+        configuration = flavor.config_class(**component_model.configuration)
+
+        return flavor.implementation_class(
+            user=component_model.user,
+            project=component_model.project,
+            name=component_model.name,
+            id=component_model.id,
+            config=configuration,
+            flavor=component_model.flavor,
+            type=component_model.type,
+        )
+
+    def to_model(self) -> "ComponentModel":
+        return ComponentModel(
+            user=self.user,
+            project=self.project,
+            id=self.id,
+            type=self.type,
+            flavor_name=self.flavor,
+            name=self.name,
+            configuration=self.config.dict(),
+        )
 
     @property
     def log_file(self) -> Optional[str]:
@@ -247,7 +298,7 @@ class StackComponent(BaseModel, ABC):
         also need that information to be available during pipeline runs.
 
         IMPORTANT: the path returned by this property must always be a path
-        that is relative to the ZenML local stores directory. The local
+        that is relative to the ZenML local store's directory. The local
         Kubeflow orchestrator relies on this convention to correctly mount the
         local folders in the Kubeflow containers. This is an example of a valid
         path:
@@ -407,8 +458,8 @@ class StackComponent(BaseModel, ABC):
             f"{key}={value}" for key, value in self.dict().items()
         )
         return (
-            f"{self.__class__.__qualname__}(type={self.TYPE}, "
-            f"flavor={self.FLAVOR}, {attribute_representation})"
+            f"{self.__class__.__qualname__}(type={self.type}, "
+            f"flavor={self.flavor}, {attribute_representation})"
         )
 
     def __str__(self) -> str:
@@ -434,7 +485,7 @@ class StackComponent(BaseModel, ABC):
                 implemented correctly.
         """
         try:
-            stack_component_type = getattr(cls, "TYPE")
+            stack_component_type = getattr(cls, "type")
             assert stack_component_type in StackComponentType
         except (AttributeError, AssertionError):
             raise StackComponentInterfaceError(
@@ -442,7 +493,7 @@ class StackComponent(BaseModel, ABC):
                     """
                     When you are working with any classes which subclass from
                     `zenml.stack.StackComponent` please make sure that your
-                    class has a ClassVar named `TYPE` and its value is set to a
+                    class has a ClassVar named `type` and its value is set to a
                     `StackComponentType` from `from zenml.enums import
                     StackComponentType`.
 
@@ -456,20 +507,20 @@ class StackComponent(BaseModel, ABC):
                         path: str
 
                         # Class Variables
-                        TYPE: ClassVar[StackComponentType] = StackComponentType.ARTIFACT_STORE
+                        type: ClassVar[StackComponentType] = StackComponentType.ARTIFACT_STORE
                     """
                 )
             )
 
         try:
-            getattr(cls, "FLAVOR")
+            getattr(cls, "flavor")
         except AttributeError:
             raise StackComponentInterfaceError(
                 textwrap.dedent(
                     """
                     When you are working with any classes which subclass from
                     `zenml.stack.StackComponent` please make sure that your
-                    class has a defined ClassVar `FLAVOR`.
+                    class has a defined ClassVar `flavor`.
 
                     Example:
 
@@ -478,7 +529,7 @@ class StackComponent(BaseModel, ABC):
                         ...
 
                         # Define flavor as a ClassVar
-                        FLAVOR: ClassVar[str] = "local"
+                        flavor: ClassVar[str] = "local"
 
                         ...
                     """

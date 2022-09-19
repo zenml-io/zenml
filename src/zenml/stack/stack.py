@@ -31,7 +31,7 @@ from zenml.constants import ENV_ZENML_SECRET_VALIDATION_LEVEL
 from zenml.enums import SecretValidationLevel, StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.logger import get_logger
-from zenml.models.stack_models import HydratedStackModel
+from zenml.models.stack_models import HydratedStackModel, StackModel
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.utils import string_utils
 
@@ -120,6 +120,21 @@ class Stack:
         self._annotator = annotator
         self._data_validator = data_validator
 
+    def to_model(self) -> "StackModel":
+        """Creates a StackModel from an actual Stack instance.
+
+        Returns:
+            a StackModel
+        """
+        return StackModel(
+            id=self.id,
+            name=self.name,
+            components={
+                type_: component.to_model()
+                for type_, component in self.components.items()
+            },
+        )
+
     @classmethod
     def from_model(cls, stack_model: HydratedStackModel) -> "Stack":
         """Creates a Stack instance from a StackModel.
@@ -130,9 +145,11 @@ class Stack:
         Returns:
             The created Stack instance.
         """
+        from zenml.stack import StackComponent
+
         stack_components = {
-            type_: models[0].to_component()
-            for type_, models in stack_model.components.items()
+            type_: StackComponent.from_model(model[0])
+            for type_, model in stack_model.components.items()
         }
         return Stack.from_components(
             id=stack_model.id,
@@ -279,7 +296,7 @@ class Stack:
             A dictionary of all components of the stack.
         """
         return {
-            component.TYPE: component
+            component.type: component
             for component in [
                 self.orchestrator,
                 self.artifact_store,
@@ -447,7 +464,7 @@ class Stack:
             A dictionary containing the stack components.
         """
         component_dict = {
-            component_type.value: component.json(sort_keys=True)
+            component_type.value: component.config.json(sort_keys=True)
             for component_type, component in self.components.items()
         }
         component_dict.update({"name": self.name})
@@ -473,7 +490,7 @@ class Stack:
         requirements = [
             component.requirements
             for component in self.components.values()
-            if component.TYPE not in exclude_components
+            if component.type not in exclude_components
         ]
         return set.union(*requirements) if requirements else set()
 
@@ -485,7 +502,8 @@ class Stack:
             The required secrets of this stack.
         """
         secrets = [
-            component.required_secrets for component in self.components.values()
+            component.config.required_secrets
+            for component in self.components.values()
         ]
         return set.union(*secrets) if secrets else set()
 
@@ -617,7 +635,7 @@ class Stack:
         for component in self.components.values():
             if not component.is_running:
                 raise StackValidationError(
-                    f"The '{component.name}' {component.TYPE} stack component "
+                    f"The '{component.name}' {component.type} stack component "
                     f"is not currently running. Please run the following "
                     f"command to provision and start the component:\n\n"
                     f"    `zenml stack up`\n"

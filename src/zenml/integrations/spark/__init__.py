@@ -14,7 +14,8 @@
 
 """The Spark integration module to enable distributed processing for steps."""
 
-from typing import List
+from typing import List, Type
+from zenml.stack import Flavor
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import SPARK
@@ -36,20 +37,16 @@ class SparkIntegration(Integration):
         from zenml.integrations.spark import materializers  # noqa
 
     @classmethod
-    def flavors(cls) -> List[FlavorModel]:
+    def flavors(cls) -> List[Type[Flavor]]:
         """Declare the stack component flavors for the Spark integration.
 
         Returns:
             The flavor wrapper for the step operator flavor
         """
-        return [
-            FlavorModel(
-                name=SPARK_KUBERNETES_STEP_OPERATOR,
-                source="zenml.integrations.spark.step_operators.KubernetesSparkStepOperator",
-                type=StackComponentType.STEP_OPERATOR,
-                integration=cls.NAME,
-            ),
-        ]
+        from zenml.integrations.spark.flavors import (
+            KubernetesSparkStepOperatorFlavor
+        )
+        return [KubernetesSparkStepOperatorFlavor]
 
 
 SparkIntegration.check_installation()

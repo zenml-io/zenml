@@ -15,12 +15,13 @@
 
 import os
 import sys
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List, Type
 
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators.base_orchestrator import BaseOrchestratorFlavor
 from zenml.orchestrators.local_docker.local_docker_entrypoint_configuration import (
     RUN_NAME_OPTION,
     LocalDockerEntrypointConfiguration,
@@ -36,14 +37,12 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class LocalDockerOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
+class LocalDockerOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines locally using Docker.
 
     This orchestrator does not allow for concurrent execution of steps and also
     does not support running on a schedule.
     """
-
-    FLAVOR: ClassVar[str] = "local_docker"
 
     def prepare_pipeline_deployment(
         self,
@@ -60,8 +59,9 @@ class LocalDockerOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             stack: The stack to be deployed.
             runtime_configuration: The runtime configuration to be used.
         """
+        docker_image_builder = PipelineDockerImageBuilder()
         if stack.container_registry:
-            self.build_and_push_docker_image(
+            docker_image_builder.build_and_push_docker_image(
                 pipeline_name=pipeline.name,
                 docker_configuration=pipeline.docker_configuration,
                 stack=stack,
@@ -73,7 +73,7 @@ class LocalDockerOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 f"{pipeline.docker_configuration.target_repository}:"
                 f"{pipeline.name}"
             )
-            self.build_docker_image(
+            docker_image_builder.build_docker_image(
                 target_image_name=target_image_name,
                 pipeline_name=pipeline.name,
                 docker_configuration=pipeline.docker_configuration,
@@ -167,3 +167,15 @@ class LocalDockerOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
             for line in logs:
                 logger.info(line.strip().decode())
+
+
+class LocalDockerOrchestratorFlavor(BaseOrchestratorFlavor):
+    """Flavor for the local Docker orchestrator."""
+
+    @property
+    def name(self) -> str:
+        return "local_docker"
+
+    @property
+    def implementation_class(self) -> Type["LocalDockerOrchestrator"]:
+        return LocalDockerOrchestrator

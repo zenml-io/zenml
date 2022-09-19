@@ -334,6 +334,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             project = self._get_project_schema(stack.project)
             user = self._get_user_schema(stack.user)
+
             # Check if stack with the domain key (name, project, owner) already
             #  exists
             existing_domain_stack = session.exec(
@@ -342,20 +343,21 @@ class SqlZenStore(BaseZenStore):
                 .where(StackSchema.project == stack.project)
                 .where(StackSchema.user == stack.user)
             ).first()
-            existing_id_stack = session.exec(
-                select(StackSchema).where(StackSchema.id == stack.id)
-            ).first()
-            # TODO: [server] This is ugly, make it prettier by combining into
-            #  one single query
-            if (
-                existing_domain_stack is not None
-                or existing_id_stack is not None
-            ):
+            if existing_domain_stack is not None:
                 raise StackExistsError(
                     f"Unable to register stack with name "
                     f"'{stack.name}': Found an existing stack with the same "
                     f"name in the same '{project.name}' project owned by the "
                     f"same '{user.name}' user."
+                )
+            existing_id_stack = session.exec(
+                select(StackSchema).where(StackSchema.id == stack.id)
+            ).first()
+            if existing_id_stack is not None:
+                raise StackExistsError(
+                    f"Unable to register stack with name "
+                    f"'{stack.name}' and id '{stack.id}': "
+                    f" Found an existing component with the same id."
                 )
 
             # Get the Schemas of all components mentioned
@@ -376,6 +378,8 @@ class SqlZenStore(BaseZenStore):
             )
             session.add(stack_in_db)
             session.commit()
+
+            session.refresh(stack_in_db)
 
             return stack_in_db.to_model()
 
@@ -539,21 +543,31 @@ class SqlZenStore(BaseZenStore):
 
             # Check if component with the same domain key (name, type, project,
             # owner) already exists
-            existing_component = session.exec(
+            existing_domain_component = session.exec(
                 select(StackComponentSchema)
                 .where(StackComponentSchema.name == component.name)
-                .where(StackComponentSchema.project == project.id)
-                .where(StackComponentSchema.user == user.id)
+                .where(StackComponentSchema.project == component.project)
+                .where(StackComponentSchema.user == component.user)
                 .where(StackComponentSchema.type == component.type)
             ).first()
-
-            if existing_component is not None:
+            if existing_domain_component is not None:
                 raise StackComponentExistsError(
                     f"Unable to register '{component.type.value}' component "
                     f"with name '{component.name}': Found an existing "
                     f"component with the same name and type in the same "
                     f"'{project.name}' project owned by the same "
                     f"'{user.name}' user."
+                )
+            existing_id_component = session.exec(
+                select(StackComponentSchema).where(
+                    StackComponentSchema.id == component.id
+                )
+            ).first()
+            if existing_id_component is not None:
+                raise StackComponentExistsError(
+                    f"Unable to register '{component.type.value}' component "
+                    f"with name '{component.name}' and id '{component.id}': "
+                    f" Found an existing component with the same id."
                 )
 
             # Create the component
@@ -563,6 +577,8 @@ class SqlZenStore(BaseZenStore):
 
             session.add(component_in_db)
             session.commit()
+
+            session.refresh(component_in_db)
 
             return component_in_db.to_model()
 
@@ -595,9 +611,9 @@ class SqlZenStore(BaseZenStore):
     def list_stack_components(
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: Optional[Union[str, UUID]] = None,
         type: Optional[str] = None,
         flavor_name: Optional[str] = None,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
     ) -> List[ComponentModel]:
@@ -606,9 +622,9 @@ class SqlZenStore(BaseZenStore):
         Args:
             project_name_or_id: The ID or name of the Project to which the stack
                 components belong
+            user_name_or_id: Optionally filter stack components by the owner
             type: Optionally filter by type of stack component
             flavor_name: Optionally filter by flavor
-            user_name_or_id: Optionally filter stack components by the owner
             name: Optionally filter stack component by name
             is_shared: Optionally filter out stack component by whether they are
                 shared or not
@@ -622,16 +638,13 @@ class SqlZenStore(BaseZenStore):
             if project_name_or_id:
                 project = self._get_project_schema(project_name_or_id)
                 query = query.where(StackComponentSchema.project == project.id)
-            # TODO: [server] prettify this
-            if type:
-                query = query.where(StackComponentSchema.type == type)
-            if flavor_name:
-                query = query.where(
-                    StackComponentSchema.flavor_name == flavor_name
-                )
             if user_name_or_id:
                 user = self._get_user_schema(user_name_or_id)
                 query = query.where(StackComponentSchema.user == user.id)
+            if type:
+                query = query.where(StackComponentSchema.type == type)
+            if flavor_name:
+                query = query.where(StackComponentSchema.flavor == flavor_name)
             if name:
                 query = query.where(StackComponentSchema.name == name)
             if is_shared is not None:
@@ -670,8 +683,8 @@ class SqlZenStore(BaseZenStore):
                     f"'{component.id}': Found no"
                     f"existing component with this id."
                 )
-
             existing_component.from_update_model(component=component)
+
             session.add(existing_component)
             session.commit()
 
@@ -739,41 +752,36 @@ class SqlZenStore(BaseZenStore):
                 is already owned by this user in this project.
         """
         with Session(self.engine) as session:
-            self._get_project_schema(flavor.project)
-            self._get_user_schema(flavor.user)
-
-            # TODO [Baris]: handle the domain key (name+type+owner+project) correctly
+            # Check if component with the same domain key (name, type, project,
+            # owner) already exists
             existing_flavor = session.exec(
-                select(FlavorSchema).where(
-                    FlavorSchema.name == flavor.name,
-                    FlavorSchema.type == flavor.type,
-                )
+                select(FlavorSchema)
+                .where(FlavorSchema.name == flavor.name)
+                .where(FlavorSchema.type == flavor.type)
+                .where(FlavorSchema.project == flavor.project)
+                .where(FlavorSchema.user == flavor.user)
             ).first()
-            if existing_flavor:
+
+            if existing_flavor is not None:
                 raise EntityExistsError(
-                    f"A {flavor.type} with '{flavor.name}' flavor already "
-                    f"exists."
+                    f"Unable to register '{flavor.type.value}' flavor "
+                    f"with name '{flavor.name}': Found an existing "
+                    f"flavor with the same name and type in the same "
+                    f"'{flavor.project}' project owned by the same "
+                    f"'{flavor.user}' user."
                 )
-            # TODO: add logic to convert from model in schema
-            sql_flavor = FlavorSchema(
-                id=flavor.id,
-                name=flavor.name,
-                source=flavor.source,
-                type=flavor.type,
-                project=flavor.project,
-                user=flavor.user,
-                integration=flavor.integration,
-            )
-            flavor_model = FlavorModel(**sql_flavor.dict())
-            session.add(sql_flavor)
+            flavor_in_db = FlavorSchema.from_create_model(flavor=flavor)
+
+            session.add(flavor_in_db)
             session.commit()
-        return flavor_model
+
+        return flavor_in_db.to_model()
 
     def get_flavor(self, flavor_id: UUID) -> FlavorModel:
-        """Get a stack component flavor by ID.
+        """Get a flavor by ID.
 
         Args:
-            flavor_id: The ID of the stack component flavor to get.
+            flavor_id: The ID of the flavor to fetch.
 
         Returns:
             The stack component flavor.
@@ -782,24 +790,18 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the stack component flavor doesn't exist.
         """
         with Session(self.engine) as session:
-
-            flavor = session.exec(
+            flavor_in_db = session.exec(
                 select(FlavorSchema).where(FlavorSchema.id == flavor_id)
             ).first()
-
-            if flavor is None:
-                raise KeyError(f"Flavor with ID {flavor_id} not found.")
-
-        # TODO: add logic to convert to model in schema
-        # return flavor.to_model()
-
-        return FlavorModel(**flavor.dict())
+        if flavor_in_db is None:
+            raise KeyError(f"Flavor with ID {flavor_id} not found.")
+        return flavor_in_db.to_model()
 
     def list_flavors(
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
-        component_type: Optional[StackComponentType] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
+        component_type: Optional[StackComponentType] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
     ) -> List[FlavorModel]:
@@ -810,70 +812,78 @@ class SqlZenStore(BaseZenStore):
                 component flavors belong
             component_type: Optionally filter by type of stack component
             user_name_or_id: Optionally filter by the owner
+            component_type: Optionally filter by type of stack component
             name: Optionally filter flavors by name
             is_shared: Optionally filter out flavors by whether they are
                 shared or not
 
         Returns:
-            List of all the stack component flavors matching the given criteria.
+            List of all the stack component flavors matching the given criteria
         """
         with Session(self.engine) as session:
-
-            # TODO [Baris]: implement filtering by component type, name, project etc.
-
-            # Get a list of all flavors
             query = select(FlavorSchema)
             if project_name_or_id:
                 project = self._get_project_schema(project_name_or_id)
-                query = query.where(FlavorSchema.project == project.id)
+                query=query.where(FlavorSchema.project == project.id)
             if component_type:
                 query = query.where(FlavorSchema.type == component_type)
             if name:
                 query = query.where(FlavorSchema.name == name)
-
-            # TODO: implement this
-            # if user_name_or_id:
-            #     user = self._get_user_schema(user_name_or_id)
-            #     query = query.where(FlavorSchema.owner == user.id)
-            # if name:
-            #     query = query.where(FlavorSchema.name == name)
-            # if is_shared is not None:
-            #     query = query.where(FlavorSchema.is_shared == is_shared)
+            if user_name_or_id:
+                user = self._get_user_schema(user_name_or_id)
+                query = query.where(FlavorSchema.user == user.id)
 
             list_of_flavors_in_db = session.exec(query).all()
 
-        # TODO: add logic to convert to model in schema
-        # return [flavor.to_model() for flavor in list_of_flavors_in_db]
-
-        return [
-            FlavorModel(**flavor.dict()) for flavor in list_of_flavors_in_db
-        ]
+        return [flavor.to_model() for flavor in list_of_flavors_in_db]
 
     @track(AnalyticsEvent.UPDATED_FLAVOR)
-    def update_flavor(self, flavor: FlavorModel) -> FlavorModel:
-        """Update an existing stack component flavor.
+    def update_flavor(self, flavor: FlavorModel) -> None:
+        """Update a flavor.
 
         Args:
-            flavor: The stack component flavor to use for the update.
+            flavor: The model of the flavor to update.
 
         Raises:
-            NotImplementedError: This method is not implemented.
+            KeyError: if the flavor doesn't exist.
         """
-        # TODO: implement this
-        raise NotImplementedError
+        with Session(self.engine) as session:
+            existing_flavor = session.exec(
+                select(FlavorSchema).where(FlavorSchema.id == flavor.id)
+            ).first()
+
+            if existing_flavor is None:
+                raise KeyError(
+                    f"Unable to update flavor with id '{flavor.id}': Found no"
+                    f"existing component with this id."
+                )
+
+            existing_flavor.from_update_model(flavor=flavor)
+            session.add(existing_flavor)
+            session.commit()
+
+        return existing_flavor.to_model()
 
     @track(AnalyticsEvent.DELETED_FLAVOR)
     def delete_flavor(self, flavor_id: UUID) -> None:
-        """Delete a stack component flavor.
+        """Delete a flavor.
 
         Args:
-            flavor_id: The ID of the stack component flavor to delete.
+            flavor_id: The id of the flavor to delete.
 
         Raises:
-            NotImplementedError: This method is not implemented.
+            KeyError: if the flavor doesn't exist.
         """
-        # TODO: implement this
-        raise NotImplementedError
+        with Session(self.engine) as session:
+            try:
+                flavor_in_db = session.exec(
+                    select(FlavorSchema).where(FlavorSchema.id == flavor_id)
+                ).one()
+                session.delete(flavor_in_db)
+            except NoResultFound as error:
+                raise KeyError from error
+
+            session.commit()
 
     # -----
     # Users
@@ -967,7 +977,10 @@ class SqlZenStore(BaseZenStore):
         """Deletes a user.
 
         Args:
-            user_name_or_id: The name or ID of the user to delete.
+            user_name_or_id: The name or the ID of the user to delete.
+
+        Raises:
+            KeyError: If no user with the given name exists.
         """
         # TODO: raise KeyError if the user doesn't exist (+ add test)
         with Session(self.engine) as session:
@@ -1103,7 +1116,8 @@ class SqlZenStore(BaseZenStore):
         """Fetches all teams for a user.
 
         Args:
-            user_name_or_id: The name or ID of the user for which to get all teams.
+            user_name_or_id: The name or ID of the user for which to get all
+                teams.
 
         Returns:
             A list of all teams that the user is part of.
@@ -1155,7 +1169,11 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             user_name_or_id: Name or ID of the user to remove from the team.
-            team_name_or_id: Name or ID of the team from which to remove the user.
+            team_name_or_id: Name or ID of the team from which to remove the
+                user.
+
+        Raises:
+            KeyError: If the team or user does not exist.
         """
         with Session(self.engine) as session:
             team = self._get_team_schema(team_name_or_id, session=session)
@@ -1283,6 +1301,7 @@ class SqlZenStore(BaseZenStore):
         """List all user role assignments.
 
         Args:
+
             project_name_or_id: If provided, only return role assignments for
                 this project.
             user_name_or_id: If provided, only list assignments for this user.

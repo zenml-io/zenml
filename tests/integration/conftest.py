@@ -18,7 +18,7 @@ from typing import Generator
 import pytest
 from pytest_mock import MockerFixture
 
-from zenml.container_registries import DefaultContainerRegistry
+from zenml.container_registries import DefaultContainerRegistryFlavor
 from zenml.repository import Repository
 from zenml.stack import Stack
 
@@ -61,7 +61,7 @@ def shared_kubeflow_repo(
     artifact_store = base_repo.active_stack.artifact_store.copy(
         update={"name": "local_kubeflow_artifact_store"}
     )
-    container_registry = DefaultContainerRegistry(
+    container_registry = DefaultContainerRegistryFlavor(
         name="local_registry", uri="localhost:5000"
     )
     kubeflow_stack = Stack(

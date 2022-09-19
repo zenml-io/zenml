@@ -19,7 +19,8 @@ MODEL_NAME_FIELD_MAX_LENGTH = 128
 MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH = 300
 # The maximum length of a password
 # NOTE: this should be kept under 50 characters to avoid problems with
-# the hashing algorithm (https://security.stackexchange.com/questions/39849/does-bcrypt-have-a-maximum-password-length).
+# the hashing algorithm
+# (https://security.stackexchange.com/questions/39849/does-bcrypt-have-a-maximum-password-length).
 USER_PASSWORD_MAX_LENGTH = 50
 
 USER_ACTIVATION_TOKEN_LENGTH = 64

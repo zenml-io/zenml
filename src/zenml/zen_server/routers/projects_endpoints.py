@@ -34,11 +34,12 @@ from zenml.models import (
     ProjectModel,
     StackModel,
 )
-from zenml.models.component_models import HydratedComponentModel
+from zenml.models.component_model import HydratedComponentModel
 from zenml.models.stack_models import HydratedStackModel
 from zenml.models.user_management_models import RoleAssignmentModel
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.models import CreatePipelineRequest
+from zenml.zen_server.models.component_models import CreateComponentModel
 from zenml.zen_server.models.pipeline_models import HydratedPipelineModel
 from zenml.zen_server.models.projects_models import (
     CreateProjectRequest,
@@ -314,7 +315,7 @@ async def list_project_stack_components(
 @handle_exceptions
 async def create_stack_component(
     project_name_or_id: Union[str, UUID],
-    component: ComponentModel,
+    component: CreateComponentModel,
     hydrated: bool = False,
     auth_context: AuthContext = Depends(authorize),
 ) -> Union[ComponentModel, HydratedComponentModel]:
@@ -331,10 +332,16 @@ async def create_stack_component(
         The created stack component.
     """
     project = zen_store.get_project(project_name_or_id)
-    component.project = project.id
-    component.user = auth_context.user.id
+    full_component = component.to_model(
+        project=project.id,
+        user=auth_context.user.id,
+    )
+
+    # TODO: [server] if possible it should validate here that the configuration
+    #  conforms to the flavor
+
     created_component = zen_store.create_stack_component(
-        component=component,
+        component=full_component,
     )
     if hydrated:
         return created_component.to_hydrated_model()

@@ -14,19 +14,21 @@
 """The base class for feature stores."""
 
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar, Dict, List, Union
+from typing import Any, Dict, List, Type, Union
 
 import pandas as pd
 
 from zenml.enums import StackComponentType
-from zenml.stack import StackComponent
+from zenml.stack import Flavor, StackComponent
+from zenml.stack.stack_component import StackComponentConfig
+
+
+class BaseFeatureStoreConfig(StackComponentConfig):
+    """Base config for feature stores."""
 
 
 class BaseFeatureStore(StackComponent, ABC):
     """Base class for all ZenML feature stores."""
-
-    TYPE: ClassVar[StackComponentType] = StackComponentType.FEATURE_STORE
-    FLAVOR: ClassVar[str]
 
     @abstractmethod
     def get_historical_features(
@@ -63,3 +65,20 @@ class BaseFeatureStore(StackComponent, ABC):
         Returns:
             The latest online feature data as a dictionary.
         """
+
+
+class BaseFeatureStoreFlavor(Flavor):
+    """Base class for all ZenML feature store flavors."""
+
+    @property
+    def type(self) -> StackComponentType:
+        return StackComponentType.FEATURE_STORE
+
+    @property
+    def config_class(self) -> Type[BaseFeatureStoreConfig]:
+        return BaseFeatureStoreConfig
+
+    @property
+    @abstractmethod
+    def implementation_class(self) -> Type[BaseFeatureStore]:
+        return BaseFeatureStore

@@ -157,10 +157,11 @@ class LocalStore(BaseModel):
         config_dict = yaml_utils.read_yaml(component_config_path)
         component_name = (prefix + name) if name != "default" else name
         config_dict["name"] = component_name
+        # TODO: [server] The Model needs to also set user and project correctly
         return ComponentModel(
             type=component_type,
             name=component_name,
-            flavor_id=flavor,
+            flavor=flavor,
             id=UUID(config_dict["uuid"]),
             configuration=base64.b64encode(yaml.dump(config_dict).encode()),
         )
@@ -584,16 +585,14 @@ def migrate_profiles(
                     )
                 except StackComponentExistsError:
                     if overwrite:
-                        assert component.id is not None
-                        component.owner = user.id
-                        component.project_id = project.id
+                        component.user = user.id
+                        component.project = project.id
                         repo.zen_store.update_stack_component(
-                            component_id=component.id,
                             component=component,
                         )
                         cli_utils.declare(
                             f"Updated {component.type} '{component.name}' with "
-                            f"flavor '{component.flavor_id}'."
+                            f"flavor '{component.flavor}'."
                         )
                     else:
                         msg = (

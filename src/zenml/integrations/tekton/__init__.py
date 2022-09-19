@@ -17,7 +17,8 @@ The Tekton integration sub-module powers an alternative to the local
 orchestrator. You can enable it by registering the Tekton orchestrator with
 the CLI tool.
 """
-from typing import List
+from typing import List, Type
+from zenml.stack import Flavor
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import TEKTON
@@ -34,20 +35,16 @@ class TektonIntegration(Integration):
     REQUIREMENTS = ["kfp-tekton==1.3.0"]
 
     @classmethod
-    def flavors(cls) -> List[FlavorModel]:
+    def flavors(cls) -> List[Type[Flavor]]:
         """Declare the stack component flavors for the Tekton integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
-        return [
-            FlavorModel(
-                name=TEKTON_ORCHESTRATOR_FLAVOR,
-                source="zenml.integrations.tekton.orchestrators.TektonOrchestrator",
-                type=StackComponentType.ORCHESTRATOR,
-                integration=cls.NAME,
-            ),
-        ]
+
+        from zenml.integrations.tekton.flavors import TektonOrchestratorFlavor
+
+        return [TektonOrchestratorFlavor        ]
 
 
 TektonIntegration.check_installation()

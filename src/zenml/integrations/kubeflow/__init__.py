@@ -17,12 +17,11 @@ The Kubeflow integration sub-module powers an alternative to the local
 orchestrator. You can enable it by registering the Kubeflow orchestrator with
 the CLI tool.
 """
-from typing import List
+from typing import List, Type
 
-from zenml.enums import StackComponentType
 from zenml.integrations.constants import KUBEFLOW
 from zenml.integrations.integration import Integration
-from zenml.models import FlavorModel
+from zenml.stack import Flavor
 
 KUBEFLOW_ORCHESTRATOR_FLAVOR = "kubeflow"
 
@@ -34,20 +33,17 @@ class KubeflowIntegration(Integration):
     REQUIREMENTS = ["kfp==1.8.9"]
 
     @classmethod
-    def flavors(cls) -> List[FlavorModel]:
+    def flavors(cls) -> List[Type[Flavor]]:
         """Declare the stack component flavors for the Kubeflow integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
-        return [
-            FlavorModel(
-                name=KUBEFLOW_ORCHESTRATOR_FLAVOR,
-                source="zenml.integrations.kubeflow.orchestrators.KubeflowOrchestrator",
-                type=StackComponentType.ORCHESTRATOR,
-                integration=cls.NAME,
-            ),
-        ]
+
+        from zenml.integrations.kubeflow.flavors import (
+            KubeflowOrchestratorFlavor
+        )
+        return [KubeflowOrchestratorFlavor]
 
 
 KubeflowIntegration.check_installation()

@@ -13,16 +13,34 @@
 #  permissions and limitations under the License.
 """Base class for all ZenML experiment trackers."""
 
-from abc import ABC
-from typing import ClassVar
+from abc import ABC, abstractmethod
+from typing import Type
 
 from zenml.enums import StackComponentType
-from zenml.stack import StackComponent
+from zenml.stack import Flavor, StackComponent
+from zenml.stack.stack_component import StackComponentConfig
+
+
+class BaseExperimentTrackerConfig(StackComponentConfig):
+    """Base config for experiment trackers."""
 
 
 class BaseExperimentTracker(StackComponent, ABC):
     """Base class for all ZenML experiment trackers."""
 
-    # Class configuration
-    TYPE: ClassVar[StackComponentType] = StackComponentType.EXPERIMENT_TRACKER
-    FLAVOR: ClassVar[str]
+
+class BaseExperimentTrackerFlavor(Flavor):
+    """Base class for all ZenML experiment tracker flavors."""
+
+    @property
+    def type(self) -> StackComponentType:
+        return StackComponentType.EXPERIMENT_TRACKER
+
+    @property
+    def config_class(self) -> Type[BaseExperimentTrackerConfig]:
+        return BaseExperimentTrackerConfig
+
+    @property
+    @abstractmethod
+    def implementation_class(self) -> Type[StackComponent]:
+        return BaseExperimentTracker

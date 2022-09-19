@@ -13,98 +13,32 @@
 #  permissions and limitations under the License.
 """Implementation of the S3 Artifact Store."""
 
-import json
 from typing import (
     Any,
     Callable,
-    ClassVar,
     Dict,
     Iterable,
     List,
     Optional,
-    Set,
     Tuple,
     Union,
     cast,
 )
 
 import s3fs
-from pydantic import validator
 
 from zenml.artifact_stores import BaseArtifactStore
-from zenml.integrations.s3 import S3_ARTIFACT_STORE_FLAVOR
 from zenml.secret.schemas import AWSSecretSchema
 from zenml.stack.authentication_mixin import AuthenticationMixin
 from zenml.utils.io_utils import convert_to_str
-from zenml.utils.secret_utils import SecretField
 
 PathType = Union[bytes, str]
 
 
 class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
-    """Artifact Store for S3 based artifacts.
+    """Artifact Store for S3 based artifacts."""
 
-    All attributes of this class except `path` will be passed to the
-    `s3fs.S3FileSystem` initialization. See
-    [here](https://s3fs.readthedocs.io/en/latest/) for more information on how
-    to use those configuration options to connect to any S3-compatible storage.
-
-    When you want to register an S3ArtifactStore from the CLI and need to pass
-    `client_kwargs`, `config_kwargs` or `s3_additional_kwargs`, you should pass
-    them as a json string:
-    ```
-    zenml artifact-store register my_s3_store --type=s3 --path=s3://my_bucket \
-    --client_kwargs='{"endpoint_url": "http://my-s3-endpoint"}'
-    ```
-    """
-
-    key: Optional[str] = SecretField()
-    secret: Optional[str] = SecretField()
-    token: Optional[str] = SecretField()
-    client_kwargs: Optional[Dict[str, Any]] = None
-    config_kwargs: Optional[Dict[str, Any]] = None
-    s3_additional_kwargs: Optional[Dict[str, Any]] = None
     _filesystem: Optional[s3fs.S3FileSystem] = None
-
-    # Class variables
-    FLAVOR: ClassVar[str] = S3_ARTIFACT_STORE_FLAVOR
-    SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"s3://"}
-
-    @validator(
-        "client_kwargs", "config_kwargs", "s3_additional_kwargs", pre=True
-    )
-    def _convert_json_string(
-        cls, value: Union[None, str, Dict[str, Any]]
-    ) -> Optional[Dict[str, Any]]:
-        """Converts potential JSON strings passed via the CLI to dictionaries.
-
-        Args:
-            value: The value to convert.
-
-        Returns:
-            The converted value.
-
-        Raises:
-            TypeError: If the value is not a `str`, `Dict` or `None`.
-            ValueError: If the value is an invalid json string or a json string
-                that does not decode into a dictionary.
-        """
-        if isinstance(value, str):
-            try:
-                dict_ = json.loads(value)
-            except json.JSONDecodeError as e:
-                raise ValueError(f"Invalid json string '{value}'") from e
-
-            if not isinstance(dict_, Dict):
-                raise ValueError(
-                    f"Json string '{value}' did not decode into a dictionary."
-                )
-
-            return dict_
-        elif isinstance(value, Dict) or value is None:
-            return value
-        else:
-            raise TypeError(f"{value} is not a json string or a dictionary.")
 
     def _get_credentials(
         self,
@@ -128,7 +62,7 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
                 secret.aws_session_token,
             )
         else:
-            return self.key, self.secret, self.token
+            return self.config.key, self.config.secret, self.config.token
 
     @property
     def filesystem(self) -> s3fs.S3FileSystem:
@@ -144,9 +78,9 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
                 key=key,
                 secret=secret,
                 token=token,
-                client_kwargs=self.client_kwargs,
-                config_kwargs=self.config_kwargs,
-                s3_additional_kwargs=self.s3_additional_kwargs,
+                client_kwargs=self.config.client_kwargs,
+                config_kwargs=self.config.config_kwargs,
+                s3_additional_kwargs=self.config.s3_additional_kwargs,
             )
         return self._filesystem
 

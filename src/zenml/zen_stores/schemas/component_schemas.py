@@ -38,9 +38,8 @@ class StackComponentSchema(SQLModel, table=True):
     is_shared: bool
 
     type: StackComponentType
-    flavor_name: str
-    # flavor_id: UUID = Field(foreign_key="flavorschema.id", nullable=True)
-    # TODO: Prefill flavors
+    flavor: str
+
     user: UUID = Field(foreign_key="userschema.id")
     project: UUID = Field(foreign_key="projectschema.id")
 
@@ -72,7 +71,7 @@ class StackComponentSchema(SQLModel, table=True):
             user=component.user,
             is_shared=component.is_shared,
             type=component.type,
-            flavor_name=component.flavor,
+            flavor=component.flavor,
             configuration=base64.b64encode(
                 json.dumps(component.configuration).encode("utf-8")
             ),
@@ -107,7 +106,7 @@ class StackComponentSchema(SQLModel, table=True):
             id=self.id,
             name=self.name,
             type=self.type,
-            flavor=self.flavor_name,
+            flavor=self.flavor,
             user=self.user,
             project=self.project,
             is_shared=self.is_shared,

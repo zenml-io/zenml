@@ -14,11 +14,8 @@
 """Implementation of the ZenML local secrets manager."""
 
 import os
-import uuid
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List
-
-from pydantic import root_validator
+from typing import TYPE_CHECKING, Dict, List, Type
 
 from zenml.cli.utils import error
 from zenml.config.global_config import GlobalConfiguration
@@ -27,55 +24,59 @@ from zenml.exceptions import SecretExistsError
 from zenml.io.fileio import remove
 from zenml.logger import get_logger
 from zenml.secret import SecretSchemaClassRegistry
-from zenml.secret.base_secret import BaseSecretSchema
-from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
+from zenml.secrets_managers.base_secrets_manager import (
+    BaseSecretsManager,
+    BaseSecretsManagerConfig,
+    BaseSecretsManagerFlavor,
+)
 from zenml.secrets_managers.utils import decode_secret_dict, encode_secret
 from zenml.utils import yaml_utils
 from zenml.utils.io_utils import create_file_if_not_exists
 
+if TYPE_CHECKING:
+    from uuid import UUID
+
+    from zenml.secret.base_secret import BaseSecretSchema
+    from zenml.stack.stack_component import StackComponent, StackComponentConfig
+
+
 logger = get_logger(__name__)
+
+
+class LocalSecretsManagerConfig(BaseSecretsManagerConfig):
+    secrets_file: str = ""
 
 
 class LocalSecretsManager(BaseSecretsManager):
     """Class for ZenML local file-based secret manager."""
 
-    secrets_file: str = ""
+    @property
+    def secrets_file(self) -> str:
+        """Gets the secrets file path.
 
-    # Class configuration
-    FLAVOR: ClassVar[str] = "local"
-
-    @root_validator(skip_on_failure=True)
-    def set_secrets_file(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Sets the secrets_file attribute value according to the component UUID.
-
-        Args:
-            values: The values to validate.
+        If the secrets file was not provided in the config by the user, this
+        will return the default secrets file path based on the component ID.
 
         Returns:
-            The validated values.
+            The secrets file path.
         """
-        if values.get("secrets_file"):
-            return values
-
-        # not likely to happen, due to Pydantic validation, but mypy complains
-        assert "uuid" in values
-
-        values["secrets_file"] = cls.get_secret_store_path(values["uuid"])
-        return values
+        if self.config.secrets_file:
+            return self.config.secrets_file
+        return self.get_default_secret_store_path(self.id)
 
     @staticmethod
-    def get_secret_store_path(uuid: uuid.UUID) -> str:
+    def get_default_secret_store_path(id_: "UUID") -> str:
         """Get the path to the secret store.
 
         Args:
-            uuid: The UUID of the secret store.
+            id_: The ID of the secret store.
 
         Returns:
             The path to the secret store.
         """
         return os.path.join(
             GlobalConfiguration().local_stores_path,
-            str(uuid),
+            str(id_),
             LOCAL_SECRETS_FILENAME,
         )
 
@@ -117,7 +118,7 @@ class LocalSecretsManager(BaseSecretsManager):
         self._create_secrets_file__if_not_exists()
         return yaml_utils.read_yaml(self.secrets_file) or {}
 
-    def register_secret(self, secret: BaseSecretSchema) -> None:
+    def register_secret(self, secret: "BaseSecretSchema") -> None:
         """Registers a new secret.
 
         Args:
@@ -136,7 +137,7 @@ class LocalSecretsManager(BaseSecretsManager):
         secrets_store_items[secret.name] = encoded_secret
         yaml_utils.append_yaml(self.secrets_file, secrets_store_items)
 
-    def get_secret(self, secret_name: str) -> BaseSecretSchema:
+    def get_secret(self, secret_name: str) -> "BaseSecretSchema":
         """Gets a specific secret.
 
         Args:
@@ -174,7 +175,7 @@ class LocalSecretsManager(BaseSecretsManager):
         secrets_store_items = self._get_all_secrets()
         return list(secrets_store_items.keys())
 
-    def update_secret(self, secret: BaseSecretSchema) -> None:
+    def update_secret(self, secret: "BaseSecretSchema") -> None:
         """Update an existing secret.
 
         Args:
@@ -218,3 +219,17 @@ class LocalSecretsManager(BaseSecretsManager):
         """Delete all existing secrets."""
         self._create_secrets_file__if_not_exists()
         remove(self.secrets_file)
+
+
+class LocalSecretsManagerFlavor(BaseSecretsManagerFlavor):
+    @property
+    def name(self) -> str:
+        return "local"
+
+    @property
+    def config_class(self) -> Type["StackComponentConfig"]:
+        return LocalSecretsManagerConfig
+
+    @property
+    def implementation_class(self) -> Type["StackComponent"]:
+        return LocalSecretsManager

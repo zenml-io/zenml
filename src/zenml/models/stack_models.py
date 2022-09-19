@@ -22,7 +22,7 @@ from pydantic import Field
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StackComponentType
 from zenml.models.base_models import ShareableProjectScopedDomainModel
-from zenml.models.component_models import ComponentModel
+from zenml.models.component_model import ComponentModel
 from zenml.models.constants import (
     MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
     MODEL_NAME_FIELD_MAX_LENGTH,

@@ -16,13 +16,12 @@
 import base64
 import json
 import os
-from typing import Any, ClassVar, List, NoReturn, Optional, Tuple, cast
+from typing import Any, List, NoReturn, Optional, Tuple, cast
 
 import requests
 from requests.auth import HTTPBasicAuth
 
 from zenml.exceptions import SecretExistsError
-from zenml.integrations.github import GITHUB_SECRET_MANAGER_FLAVOR
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.secret import BaseSecretSchema
@@ -92,20 +91,9 @@ def _convert_secret_name(
 
 
 class GitHubSecretsManager(BaseSecretsManager):
-    """Class to interact with the GitHub secrets manager.
-
-    Attributes:
-        owner: The owner (either individual or organization) of the repository.
-        repository: Name of the GitHub repository.
-    """
-
-    owner: str
-    repository: str
+    """Class to interact with the GitHub secrets manager."""
 
     _session: Optional[requests.Session] = None
-
-    # Class configuration
-    FLAVOR: ClassVar[str] = GITHUB_SECRET_MANAGER_FLAVOR
 
     @property
     def post_registration_message(self) -> Optional[str]:
@@ -165,8 +153,8 @@ class GitHubSecretsManager(BaseSecretsManager):
             HTTPError: If the request failed due to a client or server error.
         """
         url = (
-            f"https://api.github.com/repos/{self.owner}/{self.repository}"
-            f"/actions/secrets"
+            f"https://api.github.com/repos/{self.config.owner}"
+            f"/{self.config.repository}/actions/secrets"
         )
         if resource:
             url += resource
@@ -298,8 +286,8 @@ class GitHubSecretsManager(BaseSecretsManager):
         else:
             logger.info(
                 "Fetching list of secrets for repository %s/%s",
-                self.owner,
-                self.repository,
+                self.config.owner,
+                self.config.repository,
             )
             response = self._send_request("GET", params={"per_page": 100})
             potential_secret_keys = [

@@ -23,7 +23,6 @@ from whylogs.core import DatasetProfileView  # type: ignore
 
 from zenml.data_validators import BaseDataValidator
 from zenml.environment import Environment
-from zenml.integrations.whylogs import WHYLOGS_DATA_VALIDATOR_FLAVOR
 from zenml.integrations.whylogs.secret_schemas.whylabs_secret_schema import (
     WhylabsSecretSchema,
 )
@@ -44,8 +43,6 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
             stored in the ZenML Artifact Store.
     """
 
-    # Class Configuration
-    FLAVOR: ClassVar[str] = WHYLOGS_DATA_VALIDATOR_FLAVOR
     NAME: ClassVar[str] = "whylogs"
 
     def data_profiling(

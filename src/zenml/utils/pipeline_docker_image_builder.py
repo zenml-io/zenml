@@ -20,8 +20,6 @@ import sys
 from pathlib import PurePath, PurePosixPath
 from typing import TYPE_CHECKING, Iterator, List, Optional, Sequence, Tuple
 
-from pydantic import BaseModel
-
 import zenml
 from zenml.config.docker_configuration import DockerConfiguration
 from zenml.config.global_config import GlobalConfiguration
@@ -80,7 +78,7 @@ def _include_global_config(
         fileio.rmtree(config_path)
 
 
-class PipelineDockerImageBuilder(BaseModel):
+class PipelineDockerImageBuilder:
     """Builds Docker images to run a ZenML pipeline.
 
     **Usage**:
@@ -90,21 +88,7 @@ class PipelineDockerImageBuilder(BaseModel):
             image_identifier = self.build_and_push_docker_image(...)
             # use the image ID
     ```
-
-    Attributes:
-        docker_parent_image: Full name of the Docker image that should be
-            used as the parent for the image that will be built. Defaults to
-            a ZenML image built for the active Python and ZenML version.
-
-            Additional information to consider:
-            * If you specify a custom image here, you need to make sure it has
-            ZenML installed.
-            * If this is a non-local image, the environment which is running
-            the pipeline and building the Docker image needs to be able to pull
-            this image.
     """
-
-    docker_parent_image: Optional[str] = None
 
     @staticmethod
     def _gather_requirements_files(
@@ -291,9 +275,7 @@ class PipelineDockerImageBuilder(BaseModel):
         # Fallback to the value defined on the stack component if the
         # pipeline configuration doesn't have a configured value
         parent_image = (
-            docker_configuration.parent_image
-            or self.docker_parent_image
-            or DEFAULT_DOCKER_PARENT_IMAGE
+            docker_configuration.parent_image or DEFAULT_DOCKER_PARENT_IMAGE
         )
 
         if docker_configuration.dockerfile:

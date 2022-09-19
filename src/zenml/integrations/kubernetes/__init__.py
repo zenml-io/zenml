@@ -17,7 +17,8 @@ The Kubernetes integration sub-module powers an alternative to the local
 orchestrator. You can enable it by registering the Kubernetes orchestrator with
 the CLI tool.
 """
-from typing import List
+from typing import List, Type
+from zenml.stack import Flavor
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import KUBERNETES
@@ -34,20 +35,17 @@ class KubernetesIntegration(Integration):
     REQUIREMENTS = ["kubernetes==18.20.0"]
 
     @classmethod
-    def flavors(cls) -> List[FlavorModel]:
+    def flavors(cls) -> List[Type[Flavor]]:
         """Declare the stack component flavors for the Kubernetes integration.
 
         Returns:
             List of new stack component flavors.
         """
-        return [
-            FlavorModel(
-                name=KUBERNETES_ORCHESTRATOR_FLAVOR,
-                source="zenml.integrations.kubernetes.orchestrators.KubernetesOrchestrator",
-                type=StackComponentType.ORCHESTRATOR,
-                integration=cls.NAME,
-            ),
-        ]
+
+        from zenml.integrations.kubernetes.flavors import (
+            KubernetesOrchestratorFlavor
+        )
+        return [KubernetesOrchestratorFlavor]
 
 
 KubernetesIntegration.check_installation()

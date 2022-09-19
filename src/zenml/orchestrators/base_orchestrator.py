@@ -35,7 +35,7 @@ import json
 import os
 import time
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Type
 
 from google.protobuf.json_format import Parse
 from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
@@ -75,7 +75,7 @@ from zenml.orchestrators.utils import (
     get_step_for_node,
 )
 from zenml.repository import Repository
-from zenml.stack import Stack, StackComponent
+from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
 from zenml.steps import BaseStep
 from zenml.utils import source_utils, string_utils
 
@@ -86,7 +86,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-### TFX PATCH
+# TFX PATCH ####################################################################
 # The following code patches a function in tfx which leads to an OSError on
 # Windows.
 def _patched_remove_stateful_working_dir(stateful_working_dir: str) -> None:
@@ -147,7 +147,13 @@ setattr(
     "remove_output_dirs",
     _patched_remove_output_dirs,
 )
-### END OF TFX PATCH
+
+
+# END OF TFX PATCH #############################################################
+
+
+class BaseOrchestratorConfig(StackComponentConfig):
+    """Base orchestrator config."""
 
 
 class BaseOrchestrator(StackComponent, ABC):
@@ -180,8 +186,8 @@ class BaseOrchestrator(StackComponent, ABC):
     implementation that dictates the pipeline orchestration. In the simplest
     case this method will iterate through all steps and execute them one by
     one. In other cases this method will build and deploy an intermediate
-    representation of the pipeline (e.g an airflow dag or a kubeflow
-    pipelines yaml) to be executed within the orchestrators environment.
+    representation of the pipeline (e.g. an airflow dag or a kubeflow
+    pipelines yaml) to be executed within the orchestrator's environment.
 
     Building your own:
     ------------------
@@ -448,7 +454,7 @@ class BaseOrchestrator(StackComponent, ABC):
     def get_upstream_step_names(
         self, step: "BaseStep", pb2_pipeline: Pb2Pipeline
     ) -> List[str]:
-        """Given a step, use the associated pb2 node to find the names of all upstream nodes.
+        """Use the pb2 node of a step to find the names of upstream nodes.
 
         Args:
             step: Instance of a Pipeline Step
@@ -585,3 +591,20 @@ class BaseOrchestrator(StackComponent, ABC):
                 name=context_name,
                 properties=step_context_properties,
             )
+
+
+class BaseOrchestratorFlavor(Flavor):
+    """Base orchestrator flavor class."""
+
+    @property
+    def type(self) -> StackComponentType:
+        return StackComponentType.ORCHESTRATOR
+
+    @property
+    def config_class(self) -> Type[BaseOrchestratorConfig]:
+        return BaseOrchestratorConfig
+
+    @property
+    @abstractmethod
+    def implementation_class(self) -> Type["BaseOrchestrator"]:
+        """"""
