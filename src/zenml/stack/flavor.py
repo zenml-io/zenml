@@ -26,7 +26,6 @@ from zenml.utils.source_utils import load_source_path_class, resolve_class
 
 
 class Flavor:
-
     @property
     @abstractmethod
     def name(self) -> str:

@@ -18,12 +18,12 @@ implements a dedicated stack component that you can access as part of your ZenML
 steps in the usual ways.
 """
 from typing import List, Type
-from zenml.stack import Flavor
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import FEAST
 from zenml.integrations.integration import Integration
 from zenml.models import FlavorModel
+from zenml.stack import Flavor
 
 FEAST_FEATURE_STORE_FLAVOR = "feast"
 

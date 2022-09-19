@@ -18,12 +18,12 @@ orchestrator. You can enable it by registering the Tekton orchestrator with
 the CLI tool.
 """
 from typing import List, Type
-from zenml.stack import Flavor
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import TEKTON
 from zenml.integrations.integration import Integration
 from zenml.models import FlavorModel
+from zenml.stack import Flavor
 
 TEKTON_ORCHESTRATOR_FLAVOR = "tekton"
 
@@ -44,7 +44,7 @@ class TektonIntegration(Integration):
 
         from zenml.integrations.tekton.flavors import TektonOrchestratorFlavor
 
-        return [TektonOrchestratorFlavor        ]
+        return [TektonOrchestratorFlavor]
 
 
 TektonIntegration.check_installation()

@@ -13,12 +13,12 @@
 #  permissions and limitations under the License.
 """Initialization of the Label Studio integration."""
 from typing import List, Type
-from zenml.stack import Flavor
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import LABEL_STUDIO
 from zenml.integrations.integration import Integration
 from zenml.models import FlavorModel
+from zenml.stack import Flavor
 
 LABEL_STUDIO_ANNOTATOR_FLAVOR = "label_studio"
 
@@ -38,9 +38,10 @@ class LabelStudioIntegration(Integration):
         """
 
         from zenml.integrations.label_studio.flavors import (
-            LabelStudioAnnotatorFlavor
+            LabelStudioAnnotatorFlavor,
         )
-        return [LabelStudioAnnotatorFlavor        ]
+
+        return [LabelStudioAnnotatorFlavor]
 
 
 LabelStudioIntegration.check_installation()

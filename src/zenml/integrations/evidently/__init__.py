@@ -24,12 +24,12 @@ file.
 
 from typing import List, Type
 
-from zenml.stack import Flavor
-
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import EVIDENTLY
 from zenml.integrations.integration import Integration
 from zenml.models import FlavorModel
+from zenml.stack import Flavor
+
 EVIDENTLY_DATA_VALIDATOR_FLAVOR = "evidently"
 
 
@@ -54,8 +54,9 @@ class EvidentlyIntegration(Integration):
         """
 
         from zenml.integrations.evidently.flavors import (
-            EvidentlyDataValidatorFlavor
+            EvidentlyDataValidatorFlavor,
         )
+
         return [EvidentlyDataValidatorFlavor]
 
 

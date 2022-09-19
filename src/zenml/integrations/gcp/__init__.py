@@ -26,10 +26,10 @@ Vertex AI environment.
 """
 
 from typing import List, Type
-from zenml.stack import Flavor
 
 from zenml.integrations.constants import GCP
 from zenml.integrations.integration import Integration
+from zenml.stack import Flavor
 
 GCP_ARTIFACT_STORE_FLAVOR = "gcp"
 GCP_SECRETS_MANAGER_FLAVOR = "gcp_secrets_manager"
@@ -56,17 +56,17 @@ class GcpIntegration(Integration):
             List of stack component flavors for this integration.
         """
         from zenml.integrations.gcp.flavors import (
+            GCPArtifactStoreFlavor,
+            GCPSecretsManagerFlavor,
             VertexOrchestratorFlavor,
             VertexStepOperatorFlavor,
-            GCPSecretsManagerFlavor,
-            GCPArtifactStoreFlavor
         )
 
         return [
             VertexOrchestratorFlavor,
             VertexStepOperatorFlavor,
             GCPSecretsManagerFlavor,
-            GCPArtifactStoreFlavor
+            GCPArtifactStoreFlavor,
         ]
 
 

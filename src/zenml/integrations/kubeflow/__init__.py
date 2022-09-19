@@ -41,8 +41,9 @@ class KubeflowIntegration(Integration):
         """
 
         from zenml.integrations.kubeflow.flavors import (
-            KubeflowOrchestratorFlavor
+            KubeflowOrchestratorFlavor,
         )
+
         return [KubeflowOrchestratorFlavor]
 
 

@@ -20,8 +20,8 @@ from uuid import UUID
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.exc import ArgumentError, NoResultFound
-from sqlmodel import Session, SQLModel, create_engine, select, or_
-from sqlmodel.sql.expression import Select, SelectOfScalar, col
+from sqlmodel import Session, SQLModel, create_engine, or_, select
+from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.config.store_config import StoreConfiguration
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
@@ -437,10 +437,9 @@ class SqlZenStore(BaseZenStore):
                 user = self._get_user_schema(user_name_or_id)
                 query = query.where(StackSchema.user == user.id)
             if component_id:
-                query = (
-                    query
-                    .where(StackCompositionSchema.stack_id == StackSchema.id)
-                    .where(StackCompositionSchema.component_id == component_id))
+                query = query.where(
+                    StackCompositionSchema.stack_id == StackSchema.id
+                ).where(StackCompositionSchema.component_id == component_id)
             if name:
                 query = query.where(StackSchema.name == name)
             if is_shared is not None:
@@ -824,7 +823,7 @@ class SqlZenStore(BaseZenStore):
             query = select(FlavorSchema)
             if project_name_or_id:
                 project = self._get_project_schema(project_name_or_id)
-                query=query.where(FlavorSchema.project == project.id)
+                query = query.where(FlavorSchema.project == project.id)
             if component_type:
                 query = query.where(FlavorSchema.type == component_type)
             if name:
@@ -2015,11 +2014,10 @@ class SqlZenStore(BaseZenStore):
             if stack_id is not None:
                 query = query.where(PipelineRunSchema.stack_id == stack_id)
             if component_id:
-                query = (
-                    query
-                    .where(StackCompositionSchema.stack_id
-                           == PipelineRunSchema.stack_id)
-                    .where(StackCompositionSchema.component_id == component_id))
+                query = query.where(
+                    StackCompositionSchema.stack_id
+                    == PipelineRunSchema.stack_id
+                ).where(StackCompositionSchema.component_id == component_id)
             if run_name is not None:
                 query = query.where(PipelineRunSchema.name == run_name)
             if pipeline_id is not None:
