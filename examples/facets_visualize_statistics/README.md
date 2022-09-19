@@ -12,14 +12,13 @@ DataFrames for us.
 This visualization is produced with the following code:
 
 ```python
-from zenml.repository import Repository
+from zenml.post_execution import get_pipeline
 from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
     FacetStatisticsVisualizer,
 )
 
 def visualize_statistics():
-    repo = Repository()
-    pipe = repo.get_pipelines()[-1]
+    pipe = get_pipelines()[-1]
     importer_outputs = pipe.runs[-1].get_step(step="importer")
     FacetStatisticsVisualizer().visualize(importer_outputs)
 

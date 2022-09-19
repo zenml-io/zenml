@@ -376,6 +376,7 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: if the stack component doesn't exist.
+            ValueError: if the stack component is part of one or more stacks.
         """
 
     @abstractmethod

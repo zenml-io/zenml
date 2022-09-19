@@ -425,11 +425,10 @@ the ZenML Great Expectations Visualizer, e.g.:
 from zenml.integrations.great_expectations.visualizers.ge_visualizer import (
     GreatExpectationsVisualizer,
 )
-from zenml.repository import Repository
+from zenml.post_execution import get_pipeline
 
 def visualize_results(pipeline_name: str, step_name: str) -> None:
-    repo = Repository()
-    pipeline = repo.get_pipeline(pipeline_name)
+    pipeline = get_pipeline(pipeline_name)
     last_run = pipeline.runs[-1]
     validation_step = last_run.get_step(step=step_name)
     GreatExpectationsVisualizer().visualize(validation_step)

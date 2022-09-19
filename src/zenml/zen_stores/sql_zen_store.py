@@ -27,6 +27,7 @@ from zenml.config.store_config import StoreConfiguration
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.exceptions import (
     EntityExistsError,
+    IllegalOperationError,
     StackComponentExistsError,
     StackExistsError,
 )
@@ -242,7 +243,9 @@ class SqlZenStore(BaseZenStore):
         except ArgumentError as e:
             raise ValueError(
                 "Invalid SQLAlchemy URL `%s`: %s. Check the SQLAlchemy "
-                "documentation at https://docs.sqlalchemy.org/en/14/core/engines.html#database-urls "
+                "documentation at "
+                "https://docs.sqlalchemy.org/en/14/core/engines.html#database"
+                "-urls "
                 "for the correct format.",
                 url,
                 str(e),
@@ -698,6 +701,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: if the stack component doesn't exist.
+            ValueError: if the stack component is part of one or more stacks.
         """
         with Session(self.engine) as session:
             try:
@@ -706,7 +710,18 @@ class SqlZenStore(BaseZenStore):
                         StackComponentSchema.id == component_id
                     )
                 ).one()
-                session.delete(stack_component)
+                if len(stack_component.stacks) > 0:
+                    raise IllegalOperationError(
+                        f"Stack Component `{stack_component.name}` of type "
+                        f"`{stack_component.type} can not be "
+                        f"deregistered as it is part of"
+                        f"{len(stack_component.stacks)} stacks. "
+                        f"Before unregistering this stack "
+                        f"component, make sure to remove it "
+                        f"from all stacks."
+                    )
+                else:
+                    session.delete(stack_component)
             except NoResultFound as error:
                 raise KeyError from error
 
@@ -878,7 +893,23 @@ class SqlZenStore(BaseZenStore):
                 flavor_in_db = session.exec(
                     select(FlavorSchema).where(FlavorSchema.id == flavor_id)
                 ).one()
-                session.delete(flavor_in_db)
+                components_of_flavor = session.exec(
+                    select(StackComponentSchema).where(
+                        StackComponentSchema.flavor == flavor_in_db.name
+                    )
+                ).all()
+                if len(components_of_flavor) > 0:
+                    raise IllegalOperationError(
+                        f"Stack Component `{flavor_in_db.name}` of type "
+                        f"`{flavor_in_db.type} can not be "
+                        f"deleted as it is used by"
+                        f"{len(components_of_flavor)} "
+                        f"components. Before deleting this "
+                        f"flavor, make sure to delete all "
+                        f"associated components."
+                    )
+                else:
+                    session.delete(flavor_in_db)
             except NoResultFound as error:
                 raise KeyError from error
 
@@ -981,11 +1012,13 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: If no user with the given name exists.
         """
-        # TODO: raise KeyError if the user doesn't exist (+ add test)
         with Session(self.engine) as session:
-            user = self._get_user_schema(user_name_or_id, session=session)
-            session.delete(user)
-            session.commit()
+            try:
+                user = self._get_user_schema(user_name_or_id, session=session)
+                session.delete(user)
+                session.commit()
+            except NoResultFound as error:
+                raise KeyError from error
 
     # -----
     # Teams
@@ -1087,9 +1120,13 @@ class SqlZenStore(BaseZenStore):
             team_name_or_id: Name or ID of the team to delete.
         """
         with Session(self.engine) as session:
-            team = self._get_team_schema(team_name_or_id, session=session)
-            session.delete(team)
-            session.commit()
+            try:
+                team = self._get_team_schema(team_name_or_id, session=session)
+                session.delete(team)
+                session.commit()
+
+            except NoResultFound as error:
+                raise KeyError from error
 
     # ---------------
     # Team membership
@@ -1282,11 +1319,35 @@ class SqlZenStore(BaseZenStore):
             role_name_or_id: Name or ID of the role to delete.
         """
         with Session(self.engine) as session:
-            role = self._get_role_schema(role_name_or_id, session=session)
+            try:
+                role = self._get_role_schema(role_name_or_id, session=session)
 
-            # Delete role
-            session.delete(role)
-            session.commit()
+                user_role = session.exec(
+                    select(UserRoleAssignmentSchema).where(
+                        UserRoleAssignmentSchema.role_id == role.id
+                    )
+                ).all()
+                team_role = session.exec(
+                    select(TeamRoleAssignmentSchema).where(
+                        TeamRoleAssignmentSchema.role_id == role.id
+                    )
+                ).all()
+
+                if len(user_role) > 0 or len(team_role) > 0:
+                    # TODO: Eventually we might want to allow this deletion
+                    #  and simply cascade
+                    raise IllegalOperationError(
+                        f"Role `{role.name}` of type can not be "
+                        f"deleted as it is in use by multiple users and teams. "
+                        f"Before deleting this role make sure to remove all "
+                        f"instances where this role is used."
+                    )
+                else:
+                    # Delete role
+                    session.delete(role)
+                    session.commit()
+            except NoResultFound as error:
+                raise KeyError from error
 
     # ----------------
     # Role assignments
@@ -1685,13 +1746,16 @@ class SqlZenStore(BaseZenStore):
             project_name_or_id: Name or ID of the project to delete.
         """
         with Session(self.engine) as session:
-            # Check if project with the given name exists
-            project = self._get_project_schema(
-                project_name_or_id, session=session
-            )
+            try:
+                # Check if project with the given name exists
+                project = self._get_project_schema(
+                    project_name_or_id, session=session
+                )
 
-            session.delete(project)  # TODO: cascade delete
-            session.commit()
+                session.delete(project)  # TODO: cascade delete
+                session.commit()
+            except NoResultFound as error:
+                raise KeyError from error
 
     # ------------
     # Repositories
@@ -2236,13 +2300,15 @@ class SqlZenStore(BaseZenStore):
                 "provided."
             )
         if uuid_utils.is_valid_uuid(object_name_or_id):
-            filter = schema_class.id == object_name_or_id  # type: ignore[attr-defined]
+            filter = schema_class.id == object_name_or_id  # type: ignore[
+            # attr-defined]
             error_msg = (
                 f"Unable to get {schema_name} with name or ID "
                 f"'{object_name_or_id}': No {schema_name} with this ID found."
             )
         else:
-            filter = schema_class.name == object_name_or_id  # type: ignore[attr-defined]
+            filter = schema_class.name == object_name_or_id  # type: ignore[
+            # attr-defined]
             error_msg = (
                 f"Unable to get {schema_name} with name or ID "
                 f"'{object_name_or_id}': '{object_name_or_id}' is not a valid "
@@ -2558,7 +2624,6 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the pipeline run doesn't exist.
         """
         with Session(self.engine) as session:
-
             # Check if pipeline run with the given ID exists
             existing_run = session.exec(
                 select(PipelineRunSchema).where(PipelineRunSchema.id == run.id)
@@ -2695,7 +2760,6 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the step doesn't exist.
         """
         with Session(self.engine) as session:
-
             # Check if the step exists
             step = session.exec(
                 select(StepRunSchema).where(
