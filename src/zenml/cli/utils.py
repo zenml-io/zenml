@@ -46,6 +46,7 @@ from zenml.console import console, zenml_style_defaults
 from zenml.constants import IS_DEBUG_ENV
 from zenml.enums import StoreType
 from zenml.logger import get_logger
+from zenml.models.stack_models import StackModel
 
 logger = get_logger(__name__)
 
@@ -275,16 +276,15 @@ def print_stack_component_list(
 
 
 def print_stack_configuration(
-    config: Dict[str, str], active: bool, stack_name: str
+    stack: StackModel, active: bool
 ) -> None:
     """Prints the configuration options of a stack.
 
     Args:
-        config: Configuration options of the stack.
+        stack: Instance of a stack model.
         active: Whether the stack is active.
-        stack_name: Name of the stack.
     """
-    stack_caption = f"'{stack_name}' stack"
+    stack_caption = f"'{stack.name}' stack"
     if active:
         stack_caption += " (ACTIVE)"
     rich_table = table.Table(
@@ -295,9 +295,8 @@ def print_stack_configuration(
     )
     rich_table.add_column("COMPONENT_TYPE", overflow="fold")
     rich_table.add_column("COMPONENT_NAME", overflow="fold")
-    config.pop("shared")
-    for component_type, name in config.items():
-        rich_table.add_row(component_type, name)
+    for component_type, components in stack.components.items():
+        rich_table.add_row(component_type, components[0].name)
 
     # capitalize entries in first column
     rich_table.columns[0]._cells = [
