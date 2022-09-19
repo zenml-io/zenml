@@ -707,9 +707,6 @@ class SqlZenStore(BaseZenStore):
             run_id: The id of the run to get side effects for.
             pipeline_id: The id of the pipeline to get side effects for.
             stack_id: The id of the stack to get side effects for.
-
-        Returns:
-            The side effects of the stack component.
         """
         pass  # TODO: implement this
 
@@ -851,9 +848,6 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             flavor: The stack component flavor to use for the update.
-
-        Returns:
-            The updated stack component flavor.
 
         Raises:
             NotImplementedError: This method is not implemented.
@@ -1843,9 +1837,6 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             pipeline_id: The ID of the pipeline to list steps for.
-
-        Returns:
-            A list of all steps.
         """
         pass  # TODO
 
@@ -1945,9 +1936,6 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             run_id: The ID of the pipeline run to get.
-
-        Returns:
-            The DAG for the pipeline run.
         """
         # TODO: raise KeyError if run doesn't exist
         pass  # TODO
@@ -1962,9 +1950,6 @@ class SqlZenStore(BaseZenStore):
         Args:
             run_id: The ID of the pipeline run to get.
             component_id: The ID of the component to get.
-
-        Returns:
-            The side effects for the component in the pipeline run.
         """
         # TODO: raise KeyError if run doesn't exist
         pass  # TODO
@@ -2210,6 +2195,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: if the object couldn't be found.
+            ValueError: if the schema_name isn't provided.
         """
         if object_name_or_id is None:
             raise ValueError(

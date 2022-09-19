@@ -1202,9 +1202,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             pipeline_id: The ID of the pipeline to delete.
-
-        Raises:
-            KeyError: if the pipeline doesn't exist.
         """
         self._delete_resource(
             resource_id=pipeline_id,
@@ -1224,9 +1221,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             pipeline_id: The ID of the pipeline to list steps for.
-
-        Returns:
-            A list of all steps.
         """
 
     # --------------
@@ -1241,9 +1235,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The created pipeline run.
-
-        Raises:
-            EntityExistsError: If an identical pipeline run already exists.
         """
         return self._create_resource(
             resource=pipeline_run,
@@ -1260,9 +1251,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
         """
         return self._get_resource(
             resource_id=run_id,
@@ -1280,7 +1268,7 @@ class RestZenStore(BaseZenStore):
             The DAG for the pipeline run.
 
         Raises:
-            KeyError: if the pipeline run doesn't exist.
+            ValueError: if the response from the API is not a string.
         """
         body = self.get(f"{RUNS}/{str(run_id)}{GRAPH}")
         if not isinstance(body, str):
@@ -1300,12 +1288,6 @@ class RestZenStore(BaseZenStore):
         Args:
             run_id: The ID of the pipeline run to get.
             component_id: The ID of the component to get.
-
-        Returns:
-            The side effects for the component in the pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
         """
 
     def list_runs(
@@ -1345,11 +1327,8 @@ class RestZenStore(BaseZenStore):
         Args:
             run: The pipeline run to use for the update.
 
-        Returns:
-            The updated pipeline run.
-
         Raises:
-            KeyError: if the pipeline run doesn't exist.
+            NotImplementedError: this is not implemented.
         """
         # TODO[server]: figure out if this should even be
         # allowed or if we can remove it from the store interface
@@ -1360,9 +1339,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             run_id: The ID of the pipeline run to delete.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
         """
         self._delete_resource(
             resource_id=run_id,
@@ -1381,9 +1357,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The step.
-
-        Raises:
-            KeyError: if the step doesn't exist.
         """
         return self._get_resource(
             resource_id=step_id,
@@ -1399,6 +1372,9 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             A dict mapping artifact names to the output artifacts for the step.
+
+        Raises:
+            ValueError: if the response from the API is not a dict.
         """
         body = self.get(f"{STEPS}/{str(step_id)}{OUTPUTS}")
         if not isinstance(body, dict):
@@ -1417,6 +1393,9 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             A dict mapping artifact names to the input artifacts for the step.
+
+        Raises:
+            ValueError: if the response from the API is not a dict.
         """
         body = self.get(f"{STEPS}/{str(step_id)}{INPUTS}")
         if not isinstance(body, dict):
@@ -1432,9 +1411,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             step_id: The ID of the step to get the status for.
-
-        Returns:
-            ExecutionStatus: The status of the step.
         """
 
     def list_run_steps(self, run_id: UUID) -> List[StepRunModel]:
@@ -1460,6 +1436,9 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The authentication token.
+
+        Raises:
+            ValueError: if the response from the server isn't in the right format.
         """
         if self._api_token is None:
             response = self._handle_response(
@@ -1481,7 +1460,11 @@ class RestZenStore(BaseZenStore):
 
     @property
     def session(self) -> requests.Session:
-        """Authenticate to the ZenML server."""
+        """Authenticate to the ZenML server.
+
+        Returns:
+            A requests session with the authentication token.
+        """
         if self._session is None:
             self._session = requests.Session()
             token = self._get_auth_token()
@@ -1575,6 +1558,9 @@ class RestZenStore(BaseZenStore):
             url: The URL to request.
             params: The query parameters to pass to the endpoint.
             kwargs: Additional keyword arguments to pass to the request.
+
+        Returns:
+            The parsed response.
         """
         params = {k: str(v) for k, v in params.items()} if params else {}
         try:
