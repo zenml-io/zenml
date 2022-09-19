@@ -1096,20 +1096,12 @@ def test_update_run_fails_when_run_does_not_exist(
         sql_store["store"].update_run(run=pipeline_run)
 
 
-def test_delete_run_succeeds(
+def test_delete_run_raises_error(
     sql_store: BaseZenStore,
 ):
-    """Tests deleting run."""
-    pipeline_run = PipelineRunModel(
-        name="arias_pipeline_run",
-    )
-    sql_store["store"].create_run(pipeline_run=pipeline_run)
-    run_id = sql_store["store"].list_runs()[0].id
-    with does_not_raise():
-        sql_store["store"].delete_run(run_id=run_id)
-        assert len(sql_store["store"].list_runs()) == 0
-    with pytest.raises(KeyError):
-        sql_store["store"].get_run(run_id=run_id)
+    """Tests deleting run raises error."""
+    with pytest.raises(NotImplementedError):
+        sql_store["store"].delete_run(run_id=uuid.uuid4())
 
 
 # ------------------
