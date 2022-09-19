@@ -71,10 +71,10 @@ def generate_stack_component_get_command(
         cli_utils.print_active_stack()
 
         active_stack = Repository().active_stack_model
-        component = active_stack.components.get(component_type, None)
+        components = active_stack.components.get(component_type, None)
         display_name = _component_display_name(component_type)
-        if component:
-            cli_utils.declare(f"Active {display_name}: '{component.name}'")
+        if components:
+            cli_utils.declare(f"Active {display_name}: '{components[0].name}'")
         else:
             cli_utils.warning(
                 f"No {display_name} set for active stack "
@@ -159,8 +159,10 @@ def generate_stack_component_list_command(
         active_stack = repo.active_stack_model
         active_component_name = None
         if component_type in active_stack.components.keys():
-            active_component = active_stack.components[component_type][0]
-            active_component_name = active_component.name
+            active_components = active_stack.components[component_type]
+            active_component_name = (
+                active_components[0].name if active_components else None
+            )
 
         cli_utils.print_stack_component_list(
             components, active_component_name=active_component_name
@@ -194,10 +196,18 @@ def generate_stack_component_register_command(
         help=f"The flavor of the {display_name} to register.",
         type=str,
     )
+    @click.option(
+        "--share",
+        "share",
+        is_flag=True,
+        help="Use this flag to share this stack component with other users.",
+        type=click.BOOL,
+    )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
     def register_stack_component_command(
         name: str,
         flavor: str,
+        share: bool,
         args: List[str],
     ) -> None:
         """Registers a stack component.
@@ -205,12 +215,14 @@ def generate_stack_component_register_command(
         Args:
             name: Name of the component to register.
             flavor: Flavor of the component to register.
+            share: Share the stack with other users.
             args: Additional arguments to pass to the component.
         """
         with console.status(f"Registering {display_name} '{name}'...\n"):
             cli_utils.print_active_config()
             cli_utils.print_active_stack()
             repo = Repository()
+
             # Parse the given args
             parsed_args = cli_utils.parse_unknown_options(
                 args, expand_args=True
@@ -220,6 +232,7 @@ def generate_stack_component_register_command(
             component_create_model = ComponentModel(
                 user=repo.active_user.id,
                 project=repo.active_project.id,
+                is_shared=share,
                 name=name,
                 flavor=flavor,
                 configuration=parsed_args,
@@ -265,6 +278,7 @@ def generate_stack_component_update_command(
             name: The name of the stack component to update.
             args: Additional arguments to pass to the update command.
         """
+        # TODO[Baris]: Add sharing option here
         with console.status(f"Updating {display_name} '{name}'...\n"):
             cli_utils.print_active_config()
             cli_utils.print_active_stack()

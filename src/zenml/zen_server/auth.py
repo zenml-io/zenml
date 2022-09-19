@@ -113,7 +113,7 @@ def authenticate_credentials(
 
 def http_authentication(
     credentials: HTTPBasicCredentials = Depends(HTTPBasic()),
-) -> None:
+) -> AuthContext:
     """Authenticates any request to the ZenServer with basic HTTP authentication.
 
     Args:
@@ -131,8 +131,10 @@ def http_authentication(
             detail="Invalid authentication credentials",
         )
 
+    return auth_context
 
-async def oauth2_password_bearer_authentication(
+
+def oauth2_password_bearer_authentication(
     token: str = Depends(OAuth2PasswordBearer(tokenUrl=VERSION_1 + LOGIN)),
 ) -> AuthContext:
     """Authenticates any request to the ZenML server with OAuth2 password bearer JWT tokens.
@@ -173,8 +175,10 @@ def no_authentication() -> AuthContext:
             detail="Invalid authentication credentials",
         )
 
+    return auth_context
 
-def authentication_provider() -> Callable[[], AuthContext]:
+
+def authentication_provider() -> Callable[..., AuthContext]:
     """Returns the authentication provider.
 
     Returns:

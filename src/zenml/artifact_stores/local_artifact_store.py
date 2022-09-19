@@ -118,7 +118,7 @@ class LocalArtifactStore(BaseArtifactStore):
         """Returns the path to the local artifact store.
 
         If the user has not defined a path in the config, this will create a
-        subfolder in the global config directory.
+        sub-folder in the global config directory.
 
         Returns:
             The path to the local artifact store.

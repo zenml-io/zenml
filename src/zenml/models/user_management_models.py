@@ -13,41 +13,26 @@
 #  permissions and limitations under the License.
 """Model definitions for users, teams, and roles."""
 
+import re
 from datetime import datetime, timedelta
 from secrets import token_hex
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
-from uuid import UUID, uuid4
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, cast
+from uuid import UUID
 
-from jose import JWTError, jwt
 from pydantic import BaseModel, Field, SecretStr, root_validator
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
+from zenml.models.base_models import DomainModel
+from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 from zenml.utils.enum_utils import StrEnum
 
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
-    from passlib.context import CryptContext
-
-
-class RoleModel(AnalyticsTrackedModelMixin):
-    """Pydantic object representing a role.
-
-    Attributes:
-        id: Id of the role.
-        created_at: Date when the role was created.
-        name: Name of the role.
-        permissions: Set of permissions allowed by this role.
-    """
-
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id"]
-
-    id: Optional[UUID] = None
-    name: str
-    created_at: Optional[datetime] = None
+    from passlib.context import CryptContext  # type: ignore[import]
 
 
 class JWTTokenType(StrEnum):
@@ -86,6 +71,9 @@ class JWTToken(BaseModel):
         Raises:
             AuthorizationException: If the token is invalid.
         """
+        # import here to keep these dependencies out of the client
+        from jose import JWTError, jwt  # type: ignore[import]
+
         try:
             payload = jwt.decode(
                 token,
@@ -121,7 +109,10 @@ class JWTToken(BaseModel):
         Returns:
             The generated access token.
         """
-        claims = {
+        # import here to keep these dependencies out of the client
+        from jose import jwt
+
+        claims: Dict[str, Any] = {
             "sub": str(self.user_id),
         }
 
@@ -129,7 +120,7 @@ class JWTToken(BaseModel):
             expire = datetime.utcnow() + timedelta(minutes=expire_minutes)
             claims["exp"] = expire
 
-        token = jwt.encode(
+        token: str = jwt.encode(
             claims,
             GlobalConfiguration().jwt_secret_key,
             algorithm=self.JWT_ALGORITHM,
@@ -137,19 +128,8 @@ class JWTToken(BaseModel):
         return token
 
 
-class UserModel(AnalyticsTrackedModelMixin):
-    """Pydantic object representing a user.
-
-    Attributes:
-        id: Id of the user.
-        name: Name of the user.
-        full_name: Full name for the user account.
-        email: Email address for the user account.
-        active: Whether the user account is active.
-        created_at: Date when the user was created.
-        password: Password for the user account.
-        activation_token: Activation token for the user account.
-    """
+class UserModel(DomainModel, AnalyticsTrackedModelMixin):
+    """Domain model for user accounts."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "id",
@@ -159,15 +139,24 @@ class UserModel(AnalyticsTrackedModelMixin):
         "active",
     ]
 
-    id: UUID = Field(default_factory=uuid4)
-    name: str = ""
-    full_name: str = ""
-    email: str = ""
-    active: bool = False
-    password: Optional[SecretStr] = Field(None, exclude=True)
-    activation_token: Optional[SecretStr] = Field(None, exclude=True)
-    created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(default_factory=datetime.now)
+    name: str = Field(
+        default="",
+        title="The unique username for the account.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+    full_name: str = Field(
+        default="",
+        title="The full name for the account owner.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+    email: str = Field(
+        default="",
+        title="The email address associated with the account.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+    active: bool = Field(default=False, title="Active account.")
+    password: Optional[SecretStr] = Field(default=None, exclude=True)
+    activation_token: Optional[SecretStr] = Field(default=None, exclude=True)
 
     @classmethod
     def _get_crypt_context(cls) -> "CryptContext":
@@ -198,9 +187,9 @@ class UserModel(AnalyticsTrackedModelMixin):
         # attacks (https://cwe.mitre.org/data/definitions/204.html)
         hash: Optional[str] = None
         if user is not None and user.password is not None and user.active:
-            hash = user.password.get_secret_value()
+            hash = user.get_hashed_password()
         pwd_context = cls._get_crypt_context()
-        return pwd_context.verify(plain_password, hash)
+        return cast(bool, pwd_context.verify(plain_password, hash))
 
     def get_password(self) -> Optional[str]:
         """Get the password.
@@ -212,17 +201,45 @@ class UserModel(AnalyticsTrackedModelMixin):
             return None
         return self.password.get_secret_value()
 
-    def hash_password(self) -> "UserModel":
-        """Hashes the stored password and replaces it with the hashed value.
+    @classmethod
+    def _is_hashed_secret(cls, secret: SecretStr) -> bool:
+        """Checks if a secret value is already hashed.
+
+        Args:
+            secret: The secret value to check.
 
         Returns:
-            The user model, as a convenience.
+            True if the secret value is hashed, otherwise False.
         """
-        if self.password is None:
-            return
-        pwd_context = self._get_crypt_context()
-        self.password = pwd_context.hash(self.password.get_secret_value())
-        return self
+        return (
+            re.match(r"^\$2[ayb]\$.{56}$", secret.get_secret_value())
+            is not None
+        )
+
+    @classmethod
+    def _get_hashed_secret(cls, secret: Optional[SecretStr]) -> Optional[str]:
+        """Hashes the input secret and returns the hash value, if supplied and if not already hashed.
+
+        Args:
+            secret: The secret value to hash.
+
+        Returns:
+            The secret hash value, or None if no secret was supplied.
+        """
+        if secret is None:
+            return None
+        if cls._is_hashed_secret(secret):
+            return secret.get_secret_value()
+        pwd_context = cls._get_crypt_context()
+        return cast(str, pwd_context.hash(secret.get_secret_value()))
+
+    def get_hashed_password(self) -> Optional[str]:
+        """Returns the hashed password, if configured.
+
+        Returns:
+            The hashed password.
+        """
+        return self._get_hashed_secret(self.password)
 
     @classmethod
     def verify_access_token(cls, token: str) -> Optional["UserModel"]:
@@ -277,19 +294,13 @@ class UserModel(AnalyticsTrackedModelMixin):
             return None
         return self.activation_token.get_secret_value()
 
-    def hash_activation_token(self) -> "UserModel":
-        """Hashes the activation token and replaces it with the hashed value.
+    def get_hashed_activation_token(self) -> Optional[str]:
+        """Returns the hashed activation token, if configured.
 
         Returns:
-            The user model, as a convenience.
+            The hashed activation token.
         """
-        if self.activation_token is None:
-            return
-        pwd_context = self._get_crypt_context()
-        self.activation_token = pwd_context.hash(
-            self.activation_token.get_secret_value()
-        )
-        return self
+        return self._get_hashed_secret(self.activation_token)
 
     @classmethod
     def verify_activation_token(
@@ -313,9 +324,9 @@ class UserModel(AnalyticsTrackedModelMixin):
             and user.activation_token is not None
             and not user.active
         ):
-            hash = user.activation_token.get_secret_value()
+            hash = user.get_hashed_activation_token()
         pwd_context = cls._get_crypt_context()
-        return pwd_context.verify(activation_token, hash)
+        return cast(bool, pwd_context.verify(activation_token, hash))
 
     def generate_activation_token(self) -> str:
         """Generates and stores a new activation token.
@@ -333,46 +344,48 @@ class UserModel(AnalyticsTrackedModelMixin):
         validate_assignment = True
         # Forbid extra attributes to prevent unexpected behavior
         extra = "forbid"
+        underscore_attrs_are_private = True
 
 
-class TeamModel(AnalyticsTrackedModelMixin):
-    """Pydantic object representing a team.
-
-    Attributes:
-        id: Id of the team.
-        created_at: Date when the team was created.
-        name: Name of the team.
-    """
+class RoleModel(DomainModel, AnalyticsTrackedModelMixin):
+    """Domain model for roles."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["id"]
 
-    id: Optional[UUID] = None
-    name: str
-    created_at: Optional[datetime] = None
+    name: str = Field(
+        title="The unique name of the role.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
 
 
-class RoleAssignmentModel(BaseModel):
-    """Pydantic object representing a role assignment.
+class TeamModel(DomainModel, AnalyticsTrackedModelMixin):
+    """Domain model for teams."""
 
-    Attributes:
-        id: Id of the role assignment.
-        role_id: Id of the role.
-        project_id: Optional ID of a project that the role is limited to.
-        team_id: Id of a team to which the role is assigned.
-        user_id: Id of a user to which the role is assigned.
-        created_at: Date when the role was assigned.
-    """
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id"]
 
-    id: Optional[UUID] = None
-    role_id: UUID
-    project_id: Optional[UUID] = None
-    team_id: Optional[UUID] = None
-    user_id: Optional[UUID] = None
-    created_at: Optional[datetime] = None
+    name: str = Field(
+        title="The unique name of the team.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
+
+
+class RoleAssignmentModel(DomainModel):
+    """Domain model for role assignments."""
+
+    role: UUID = Field(title="The role.")
+    project: Optional[UUID] = Field(
+        None, title="The project that the role is limited to."
+    )
+    team: Optional[UUID] = Field(
+        None, title="The team that the role is assigned to."
+    )
+    user: Optional[UUID] = Field(
+        None, title="The user that the role is assigned to."
+    )
 
     @root_validator
     def ensure_single_entity(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Validates that either `user_id` or `team_id` is set.
+        """Validates that either `user` or `team` is set.
 
         Args:
             values: The values to validate.
@@ -381,16 +394,14 @@ class RoleAssignmentModel(BaseModel):
             The validated values.
 
         Raises:
-            ValueError: If neither `user_id` nor `team_id` is set.
+            ValueError: If neither `user` nor `team` is set.
         """
-        user_id = values.get("user_id", None)
-        team_id = values.get("team_id", None)
-        if user_id and team_id:
-            raise ValueError("Only `user_id` or `team_id` is allowed.")
+        user = values.get("user", None)
+        team = values.get("team", None)
+        if user and team:
+            raise ValueError("Only `user` or `team` is allowed.")
 
-        if not (user_id or team_id):
-            raise ValueError(
-                "Missing `user_id` or `team_id` for role assignment."
-            )
+        if not (user or team):
+            raise ValueError("Missing `user` or `team` for role assignment.")
 
         return values

@@ -13,28 +13,31 @@
 #  permissions and limitations under the License.
 """Model definitions for code projects."""
 
-from datetime import datetime
-from typing import ClassVar, List, Optional
-from uuid import UUID, uuid4
+from typing import ClassVar, List
 
 from pydantic import Field
 
+from zenml.models.base_models import DomainModel
+from zenml.models.constants import (
+    MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
+    MODEL_NAME_FIELD_MAX_LENGTH,
+)
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 
-class ProjectModel(AnalyticsTrackedModelMixin):
-    """Domain Model describing the Project."""
+class ProjectModel(DomainModel, AnalyticsTrackedModelMixin):
+    """Domain model for projects."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "id",
     ]
 
-    id: UUID = Field(default_factory=uuid4, title="The unique if of the stack.")
-    name: str = Field(title="The unique name of the stack.")
-    description: Optional[str] = Field(
-        default=None, title="The description of the project.", max_length=300
+    name: str = Field(
+        title="The unique name of the project.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
-    creation_date: datetime = Field(
-        default_factory=datetime.now,
-        title="The time at which the project was created.",
+    description: str = Field(
+        default="",
+        title="The description of the project.",
+        max_length=MODEL_DESCRIPTIVE_FIELD_MAX_LENGTH,
     )

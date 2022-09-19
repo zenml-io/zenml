@@ -16,7 +16,7 @@
 import json
 from datetime import datetime
 from typing import List, Optional
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -38,7 +38,8 @@ class PipelineSchema(SQLModel, table=True):
     docstring: Optional[str] = Field(nullable=True)
     configuration: str
 
-    creation_date: datetime
+    created: datetime = Field(default_factory=datetime.now)
+    updated: datetime = Field(default_factory=datetime.now)
 
     runs: List["PipelineRunSchema"] = Relationship(
         back_populates="pipeline",
@@ -56,7 +57,6 @@ class PipelineSchema(SQLModel, table=True):
         """
         return cls(
             id=pipeline.id,
-            creation_date=pipeline.creation_date,
             name=pipeline.name,
             project=pipeline.project,
             user=pipeline.user,
@@ -74,7 +74,9 @@ class PipelineSchema(SQLModel, table=True):
             The updated `PipelineSchema`.
         """
         self.name = model.name
+        self.updated = datetime.now()
         self.docstring = model.docstring
+        self.configuration = json.dumps(model.configuration)
         return self
 
     def to_model(self) -> "PipelineModel":
@@ -90,7 +92,8 @@ class PipelineSchema(SQLModel, table=True):
             user=self.user,
             docstring=self.docstring,
             configuration=json.loads(self.configuration),
-            creation_date=self.creation_date,
+            created=self.created,
+            updated=self.updated,
         )
 
 
@@ -113,7 +116,8 @@ class PipelineRunSchema(SQLModel, table=True):
     git_sha: Optional[str] = Field(nullable=True)
     zenml_version: str
 
-    creation_date: datetime
+    created: datetime = Field(default_factory=datetime.now)
+    updated: datetime = Field(default_factory=datetime.now)
 
     pipeline: PipelineSchema = Relationship(back_populates="runs")
 
@@ -136,7 +140,6 @@ class PipelineRunSchema(SQLModel, table=True):
         """
         return cls(
             id=run.id,
-            creation_date=run.creation_date,
             name=run.name,
             stack_id=run.stack_id,
             user=run.user,
@@ -160,10 +163,11 @@ class PipelineRunSchema(SQLModel, table=True):
         self.name = model.name
         self.runtime_configuration = json.dumps(model.runtime_configuration)
         self.git_sha = model.git_sha
-        assert model.zenml_version is not None
-        self.zenml_version = model.zenml_version
-        assert model.mlmd_id is not None
-        self.mlmd_id = model.mlmd_id
+        if model.zenml_version is not None:
+            self.zenml_version = model.zenml_version
+        if model.mlmd_id is not None:
+            self.mlmd_id = model.mlmd_id
+        self.updated = datetime.now()
         return self
 
     def to_model(self) -> PipelineRunModel:
@@ -184,15 +188,16 @@ class PipelineRunSchema(SQLModel, table=True):
             runtime_configuration=config,
             git_sha=self.git_sha,
             zenml_version=self.zenml_version,
-            creation_date=self.creation_date,
             mlmd_id=self.mlmd_id,
+            created=self.created,
+            updated=self.updated,
         )
 
 
 class StepRunSchema(SQLModel, table=True):
     """SQL Model for steps of pipeline runs."""
 
-    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    id: UUID = Field(primary_key=True)
     name: str
 
     pipeline_run_id: UUID = Field(foreign_key="pipelinerunschema.id")
@@ -202,6 +207,9 @@ class StepRunSchema(SQLModel, table=True):
     entrypoint_name: str
 
     mlmd_id: int = Field(default=None, nullable=True)
+
+    created: datetime = Field(default_factory=datetime.now)
+    updated: datetime = Field(default_factory=datetime.now)
 
     @classmethod
     def from_create_model(cls, model: StepRunModel) -> "StepRunSchema":
@@ -215,6 +223,7 @@ class StepRunSchema(SQLModel, table=True):
 
         """
         return cls(
+            id=model.id,
             name=model.name,
             pipeline_run_id=model.pipeline_run_id,
             docstring=model.docstring,
@@ -245,6 +254,8 @@ class StepRunSchema(SQLModel, table=True):
             entrypoint_name=self.entrypoint_name,
             mlmd_id=self.mlmd_id,
             mlmd_parent_step_ids=mlmd_parent_step_ids,
+            created=self.created,
+            updated=self.updated,
         )
 
 
@@ -258,7 +269,7 @@ class StepRunOrderSchema(SQLModel, table=True):
 class ArtifactSchema(SQLModel, table=True):
     """SQL Model for artifacts of steps."""
 
-    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    id: UUID = Field(primary_key=True)
     name: str  # Name of the output in the parent step
 
     parent_step_id: UUID = Field(foreign_key="steprunschema.id")
@@ -274,6 +285,9 @@ class ArtifactSchema(SQLModel, table=True):
     mlmd_parent_step_id: int = Field(default=None, nullable=True)
     mlmd_producer_step_id: int = Field(default=None, nullable=True)
 
+    created: datetime = Field(default_factory=datetime.now)
+    updated: datetime = Field(default_factory=datetime.now)
+
     @classmethod
     def from_create_model(cls, model: ArtifactModel) -> "ArtifactSchema":
         """Create an `ArtifactSchema` from an `ArtifactModel`.
@@ -285,6 +299,7 @@ class ArtifactSchema(SQLModel, table=True):
             The created `ArtifactSchema`.
         """
         return cls(
+            id=model.id,
             name=model.name,
             parent_step_id=model.parent_step_id,
             producer_step_id=model.producer_step_id,
@@ -317,6 +332,8 @@ class ArtifactSchema(SQLModel, table=True):
             mlmd_id=self.mlmd_id,
             mlmd_parent_step_id=self.mlmd_parent_step_id,
             mlmd_producer_step_id=self.mlmd_producer_step_id,
+            created=self.created,
+            updated=self.updated,
         )
 
 

@@ -26,19 +26,18 @@ from zenml.models import FlavorModel
 class FlavorSchema(SQLModel, table=True):
     """SQL Model for flavors."""
 
-    id: UUID = Field(primary_key=True, default_factory=uuid4)
-
-    name: str
-
+    id: UUID = Field(primary_key=True)
     type: StackComponentType
     source: str
+    name: str
     integration: Optional[str] = Field(default="")
-
     config_schema: str
 
-    project_id: UUID = Field(foreign_key="projectschema.id")
-    user_id: UUID = Field(foreign_key="userschema.id")
-    created_at: datetime = Field(default_factory=datetime.now)
+    project: UUID = Field(foreign_key="projectschema.id")
+    user: UUID = Field(foreign_key="userschema.id")
+
+    created: datetime = Field(default_factory=datetime.now)
+    updated: datetime = Field(default_factory=datetime.now)
 
     @classmethod
     def from_create_model(

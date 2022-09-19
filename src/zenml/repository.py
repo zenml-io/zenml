@@ -569,13 +569,11 @@ class Repository(metaclass=RepositoryMetaClass):
             A list of all stacks available in the current project and owned by
             the current user.
         """
-        return [
-            stack.to_hydrated_model()
-            for stack in self.zen_store.list_stacks(
+        stacks = self.zen_store.list_stacks(
                 project_name_or_id=self.active_project_name,
                 user_name_or_id=self.active_user.id,
             )
-        ]
+        return [s.to_hydrated_model() for s in stacks]
 
     @property
     def stacks(self) -> List["Stack"]:
@@ -617,8 +615,8 @@ class Repository(metaclass=RepositoryMetaClass):
         dict_of_stacks = dict()
         for stack in stacks:
             dict_of_stacks[stack.name] = {"shared": str(stack.is_shared)}
-            for comp_type, comp in stack.to_hydrated_model().components.items():
-                dict_of_stacks[stack.name][str(comp_type)] = comp[0].name
+            for com_type, comps in stack.to_hydrated_model().components.items():
+                dict_of_stacks[stack.name][str(com_type)] = comps[0].name
 
         return dict_of_stacks
 
@@ -731,7 +729,7 @@ class Repository(metaclass=RepositoryMetaClass):
             RuntimeError: If the stack configuration is invalid.
         """
         if stack.is_valid:
-            created_stack = self.zen_store.register_stack(
+            created_stack = self.zen_store.create_stack(
                 stack=stack,
             )
             return created_stack
@@ -776,7 +774,6 @@ class Repository(metaclass=RepositoryMetaClass):
             )
 
         try:
-            assert stack.id is not None
             self.zen_store.delete_stack(stack_id=stack.id)
             logger.info("Deregistered stack with name '%s'.", stack.name)
         except KeyError:
@@ -817,7 +814,7 @@ class Repository(metaclass=RepositoryMetaClass):
         component.configuration = configuration
 
         # Register the new model
-        return self.zen_store.register_stack_component(component=component)
+        return self.zen_store.create_stack_component(component=component)
 
     def update_stack_component(
         self,
@@ -959,10 +956,8 @@ class Repository(metaclass=RepositoryMetaClass):
 
         flavor_model = flavor_class().to_model()
 
-        return self.zen_store.create_flavor(
-            flavor=flavor_model,
-            user_name_or_id=self.active_user.id,
-            project_name_or_id=self.active_project.id,
+        return self.zen_store.create_stack_component(
+            component=ComponentModel.from_component(flavor_model),
         )
 
     def delete_flavor(self, flavor: FlavorModel) -> None:
@@ -1104,13 +1099,11 @@ class Repository(metaclass=RepositoryMetaClass):
             )
             pipeline = self.zen_store.create_pipeline(pipeline=pipeline)
             logger.info(f"Registered new pipeline with name {pipeline.name}.")
-            assert pipeline.id is not None
             return pipeline.id
 
         # B) If a pipeline exists that has the same config, use that pipeline.
         if pipeline_configuration == existing_pipeline.configuration:
             logger.debug("Did not register pipeline since it already exists.")
-            assert existing_pipeline.id is not None
             return existing_pipeline.id
 
         # C) If a pipeline with different config exists, raise an error.

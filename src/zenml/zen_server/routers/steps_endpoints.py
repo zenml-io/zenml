@@ -14,12 +14,12 @@
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
 from typing import Dict
+from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
 from zenml.constants import INPUTS, OUTPUTS, STEPS, VERSION_1
 from zenml.models.pipeline_models import ArtifactModel, StepRunModel
-from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -37,7 +37,7 @@ router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_step(step_id: str) -> StepRunModel:
+async def get_step(step_id: UUID) -> StepRunModel:
     """Get one specific step.
 
     Args:
@@ -46,7 +46,7 @@ async def get_step(step_id: str) -> StepRunModel:
     Returns:
         The step.
     """
-    return zen_store.get_run_step(parse_name_or_uuid(step_id))
+    return zen_store.get_run_step(step_id)
 
 
 @router.get(
@@ -55,7 +55,7 @@ async def get_step(step_id: str) -> StepRunModel:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_step_outputs(step_id: str) -> Dict[str, ArtifactModel]:
+async def get_step_outputs(step_id: UUID) -> Dict[str, ArtifactModel]:
     """Get the outputs of a specific step.
 
     Args:
@@ -64,7 +64,7 @@ async def get_step_outputs(step_id: str) -> Dict[str, ArtifactModel]:
     Returns:
         All outputs of the step, mapping from output name to artifact model.
     """
-    return zen_store.get_run_step_outputs(parse_name_or_uuid(step_id))
+    return zen_store.get_run_step_outputs(step_id)
 
 
 @router.get(
@@ -73,7 +73,7 @@ async def get_step_outputs(step_id: str) -> Dict[str, ArtifactModel]:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_step_inputs(step_id: str) -> Dict[str, ArtifactModel]:
+async def get_step_inputs(step_id: UUID) -> Dict[str, ArtifactModel]:
     """Get the inputs of a specific step.
 
     Args:
@@ -82,4 +82,4 @@ async def get_step_inputs(step_id: str) -> Dict[str, ArtifactModel]:
     Returns:
         All inputs of the step, mapping from input name to artifact model.
     """
-    return zen_store.get_run_step_inputs(parse_name_or_uuid(step_id))
+    return zen_store.get_run_step_inputs(step_id)

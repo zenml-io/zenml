@@ -18,7 +18,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Type
 
 from zenml.cli.utils import error
-from zenml.constants import LOCAL_SECRETS_FILENAME, LOCAL_STORES_DIRECTORY_NAME
+from zenml.config.global_config import GlobalConfiguration
+from zenml.constants import LOCAL_SECRETS_FILENAME
 from zenml.exceptions import SecretExistsError
 from zenml.io.fileio import remove
 from zenml.logger import get_logger
@@ -30,10 +31,7 @@ from zenml.secrets_managers.base_secrets_manager import (
 )
 from zenml.secrets_managers.utils import decode_secret_dict, encode_secret
 from zenml.utils import yaml_utils
-from zenml.utils.io_utils import (
-    create_file_if_not_exists,
-    get_global_config_directory,
-)
+from zenml.utils.io_utils import create_file_if_not_exists
 
 if TYPE_CHECKING:
     from uuid import UUID
@@ -77,8 +75,7 @@ class LocalSecretsManager(BaseSecretsManager):
             The path to the secret store.
         """
         return os.path.join(
-            get_global_config_directory(),
-            LOCAL_STORES_DIRECTORY_NAME,
+            GlobalConfiguration().local_stores_path,
             str(id_),
             LOCAL_SECRETS_FILENAME,
         )

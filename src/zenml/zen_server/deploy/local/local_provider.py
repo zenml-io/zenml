@@ -100,7 +100,7 @@ class LocalServerProvider(BaseServerProvider):
             ),
             LocalDaemonServiceEndpointConfig(
                 protocol=ServiceEndpointProtocol.HTTP,
-                ip_address=str(server_config.address),
+                ip_address=str(server_config.ip_address),
                 port=server_config.port,
                 allocate_port=False,
             ),

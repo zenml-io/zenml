@@ -21,7 +21,6 @@ from zenml.constants import STACK_COMPONENTS, TYPES, VERSION_1
 from zenml.enums import StackComponentType
 from zenml.models import ComponentModel
 from zenml.models.component_model import HydratedComponentModel
-from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.models.component_models import UpdateComponentModel
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
@@ -41,20 +40,22 @@ router = APIRouter(
 )
 @handle_exceptions
 async def list_stack_components(
-    project_name_or_id: Optional[str] = None,
-    user_name_or_id: Optional[str] = None,
-    component_type: Optional[str] = None,
-    component_name: Optional[str] = None,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
+    user_name_or_id: Optional[Union[str, UUID]] = None,
+    type: Optional[str] = None,
+    name: Optional[str] = None,
+    flavor_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
-    hydrated: bool = True,
+    hydrated: bool = False,
 ) -> Union[List[ComponentModel], List[HydratedComponentModel]]:
     """Get a list of all stack components for a specific type.
 
     Args:
         project_name_or_id: Name or ID of the project
         user_name_or_id: Optionally filter by name or ID of the user.
-        component_name: Optionally filter by component name
-        component_type: Optionally filter by component type
+        name: Optionally filter by component name
+        type: Optionally filter by component type
+        flavor_name: Optionally filter by flavor
         is_shared: Optionally filter by shared status of the component
         hydrated: Defines if users and projects will be
                   included by reference (FALSE) or as model (TRUE)
@@ -63,11 +64,12 @@ async def list_stack_components(
         List of stack components for a specific type.
     """
     components_list = zen_store.list_stack_components(
-        project_name_or_id=parse_name_or_uuid(project_name_or_id),
-        user_name_or_id=parse_name_or_uuid(user_name_or_id),
-        type=component_type,
+        project_name_or_id=project_name_or_id,
+        user_name_or_id=user_name_or_id,
+        type=type,
+        name=name,
+        flavor_name=flavor_name,
         is_shared=is_shared,
-        name=component_name,
     )
     if hydrated:
         return [comp.to_hydrated_model() for comp in components_list]
@@ -82,7 +84,7 @@ async def list_stack_components(
 )
 @handle_exceptions
 async def get_stack_component(
-    component_id: str, hydrated: bool = True
+    component_id: UUID, hydrated: bool = False
 ) -> Union[ComponentModel, HydratedComponentModel]:
     """Returns the requested stack component.
 
@@ -94,7 +96,7 @@ async def get_stack_component(
     Returns:
         The requested stack component.
     """
-    component = zen_store.get_stack_component(UUID(component_id))
+    component = zen_store.get_stack_component(component_id)
     if hydrated:
         return component.to_hydrated_model()
     else:
@@ -108,9 +110,9 @@ async def get_stack_component(
 )
 @handle_exceptions
 async def update_stack_component(
-    component_id: str,
+    component_id: UUID,
     component_update: UpdateComponentModel,
-    hydrated: bool = True,
+    hydrated: bool = False,
 ) -> Union[ComponentModel, HydratedComponentModel]:
     """Updates a stack component.
 
@@ -123,9 +125,7 @@ async def update_stack_component(
     Returns:
         Updated stack component.
     """
-    component_in_db = zen_store.get_stack_component(
-        parse_name_or_uuid(component_id)
-    )
+    component_in_db = zen_store.get_stack_component(component_id)
 
     updated_component = zen_store.update_stack_component(
         component=component_update.apply_to_model(component_in_db)
@@ -141,13 +141,13 @@ async def update_stack_component(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def deregister_stack_component(component_id: str) -> None:
+async def deregister_stack_component(component_id: UUID) -> None:
     """Deletes a stack component.
 
     Args:
         component_id: ID of the stack component.
     """
-    zen_store.delete_stack_component(UUID(component_id))
+    zen_store.delete_stack_component(component_id)
 
 
 @router.get(

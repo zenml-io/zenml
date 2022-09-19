@@ -24,23 +24,23 @@ of each other.
 """
 
 from zenml.zen_server.models.pipeline_models import (
-    CreatePipelineModel,
-    UpdatePipelineModel,
+    CreatePipelineRequest,
+    UpdatePipelineRequest,
 )
 from zenml.zen_server.models.projects_models import (
-    CreateProjectModel,
-    UpdateProjectModel,
+    CreateProjectRequest,
+    UpdateProjectRequest,
 )
 from zenml.zen_server.models.stack_models import (
-    CreateStackModel,
-    UpdateStackModel,
+    CreateStackRequest,
+    UpdateStackRequest,
 )
 
 __all__ = [
-    "CreateStackModel",
-    "UpdateStackModel",
-    "CreateProjectModel",
-    "UpdateProjectModel",
-    "CreatePipelineModel",
-    "UpdatePipelineModel",
+    "CreateStackRequest",
+    "UpdateStackRequest",
+    "CreateProjectRequest",
+    "UpdateProjectRequest",
+    "CreatePipelineRequest",
+    "UpdatePipelineRequest",
 ]

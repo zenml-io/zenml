@@ -16,12 +16,16 @@
 from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional
 from uuid import UUID, uuid4
+import json
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List
 
 from pydantic import Field
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
+from zenml.models.base_models import ShareableProjectScopedDomainModel
+from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.models.project_models import ProjectModel
 from zenml.models.user_management_models import UserModel
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
@@ -29,16 +33,10 @@ from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 logger = get_logger(__name__)
 
 
-class ComponentModel(AnalyticsTrackedModelMixin):
-    """Network Serializable Model describing the StackComponent.
-
-    name, type, flavor and config are specified explicitly by the user
-    through the user interface. These values + owner can be updated.
-
-    owner, created_by, created_at are added implicitly set within domain logic
-
-    id is set when the database entry is created
-    """
+class ComponentModel(
+    ShareableProjectScopedDomainModel, AnalyticsTrackedModelMixin
+):
+    """Domain Model describing the Stack Component."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "id",
@@ -52,35 +50,20 @@ class ComponentModel(AnalyticsTrackedModelMixin):
     id: UUID = Field(
         default_factory=uuid4, title="The unique id of the component."
     )
-
     name: str = Field(
-        title="The name of the Stack Component.",
+        title="The name of the stack component.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
     type: StackComponentType = Field(
-        title="The type of the Stack Component.",
+        title="The type of the stack component.",
     )
-    flavor: Optional[str] = Field(
-        title="The flavor of the Stack Component.",
+    flavor: str = Field(
+        title="The flavor of the stack component.",
     )
     configuration: Dict[
         str, Any
     ] = Field(  # Json representation of the configuration
-        title="The id of the Stack Component.",
-    )
-    user: Optional[UUID] = Field(
-        default=None,
-        title="The id of the user that owns this component.",
-    )
-    is_shared: bool = Field(
-        default=False,
-        title="Flag describing if this component is shared.",
-    )
-    project: Optional[UUID] = Field(
-        default=None, title="The project that contains this component."
-    )
-    creation_date: datetime = Field(
-        default_factory=datetime.now,
-        title="The time at which the component was registered.",
+        title="The stack component configuration.",
     )
 
     class Config:
@@ -95,7 +78,8 @@ class ComponentModel(AnalyticsTrackedModelMixin):
                 "configuration": {"location": "europe-west3"},
                 "project": "da63ad01-9117-4082-8a99-557ca5a7d324",
                 "user": "43d73159-04fe-418b-b604-b769dd5b771b",
-                "created_at": "2022-08-12T07:12:44.931Z",
+                "created": "2022-08-12T07:12:44.931Z",
+                "updated": "2022-08-12T07:12:44.931Z",
             }
         }
 
@@ -118,20 +102,18 @@ class ComponentModel(AnalyticsTrackedModelMixin):
             configuration=self.configuration,
             project=project,
             user=user,
-            is_shared=self.is_shared,
-            creation_date=self.creation_date,
+            created=self.created,
+            updated=self.updated,
         )
 
 
 class HydratedComponentModel(ComponentModel):
     """Component model with User and Project fully hydrated."""
 
-    project: ProjectModel = Field(
-        default=None, title="The project that contains this stack."
-    )
+    project: ProjectModel = Field(title="The project that contains this stack.")  # type: ignore[assignment]
+    # TODO: before ignoring the typing error, think of a better way to do this
     user: UserModel = Field(
-        default=None,
-        title="The id of the user, that created this stack.",
+        title="The user that created this stack.",
     )
 
     class Config:
@@ -148,13 +130,16 @@ class HydratedComponentModel(ComponentModel):
                     "id": "da63ad01-9117-4082-8a99-557ca5a7d324",
                     "name": "default",
                     "description": "Best project.",
-                    "creation_date": "2022-09-13T16:03:52.317039",
+                    "created": "2022-09-15T11:43:29.987627",
+                    "updated": "2022-09-15T11:43:29.987627",
                 },
                 "user": {
                     "id": "43d73159-04fe-418b-b604-b769dd5b771b",
                     "name": "default",
-                    "creation_date": "2022-09-13T16:03:52.329928",
+                    "created": "2022-09-15T11:43:29.987627",
+                    "updated": "2022-09-15T11:43:29.987627",
                 },
-                "created_at": "2022-08-12T07:12:44.931Z",
+                "created": "2022-09-15T11:43:29.987627",
+                "updated": "2022-09-15T11:43:29.987627",
             }
         }

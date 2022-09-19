@@ -88,10 +88,10 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilderMixin):
             if self.config.kubernetes_context not in contexts:
                 return False, (
                     f"Could not find a Kubernetes context named "
-                    f"'{self.config.kubernetes_context}' in the local Kubernetes "
-                    f"configuration. Please make sure that the Kubernetes "
-                    f"cluster is running and that the kubeconfig file is "
-                    f"configured correctly. To list all configured "
+                    f"'{self.config.kubernetes_context}' in the local "
+                    f"Kubernetes configuration. Please make sure that the "
+                    f"Kubernetes cluster is running and that the kubeconfig "
+                    f"file is configured correctly. To list all configured "
                     f"contexts, run:\n\n"
                     f"  `kubectl config get-contexts`\n"
                 )
@@ -99,23 +99,23 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilderMixin):
             # go through all stack components and identify those that
             # advertise a local path where they persist information that
             # they need to be available when running pipelines.
-            for stack_comp in stack.components.values():
-                local_path = stack_comp.local_path
+            for stack_component in stack.components.values():
+                local_path = stack_component.local_path
                 if not local_path:
                     continue
                 return False, (
                     f"The Tekton orchestrator is configured to run "
                     f"pipelines in a remote Kubernetes cluster designated "
                     f"by the '{self.config.kubernetes_context}' configuration "
-                    f"context, but the '{stack_comp.name}' "
-                    f"{stack_comp.type.value} is a local stack component "
+                    f"context, but the '{stack_component.name}' "
+                    f"{stack_component.type.value} is a local stack component "
                     f"and will not be available in the Tekton pipeline "
                     f"step.\nPlease ensure that you always use non-local "
                     f"stack components with a Tekton orchestrator, "
                     f"otherwise you may run into pipeline execution "
                     f"problems. You should use a flavor of "
-                    f"{stack_comp.type.value} other than "
-                    f"'{stack_comp.flavor}'."
+                    f"{stack_component.type.value} other than "
+                    f"'{stack_component.flavor}'."
                 )
 
             if container_registry.is_local:
@@ -124,7 +124,7 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilderMixin):
                     f"pipelines in a remote Kubernetes cluster designated "
                     f"by the '{self.config.kubernetes_context}' configuration "
                     f"context, but the '{container_registry.name}' "
-                    f"container registry URI '{container_registry.uri}' "
+                    f"container registry URI '{container_registry.config.uri}' "
                     f"points to a local container registry. Please ensure "
                     f"that you always use non-local stack components with "
                     f"a Tekton orchestrator, otherwise you will "
@@ -317,8 +317,8 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilderMixin):
             raise RuntimeError(
                 f"Failed to upload Tekton pipeline: {str(e)}. "
                 f"Please make sure your kubernetes config is present and the "
-                f"{self.config.kubernetes_context} kubernetes context is configured "
-                f"correctly.",
+                f"{self.config.kubernetes_context} kubernetes context is "
+                f"configured correctly.",
             )
 
     @property
@@ -331,7 +331,7 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilderMixin):
         return os.path.join(
             io_utils.get_global_config_directory(),
             "tekton",
-            str(self.uuid),
+            str(self.id),
         )
 
     @property

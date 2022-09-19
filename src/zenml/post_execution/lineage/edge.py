@@ -11,25 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Model definitions for code repositories."""
 
-from datetime import datetime
-from typing import ClassVar, List, Optional
-from uuid import UUID
-
-from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
+from pydantic import BaseModel
 
 
-class CodeRepositoryModel(AnalyticsTrackedModelMixin):
-    """The representation of a code repository.
+class Edge(BaseModel):
+    """A class that represents an edge in a lineage graph."""
 
-    Attributes:
-        name: Step name
-    """
-
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["id", "project_id"]
-
-    id: Optional[UUID] = None
-    name: str
-    project_id: Optional[UUID] = None
-    created_at: Optional[datetime] = None
+    id: str
+    source: str
+    target: str

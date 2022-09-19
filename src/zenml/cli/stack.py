@@ -1211,16 +1211,16 @@ def copy_stack(
 
         if target_stack in repo.stack_configurations:
             cli_utils.error(
-                f"Can't copy stack as a stack with the name '{target_stack}' "
+                f"Can't copy stack because a stack with the name '{target_stack}' "
                 "already exists."
             )
         stack_model.name = target_stack
+        stack_model.user = repo.active_user.id
+        stack_model.project = repo.active_project.id
 
         copied_stack = StackModel.parse_obj(
-            stack_model.dict(exclude={"id", "creation_date"})
+            stack_model.dict(exclude={"id", "created", "updated"})
         )
-        # TODO: [server] an actually new instance needs to be created here to
-        #  to ensure a new stack id is created
         repo.register_stack(copied_stack)
 
 

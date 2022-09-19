@@ -107,8 +107,8 @@ class LocalDockerOrchestrator(
         volumes = {}
 
         # Add a volume for all local paths of stack components
-        for stack_comp in stack.components.values():
-            local_path = stack_comp.local_path
+        for stack_component in stack.components.values():
+            local_path = stack_component.local_path
             if not local_path:
                 continue
 

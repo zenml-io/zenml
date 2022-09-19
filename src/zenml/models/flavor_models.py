@@ -21,13 +21,22 @@ from pydantic import Field
 
 from zenml.enums import StackComponentType
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
+from typing import TYPE_CHECKING, Optional, Type
+from uuid import UUID
+
+from zenml.enums import StackComponentType
+from zenml.models.base_models import ShareableProjectScopedDomainModel
+from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
+from zenml.utils.source_utils import (
+    load_source_path_class,
+    validate_flavor_source,
+)
 
 
-class FlavorModel(AnalyticsTrackedModelMixin):
-    """Network serializable wrapper.
-
-    This represents the custom implementation of a stack component flavor.
-    """
+class FlavorModel(
+    ShareableProjectScopedDomainModel, AnalyticsTrackedModelMixin
+):
+    """Domain model representing the custom implementation of a flavor."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "id",
@@ -37,17 +46,17 @@ class FlavorModel(AnalyticsTrackedModelMixin):
         "user_id",
     ]
 
-    id: Optional[UUID] = Field(
+    id: UUID = Field(
         default=None,
         title="The ID of the Flavor.",
     )
-    name: Optional[str] = Field(
+    name: str = Field(
         title="The name of the Flavor.",
     )
-    type: Optional[StackComponentType] = Field(
+    type: StackComponentType = Field(
         title="The type of the Flavor.",
     )
-    config_schema: Optional[str] = Field(
+    config_schema: str = Field(
         title="The JSON schema of this flavor's corresponding configuration."
     )
     source: str = Field(
@@ -55,15 +64,4 @@ class FlavorModel(AnalyticsTrackedModelMixin):
     )
     integration: Optional[str] = Field(
         title="The name of the integration that the Flavor belongs to."
-    )
-    user_id: Optional[UUID] = Field(
-        default=None,
-        title="The ID of the user, that created this Flavor.",
-    )
-    project_id: Optional[UUID] = Field(
-        default=None, title="The project that contains this Flavor."
-    )
-    created_at: Optional[datetime] = Field(
-        default=None,
-        title="The time at which the component was registered.",
     )

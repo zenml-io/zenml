@@ -13,21 +13,18 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for users."""
 
-from typing import List, Optional
+from typing import List, Optional, Union
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from zenml.constants import ACTIVATE, DEACTIVATE, ROLES, USERS, VERSION_1
 from zenml.logger import get_logger
 from zenml.models import RoleAssignmentModel, UserModel
-from zenml.utils.uuid_utils import (
-    parse_name_or_uuid,
-    parse_optional_name_or_uuid,
-)
 from zenml.zen_server.auth import authenticate_credentials, authorize
 from zenml.zen_server.models.user_management_models import (
     ActivateUserRequest,
-    CreateUserModel,
+    CreateUserRequest,
     CreateUserResponse,
     DeactivateUserResponse,
     UpdateUserRequest,
@@ -72,7 +69,7 @@ async def list_users() -> List[UserModel]:
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-async def create_user(user: CreateUserModel) -> CreateUserResponse:
+async def create_user(user: CreateUserRequest) -> CreateUserResponse:
     """Creates a user.
 
     # noqa: DAR401
@@ -93,10 +90,8 @@ async def create_user(user: CreateUserModel) -> CreateUserResponse:
     if user.password is None:
         user_model.active = False
         token = user_model.generate_activation_token()
-        user_model.hash_activation_token()
     else:
         user_model.active = True
-        user_model.hash_password()
     new_user = zen_store.create_user(user_model)
     # add back the original unhashed activation token, if generated, to
     # send it back to the client
@@ -110,7 +105,7 @@ async def create_user(user: CreateUserModel) -> CreateUserResponse:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_user(user_name_or_id: str) -> UserModel:
+async def get_user(user_name_or_id: Union[str, UUID]) -> UserModel:
     """Returns a specific user.
 
     Args:
@@ -119,9 +114,7 @@ async def get_user(user_name_or_id: str) -> UserModel:
     Returns:
         A specific user.
     """
-    return zen_store.get_user(
-        user_name_or_id=parse_name_or_uuid(user_name_or_id)
-    )
+    return zen_store.get_user(user_name_or_id=user_name_or_id)
 
 
 @router.put(
@@ -131,7 +124,7 @@ async def get_user(user_name_or_id: str) -> UserModel:
 )
 @handle_exceptions
 async def update_user(
-    user_name_or_id: str, user: UpdateUserRequest
+    user_name_or_id: Union[str, UUID], user: UpdateUserRequest
 ) -> UserModel:
     """Updates a specific user.
 
@@ -142,14 +135,9 @@ async def update_user(
     Returns:
         The updated user.
     """
-    existing_user = zen_store.get_user(parse_name_or_uuid(user_name_or_id))
-    user_model = user.to_model(user=existing_user)
-    if user.password is not None:
-        user_model.hash_password()
-
-    return zen_store.update_user(
-        user_name_or_id=parse_name_or_uuid(user_name_or_id), user=user_model
-    )
+    existing_user = zen_store.get_user(user_name_or_id)
+    user_model = user.apply_to_model(existing_user)
+    return zen_store.update_user(user_model)
 
 
 @activation_router.put(
@@ -159,7 +147,7 @@ async def update_user(
 )
 @handle_exceptions
 async def activate_user(
-    user_name_or_id: str, user: ActivateUserRequest
+    user_name_or_id: Union[str, UUID], user: ActivateUserRequest
 ) -> UserModel:
     """Activates a specific user.
 
@@ -174,21 +162,18 @@ async def activate_user(
         HTTPException: If the user is not authorized to activate the user.
     """
     auth_context = authenticate_credentials(
-        user_name_or_id=parse_name_or_uuid(user_name_or_id),
-        activation_token=user.activation_token.get_secret_value(),
+        user_name_or_id=user_name_or_id,
+        activation_token=user.activation_token,
     )
     if auth_context is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
         )
-    user_model = user.to_model(user=auth_context.user)
-    user_model.hash_password()
+    user_model = user.apply_to_model(auth_context.user)
     user_model.active = True
     user_model.activation_token = None
-    return zen_store.update_user(
-        user_name_or_id=parse_name_or_uuid(user_name_or_id), user=user_model
-    )
+    return zen_store.update_user(user_model)
 
 
 @router.put(
@@ -197,7 +182,7 @@ async def activate_user(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def deactivate_user(user_name_or_id: str) -> UserModel:
+async def deactivate_user(user_name_or_id: Union[str, UUID]) -> UserModel:
     """Deactivates a user and generates a new activation token for it.
 
     Args:
@@ -206,15 +191,11 @@ async def deactivate_user(user_name_or_id: str) -> UserModel:
     Returns:
         The generated activation token.
     """
-    user = zen_store.get_user(parse_name_or_uuid(user_name_or_id))
+    user = zen_store.get_user(user_name_or_id)
     user.active = False
     token = user.generate_activation_token()
-    user.hash_activation_token()
-    user = zen_store.update_user(
-        user_name_or_id=parse_name_or_uuid(user_name_or_id), user=user
-    )
-    # add back the original unhashed activation token, if generated, to
-    # send it back to the client
+    user = zen_store.update_user(user=user)
+    # add back the original un-hashed activation token
     user.activation_token = token
     return DeactivateUserResponse.from_model(user)
 
@@ -224,13 +205,13 @@ async def deactivate_user(user_name_or_id: str) -> UserModel:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def delete_user(user_name_or_id: str) -> None:
+async def delete_user(user_name_or_id: Union[str, UUID]) -> None:
     """Deletes a specific user.
 
     Args:
         user_name_or_id: Name or ID of the user.
     """
-    zen_store.delete_user(user_name_or_id=parse_name_or_uuid(user_name_or_id))
+    zen_store.delete_user(user_name_or_id=user_name_or_id)
 
 
 @router.get(
@@ -240,18 +221,22 @@ async def delete_user(user_name_or_id: str) -> None:
 )
 @handle_exceptions
 async def get_role_assignments_for_user(
-    user_name_or_id: str,
+    user_name_or_id: Union[str, UUID],
+    project_name_or_id: Optional[Union[str, UUID]] = None,
 ) -> List[RoleAssignmentModel]:
     """Returns a list of all roles that are assigned to a user.
 
     Args:
         user_name_or_id: Name or ID of the user.
+        project_name_or_id: If provided, only list roles that are limited to
+            the given project.
 
     Returns:
         A list of all roles that are assigned to a user.
     """
     return zen_store.list_role_assignments(
-        user_name_or_id=parse_name_or_uuid(user_name_or_id)
+        user_name_or_id=user_name_or_id,
+        project_name_or_id=project_name_or_id,
     )
 
 
@@ -261,9 +246,9 @@ async def get_role_assignments_for_user(
 )
 @handle_exceptions
 async def assign_role(
-    role_name_or_id: str,
-    user_name_or_id: str,
-    project_name_or_id: Optional[str] = None,
+    user_name_or_id: Union[str, UUID],
+    role_name_or_id: Union[str, UUID],
+    project_name_or_id: Optional[Union[str, UUID]] = None,
 ) -> None:
     """Assign a role to a user for all resources within a given project or globally.
 
@@ -275,10 +260,10 @@ async def assign_role(
             assigned globally.
     """
     zen_store.assign_role(
-        role_name_or_id=parse_name_or_uuid(role_name_or_id),
-        user_or_team_name_or_id=parse_name_or_uuid(user_name_or_id),
+        role_name_or_id=role_name_or_id,
+        user_or_team_name_or_id=user_name_or_id,
         is_user=True,
-        project_name_or_id=parse_optional_name_or_uuid(project_name_or_id),
+        project_name_or_id=project_name_or_id,
     )
 
 
@@ -288,9 +273,9 @@ async def assign_role(
 )
 @handle_exceptions
 async def unassign_role(
-    user_name_or_id: str,
-    role_name_or_id: str,
-    project_name_or_id: Optional[str],
+    user_name_or_id: Union[str, UUID],
+    role_name_or_id: Union[str, UUID],
+    project_name_or_id: Optional[Union[str, UUID]],
 ) -> None:
     """Remove a users role within a project or globally.
 
@@ -301,8 +286,8 @@ async def unassign_role(
             provided, the role will be revoked globally.
     """
     zen_store.revoke_role(
-        role_name_or_id=parse_name_or_uuid(role_name_or_id),
-        user_or_team_name_or_id=parse_name_or_uuid(user_name_or_id),
+        role_name_or_id=role_name_or_id,
+        user_or_team_name_or_id=user_name_or_id,
         is_user=True,
-        project_name_or_id=parse_optional_name_or_uuid(project_name_or_id),
+        project_name_or_id=project_name_or_id,
     )

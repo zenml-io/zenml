@@ -63,7 +63,7 @@ class LocalServerDeploymentConfig(ServerDeploymentConfig):
     """
 
     port: int = 8237
-    address: Union[
+    ip_address: Union[
         ipaddress.IPv4Address, ipaddress.IPv6Address
     ] = ipaddress.IPv4Address(DEFAULT_LOCAL_SERVICE_IP_ADDRESS)
 

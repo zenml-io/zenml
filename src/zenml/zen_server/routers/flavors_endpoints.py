@@ -13,14 +13,14 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for flavors."""
 
-from typing import List, Optional
+from typing import List, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
 from zenml.constants import FLAVORS, VERSION_1
+from zenml.enums import StackComponentType
 from zenml.models import FlavorModel
-from zenml.utils.uuid_utils import parse_name_or_uuid
 from zenml.zen_server.auth import authorize
 from zenml.zen_server.utils import error_response, handle_exceptions, zen_store
 
@@ -39,22 +39,38 @@ router = APIRouter(
 )
 @handle_exceptions
 async def list_flavors(
-    project_name_or_id: Optional[str] = None,
-    component_type: Optional[str] = None,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
+    component_type: Optional[StackComponentType] = None,
+    user_name_or_id: Optional[Union[str, UUID]] = None,
+    name: Optional[str] = None,
+    is_shared: Optional[bool] = None,
+    hydrated: bool = False,
 ) -> List[FlavorModel]:
     """Returns all flavors.
 
     Args:
         project_name_or_id: Name or ID of the project.
-        component_type: Optionally filter by component_type.
+        component_type: Optionally filter by component type.
+        user_name_or_id: Optionally filter by name or ID of the user.
+        name: Optionally filter by flavor name.
+        is_shared: Optionally filter by shared status of the flavor.
+        hydrated: Defines if users and projects will be
+                  included by reference (FALSE) or as model (TRUE)
 
     Returns:
         All flavors.
     """
     flavors_list = zen_store.list_flavors(
-        project_name_or_id=parse_name_or_uuid(project_name_or_id),
+        project_name_or_id=project_name_or_id,
         component_type=component_type,
+        user_name_or_id=user_name_or_id,
+        is_shared=is_shared,
+        name=name,
     )
+    # if hydrated:
+    #     return [flavor.to_hydrated_model() for flavor in flavors_list]
+    # else:
+    #     return flavors_list
     return flavors_list
 
 
@@ -64,18 +80,23 @@ async def list_flavors(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def get_flavor(
-    flavor_id: str,
-) -> FlavorModel:
+async def get_flavor(flavor_id: UUID, hydrated: bool = False) -> FlavorModel:
     """Returns the requested flavor.
 
     Args:
         flavor_id: ID of the flavor.
+        hydrated: Defines if users and projects will be
+                  included by reference (FALSE) or as model (TRUE)
 
     Returns:
         The requested stack.
     """
-    return zen_store.get_flavor(UUID(flavor_id))
+    flavor = zen_store.get_flavor(flavor_id)
+    # if hydrated:
+    #     return flavor.to_hydrated_model()
+    # else:
+    #     return flavor
+    return flavor
 
 
 @router.put(
@@ -84,17 +105,27 @@ async def get_flavor(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def update_flavor(flavor_id: str, flavor: FlavorModel) -> FlavorModel:
+async def update_flavor(
+    flavor_id: UUID, flavor: FlavorModel, hydrated: bool = False
+) -> FlavorModel:
     """Updates a stack.
 
     Args:
-        flavor_id: Name of the flavor.
+        flavor_id: ID of the flavor.
         flavor: Flavor to use for the update.
+        hydrated: Defines if users and projects will be
+                  included by reference (FALSE) or as model (TRUE)
 
     Returns:
         The updated flavor.
     """
-    # TODO: [server] implement an update method on the flavor
+    flavor.id = flavor_id
+    updated_flavor = zen_store.update_flavor(flavor=flavor)
+    # if hydrated:
+    #     return updated_flavor.to_hydrated_model()
+    # else:
+    #     return updated_flavor
+    return updated_flavor
 
 
 @router.delete(
@@ -102,10 +133,10 @@ async def update_flavor(flavor_id: str, flavor: FlavorModel) -> FlavorModel:
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-async def delete_flavor(flavor_id: str) -> None:
+async def delete_flavor(flavor_id: UUID) -> None:
     """Deletes a flavor.
 
     Args:
-        flavor_id: Name of the flavor.
+        flavor_id: ID of the flavor.
     """
-    # TODO: [server] implement an update method on the flavor
+    zen_store.delete_flavor(flavor_id)

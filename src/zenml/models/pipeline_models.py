@@ -13,17 +13,15 @@
 #  permissions and limitations under the License.
 """Model definitions for pipelines, runs, steps, and artifacts."""
 
-from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional, cast
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from zenml import __version__ as current_zenml_version
-from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import ArtifactType
-from zenml.models.project_models import ProjectModel
-from zenml.models.user_management_models import UserModel
+from zenml.models.base_models import DomainModel, ProjectScopedDomainModel
+from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.utils.analytics_utils import AnalyticsTrackedModelMixin
 
 
@@ -57,70 +55,28 @@ def get_git_sha(clean: bool = True) -> Optional[str]:
     return cast(str, repo.head.object.hexsha)
 
 
-class PipelineModel(AnalyticsTrackedModelMixin):
-    """Domain Model representing a pipeline."""
+class PipelineModel(ProjectScopedDomainModel, AnalyticsTrackedModelMixin):
+    """Domain model representing a pipeline."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["id", "project", "user"]
 
-    id: UUID = Field(
-        default_factory=uuid4, title="The unique id of the pipeline."
+    name: str = Field(
+        title="The name of the pipeline.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
-    name: str = Field(title="The name of the pipeline.")
 
     docstring: Optional[str]
     configuration: Dict[str, str]
 
-    project: UUID = Field(title="The project that contains this component.")
-    user: UUID = Field(
-        title="The id of the user that owns this component.",
-    )
 
-    creation_date: datetime = Field(
-        default_factory=datetime.now,
-        title="The time at which the pipeline was created.",
-    )
-
-    def to_hydrated_model(self) -> "HydratedPipelineModel":
-        """Converts this model to a hydrated model.
-
-        Returns:
-            A hydrated model.
-        """
-        zen_store = GlobalConfiguration().zen_store
-
-        project = zen_store.get_project(self.project)
-        user = zen_store.get_user(self.user)
-
-        return HydratedPipelineModel(
-            id=self.id,
-            name=self.name,
-            project=project,
-            user=user,
-            docstring=self.docstring,
-            configuration=self.configuration,
-            creation_date=self.creation_date,
-        )
-
-
-class HydratedPipelineModel(PipelineModel):
-    """Pipeline model with User and Project fully hydrated."""
-
-    project: ProjectModel = Field(
-        default=None, title="The project that contains this stack."
-    )
-    user: UserModel = Field(
-        default=None,
-        title="The id of the user, that created this stack.",
-    )
-
-
-class PipelineRunModel(AnalyticsTrackedModelMixin):
+class PipelineRunModel(DomainModel, AnalyticsTrackedModelMixin):
     """Domain Model representing a pipeline run."""
 
-    id: UUID = Field(default_factory=uuid4, title="The unique id of the run.")
-    name: str = Field(title="The name of the pipeline.")
+    name: str = Field(
+        title="The name of the pipeline run.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
+    )
 
-    user: UUID  # might not be set for scheduled runs
     stack_id: Optional[UUID]  # might not be set for scheduled runs
     pipeline_id: Optional[UUID]  # might not be set for scheduled runs
 
@@ -131,18 +87,16 @@ class PipelineRunModel(AnalyticsTrackedModelMixin):
 
     # ID in MLMD - needed for some metadata store methods
     mlmd_id: Optional[int]
+    user: Optional[UUID]  # might not be set for scheduled runs
 
-    creation_date: datetime = Field(
-        default_factory=datetime.now,
-        title="The time at which the run was registered.",
+
+class StepRunModel(DomainModel):
+    """Domain Model representing a step in a pipeline run."""
+
+    name: str = Field(
+        title="The name of the pipeline run step.",
+        max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
-
-
-class StepRunModel(BaseModel):
-    """Pydantic object representing a step of a pipeline run."""
-
-    id: Optional[UUID]
-    name: str
 
     pipeline_run_id: Optional[UUID]
     parent_step_ids: Optional[List[UUID]]
@@ -156,10 +110,9 @@ class StepRunModel(BaseModel):
     mlmd_parent_step_ids: List[int]
 
 
-class ArtifactModel(BaseModel):
-    """Pydantic object representing an artifact."""
+class ArtifactModel(DomainModel):
+    """Domain Model representing an artifact."""
 
-    id: Optional[UUID]
     name: Optional[str]  # Name of the output in the parent step
 
     parent_step_id: Optional[UUID]

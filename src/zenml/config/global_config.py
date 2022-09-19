@@ -26,6 +26,10 @@ from pydantic.main import ModelMetaclass
 
 from zenml import __version__
 from zenml.config.store_config import StoreConfiguration
+from zenml.constants import (
+    DEFAULT_STORE_DIRECTORY_NAME,
+    LOCAL_STORES_DIRECTORY_NAME,
+)
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import io_utils, yaml_utils
@@ -467,6 +471,18 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         """
         return self._config_path
 
+    @property
+    def local_stores_path(self) -> str:
+        """Path where local stores information is stored.
+
+        Returns:
+            The path where local stores information is stored.
+        """
+        return os.path.join(
+            self.config_directory,
+            LOCAL_STORES_DIRECTORY_NAME,
+        )
+
     def get_default_store(self) -> StoreConfiguration:
         """Get the default store configuration.
 
@@ -475,7 +491,12 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         """
         from zenml.zen_stores.base_zen_store import BaseZenStore
 
-        return BaseZenStore.get_default_store_config(path=self.config_directory)
+        return BaseZenStore.get_default_store_config(
+            path=os.path.join(
+                self.local_stores_path,
+                DEFAULT_STORE_DIRECTORY_NAME,
+            )
+        )
 
     def set_default_store(self) -> None:
         """Creates and sets the default store configuration.

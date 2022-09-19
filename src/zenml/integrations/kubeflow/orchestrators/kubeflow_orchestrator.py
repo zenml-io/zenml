@@ -30,7 +30,6 @@
 # inspired by the kubeflow dag runner implementation of tfx
 """Implementation of the Kubeflow orchestrator."""
 import os
-import re
 import sys
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 from uuid import UUID
@@ -45,6 +44,7 @@ from kubernetes import config as k8s_config
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
 from zenml.artifact_stores import LocalArtifactStore
+from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.exceptions import ProvisioningError
@@ -245,7 +245,8 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilderMixin):
                         f"pipelines in a remote Kubernetes cluster designated "
                         f"by the '{self.kubernetes_context}' configuration "
                         f"context, but the '{container_registry.name}' "
-                        f"container registry URI '{container_registry.uri}' "
+                        f"container registry URI "
+                        f"'{container_registry.config.uri}' "
                         f"points to a local container registry. Please ensure "
                         f"that you always use non-local stack components with "
                         f"a remote Kubeflow orchestrator, otherwise you will "
@@ -265,8 +266,8 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilderMixin):
                         f"pipelines in a local k3d Kubernetes cluster "
                         f"designated by the '{self.kubernetes_context}' "
                         f"configuration context, but the container registry "
-                        f"URI '{container_registry.uri}' doesn't match the "
-                        f"expected format 'localhost:$PORT'. "
+                        f"URI '{container_registry.config.uri}' doesn't "
+                        f"match the expected format 'localhost:$PORT'. "
                         f"The local Kubeflow orchestrator only works with a "
                         f"local container registry because it cannot "
                         f"currently authenticate to external container "
@@ -291,12 +292,12 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilderMixin):
             the local k3d cluster managed by ZenML).
         """
         return self.kubernetes_context == self._get_k3d_kubernetes_context(
-            self.uuid
+            self.id
         )
 
     @property
     def root_directory(self) -> str:
-        """Returns path to the root directory for all files concerning this orchestrator.
+        """Path to the root directory for all files concerning this orchestrator.
 
         Returns:
             Path to the root directory.
@@ -304,7 +305,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilderMixin):
         return os.path.join(
             io_utils.get_global_config_directory(),
             "kubeflow",
-            str(self.uuid),
+            str(self.id),
         )
 
     @property
@@ -338,8 +339,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilderMixin):
             runtime_configuration=runtime_configuration,
         )
 
-    @staticmethod
-    def _configure_container_op(container_op: dsl.ContainerOp) -> None:
+    def _configure_container_op(self, container_op: dsl.ContainerOp) -> None:
         """Makes changes in place to the configuration of the container op.
 
         Configures persistent mounted volumes for each stack component that
@@ -369,45 +369,48 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilderMixin):
         }
 
         stack = Repository().active_stack
-        global_cfg_dir = io_utils.get_global_config_directory()
+        local_stores_path = GlobalConfiguration().local_stores_path
 
         # go through all stack components and identify those that advertise
         # a local path where they persist information that they need to be
-        # available when running pipelines. For those that do, mount them
-        # into the Kubeflow container.
-        has_local_repos = False
+        # available when running pipelines.
+        has_local_paths = False
         for stack_comp in stack.components.values():
             local_path = stack_comp.local_path
             if not local_path:
                 continue
             # double-check this convention, just in case it wasn't respected
             # as documented in `StackComponent.local_path`
-            if not local_path.startswith(global_cfg_dir):
+            if not local_path.startswith(local_stores_path):
                 raise ValueError(
-                    f"Local path {local_path} for component {stack_comp.name} "
-                    f"is not in the global config directory ({global_cfg_dir})."
+                    f"Local path {local_path} for component "
+                    f"{stack_comp.name} is not in the local stores "
+                    f"directory ({local_stores_path})."
                 )
-            has_local_repos = True
-            host_path = k8s_client.V1HostPathVolumeSource(
-                path=local_path, type="Directory"
-            )
-            volume_name = f"{stack_comp.type.value}-{stack_comp.name}"
-            volumes[local_path] = k8s_client.V1Volume(
-                name=re.sub(r"[^0-9a-zA-Z-]+", "-", volume_name)
-                .strip("-")
-                .lower(),
-                host_path=host_path,
-            )
+            has_local_paths = True
             logger.debug(
-                "Adding host path volume for %s %s (path: %s) "
-                "in kubeflow pipelines container.",
+                "The host path for %s %s (path: %s) will be mounted "
+                "in the kubeflow pipelines container.",
                 stack_comp.type.value,
                 stack_comp.name,
                 local_path,
             )
-        container_op.add_pvolumes(volumes)
 
-        if has_local_repos:
+        if has_local_paths or self.is_local:
+            host_path = k8s_client.V1HostPathVolumeSource(
+                path=local_stores_path, type="Directory"
+            )
+
+            volumes[local_stores_path] = k8s_client.V1Volume(
+                name="local-stores",
+                host_path=host_path,
+            )
+            logger.debug(
+                "Adding host path volume for the local ZenML stores (path: %s) "
+                "in kubeflow pipelines container.",
+                local_stores_path,
+            )
+
             if sys.platform == "win32":
                 # File permissions are not checked on Windows. This if clause
                 # prevents mypy from complaining about unused 'type: ignore'
@@ -427,6 +430,8 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilderMixin):
                     "Setting security context UID and GID to local user/group "
                     "in kubeflow pipelines container."
                 )
+
+        container_op.add_pvolumes(volumes)
 
         # Add environment variables for Azure Blob Storage to pod in case they
         # are set locally
