@@ -234,6 +234,7 @@ class ZenStoreInterface(ABC):
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
+        component_id: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
     ) -> List[StackModel]:
@@ -242,6 +243,8 @@ class ZenStoreInterface(ABC):
         Args:
             project_name_or_id: Id or name of the Project containing the stack
             user_name_or_id: Optionally filter stacks by their owner
+            component_id: Optionally filter for stacks that contain the
+                          component
             name: Optionally filter stacks by their name
             is_shared: Optionally filter out stacks by whether they are shared
                 or not
@@ -1067,6 +1070,7 @@ class ZenStoreInterface(ABC):
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[UUID] = None,
+        component_id: Optional[UUID] = None,
         run_name: Optional[str] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[UUID] = None,
@@ -1077,6 +1081,8 @@ class ZenStoreInterface(ABC):
         Args:
             project_name_or_id: If provided, only return runs for this project.
             stack_id: If provided, only return runs for this stack.
+            component_id: Optionally filter for runs that used the
+                          component
             run_name: Run name if provided
             user_name_or_id: If provided, only return runs for this user.
             pipeline_id: If provided, only return runs for this pipeline.

@@ -17,12 +17,11 @@ from pathlib import Path, PurePath
 from typing import Any, ClassVar, Dict, List, Optional, Type, Union, cast
 from uuid import UUID
 
-from sqlalchemy import or_
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.exc import ArgumentError, NoResultFound
-from sqlmodel import Session, SQLModel, create_engine, select
-from sqlmodel.sql.expression import Select, SelectOfScalar
+from sqlmodel import Session, SQLModel, create_engine, select, or_
+from sqlmodel.sql.expression import Select, SelectOfScalar, col
 
 from zenml.config.store_config import StoreConfiguration
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
@@ -69,6 +68,7 @@ from zenml.zen_stores.schemas import (
     UserRoleAssignmentSchema,
     UserSchema,
 )
+from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -391,6 +391,7 @@ class SqlZenStore(BaseZenStore):
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
+        component_id: Optional[UUID] = None,
         name: Optional[str] = None,
         is_shared: Optional[bool] = None,
     ) -> List[StackModel]:
@@ -399,6 +400,8 @@ class SqlZenStore(BaseZenStore):
         Args:
             project_name_or_id: Id or name of the Project containing the stack
             user_name_or_id: Optionally filter stacks by their owner
+            component_id: Optionally filter for stacks that contain the
+                          component
             name: Optionally filter stacks by their name
             is_shared: Optionally filter out stacks by whether they are shared
                 or not
@@ -407,7 +410,6 @@ class SqlZenStore(BaseZenStore):
             A list of all stacks matching the filter criteria.
         """
         with Session(self.engine) as session:
-            # TODO: raise KeyError when nonexistent project or username passed in
             # Get a list of all stacks
             query = select(StackSchema)
             # TODO: prettify
@@ -417,6 +419,11 @@ class SqlZenStore(BaseZenStore):
             if user_name_or_id:
                 user = self._get_user_schema(user_name_or_id)
                 query = query.where(StackSchema.user == user.id)
+            if component_id:
+                query = (
+                    query
+                    .where(StackCompositionSchema.stack_id == StackSchema.id)
+                    .where(StackCompositionSchema.component_id == component_id))
             if name:
                 query = query.where(StackSchema.name == name)
             if is_shared is not None:
@@ -1965,6 +1972,7 @@ class SqlZenStore(BaseZenStore):
         self,
         project_name_or_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[UUID] = None,
+        component_id: Optional[UUID] = None,
         run_name: Optional[str] = None,
         user_name_or_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[UUID] = None,
@@ -1975,6 +1983,8 @@ class SqlZenStore(BaseZenStore):
         Args:
             project_name_or_id: If provided, only return runs for this project.
             stack_id: If provided, only return runs for this stack.
+            component_id: Optionally filter for runs that used the
+                          component
             run_name: Run name if provided
             user_name_or_id: If provided, only return runs for this user.
             pipeline_id: If provided, only return runs for this pipeline.
@@ -1992,6 +2002,12 @@ class SqlZenStore(BaseZenStore):
                 query = query.where(StackSchema.project == project.id)
             if stack_id is not None:
                 query = query.where(PipelineRunSchema.stack_id == stack_id)
+            if component_id:
+                query = (
+                    query
+                    .where(StackCompositionSchema.stack_id
+                           == PipelineRunSchema.stack_id)
+                    .where(StackCompositionSchema.component_id == component_id))
             if run_name is not None:
                 query = query.where(PipelineRunSchema.name == run_name)
             if pipeline_id is not None:
