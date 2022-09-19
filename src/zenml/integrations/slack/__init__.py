@@ -14,12 +14,12 @@
 """Slack integration for alerter components."""
 
 from typing import List, Type
-from zenml.stack import Flavor
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import SLACK
 from zenml.integrations.integration import Integration
 from zenml.models import FlavorModel
+from zenml.stack import Flavor
 
 SLACK_ALERTER_FLAVOR = "slack"
 
@@ -43,7 +43,7 @@ class SlackIntegration(Integration):
 
         from zenml.integrations.slack.flavors import SlackAlerterFlavor
 
-        return [SlackAlerterFlavor        ]
+        return [SlackAlerterFlavor]
 
 
 SlackIntegration.check_installation()

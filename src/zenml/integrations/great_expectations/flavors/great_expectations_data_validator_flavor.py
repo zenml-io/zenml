@@ -17,7 +17,6 @@ import os
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
 import yaml
-
 from pydantic import root_validator, validator
 
 from zenml.data_validators.base_data_validator import (

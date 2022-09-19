@@ -723,7 +723,10 @@ class Repository(metaclass=RepositoryMetaClass):
         """
         if stack.id == self.active_stack_model.id:
             raise ValueError(
-                f"Unable to deregister active stack " f"'{stack.name}'."
+                f"Unable to deregister active stack "
+                f"'{stack.name}'. Make "
+                f"sure to designate a new active stack before deleting this "
+                f"one."
             )
 
         try:

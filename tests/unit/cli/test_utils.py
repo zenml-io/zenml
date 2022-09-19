@@ -18,7 +18,6 @@ from hypothesis import given
 from hypothesis.strategies import datetimes
 
 from zenml.cli.utils import format_date, parse_unknown_options
-from zenml.repository import Repository
 
 SAMPLE_CUSTOM_ARGUMENTS = [
     '--custom_argument="value"',

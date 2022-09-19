@@ -18,12 +18,12 @@ to access the HashiCorp Vault secrets manager from within your ZenML
 pipeline runs.
 """
 from typing import List, Type
-from zenml.stack import Flavor
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import VAULT
 from zenml.integrations.integration import Integration
 from zenml.models import FlavorModel
+from zenml.stack import Flavor
 
 VAULT_SECRETS_MANAGER_FLAVOR = "vault"
 

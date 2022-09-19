@@ -14,7 +14,6 @@
 """Model definitions for stack component flavors."""
 
 from typing import ClassVar, List, Optional
-from uuid import UUID
 
 from pydantic import Field
 

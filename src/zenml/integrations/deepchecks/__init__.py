@@ -23,11 +23,13 @@ browser.
 """
 
 from typing import List, Type
-from zenml.stack import Flavor
+
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import DEEPCHECKS
 from zenml.integrations.integration import Integration
 from zenml.models import FlavorModel
+from zenml.stack import Flavor
+
 DEEPCHECKS_DATA_VALIDATOR_FLAVOR = "deepchecks"
 
 
@@ -52,9 +54,10 @@ class DeepchecksIntegration(Integration):
         """
 
         from zenml.integrations.deepchecks.flavors import (
-            DeepchecksDataValidatorFlavor
+            DeepchecksDataValidatorFlavor,
         )
-        return [DeepchecksDataValidatorFlavor        ]
+
+        return [DeepchecksDataValidatorFlavor]
 
 
 DeepchecksIntegration.check_installation()

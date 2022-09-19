@@ -106,7 +106,9 @@ class MLFlowExperimentTrackerConfig(BaseExperimentTrackerConfig):
             ValueError: If the tracking uri is not valid.
         """
         # TODO: refactor this into the actual implementation
-        from mlflow.store.db.db_types import DATABASE_ENGINES  # type: ignore[import]
+        from mlflow.store.db.db_types import (
+            DATABASE_ENGINES,  # type: ignore[import]
+        )
 
         if tracking_uri:
             valid_schemes = DATABASE_ENGINES + ["http", "https", "file"]

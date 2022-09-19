@@ -275,9 +275,7 @@ def print_stack_component_list(
     print_table(configurations)
 
 
-def print_stack_configuration(
-    stack: StackModel, active: bool
-) -> None:
+def print_stack_configuration(stack: StackModel, active: bool) -> None:
     """Prints the configuration options of a stack.
 
     Args:
