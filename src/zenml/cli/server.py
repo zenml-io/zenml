@@ -20,7 +20,7 @@ from typing import Any, Dict, Optional, Union
 
 import click
 import yaml
-from click_params import IP_ADDRESS
+from click_params import IP_ADDRESS  # type: ignore[import]
 from rich.errors import MarkupError
 from rich.markdown import Markdown
 

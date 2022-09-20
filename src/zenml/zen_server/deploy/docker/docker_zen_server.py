@@ -79,6 +79,7 @@ class DockerServerDeploymentConfig(ServerDeploymentConfig):
     address: Union[
         ipaddress.IPv4Address, ipaddress.IPv6Address
     ] = ipaddress.IPv4Address(DEFAULT_LOCAL_SERVICE_IP_ADDRESS)
+    store: Optional[StoreConfiguration] = None
 
 
 class DockerZenServerConfig(ContainerServiceConfig):
@@ -89,7 +90,6 @@ class DockerZenServerConfig(ContainerServiceConfig):
     """
 
     server: DockerServerDeploymentConfig
-    store: Optional[StoreConfiguration] = None
 
 
 class DockerZenServer(ContainerService):
