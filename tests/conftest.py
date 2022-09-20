@@ -24,7 +24,10 @@ from py._builtin import execfile
 from pytest_mock import MockerFixture
 
 from tests.venv_clone_utils import clone_virtualenv
-from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
+from zenml.artifact_stores.local_artifact_store import (
+    LocalArtifactStore,
+    LocalArtifactStoreConfig,
+)
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ENV_ZENML_DEBUG, TEST_STEP_INPUT_INT
@@ -34,6 +37,7 @@ from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.pipelines import pipeline
 from zenml.repository import Repository
 from zenml.stack.stack import Stack
+from zenml.stack.stack_component import StackComponentConfig, StackComponentType
 from zenml.steps import StepContext, step
 from zenml.zen_stores.base_zen_store import BaseZenStore
 from zenml.zen_stores.sql_zen_store import SqlZenStore, SqlZenStoreConfiguration
@@ -306,8 +310,24 @@ def files_dir(request: pytest.FixtureRequest, tmp_path: Path) -> Path:
 @pytest.fixture
 def local_stack():
     """Returns a local stack with local orchestrator and artifact store."""
-    orchestrator = LocalOrchestrator(name="")
-    artifact_store = LocalArtifactStore(name="", path="")
+    orchestrator = LocalOrchestrator(
+        name="",
+        id=uuid4(),
+        config=StackComponentConfig(),
+        flavor="default",
+        type=StackComponentType.ORCHESTRATOR,
+        user=uuid4(),
+        project=uuid4(),
+    )
+    artifact_store = LocalArtifactStore(
+        name="",
+        id=uuid4(),
+        config=LocalArtifactStoreConfig(),
+        flavor="default",
+        type=StackComponentType.ARTIFACT_STORE,
+        user=uuid4(),
+        project=uuid4(),
+    )
     return Stack(
         id=uuid4(),
         name="",

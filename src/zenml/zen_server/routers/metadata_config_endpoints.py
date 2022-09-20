@@ -39,4 +39,7 @@ async def get_metadata_config() -> str:
     Returns:
         The metadata config.
     """
-    return zen_store.get_metadata_config()
+    from google.protobuf.json_format import MessageToJson
+
+    config = zen_store.get_metadata_config()
+    return MessageToJson(config)

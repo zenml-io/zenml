@@ -33,7 +33,6 @@ from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker imp
     MLFLOW_TRACKING_USERNAME,
     MLFlowExperimentTracker,
 )
-from zenml.metadata_stores import SQLiteMetadataStore
 from zenml.orchestrators import LocalOrchestrator
 from zenml.stack import Stack
 
@@ -61,7 +60,6 @@ def test_mlflow_experiment_tracker_stack_validation() -> None:
     experiment_tracker = MLFlowExperimentTracker(name="")
 
     local_orchestrator = LocalOrchestrator(name="")
-    local_metadata_store = SQLiteMetadataStore(name="", uri="./metadata.db")
     local_artifact_store = LocalArtifactStore(name="")
     remote_artifact_store = GCPArtifactStore(name="", path="gs://my-bucket")
 
@@ -69,7 +67,6 @@ def test_mlflow_experiment_tracker_stack_validation() -> None:
         Stack(
             name="",
             orchestrator=local_orchestrator,
-            metadata_store=local_metadata_store,
             artifact_store=remote_artifact_store,
             experiment_tracker=experiment_tracker,
         ).validate()
@@ -78,7 +75,6 @@ def test_mlflow_experiment_tracker_stack_validation() -> None:
         Stack(
             name="",
             orchestrator=local_orchestrator,
-            metadata_store=local_metadata_store,
             artifact_store=local_artifact_store,
             experiment_tracker=experiment_tracker,
         ).validate()

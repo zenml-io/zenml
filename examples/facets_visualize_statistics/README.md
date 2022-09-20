@@ -12,7 +12,7 @@ DataFrames for us.
 This visualization is produced with the following code:
 
 ```python
-from zenml.post_execution import get_pipeline
+from zenml.post_execution import get_pipelines
 from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
     FacetStatisticsVisualizer,
 )

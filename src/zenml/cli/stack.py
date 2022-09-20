@@ -1215,11 +1215,15 @@ def copy_stack(
                 f"Stack `{source_stack}` cannot be copied as it does not exist."
             )
 
-        if target_stack in repo.stack_configurations:
+        try:
+            repo.get_stack_by_name(name=target_stack)
             cli_utils.error(
-                f"Can't copy stack because a stack with the name '{target_stack}' "
-                "already exists."
+                f"Can't copy stack because a stack with the name "
+                f"'{target_stack}' already exists."
             )
+        except KeyError:
+            pass
+
         stack_model.name = target_stack
         stack_model.user = repo.active_user.id
         stack_model.project = repo.active_project.id

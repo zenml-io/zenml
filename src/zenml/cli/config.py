@@ -13,17 +13,21 @@
 #  permissions and limitations under the License.
 """CLI for manipulating ZenML local and global config file."""
 
+import os
 from typing import TYPE_CHECKING, Optional
 
 import click
+import yaml
 from rich.markdown import Markdown
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.store_config import StoreConfiguration
 from zenml.console import console
 from zenml.enums import CliCategories, LoggingLevels
 from zenml.repository import Repository
+from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 if TYPE_CHECKING:
@@ -160,12 +164,19 @@ def config() -> None:
     is_flag=True,
     help="Configure ZenML to use the stacks stored on your local filesystem.",
 )
+@click.option(
+    "--config",
+    help="Use a YAML or JSON configuration or configuration file.",
+    required=False,
+    type=str,
+)
 def config_set_command(
     url: Optional[str] = None,
     username: Optional[str] = None,
     password: Optional[str] = None,
     project: Optional[str] = None,
     local_store: bool = False,
+    config: Optional[str] = None,
 ) -> None:
     """Change the ZenML configuration.
 
@@ -178,10 +189,29 @@ def config_set_command(
             server.
         project: The active project that is used to connect to the ZenML
             server.
+        config: A YAML or JSON configuration or configuration file to use.
     """
     from zenml.zen_stores.rest_zen_store import RestZenStoreConfiguration
 
-    if local_store:
+    if config:
+        if local_store or url or username or password:
+            cli_utils.error(
+                "You cannot pass a config file and pass the `--url`, "
+                "`--username` or `--password` configuration options at the "
+                "same time."
+            )
+        if os.path.isfile(config):
+            store_dict = yaml_utils.read_yaml(config)
+        else:
+            store_dict = yaml.safe_load(config)
+        if not isinstance(store_dict, dict):
+            cli_utils.error(
+                "The configuration argument must be JSON/YAML content or "
+                "point to a valid configuration file."
+            )
+        store_config = StoreConfiguration.parse_obj(store_dict)
+        GlobalConfiguration().set_store(store_config)
+    elif local_store:
         if url or username or password or project:
             cli_utils.error(
                 "The `--url`, `--username`, `--password` and `--project` "
@@ -206,15 +236,16 @@ def config_set_command(
             username=username,
         )
         GlobalConfiguration().set_store(store_config)
-        if project:
-            try:
-                Repository().set_active_project(project_name_or_id=project)
-            except KeyError:
-                cli_utils.error(
-                    f"The project {project} does not exist on the server "
-                    f"{url}. Please set another project by running `zenml "
-                    f"project set`."
-                )
+
+    if project:
+        try:
+            Repository().set_active_project(project_name_or_id=project)
+        except KeyError:
+            cli_utils.error(
+                f"The project {project} does not exist on the server "
+                f"{url}. Please set another project by running `zenml "
+                f"project set`."
+            )
 
 
 @config.command(

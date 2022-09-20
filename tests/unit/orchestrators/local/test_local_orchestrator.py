@@ -11,13 +11,25 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from uuid import uuid4
+
 from zenml.enums import StackComponentType
 from zenml.orchestrators import LocalOrchestrator
+from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
+from zenml.stack.stack_component import StackComponentConfig, StackComponentType
 
 
 def test_local_orchestrator_attributes():
     """Tests that the basic attributes of the local orchestrator are set
     correctly."""
-    orchestrator = LocalOrchestrator(name="")
-    assert orchestrator.TYPE == StackComponentType.ORCHESTRATOR
-    assert orchestrator.flavor == "local"
+    orchestrator = LocalOrchestrator(
+        name="",
+        id=uuid4(),
+        config=StackComponentConfig(),
+        flavor="default",
+        type=StackComponentType.ORCHESTRATOR,
+        user=uuid4(),
+        project=uuid4(),
+    )
+    assert orchestrator.type == StackComponentType.ORCHESTRATOR
+    assert orchestrator.flavor == "default"

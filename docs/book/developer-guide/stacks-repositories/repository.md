@@ -204,7 +204,6 @@ In the following we use the repository to register a new ZenML stack called
 ```python
 from zenml.repository import Repository
 from zenml.artifact_stores import LocalArtifactStore
-from zenml.metadata_stores import SQLiteMetadataStore
 from zenml.orchestrators import LocalOrchestrator
 from zenml.stack import Stack
 
@@ -213,12 +212,6 @@ repo = Repository()
 
 # Create a new orchestrator
 orchestrator = LocalOrchestrator(name="local")
-
-# Create a new metadata store
-metadata_store = SQLiteMetadataStore(
-    name="local",
-    uri="/tmp/zenml/zenml.db",
-)
 
 # Create a new artifact store
 artifact_store = LocalArtifactStore(
@@ -230,7 +223,6 @@ artifact_store = LocalArtifactStore(
 stack = Stack(
     name="local",
     orchestrator=orchestrator,
-    metadata_store=metadata_store,
     artifact_store=artifact_store,
 )
 
