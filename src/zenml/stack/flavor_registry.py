@@ -67,7 +67,7 @@ class FlavorRegistry:
             LocalSecretsManagerFlavor,
         )
         for flavor in default_flavors:
-            flavor_instance = flavor()
+            flavor_instance = flavor()  # type: ignore[abstract]
             self._register_flavor(
                 flavor_instance.to_model(integration="built-in")
             )

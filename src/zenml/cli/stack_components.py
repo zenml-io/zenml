@@ -119,7 +119,6 @@ def generate_stack_component_describe_command(
             )
         except KeyError as e:
             cli_utils.error(str(e))  # noqa
-            return
 
         is_active = component.id == repo.active_stack.components.get(
             component_type
@@ -173,7 +172,7 @@ def generate_stack_component_list_command(
 
 def generate_stack_component_register_command(
     component_type: StackComponentType,
-) -> Callable[[str, str, str, bool, List[str]], None]:
+) -> Callable[[str, str, bool, List[str]], None]:
     """Generates a `register` command for the specific stack component type.
 
     Args:
@@ -537,7 +536,7 @@ def generate_stack_component_up_command(
                 type=component_type, name=name
             )
         except KeyError as e:
-            cli_utils.error(e)  # noqa
+            cli_utils.error(str(e))  # noqa
             return
 
         from zenml.stack import StackComponent
@@ -632,7 +631,7 @@ def generate_stack_component_down_command(
                 type=component_type, name=name
             )
         except KeyError as e:
-            cli_utils.error(e)  # noqa
+            cli_utils.error(str(e))  # noqa
             return
 
         from zenml.stack import StackComponent
@@ -715,8 +714,7 @@ def generate_stack_component_logs_command(
                 type=component_type, name=name
             )
         except KeyError as e:
-            cli_utils.error(e)  # noqa
-            return
+            cli_utils.error(str(e))  # noqa
 
         from zenml.stack import StackComponent
 

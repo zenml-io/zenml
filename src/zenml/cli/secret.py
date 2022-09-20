@@ -34,6 +34,7 @@ from zenml.enums import StackComponentType
 from zenml.exceptions import SecretExistsError
 from zenml.repository import Repository
 from zenml.secret import ARBITRARY_SECRET_SCHEMA_TYPE
+from zenml.stack.stack_component import StackComponent
 
 if TYPE_CHECKING:
     from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
@@ -66,7 +67,7 @@ def register_secrets_manager_subcommands() -> None:
                 "manager first and add it to your stack."
             )
 
-        ctx.obj = secrets_manager_models[0].to_component()
+        ctx.obj = StackComponent.from_model(secrets_manager_models[0])
 
     @secret.command(
         "register",

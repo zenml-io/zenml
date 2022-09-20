@@ -574,14 +574,10 @@ def migrate_profiles(
                 project=project.name,
             ):
                 try:
-                    repo.zen_store.create_stack_component(
-                        user_name_or_id=user.id,
-                        project_name_or_id=project.name,
-                        component=component,
-                    )
+                    repo.zen_store.create_stack_component(component=component)
                     cli_utils.declare(
                         f"Migrated {component.type} '{component.name}' with "
-                        f"flavor '{component.flavor_id}'."
+                        f"flavor '{component.flavor}'."
                     )
                 except StackComponentExistsError:
                     if overwrite:

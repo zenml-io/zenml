@@ -131,17 +131,12 @@ class StackComponentConfig(BaseModel, ABC):
         if not secret_utils.is_secret_reference(value):
             return value
 
-        from zenml.repository import Repository
-
-        stack = Repository().active_stack
-
         # A stack component can be part of many stacks, and currently a
         # secrets manager is associated with a stack. This means we're
         # not able to identify the 'correct' secrets manager that the user
         # wanted to resolve the secrets in a general way. We therefore
         # limit secret resolving to components of the active stack.
-        component = stack.components.get(self.type, None)
-        if not component or component.id != self.id:
+        if not self._is_part_of_active_stack():
             raise RuntimeError(
                 f"Failed to resolve secret reference for attribute {key} "
                 f"of stack component `{self}`: The stack component is not "
@@ -151,6 +146,8 @@ class StackComponentConfig(BaseModel, ABC):
                 "which includes both this component and a secrets manager as "
                 "your active stack: `zenml stack set <STACK_NAME>`."
             )
+
+        from zenml.repository import Repository
 
         secrets_manager = Repository().active_stack.secrets_manager
         if not secrets_manager:
@@ -181,6 +178,21 @@ class StackComponentConfig(BaseModel, ABC):
             )
 
         return str(secret_value)
+
+    def _is_part_of_active_stack(self) -> bool:
+        """Checks if this config belongs to a component in the active stack.
+
+        Returns:
+            True if this config belongs to a component in the active stack,
+            False otherwise.
+        """
+
+        from zenml.repository import Repository
+
+        for component in Repository().active_stack.components.values():
+            if component.config == self:
+                return True
+        return False
 
     if not TYPE_CHECKING:
         # When defining __getattribute__, mypy allows accessing non-existent
