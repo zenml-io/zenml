@@ -1470,15 +1470,24 @@ def test_get_flavor_succeeds(
     verata_flavor = FlavorModel(
         name=flavor_name,
         type=StackComponentType.ARTIFACT_STORE,
+        config_schema="default",
         source=".",
         project=sql_store["default_project"].id,
         user=sql_store["active_user"].id,
     )
     with does_not_raise():
         sql_store["store"].create_flavor(flavor=verata_flavor)
-    with does_not_raise():
+        verata_flavor_id = (
+            sql_store["store"]
+            .list_flavors(
+                project_name_or_id=sql_store["default_project"].name,
+                component_type=StackComponentType.ARTIFACT_STORE,
+                name=flavor_name,
+            )[0]
+            .id
+        )
         assert (
-            sql_store["store"].get_flavor(flavor_id=verata_flavor.id).name
+            sql_store["store"].get_flavor(flavor_id=verata_flavor_id).name
             == flavor_name
         )
 
@@ -1495,18 +1504,19 @@ def test_list_flavors_succeeds(
     sql_store: BaseZenStore,
 ):
     """Tests listing stack component flavors."""
-    flavor_name = "default"
+    flavor_name = "verata"
+    verata_flavor = FlavorModel(
+        name=flavor_name,
+        type=StackComponentType.ARTIFACT_STORE,
+        config_schema="default",
+        source=".",
+        project=sql_store["default_project"].id,
+        user=sql_store["active_user"].id,
+    )
     with does_not_raise():
-        assert (
-            sql_store["store"]
-            .list_flavors(
-                project_name_or_id=sql_store["default_project"].name,
-                component_type=StackComponentType.ORCHESTRATOR,
-                name=flavor_name,
-            )[0]
-            .name
-            == flavor_name
-        )
+        sql_store["store"].create_flavor(flavor=verata_flavor)
+        assert len(sql_store["store"].list_flavors()) == 1
+        assert sql_store["store"].list_flavors()[0].name == flavor_name
 
 
 def test_list_flavors_fails_with_nonexistent_project(
