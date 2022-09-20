@@ -12,11 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import json
 import uuid
 from contextlib import ExitStack as does_not_raise
 
 import pytest
+from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
 
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.exceptions import (
@@ -702,15 +702,10 @@ def test_tfx_metadata_succeeds(
     sql_store: BaseZenStore,
 ):
     """Tests tfx metadata."""
-    config = sql_store["store"].get_metadata_config()
-    assert config is not None
-    assert type(config) == str
-    try:
-        json_config = json.loads(config)
-        assert json_config is not None
-        assert type(json_config) == dict
-    except json.JSONDecodeError:
-        assert False
+    with does_not_raise():
+        config = sql_store["store"].get_metadata_config()
+        assert config is not None
+        assert type(config) == ConnectionConfig
 
 
 # =======================
