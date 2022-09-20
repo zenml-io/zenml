@@ -792,7 +792,8 @@ class Stack:
         """Gets all the active stack components for a stack.
 
         Args:
-            step: The step for which to get the active components.
+            step_config: Configuration of the step for which to get the active
+                components.
 
         Returns:
             Dictionary of active stack components.

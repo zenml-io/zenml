@@ -27,7 +27,7 @@ from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
 from zenml.steps import Output
 from zenml.steps.base_step import BaseStep
 from zenml.steps.step_interfaces.base_drift_detection_step import (
-    BaseDriftDetectionConfig,
+    BaseDriftDetectionParameters,
     BaseDriftDetectionStep,
 )
 from zenml.steps.utils import clone_step
@@ -89,8 +89,8 @@ class EvidentlyColumnMapping(BaseModel):
         return column_mapping
 
 
-class EvidentlyProfileConfig(BaseDriftDetectionConfig):
-    """Config class for Evidently profile steps.
+class EvidentlyProfileParameters(BaseDriftDetectionParameters):
+    """Parameters class for Evidently profile steps.
 
     Attributes:
         column_mapping: properties of the DataFrame columns used
@@ -130,7 +130,7 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
         self,
         reference_dataset: pd.DataFrame,
         comparison_dataset: pd.DataFrame,
-        config: EvidentlyProfileConfig,
+        params: EvidentlyProfileParameters,
     ) -> Output(  # type:ignore[valid-type]
         profile=Profile, dashboard=str
     ):
@@ -140,7 +140,7 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
             reference_dataset: a Pandas DataFrame
             comparison_dataset: a Pandas DataFrame of new data you wish to
                 compare against the reference data
-            config: the configuration for the step
+            params: the parameters for the step
 
         Raises:
             ValueError: If ignored_cols is an empty list
@@ -158,18 +158,18 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
         )
         column_mapping = None
 
-        if config.ignored_cols is None:
+        if params.ignored_cols is None:
             pass
 
-        elif not config.ignored_cols:
+        elif not params.ignored_cols:
             raise ValueError(
-                f"Expects None or list of columns in strings, but got {config.ignored_cols}"
+                f"Expects None or list of columns in strings, but got {params.ignored_cols}"
             )
 
         elif not (
-            set(config.ignored_cols).issubset(set(reference_dataset.columns))
+            set(params.ignored_cols).issubset(set(reference_dataset.columns))
         ) or not (
-            set(config.ignored_cols).issubset(set(comparison_dataset.columns))
+            set(params.ignored_cols).issubset(set(comparison_dataset.columns))
         ):
             raise ValueError(
                 "Column is not found in reference or comparison datasets"
@@ -177,29 +177,29 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
 
         else:
             reference_dataset = reference_dataset.drop(
-                labels=list(config.ignored_cols), axis=1
+                labels=list(params.ignored_cols), axis=1
             )
             comparison_dataset = comparison_dataset.drop(
-                labels=list(config.ignored_cols), axis=1
+                labels=list(params.ignored_cols), axis=1
             )
 
-        if config.column_mapping:
-            column_mapping = config.column_mapping.to_evidently_column_mapping()
+        if params.column_mapping:
+            column_mapping = params.column_mapping.to_evidently_column_mapping()
         profile, dashboard = data_validator.data_profiling(
             dataset=reference_dataset,
             comparison_dataset=comparison_dataset,
-            profile_list=config.profile_sections,
+            profile_list=params.profile_sections,
             column_mapping=column_mapping,
-            verbose_level=config.verbose_level,
-            profile_options=config.profile_options,
-            dashboard_options=config.dashboard_options,
+            verbose_level=params.verbose_level,
+            profile_options=params.profile_options,
+            dashboard_options=params.dashboard_options,
         )
         return [profile, dashboard.html()]
 
 
 def evidently_profile_step(
     step_name: str,
-    config: EvidentlyProfileConfig,
+    params: EvidentlyProfileParameters,
 ) -> BaseStep:
     """Shortcut function to create a new instance of the EvidentlyProfileConfig step.
 
@@ -209,9 +209,9 @@ def evidently_profile_step(
 
     Args:
         step_name: The name of the step
-        config: The configuration for the step
+        params: The parameters for the step
 
     Returns:
         a EvidentlyProfileStep step instance
     """
-    return clone_step(EvidentlyProfileStep, step_name)(config=config)
+    return clone_step(EvidentlyProfileStep, step_name)(params=params)

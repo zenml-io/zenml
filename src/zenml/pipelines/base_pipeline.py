@@ -623,11 +623,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
             enable_cache = parameters.pop(PARAM_ENABLE_CACHE, None)
 
             if not overwrite:
-                parameters.update(step.configuration.function_parameters)
+                parameters.update(step.configuration.parameters)
 
             step.configure(
                 enable_cache=enable_cache,
-                function_parameters=parameters,
+                parameters=parameters,
             )
 
     @classmethod
@@ -707,8 +707,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
         steps = {}
         for step_name, step in self.steps.items():
             function_parameters = (
-                pydantic_utils.TemplateGenerator(step.CONFIG_CLASS).run()
-                if step.CONFIG_CLASS
+                pydantic_utils.TemplateGenerator(step.PARAMETERS_CLASS).run()
+                if step.PARAMETERS_CLASS
                 else {}
             )
             outputs = {

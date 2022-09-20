@@ -24,14 +24,16 @@ from zenml.integrations.kserve.services.kserve_deployment import (
     KServeDeploymentConfig,
 )
 from zenml.integrations.kserve.steps.kserve_deployer import (
-    KServeDeployerStepConfig,
+    KServeDeployerStepParameters,
 )
 from zenml.io import fileio
 from zenml.utils import io_utils
 
 
 def prepare_service_config(
-    model_uri: str, output_artifact_uri: str, config: KServeDeployerStepConfig
+    model_uri: str,
+    output_artifact_uri: str,
+    params: KServeDeployerStepParameters,
 ) -> KServeDeploymentConfig:
     """Prepare the model files for model serving.
 
@@ -42,7 +44,7 @@ def prepare_service_config(
     Args:
         model_uri: the URI of the model artifact being served
         output_artifact_uri: the URI of the output artifact
-        config: the KServe deployer step config
+        params: the KServe deployer step parameters
 
     Returns:
         The URL to the model is ready for serving.
@@ -62,18 +64,18 @@ def prepare_service_config(
 
     # TODO [ENG-792]: validate the model artifact type against the
     #   supported built-in KServe server implementations
-    if config.service_config.predictor == "tensorflow":
+    if params.service_config.predictor == "tensorflow":
         # the TensorFlow server expects model artifacts to be
         # stored in numbered subdirectories, each representing a model
         # version
         served_model_uri = os.path.join(
             served_model_uri,
-            config.service_config.predictor,
-            config.service_config.model_name,
+            params.service_config.predictor,
+            params.service_config.model_name,
         )
         fileio.makedirs(served_model_uri)
         io_utils.copy_dir(model_uri, os.path.join(served_model_uri, "1"))
-    elif config.service_config.predictor == "sklearn":
+    elif params.service_config.predictor == "sklearn":
         # the sklearn server expects model artifacts to be
         # stored in a file called model.joblib
         model_uri = os.path.join(model_uri, "model")
@@ -84,8 +86,8 @@ def prepare_service_config(
             )
         served_model_uri = os.path.join(
             served_model_uri,
-            config.service_config.predictor,
-            config.service_config.model_name,
+            params.service_config.predictor,
+            params.service_config.model_name,
         )
         fileio.makedirs(served_model_uri)
         fileio.copy(model_uri, os.path.join(served_model_uri, "model.joblib"))
@@ -95,19 +97,21 @@ def prepare_service_config(
         # is originally stored
         served_model_uri = os.path.join(
             served_model_uri,
-            config.service_config.predictor,
-            config.service_config.model_name,
+            params.service_config.predictor,
+            params.service_config.model_name,
         )
         fileio.makedirs(served_model_uri)
         fileio.copy(model_uri, served_model_uri)
 
-    service_config = config.service_config.copy()
+    service_config = params.service_config.copy()
     service_config.model_uri = served_model_uri
     return service_config
 
 
 def prepare_torch_service_config(
-    model_uri: str, output_artifact_uri: str, config: KServeDeployerStepConfig
+    model_uri: str,
+    output_artifact_uri: str,
+    params: KServeDeployerStepParameters,
 ) -> KServeDeploymentConfig:
     """Prepare the PyTorch model files for model serving.
 
@@ -118,7 +122,7 @@ def prepare_torch_service_config(
     Args:
         model_uri: the URI of the model artifact being served
         output_artifact_uri: the URI of the output artifact
-        config: the KServe deployer step config
+        params: the KServe deployer step parameters
 
     Returns:
         The URL to the model is ready for serving.
@@ -132,25 +136,25 @@ def prepare_torch_service_config(
     fileio.makedirs(served_model_uri)
     fileio.makedirs(config_propreties_uri)
 
-    if config.torch_serve_parameters is None:
+    if params.torch_serve_parameters is None:
         raise RuntimeError("No torch serve parameters provided")
     else:
         # Create a temporary folder
         temp_dir = tempfile.mkdtemp(prefix="zenml-pytorch-temp-")
         tmp_model_uri = os.path.join(
-            str(temp_dir), f"{config.service_config.model_name}.pt"
+            str(temp_dir), f"{params.service_config.model_name}.pt"
         )
 
         # Copy from artifact store to temporary file
         fileio.copy(f"{model_uri}/checkpoint.pt", tmp_model_uri)
 
         torch_archiver_args = TorchModelArchiver(
-            model_name=config.service_config.model_name,
+            model_name=params.service_config.model_name,
             serialized_file=tmp_model_uri,
-            model_file=config.torch_serve_parameters.model_class,
-            handler=config.torch_serve_parameters.handler,
+            model_file=params.torch_serve_parameters.model_class,
+            handler=params.torch_serve_parameters.handler,
             export_path=temp_dir,
-            version=config.torch_serve_parameters.model_version,
+            version=params.torch_serve_parameters.model_version,
         )
 
         manifest = ModelExportUtils.generate_manifest_json(torch_archiver_args)
@@ -158,7 +162,7 @@ def prepare_torch_service_config(
 
         # Copy from temporary file to artifact store
         archived_model_uri = os.path.join(
-            temp_dir, f"{config.service_config.model_name}.mar"
+            temp_dir, f"{params.service_config.model_name}.mar"
         )
         if not fileio.exists(archived_model_uri):
             raise RuntimeError(
@@ -170,21 +174,21 @@ def prepare_torch_service_config(
         fileio.copy(
             archived_model_uri,
             os.path.join(
-                served_model_uri, f"{config.service_config.model_name}.mar"
+                served_model_uri, f"{params.service_config.model_name}.mar"
             ),
         )
 
         # Get or Generate the config file
-        if config.torch_serve_parameters.torch_config:
+        if params.torch_serve_parameters.torch_config:
             # Copy the torch model config to the model store
             fileio.copy(
-                config.torch_serve_parameters.torch_config,
+                params.torch_serve_parameters.torch_config,
                 os.path.join(config_propreties_uri, "config.properties"),
             )
         else:
             # Generate the config file
             config_file_uri = generate_model_deployer_config(
-                model_name=config.service_config.model_name,
+                model_name=params.service_config.model_name,
                 directory=temp_dir,
             )
             # Copy the torch model config to the model store
@@ -193,7 +197,7 @@ def prepare_torch_service_config(
                 os.path.join(config_propreties_uri, "config.properties"),
             )
 
-    service_config = config.service_config.copy()
+    service_config = params.service_config.copy()
     service_config.model_uri = deployment_folder_uri
     return service_config
 

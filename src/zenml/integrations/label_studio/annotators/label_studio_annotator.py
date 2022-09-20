@@ -28,8 +28,8 @@ from zenml.integrations.azure import AZURE_ARTIFACT_STORE_FLAVOR
 from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
 from zenml.integrations.label_studio import LABEL_STUDIO_ANNOTATOR_FLAVOR
 from zenml.integrations.label_studio.steps.label_studio_standard_steps import (
-    LabelStudioDatasetRegistrationConfig,
-    LabelStudioDatasetSyncConfig,
+    LabelStudioDatasetRegistrationParameters,
+    LabelStudioDatasetSyncParameters,
 )
 from zenml.integrations.s3 import S3_ARTIFACT_STORE_FLAVOR
 from zenml.io import fileio
@@ -344,23 +344,23 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
 
     def register_dataset_for_annotation(
         self,
-        config: LabelStudioDatasetRegistrationConfig,
+        params: LabelStudioDatasetRegistrationParameters,
     ) -> Any:
         """Registers a dataset for annotation.
 
         Args:
-            config: Configuration for the dataset.
+            params: Parameters for the dataset.
 
         Returns:
             A Label Studio Project object.
         """
-        project_id = self.get_id_from_name(config.dataset_name)
+        project_id = self.get_id_from_name(params.dataset_name)
         if project_id:
             dataset = self._get_client().get_project(project_id)
         else:
             dataset = self.add_dataset(
-                dataset_name=config.dataset_name,
-                label_config=config.label_config,
+                dataset_name=params.dataset_name,
+                label_config=params.label_config,
             )
 
         return dataset
@@ -438,13 +438,16 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
             )
 
     def _storage_source_already_exists(
-        self, uri: str, config: LabelStudioDatasetSyncConfig, dataset: Project
+        self,
+        uri: str,
+        params: LabelStudioDatasetSyncParameters,
+        dataset: Project,
     ) -> bool:
         """Returns whether a storage source already exists.
 
         Args:
             uri: URI of the storage source.
-            config: Configuration for the dataset.
+            params: Parameters for the dataset.
             dataset: Label Studio dataset.
 
         Returns:
@@ -455,25 +458,25 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         """
         # TODO: check we are already connected
         dataset_id = int(dataset.get_params()["id"])
-        if config.storage_type == "azure":
+        if params.storage_type == "azure":
             storage_sources = self._get_azure_import_storage_sources(dataset_id)
-        elif config.storage_type == "gcs":
+        elif params.storage_type == "gcs":
             storage_sources = self._get_gcs_import_storage_sources(dataset_id)
-        elif config.storage_type == "s3":
+        elif params.storage_type == "s3":
             storage_sources = self._get_s3_import_storage_sources(dataset_id)
         else:
             raise NotImplementedError(
-                f"Storage type '{config.storage_type}' not implemented."
+                f"Storage type '{params.storage_type}' not implemented."
             )
         return any(
             (
-                source.get("presign") == config.presign
+                source.get("presign") == params.presign
                 and source.get("bucket") == uri
-                and source.get("regex_filter") == config.regex_filter
-                and source.get("use_blob_urls") == config.use_blob_urls
+                and source.get("regex_filter") == params.regex_filter
+                and source.get("use_blob_urls") == params.use_blob_urls
                 and source.get("title") == dataset.get_params()["title"]
-                and source.get("description") == config.description
-                and source.get("presign_ttl") == config.presign_ttl
+                and source.get("description") == params.description
+                and source.get("presign_ttl") == params.presign_ttl
                 and source.get("project") == dataset_id
             )
             for source in storage_sources
@@ -500,14 +503,14 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
     def connect_and_sync_external_storage(
         self,
         uri: str,
-        config: LabelStudioDatasetSyncConfig,
+        params: LabelStudioDatasetSyncParameters,
         dataset: Project,
     ) -> Optional[Dict[str, Any]]:
         """Syncs the external storage for the given project.
 
         Args:
             uri: URI of the storage source.
-            config: Configuration for the dataset.
+            params: Parameters for the dataset.
             dataset: Label Studio dataset.
 
         Returns:
@@ -521,16 +524,16 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         #     return None
 
         storage_connection_args = {
-            "prefix": config.prefix,
-            "regex_filter": config.regex_filter,
-            "use_blob_urls": config.use_blob_urls,
-            "presign": config.presign,
-            "presign_ttl": config.presign_ttl,
+            "prefix": params.prefix,
+            "regex_filter": params.regex_filter,
+            "use_blob_urls": params.use_blob_urls,
+            "presign": params.presign,
+            "presign_ttl": params.presign_ttl,
             "title": dataset.get_params()["title"],
-            "description": config.description,
+            "description": params.description,
         }
-        if config.storage_type == "azure":
-            if not config.azure_account_name or not config.azure_account_key:
+        if params.storage_type == "azure":
+            if not params.azure_account_name or not params.azure_account_key:
                 logger.warning(
                     "Authentication credentials for Azure aren't fully "
                     "provided. Please update the storage synchronization "
@@ -538,12 +541,12 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
                 )
             storage = dataset.connect_azure_import_storage(
                 container=uri,
-                account_name=config.azure_account_name,
-                account_key=config.azure_account_key,
+                account_name=params.azure_account_name,
+                account_key=params.azure_account_key,
                 **storage_connection_args,
             )
-        elif config.storage_type == "gcs":
-            if not config.google_application_credentials:
+        elif params.storage_type == "gcs":
+            if not params.google_application_credentials:
                 logger.warning(
                     "Authentication credentials for Google Cloud Storage "
                     "aren't fully provided. Please update the storage "
@@ -552,11 +555,11 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
                 )
             storage = dataset.connect_google_import_storage(
                 bucket=uri,
-                google_application_credentials=config.google_application_credentials,
+                google_application_credentials=params.google_application_credentials,
                 **storage_connection_args,
             )
-        elif config.storage_type == "s3":
-            if not config.aws_access_key_id or not config.aws_secret_access_key:
+        elif params.storage_type == "s3":
+            if not params.aws_access_key_id or not params.aws_secret_access_key:
                 logger.warning(
                     "Authentication credentials for S3 aren't fully provided."
                     "Please update the storage synchronization settings in the "
@@ -564,16 +567,16 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
                 )
             storage = dataset.connect_s3_import_storage(
                 bucket=uri,
-                aws_access_key_id=config.aws_access_key_id,
-                aws_secret_access_key=config.aws_secret_access_key,
-                aws_session_token=config.aws_session_token,
-                region_name=config.s3_region_name,
-                s3_endpoint=config.s3_endpoint,
+                aws_access_key_id=params.aws_access_key_id,
+                aws_secret_access_key=params.aws_secret_access_key,
+                aws_session_token=params.aws_session_token,
+                region_name=params.s3_region_name,
+                s3_endpoint=params.s3_endpoint,
                 **storage_connection_args,
             )
         else:
             raise ValueError(
-                f"Invalid storage type. '{config.storage_type}' is not supported by ZenML's Label Studio integration. Please choose between 'azure', 'gcs' and 'aws'."
+                f"Invalid storage type. '{params.storage_type}' is not supported by ZenML's Label Studio integration. Please choose between 'azure', 'gcs' and 'aws'."
             )
 
         synced_storage = self._get_client().sync_storage(

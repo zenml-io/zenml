@@ -54,7 +54,7 @@ class BaseEntrypointConfiguration(ABC):
         """Returns a command that runs the entrypoint module.
 
         This entrypoint module is responsible for running the entrypoint
-        configration when called. Defaults to running the
+        configuration when called. Defaults to running the
         `zenml.entrypoints.entrypoint` module.
 
         **Note**: This command won't work on its own but needs to be called with

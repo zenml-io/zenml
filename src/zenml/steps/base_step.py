@@ -57,7 +57,6 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.default_materializer_registry import (
     default_materializer_registry,
 )
-from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_context import StepContext
 from zenml.steps.utils import (
     INSTANCE_CONFIGURATION,
@@ -83,7 +82,9 @@ from zenml.utils import dict_utils, pydantic_utils, settings_utils, source_utils
 logger = get_logger(__name__)
 if TYPE_CHECKING:
     from zenml.config.settings import SettingsOrDict
+    from zenml.steps.parameters import Parameters
 
+    ParametersOrDict = Union["Parameters", Dict[str, Any]]
     ArtifactClassOrStr = Union[str, Type["BaseArtifact"]]
     MaterializerClassOrStr = Union[str, Type["BaseMaterializer"]]
 
@@ -113,13 +114,15 @@ class BaseStepMeta(type):
         Raises:
             StepInterfaceError: When unable to create the step.
         """
+        from zenml.steps.parameters import Parameters
+
         dct.setdefault(INSTANCE_CONFIGURATION, {})
         cls = cast(Type["BaseStep"], super().__new__(mcs, name, bases, dct))
 
         cls.INPUT_SIGNATURE = {}
         cls.OUTPUT_SIGNATURE = {}
-        cls.CONFIG_PARAMETER_NAME = None
-        cls.CONFIG_CLASS = None
+        cls.PARAMETERS_FUNCTION_PARAMETER_NAME = None
+        cls.PARAMETERS_CLASS = None
         cls.CONTEXT_PARAMETER_NAME = None
 
         # Get the signature of the step function
@@ -165,18 +168,18 @@ class BaseStepMeta(type):
                     f"and outputs."
                 )
 
-            if issubclass(arg_type, BaseStepConfig):
+            if issubclass(arg_type, Parameters):
                 # Raise an error if we already found a config in the signature
-                if cls.CONFIG_CLASS is not None:
+                if cls.PARAMETERS_CLASS is not None:
                     raise StepInterfaceError(
-                        f"Found multiple configuration arguments "
-                        f"('{cls.CONFIG_PARAMETER_NAME}' and '{arg}') when "
+                        f"Found multiple parameter arguments "
+                        f"('{cls.PARAMETERS_FUNCTION_PARAMETER_NAME}' and '{arg}') when "
                         f"trying to create step '{name}'. Please make sure to "
-                        f"only have one `BaseStepConfig` subclass as input "
+                        f"only have one `Parameters` subclass as input "
                         f"argument for a step."
                     )
-                cls.CONFIG_PARAMETER_NAME = arg
-                cls.CONFIG_CLASS = arg_type
+                cls.PARAMETERS_FUNCTION_PARAMETER_NAME = arg
+                cls.PARAMETERS_CLASS = arg_type
 
             elif issubclass(arg_type, StepContext):
                 if cls.CONTEXT_PARAMETER_NAME is not None:
@@ -213,8 +216,8 @@ class BaseStepMeta(type):
         counter: Counter[str] = collections.Counter()
         counter.update(list(cls.INPUT_SIGNATURE))
         counter.update(list(cls.OUTPUT_SIGNATURE))
-        if cls.CONFIG_CLASS:
-            counter.update(list(cls.CONFIG_CLASS.__fields__.keys()))
+        if cls.PARAMETERS_CLASS:
+            counter.update(list(cls.PARAMETERS_CLASS.__fields__.keys()))
 
         shared_keys = {k for k in counter.elements() if counter[k] > 1}
         if shared_keys:
@@ -239,16 +242,12 @@ class BaseStep(metaclass=BaseStepMeta):
         pipeline_parameter_name: The name of the pipeline parameter for which
             this step was passed as an argument.
         enable_cache: A boolean indicating if caching is enabled for this step.
-        custom_step_operator: Optional name of a custom step operator to use
-            for this step.
-        requires_context: A boolean indicating if this step requires a
-            `StepContext` object during execution.
     """
 
     INPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
     OUTPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
-    CONFIG_PARAMETER_NAME: ClassVar[Optional[str]] = None
-    CONFIG_CLASS: ClassVar[Optional[Type[BaseStepConfig]]] = None
+    PARAMETERS_FUNCTION_PARAMETER_NAME: ClassVar[Optional[str]] = None
+    PARAMETERS_CLASS: ClassVar[Optional[Type["Parameters"]]] = None
     CONTEXT_PARAMETER_NAME: ClassVar[Optional[str]] = None
 
     INSTANCE_CONFIGURATION: Dict[str, Any] = {}
@@ -305,7 +304,7 @@ class BaseStep(metaclass=BaseStepMeta):
             enable_cache=enable_cache,
         )
         self._apply_class_configuration(kwargs)
-        self._verify_and_apply_init_config(*args, **kwargs)
+        self._verify_and_apply_init_params(*args, **kwargs)
 
     @abstractmethod
     def entrypoint(self, *args: Any, **kwargs: Any) -> Any:
@@ -510,14 +509,12 @@ class BaseStep(metaclass=BaseStepMeta):
             extra=extra,
         )
 
-    def _verify_and_apply_init_config(self, *args: Any, **kwargs: Any) -> None:
+    def _verify_and_apply_init_params(self, *args: Any, **kwargs: Any) -> None:
         """Verifies the initialization args and kwargs of this step.
 
-        This method makes sure that there is only a config object passed at
-        initialization and that it was passed using the correct name and
+        This method makes sure that there is only one parameters object passed
+        at initialization and that it was passed using the correct name and
         type specified in the step declaration.
-        If the correct config object was found, additionally saves the
-        config parameters to `self.PARAM_SPEC`.
 
         Args:
             *args: The args passed to the init method of this step.
@@ -527,7 +524,7 @@ class BaseStep(metaclass=BaseStepMeta):
             StepInterfaceError: If there are too many arguments or arguments
                 with a wrong name/type.
         """
-        maximum_arg_count = 1 if self.CONFIG_CLASS else 0
+        maximum_arg_count = 1 if self.PARAMETERS_CLASS else 0
         arg_count = len(args) + len(kwargs)
         if arg_count > maximum_arg_count:
             raise StepInterfaceError(
@@ -536,34 +533,35 @@ class BaseStep(metaclass=BaseStepMeta):
                 f"'{self.name}' step."
             )
 
-        if self.CONFIG_PARAMETER_NAME and self.CONFIG_CLASS:
+        if self.PARAMETERS_FUNCTION_PARAMETER_NAME and self.PARAMETERS_CLASS:
             if args:
                 config = args[0]
             elif kwargs:
                 key, config = kwargs.popitem()
 
-                if key != self.CONFIG_PARAMETER_NAME:
+                if key != self.PARAMETERS_FUNCTION_PARAMETER_NAME:
                     raise StepInterfaceError(
                         f"Unknown keyword argument '{key}' when creating a "
                         f"'{self.name}' step, only expected a single "
-                        f"argument with key '{self.CONFIG_PARAMETER_NAME}'."
+                        "argument with key "
+                        f"'{self.PARAMETERS_FUNCTION_PARAMETER_NAME}'."
                     )
             else:
-                # This step requires configuration parameters but no config
+                # This step requires configuration parameters but no parameters
                 # object was passed as an argument. The parameters might be
-                # set via default values in the config class or in a
+                # set via default values in the parameters class or in a
                 # configuration file, so we continue for now and verify
                 # that all parameters are set before running the step
                 return
 
-            if not isinstance(config, self.CONFIG_CLASS):
+            if not isinstance(config, self.PARAMETERS_CLASS):
                 raise StepInterfaceError(
                     f"`{config}` object passed when creating a "
                     f"'{self.name}' step is not a "
-                    f"`{self.CONFIG_CLASS.__name__}` instance."
+                    f"`{self.PARAMETERS_CLASS.__name__}` instance."
                 )
 
-            self.configure(function_parameters=config)
+            self.configure(parameters=config)
 
     def _validate_input_artifacts(
         self, *artifacts: _OutputArtifact, **kw_artifacts: _OutputArtifact
@@ -683,7 +681,7 @@ class BaseStep(metaclass=BaseStepMeta):
         config = self._finalize_configuration(input_artifacts=input_artifacts)
 
         execution_parameters = {
-            **self.configuration.function_parameters,
+            **self.configuration.parameters,
             **self._internal_execution_parameters,
         }
 
@@ -796,9 +794,7 @@ class BaseStep(metaclass=BaseStepMeta):
         enable_cache: Optional[bool] = None,
         experiment_tracker: Optional[str] = None,
         step_operator: Optional[str] = None,
-        function_parameters: Optional[
-            Union[BaseStepConfig, Dict[str, Any]]
-        ] = None,
+        parameters: Optional["ParametersOrDict"] = None,
         output_materializers: Optional[
             Union[
                 "MaterializerClassOrStr", Mapping[str, "MaterializerClassOrStr"]
@@ -825,7 +821,7 @@ class BaseStep(metaclass=BaseStepMeta):
             enable_cache: If caching should be enabled for this step.
             experiment_tracker: The experiment tracker to use for this step.
             step_operator: The step operator to use for this step.
-            function_parameters: Function parameters for this step
+            parameters: Function parameters for this step
             output_materializers: Output materializers for this step. If
                 given as a dict, the keys must be a subset of the outputs of
                 this step. If a single value (type or string) is given, the
@@ -834,7 +830,7 @@ class BaseStep(metaclass=BaseStepMeta):
             settings: settings for this step.
             extra: Extra configurations for this step.
             merge: If `True`, will merge the given dictionary configurations
-                like `function_parameters` and `settings` with existing
+                like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
                 overwrite all existing ones. See the general description of this
                 method for an example.
@@ -894,7 +890,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 "enable_cache": enable_cache,
                 "experiment_tracker": experiment_tracker,
                 "step_operator": step_operator,
-                "function_parameters": function_parameters,
+                "parameters": parameters,
                 "settings": settings,
                 "outputs": outputs or None,
                 "extra": extra,
@@ -932,9 +928,7 @@ class BaseStep(metaclass=BaseStepMeta):
             config: The configuration update to validate.
         """
         settings_utils.validate_setting_keys(list(config.settings))
-        self._validate_function_parameters(
-            parameters=config.function_parameters
-        )
+        self._validate_function_parameters(parameters=config.parameters)
         self._validate_outputs(outputs=config.outputs)
 
     def _validate_function_parameters(self, parameters: Dict[str, Any]) -> None:
@@ -951,14 +945,14 @@ class BaseStep(metaclass=BaseStepMeta):
             # No parameters set (yet), defer validation to a later point
             return
 
-        if not self.CONFIG_CLASS:
+        if not self.PARAMETERS_CLASS:
             raise StepInterfaceError(
                 f"Function parameters configured for step {self.name} which "
                 "does not accept any function parameters."
             )
 
         try:
-            self.CONFIG_CLASS(**parameters)
+            self.PARAMETERS_CLASS(**parameters)
         except ValidationError:
             raise StepInterfaceError("Failed to validate function parameters.")
 
@@ -1122,7 +1116,7 @@ class BaseStep(metaclass=BaseStepMeta):
         values = dict_utils.remove_none_values(
             {
                 "outputs": outputs or None,
-                "function_parameters": function_parameters,
+                "parameters": function_parameters,
             }
         )
         config = StepConfigurationUpdate(**values)
@@ -1161,15 +1155,15 @@ class BaseStep(metaclass=BaseStepMeta):
             MissingStepParameterError: If no value could be found for one or
                 more config parameters.
         """
-        if not self.CONFIG_CLASS:
+        if not self.PARAMETERS_CLASS:
             return {}
 
         # we need to store a value for all config keys inside the
         # metadata store to make sure caching works as expected
         missing_keys = []
         values = {}
-        for name, field in self.CONFIG_CLASS.__fields__.items():
-            if name in self.configuration.function_parameters:
+        for name, field in self.PARAMETERS_CLASS.__fields__.items():
+            if name in self.configuration.parameters:
                 # a value for this parameter has been set already
                 continue
 
@@ -1183,7 +1177,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
         if missing_keys:
             raise MissingStepParameterError(
-                self.name, missing_keys, self.CONFIG_CLASS
+                self.name, missing_keys, self.PARAMETERS_CLASS
             )
 
         return values

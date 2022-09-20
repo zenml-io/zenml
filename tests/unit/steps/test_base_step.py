@@ -22,7 +22,7 @@ from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.pipelines import pipeline
-from zenml.steps import BaseStepConfig, Output, StepContext, step
+from zenml.steps import Output, Parameters, StepContext, step
 from zenml.utils import source_utils
 
 
@@ -47,14 +47,14 @@ def test_define_step_with_shared_input_and_output_name():
             return shared_name
 
 
-def test_define_step_with_multiple_configs():
-    """Tests that defining a step with multiple configs raises
+def test_define_step_with_multiple_parameter_classes():
+    """Tests that defining a step with multiple parameter classes raises
     a StepInterfaceError."""
     with pytest.raises(StepInterfaceError):
 
         @step
         def some_step(
-            first_config: BaseStepConfig, second_config: BaseStepConfig
+            first_params: Parameters, second_params: Parameters
         ) -> None:
             pass
 
@@ -160,55 +160,55 @@ def test_initialize_step_with_unexpected_config():
     config raises an Exception."""
 
     @step
-    def step_without_config() -> None:
+    def step_without_params() -> None:
         pass
 
     with pytest.raises(StepInterfaceError):
-        step_without_config(config=BaseStepConfig())
+        step_without_params(params=Parameters())
 
 
-def test_initialize_step_with_config():
+def test_initialize_step_with_params():
     """Tests that a step can only be initialized with it's defined
-    config class."""
+    parameter class."""
 
-    class StepConfig(BaseStepConfig):
+    class StepParams(Parameters):
         pass
 
-    class DifferentConfig(BaseStepConfig):
+    class DifferentParams(Parameters):
         pass
 
     @step
-    def step_with_config(config: StepConfig) -> None:
+    def step_with_params(params: StepParams) -> None:
         pass
 
-    # initialize with wrong config classes
+    # initialize with wrong param classes
     with pytest.raises(StepInterfaceError):
-        step_with_config(config=BaseStepConfig())  # noqa
+        step_with_params(params=Parameters())  # noqa
 
     with pytest.raises(StepInterfaceError):
-        step_with_config(config=DifferentConfig())  # noqa
+        step_with_params(params=DifferentParams())  # noqa
 
     # initialize with wrong key
     with pytest.raises(StepInterfaceError):
-        step_with_config(wrong_config_key=StepConfig())  # noqa
+        step_with_params(wrong_params_key=StepParams())  # noqa
 
     # initializing with correct key should work
     with does_not_raise():
-        step_with_config(config=StepConfig())
+        step_with_params(params=StepParams())
 
     # initializing as non-kwarg should work as well
     with does_not_raise():
-        step_with_config(StepConfig())
+        step_with_params(StepParams())
 
     # initializing with multiple args or kwargs should fail
     with pytest.raises(StepInterfaceError):
-        step_with_config(StepConfig(), config=StepConfig())
+        step_with_params(StepParams(), params=StepParams())
 
     with pytest.raises(StepInterfaceError):
-        step_with_config(StepConfig(), StepConfig())
+        step_with_params(StepParams(), StepParams())
 
     with pytest.raises(StepInterfaceError):
-        step_with_config(config=StepConfig(), config2=StepConfig())
+        step_with_params(params=StepParams(), params2=StepParams())
 
 
 class CustomType:
@@ -670,34 +670,32 @@ def test_call_step_with_default_materializer_registered():
 
 
 def test_step_uses_config_class_default_values_if_no_config_is_passed():
-    """Tests that a step falls back to the config class default values if
-    no config object is passed at initialization."""
+    """Tests that a step falls back to the param class default values if
+    no params object is passed at initialization."""
 
-    class ConfigWithDefaultValues(BaseStepConfig):
+    class ParamsWithDefaultValues(Parameters):
         some_parameter: int = 1
 
     @step
-    def some_step(config: ConfigWithDefaultValues) -> None:
+    def some_step(params: ParamsWithDefaultValues) -> None:
         pass
 
     # don't pass the config when initializing the step
     step_instance = some_step()
     step_instance._finalize_configuration({})
 
-    assert (
-        step_instance.configuration.function_parameters["some_parameter"] == 1
-    )
+    assert step_instance.configuration.parameters["some_parameter"] == 1
 
 
 def test_step_fails_if_config_parameter_value_is_missing():
     """Tests that a step fails if no config object is passed at
     initialization and the config class misses some default values."""
 
-    class ConfigWithoutDefaultValues(BaseStepConfig):
+    class ParamsWithoutDefaultValues(Parameters):
         some_parameter: int
 
     @step
-    def some_step(config: ConfigWithoutDefaultValues) -> None:
+    def some_step(params: ParamsWithoutDefaultValues) -> None:
         pass
 
     # don't pass the config when initializing the step
@@ -711,11 +709,11 @@ def test_step_config_allows_none_as_default_value():
     """Tests that `None` is allowed as a default value for a
     step config field."""
 
-    class ConfigWithNoneDefaultValue(BaseStepConfig):
+    class ParamsWithNoneDefaultValue(Parameters):
         some_parameter: Optional[int] = None
 
     @step
-    def some_step(config: ConfigWithNoneDefaultValue) -> None:
+    def some_step(params: ParamsWithNoneDefaultValue) -> None:
         pass
 
     # don't pass the config when initializing the step

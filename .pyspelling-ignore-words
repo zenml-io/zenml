@@ -372,6 +372,7 @@ PathType
 PermissionError
 PillowImageMaterializer
 PipelineConfigurationError
+PipelineDeployment
 PipelineDockerImageBuilder
 PipelineInterfaceError
 PipelineNode
@@ -420,7 +421,6 @@ Rollouts
 Runtime
 RuntimeConfiguration
 RuntimeError
-SettingsResolvingError
 SAS
 SDK
 SDfscs
@@ -475,6 +475,7 @@ ServiceConfig
 ServicePrincipal
 ServiceStatus
 ServiceType
+SettingsResolvingError
 SingleDatasetCheck
 SingletonMetaClass
 SlackAlerter

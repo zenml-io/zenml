@@ -24,19 +24,19 @@ from zenml.exceptions import (
 )
 from zenml.pipelines import pipeline
 from zenml.repository import Repository
-from zenml.steps import BaseStepConfig, step
+from zenml.steps import Parameters, step
 from zenml.utils.yaml_utils import write_yaml
 
 
-def create_pipeline_with_config_value(config_value: int):
+def create_pipeline_with_param_value(param_value: int):
     """Creates pipeline instance with a step named 'step' which has a
     parameter named 'value'."""
 
-    class Config(BaseStepConfig):
+    class Params(Parameters):
         value: int
 
     @step
-    def step_with_config(config: Config) -> None:
+    def step_with_params(params: Params) -> None:
         pass
 
     @pipeline
@@ -44,7 +44,7 @@ def create_pipeline_with_config_value(config_value: int):
         step_()
 
     pipeline_instance = some_pipeline(
-        step_=step_with_config(config=Config(value=config_value))
+        step_=step_with_params(params=Params(value=param_value))
     )
     return pipeline_instance
 
@@ -187,18 +187,16 @@ def test_initialize_pipeline_with_missing_kwarg_step_brackets(
 def test_setting_step_parameter_with_config_object():
     """Test whether step parameters can be set using a config object."""
     config_value = 0
-    pipeline_instance = create_pipeline_with_config_value(config_value)
+    pipeline_instance = create_pipeline_with_param_value(config_value)
     step_instance = pipeline_instance.steps["step_"]
 
-    assert (
-        step_instance.configuration.function_parameters["value"] == config_value
-    )
+    assert step_instance.configuration.parameters["value"] == config_value
 
 
 def test_overwrite_step_parameter_with_config_yaml(tmp_path):
     """Test whether step parameters can be overwritten using a config yaml."""
     config_value = 0
-    pipeline_instance = create_pipeline_with_config_value(config_value)
+    pipeline_instance = create_pipeline_with_param_value(config_value)
 
     yaml_path = os.path.join(tmp_path, "config.yaml")
     yaml_config_value = 1
@@ -210,17 +208,14 @@ def test_overwrite_step_parameter_with_config_yaml(tmp_path):
         yaml_path, overwrite_step_parameters=True
     )
     step_instance = pipeline_instance.steps["step_"]
-    assert (
-        step_instance.configuration.function_parameters["value"]
-        == yaml_config_value
-    )
+    assert step_instance.configuration.parameters["value"] == yaml_config_value
 
 
 def test_dont_overwrite_step_parameter_with_config_yaml(tmp_path):
     """Test that step parameters don't get overwritten by yaml file
     if not forced."""
     config_value = 0
-    pipeline_instance = create_pipeline_with_config_value(config_value)
+    pipeline_instance = create_pipeline_with_param_value(config_value)
 
     yaml_path = os.path.join(tmp_path, "config.yaml")
     yaml_config_value = 1
@@ -230,14 +225,12 @@ def test_dont_overwrite_step_parameter_with_config_yaml(tmp_path):
     )
     pipeline_instance = pipeline_instance.with_config(yaml_path)
     step_instance = pipeline_instance.steps["step_"]
-    assert (
-        step_instance.configuration.function_parameters["value"] == config_value
-    )
+    assert step_instance.configuration.parameters["value"] == config_value
 
 
 def test_yaml_configuration_with_invalid_step_name(tmp_path):
     """Test that a config yaml with an invalid step name raises an exception"""
-    pipeline_instance = create_pipeline_with_config_value(0)
+    pipeline_instance = create_pipeline_with_param_value(0)
 
     yaml_path = os.path.join(tmp_path, "config.yaml")
     write_yaml(
@@ -250,7 +243,7 @@ def test_yaml_configuration_with_invalid_step_name(tmp_path):
 
 def test_yaml_configuration_allows_enabling_cache(tmp_path):
     """Test that a config yaml allows you to disable the cache for a step."""
-    pipeline_instance = create_pipeline_with_config_value(13)
+    pipeline_instance = create_pipeline_with_param_value(13)
 
     yaml_path = os.path.join(tmp_path, "config.yaml")
     cache_value = False

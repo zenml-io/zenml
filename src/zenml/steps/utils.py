@@ -57,7 +57,6 @@ from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_context import StepContext
 from zenml.steps.step_environment import StepEnvironment
 from zenml.steps.step_output import Output
@@ -186,7 +185,7 @@ def _create_component_spec_class(
     inputs = _create_channel_parameters(configuration.inputs)
     outputs = _create_channel_parameters(configuration.outputs)
 
-    execution_parameter_names = set(configuration.function_parameters).union(
+    execution_parameter_names = set(configuration.parameters).union(
         step._internal_execution_parameters
     )
     parameters = {
@@ -377,6 +376,8 @@ class _ZenMLStepExecutor(BaseExecutor):
             RuntimeError: if the step fails.
             StepInterfaceError: if the step interface is not implemented.
         """
+        from zenml.steps import Parameters
+
         step_name = self.configuration.name
         step_function = self._STEP.entrypoint
         output_materializers = self._load_output_materializers()
@@ -402,7 +403,7 @@ class _ZenMLStepExecutor(BaseExecutor):
             arg_type = spec.annotations.get(arg, None)
             arg_type = resolve_type_annotation(arg_type)
 
-            if issubclass(arg_type, BaseStepConfig):
+            if issubclass(arg_type, Parameters):
                 try:
                     config_object = arg_type.parse_obj(exec_properties)
                 except pydantic.ValidationError as e:

@@ -42,7 +42,7 @@ class StepConfigurationUpdate(StrictBaseModel):
     enable_cache: Optional[bool] = None
     step_operator: Optional[str] = None
     experiment_tracker: Optional[str] = None
-    function_parameters: Dict[str, Any] = {}
+    parameters: Dict[str, Any] = {}
     settings: Dict[str, Settings] = {}
     extra: Dict[str, Any] = {}
 

@@ -15,7 +15,7 @@
 
 from zenml.integrations.kserve.steps.kserve_deployer import (
     CustomDeployParameters,
-    KServeDeployerStepConfig,
+    KServeDeployerStepParameters,
     TorchServeParameters,
     kserve_custom_model_deployer_step,
     kserve_model_deployer_step,

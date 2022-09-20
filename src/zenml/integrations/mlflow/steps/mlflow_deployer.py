@@ -38,7 +38,7 @@ from zenml.repository import Repository
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseStep,
-    BaseStepConfig,
+    Parameters,
     StepEnvironment,
     step,
 )
@@ -46,8 +46,8 @@ from zenml.steps import (
 logger = get_logger(__name__)
 
 
-class MLFlowDeployerConfig(BaseStepConfig):
-    """Model deployer step configuration for MLflow.
+class MLFlowDeployerParameters(Parameters):
+    """Model deployer step parameters for MLflow.
 
     Attributes:
         model_name: the name of the MLflow model logged in the MLflow artifact
@@ -74,7 +74,7 @@ class MLFlowDeployerConfig(BaseStepConfig):
 def mlflow_model_deployer_step(
     deploy_decision: bool,
     model: ModelArtifact,
-    config: MLFlowDeployerConfig,
+    params: MLFlowDeployerParameters,
 ) -> MLFlowDeploymentService:
     """Model deployer pipeline step for MLflow.
 
@@ -83,7 +83,7 @@ def mlflow_model_deployer_step(
     Args:
         deploy_decision: whether to deploy the model or not
         model: the model artifact to deploy
-        config: configuration for the deployer step
+        params: parameters for the deployer step
 
     Returns:
         MLflow deployment service
@@ -106,31 +106,31 @@ def mlflow_model_deployer_step(
 
     client = MlflowClient()
     mlflow_run_id = experiment_tracker.get_run_id(
-        experiment_name=config.experiment_name or pipeline_name,
-        run_name=config.run_name or run_id,
+        experiment_name=params.experiment_name or pipeline_name,
+        run_name=params.run_name or run_id,
     )
 
     model_uri = ""
     if mlflow_run_id and client.list_artifacts(
-        mlflow_run_id, config.model_name
+        mlflow_run_id, params.model_name
     ):
         model_uri = artifact_utils.get_artifact_uri(
-            run_id=mlflow_run_id, artifact_path=config.model_name
+            run_id=mlflow_run_id, artifact_path=params.model_name
         )
 
     # fetch existing services with same pipeline name, step name and model name
     existing_services = model_deployer.find_model_server(
         pipeline_name=pipeline_name,
         pipeline_step_name=step_name,
-        model_name=config.model_name,
+        model_name=params.model_name,
     )
 
     # create a config for the new model service
     predictor_cfg = MLFlowDeploymentConfig(
-        model_name=config.model_name or "",
+        model_name=params.model_name or "",
         model_uri=model_uri,
-        workers=config.workers,
-        mlserver=config.mlserver,
+        workers=params.workers,
+        mlserver=params.mlserver,
         pipeline_name=pipeline_name,
         pipeline_run_id=run_id,
         pipeline_step_name=step_name,
@@ -147,7 +147,7 @@ def mlflow_model_deployer_step(
         # the currently running service created for the same model, if any
         if not existing_services:
             logger.warning(
-                f"An MLflow model with name `{config.model_name}` was not "
+                f"An MLflow model with name `{params.model_name}` was not "
                 f"logged in the current pipeline run and no running MLflow "
                 f"model server was found. Please ensure that your pipeline "
                 f"includes an `@enable_mlflow` decorated step that trains a "
@@ -159,12 +159,12 @@ def mlflow_model_deployer_step(
             # something
             return service
         logger.info(
-            f"An MLflow model with name `{config.model_name}` was not "
+            f"An MLflow model with name `{params.model_name}` was not "
             f"trained in the current pipeline run. Reusing the existing "
             f"MLflow model server."
         )
         if not service.is_running:
-            service.start(config.timeout)
+            service.start(params.timeout)
 
         # return the existing service
         return service
@@ -177,13 +177,13 @@ def mlflow_model_deployer_step(
             f"Skipping model deployment because the model quality does not "
             f"meet the criteria. Reusing last model server deployed by step "
             f"'{step_name}' and pipeline '{pipeline_name}' for model "
-            f"'{config.model_name}'..."
+            f"'{params.model_name}'..."
         )
         # even when the deploy decision is negative, we still need to start
         # the previous model server if it is no longer running, to ensure
         # that a model server is available at all times
         if not service.is_running:
-            service.start(config.timeout)
+            service.start(params.timeout)
         return service
 
     # create a new model deployment and replace an old one if it exists
@@ -192,7 +192,7 @@ def mlflow_model_deployer_step(
         model_deployer.deploy_model(
             replace=True,
             config=predictor_cfg,
-            timeout=config.timeout,
+            timeout=params.timeout,
         ),
     )
 
