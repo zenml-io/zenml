@@ -1443,6 +1443,7 @@ def test_create_stack_component_fails_when_flavor_already_exists(
     scinda_flavor = FlavorModel(
         name=flavor_name,
         type=StackComponentType.ORCHESTRATOR,
+        config_schema="default",
         source=".",
         project=sql_store["default_project"].id,
         user=sql_store["active_user"].id,
@@ -1452,6 +1453,7 @@ def test_create_stack_component_fails_when_flavor_already_exists(
     scinda_copy_flavor = FlavorModel(
         name=flavor_name,
         type=StackComponentType.ORCHESTRATOR,
+        config_schema="default",
         source=".",
         project=sql_store["default_project"].id,
         user=sql_store["active_user"].id,
