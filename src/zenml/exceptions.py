@@ -238,5 +238,5 @@ class DuplicatedConfigurationError(ZenMLBaseException):
     """Raised when a configuration parameter is set twice."""
 
 
-class RuntimeOptionsResolvingError(ZenMLBaseException):
-    """Raised when resolving runtime options failed."""
+class SettingsResolvingError(ZenMLBaseException):
+    """Raised when resolving settings failed."""

@@ -420,7 +420,7 @@ Rollouts
 Runtime
 RuntimeConfiguration
 RuntimeError
-RuntimeOptionsResolvingError
+SettingsResolvingError
 SAS
 SDK
 SDfscs

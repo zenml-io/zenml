@@ -72,22 +72,17 @@ from zenml.steps.utils import (
     PARAM_OUTPUT_TYPES,
     PARAM_PIPELINE_PARAMETER_NAME,
     PARAM_RESOURCE_CONFIGURATION,
-    PARAM_RUNTIME_OPTIONS,
+    PARAM_SETTINGS,
     PARAM_STEP_OPERATOR,
     create_component_class,
     parse_return_type_annotations,
     resolve_type_annotation,
 )
-from zenml.utils import (
-    dict_utils,
-    pydantic_utils,
-    runtime_options_utils,
-    source_utils,
-)
+from zenml.utils import dict_utils, pydantic_utils, settings_utils, source_utils
 
 logger = get_logger(__name__)
 if TYPE_CHECKING:
-    from zenml.config.base_runtime_options import RuntimeOptionsOrDict
+    from zenml.config.settings import SettingsOrDict
 
     ArtifactClassOrStr = Union[str, Type["BaseArtifact"]]
     MaterializerClassOrStr = Union[str, Type["BaseMaterializer"]]
@@ -452,9 +447,9 @@ class BaseStep(metaclass=BaseStepMeta):
             )
             step_operator = deprecated_step_operator
 
-        runtime_options = options.pop(PARAM_RUNTIME_OPTIONS, None) or {}
+        settings = options.pop(PARAM_SETTINGS, None) or {}
 
-        resource_config = runtime_options.get(RESOURCE_CONFIGURATION_KEY, None)
+        resource_config = settings.get(RESOURCE_CONFIGURATION_KEY, None)
         deprecated_resource_config = options.pop(
             PARAM_RESOURCE_CONFIGURATION, None
         )
@@ -462,7 +457,7 @@ class BaseStep(metaclass=BaseStepMeta):
             raise RuntimeError(
                 "Resource configuration was specified twice using the "
                 f"`{PARAM_RESOURCE_CONFIGURATION}` and "
-                f"`{PARAM_RUNTIME_OPTIONS}` parameters of the @step decorator. "
+                f"`{PARAM_SETTINGS}` parameters of the @step decorator. "
                 "Remove the value specified using the "
                 f"`{PARAM_RESOURCE_CONFIGURATION}` parameter to solve this "
                 "issue."
@@ -474,12 +469,10 @@ class BaseStep(metaclass=BaseStepMeta):
                 "parameter instead: "
                 "`@step(%s={'resources': ResourceConfiguration(...)})`",
                 PARAM_RESOURCE_CONFIGURATION,
-                PARAM_RUNTIME_OPTIONS,
-                PARAM_RUNTIME_OPTIONS,
+                PARAM_SETTINGS,
+                PARAM_SETTINGS,
             )
-            runtime_options[
-                RESOURCE_CONFIGURATION_KEY
-            ] = deprecated_resource_config
+            settings[RESOURCE_CONFIGURATION_KEY] = deprecated_resource_config
 
         output_materializers = options.pop(PARAM_OUTPUT_MATERIALIZERS, None)
 
@@ -513,7 +506,7 @@ class BaseStep(metaclass=BaseStepMeta):
             step_operator=step_operator,
             output_artifacts=output_artifacts,
             output_materializers=output_materializers,
-            runtime_options=runtime_options,
+            settings=settings,
             extra=extra,
         )
 
@@ -812,7 +805,7 @@ class BaseStep(metaclass=BaseStepMeta):
             ]
         ] = None,
         output_artifacts: Optional[Mapping[str, "ArtifactClassOrStr"]] = None,
-        runtime_options: Optional[Mapping[str, "RuntimeOptionsOrDict"]] = None,
+        settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         merge: bool = True,
     ) -> None:
@@ -838,10 +831,10 @@ class BaseStep(metaclass=BaseStepMeta):
                 this step. If a single value (type or string) is given, the
                 materializer will be used for all outputs.
             output_artifacts: Output artifacts for this step.
-            runtime_options: Runtime options for this step.
+            settings: settings for this step.
             extra: Extra configurations for this step.
             merge: If `True`, will merge the given dictionary configurations
-                like `function_parameters` and `runtime_options` with existing
+                like `function_parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
                 overwrite all existing ones. See the general description of this
                 method for an example.
@@ -902,7 +895,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 "experiment_tracker": experiment_tracker,
                 "step_operator": step_operator,
                 "function_parameters": function_parameters,
-                "runtime_options": runtime_options,
+                "settings": settings,
                 "outputs": outputs or None,
                 "extra": extra,
             }
@@ -938,9 +931,7 @@ class BaseStep(metaclass=BaseStepMeta):
         Args:
             config: The configuration update to validate.
         """
-        runtime_options_utils.validate_runtime_option_keys(
-            list(config.runtime_options)
-        )
+        settings_utils.validate_setting_keys(list(config.settings))
         self._validate_function_parameters(
             parameters=config.function_parameters
         )

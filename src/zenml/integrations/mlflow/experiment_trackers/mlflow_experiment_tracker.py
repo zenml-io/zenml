@@ -23,7 +23,7 @@ from pydantic import root_validator, validator
 
 import zenml
 from zenml.artifact_stores import LocalArtifactStore
-from zenml.config.base_runtime_options import BaseRuntimeOptions
+from zenml.config.settings import Settings
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
 )
@@ -47,8 +47,8 @@ MLFLOW_TRACKING_TOKEN = "MLFLOW_TRACKING_TOKEN"
 MLFLOW_TRACKING_INSECURE_TLS = "MLFLOW_TRACKING_INSECURE_TLS"
 
 
-class MLFlowExperimentTrackerRuntimeOptions(BaseRuntimeOptions):
-    """Runtime options for the MLflow experiment tracker.
+class MLFlowExperimentTrackerSettings(Settings):
+    """settings for the MLflow experiment tracker.
 
     Attributes:
         experiment_name: The MLflow experiment name.
@@ -213,13 +213,13 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             )
 
     @property
-    def runtime_options_class(self) -> Optional[Type["BaseRuntimeOptions"]]:
-        """Runtime options class for the Mlflow experiment tracker.
+    def settings_class(self) -> Optional[Type["Settings"]]:
+        """settings class for the Mlflow experiment tracker.
 
         Returns:
-            The runtime options class.
+            The settings class.
         """
-        return MLFlowExperimentTrackerRuntimeOptions
+        return MLFlowExperimentTrackerSettings
 
     @staticmethod
     def is_remote_tracking_uri(tracking_uri: str) -> bool:
@@ -266,9 +266,8 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         """
         self.configure_mlflow()
         config = cast(
-            MLFlowExperimentTrackerRuntimeOptions,
-            self.get_runtime_options(step)
-            or MLFlowExperimentTrackerRuntimeOptions(),
+            MLFlowExperimentTrackerSettings,
+            self.get_settings(step) or MLFlowExperimentTrackerSettings(),
         )
         run_name = "run_name"
         pipeline_name = "pipeline_name"

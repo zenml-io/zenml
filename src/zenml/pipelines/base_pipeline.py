@@ -58,13 +58,13 @@ from zenml.utils import (
     dict_utils,
     io_utils,
     pydantic_utils,
-    runtime_options_utils,
+    settings_utils,
     yaml_utils,
 )
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 if TYPE_CHECKING:
-    from zenml.config.base_runtime_options import RuntimeOptionsOrDict
+    from zenml.config.settings import SettingsOrDict
     from zenml.stack import Stack
 
     StepConfigurationUpdateOrDict = Union[
@@ -76,7 +76,7 @@ PIPELINE_INNER_FUNC_NAME = "connect"
 PARAM_ENABLE_CACHE = "enable_cache"
 INSTANCE_CONFIGURATION = "INSTANCE_CONFIGURATION"
 PARAM_DOCKER_CONFIGURATION = "docker_configuration"
-PARAM_RUNTIME_OPTIONS = "runtime_options"
+PARAM_SETTINGS = "settings"
 PARAM_EXTRA_OPTIONS = "extra"
 
 
@@ -188,7 +188,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
     def configure(
         self,
         enable_cache: Optional[bool] = None,
-        runtime_options: Optional[Mapping[str, "RuntimeOptionsOrDict"]] = None,
+        settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         merge: bool = True,
     ) -> None:
@@ -206,10 +206,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         Args:
             enable_cache: If caching should be enabled for this pipeline.
-            runtime_options: Runtime options for this pipeline.
+            settings: settings for this pipeline.
             extra: Extra configurations for this pipeline.
             merge: If `True`, will merge the given dictionary configurations
-                like `extra` and `runtime_options` with existing
+                like `extra` and `settings` with existing
                 configurations. If `False` the given configurations will
                 overwrite all existing ones. See the general description of this
                 method for an example.
@@ -217,7 +217,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         values = dict_utils.remove_none_values(
             {
                 "enable_cache": enable_cache,
-                "runtime_options": runtime_options,
+                "settings": settings,
                 "extra": extra,
             }
         )
@@ -234,14 +234,14 @@ class BasePipeline(metaclass=BasePipelineMeta):
             RuntimeError: If multiple values are provided for the Docker
                 configuration of the pipeline.
         """
-        runtime_options = options.pop(PARAM_RUNTIME_OPTIONS, None) or {}
+        settings = options.pop(PARAM_SETTINGS, None) or {}
 
-        docker_config = runtime_options.get(DOCKER_CONFIGURATION_KEY, None)
+        docker_config = settings.get(DOCKER_CONFIGURATION_KEY, None)
         deprecated_docker_config = options.pop(PARAM_DOCKER_CONFIGURATION, None)
         if deprecated_docker_config and docker_config:
             raise RuntimeError(
                 "Docker configuration was specified twice using the "
-                f"`{PARAM_DOCKER_CONFIGURATION}` and `{PARAM_RUNTIME_OPTIONS}` "
+                f"`{PARAM_DOCKER_CONFIGURATION}` and `{PARAM_SETTINGS}` "
                 "parameters of the @pipeline decorator. Remove the value "
                 f"specified using the `{PARAM_DOCKER_CONFIGURATION}` parameter "
                 "to solve this issue."
@@ -253,13 +253,13 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 "parameter instead: "
                 "`@pipeline(%s={'docker': DockerConfiguration(...)})`",
                 PARAM_DOCKER_CONFIGURATION,
-                PARAM_RUNTIME_OPTIONS,
-                PARAM_RUNTIME_OPTIONS,
+                PARAM_SETTINGS,
+                PARAM_SETTINGS,
             )
-            runtime_options[DOCKER_CONFIGURATION_KEY] = deprecated_docker_config
+            settings[DOCKER_CONFIGURATION_KEY] = deprecated_docker_config
 
         extra = options.pop(PARAM_EXTRA_OPTIONS, None)
-        self.configure(runtime_options=runtime_options, extra=extra)
+        self.configure(settings=settings, extra=extra)
 
     def _verify_steps(self, *steps: BaseStep, **kw_steps: Any) -> None:
         """Verifies the initialization args and kwargs of this pipeline.
@@ -430,7 +430,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         run_name: Optional[str] = None,
         enable_cache: Optional[bool] = None,
         schedule: Optional[Schedule] = None,
-        runtime_options: Optional[Mapping[str, "RuntimeOptionsOrDict"]] = None,
+        settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         step_configurations: Optional[
             Mapping[str, "StepConfigurationUpdateOrDict"]
         ] = None,
@@ -443,7 +443,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             run_name: Name of the pipeline run.
             enable_cache: If caching should be enabled for this pipeline run.
             schedule: Optional schedule of the pipeline.
-            runtime_options: Runtime options for this pipeline run.
+            settings: settings for this pipeline run.
             step_configurations: Configurations for steps of the pipeline.
             extra: Extra configurations for this pipeline run.
             config_path: Path to a yaml configuration file. This file will
@@ -497,7 +497,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 "run_name": run_name,
                 "enable_cache": enable_cache,
                 "steps": step_configurations,
-                "runtime_options": runtime_options,
+                "settings": settings,
                 "schedule": schedule,
                 "extra": extra,
             }
@@ -560,9 +560,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         Args:
             config: The configuration update to validate.
         """
-        runtime_options_utils.validate_runtime_option_keys(
-            list(config.runtime_options)
-        )
+        settings_utils.validate_setting_keys(list(config.settings))
 
     def with_config(
         self: T, config_file: str, overwrite_step_parameters: bool = False
@@ -687,26 +685,24 @@ class BasePipeline(metaclass=BasePipelineMeta):
             stack: The stack for which the template should be generated. If
                 not given, the active stack will be used.
         """
-        from zenml.config.base_runtime_options import ConfigurationLevel
+        from zenml.config.settings import ConfigurationLevel
         from zenml.config.step_configurations import (
             PartialArtifactConfiguration,
         )
 
         stack = stack or Repository().active_stack
 
-        runtime_option_classes = stack.runtime_option_classes
-        runtime_option_classes.update(
-            runtime_options_utils.get_universal_runtime_options()
-        )
+        setting_classes = stack.setting_classes
+        setting_classes.update(settings_utils.get_universal_settings())
 
-        pipeline_runtime_options = {}
-        step_runtime_options = {}
-        for key, options_class in runtime_option_classes.items():
+        pipeline_settings = {}
+        step_settings = {}
+        for key, options_class in setting_classes.items():
             fields = pydantic_utils.TemplateGenerator(options_class).run()
             if ConfigurationLevel.PIPELINE in options_class.LEVEL:
-                pipeline_runtime_options[key] = fields
+                pipeline_settings[key] = fields
             if ConfigurationLevel.STEP in options_class.LEVEL:
-                step_runtime_options[key] = fields
+                step_settings[key] = fields
 
         steps = {}
         for step_name, step in self.steps.items():
@@ -721,13 +717,13 @@ class BasePipeline(metaclass=BasePipelineMeta):
             }
             step_template = StepConfigurationUpdate(
                 function_parameters=function_parameters,
-                runtime_options=step_runtime_options,
+                settings=step_settings,
                 outputs=outputs,
             )
             steps[step_name] = step_template
 
         run_config = PipelineRunConfiguration(
-            runtime_options=pipeline_runtime_options, steps=steps
+            settings=pipeline_settings, steps=steps
         )
         template = pydantic_utils.TemplateGenerator(run_config).run()
         yaml_string = yaml.dump(template)

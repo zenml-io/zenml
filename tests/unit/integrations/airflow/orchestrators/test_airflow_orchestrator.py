@@ -24,4 +24,4 @@ def test_airflow_orchestrator_attributes():
     assert orchestrator.TYPE == StackComponentType.ORCHESTRATOR
     assert orchestrator.FLAVOR == "airflow"
 
-    assert orchestrator.runtime_options() == {"dag_filepath": None}
+    assert orchestrator.settings() == {"dag_filepath": None}

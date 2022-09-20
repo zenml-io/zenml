@@ -37,14 +37,14 @@ from zenml.steps.utils import (
     PARAM_OUTPUT_MATERIALIZERS,
     PARAM_OUTPUT_TYPES,
     PARAM_RESOURCE_CONFIGURATION,
-    PARAM_RUNTIME_OPTIONS,
+    PARAM_SETTINGS,
     PARAM_STEP_OPERATOR,
     STEP_INNER_FUNC_NAME,
 )
 
 if TYPE_CHECKING:
     from zenml.artifacts.base_artifact import BaseArtifact
-    from zenml.config.base_runtime_options import RuntimeOptionsOrDict
+    from zenml.config.settings import SettingsOrDict
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.steps import ResourceConfiguration
 
@@ -68,7 +68,7 @@ def step(
     step_operator: Optional[str] = None,
     output_artifacts: Optional[Dict[str, "ArtifactClassOrStr"]] = None,
     output_materializers: Optional[Dict[str, "MaterializerClassOrStr"]] = None,
-    runtime_options: Optional[Dict[str, "RuntimeOptionsOrDict"]] = None,
+    settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
     custom_step_operator: Optional[str] = None,
     output_types: Optional[Dict[str, Type["BaseArtifact"]]] = None,
@@ -86,7 +86,7 @@ def step(
     step_operator: Optional[str] = None,
     output_artifacts: Optional[Dict[str, "ArtifactClassOrStr"]] = None,
     output_materializers: Optional[Dict[str, "MaterializerClassOrStr"]] = None,
-    runtime_options: Optional[Dict[str, "RuntimeOptionsOrDict"]] = None,
+    settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
     custom_step_operator: Optional[str] = None,
     output_types: Optional[Dict[str, Type["BaseArtifact"]]] = None,
@@ -109,7 +109,7 @@ def step(
         step_operator: The step operator to use for this step.
         output_materializers: Output materializers for this step.
         output_artifacts: Output artifacts for this step.
-        runtime_options: Runtime options for this step.
+        settings: settings for this step.
         extra: Extra configurations for this step.
         output_types: A dictionary which sets different outputs to non-default
             artifact types.
@@ -146,7 +146,7 @@ def step(
                     PARAM_STEP_OPERATOR: step_operator,
                     PARAM_OUTPUT_ARTIFACTS: output_artifacts,
                     PARAM_OUTPUT_MATERIALIZERS: output_materializers,
-                    PARAM_RUNTIME_OPTIONS: runtime_options,
+                    PARAM_SETTINGS: settings,
                     PARAM_EXTRA_OPTIONS: extra,
                     PARAM_CUSTOM_STEP_OPERATOR: custom_step_operator,
                     PARAM_OUTPUT_TYPES: output_types,

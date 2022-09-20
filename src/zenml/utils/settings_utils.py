@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Runtime option utility functions."""
+"""Utility functions for ZenML settings."""
 import re
 from typing import TYPE_CHECKING, Dict, Sequence, Type
 
@@ -22,7 +22,7 @@ from zenml.config.constants import (
 from zenml.enums import StackComponentType
 
 if TYPE_CHECKING:
-    from zenml.config.base_runtime_options import BaseRuntimeOptions
+    from zenml.config.settings import Settings
     from zenml.stack import StackComponent
 
 STACK_COMPONENT_REGEX = re.compile(
@@ -30,22 +30,22 @@ STACK_COMPONENT_REGEX = re.compile(
 )
 
 
-def get_runtime_options_key_for_stack_component(
+def get_settings_key_for_stack_component(
     stack_component: "StackComponent",
 ) -> str:
-    """Gets the runtime options key for a stack component.
+    """Gets the settings key for a stack component.
 
     Args:
         stack_component: The stack component for which to get the key.
 
     Returns:
-        The runtime options key for the stack component.
+        The settings key for the stack component.
     """
     return f"{stack_component.TYPE}.{stack_component.name}"
 
 
-def is_valid_runtime_option_key(key: str) -> bool:
-    """Checks whether a runtime option key is valid.
+def is_valid_setting_key(key: str) -> bool:
+    """Checks whether a settings key is valid.
 
     Args:
         key: The key to check.
@@ -53,13 +53,11 @@ def is_valid_runtime_option_key(key: str) -> bool:
     Returns:
         If the key is valid.
     """
-    return is_universal_runtime_option_key(
-        key
-    ) or is_stack_component_runtime_option_key(key)
+    return is_universal_setting_key(key) or is_stack_component_setting_key(key)
 
 
-def is_stack_component_runtime_option_key(key: str) -> bool:
-    """Checks whether a runtime option key refers to a stack component.
+def is_stack_component_setting_key(key: str) -> bool:
+    """Checks whether a settings key refers to a stack component.
 
     Args:
         key: The key to check.
@@ -70,23 +68,23 @@ def is_stack_component_runtime_option_key(key: str) -> bool:
     return bool(STACK_COMPONENT_REGEX.fullmatch(key))
 
 
-def is_universal_runtime_option_key(key: str) -> bool:
-    """Checks whether the key refers to a universal runtime option.
+def is_universal_setting_key(key: str) -> bool:
+    """Checks whether the key refers to a universal setting.
 
     Args:
         key: The key to check.
 
     Returns:
-        If the key refers to a universal runtime option.
+        If the key refers to a universal setting.
     """
-    return key in get_universal_runtime_options()
+    return key in get_universal_settings()
 
 
-def get_universal_runtime_options() -> Dict[str, Type["BaseRuntimeOptions"]]:
-    """Returns all universal runtime options.
+def get_universal_settings() -> Dict[str, Type["Settings"]]:
+    """Returns all universal settings.
 
     Returns:
-        Dictionary mapping universal runtime option keys to their type.
+        Dictionary mapping universal settings keys to their type.
     """
     from zenml.config import DockerConfiguration, ResourceConfiguration
 
@@ -96,15 +94,15 @@ def get_universal_runtime_options() -> Dict[str, Type["BaseRuntimeOptions"]]:
     }
 
 
-def validate_runtime_option_keys(runtime_option_keys: Sequence[str]) -> None:
-    """Validates runtime option keys.
+def validate_setting_keys(setting_keys: Sequence[str]) -> None:
+    """Validates settings keys.
 
     Args:
-        runtime_option_keys: The keys to validate.
+        setting_keys: The keys to validate.
 
     Raises:
         ValueError: If any key is invalid.
     """
-    for key in runtime_option_keys:
-        if not is_valid_runtime_option_key(key):
-            raise ValueError(f"Invalid runtime option key: {key}")
+    for key in setting_keys:
+        if not is_valid_setting_key(key):
+            raise ValueError(f"Invalid settings key: {key}")

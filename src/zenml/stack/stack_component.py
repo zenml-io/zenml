@@ -33,11 +33,11 @@ from zenml.config.step_configurations import Step
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackComponentInterfaceError
 from zenml.logger import get_logger
-from zenml.utils import runtime_options_utils, secret_utils
+from zenml.utils import secret_utils, settings_utils
 
 if TYPE_CHECKING:
-    from zenml.config.base_runtime_options import BaseRuntimeOptions
     from zenml.config.pipeline_configurations import PipelineDeployment
+    from zenml.config.settings import Settings
     from zenml.stack import Stack, StackValidator
 
 
@@ -233,46 +233,44 @@ class StackComponent(BaseModel, ABC):
         }
 
     @property
-    def runtime_options_class(self) -> Optional[Type["BaseRuntimeOptions"]]:
-        """Class specifying available runtime options for this component.
+    def settings_class(self) -> Optional[Type["Settings"]]:
+        """Class specifying available settings for this component.
 
         Returns:
-            Optional runtime option class.
+            Optional settings class.
         """
         return None
 
-    def get_runtime_options(
+    def get_settings(
         self, container: Union["Step", "PipelineDeployment"]
-    ) -> Optional["BaseRuntimeOptions"]:
-        """Gets runtime options for this stack component.
+    ) -> Optional["Settings"]:
+        """Gets settings for this stack component.
 
         This will return `None` if the stack component doesn't specify a
-        runtime options class or the container doesn't contain runtime
+        settings class or the container doesn't contain runtime
         options for this component.
 
         Args:
             container: The `Step` or `PipelineDeployment` from which to get
-                the runtime options.
+                the settings.
 
         Returns:
-            Optional runtime options for this stack component.
+            Optional settings for this stack component.
         """
-        if not self.runtime_options_class:
+        if not self.settings_class:
             return None
 
-        key = runtime_options_utils.get_runtime_options_key_for_stack_component(
-            self
-        )
+        key = settings_utils.get_settings_key_for_stack_component(self)
         options = (
-            container.config.runtime_options
+            container.config.settings
             if isinstance(container, Step)
-            else container.pipeline.runtime_options
+            else container.pipeline.settings
         )
 
         if key not in options:
             return None
 
-        return self.runtime_options_class(**options[key].dict())
+        return self.settings_class(**options[key].dict())
 
     @property
     def log_file(self) -> Optional[str]:

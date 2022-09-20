@@ -18,10 +18,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from pydantic import Extra
 
-from zenml.config.base_runtime_options import (
-    BaseRuntimeOptions,
-    ConfigurationLevel,
-)
+from zenml.config.settings import ConfigurationLevel, Settings
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -49,7 +46,7 @@ class PythonEnvironmentExportMethod(Enum):
         }[self]
 
 
-class DockerConfiguration(BaseRuntimeOptions):
+class DockerConfiguration(Settings):
     """Configuration for building Docker images to run ZenML pipelines.
 
     Build process:

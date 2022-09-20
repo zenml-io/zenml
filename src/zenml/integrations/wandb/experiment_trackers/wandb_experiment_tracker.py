@@ -29,7 +29,7 @@ from typing import (
 import wandb
 from pydantic import validator
 
-from zenml.config.base_runtime_options import BaseRuntimeOptions
+from zenml.config.settings import Settings
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
 )
@@ -47,8 +47,8 @@ logger = get_logger(__name__)
 WANDB_API_KEY = "WANDB_API_KEY"
 
 
-class WandbExperimentTrackerRuntimeOptions(BaseRuntimeOptions):
-    """Runtime options for the Wandb experiment tracker.
+class WandbExperimentTrackerSettings(Settings):
+    """settings for the Wandb experiment tracker.
 
     Attributes:
         run_name: The Wandb run name.
@@ -108,13 +108,13 @@ class WandbExperimentTracker(BaseExperimentTracker):
     FLAVOR: ClassVar[str] = WANDB_EXPERIMENT_TRACKER_FLAVOR
 
     @property
-    def runtime_options_class(self) -> Optional[Type["BaseRuntimeOptions"]]:
-        """Runtime options class for the Wandb experiment tracker.
+    def settings_class(self) -> Optional[Type["Settings"]]:
+        """settings class for the Wandb experiment tracker.
 
         Returns:
-            The runtime options class.
+            The settings class.
         """
-        return WandbExperimentTrackerRuntimeOptions
+        return WandbExperimentTrackerSettings
 
     def prepare_step_run(self, step: "Step") -> None:
         """Configures a Wandb run.
@@ -124,9 +124,8 @@ class WandbExperimentTracker(BaseExperimentTracker):
         """
         os.environ[WANDB_API_KEY] = self.api_key
         config = cast(
-            WandbExperimentTrackerRuntimeOptions,
-            self.get_runtime_options(step)
-            or WandbExperimentTrackerRuntimeOptions(),
+            WandbExperimentTrackerSettings,
+            self.get_settings(step) or WandbExperimentTrackerSettings(),
         )
 
         pipeline_run_name = "pipeline_run"

@@ -35,13 +35,13 @@ from zenml.constants import (
 from zenml.enums import SecretValidationLevel, StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.logger import get_logger
-from zenml.utils import runtime_options_utils, string_utils
+from zenml.utils import settings_utils, string_utils
 
 if TYPE_CHECKING:
     from zenml.alerter import BaseAlerter
     from zenml.annotators import BaseAnnotator
     from zenml.artifact_stores import BaseArtifactStore
-    from zenml.config.base_runtime_options import BaseRuntimeOptions
+    from zenml.config.settings import Settings
     from zenml.container_registries import BaseContainerRegistry
     from zenml.data_validators import BaseDataValidator
     from zenml.experiment_trackers.base_experiment_tracker import (
@@ -471,20 +471,20 @@ class Stack:
         return set.union(*secrets) if secrets else set()
 
     @property
-    def runtime_option_classes(self) -> Dict[str, Type["BaseRuntimeOptions"]]:
-        """Runtime option classes of all components of this stack.
+    def setting_classes(self) -> Dict[str, Type["Settings"]]:
+        """Setting classes of all components of this stack.
 
         Returns:
-            All runtime option classes and their respective keys.
+            All setting classes and their respective keys.
         """
-        runtime_option_classes = {}
+        setting_classes = {}
         for component in self.components.values():
-            if component.runtime_options_class:
-                key = runtime_options_utils.get_runtime_options_key_for_stack_component(
+            if component.settings_class:
+                key = settings_utils.get_settings_key_for_stack_component(
                     component
                 )
-                runtime_option_classes[key] = component.runtime_options_class
-        return runtime_option_classes
+                setting_classes[key] = component.settings_class
+        return setting_classes
 
     def _validate_secrets(self, raise_exception: bool) -> None:
         """Validates that all secrets of the stack exists.

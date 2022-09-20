@@ -272,6 +272,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
         self._add_mlmd_contexts(
             pipeline_node=pipeline_node,
+            step=step,
             deployment=self._active_run_config,
             stack=stack,
         )

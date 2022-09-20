@@ -18,7 +18,7 @@ from typing import Optional, Union
 
 from pydantic import Extra, Field, PositiveFloat, PositiveInt
 
-from zenml.config.base_runtime_options import BaseRuntimeOptions
+from zenml.config.settings import Settings
 
 
 class ByteUnit(Enum):
@@ -59,7 +59,7 @@ class ByteUnit(Enum):
 MEMORY_REGEX = r"^[0-9]+(" + "|".join(unit.value for unit in ByteUnit) + r")$"
 
 
-class ResourceConfiguration(BaseRuntimeOptions):
+class ResourceConfiguration(Settings):
     """Class for configuring hardware resources.
 
     Attributes:

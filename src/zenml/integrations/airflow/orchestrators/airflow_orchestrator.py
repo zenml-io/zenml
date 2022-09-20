@@ -303,11 +303,11 @@ class AirflowOrchestrator(BaseOrchestrator):
             password,
         )
 
-    def runtime_options(self) -> Dict[str, Any]:
-        """Runtime options for the airflow orchestrator.
+    def settings(self) -> Dict[str, Any]:
+        """settings for the airflow orchestrator.
 
         Returns:
-            Runtime options dictionary.
+            settings dictionary.
         """
         return {DAG_FILEPATH_OPTION_KEY: None}
 

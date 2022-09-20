@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Base class for all ZenML runtime options."""
+"""Base class for all ZenML settings."""
 from enum import IntFlag, auto
 from typing import Any, ClassVar, Dict, Optional, Union
 
@@ -19,18 +19,18 @@ from pydantic import Extra
 
 from zenml.config.secret_reference_mixin import SecretReferenceMixin
 
-RuntimeOptionsOrDict = Union[Dict[str, Any], "BaseRuntimeOptions"]
+SettingsOrDict = Union[Dict[str, Any], "Settings"]
 
 
 class ConfigurationLevel(IntFlag):
-    """Runtime options configuration level."""
+    """Settings configuration level."""
 
     STEP = auto()
     PIPELINE = auto()
 
 
-class BaseRuntimeOptions(SecretReferenceMixin):
-    """Base class for runtime options."""
+class Settings(SecretReferenceMixin):
+    """Base class for settings."""
 
     KEY: ClassVar[Optional[str]] = None
     LEVEL: ClassVar[ConfigurationLevel] = (

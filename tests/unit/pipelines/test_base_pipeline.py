@@ -298,7 +298,7 @@ def test_pipeline_stores_docker_config():
         pass
 
     stored_docker_config = DockerConfiguration.parse_obj(
-        my_pipeline().configuration.runtime_options["docker"]
+        my_pipeline().configuration.settings["docker"]
     )
     assert stored_docker_config == docker_config
 

@@ -55,7 +55,7 @@ from kubernetes import config as k8s_config
 from pydantic import root_validator
 
 from zenml.artifact_stores import LocalArtifactStore
-from zenml.config.base_runtime_options import BaseRuntimeOptions
+from zenml.config.settings import Settings
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
@@ -96,8 +96,8 @@ KFP_POD_LABELS = {
 }
 
 
-class KubeflowOrchestratorRuntimeOptions(BaseRuntimeOptions):
-    """Runtime options for the Kubeflow orchestrator.
+class KubeflowOrchestratorSettings(Settings):
+    """settings for the Kubeflow orchestrator.
 
     Attributes:
         client_args: Arguments to pass when initializing the KFP client.
@@ -220,13 +220,13 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         return context_names, active_context_name
 
     @property
-    def runtime_options_class(self) -> Optional[Type["BaseRuntimeOptions"]]:
-        """Runtime options class for the Kubeflow orchestrator.
+    def settings_class(self) -> Optional[Type["Settings"]]:
+        """settings class for the Kubeflow orchestrator.
 
         Returns:
-            The runtime options class.
+            The settings class.
         """
-        return KubeflowOrchestratorRuntimeOptions
+        return KubeflowOrchestratorSettings
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -700,9 +700,9 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         pipeline_name = deployment.pipeline.name
         run_name = deployment.run_name
         enable_cache = deployment.pipeline.enable_cache
-        runtime_options = cast(
-            Optional[KubeflowOrchestratorRuntimeOptions],
-            self.get_runtime_options(deployment),
+        settings = cast(
+            Optional[KubeflowOrchestratorSettings],
+            self.get_settings(deployment),
         )
 
         try:
@@ -712,7 +712,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             )
 
             # upload the pipeline to Kubeflow and start it
-            client = self._get_kfp_client(runtime_options=runtime_options)
+            client = self._get_kfp_client(settings=settings)
             if deployment.schedule:
                 try:
                     experiment = client.get_experiment(pipeline_name)
@@ -765,7 +765,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
                 if self.synchronous:
                     # TODO [ENG-698]: Allow configuration of the timeout as a
-                    #  runtime option
+                    #  setting
                     client.wait_for_run_completion(
                         run_id=result.run_id, timeout=1200
                     )
@@ -780,12 +780,12 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
     def _get_kfp_client(
         self,
-        runtime_options: Optional[KubeflowOrchestratorRuntimeOptions] = None,
+        settings: Optional[KubeflowOrchestratorSettings] = None,
     ) -> kfp.Client:
         """Creates a KFP client instance.
 
         Args:
-            runtime_options: Optional runtime options which can be used to
+            settings: Optional settings which can be used to
                 configure the client instance.
 
         Returns:
@@ -796,8 +796,8 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             "kube_context": self.kubernetes_context,
         }
 
-        if runtime_options:
-            client_args.update(runtime_options.client_args)
+        if settings:
+            client_args.update(settings.client_args)
 
         return kfp.Client(**client_args)
 

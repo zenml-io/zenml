@@ -18,12 +18,9 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 import yaml
 
 import zenml
-from zenml.config.base_runtime_options import (
-    BaseRuntimeOptions,
-    RuntimeOptionsOrDict,
-)
 from zenml.config.constants import DOCKER_CONFIGURATION_KEY
 from zenml.config.schedule import Schedule
+from zenml.config.settings import Settings, SettingsOrDict
 from zenml.config.step_configurations import (
     Step,
     StepConfigurationUpdate,
@@ -34,17 +31,14 @@ from zenml.config.strict_base_model import StrictBaseModel
 if TYPE_CHECKING:
     from zenml.config import DockerConfiguration
 
-from zenml.config.base_runtime_options import (
-    BaseRuntimeOptions,
-    RuntimeOptionsOrDict,
-)
+from zenml.config.settings import Settings, SettingsOrDict
 
 
 class PipelineConfigurationUpdate(StrictBaseModel):
     """Class for pipeline configuration updates."""
 
     enable_cache: Optional[bool] = None
-    runtime_options: Dict[str, BaseRuntimeOptions] = {}
+    settings: Dict[str, Settings] = {}
     extra: Dict[str, Any] = {}
 
 
@@ -69,7 +63,7 @@ class PipelineRunConfiguration(StrictBaseModel):
     enable_cache: Optional[bool] = None
     schedule: Optional[Schedule] = None
     steps: Dict[str, StepConfigurationUpdate] = {}
-    runtime_options: Dict[str, BaseRuntimeOptions] = {}
+    settings: Dict[str, Settings] = {}
     extra: Dict[str, Any] = {}
 
 
@@ -114,7 +108,7 @@ class PipelineDeployment(StrictBaseModel):
         """
         from zenml.config import DockerConfiguration
 
-        model_or_dict: RuntimeOptionsOrDict = self.pipeline.runtime_options.get(
+        model_or_dict: SettingsOrDict = self.pipeline.settings.get(
             DOCKER_CONFIGURATION_KEY, {}
         )
         return DockerConfiguration.parse_obj(model_or_dict)

@@ -22,17 +22,14 @@ from tfx.dsl.compiler.compiler import Compiler as TFXCompiler
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 
-from zenml.config.base_runtime_options import (
-    BaseRuntimeOptions,
-    ConfigurationLevel,
-)
 from zenml.config.pipeline_configurations import (
     PipelineDeployment,
     PipelineRunConfiguration,
 )
-from zenml.config.runtime_options_resolver import RuntimeOptionsResolver
+from zenml.config.settings import ConfigurationLevel, Settings
+from zenml.config.settings_resolver import SettingsResolver
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
-from zenml.exceptions import RuntimeOptionsResolvingError, StackValidationError
+from zenml.exceptions import SettingsResolvingError, StackValidationError
 from zenml.utils import source_utils, string_utils
 
 if TYPE_CHECKING:
@@ -75,25 +72,23 @@ class Compiler:
             pipeline=pipeline, stack=stack
         )
 
-        pipeline_runtime_options = self._filter_and_validate_runtime_options(
-            runtime_options=pipeline.configuration.runtime_options,
+        pipeline_settings = self._filter_and_validate_settings(
+            settings=pipeline.configuration.settings,
             configuration_level=ConfigurationLevel.PIPELINE,
             stack=stack,
         )
-        pipeline.configure(
-            runtime_options=pipeline_runtime_options, merge=False
-        )
+        pipeline.configure(settings=pipeline_settings, merge=False)
 
         options_to_passdown = {
             key: options
-            for key, options in pipeline_runtime_options.items()
+            for key, options in pipeline_settings.items()
             if ConfigurationLevel.STEP in options.LEVEL
         }
 
         steps = {
             name: self._compile_step(
                 step=step,
-                pipeline_runtime_options=options_to_passdown,
+                pipeline_settings=options_to_passdown,
                 pipeline_extra=pipeline.configuration.extra,
                 stack=stack,
             )
@@ -138,7 +133,7 @@ class Compiler:
         """
         pipeline.configure(
             enable_cache=config.enable_cache,
-            runtime_options=config.runtime_options,
+            settings=config.settings,
             extra=config.extra,
         )
 
@@ -147,42 +142,40 @@ class Compiler:
                 raise KeyError(f"No step with name {step_name}.")
             pipeline.steps[step_name]._apply_configuration(step_config)
 
-    def _filter_and_validate_runtime_options(
+    def _filter_and_validate_settings(
         self,
-        runtime_options: Dict[str, "BaseRuntimeOptions"],
+        settings: Dict[str, "Settings"],
         configuration_level: ConfigurationLevel,
         stack: "Stack",
-    ) -> Dict[str, "BaseRuntimeOptions"]:
-        """Filters and validates runtime options.
+    ) -> Dict[str, "Settings"]:
+        """Filters and validates settings.
 
         Args:
-            runtime_options: The runtime options to check.
-            configuration_level: The level on which these runtime options
+            settings: The settings to check.
+            configuration_level: The level on which these settings
                 were configured.
             stack: The stack on which the pipeline will run.
 
         Raises:
-            TypeError: If a runtime option with an unsupported configuration
-                level was specified.
+            TypeError: If settings with an unsupported configuration
+                level were specified.
 
         Returns:
-            The filtered runtime options.
+            The filtered settings.
         """
         validated_options = {}
 
-        for key, options in runtime_options.items():
-            resolver = RuntimeOptionsResolver(key=key, options=options)
+        for key, options in settings.items():
+            resolver = SettingsResolver(key=key, options=options)
             try:
                 options = resolver.resolve(stack=stack)
-            except RuntimeOptionsResolvingError:
-                logger.debug(
-                    "Not including runtime options with key `%s`.", key
-                )
+            except SettingsResolvingError:
+                logger.debug("Not including settings with key `%s`.", key)
                 continue
 
             if configuration_level not in options.LEVEL:
                 raise TypeError(
-                    f"The runtime options class {options.__class__} can't be "
+                    f"The settings class {options.__class__} can't be "
                     f"specified on a {configuration_level.name} level."
                 )
             validated_options[key] = options
@@ -206,7 +199,7 @@ class Compiler:
     def _compile_step(
         self,
         step: "BaseStep",
-        pipeline_runtime_options: Dict[str, "BaseRuntimeOptions"],
+        pipeline_settings: Dict[str, "Settings"],
         pipeline_extra: Dict[str, Any],
         stack: "Stack",
     ) -> Step:
@@ -214,7 +207,7 @@ class Compiler:
 
         Args:
             step: The step to compile.
-            pipeline_runtime_options: Runtime options configured on the
+            pipeline_settings: settings configured on the
                 pipeline of the step.
             pipeline_extra: Extra values configured on the pipeline of the step.
             stack: The stack on which the pipeline will be run.
@@ -223,20 +216,20 @@ class Compiler:
             The compiled step.
         """
         step_spec = self._get_step_spec(step=step)
-        step_runtime_options = self._filter_and_validate_runtime_options(
-            runtime_options=step.configuration.runtime_options,
+        step_settings = self._filter_and_validate_settings(
+            settings=step.configuration.settings,
             configuration_level=ConfigurationLevel.STEP,
             stack=stack,
         )
 
-        merged_runtime_options = {
-            **pipeline_runtime_options,
-            **step_runtime_options,
+        merged_settings = {
+            **pipeline_settings,
+            **step_settings,
         }
         merged_extras = {**pipeline_extra, **step.configuration.extra}
 
         step.configure(
-            runtime_options=merged_runtime_options,
+            settings=merged_settings,
             extra=merged_extras,
             merge=False,
         )
