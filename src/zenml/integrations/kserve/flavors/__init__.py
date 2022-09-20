@@ -14,5 +14,11 @@
 """KServe integration flavors."""
 
 from zenml.integrations.kserve.flavors.kserve_model_deployer_flavor import (
+    KServeModelDeployerConfig,
     KServeModelDeployerFlavor,
 )
+
+__all__ = [
+    "KServeModelDeployerFlavor",
+    "KServeModelDeployerConfig",
+]

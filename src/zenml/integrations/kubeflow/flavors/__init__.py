@@ -14,5 +14,11 @@
 """Kubeflow integration flavors."""
 
 from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import (
+    KubeflowOrchestratorConfig,
     KubeflowOrchestratorFlavor,
 )
+
+__all__ = [
+    "KubeflowOrchestratorFlavor",
+    "KubeflowOrchestratorConfig",
+]

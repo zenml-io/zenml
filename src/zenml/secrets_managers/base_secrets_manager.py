@@ -102,7 +102,7 @@ class BaseSecretsManagerConfig(StackComponentConfig):
             # Secrets Manager that doesn't support scoping
             if scope != SecretsManagerScope.NONE and not cls.SUPPORTS_SCOPING:
                 raise ValueError(
-                    f"The {cls.flavor} Secrets Manager does not support "
+                    f"This Secrets Manager does not support "
                     f"scoping. You can only use a `none` scope value."
                 )
         elif not cls.SUPPORTS_SCOPING:
@@ -114,7 +114,7 @@ class BaseSecretsManagerConfig(StackComponentConfig):
         # Secrets Manager that does support scoping
         if scope == SecretsManagerScope.NONE and cls.SUPPORTS_SCOPING:
             logger.warning(
-                f"Unscoped support for the {cls.flavor} Secrets "
+                f"Unscoped support for this Secrets "
                 f"Manager is deprecated and will be removed in a future "
                 f"release. You should use the `global` scope instead."
             )
@@ -189,6 +189,10 @@ class BaseSecretsManager(StackComponent, ABC):
             Manager.
     """
 
+    @property
+    def config(self) -> BaseSecretsManagerConfig:
+        return cast(BaseSecretsManagerConfig, self._config)
+
     def _get_scope_path(self) -> List[str]:
         """Get the secret path for the current scope.
 
@@ -198,14 +202,17 @@ class BaseSecretsManager(StackComponent, ABC):
         Returns:
             the secret scope path
         """
-        if self.scope == SecretsManagerScope.NONE:
+        if self.config.scope == SecretsManagerScope.NONE:
             return []
 
-        path = [ZENML_SCOPE_PATH_PREFIX, self.scope]
-        if self.scope == SecretsManagerScope.COMPONENT:
+        path = [ZENML_SCOPE_PATH_PREFIX, self.config.scope]
+        if self.config.scope == SecretsManagerScope.COMPONENT:
             path.append(str(self.id))
-        elif self.scope == SecretsManagerScope.NAMESPACE and self.namespace:
-            path.append(self.namespace)
+        elif (
+            self.config.scope == SecretsManagerScope.NAMESPACE
+            and self.config.namespace
+        ):
+            path.append(self.config.namespace)
 
         return path
 
@@ -333,19 +340,22 @@ class BaseSecretsManager(StackComponent, ABC):
             Dictionary with scope metadata information uniquely identifying the
             secret.
         """
-        if self.scope == SecretsManagerScope.NONE:
+        if self.config.scope == SecretsManagerScope.NONE:
             # unscoped secrets do not have tags, for backwards compatibility
             # purposes
             return {}
 
         metadata = {
-            "zenml_scope": self.scope.value,
+            "zenml_scope": self.config.scope.value,
         }
         if secret_name:
             metadata[ZENML_SECRET_NAME_LABEL] = secret_name
-        if self.scope == SecretsManagerScope.NAMESPACE and self.namespace:
-            metadata["zenml_namespace"] = self.namespace
-        if self.scope == SecretsManagerScope.COMPONENT:
+        if (
+            self.config.scope == SecretsManagerScope.NAMESPACE
+            and self.config.namespace
+        ):
+            metadata["zenml_namespace"] = self.config.namespace
+        if self.config.scope == SecretsManagerScope.COMPONENT:
             metadata["zenml_component_uuid"] = str(self.id)
 
         return metadata
@@ -369,7 +379,7 @@ class BaseSecretsManager(StackComponent, ABC):
         Returns:
             Dictionary with metadata information describing the secret.
         """
-        if self.scope == SecretsManagerScope.NONE:
+        if self.config.scope == SecretsManagerScope.NONE:
             # unscoped secrets do not have tags, for backwards compatibility
             # purposes
             return {}

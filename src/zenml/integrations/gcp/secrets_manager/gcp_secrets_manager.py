@@ -13,13 +13,14 @@
 #  permissions and limitations under the License.
 """Implementation of the GCP Secrets Manager."""
 import json
-from typing import Any, ClassVar, Dict, List, Optional, Tuple
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, cast
 
 from google.api_core import exceptions as google_exceptions
 from google.cloud import secretmanager
 
 from zenml.exceptions import SecretExistsError
 from zenml.integrations.gcp.flavors.gcp_secrets_manager_flavor import (
+    GCPSecretsManagerConfig,
     validate_gcp_secret_name_or_namespace,
 )
 from zenml.logger import get_logger
@@ -66,6 +67,10 @@ class GCPSecretsManager(BaseSecretsManager):
     """Class to interact with the GCP secrets manager."""
 
     CLIENT: ClassVar[Any] = None
+
+    @property
+    def config(self) -> GCPSecretsManagerConfig:
+        return cast(GCPSecretsManagerConfig, self._config)
 
     @classmethod
     def _ensure_client_connected(cls) -> None:

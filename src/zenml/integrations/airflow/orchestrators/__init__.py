@@ -16,3 +16,5 @@
 from zenml.integrations.airflow.orchestrators.airflow_orchestrator import (  # noqa
     AirflowOrchestrator,
 )
+
+__all__ = ["AirflowOrchestrator"]

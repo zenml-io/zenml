@@ -14,5 +14,11 @@
 """Slack integration flavors."""
 
 from zenml.integrations.slack.flavors.slack_alerter_flavor import (
+    SlackAlerterConfig,
     SlackAlerterFlavor,
 )
+
+__all__ = [
+    "SlackAlerterFlavor",
+    "SlackAlerterConfig",
+]

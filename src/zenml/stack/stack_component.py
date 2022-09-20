@@ -206,7 +206,7 @@ class StackComponent:
     ):
         self.id = id
         self.name = name
-        self.config = config
+        self._config = config
         self.flavor = flavor
         self.type = type
         self.user = user
@@ -252,6 +252,15 @@ class StackComponent:
             name=self.name,
             configuration=self.config.dict(),
         )
+
+    @property
+    def config(self) -> StackComponentConfig:
+        """Returns the configuration of the stack component.
+
+        This should be overwritten by any subclasses that define custom configs
+        to return the correct config class.
+        """
+        return self._config
 
     @property
     def log_file(self) -> Optional[str]:

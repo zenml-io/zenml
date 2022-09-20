@@ -16,3 +16,5 @@
 from zenml.integrations.spark.step_operators.kubernetes_step_operator import (
     KubernetesSparkStepOperator,
 )
+
+__all__ = ["KubernetesSparkStepOperator"]

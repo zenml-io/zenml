@@ -17,7 +17,7 @@ import copy
 import os
 import re
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
 
 from git.exc import InvalidGitRepositoryError
 from git.repo.base import Repo
@@ -29,6 +29,9 @@ from zenml.container_registries import (
     GitHubContainerRegistryFlavor,
 )
 from zenml.entrypoints.step_entrypoint_configuration import PIPELINE_JSON_OPTION
+from zenml.integrations.github.flavors.github_actions_orchestrator_flavor import (
+    GitHubActionsOrchestratorConfig,
+)
 from zenml.integrations.github.orchestrators.github_actions_entrypoint_configuration import (
     GitHubActionsEntrypointConfiguration,
 )
@@ -66,6 +69,10 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using GitHub Actions."""
 
     _git_repo: Optional[Repo] = None
+
+    @property
+    def config(self) -> GitHubActionsOrchestratorConfig:
+        return cast(GitHubActionsOrchestratorConfig, self._config)
 
     @property
     def git_repo(self) -> Repo:
@@ -136,9 +143,9 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
                     "The GitHub Actions orchestrator requires a remote "
                     f"container registry, but the '{container_registry.name}' "
                     "container registry of your active stack points to a local "
-                    f"URI '{container_registry.uri}'. Please make sure stacks "
-                    "with a GitHub Actions orchestrator always contain remote "
-                    "container registries."
+                    f"URI '{container_registry.config.uri}'. Please make sure "
+                    "stacks with a GitHub Actions orchestrator always contain "
+                    "remote container registries."
                 )
 
             if container_registry.requires_authentication:

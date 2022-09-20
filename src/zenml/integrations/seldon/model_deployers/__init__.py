@@ -16,3 +16,5 @@
 from zenml.integrations.seldon.model_deployers.seldon_model_deployer import (  # noqa
     SeldonModelDeployer,
 )
+
+__all__ = ["SeldonModelDeployer"]

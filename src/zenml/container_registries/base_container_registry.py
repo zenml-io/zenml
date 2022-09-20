@@ -14,7 +14,7 @@
 """Implementation of a base container registry class."""
 
 import re
-from typing import Optional, Tuple, Type
+from typing import Optional, Tuple, Type, cast
 
 from pydantic import validator
 
@@ -58,6 +58,10 @@ class BaseContainerRegistry(StackComponent, AuthenticationMixin):
     """Base class for all ZenML container registries."""
 
     @property
+    def config(self) -> BaseContainerRegistryConfig:
+        return cast(BaseContainerRegistryConfig, self._config)
+
+    @property
     def requires_authentication(self) -> bool:
         """Returns whether the container registry requires authentication.
 
@@ -65,7 +69,7 @@ class BaseContainerRegistry(StackComponent, AuthenticationMixin):
             `True` if the container registry requires authentication,
             `False` otherwise.
         """
-        return bool(self.authentication_secret)
+        return bool(self.config.authentication_secret)
 
     @property
     def credentials(self) -> Optional[Tuple[str, str]]:

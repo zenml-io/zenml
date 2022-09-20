@@ -14,8 +14,17 @@
 """GitHub integration flavors."""
 
 from zenml.integrations.github.flavors.github_actions_orchestrator_flavor import (
+    GitHubActionsOrchestratorConfig,
     GitHubActionsOrchestratorFlavor,
 )
 from zenml.integrations.github.flavors.github_secrets_manager_flavor import (
+    GitHubSecretsManagerConfig,
     GitHubSecretsManagerFlavor,
 )
+
+__all__ = [
+    "GitHubActionsOrchestratorFlavor",
+    "GitHubActionsOrchestratorConfig",
+    "GitHubSecretsManagerFlavor",
+    "GitHubSecretsManagerConfig",
+]

@@ -74,7 +74,7 @@ class PipelineRunDagVisualizer(BaseVisualizer):
             for artifact_name, artifact in step.outputs.items():
                 dot.node(
                     self.ARTIFACT_PREFIX + str(artifact.id),
-                    f"{artifact_name} \n" f"({artifact._data_type})",
+                    f"{artifact_name} \n" f"({artifact.data_type})",
                     shape=self.ARTIFACT_SHAPE,
                 )
                 dot.edge(

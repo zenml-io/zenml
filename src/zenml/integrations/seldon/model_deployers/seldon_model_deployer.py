@@ -19,6 +19,9 @@ from typing import TYPE_CHECKING, Dict, List, Optional, cast
 from uuid import UUID
 
 from zenml.integrations.seldon import SELDON_MODEL_DEPLOYER_FLAVOR
+from zenml.integrations.seldon.flavors.seldon_model_deployer_flavor import (
+    SeldonModelDeployerConfig,
+)
 from zenml.integrations.seldon.seldon_client import SeldonClient
 from zenml.integrations.seldon.services.seldon_deployment import (
     SeldonDeploymentConfig,
@@ -46,6 +49,10 @@ class SeldonModelDeployer(BaseModelDeployer):
     """Seldon Core model deployer stack component implementation."""
 
     _client: Optional[SeldonClient] = None
+
+    @property
+    def config(self) -> SeldonModelDeployerConfig:
+        return cast(SeldonModelDeployerConfig, self._config)
 
     @staticmethod
     def get_model_server_info(  # type: ignore[override]

@@ -59,7 +59,7 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):  # type: ignore[misc]
         # extract the protocol used in the artifact store root path
         protocols = [
             scheme
-            for scheme in artifact_store.SUPPORTED_SCHEMES
+            for scheme in artifact_store.config.SUPPORTED_SCHEMES
             if self.root_path.startswith(scheme)
         ]
         if protocols:

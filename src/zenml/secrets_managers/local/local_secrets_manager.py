@@ -15,7 +15,7 @@
 
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Type
+from typing import TYPE_CHECKING, Dict, List, Type, cast
 
 from zenml.cli.utils import error
 from zenml.config.global_config import GlobalConfiguration
@@ -37,7 +37,6 @@ if TYPE_CHECKING:
     from uuid import UUID
 
     from zenml.secret.base_secret import BaseSecretSchema
-    from zenml.stack.stack_component import StackComponent, StackComponentConfig
 
 
 logger = get_logger(__name__)
@@ -49,6 +48,10 @@ class LocalSecretsManagerConfig(BaseSecretsManagerConfig):
 
 class LocalSecretsManager(BaseSecretsManager):
     """Class for ZenML local file-based secret manager."""
+
+    @property
+    def config(self) -> LocalSecretsManagerConfig:
+        return cast(LocalSecretsManagerConfig, self._config)
 
     @property
     def secrets_file(self) -> str:
@@ -227,9 +230,9 @@ class LocalSecretsManagerFlavor(BaseSecretsManagerFlavor):
         return "local"
 
     @property
-    def config_class(self) -> Type["StackComponentConfig"]:
+    def config_class(self) -> Type[LocalSecretsManagerConfig]:
         return LocalSecretsManagerConfig
 
     @property
-    def implementation_class(self) -> Type["StackComponent"]:
+    def implementation_class(self) -> Type["LocalSecretsManager"]:
         return LocalSecretsManager

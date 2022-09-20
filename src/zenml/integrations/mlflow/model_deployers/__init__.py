@@ -14,3 +14,5 @@
 from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (  # noqa
     MLFlowModelDeployer,
 )
+
+__all__ = ["MLFlowModelDeployer"]

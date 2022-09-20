@@ -30,7 +30,7 @@
 """Implementation of the VertexAI orchestrator."""
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
 
 import kfp
 from google.api_core import exceptions as google_exceptions
@@ -41,6 +41,9 @@ from kfp.v2.compiler import Compiler as KFPV2Compiler
 
 from zenml.enums import StackComponentType
 from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
+from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import (
+    VertexOrchestratorConfig,
+)
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsMixin,
 )
@@ -84,6 +87,10 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
     _pipeline_root: str
 
     @property
+    def config(self) -> VertexOrchestratorConfig:
+        return cast(VertexOrchestratorConfig, self._config)
+
+    @property
     def validator(self) -> Optional[StackValidator]:
         """Validates that the stack contains a container registry.
 
@@ -109,7 +116,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                     f"The Vertex orchestrator does not support local "
                     f"container registries. You should replace the component '"
                     f"{container_registry.name}' "
-                    f"{container_registry.TYPE.value} to a remote one."
+                    f"{container_registry.type.value} to a remote one."
                 )
 
             # Validate that the rest of the components are not local.
@@ -166,7 +173,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             orchestrator.
         """
         return os.path.join(
-            get_global_config_directory(), "vertex", str(self.uuid)
+            get_global_config_directory(), "vertex", str(self.id)
         )
 
     @property

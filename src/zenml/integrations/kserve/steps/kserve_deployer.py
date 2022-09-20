@@ -429,7 +429,9 @@ def kserve_custom_model_deployer_step(
 
     # Get the model artifact to extract information about the model
     # and how it can be loaded again later in the deployment environment.
-    artifact = stack.metadata_store.store.get_artifacts_by_uri(model.uri)
+    artifact = stack.metadata_store.store.get_artifacts_by_uri(
+        model.uri
+    )  # TODO
     if not artifact:
         raise DoesNotExistException(f"No artifact found at {model.uri}.")
 

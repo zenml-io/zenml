@@ -14,13 +14,16 @@
 """Implementation of the AWS container registry integration."""
 
 import re
-from typing import List, Optional
+from typing import List, Optional, cast
 
 import boto3
 from botocore.exceptions import ClientError
 
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
+)
+from zenml.integrations.aws.flavors.aws_container_registry_flavor import (
+    AWSContainerRegistryConfig,
 )
 from zenml.logger import get_logger
 
@@ -29,6 +32,10 @@ logger = get_logger(__name__)
 
 class AWSContainerRegistry(BaseContainerRegistry):
     """Class for AWS Container Registry."""
+
+    @property
+    def config(self) -> AWSContainerRegistryConfig:
+        return cast(AWSContainerRegistryConfig, self._config)
 
     def _get_region(self) -> str:
         """Parses the AWS region from the registry URI.
@@ -73,7 +80,7 @@ class AWSContainerRegistry(BaseContainerRegistry):
 
         repo_exists = any(image_name.startswith(f"{uri}:") for uri in repo_uris)
         if not repo_exists:
-            match = re.search(f"{self.uri}/(.*):.*", image_name)
+            match = re.search(f"{self.config.uri}/(.*):.*", image_name)
             if not match:
                 raise ValueError(f"Invalid docker image name '{image_name}'.")
 

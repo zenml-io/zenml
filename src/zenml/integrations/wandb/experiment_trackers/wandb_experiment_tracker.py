@@ -15,12 +15,15 @@
 
 import os
 from contextlib import contextmanager
-from typing import Iterator, Optional, Tuple
+from typing import Iterator, Optional, Tuple, cast
 
 import wandb
 
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
+)
+from zenml.integrations.wandb.flavors.wandb_experiment_tracker_flavor import (
+    WandbExperimentTrackerConfig,
 )
 from zenml.logger import get_logger
 
@@ -45,6 +48,10 @@ class WandbExperimentTracker(BaseExperimentTracker):
         context.stack.experiment_tracker  # get the tracking_uri etc. from here
     ```
     """
+
+    @property
+    def config(self) -> WandbExperimentTrackerConfig:
+        return cast(WandbExperimentTrackerConfig, self._config)
 
     def prepare_step_run(self) -> None:
         """Sets the wandb api key."""

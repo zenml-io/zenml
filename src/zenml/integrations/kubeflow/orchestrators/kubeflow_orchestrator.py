@@ -31,7 +31,7 @@
 """Implementation of the Kubeflow orchestrator."""
 import os
 import sys
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
 from uuid import UUID
 
 import kfp
@@ -50,6 +50,7 @@ from zenml.environment import Environment
 from zenml.exceptions import ProvisioningError
 from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import (
     DEFAULT_KFP_UI_PORT,
+    KubeflowOrchestratorConfig,
 )
 from zenml.integrations.kubeflow.orchestrators import (
     local_deployment_utils,
@@ -87,6 +88,10 @@ KFP_POD_LABELS = {
 
 class KubeflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Kubeflow."""
+
+    @property
+    def config(self) -> KubeflowOrchestratorConfig:
+        return cast(KubeflowOrchestratorConfig, self._config)
 
     @staticmethod
     def _get_k3d_cluster_name(uuid: UUID) -> str:
@@ -754,7 +759,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         Returns:
             The K3D cluster name.
         """
-        return self._get_k3d_cluster_name(self.uuid)
+        return self._get_k3d_cluster_name(self.id)
 
     def _get_k3d_registry_name(self, port: int) -> str:
         """Returns the K3D registry name.
@@ -962,14 +967,16 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
         logger.info("Provisioning local Kubeflow Pipelines deployment...")
 
-        container_registry_port = int(container_registry.uri.split(":")[-1])
+        container_registry_port = int(
+            container_registry.config.uri.split(":")[-1]
+        )
         container_registry_name = self._get_k3d_registry_name(
             port=container_registry_port
         )
         local_deployment_utils.write_local_registry_yaml(
             yaml_path=self._k3d_registry_config_path,
             registry_name=container_registry_name,
-            registry_uri=container_registry.uri,
+            registry_uri=container_registry.config.uri,
         )
 
         try:

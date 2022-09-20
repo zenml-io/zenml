@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Feast Feature Store for ZenML."""
 
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Union, cast
 
 import pandas as pd
 import redis
@@ -21,6 +21,9 @@ from feast import FeatureStore  # type: ignore[import]
 from feast.registry import Registry  # type: ignore[import]
 
 from zenml.feature_stores.base_feature_store import BaseFeatureStore
+from zenml.integrations.feast.flavors.feast_feature_store_flavor import (
+    FeastFeatureStoreConfig,
+)
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -28,6 +31,10 @@ logger = get_logger(__name__)
 
 class FeastFeatureStore(BaseFeatureStore):
     """Class to interact with the Feast feature store."""
+
+    @property
+    def config(self) -> FeastFeatureStoreConfig:
+        return cast(FeastFeatureStoreConfig, self._config)
 
     def _validate_connection(self) -> None:
         """Validates the connection to the feature store.

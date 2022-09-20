@@ -14,5 +14,11 @@
 """Amazon S3 integration flavors."""
 
 from zenml.integrations.s3.flavors.s3_artifact_store_flavor import (
+    S3ArtifactStoreConfig,
     S3ArtifactStoreFlavor,
 )
+
+__all__ = [
+    "S3ArtifactStoreFlavor",
+    "S3ArtifactStoreConfig",
+]

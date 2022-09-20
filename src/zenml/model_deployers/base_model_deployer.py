@@ -14,7 +14,7 @@
 """Base class for all ZenML model deployers."""
 
 from abc import ABC, abstractmethod
-from typing import Dict, Generator, List, Optional, Type
+from typing import Dict, Generator, List, Optional, Type, cast
 from uuid import UUID
 
 from zenml.enums import StackComponentType
@@ -64,6 +64,10 @@ class BaseModelDeployer(StackComponent, ABC):
     management on remote model servers outside the coverage of a pipeline
     (see `stop_model_server`, `start_model_server` and `delete_model_server`).
     """
+
+    @property
+    def config(self) -> BaseModelDeployerConfig:
+        return cast(BaseModelDeployerConfig, self._config)
 
     @abstractmethod
     def deploy_model(
