@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 
 
+from uuid import uuid4
+
 import pytest
 
 from zenml.enums import StackComponentType
@@ -20,24 +22,59 @@ from zenml.exceptions import ArtifactStoreInterfaceError
 from zenml.integrations.s3.artifact_stores.s3_artifact_store import (
     S3ArtifactStore,
 )
+from zenml.integrations.s3.flavors.s3_artifact_store_flavor import (
+    S3ArtifactStoreConfig,
+)
 
 
 def test_s3_artifact_store_attributes():
     """Tests that the basic attributes of the s3 artifact store are set
     correctly."""
-    artifact_store = S3ArtifactStore(name="", path="s3://tmp")
-    assert artifact_store.TYPE == StackComponentType.ARTIFACT_STORE
-    assert artifact_store.FLAVOR == "s3"
+    artifact_store = S3ArtifactStore(
+        name="",
+        id=uuid4(),
+        config=S3ArtifactStoreConfig(path="s3://tmp"),
+        flavor="s3",
+        type=StackComponentType.ARTIFACT_STORE,
+        user=uuid4(),
+        project=uuid4(),
+    )
+    assert artifact_store.type == StackComponentType.ARTIFACT_STORE
+    assert artifact_store.flavor == "s3"
 
 
 def test_must_be_s3_path():
     """Checks that a s3 artifact store can only be initialized with a s3
     path."""
     with pytest.raises(ArtifactStoreInterfaceError):
-        S3ArtifactStore(name="", path="/local/path")
+        S3ArtifactStore(
+            name="",
+            id=uuid4(),
+            config=S3ArtifactStoreConfig(path="/local/path"),
+            flavor="s3",
+            type=StackComponentType.ARTIFACT_STORE,
+            user=uuid4(),
+            project=uuid4(),
+        )
 
     with pytest.raises(ArtifactStoreInterfaceError):
-        S3ArtifactStore(name="", path="gs://mybucket")
+        S3ArtifactStore(
+            name="",
+            id=uuid4(),
+            config=S3ArtifactStoreConfig(path="gs://mybucket"),
+            flavor="s3",
+            type=StackComponentType.ARTIFACT_STORE,
+            user=uuid4(),
+            project=uuid4(),
+        )
 
-    artifact_store = S3ArtifactStore(name="", path="s3://mybucket")
+    artifact_store = S3ArtifactStore(
+        name="",
+        id=uuid4(),
+        config=S3ArtifactStoreConfig(path="s3://mybucket"),
+        flavor="s3",
+        type=StackComponentType.ARTIFACT_STORE,
+        user=uuid4(),
+        project=uuid4(),
+    )
     assert artifact_store.path == "s3://mybucket"

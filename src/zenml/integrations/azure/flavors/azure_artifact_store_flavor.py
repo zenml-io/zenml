@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from zenml.integrations.azure.artifact_stores import AzureArtifactStore
 
 
-class AzureArtfactStoreConfig(
+class AzureArtifactStoreConfig(
     BaseArtifactStoreConfig, AuthenticationConfigMixin
 ):
     """Configuration class for Azure Artifact Store."""
@@ -42,8 +42,8 @@ class AzureArtifactStoreFlavor(BaseArtifactStoreFlavor):
         return AZURE_ARTIFACT_STORE_FLAVOR
 
     @property
-    def config_class(self) -> Type[AzureArtfactStoreConfig]:
-        return AzureArtfactStoreConfig
+    def config_class(self) -> Type[AzureArtifactStoreConfig]:
+        return AzureArtifactStoreConfig
 
     @property
     def implementation_class(self) -> Type["AzureArtifactStore"]:
