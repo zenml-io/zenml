@@ -191,7 +191,7 @@ async def get_role_assignments_for_project(
 async def list_project_stacks(
     project_name_or_id: Union[str, UUID],
     user_name_or_id: Optional[Union[str, UUID]] = None,
-    component_id: Optional[str] = None,
+    component_id: Optional[UUID] = None,
     stack_name: Optional[str] = None,
     is_shared: Optional[bool] = None,
     hydrated: bool = False,

@@ -42,7 +42,7 @@ router = APIRouter(
 async def list_stacks(
     project_name_or_id: Optional[Union[str, UUID]] = None,
     user_name_or_id: Optional[Union[str, UUID]] = None,
-    component_id: Optional[str] = None,
+    component_id: Optional[UUID] = None,
     name: Optional[str] = None,
     is_shared: Optional[bool] = None,
     hydrated: bool = False,

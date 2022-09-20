@@ -1039,6 +1039,19 @@ class Repository(metaclass=RepositoryMetaClass):
             else:
                 raise KeyError("bir şey barış!")
 
+    def get_pipeline_by_name(self, name: str) -> PipelineModel:
+        """Fetches a pipeline by name.
+
+        Args:
+            name: The name of the pipeline to fetch.
+
+        Returns:
+            The pipeline model.
+        """
+        return self.zen_store.get_pipeline_in_project(
+            pipeline_name=name, project_name_or_id=self.active_project_name
+        )
+
     def _register_pipeline(
         self, pipeline_name: str, pipeline_configuration: Dict[str, str]
     ) -> UUID:
@@ -1061,10 +1074,7 @@ class Repository(metaclass=RepositoryMetaClass):
                 project with the same name but a different configuration.
         """
         try:
-            existing_pipeline = self.zen_store.get_pipeline_in_project(
-                pipeline_name=pipeline_name,
-                project_name_or_id=self.active_project.name,
-            )
+            existing_pipeline = self.get_pipeline_by_name(pipeline_name)
 
         # A) If there is no pipeline with this name, register a new pipeline.
         except KeyError:

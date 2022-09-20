@@ -126,11 +126,14 @@ def list_pipeline_runs(
     """
     cli_utils.print_active_config()
     try:
+        repo = Repository()
+        stack_model = repo.get_stack_by_name(stack)
+        pipeline_model = repo.get_pipeline_by_name(pipeline)
         pipeline_runs = Repository().zen_store.list_runs(
             project_name_or_id=Repository().active_project.id,
             user_name_or_id=user,
-            pipeline_id=pipeline,  # TODO: pipeline_name_or_id
-            stack_id=stack,  # TODO: stack_name_or_id
+            pipeline_id=pipeline_model.id,
+            stack_id=stack_model.id,
             unlisted=unlisted,
         )
     except KeyError as err:
