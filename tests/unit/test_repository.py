@@ -32,6 +32,7 @@ from zenml.orchestrators import LocalOrchestrator
 from zenml.repository import Repository
 from zenml.stack import Stack
 from zenml.utils import io_utils
+from zenml.models.stack_models import StackModel
 
 
 def _create_local_stack(
@@ -199,14 +200,16 @@ def test_activating_a_stack_updates_the_config_file(clean_repo):
 def test_getting_a_stack(clean_repo):
     """Tests that getting a stack succeeds if the stack name exists and fails
     otherwise."""
-    existing_stack_name = clean_repo.active_stack_name
+    existing_stack_name = clean_repo.active_stack.name
 
     with does_not_raise():
         stack = clean_repo.get_stack_by_name(existing_stack_name)
-        assert isinstance(stack, Stack)
+        assert isinstance(stack, StackModel)
 
     with pytest.raises(KeyError):
-        clean_repo.get_stack_by_name("stack_name_that_hopefully_does_not_exist")
+        clean_repo.get_stack_by_name(
+            "stack_name_that_hopefully_does_not_exist"
+        )
 
 
 def test_registering_a_stack(clean_repo):
