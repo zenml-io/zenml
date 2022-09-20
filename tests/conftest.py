@@ -31,6 +31,16 @@ from zenml.artifact_stores.local_artifact_store import (
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ENV_ZENML_DEBUG, TEST_STEP_INPUT_INT
+from zenml.container_registries.base_container_registry import (
+    BaseContainerRegistry,
+    BaseContainerRegistryConfig,
+)
+from zenml.integrations.gcp.artifact_stores.gcp_artifact_store import (
+    GCPArtifactStore,
+)
+from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
+    GCPArtifactStoreConfig,
+)
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models.user_management_models import TeamModel
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
@@ -333,6 +343,62 @@ def local_stack():
         name="",
         orchestrator=orchestrator,
         artifact_store=artifact_store,
+    )
+
+
+@pytest.fixture
+def local_artifact_store():
+    """Fixture that creates a local artifact store for testing."""
+    return LocalArtifactStore(
+        name="",
+        id=uuid4(),
+        config=LocalArtifactStoreConfig(),
+        flavor="default",
+        type=StackComponentType.ARTIFACT_STORE,
+        user=uuid4(),
+        project=uuid4(),
+    )
+
+
+@pytest.fixture
+def remote_artifact_store():
+    """Fixture that creates a local artifact store for testing."""
+    return GCPArtifactStore(
+        name="",
+        id=uuid4(),
+        config=GCPArtifactStoreConfig(path="gs://bucket"),
+        flavor="gcp",
+        type=StackComponentType.ARTIFACT_STORE,
+        user=uuid4(),
+        project=uuid4(),
+    )
+
+
+@pytest.fixture
+def local_container_registry():
+    """Fixture that creates a local container registry for testing."""
+    return BaseContainerRegistry(
+        name="",
+        id=uuid4(),
+        config=BaseContainerRegistryConfig(uri="localhost:5000"),
+        flavor="default",
+        type=StackComponentType.CONTAINER_REGISTRY,
+        user=uuid4(),
+        project=uuid4(),
+    )
+
+
+@pytest.fixture
+def remote_container_registry():
+    """Fixture that creates a remote container registry for testing."""
+    return BaseContainerRegistry(
+        name="",
+        id=uuid4(),
+        config=BaseContainerRegistryConfig(uri="gcr.io/my-project"),
+        flavor="default",
+        type=StackComponentType.CONTAINER_REGISTRY,
+        user=uuid4(),
+        project=uuid4(),
     )
 
 

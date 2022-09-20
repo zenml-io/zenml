@@ -107,8 +107,10 @@ class VertexOrchestratorConfig(
     node_selector_constraint: Optional[Tuple[str, str]] = None
     gpu_limit: Optional[int] = None
 
+    docker_parent_image: Optional[str] = None
+
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        ("custom_docker_base_image_name", "docker_parent_image")
+        "custom_docker_base_image_name", "docker_parent_image"
     )
 
 

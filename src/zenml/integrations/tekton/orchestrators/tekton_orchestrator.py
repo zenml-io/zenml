@@ -104,7 +104,7 @@ class TektonOrchestrator(BaseOrchestrator):
             # they need to be available when running pipelines.
             for stack_component in stack.components.values():
                 local_path = stack_component.local_path
-                if not local_path:
+                if local_path is None:
                     continue
                 return False, (
                     f"The Tekton orchestrator is configured to run "

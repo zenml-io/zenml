@@ -49,8 +49,10 @@ class SagemakerStepOperatorConfig(BaseStepOperatorConfig):
     bucket: Optional[str] = None
     experiment_name: Optional[str] = None
 
+    docker_parent_image: Optional[str] = None
+
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        ("base_image", "docker_parent_image")
+        "custom_docker_base_image_name", "docker_parent_image"
     )
 
 

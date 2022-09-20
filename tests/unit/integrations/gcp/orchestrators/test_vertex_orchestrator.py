@@ -17,58 +17,59 @@ from uuid import uuid4
 
 import pytest
 
-from zenml.artifact_stores import LocalArtifactStore
-from zenml.container_registries import (
-    DefaultContainerRegistryFlavor,
-    GCPContainerRegistryFlavor,
-)
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
 from zenml.integrations.azure.artifact_stores import AzureArtifactStore
-from zenml.integrations.gcp.artifact_stores import GCPArtifactStore
+from zenml.integrations.azure.flavors.azure_artifact_store_flavor import (
+    AzureArtifactStoreConfig,
+)
+from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import (
+    VertexOrchestratorConfig,
+)
 from zenml.integrations.gcp.orchestrators import VertexOrchestrator
 from zenml.stack import Stack
 
 
-def test_vertex_orchestrator_attributes() -> None:
-    """Tests that the basic attributes of the vertex orchestrator are set
-    correctly."""
-    orchestrator = VertexOrchestrator(
+def _get_vertex_orchestrator(**kwargs):
+    return VertexOrchestrator(
         name="",
-        location="europe-west4",
-        pipeline_root="gs://my-bucket/pipeline",
+        id=uuid4(),
+        config=VertexOrchestratorConfig(**kwargs),
+        flavor="gcp",
+        type=StackComponentType.ORCHESTRATOR,
+        user=uuid4(),
+        project=uuid4(),
     )
 
-    assert orchestrator.TYPE == StackComponentType.ORCHESTRATOR
-    assert orchestrator.FLAVOR == "vertex"
 
-
-def test_vertex_orchestrator_stack_validation() -> None:
+def test_vertex_orchestrator_stack_validation(
+    local_artifact_store,
+    remote_artifact_store,
+    local_container_registry,
+    remote_container_registry,
+) -> None:
     """Tests that the vertex orchestrator validates that it's stack has a
     container registry and that all stack components used are not local."""
 
-    orchestrator = VertexOrchestrator(
-        name="",
+    orchestrator = _get_vertex_orchestrator(
         location="europe-west4",
         pipeline_root="gs://my-bucket/pipeline",
     )
-    orchestrator_no_pipeline_root = VertexOrchestrator(
-        name="", location="europe-west4"
+    orchestrator_no_pipeline_root = _get_vertex_orchestrator(
+        location="europe-west4"
     )
 
-    local_artifact_store = LocalArtifactStore(name="", path="/local/path")
-    gcp_artifact_store = GCPArtifactStore(
-        name="gcp_artifact_store", path="gs://my-bucket/artifacts"
-    )
+    gcp_artifact_store = remote_artifact_store
+    gcp_container_registry = remote_container_registry
+
     azure_artifact_store = AzureArtifactStore(
-        name="azure_artifact_store", path="abfs://my-container/artifacts"
-    )
-
-    local_container_registry = DefaultContainerRegistryFlavor(
-        name="", uri="localhost:5000"
-    )
-    gcp_container_registry = GCPContainerRegistryFlavor(
-        name="", uri="gcr.io/my-project"
+        name="azure_artifact_store",
+        id=uuid4(),
+        config=AzureArtifactStoreConfig(path="abfs://my-container/artifacts"),
+        flavor="azure",
+        type=StackComponentType.ARTIFACT_STORE,
+        user=uuid4(),
+        project=uuid4(),
     )
 
     with pytest.raises(StackValidationError):

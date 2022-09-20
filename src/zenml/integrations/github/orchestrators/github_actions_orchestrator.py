@@ -158,7 +158,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
                 )
 
             for component in stack.components.values():
-                if component.local_path:
+                if component.local_path is not None:
                     return False, (
                         "The GitHub Actions orchestrator runs pipelines on "
                         "remote GitHub Actions runners, but the "

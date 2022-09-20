@@ -65,8 +65,10 @@ class KubeflowOrchestratorConfig(BaseOrchestratorConfig):
     skip_cluster_provisioning: bool = False
     skip_ui_daemon_provisioning: bool = False
 
+    docker_parent_image: Optional[str] = None
+
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        ("custom_docker_base_image_name", "docker_parent_image")
+        "custom_docker_base_image_name", "docker_parent_image"
     )
 
 

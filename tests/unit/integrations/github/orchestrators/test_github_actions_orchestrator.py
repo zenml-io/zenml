@@ -17,41 +17,52 @@ from uuid import uuid4
 
 import pytest
 
-from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
-from zenml.container_registries import DefaultContainerRegistryFlavor
+from zenml.container_registries.base_container_registry import (
+    BaseContainerRegistry,
+    BaseContainerRegistryConfig,
+)
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
-from zenml.integrations.gcp.artifact_stores import GCPArtifactStore
+from zenml.integrations.github.flavors.github_actions_orchestrator_flavor import (
+    GitHubActionsOrchestratorConfig,
+)
 from zenml.integrations.github.orchestrators import GitHubActionsOrchestrator
 from zenml.stack import Stack
 
 
-def test_github_actions_orchestrator_attributes() -> None:
-    """Tests that the basic attributes of the GitHub actions orchestrator are
-    set correctly."""
-    orchestrator = GitHubActionsOrchestrator(name="")
-    assert orchestrator.TYPE == StackComponentType.ORCHESTRATOR
-    assert orchestrator.FLAVOR == "github"
+def _get_github_actions_orchestrator() -> GitHubActionsOrchestrator:
+    """Helper function to get a Kubernetes orchestrator."""
+    return GitHubActionsOrchestrator(
+        name="",
+        id=uuid4(),
+        config=GitHubActionsOrchestratorConfig(),
+        flavor="github",
+        type=StackComponentType.ORCHESTRATOR,
+        user=uuid4(),
+        project=uuid4(),
+    )
 
 
-def test_github_actions_orchestrator_stack_validation() -> None:
+def test_github_actions_orchestrator_stack_validation(
+    local_container_registry,
+    remote_container_registry,
+    local_artifact_store,
+    remote_artifact_store,
+) -> None:
     """Tests the GitHub actions orchestrator stack validation."""
-    orchestrator = GitHubActionsOrchestrator(name="")
+    orchestrator = _get_github_actions_orchestrator()
 
-    local_container_registry = DefaultContainerRegistryFlavor(
-        name="", uri="localhost:5000"
+    container_registry_that_requires_authentication = BaseContainerRegistry(
+        name="",
+        id=uuid4(),
+        config=BaseContainerRegistryConfig(
+            uri="localhost:5000", authentication_secret="some_secret"
+        ),
+        flavor="default",
+        type=StackComponentType.CONTAINER_REGISTRY,
+        user=uuid4(),
+        project=uuid4(),
     )
-    container_registry_that_requires_authentication = (
-        DefaultContainerRegistryFlavor(
-            name="", uri="localhost:5000", authentication_secret="some_secret"
-        )
-    )
-    remote_container_registry = DefaultContainerRegistryFlavor(
-        name="", uri="gcr.io/my-project"
-    )
-
-    local_artifact_store = LocalArtifactStore(name="", path="/local/path")
-    remote_artifact_store = GCPArtifactStore(name="", path="gs://bucket")
 
     with does_not_raise():
         # Stack with container registry and only remote components

@@ -63,8 +63,10 @@ class AzureMLStepOperatorConfig(BaseStepOperatorConfig):
     service_principal_id: Optional[str] = SecretField()
     service_principal_password: Optional[str] = SecretField()
 
+    docker_parent_image: Optional[str] = None
+
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        ("docker_base_image", "docker_parent_image")
+        "custom_docker_base_image_name", "docker_parent_image"
     )
 
 

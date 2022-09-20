@@ -51,17 +51,18 @@ def test_mlflow_experiment_tracker_attributes() -> None:
     experiment_tracker = MLFlowExperimentTracker(
         name="",
         id=uuid4(),
-        config=MLFlowExperimentTrackerConfig(),
+        config=MLFlowExperimentTrackerConfig(
+            tracking_uri="http://localhost:5000",
+            tracking_username="john_doe",
+            tracking_password="password",
+            tracking_token="token1234",
+            tracking_insecure_tls=True,
+            databricks_host="https://databricks.com",
+        ),
         flavor="mlflow",
         type=StackComponentType.EXPERIMENT_TRACKER,
         user=uuid4(),
         project=uuid4(),
-        tracking_uri="http://localhost:5000",
-        tracking_username="john_doe",
-        tracking_password="password",
-        tracking_token="token1234",
-        tracking_insecure_tls=True,
-        databricks_host="https://databricks.com",
     )
 
     assert experiment_tracker.type == StackComponentType.EXPERIMENT_TRACKER
@@ -137,12 +138,13 @@ def test_mlflow_experiment_tracker_authentication() -> None:
         MLFlowExperimentTracker(
             name="",
             id=uuid4(),
-            config=MLFlowExperimentTrackerConfig(),
+            config=MLFlowExperimentTrackerConfig(
+                tracking_uri="http://localhost:5000",
+            ),
             flavor="mlflow",
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
             project=uuid4(),
-            tracking_uri="http://localhost:5000",
         )
 
     # should raise because no authentication parameters are set
@@ -150,12 +152,13 @@ def test_mlflow_experiment_tracker_authentication() -> None:
         MLFlowExperimentTracker(
             name="",
             id=uuid4(),
-            config=MLFlowExperimentTrackerConfig(),
+            config=MLFlowExperimentTrackerConfig(
+                tracking_uri="databricks",
+            ),
             flavor="mlflow",
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
             project=uuid4(),
-            tracking_uri="databricks",
         )
 
     # should not raise because username and password are set
@@ -163,29 +166,31 @@ def test_mlflow_experiment_tracker_authentication() -> None:
         MLFlowExperimentTracker(
             name="",
             id=uuid4(),
-            config=MLFlowExperimentTrackerConfig(),
+            config=MLFlowExperimentTrackerConfig(
+                tracking_uri="http://localhost:5000",
+                tracking_username="john_doe",
+                tracking_password="password",
+            ),
             flavor="mlflow",
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
             project=uuid4(),
-            tracking_uri="http://localhost:5000",
-            tracking_username="john_doe",
-            tracking_password="password",
         )
 
     with does_not_raise():
         MLFlowExperimentTracker(
             name="",
             id=uuid4(),
-            config=MLFlowExperimentTrackerConfig(),
+            config=MLFlowExperimentTrackerConfig(
+                tracking_uri="databricks",
+                tracking_username="john_doe",
+                tracking_password="password",
+                databricks_host="https://databricks.com",
+            ),
             flavor="mlflow",
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
             project=uuid4(),
-            tracking_uri="databricks",
-            tracking_username="john_doe",
-            tracking_password="password",
-            databricks_host="https://databricks.com",
         )
 
     # should not raise because token is set
@@ -193,27 +198,29 @@ def test_mlflow_experiment_tracker_authentication() -> None:
         MLFlowExperimentTracker(
             name="",
             id=uuid4(),
-            config=MLFlowExperimentTrackerConfig(),
+            config=MLFlowExperimentTrackerConfig(
+                tracking_uri="http://localhost:5000",
+                tracking_token="token1234",
+            ),
             flavor="mlflow",
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
             project=uuid4(),
-            tracking_uri="http://localhost:5000",
-            tracking_token="token1234",
         )
 
     with does_not_raise():
         MLFlowExperimentTracker(
             name="",
             id=uuid4(),
-            config=MLFlowExperimentTrackerConfig(),
+            config=MLFlowExperimentTrackerConfig(
+                tracking_uri="databricks",
+                tracking_token="token1234",
+                databricks_host="https://databricks.com",
+            ),
             flavor="mlflow",
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
             project=uuid4(),
-            tracking_uri="databricks",
-            tracking_token="token1234",
-            databricks_host="https://databricks.com",
         )
 
 
@@ -223,16 +230,17 @@ def test_mlflow_experiment_tracker_set_config(local_stack: Stack) -> None:
     local_stack._experiment_tracker = MLFlowExperimentTracker(
         name="",
         id=uuid4(),
-        config=MLFlowExperimentTrackerConfig(),
+        config=MLFlowExperimentTrackerConfig(
+            tracking_uri="http://localhost:5000",
+            tracking_username="john_doe",
+            tracking_password="password",
+            tracking_token="token1234",
+            tracking_insecure_tls=True,
+        ),
         flavor="mlflow",
         type=StackComponentType.EXPERIMENT_TRACKER,
         user=uuid4(),
         project=uuid4(),
-        tracking_uri="http://localhost:5000",
-        tracking_username="john_doe",
-        tracking_password="password",
-        tracking_token="token1234",
-        tracking_insecure_tls=True,
     )
 
     local_stack._experiment_tracker.configure_mlflow()
@@ -245,16 +253,17 @@ def test_mlflow_experiment_tracker_set_config(local_stack: Stack) -> None:
     local_stack._experiment_tracker = MLFlowExperimentTracker(
         name="",
         id=uuid4(),
-        config=MLFlowExperimentTrackerConfig(),
+        config=MLFlowExperimentTrackerConfig(
+            tracking_uri="databricks",
+            tracking_username="john_doe",
+            tracking_password="password",
+            tracking_token="token1234",
+            databricks_host="https://databricks.com",
+        ),
         flavor="mlflow",
         type=StackComponentType.EXPERIMENT_TRACKER,
         user=uuid4(),
         project=uuid4(),
-        tracking_uri="databricks",
-        tracking_username="john_doe",
-        tracking_password="password",
-        tracking_token="token1234",
-        databricks_host="https://databricks.com",
     )
 
     local_stack._experiment_tracker.configure_mlflow()

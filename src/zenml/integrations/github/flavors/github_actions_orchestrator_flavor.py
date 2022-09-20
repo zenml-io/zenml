@@ -52,8 +52,10 @@ class GitHubActionsOrchestratorConfig(BaseOrchestratorConfig):
     skip_github_repository_check: bool = False
     push: bool = False
 
+    docker_parent_image: Optional[str] = None
+
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        ("custom_docker_base_image_name", "docker_parent_image")
+        "custom_docker_base_image_name", "docker_parent_image"
     )
 
 

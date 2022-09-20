@@ -121,7 +121,7 @@ class MLFlowExperimentTrackerConfig(BaseExperimentTrackerConfig):
                         f"managed tracking server requires the `databricks_host` "
                         f"to be set in your stack component. To update your "
                         f"component, run `zenml experiment-tracker update "
-                        f"{values['name']} --databricks_host=DATABRICKS_HOST` "
+                        f"<NAME> --databricks_host=DATABRICKS_HOST` "
                         f"and specify the hostname of your Databricks workspace."
                     )
 
@@ -140,7 +140,7 @@ class MLFlowExperimentTrackerConfig(BaseExperimentTrackerConfig):
                         f"username and password or an authentication token in your "
                         f"stack component. To update your component, run the "
                         f"following command: `zenml experiment-tracker update "
-                        f"{values['name']} --tracking_username=MY_USERNAME "
+                        f"<NAME> --tracking_username=MY_USERNAME "
                         f"--tracking_password=MY_PASSWORD "
                         f"--tracking_token=MY_TOKEN` and specify either your "
                         f"username and password or token."
