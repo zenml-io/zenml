@@ -35,7 +35,7 @@ router = APIRouter(
 
 @router.get(
     "/",
-    response_model=Union[List[HydratedStackModel], List[StackModel]],
+    response_model=Union[List[HydratedStackModel], List[StackModel]],  # type: ignore[arg-type]
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -76,7 +76,7 @@ async def list_stacks(
 
 @router.get(
     "/{stack_id}",
-    response_model=Union[HydratedStackModel, StackModel],
+    response_model=Union[HydratedStackModel, StackModel],  # type: ignore[arg-type]
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -102,7 +102,7 @@ async def get_stack(
 
 @router.put(
     "/{stack_id}",
-    response_model=Union[HydratedStackModel, StackModel],
+    response_model=Union[HydratedStackModel, StackModel],  # type: ignore[arg-type]
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
