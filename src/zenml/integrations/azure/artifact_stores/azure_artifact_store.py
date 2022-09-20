@@ -29,7 +29,7 @@ import adlfs
 
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.integrations.azure.flavors.azure_artifact_store_flavor import (
-    AzureArtfactStoreConfig,
+    AzureArtifactStoreConfig,
 )
 from zenml.secret.schemas import AzureSecretSchema
 from zenml.stack.authentication_mixin import AuthenticationMixin
@@ -44,8 +44,8 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
     _filesystem: Optional[adlfs.AzureBlobFileSystem] = None
 
     @property
-    def config(self) -> AzureArtfactStoreConfig:
-        return cast(AzureArtfactStoreConfig, self._config)
+    def config(self) -> AzureArtifactStoreConfig:
+        return cast(AzureArtifactStoreConfig, self._config)
 
     @property
     def filesystem(self) -> adlfs.AzureBlobFileSystem:
