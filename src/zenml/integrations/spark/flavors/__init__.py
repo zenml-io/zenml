@@ -14,8 +14,17 @@
 """Spark integration flavors."""
 
 from zenml.integrations.spark.flavors.spark_on_kubernetes_step_operator_flavor import (
+    KubernetesSparkStepOperatorConfig,
     KubernetesSparkStepOperatorFlavor,
 )
 from zenml.integrations.spark.flavors.spark_step_operator_flavor import (
+    SparkStepOperatorConfig,
     SparkStepOperatorFlavor,
 )
+
+__all__ = [
+    "KubernetesSparkStepOperatorFlavor",
+    "KubernetesSparkStepOperatorConfig",
+    "SparkStepOperatorFlavor",
+    "SparkStepOperatorConfig",
+]

@@ -328,13 +328,13 @@ class UserModel(DomainModel, AnalyticsTrackedModelMixin):
         pwd_context = cls._get_crypt_context()
         return cast(bool, pwd_context.verify(activation_token, hash))
 
-    def generate_activation_token(self) -> str:
+    def generate_activation_token(self) -> SecretStr:
         """Generates and stores a new activation token.
 
         Returns:
             The generated activation token.
         """
-        self.activation_token = token_hex(32)
+        self.activation_token = SecretStr(token_hex(32))
         return self.activation_token
 
     class Config:

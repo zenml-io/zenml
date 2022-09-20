@@ -14,11 +14,14 @@
 """Implementation of the Spark Step Operator."""
 
 import subprocess
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Optional, cast
 
 from pyspark.conf import SparkConf
 
 from zenml.config.docker_configuration import DockerConfiguration
+from zenml.integrations.spark.flavors.spark_step_operator_flavor import (
+    SparkStepOperatorConfig,
+)
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.step_operators import BaseStepOperator
@@ -30,6 +33,10 @@ if TYPE_CHECKING:
 
 class SparkStepOperator(BaseStepOperator):
     """Base class for all Spark-related step operators."""
+
+    @property
+    def config(self) -> SparkStepOperatorConfig:
+        return cast(SparkStepOperatorConfig, self._config)
 
     @property
     def application_path(self) -> Optional[str]:

@@ -14,7 +14,7 @@
 """Implementation of the MLflow experiment tracker for ZenML."""
 
 import os
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple, cast
 
 import mlflow  # type: ignore[import]
 from mlflow.entities import Experiment  # type: ignore[import]
@@ -26,6 +26,7 @@ from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
 )
 from zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor import (
+    MLFlowExperimentTrackerConfig,
     is_databricks_tracking_uri,
     is_remote_mlflow_tracking_uri,
 )
@@ -63,7 +64,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
     ```
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize the experiment tracker and validate the tracking uri.
 
         Args:
@@ -73,7 +74,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         super().__init__(*args, **kwargs)
         self._ensure_valid_tracking_uri()
 
-    def _ensure_valid_tracking_uri(self) -> Optional[str]:
+    def _ensure_valid_tracking_uri(self) -> None:
         """Ensures that the tracking uri is a valid mlflow tracking uri.
 
         Args:
@@ -98,6 +99,10 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
                     f"https://www.mlflow.org/docs/latest/tracking.html#where-runs-are-recorded "
                     f"for more information."
                 )
+
+    @property
+    def config(self) -> MLFlowExperimentTrackerConfig:
+        return cast(MLFlowExperimentTrackerConfig, self._config)
 
     @staticmethod
     def _local_mlflow_backend() -> str:

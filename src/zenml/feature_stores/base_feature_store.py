@@ -14,7 +14,7 @@
 """The base class for feature stores."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Type, Union
+from typing import Any, Dict, List, Type, Union, cast
 
 import pandas as pd
 
@@ -29,6 +29,10 @@ class BaseFeatureStoreConfig(StackComponentConfig):
 
 class BaseFeatureStore(StackComponent, ABC):
     """Base class for all ZenML feature stores."""
+
+    @property
+    def config(self) -> BaseFeatureStoreConfig:
+        return cast(BaseFeatureStoreConfig, self._config)
 
     @abstractmethod
     def get_historical_features(

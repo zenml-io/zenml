@@ -23,6 +23,9 @@ from whylogs.core import DatasetProfileView  # type: ignore
 
 from zenml.data_validators import BaseDataValidator
 from zenml.environment import Environment
+from zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor import (
+    WhylogsDataValidatorConfig,
+)
 from zenml.integrations.whylogs.secret_schemas.whylabs_secret_schema import (
     WhylabsSecretSchema,
 )
@@ -44,6 +47,10 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
     """
 
     NAME: ClassVar[str] = "whylogs"
+
+    @property
+    def config(self) -> WhylogsDataValidatorConfig:
+        return cast(WhylogsDataValidatorConfig, self._config)
 
     def data_profiling(
         self,

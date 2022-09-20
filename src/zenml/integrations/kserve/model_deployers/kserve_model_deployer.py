@@ -22,6 +22,9 @@ from kubernetes import client
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.integrations.kserve import KSERVE_MODEL_DEPLOYER_FLAVOR
+from zenml.integrations.kserve.flavors.kserve_model_deployer_flavor import (
+    KServeModelDeployerConfig,
+)
 from zenml.integrations.kserve.services.kserve_deployment import (
     KServeDeploymentConfig,
     KServeDeploymentService,
@@ -49,6 +52,10 @@ class KServeModelDeployer(BaseModelDeployer):
     """KServe model deployer stack component implementation."""
 
     _client: Optional[KServeClient] = None
+
+    @property
+    def config(self) -> KServeModelDeployerConfig:
+        return cast(KServeModelDeployerConfig, self._config)
 
     @staticmethod
     def get_model_server_info(  # type: ignore[override]

@@ -14,7 +14,7 @@
 """Base class for ZenML annotator stack components."""
 
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar, List, Optional, Tuple, Type
+from typing import Any, ClassVar, List, Optional, Tuple, Type, cast
 
 from zenml.enums import StackComponentType
 from zenml.stack import Flavor, StackComponent
@@ -33,6 +33,10 @@ class BaseAnnotatorConfig(StackComponentConfig):
 
 class BaseAnnotator(StackComponent, ABC):
     """Base class for all ZenML annotators."""
+
+    @property
+    def config(self) -> BaseAnnotatorConfig:
+        return cast(BaseAnnotatorConfig, self._config)
 
     @abstractmethod
     def get_url(self) -> str:

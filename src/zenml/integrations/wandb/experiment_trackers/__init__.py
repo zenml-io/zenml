@@ -14,3 +14,5 @@
 from zenml.integrations.wandb.experiment_trackers.wandb_experiment_tracker import (  # noqa
     WandbExperimentTracker,
 )
+
+__all__ = ["WandbExperimentTracker"]

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML local orchestrator."""
 
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Any, List, Type
 
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
@@ -85,5 +85,5 @@ class LocalOrchestratorFlavor(BaseOrchestratorFlavor):
         return "local"
 
     @property
-    def implementation_class(self):
+    def implementation_class(self) -> Type[LocalOrchestrator]:
         return LocalOrchestrator

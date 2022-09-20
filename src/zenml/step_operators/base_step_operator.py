@@ -14,7 +14,7 @@
 """Base class for ZenML step operators."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List, Type
+from typing import TYPE_CHECKING, List, Type, cast
 
 from zenml.enums import StackComponentType
 from zenml.stack import Flavor, StackComponent
@@ -31,6 +31,10 @@ class BaseStepOperatorConfig(StackComponentConfig):
 
 class BaseStepOperator(StackComponent, ABC):
     """Base class for all ZenML step operators."""
+
+    @property
+    def config(self) -> BaseStepOperatorConfig:
+        return cast(BaseStepOperatorConfig, self._config)
 
     @abstractmethod
     def launch(

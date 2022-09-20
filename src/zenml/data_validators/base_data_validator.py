@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Base class for all ZenML data validators."""
 
-from typing import Any, ClassVar, Optional, Sequence, Type
+from typing import Any, ClassVar, Optional, Sequence, Type, cast
 
 from zenml.enums import StackComponentType
 from zenml.repository import Repository
@@ -29,6 +29,10 @@ class BaseDataValidator(StackComponent):
     """Base class for all ZenML data validators."""
 
     NAME: ClassVar[str]
+
+    @property
+    def config(self) -> BaseDataValidatorConfig:
+        return cast(BaseDataValidatorConfig, self._config)
 
     @classmethod
     def get_active_data_validator(cls) -> "BaseDataValidator":

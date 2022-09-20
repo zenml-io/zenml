@@ -16,3 +16,5 @@
 from zenml.integrations.gcp.artifact_stores.gcp_artifact_store import (  # noqa
     GCPArtifactStore,
 )
+
+__all__ = ["GCPArtifactStore"]

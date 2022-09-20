@@ -14,5 +14,11 @@
 """Seldon integration flavors."""
 
 from zenml.integrations.seldon.flavors.seldon_model_deployer_flavor import (
+    SeldonModelDeployerConfig,
     SeldonModelDeployerFlavor,
 )
+
+__all__ = [
+    "SeldonModelDeployerFlavor",
+    "SeldonModelDeployerConfig",
+]

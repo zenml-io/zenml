@@ -14,5 +14,11 @@
 """Great Expectations integration flavors."""
 
 from zenml.integrations.great_expectations.flavors.great_expectations_data_validator_flavor import (
+    GreatExpectationsDataValidatorConfig,
     GreatExpectationsDataValidatorFlavor,
 )
+
+__all__ = [
+    "GreatExpectationsDataValidatorFlavor",
+    "GreatExpectationsDataValidatorConfig",
+]

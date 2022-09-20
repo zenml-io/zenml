@@ -13,17 +13,16 @@
 #  permissions and limitations under the License.
 """Stack component mixin for authentication."""
 
-from typing import Optional, Type, TypeVar
-
-from pydantic import BaseModel
+from typing import Optional, Type, TypeVar, cast
 
 from zenml.repository import Repository
 from zenml.secret import BaseSecretSchema
+from zenml.stack.stack_component import StackComponent, StackComponentConfig
 
 T = TypeVar("T", bound=BaseSecretSchema)
 
 
-class AuthenticationConfigMixin(BaseModel):
+class AuthenticationConfigMixin(StackComponentConfig):
     """Base config for authentication mixins.
 
     Any stack component that implements `AuthenticationMixin` should have a
@@ -37,12 +36,16 @@ class AuthenticationConfigMixin(BaseModel):
     authentication_secret: Optional[str] = None
 
 
-class AuthenticationMixin:
+class AuthenticationMixin(StackComponent):
     """Stack component mixin for authentication.
 
     Any stack component that implements this mixin should have a config that
     inherits from `AuthenticationConfigMixin`.
     """
+
+    @property
+    def config(self) -> AuthenticationConfigMixin:
+        return cast(AuthenticationConfigMixin, self._config)
 
     def get_authentication_secret(
         self, expected_schema_type: Type[T]

@@ -16,3 +16,5 @@
 from zenml.integrations.evidently.flavors.evidently_data_validator_flavor import (
     EvidentlyDataValidatorFlavor,
 )
+
+__all__ = ["EvidentlyDataValidatorFlavor"]

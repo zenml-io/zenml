@@ -116,7 +116,7 @@ class LocalArtifactStore(BaseArtifactStore):
         )
 
     @property
-    def path(self):
+    def path(self) -> str:
         """Returns the path to the local artifact store.
 
         If the user has not defined a path in the config, this will create a

@@ -30,7 +30,7 @@
 # inspired by the Kubernetes dag runner implementation of tfx
 """Kubernetes-native orchestrator."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -38,6 +38,9 @@ from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
+from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
+    KubernetesOrchestratorConfig,
+)
 from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator_entrypoint_configuration import (
     KubernetesOrchestratorEntrypointConfiguration,
@@ -85,6 +88,10 @@ class KubernetesOrchestrator(BaseOrchestrator):
         self._k8s_core_api = k8s_client.CoreV1Api()
         self._k8s_batch_api = k8s_client.BatchV1beta1Api()
         self._k8s_rbac_api = k8s_client.RbacAuthorizationV1Api()
+
+    @property
+    def config(self) -> KubernetesOrchestratorConfig:
+        return cast(KubernetesOrchestratorConfig, self._config)
 
     def get_kubernetes_contexts(self) -> Tuple[List[str], str]:
         """Get list of configured Kubernetes contexts and the active context.
@@ -180,9 +187,9 @@ class KubernetesOrchestrator(BaseOrchestrator):
                     f"The Kubernetes orchestrator requires a remote container "
                     f"registry, but the '{container_registry.name}' container "
                     f"registry of your active stack points to a local URI "
-                    f"'{container_registry.uri}'. Please make sure stacks "
-                    f"with a Kubernetes orchestrator always contain remote "
-                    f"container registries."
+                    f"'{container_registry.config.uri}'. Please make sure "
+                    f"stacks with a Kubernetes orchestrator always contain "
+                    f"remote container registries."
                 )
 
             return True, ""

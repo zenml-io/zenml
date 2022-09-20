@@ -28,6 +28,9 @@ from typing import (
 import s3fs
 
 from zenml.artifact_stores import BaseArtifactStore
+from zenml.integrations.s3.flavors.s3_artifact_store_flavor import (
+    S3ArtifactStoreConfig,
+)
 from zenml.secret.schemas import AWSSecretSchema
 from zenml.stack.authentication_mixin import AuthenticationMixin
 from zenml.utils.io_utils import convert_to_str
@@ -39,6 +42,10 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
     """Artifact Store for S3 based artifacts."""
 
     _filesystem: Optional[s3fs.S3FileSystem] = None
+
+    @property
+    def config(self) -> S3ArtifactStoreConfig:
+        return cast(S3ArtifactStoreConfig, self._config)
 
     def _get_credentials(
         self,

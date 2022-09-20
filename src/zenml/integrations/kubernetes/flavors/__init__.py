@@ -14,5 +14,11 @@
 """Kubernetes integration flavors."""
 
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
+    KubernetesOrchestratorConfig,
     KubernetesOrchestratorFlavor,
 )
+
+__all__ = [
+    "KubernetesOrchestratorFlavor",
+    "KubernetesOrchestratorConfig",
+]

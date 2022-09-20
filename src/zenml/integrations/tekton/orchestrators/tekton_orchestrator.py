@@ -15,7 +15,7 @@
 import os
 import subprocess
 import sys
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
 
 from kfp import dsl
 from kfp_tekton.compiler import TektonCompiler
@@ -26,6 +26,7 @@ from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.integrations.tekton.flavors.tekton_orchestrator_flavor import (
     DEFAULT_TEKTON_UI_PORT,
+    TektonOrchestratorConfig,
 )
 from zenml.integrations.tekton.orchestrators.tekton_entrypoint_configuration import (
     TektonEntrypointConfiguration,
@@ -49,6 +50,10 @@ logger = get_logger(__name__)
 
 class TektonOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Tekton."""
+
+    @property
+    def config(self) -> TektonOrchestratorConfig:
+        return cast(TektonOrchestratorConfig, self._config)
 
     def get_kubernetes_contexts(self) -> Tuple[List[str], Optional[str]]:
         """Get the list of configured Kubernetes contexts and the active context.

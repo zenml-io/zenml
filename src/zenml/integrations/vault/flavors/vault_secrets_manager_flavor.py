@@ -14,7 +14,7 @@
 """HashiCorp Vault secrets manager flavor."""
 
 import re
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, Type
+from typing import TYPE_CHECKING, ClassVar, Optional, Type
 
 from zenml.integrations.vault import VAULT_SECRETS_MANAGER_FLAVOR
 from zenml.secrets_managers import (
@@ -59,7 +59,6 @@ class VaultSecretsManagerConfig(BaseSecretsManagerConfig):
     """
 
     SUPPORTS_SCOPING: ClassVar[bool] = True
-    CLIENT: ClassVar[Any] = None
 
     url: str
     token: str

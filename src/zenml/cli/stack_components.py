@@ -118,7 +118,7 @@ def generate_stack_component_describe_command(
                 name=name,
             )
         except KeyError as e:
-            cli_utils.error(e)  # noqa
+            cli_utils.error(str(e))  # noqa
             return
 
         is_active = component.id == repo.active_stack.components.get(

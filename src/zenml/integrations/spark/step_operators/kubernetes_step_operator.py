@@ -13,11 +13,14 @@
 #  permissions and limitations under the License.
 """Implementation of the Kubernetes Spark Step Operator."""
 import os
-from typing import Any
+from typing import Any, cast
 
 from pyspark.conf import SparkConf
 
 from zenml.config.docker_configuration import DockerConfiguration
+from zenml.integrations.spark.flavors.spark_on_kubernetes_step_operator_flavor import (
+    KubernetesSparkStepOperatorConfig,
+)
 from zenml.integrations.spark.step_operators import spark_entrypoint
 from zenml.integrations.spark.step_operators.spark_step_operator import (
     SparkStepOperator,
@@ -40,6 +43,10 @@ ENTRYPOINT_NAME = "zenml_spark_entrypoint.py"
 
 class KubernetesSparkStepOperator(SparkStepOperator):
     """Step operator which runs Steps with Spark on Kubernetes."""
+
+    @property
+    def config(self) -> KubernetesSparkStepOperatorConfig:
+        return cast(KubernetesSparkStepOperatorConfig, self._config)
 
     @property
     def application_path(self) -> Any:

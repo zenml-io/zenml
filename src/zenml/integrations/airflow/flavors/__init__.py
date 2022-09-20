@@ -16,3 +16,5 @@
 from zenml.integrations.airflow.flavors.airflow_orchestrator_flavor import (
     AirflowOrchestratorFlavor,
 )
+
+__all__ = ["AirflowOrchestratorFlavor"]

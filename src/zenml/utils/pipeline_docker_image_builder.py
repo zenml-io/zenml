@@ -404,7 +404,7 @@ class PipelineDockerImageBuilder:
             )
 
         target_image_name = (
-            f"{container_registry.uri}/"
+            f"{container_registry.config.uri}/"
             f"{docker_configuration.target_repository}:{pipeline_name}"
         )
 

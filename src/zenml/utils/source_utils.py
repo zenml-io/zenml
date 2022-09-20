@@ -64,6 +64,7 @@ logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     from zenml.stack.flavor import Flavor
+    from zenml.stack.stack_component import StackComponentConfig
 
 
 def is_standard_pin(pin: str) -> bool:
@@ -667,6 +668,9 @@ def validate_config_source(
     source: str, component_type: StackComponentType
 ) -> Type["StackComponentConfig"]:
     """ """
+
+    from zenml.stack.stack_component import StackComponentConfig
+
     try:
         config_class = load_source_path_class(source)
     except (ValueError, AttributeError, ImportError) as e:

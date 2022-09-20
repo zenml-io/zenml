@@ -35,7 +35,16 @@ import json
 import os
 import time
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Type
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    cast,
+)
 
 from google.protobuf.json_format import Parse
 from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
@@ -200,6 +209,10 @@ class BaseOrchestrator(StackComponent, ABC):
 
     # Class Configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.ORCHESTRATOR
+
+    @property
+    def config(self) -> BaseOrchestratorConfig:
+        return cast(BaseOrchestratorConfig, self._config)
 
     @staticmethod
     def get_mlmd_connection_config() -> metadata.ConnectionConfigType:

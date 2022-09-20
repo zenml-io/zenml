@@ -22,6 +22,9 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 from zenml.exceptions import SecretExistsError
+from zenml.integrations.github.flavors.github_secrets_manager_flavor import (
+    GitHubSecretsManagerConfig,
+)
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.secret import BaseSecretSchema
@@ -94,6 +97,10 @@ class GitHubSecretsManager(BaseSecretsManager):
     """Class to interact with the GitHub secrets manager."""
 
     _session: Optional[requests.Session] = None
+
+    @property
+    def config(self) -> GitHubSecretsManagerConfig:
+        return cast(GitHubSecretsManagerConfig, self._config)
 
     @property
     def post_registration_message(self) -> Optional[str]:
@@ -231,7 +238,7 @@ class GitHubSecretsManager(BaseSecretsManager):
             )
 
         if not inside_github_action_environment():
-            stack_name = Repository().active_stack_name
+            stack_name = Repository().active_stack_model.name
             commands = [
                 f"zenml stack copy {stack_name} <NEW_STACK_NAME>",
                 "zenml secrets_manager register <NEW_SECRETS_MANAGER_NAME> "

@@ -39,7 +39,7 @@ class LineageGraph(BaseModel):
     edges: List[Edge] = []
     root_step_id: Optional[str]
 
-    def generate_step_nodes_and_edges(self, step: StepView):
+    def generate_step_nodes_and_edges(self, step: StepView) -> None:
         """Generates the step nodes and the edges between them.
 
         Args:
@@ -105,7 +105,7 @@ class LineageGraph(BaseModel):
                 )
             )
 
-    def generate_run_nodes_and_edges(self, run: PipelineRunView):
+    def generate_run_nodes_and_edges(self, run: PipelineRunView) -> None:
         """Generates the run nodes and the edges between them.
 
         Args:

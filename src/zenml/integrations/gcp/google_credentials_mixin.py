@@ -13,16 +13,17 @@
 #  permissions and limitations under the License.
 """Implementation of the Google credentials mixin."""
 
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple, cast
 
 from google.auth import default, load_credentials_from_file
-from pydantic import BaseModel
+
+from zenml.stack.stack_component import StackComponent, StackComponentConfig
 
 if TYPE_CHECKING:
     from google.auth.credentials import Credentials
 
 
-class GoogleCredentialsConfigMixin(BaseModel):
+class GoogleCredentialsConfigMixin(StackComponentConfig):
     """Config mixin for Google Cloud Platform credentials.
 
     Attributes:
@@ -34,8 +35,12 @@ class GoogleCredentialsConfigMixin(BaseModel):
     service_account_path: Optional[str] = None
 
 
-class GoogleCredentialsMixin:
+class GoogleCredentialsMixin(StackComponent):
     """StackComponent mixin to get Google Cloud Platform credentials."""
+
+    @property
+    def config(self) -> GoogleCredentialsConfigMixin:
+        return cast(GoogleCredentialsConfigMixin, self._config)
 
     def _get_authentication(self) -> Tuple["Credentials", str]:
         """Get GCP credentials and the project ID associated with the credentials.

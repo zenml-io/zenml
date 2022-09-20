@@ -30,6 +30,7 @@ import gcsfs
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
     GCP_PATH_PREFIX,
+    GCPArtifactStoreConfig,
 )
 from zenml.secret.schemas import GCPSecretSchema
 from zenml.stack.authentication_mixin import AuthenticationMixin
@@ -42,6 +43,10 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
     """Artifact Store for Google Cloud Storage based artifacts."""
 
     _filesystem: Optional[gcsfs.GCSFileSystem] = None
+
+    @property
+    def config(self) -> GCPArtifactStoreConfig:
+        return cast(GCPArtifactStoreConfig, self._config)
 
     @property
     def filesystem(self) -> gcsfs.GCSFileSystem:

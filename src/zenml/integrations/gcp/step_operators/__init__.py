@@ -16,3 +16,5 @@
 from zenml.integrations.gcp.step_operators.vertex_step_operator import (  # noqa
     VertexStepOperator,
 )
+
+__all__ = ["VertexStepOperator"]

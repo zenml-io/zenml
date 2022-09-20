@@ -16,7 +16,7 @@
 import itertools
 import os
 from pathlib import PurePosixPath
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Optional, cast
 
 from azureml.core import (
     ComputeTarget,
@@ -34,6 +34,9 @@ from azureml.core.conda_dependencies import CondaDependencies
 import zenml
 from zenml.constants import ENV_ZENML_CONFIG_PATH
 from zenml.environment import Environment as ZenMLEnvironment
+from zenml.integrations.azure.flavors.azureml_step_operator_flavor import (
+    AzureMLStepOperatorConfig,
+)
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.step_operators import BaseStepOperator
@@ -57,6 +60,10 @@ class AzureMLStepOperator(BaseStepOperator):
     This class defines code that can set up an AzureML environment and run the
     ZenML entrypoint command in it.
     """
+
+    @property
+    def config(self) -> AzureMLStepOperatorConfig:
+        return cast(AzureMLStepOperatorConfig, self._config)
 
     def _get_authentication(self) -> Optional[AbstractAuthentication]:
         """Returns the authentication object for the AzureML environment.
@@ -132,10 +139,7 @@ class AzureMLStepOperator(BaseStepOperator):
                 python_version=ZenMLEnvironment.python_version(),
             )
 
-            parent_image = (
-                docker_configuration.parent_image
-                or self.config.docker_parent_image
-            )
+            parent_image = docker_configuration.parent_image
 
             if parent_image:
                 # replace the default azure base image
