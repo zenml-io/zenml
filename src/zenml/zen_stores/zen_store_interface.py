@@ -13,9 +13,11 @@
 #  permissions and limitations under the License.
 """ZenML Store interface."""
 from abc import ABC, abstractmethod
-from pathlib import Path, PurePath
+from pathlib import PurePath
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
+
+from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
 
 from zenml.config.store_config import StoreConfiguration
 from zenml.enums import ExecutionStatus, StackComponentType
@@ -113,19 +115,6 @@ class ZenStoreInterface(ABC):
 
     @staticmethod
     @abstractmethod
-    def get_path_from_url(url: str) -> Optional[Path]:
-        """Get the path from a URL, if it points or is backed by a local file.
-
-        Args:
-            url: The URL to get the path from.
-
-        Returns:
-            The local path backed by the URL, or None if the URL is not backed
-            by a local file or directory
-        """
-
-    @staticmethod
-    @abstractmethod
     def get_local_url(path: str) -> str:
         """Get a local URL for a given local path.
 
@@ -134,20 +123,6 @@ class ZenStoreInterface(ABC):
 
         Returns:
             Url pointing to the path for the store type.
-        """
-
-    @staticmethod
-    @abstractmethod
-    def validate_url(url: str) -> str:
-        """Check if the given url is valid.
-
-        The implementation should raise a ValueError if the url is invalid.
-
-        Args:
-            url: The url to check.
-
-        Returns:
-            The modified url, if it is valid.
         """
 
     @classmethod
@@ -186,7 +161,7 @@ class ZenStoreInterface(ABC):
     # ------------
 
     @abstractmethod
-    def get_metadata_config(self) -> str:
+    def get_metadata_config(self) -> ConnectionConfig:
         """Get the TFX metadata config of this ZenStore.
 
         Returns:

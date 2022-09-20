@@ -14,16 +14,14 @@
 """Base implementation of a metadata store."""
 
 import json
-from abc import ABC, abstractmethod
 from collections import OrderedDict
 from json import JSONDecodeError
-from typing import Dict, List, Optional, Tuple, Union
-from uuid import UUID, uuid4
+from typing import Dict, List, Optional, Tuple
 
 from ml_metadata import proto
 from ml_metadata.metadata_store import metadata_store
 from ml_metadata.proto import metadata_store_pb2
-from pydantic import BaseModel, Extra, Field
+from pydantic import Extra
 from tfx.dsl.compiler.constants import (
     PIPELINE_CONTEXT_TYPE_NAME,
     PIPELINE_RUN_CONTEXT_TYPE_NAME,
@@ -48,42 +46,21 @@ from zenml.steps.utils import (
 logger = get_logger(__name__)
 
 
-class BaseMetadataStore(BaseModel, ABC):
-    """Base class for all ZenML metadata stores."""
+class MetadataStore:
+    """ZenML MLMD metadata store."""
 
-    uuid: UUID = Field(default_factory=uuid4)
     upgrade_migration_enabled: bool = True
-    _store: Optional[metadata_store.MetadataStore] = None
+    store: metadata_store.MetadataStore
 
-    @property
-    def store(self) -> metadata_store.MetadataStore:
-        """General property that hooks into TFX metadata store.
+    def __init__(self, config: metadata_store_pb2.ConnectionConfig) -> None:
+        """Initializes the metadata store.
 
-        Returns:
-            metadata_store.MetadataStore: TFX metadata store.
+        Args:
+            config: The connection configuration for the metadata store.
         """
-        if self._store is None:
-            config = self.get_tfx_metadata_config()
-            self._store = metadata_store.MetadataStore(
-                config,
-                enable_upgrade_migration=self.upgrade_migration_enabled
-                and isinstance(config, metadata_store_pb2.ConnectionConfig),
-            )
-        return self._store
-
-    @abstractmethod
-    def get_tfx_metadata_config(
-        self,
-    ) -> Union[
-        metadata_store_pb2.ConnectionConfig,
-        metadata_store_pb2.MetadataStoreClientConfig,
-    ]:
-        """Return tfx metadata config.
-
-        Returns:
-            tfx metadata config.
-        """
-        raise NotImplementedError
+        self.store = metadata_store.MetadataStore(
+            config, enable_upgrade_migration=True
+        )
 
     @property
     def step_type_mapping(self) -> Dict[int, str]:
