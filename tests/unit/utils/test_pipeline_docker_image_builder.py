@@ -39,30 +39,19 @@ def test_including_active_profile_in_build_context(tmp_path: Path):
 
 
 def test_check_user_is_set():
-    config = DockerConfiguration(
-        install_stack_requirements=False,
-        requirements=None,
-        required_integrations=[],
-        user=None,
-        replicate_local_python_environment="pip_freeze",
-    )
+    """Tests the setting of the user if configured."""
+    config = DockerSettings(user=None)
     generated_dockerfile = (
         PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
-            "test:test", config
+            "image:tag", config
         )
     )
     assert all(["USER" not in line for line in generated_dockerfile])
 
-    config = DockerConfiguration(
-        install_stack_requirements=False,
-        requirements=None,
-        required_integrations=[],
-        user="test_user",
-        replicate_local_python_environment="pip_freeze",
-    )
+    config = DockerSettings(user="test_user")
     generated_dockerfile = (
         PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
-            "test:test", config
+            "image:tag", config
         )
     )
     assert "USER test_user" in generated_dockerfile
