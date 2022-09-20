@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 
 
+from uuid import uuid4
+
 import pytest
 
 from zenml.enums import StackComponentType
@@ -20,24 +22,61 @@ from zenml.exceptions import ArtifactStoreInterfaceError
 from zenml.integrations.gcp.artifact_stores.gcp_artifact_store import (
     GCPArtifactStore,
 )
+from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
+    GCPArtifactStoreConfig,
+)
 
 
 def test_gcp_artifact_store_attributes():
     """Tests that the basic attributes of the gcp artifact store are set
     correctly."""
-    artifact_store = GCPArtifactStore(name="", path="gs://tmp")
-    assert artifact_store.TYPE == StackComponentType.ARTIFACT_STORE
-    assert artifact_store.FLAVOR == "gcp"
+    artifact_store = GCPArtifactStore(
+        name="",
+        id=uuid4(),
+        config=GCPArtifactStoreConfig(path="gs://tmp"),
+        flavor="gcp",
+        type=StackComponentType.ARTIFACT_STORE,
+        user=uuid4(),
+        project=uuid4(),
+    )
+    assert artifact_store.type == StackComponentType.ARTIFACT_STORE
+    assert artifact_store.flavor == "gcp"
 
 
 def test_must_be_gcs_path():
     """Checks that a gcp artifact store can only be initialized with a gcs
     path."""
     with pytest.raises(ArtifactStoreInterfaceError):
-        GCPArtifactStore(name="", path="/local/path")
+        GCPArtifactStore(
+            name="",
+            id=uuid4(),
+            config=GCPArtifactStoreConfig(path="/local/path"),
+            flavor="gcp",
+            type=StackComponentType.ARTIFACT_STORE,
+            user=uuid4(),
+            project=uuid4(),
+        )
 
     with pytest.raises(ArtifactStoreInterfaceError):
-        GCPArtifactStore(name="", path="s3://local/path")
+        GCPArtifactStore(
+            name="",
+            id=uuid4(),
+            config=GCPArtifactStoreConfig(path="s3://local/path"),
+            flavor="gcp",
+            type=StackComponentType.ARTIFACT_STORE,
+            user=uuid4(),
+            project=uuid4(),
+        )
 
-    artifact_store = GCPArtifactStore(name="", path="gs://mybucket")
-    assert artifact_store.path == "gs://mybucket"
+    gcp_path = "gs://mybucket"
+    artifact_store = GCPArtifactStore(
+        name="",
+        id=uuid4(),
+        config=GCPArtifactStoreConfig(path=gcp_path),
+        flavor="gcp",
+        type=StackComponentType.ARTIFACT_STORE,
+        user=uuid4(),
+        project=uuid4(),
+    )
+
+    assert artifact_store.path == gcp_path
