@@ -347,6 +347,20 @@ def local_stack():
 
 
 @pytest.fixture
+def local_orchestrator():
+    """Returns a local orchestrator."""
+    return LocalOrchestrator(
+        name="",
+        id=uuid4(),
+        config=StackComponentConfig(),
+        flavor="default",
+        type=StackComponentType.ORCHESTRATOR,
+        user=uuid4(),
+        project=uuid4(),
+    )
+
+
+@pytest.fixture
 def local_artifact_store():
     """Fixture that creates a local artifact store for testing."""
     return LocalArtifactStore(

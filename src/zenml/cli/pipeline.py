@@ -103,7 +103,7 @@ def delete_pipeline(pipeline_name_or_id: str) -> None:
 
 
 @pipeline.group()
-def run() -> None:
+def runs() -> None:
     """Commands for pipeline runs."""
 
 
@@ -111,7 +111,7 @@ def run() -> None:
 @click.option("--stack", "-s", type=str, required=False)
 @click.option("--user", "-u", type=str, required=False)
 @click.option("--unlisted", is_flag=True)
-@run.command("list", help="List all registered pipeline runs.")
+@runs.command("list", help="List all registered pipeline runs.")
 def list_pipeline_runs(
     pipeline: str, stack: str, user: str, unlisted: bool = False
 ) -> None:

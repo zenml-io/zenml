@@ -14,6 +14,7 @@
 
 from contextlib import ExitStack as does_not_raise
 from typing import Iterator
+from uuid import uuid4
 
 import pytest
 from click.testing import CliRunner
@@ -124,7 +125,7 @@ def test_updating_stack_component_name_or_uuid_fails(clean_repo) -> None:
     )
     assert update_result1.exit_code == 1
     with does_not_raise():
-        clean_repo.get_stack_component(
+        clean_repo.get_stack_component_by_name_and_type(
             StackComponentType.CONTAINER_REGISTRY, "new_container_registry"
         )
 
@@ -137,7 +138,7 @@ def test_updating_stack_component_name_or_uuid_fails(clean_repo) -> None:
     )
     assert update_result2.exit_code == 1
     with does_not_raise():
-        clean_repo.get_stack_component(
+        clean_repo.get_stack_component_by_name_and_type(
             StackComponentType.CONTAINER_REGISTRY, "new_container_registry"
         )
 
@@ -174,7 +175,7 @@ def test_updating_stack_component_with_unconfigured_property_fails(
     )
     assert update_result.exit_code == 1
     with pytest.raises(AttributeError):
-        clean_repo.get_stack_component(
+        clean_repo.get_stack_component_by_name_and_type(
             StackComponentType.CONTAINER_REGISTRY, "new_container_registry"
         ).favorite_cat
 
@@ -186,6 +187,9 @@ def test_flavor() -> Iterator[FlavorModel]:
         name=AriaOrchestrator.FLAVOR,
         type=AriaOrchestrator.TYPE,
         source=f"{AriaOrchestrator.__module__}.{AriaOrchestrator.__name__}",
+        config_schema="",
+        project=uuid4(),
+        user=uuid4(),
     )
 
     flavor_registry._register_flavor(aria_flavor)
@@ -226,7 +230,7 @@ def test_removing_attributes_from_stack_component_works(
         ],
     )
     assert remove_attribute.exit_code == 0
-    orchestrator = clean_repo.get_stack_component(
+    orchestrator = clean_repo.get_stack_component_by_name_and_type(
         StackComponentType.ORCHESTRATOR, "new_orchestrator"
     )
     assert orchestrator.favorite_orchestration_language_version is None
@@ -365,7 +369,7 @@ def test_renaming_stack_component_to_preexisting_name_fails(
     )
     assert result.exit_code == 1
     try:
-        clean_repo.get_stack_component(
+        clean_repo.get_stack_component_by_name_and_type(
             StackComponentType.ORCHESTRATOR, "new_orchestrator"
         )
     except KeyError:
@@ -386,11 +390,11 @@ def test_renaming_nonexistent_stack_component_fails(clean_repo) -> None:
     )
     assert result.exit_code == 1
     with pytest.raises(KeyError):
-        clean_repo.get_stack_component(
+        clean_repo.get_stack_component_by_name_and_type(
             StackComponentType.CONTAINER_REGISTRY, "arias_container_registry"
         )
     with pytest.raises(KeyError):
-        clean_repo.get_stack_component(
+        clean_repo.get_stack_component_by_name_and_type(
             StackComponentType.CONTAINER_REGISTRY, "not_a_container_registry"
         )
 
@@ -424,17 +428,18 @@ def test_renaming_non_core_component_succeeds(clean_repo) -> None:
     )
     assert result.exit_code == 0
     with pytest.raises(KeyError):
-        clean_repo.get_stack_component(
-            StackComponentType.CONTAINER_REGISTRY, "some_container_registry"
+        clean_repo.get_stack_component_by_name_and_type(
+            StackComponentType.CONTAINER_REGISTRY,
+            "some_container_registry",
         )
     assert isinstance(
-        clean_repo.get_stack_component(
+        clean_repo.get_stack_component_by_name_and_type(
             StackComponentType.CONTAINER_REGISTRY, new_component_name
         ),
         StackComponent,
     )
     assert (
-        clean_repo.get_stack_component(
+        clean_repo.get_stack_component_by_name_and_type(
             StackComponentType.CONTAINER_REGISTRY, new_component_name
         ).name
         == new_component_name
@@ -455,17 +460,17 @@ def test_renaming_core_component_succeeds(clean_repo) -> None:
     )
     assert result.exit_code == 0
     with pytest.raises(KeyError):
-        clean_repo.get_stack_component(
+        clean_repo.get_stack_component_by_name_and_type(
             StackComponentType.ORCHESTRATOR, "default"
         )
     assert isinstance(
-        clean_repo.get_stack_component(
+        clean_repo.get_stack_component_by_name_and_type(
             StackComponentType.ORCHESTRATOR, new_component_name
         ),
         StackComponent,
     )
     assert (
-        clean_repo.get_stack_component(
+        clean_repo.get_stack_component_by_name_and_type(
             StackComponentType.ORCHESTRATOR, new_component_name
         ).name
         == new_component_name
