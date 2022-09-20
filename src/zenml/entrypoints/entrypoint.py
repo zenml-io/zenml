@@ -45,15 +45,12 @@ def main() -> None:
     parser.add_argument(f"--{ENTRYPOINT_CONFIG_SOURCE_OPTION}", required=True)
     args, remaining_args = parser.parse_known_args()
 
-    # Create an instance of the entrypoint configuration and pass it the
-    # remaining command line arguments
     entrypoint_config_class = source_utils.load_and_validate_class(
         args.entrypoint_config_source,
         expected_class=BaseEntrypointConfiguration,
     )
     entrypoint_config = entrypoint_config_class(arguments=remaining_args)
 
-    # Run the entrypoint configuration
     entrypoint_config.run()
 
 

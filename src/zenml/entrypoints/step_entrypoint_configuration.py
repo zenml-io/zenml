@@ -35,9 +35,9 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
     """Base class for entrypoint configurations that run a single step.
 
     If an orchestrator needs to run steps in a separate process or environment
-    (e.g. a docker container), you should create a custom entrypoint
-    configuration class that inherits from this class and use it to implement
-    your custom entrypoint logic.
+    (e.g. a docker container), this class can either be used directly or
+    subclassed if custom behavior like setting a run name for scheduled runs
+    is necessary.
 
     How to subclass:
     ----------------
@@ -49,21 +49,18 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
     Passing additional arguments to the entrypoint:
         If you need to pass additional arguments to the entrypoint, there are
         two methods that you need to implement:
-            * `get_custom_entrypoint_options()`: This method should return all
-                the additional options that you require in the entrypoint.
+            * `get_entrypoint_options()`: This method should return all
+                the options that are required in the entrypoint. Make sure to
+                include the result from the superclass method so the options
+                are complete.
 
-            * `get_custom_entrypoint_arguments(...)`: This method should return
+            * `get_entrypoint_arguments(...)`: This method should return
                 a list of arguments that should be passed to the entrypoint.
-                The arguments need to provide values for all options defined
-                in the `custom_entrypoint_options()` method mentioned above.
+                Make sure to include the result from the superclass method so
+                the arguments are complete.
 
         You'll be able to access the argument values from `self.entrypoint_args`
         inside your `StepEntrypointConfiguration` subclass.
-
-    Running custom code inside the entrypoint:
-        If you need to run custom code in the entrypoint, you can overwrite
-        the `setup(...)` and `post_run(...)` methods which allow you to run
-        code before and after the step execution respectively.
 
     How to use:
     -----------
@@ -80,20 +77,17 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
     class MyOrchestrator(BaseOrchestrator):
         def prepare_or_run_pipeline(
             self,
-            sorted_list_of_steps: List[BaseStep],
-            pipeline: "BasePipeline",
-            pb2_pipeline: Pb2Pipeline,
+            pipeline: "PipelineDeployment",
             stack: "Stack",
-            runtime_configuration: "RuntimeConfiguration",
         ) -> Any:
             ...
 
             cmd = MyStepEntrypointConfiguration.get_entrypoint_command()
-            for step in sorted_list_of_steps:
+            for step_name, step in pipeline.steps.items():
                 ...
 
                 args = MyStepEntrypointConfiguration.get_entrypoint_arguments(
-                    step=step, pb2_pipeline=pb2_pipeline
+                    step_name=step_name
                 )
                 # Run the command and pass it the arguments. Our example
                 # orchestrator here executes the entrypoint in a separate
@@ -127,7 +121,8 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         """Gets all options required for running with this configuration.
 
         Returns:
-            A set of strings with all required options.
+            The superclass options as well as an option for the name of the
+            step to run.
         """
         return super().get_entrypoint_options() | {STEP_NAME_OPTION}
 
@@ -145,10 +140,11 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         `get_entrypoint_options()` method of this class.
 
         Args:
-            **kwargs: Kwargs to be used in subclasses.
+            **kwargs: Kwargs, must include the step name.
 
         Returns:
-            A list of strings with the arguments.
+            The superclass arguments as well as arguments for the name of the
+            step to run.
         """
         return super().get_entrypoint_arguments(**kwargs) + [
             f"--{STEP_NAME_OPTION}",
@@ -156,14 +152,7 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         ]
 
     def run(self) -> None:
-        """Runs a single ZenML step.
-
-        Subclasses should in most cases not need to overwrite this method and
-        implement their custom logic in the `setup(...)` and `post_run(...)`
-        methods instead. If you still need to customize the functionality of
-        this method, make sure to still include all the existing logic as your
-        step won't be executed properly otherwise.
-        """
+        """Prepares the environment and runs the configured step."""
         deployment_config = self.load_deployment_config()
 
         step_name = self.entrypoint_args[STEP_NAME_OPTION]

@@ -23,10 +23,10 @@ from zenml.repository import Repository
 
 
 class PipelineEntrypointConfiguration(BaseEntrypointConfiguration):
-    """Entrypoint configuration to run an entire pipeline sequentially."""
+    """Base class for entrypoint configurations that run an entire pipeline."""
 
     def run(self) -> None:
-        """Runs a ZenML pipeline."""
+        """Prepares the environment and runs the configured pipeline."""
         deployment_config = self.load_deployment_config()
 
         # Activate all the integrations. This makes sure that all materializers

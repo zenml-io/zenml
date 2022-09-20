@@ -25,22 +25,22 @@ class TektonEntrypointConfiguration(StepEntrypointConfiguration):
 
     @classmethod
     def get_entrypoint_options(cls) -> Set[str]:
-        """Adds a run name option for the entrypoint.
+        """Gets all options required for running with this configuration.
 
         Returns:
-            Set of custom entrypoint options.
+            The superclass options as well as an option for the run name.
         """
         return super().get_entrypoint_options() | {RUN_NAME_OPTION}
 
     @classmethod
     def get_custom_entrypoint_arguments(cls, **kwargs: Any) -> List[str]:
-        """Returns a Tekton placeholder for the run name argument.
+        """Gets all arguments that the entrypoint command should be called with.
 
         Args:
-            **kwargs: Additional args.
+            **kwargs: Kwargs, must include the run name.
 
         Returns:
-            The run name argument.
+            The superclass arguments as well as arguments for the run name.
         """
         # Tekton replaces the `$(context.pipelineRun.name)` with the actual
         # run name when executing a container. This allows users to re-trigger

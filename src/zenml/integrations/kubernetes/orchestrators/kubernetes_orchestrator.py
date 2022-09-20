@@ -245,7 +245,7 @@ class KubernetesOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         pipeline: "PipelineDeployment",
         stack: "Stack",
     ) -> Any:
-        """Run pipeline in Kubernetes.
+        """Runs the pipeline in Kubernetes.
 
         Args:
             pipeline: ZenML pipeline.

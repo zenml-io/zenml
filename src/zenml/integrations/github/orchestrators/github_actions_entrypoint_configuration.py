@@ -25,22 +25,22 @@ class GitHubActionsEntrypointConfiguration(StepEntrypointConfiguration):
 
     @classmethod
     def get_entrypoint_options(cls) -> Set[str]:
-        """GitHub Actions specific entrypoint options.
+        """Gets all options required for running with this configuration.
 
         Returns:
-            Set with the custom run id option.
+            The superclass options as well as an option for the run id.
         """
         return super().get_entrypoint_options() | {RUN_ID_OPTION}
 
     @classmethod
     def get_entrypoint_arguments(cls, **kwargs: Any) -> List[str]:
-        """Adds a run id argument for the entrypoint.
+        """Gets all arguments that the entrypoint command should be called with.
 
         Args:
-            **kwargs: Additional args.
+            **kwargs: Kwargs.
 
         Returns:
-            GitHub Actions placeholder for the run id option.
+            The superclass arguments as well as arguments for the run id.
         """
         # These placeholders in the workflow file will be replaced with
         # concrete values by the GitHub Actions runner

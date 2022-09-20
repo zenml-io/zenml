@@ -34,7 +34,7 @@ import json
 import os
 import time
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Sequence, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Type
 
 from google.protobuf import json_format
 from tfx.dsl.compiler.constants import PIPELINE_RUN_ID_PARAMETER_NAME
@@ -127,35 +127,19 @@ class BaseOrchestrator(StackComponent, ABC):
 
     How it works:
     -------------
-    The `run()` method is the entrypoint that is executed when the
+    The `run(...)` method is the entrypoint that is executed when the
     pipeline's run method is called within the user code
-    (`pipeline_instance.run()`).
+    (`pipeline_instance.run(...)`).
 
-    This method will take the ZenML Pipeline instance and prepare it for
-    eventual execution. To do this the following steps are taken:
+    This method will do some internal preparation and then call the
+    `prepare_or_run_pipeline(...)` method. BaseOrchestrator subclasses must
+    implement this method and either run the pipeline steps directly or deploy
+    the pipeline to some remote infrastructure.
 
-    * The underlying protobuf pipeline is created.
-
-    * Within the `_configure_node_context()` method the pipeline
-    requirements, stack and runtime configuration is added to the step
-    context
-
-    * The `_get_sorted_steps()` method then generates a sorted list of
-    steps which will later be used to directly execute these steps in order,
-    or to easily build a dag
-
-    * After these initial steps comes the most crucial one. Within the
-    `prepare_or_run_pipeline()` method each orchestrator will have its own
-    implementation that dictates the pipeline orchestration. In the simplest
-    case this method will iterate through all steps and execute them one by
-    one. In other cases this method will build and deploy an intermediate
-    representation of the pipeline (e.g an airflow dag or a kubeflow
-    pipelines yaml) to be executed within the orchestrators environment.
-
-    Building your own:
+    How to subclass:
     ------------------
-    In order to build your own orchestrator, all you need to do is subclass
-    from this class and implement your own `prepare_or_run_pipeline()`
+    When subclassing the BaseOrchestrator, the only
+    from this class and implement the `prepare_or_run_pipeline(...)`
     method. Overwriting other methods is NOT recommended but possible.
     See the docstring of the `prepare_or_run_pipeline()` method to find out
     details of what needs to be implemented within it.
@@ -182,8 +166,8 @@ class BaseOrchestrator(StackComponent, ABC):
         The Steps are run directly from within the same environment in which
         the orchestrator code is executed. In this case you will need to
         deal with implementation-specific runtime configurations (like the
-        schedule) and then iterate through each step and finally call
-        `self.run_step()` to execute each step.
+        schedule) and then iterate through the steps and finally call
+        `self.run_step(...)` to execute each step.
 
         Advanced Case:
         --------------
@@ -191,17 +175,15 @@ class BaseOrchestrator(StackComponent, ABC):
         build some intermediate representation of the pipeline that is then
         used to create and run the pipeline and its steps on the target
         environment. For such orchestrators this method will have to build
-        this representation and either deploy it directly or return it.
+        this representation and deploy it.
 
         Regardless of the implementation details, the orchestrator will need
-        to a way to trigger each step in the target environment. For this
-        the `run_step()` method should be used.
+        to run each step in the target environment. For this the
+        `self.run_step(...)` method should be used.
 
-        In case the orchestrator is using docker containers for orchestration
-        of each step, the `zenml.entrypoints.step_entrypoint` module can be
-        used as a generalized entrypoint that sets up all the necessary
-        prerequisites, parses input parameters and finally executes the step
-        using the `run_step()`method.
+        The easiest way to make this work is by using an entrypoint
+        configuration to run single steps (`zenml.entrypoints.step_entrypoint_configuration.StepEntrypointConfiguration`)
+        or entire pipelines (`zenml.entrypoints.pipeline_entrypoint_configuration.PipelineEntrypointConfiguration`).
 
         Args:
             pipeline: Representation of the pipeline to run.
@@ -211,26 +193,6 @@ class BaseOrchestrator(StackComponent, ABC):
             The optional return value from this method will be returned by the
             `pipeline_instance.run()` call when someone is running a pipeline.
         """
-
-    def _prepare_run(self, pipeline_run: "PipelineDeployment") -> None:
-        """Prepares a run.
-
-        Args:
-            pipeline_run: The run to prepare.
-        """
-        self._active_run_config = pipeline_run
-
-        pb2_pipeline = Pb2Pipeline()
-        pb2_pipeline_json = string_utils.b64_decode(
-            self._active_run_config.proto_pipeline
-        )
-        json_format.Parse(pb2_pipeline_json, pb2_pipeline)
-        self._active_pb2_pipeline = pb2_pipeline
-
-    def _cleanup_run(self) -> None:
-        """Cleans up the active run."""
-        self._active_run_config = None
-        self._active_pb2_pipeline = None
 
     def run(self, pipeline_run: "PipelineDeployment", stack: "Stack") -> Any:
         """Runs a pipeline on a stack.
@@ -251,30 +213,6 @@ class BaseOrchestrator(StackComponent, ABC):
         self._cleanup_run()
 
         return result
-
-    @staticmethod
-    def _ensure_artifact_classes_loaded(
-        step_configuration: "StepConfiguration",
-    ) -> None:
-        """Ensures that all artifact classes for a step are loaded.
-
-        Args:
-            step_configuration: A step configuration.
-        """
-        artifact_class_sources = set(
-            input_.artifact_source
-            for input_ in step_configuration.inputs.values()
-        ) | set(
-            output.artifact_source
-            for output in step_configuration.outputs.values()
-        )
-
-        for source in artifact_class_sources:
-            # Tfx depends on these classes being loaded so it can detect the
-            # correct artifact class
-            source_utils.validate_source_class(
-                source, expected_class=BaseArtifact
-            )
 
     def run_step(
         self, step: "Step", run_name: Optional[str] = None
@@ -363,6 +301,71 @@ class BaseOrchestrator(StackComponent, ABC):
         return execution_info
 
     @staticmethod
+    def requires_resources_in_orchestration_environment(
+        step: "Step",
+    ) -> bool:
+        """Checks if the orchestrator should run this step on special resources.
+
+        Args:
+            step: The step that will be checked.
+
+        Returns:
+            True if the step requires special resources in the orchestration
+            environment, False otherwise.
+        """
+        # If the step requires custom resources and doesn't run with a step
+        # operator, it would need these requirements in the orchestrator
+        # environment
+        if step.config.step_operator:
+            return False
+
+        return not step.config.resource_configuration.empty
+
+    def _prepare_run(self, pipeline_run: "PipelineDeployment") -> None:
+        """Prepares a run.
+
+        Args:
+            pipeline_run: The run to prepare.
+        """
+        self._active_run_config = pipeline_run
+
+        pb2_pipeline = Pb2Pipeline()
+        pb2_pipeline_json = string_utils.b64_decode(
+            self._active_run_config.proto_pipeline
+        )
+        json_format.Parse(pb2_pipeline_json, pb2_pipeline)
+        self._active_pb2_pipeline = pb2_pipeline
+
+    def _cleanup_run(self) -> None:
+        """Cleans up the active run."""
+        self._active_run_config = None
+        self._active_pb2_pipeline = None
+
+    @staticmethod
+    def _ensure_artifact_classes_loaded(
+        step_configuration: "StepConfiguration",
+    ) -> None:
+        """Ensures that all artifact classes for a step are loaded.
+
+        Args:
+            step_configuration: A step configuration.
+        """
+        artifact_class_sources = set(
+            input_.artifact_source
+            for input_ in step_configuration.inputs.values()
+        ) | set(
+            output.artifact_source
+            for output in step_configuration.outputs.values()
+        )
+
+        for source in artifact_class_sources:
+            # Tfx depends on these classes being loaded so it can detect the
+            # correct artifact class
+            source_utils.validate_source_class(
+                source, expected_class=BaseArtifact
+            )
+
+    @staticmethod
     def _execute_step(
         tfx_launcher: launcher.Launcher,
     ) -> Optional[data_types.ExecutionInfo]:
@@ -434,6 +437,7 @@ class BaseOrchestrator(StackComponent, ABC):
     def _add_mlmd_contexts(
         self,
         pipeline_node: PipelineNode,
+        step: "Step",
         deployment: "PipelineDeployment",
         stack: "Stack",
     ) -> None:
@@ -446,6 +450,7 @@ class BaseOrchestrator(StackComponent, ABC):
         Args:
             pipeline_node: The pipeline node to which the contexts should be
                 added.
+            step: The corresponding step for the pipeline node.
             deployment: The pipeline deployment to store in the contexts.
             stack: The stack the pipeline will run on.
         """
@@ -458,10 +463,6 @@ class BaseOrchestrator(StackComponent, ABC):
             MLMD_CONTEXT_STACK_PROPERTY_NAME: stack_json,
             MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME: pipeline_config,
         }
-
-        step = self._get_step_for_node(
-            pipeline_node, steps=list(deployment.steps.values())
-        )
 
         step_context_properties = context_properties.copy()
         step_context_properties[
@@ -477,49 +478,6 @@ class BaseOrchestrator(StackComponent, ABC):
             name=context_name,
             properties=step_context_properties,
         )
-
-    @staticmethod
-    def _get_step_for_node(
-        node: PipelineNode, steps: Sequence["Step"]
-    ) -> "Step":
-        """Gets the ZenML step for a pipeline node.
-
-        Args:
-            node: The node for which to get the step.
-            steps: Sequence of steps.
-
-        Raises:
-            RuntimeError: If no step for the node was found.
-
-        Returns:
-            The step for the given node.
-        """
-        step_name = node.node_info.id
-        try:
-            return next(step for step in steps if step.config.name == step_name)
-        except StopIteration:
-            raise RuntimeError(f"Unable to find step with name '{step_name}'.")
-
-    @staticmethod
-    def requires_resources_in_orchestration_environment(
-        step: "Step",
-    ) -> bool:
-        """Checks if the orchestrator should run this step on special resources.
-
-        Args:
-            step: The step that will be checked.
-
-        Returns:
-            True if the step requires special resources in the orchestration
-            environment, False otherwise.
-        """
-        # If the step requires custom resources and doesn't run with a step
-        # operator, it would need these requirements in the orchestrator
-        # environment
-        if step.config.step_operator:
-            return False
-
-        return not step.config.resource_configuration.empty
 
     def _get_node_with_step_name(self, step_name: str) -> PipelineNode:
         """Given the name of a step, return the node with that name from the pb2_pipeline.

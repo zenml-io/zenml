@@ -31,75 +31,10 @@ ENTRYPOINT_CONFIG_SOURCE_OPTION = "entrypoint_config_source"
 
 
 class BaseEntrypointConfiguration(ABC):
-    """Abstract base class for entrypoint configurations that run a single step.
+    """Abstract base class for entrypoint configurations.
 
-    If an orchestrator needs to run steps in a separate process or environment
-    (e.g. a docker container), you should create a custom entrypoint
-    configuration class that inherits from this class and use it to implement
-    your custom entrypoint logic.
-
-    How to subclass:
-    ----------------
-    There is only one mandatory method `get_run_name(...)` that you need to
-    implement in order to get a functioning entrypoint. Inside this method you
-    need to return a string which **has** to be the same for all steps that are
-    executed as part of the same pipeline run.
-
-    Passing additional arguments to the entrypoint:
-        If you need to pass additional arguments to the entrypoint, there are
-        two methods that you need to implement:
-            * `get_custom_entrypoint_options()`: This method should return all
-                the additional options that you require in the entrypoint.
-
-            * `get_custom_entrypoint_arguments(...)`: This method should return
-                a list of arguments that should be passed to the entrypoint.
-                The arguments need to provide values for all options defined
-                in the `custom_entrypoint_options()` method mentioned above.
-
-        You'll be able to access the argument values from `self.entrypoint_args`
-        inside your `StepEntrypointConfiguration` subclass.
-
-    Running custom code inside the entrypoint:
-        If you need to run custom code in the entrypoint, you can overwrite
-        the `setup(...)` and `post_run(...)` methods which allow you to run
-        code before and after the step execution respectively.
-
-    How to use:
-    -----------
-    After you created your `StepEntrypointConfiguration` subclass, you only
-    have to run the entrypoint somewhere. To do this, you should execute the
-    command returned by the `get_entrypoint_command()` method with the
-    arguments returned by the `get_entrypoint_arguments(...)` method.
-
-    Example:
-    ```python
-    class MyStepEntrypointConfiguration(StepEntrypointConfiguration):
-        ...
-
-    class MyOrchestrator(BaseOrchestrator):
-        def prepare_or_run_pipeline(
-            self,
-            sorted_list_of_steps: List[BaseStep],
-            pipeline: "BasePipeline",
-            pb2_pipeline: Pb2Pipeline,
-            stack: "Stack",
-            runtime_configuration: "RuntimeConfiguration",
-        ) -> Any:
-            ...
-
-            cmd = MyStepEntrypointConfiguration.get_entrypoint_command()
-            for step in sorted_list_of_steps:
-                ...
-
-                args = MyStepEntrypointConfiguration.get_entrypoint_arguments(
-                    step=step, pb2_pipeline=pb2_pipeline
-                )
-                # Run the command and pass it the arguments. Our example
-                # orchestrator here executes the entrypoint in a separate
-                # process, but in a real-world scenario you would probably run
-                # it inside a docker container or a different environment.
-                import subprocess
-                subprocess.check_call(cmd + args)
+    An entrypoint configuration specifies the arguments that should be passed
+    to the entrypoint and what is running inside the entrypoint.
 
     Attributes:
         entrypoint_args: The parsed arguments passed to the entrypoint.
@@ -118,9 +53,9 @@ class BaseEntrypointConfiguration(ABC):
     def get_entrypoint_command(cls) -> List[str]:
         """Returns a command that runs the entrypoint module.
 
-        This entrypoint module must execute a ZenML step when called. If
-        subclasses don't overwrite this method, it will default to running the
-        `zenml.entrypoints.step_entrypoint` module.
+        This entrypoint module is responsible for running the entrypoint
+        configration when called. Defaults to running the
+        `zenml.entrypoints.entrypoint` module.
 
         **Note**: This command won't work on its own but needs to be called with
             the arguments returned by the `get_entrypoint_arguments(...)`
@@ -157,12 +92,8 @@ class BaseEntrypointConfiguration(ABC):
         It needs to provide values for all options returned by the
         `get_entrypoint_options()` method of this class.
 
-        **Note**: Subclasses should implement the
-            `get_custom_entrypoint_arguments(...)` class method instead of
-            this one if they require custom arguments.
-
         Args:
-            **kwargs: Kwargs to be used in subclasses.
+            **kwargs: Keyword args.
 
         Returns:
             A list of strings with the arguments.
@@ -175,10 +106,7 @@ class BaseEntrypointConfiguration(ABC):
         return arguments
 
     def get_run_name(self, pipeline_name: str) -> Optional[str]:
-        """Returns the run name.
-
-        Subclasses must implement this and return a run name that is the same
-        for all steps of this pipeline run.
+        """Returns an optional run name.
 
         Examples:
         * If you're in an orchestrator environment which has an equivalent
@@ -187,7 +115,7 @@ class BaseEntrypointConfiguration(ABC):
             pods which we can reuse: `return os.environ["KFP_RUN_ID"]`
         * If that isn't possible, you could pass a unique value as an argument
             to the entrypoint (make sure to also return it from
-            `get_custom_entrypoint_options()`) and use it like this:
+            `get_entrypoint_options()`) and use it like this:
             `return self.entrypoint_args["run_name_option"]`
 
         Args:
@@ -267,14 +195,4 @@ class BaseEntrypointConfiguration(ABC):
 
     @abstractmethod
     def run(self) -> None:
-        """Runs a single ZenML step.
-
-        Subclasses should in most cases not need to overwrite this method and
-        implement their custom logic in the `setup(...)` and `post_run(...)`
-        methods instead. If you still need to customize the functionality of
-        this method, make sure to still include all the existing logic as your
-        step won't be executed properly otherwise.
-
-        Raises:
-            TypeError: If the arguments passed to the entrypoint are invalid.
-        """
+        """Runs the entrypoint configuration."""

@@ -25,27 +25,22 @@ class KubernetesStepEntrypointConfiguration(StepEntrypointConfiguration):
 
     @classmethod
     def get_entrypoint_options(cls) -> Set[str]:
-        """Kubernetes specific entrypoint options.
-
-        The argument `RUN_NAME_OPTION` is needed for `get_run_name` to have
-        consistent values between steps.
+        """Gets all options required for running with this configuration.
 
         Returns:
-            Set of entrypoint options.
+            The superclass options as well as an option for the run name.
         """
         return super().get_entrypoint_options() | {RUN_NAME_OPTION}
 
     @classmethod
     def get_entrypoint_arguments(cls, **kwargs: Any) -> List[str]:
-        """Kubernetes specific entrypoint arguments.
-
-        Sets the value for the `RUN_NAME_OPTION` argument.
+        """Gets all arguments that the entrypoint command should be called with.
 
         Args:
-            **kwargs: Additional args.
+            **kwargs: Kwargs, must include the run name.
 
         Returns:
-            List of entrypoint arguments.
+            The superclass arguments as well as arguments for the run name.
         """
         return super().get_entrypoint_arguments(**kwargs) + [
             f"--{RUN_NAME_OPTION}",

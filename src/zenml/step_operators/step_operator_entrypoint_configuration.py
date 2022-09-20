@@ -33,92 +33,20 @@ from zenml.steps import utils as step_utils
 if TYPE_CHECKING:
     from zenml.config.pipeline_configurations import PipelineDeployment
     from zenml.config.step_configurations import Step
+
 EXECUTION_INFO_PATH_OPTION = "execution_info_path"
 
 
 class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
-    """Base class for entrypoint configurations that run a single step.
-
-    If an orchestrator needs to run steps in a separate process or environment
-    (e.g. a docker container), you should create a custom entrypoint
-    configuration class that inherits from this class and use it to implement
-    your custom entrypoint logic.
-
-    How to subclass:
-    ----------------
-    There is only one mandatory method `get_run_name(...)` that you need to
-    implement in order to get a functioning entrypoint. Inside this method you
-    need to return a string which **has** to be the same for all steps that are
-    executed as part of the same pipeline run.
-
-    Passing additional arguments to the entrypoint:
-        If you need to pass additional arguments to the entrypoint, there are
-        two methods that you need to implement:
-            * `get_custom_entrypoint_options()`: This method should return all
-                the additional options that you require in the entrypoint.
-
-            * `get_custom_entrypoint_arguments(...)`: This method should return
-                a list of arguments that should be passed to the entrypoint.
-                The arguments need to provide values for all options defined
-                in the `custom_entrypoint_options()` method mentioned above.
-
-        You'll be able to access the argument values from `self.entrypoint_args`
-        inside your `StepEntrypointConfiguration` subclass.
-
-    Running custom code inside the entrypoint:
-        If you need to run custom code in the entrypoint, you can overwrite
-        the `setup(...)` and `post_run(...)` methods which allow you to run
-        code before and after the step execution respectively.
-
-    How to use:
-    -----------
-    After you created your `StepEntrypointConfiguration` subclass, you only
-    have to run the entrypoint somewhere. To do this, you should execute the
-    command returned by the `get_entrypoint_command()` method with the
-    arguments returned by the `get_entrypoint_arguments(...)` method.
-
-    Example:
-    ```python
-    class MyStepEntrypointConfiguration(StepEntrypointConfiguration):
-        ...
-
-    class MyOrchestrator(BaseOrchestrator):
-        def prepare_or_run_pipeline(
-            self,
-            sorted_list_of_steps: List[BaseStep],
-            pipeline: "BasePipeline",
-            pb2_pipeline: Pb2Pipeline,
-            stack: "Stack",
-            runtime_configuration: "RuntimeConfiguration",
-        ) -> Any:
-            ...
-
-            cmd = MyStepEntrypointConfiguration.get_entrypoint_command()
-            for step in sorted_list_of_steps:
-                ...
-
-                args = MyStepEntrypointConfiguration.get_entrypoint_arguments(
-                    step=step, pb2_pipeline=pb2_pipeline
-                )
-                # Run the command and pass it the arguments. Our example
-                # orchestrator here executes the entrypoint in a separate
-                # process, but in a real-world scenario you would probably run
-                # it inside a docker container or a different environment.
-                import subprocess
-                subprocess.check_call(cmd + args)
-    ```
-    """
+    """Base class for step operator entrypoint configurations."""
 
     @classmethod
     def get_entrypoint_options(cls) -> Set[str]:
-        """Gets all options required for running an entrypoint with this configuration.
-
-        **Note**: Subclasses should implement the
-            `get_custom_entrypoint_options()` class method instead of this
-            one if they require custom options.
+        """Gets all options required for running with this configuration.
 
         Returns:
-            A set of strings with all required options.
+            The superclass options as well as an option for the path to the
+            execution info.
         """
         return super().get_entrypoint_options() | {EXECUTION_INFO_PATH_OPTION}
 
@@ -129,21 +57,12 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
     ) -> List[str]:
         """Gets all arguments that the entrypoint command should be called with.
 
-        The argument list should be something that
-        `argparse.ArgumentParser.parse_args(...)` can handle (e.g.
-        `["--some_option", "some_value"]` or `["--some_option=some_value"]`).
-        It needs to provide values for all options returned by the
-        `get_entrypoint_options()` method of this class.
-
-        **Note**: Subclasses should implement the
-            `get_custom_entrypoint_arguments(...)` class method instead of
-            this one if they require custom arguments.
-
         Args:
-            **kwargs: Additional kwargs.
+            **kwargs: Kwargs, must include the execution info path.
 
         Returns:
-            A list of strings with the arguments.
+            The superclass arguments as well as arguments for the path to the
+            execution info.
         """
         return super().get_entrypoint_arguments(**kwargs) + [
             f"--{EXECUTION_INFO_PATH_OPTION}",
@@ -155,11 +74,11 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
         step: "Step",
         deployment: "PipelineDeployment",
     ) -> Optional[data_types.ExecutionInfo]:
-        """Executes a step.
+        """Runs a single step.
 
         Args:
-            step: The step to execute.
-            deployment: The pipeline deployment for the step.
+            step: The step to run.
+            deployment: The deployment configuration.
 
         Raises:
             RuntimeError: If the step executor class does not exist.

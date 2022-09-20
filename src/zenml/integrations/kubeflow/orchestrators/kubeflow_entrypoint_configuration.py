@@ -33,7 +33,7 @@ class KubeflowEntrypointConfiguration(StepEntrypointConfiguration):
 
     @classmethod
     def get_entrypoint_options(cls) -> Set[str]:
-        """Kubeflow specific entrypoint options.
+        """Gets all options required for running with this configuration.
 
         The metadata ui path option expects a path where the markdown file
         that will be displayed in the kubeflow UI should be written. The same
@@ -41,19 +41,21 @@ class KubeflowEntrypointConfiguration(StepEntrypointConfiguration):
         `mlpipeline-ui-metadata` for the corresponding `kfp.dsl.ContainerOp`.
 
         Returns:
-            The set of custom entrypoint options.
+            The superclass options as well as an option for the metadata ui
+            path.
         """
         return super().get_entrypoint_options() | {METADATA_UI_PATH_OPTION}
 
     @classmethod
     def get_entrypoint_arguments(cls, **kwargs: Any) -> List[str]:
-        """Sets the metadata ui path argument to the value passed in via the keyword args.
+        """Gets all arguments that the entrypoint command should be called with.
 
         Args:
-            **kwargs: Additional args.
+            **kwargs: Kwargs, must include the metadata ui path.
 
         Returns:
-            A list of strings that will be used as arguments to the step.
+            The superclass arguments as well as arguments for the metadata ui
+            path.
         """
         return super().get_entrypoint_arguments(**kwargs) + [
             f"--{METADATA_UI_PATH_OPTION}",

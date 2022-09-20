@@ -25,14 +25,10 @@ class VertexEntrypointConfiguration(StepEntrypointConfiguration):
 
     @classmethod
     def get_entrypoint_options(cls) -> Set[str]:
-        """Vertex AI Pipelines specific entrypoint options.
-
-        The argument `VERTEX_JOB_ID_OPTION` allows to specify the job id of the
-        Vertex AI Pipeline and get it in the execution of the step, via the `get_run_name`
-        method.
+        """Gets all options required for running with this configuration.
 
         Returns:
-            The set of custom entrypoint options.
+            The superclass options as well as an option for the Vertex job id.
         """
         return super().get_entrypoint_options() | {VERTEX_JOB_ID_OPTION}
 
@@ -41,13 +37,13 @@ class VertexEntrypointConfiguration(StepEntrypointConfiguration):
         cls,
         **kwargs: Any,
     ) -> List[str]:
-        """Sets the value for the `VERTEX_JOB_ID_OPTION` argument.
+        """Gets all arguments that the entrypoint command should be called with.
 
         Args:
-            **kwargs: Additional args.
+            **kwargs: Kwargs, must include the Vertex job id.
 
         Returns:
-            A list of arguments for the entrypoint.
+            The superclass arguments as well as arguments for the Vertex job id.
         """
         return super().get_entrypoint_arguments(**kwargs) + [
             f"--{VERTEX_JOB_ID_OPTION}",
