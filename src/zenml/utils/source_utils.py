@@ -58,6 +58,7 @@ from zenml.constants import APP_NAME
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.logger import get_logger
+from zenml.stack.stack_component import StackComponentConfig
 
 logger = get_logger(__name__)
 
