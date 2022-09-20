@@ -21,6 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 import zenml
+from zenml.constants import ENV_ZENML_SERVER_ROOT_URL_PATH
 from zenml.zen_server.routers import (
     artifacts_endpoints,
     auth_endpoints,
@@ -39,6 +40,8 @@ from zenml.zen_server.routers import (
 
 DASHBOARD_DIRECTORY = "dashboard"
 
+ROOT_URL_PATH = os.getenv(ENV_ZENML_SERVER_ROOT_URL_PATH, "/")
+
 
 def relative_path(rel: str) -> str:
     """Get the absolute path of a path relative to the ZenML server module.
@@ -52,7 +55,11 @@ def relative_path(rel: str) -> str:
     return os.path.join(os.path.dirname(__file__), rel)
 
 
-app = FastAPI(title="ZenML", version=zenml.__version__)
+app = FastAPI(
+    title="ZenML",
+    version=zenml.__version__,
+    root_path=ROOT_URL_PATH,
+)
 
 
 app.mount(
@@ -82,11 +89,6 @@ async def health() -> str:
         String representing the health status of the server.
     """
     return "OK"
-
-
-# @app.get("/dashboard", include_in_schema=False)
-# def root():
-#     return HTMLResponse('/home/htahir1/workspace/zenml_io/zenml/dashboard/build/index.html')
 
 
 # to run this file locally, execute:

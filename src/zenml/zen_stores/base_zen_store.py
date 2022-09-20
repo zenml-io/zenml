@@ -12,12 +12,18 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Base Zen Store implementation."""
+import os
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
 from uuid import UUID
 
 from pydantic import BaseModel
 
 from zenml.config.store_config import StoreConfiguration
+from zenml.constants import (
+    ENV_ZENML_DEFAULT_PROJECT_NAME,
+    ENV_ZENML_DEFAULT_USER_NAME,
+    ENV_ZENML_DEFAULT_USER_PASSWORD,
+)
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackExistsError
 from zenml.logger import get_logger
@@ -42,6 +48,7 @@ from zenml.zen_stores.zen_store_interface import ZenStoreInterface
 logger = get_logger(__name__)
 
 DEFAULT_USERNAME = "default"
+DEFAULT_PASSWORD = ""
 DEFAULT_PROJECT_NAME = "default"
 DEFAULT_STACK_NAME = "default"
 
@@ -442,10 +449,11 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         Raises:
             KeyError: If the default user doesn't exist.
         """
+        user_name = os.getenv(ENV_ZENML_DEFAULT_USER_NAME, DEFAULT_USERNAME)
         try:
-            return self.get_user(DEFAULT_USERNAME)
+            return self.get_user(user_name)
         except KeyError:
-            raise KeyError("The default user is not configured")
+            raise KeyError(f"The default user '{user_name}' is not configured")
 
     @track(AnalyticsEvent.CREATED_DEFAULT_USER)
     def _create_default_user(self) -> UserModel:
@@ -454,12 +462,16 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         Returns:
             The default user.
         """
-        logger.info("Creating default user...")
+        user_name = os.getenv(ENV_ZENML_DEFAULT_USER_NAME, DEFAULT_USERNAME)
+        user_password = os.getenv(
+            ENV_ZENML_DEFAULT_USER_PASSWORD, DEFAULT_PASSWORD
+        )
+        logger.info(f"Creating default user '{user_name}' ...")
         return self.create_user(
             UserModel(
-                name=DEFAULT_USERNAME,
+                name=user_name,
                 active=True,
-                password="",
+                password=user_password,
             )
         )
 
@@ -512,10 +524,15 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         Raises:
             KeyError: if the default project doesn't exist.
         """
+        project_name = os.getenv(
+            ENV_ZENML_DEFAULT_PROJECT_NAME, DEFAULT_PROJECT_NAME
+        )
         try:
-            return self.get_project(DEFAULT_PROJECT_NAME)
+            return self.get_project(project_name)
         except KeyError:
-            raise KeyError("The default project is not configured")
+            raise KeyError(
+                f"The default project '{project_name}' is not configured"
+            )
 
     @track(AnalyticsEvent.CREATED_DEFAULT_PROJECT)
     def _create_default_project(self) -> ProjectModel:
@@ -524,8 +541,11 @@ class BaseZenStore(BaseModel, ZenStoreInterface, AnalyticsTrackerMixin):
         Returns:
             The default project.
         """
-        logger.info("Creating default project...")
-        return self.create_project(ProjectModel(name=DEFAULT_PROJECT_NAME))
+        project_name = os.getenv(
+            ENV_ZENML_DEFAULT_PROJECT_NAME, DEFAULT_PROJECT_NAME
+        )
+        logger.info(f"Creating default project '{project_name}' ...")
+        return self.create_project(ProjectModel(name=project_name))
 
     # ------------
     # Repositories

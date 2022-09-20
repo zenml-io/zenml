@@ -28,6 +28,7 @@ from zenml import __version__
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_STORE_DIRECTORY_NAME,
+    ENV_ZENML_STORE_PREFIX,
     LOCAL_STORES_DIRECTORY_NAME,
 )
 from zenml.io import fileio
@@ -490,6 +491,19 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             The default store configuration.
         """
         from zenml.zen_stores.base_zen_store import BaseZenStore
+
+        env_config: Dict[str, str] = {}
+        for k, v in os.environ.items():
+            if v == "":
+                continue
+            if k.startswith(ENV_ZENML_STORE_PREFIX): 
+                env_config[k[len(ENV_ZENML_STORE_PREFIX) :].lower()] = v
+        if len(env_config):
+            logger.debug(
+                f"Using environment variables to configure the default store: "
+                f"{env_config}"
+            )
+            return StoreConfiguration(**env_config)
 
         return BaseZenStore.get_default_store_config(
             path=os.path.join(
