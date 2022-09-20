@@ -98,8 +98,8 @@ class StepRunModel(DomainModel):
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
 
-    pipeline_run_id: Optional[UUID]
-    parent_step_ids: Optional[List[UUID]]
+    pipeline_run_id: UUID
+    parent_step_ids: List[UUID]
 
     docstring: Optional[str]
     parameters: Dict[str, str]
@@ -113,10 +113,10 @@ class StepRunModel(DomainModel):
 class ArtifactModel(DomainModel):
     """Domain Model representing an artifact."""
 
-    name: Optional[str]  # Name of the output in the parent step
+    name: str  # Name of the output in the parent step
 
-    parent_step_id: Optional[UUID]
-    producer_step_id: Optional[UUID]
+    parent_step_id: UUID
+    producer_step_id: UUID
 
     type: ArtifactType
     uri: str
