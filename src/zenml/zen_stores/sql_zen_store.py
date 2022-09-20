@@ -19,7 +19,10 @@ from pathlib import Path, PurePath
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union, cast
 from uuid import UUID
 
-from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
+from ml_metadata.proto.metadata_store_pb2 import (
+    ConnectionConfig,
+    MySQLDatabaseConfig,
+)
 from pydantic import root_validator
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import make_url
@@ -201,10 +204,10 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                         raise ValueError(
                             "Invalid MySQL URL query parameter `%s`: The "
                             "parameter must be one of: ssl_ca, ssl_cert, "
-                            "ssl_key, ssl_verify_server_cert.",
+                            "ssl_key, or ssl_verify_server_cert.",
                             k,
                         )
-                sql_url = sql_url._replace(query=None)
+                sql_url = sql_url._replace(query={})
 
             database = values.get("database")
             if (
@@ -264,12 +267,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             assert self.password is not None
             assert sql_url.host is not None
 
-            # config = MySQLDatabaseConfig(
-            #     host=sql_url.host,
-            #     port=int(sql_url.port,
-            #     database=self.database,
-            # )
-
             mlmd_config = metadata.mysql_metadata_connection_config(
                 host=sql_url.host,
                 port=sql_url.port or 3306,
@@ -278,21 +275,21 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 password=self.password,
             )
 
-            # mlmd_ssl_options = {}
-            # # Handle certificate params
-            # for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
-            #     ssl_setting = getattr(self, key)
-            #     if ssl_setting and os.path.isfile(ssl_setting):
-            #         mlmd_ssl_options[key.lstrip("ssl_")] = ssl_setting
+            mlmd_ssl_options = {}
+            # Handle certificate params
+            for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
+                ssl_setting = getattr(self, key)
+                if ssl_setting and os.path.isfile(ssl_setting):
+                    mlmd_ssl_options[key.lstrip("ssl_")] = ssl_setting
 
-            # # Handle additional params
-            # if mlmd_ssl_options:
-            #     mlmd_ssl_options[
-            #         "verify_server_cert"
-            #     ] = self.ssl_verify_server_cert
-            #     mlmd_config.mysql.ssl_options.CopyFrom(
-            #         MySQLDatabaseConfig.SSLOptions(**mlmd_ssl_options)
-            #     )
+            # Handle additional params
+            if mlmd_ssl_options:
+                mlmd_ssl_options[
+                    "verify_server_cert"
+                ] = self.ssl_verify_server_cert
+                mlmd_config.mysql.ssl_options.CopyFrom(
+                    MySQLDatabaseConfig.SSLOptions(**mlmd_ssl_options)
+                )
         else:
             raise NotImplementedError(
                 f"SQL driver `{sql_url.drivername}` is not supported."
