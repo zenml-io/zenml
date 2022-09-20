@@ -13,10 +13,12 @@
 #  permissions and limitations under the License.
 
 from contextlib import ExitStack as does_not_raise
+from uuid import uuid4
 
 import pytest
 
-from zenml.secrets_managers import BaseSecretsManager
+from zenml.secrets_managers import BaseSecretsManager, BaseSecretsManagerConfig
+from zenml.stack.stack_component import StackComponentType
 
 
 class StubSecretsManager(BaseSecretsManager):
@@ -42,11 +44,31 @@ class StubSecretsManager(BaseSecretsManager):
         pass
 
 
+class StubSecretsManagerConfig(BaseSecretsManagerConfig):
+    attribute: str
+
+
 def test_base_secrets_manager_prevents_secret_references():
     """Tests that the secrets manager prevents all secret references"""
 
     with pytest.raises(ValueError):
-        StubSecretsManager(name="", attribute="{{secret.key}}")
+        StubSecretsManager(
+            name="",
+            id=uuid4(),
+            config=StubSecretsManagerConfig(attribute="{{secret.key}}"),
+            flavor="default",
+            type=StackComponentType.SECRETS_MANAGER,
+            user=uuid4(),
+            project=uuid4(),
+        )
 
     with does_not_raise():
-        StubSecretsManager(name="", attribute="not_a_secret_ref")
+        StubSecretsManager(
+            name="",
+            id=uuid4(),
+            config=StubSecretsManagerConfig(attribute="not_a_secret_ref"),
+            flavor="default",
+            type=StackComponentType.SECRETS_MANAGER,
+            user=uuid4(),
+            project=uuid4(),
+        )

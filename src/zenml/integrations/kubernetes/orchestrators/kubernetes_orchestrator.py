@@ -171,7 +171,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
 
             # Check that all stack components are non-local.
             for stack_component in stack.components.values():
-                if stack_component.local_path:
+                if stack_component.local_path is not None:
                     return False, (
                         f"The Kubernetes orchestrator currently only supports "
                         f"remote stacks, but the '{stack_component.name}' "

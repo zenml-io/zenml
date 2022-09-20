@@ -862,9 +862,32 @@ class Repository(metaclass=RepositoryMetaClass):
             )
 
     def get_stack_component_by_name_and_type(
-        self, type: StackComponentType, name: str, is_shared: bool = False
+        self,
+        type: StackComponentType,
+        name: Optional[str],
+        is_shared: bool = False,
     ) -> ComponentModel:
-        """Fetches a stack by name within the active stack"""
+        """Fetches a stack component by type and name.
+
+        If the name is not provided, the respective component in the active
+        stack is returned.
+
+        Args:
+            type: The type of the component to fetch.
+            name: The name of the component to fetch.
+            is_shared: Whether to fetch a shared component.
+
+        Returns:
+            A model of the requested stack component.
+        """
+        if name is None:
+            active_stack_components = self.active_stack_model.components
+            if type not in active_stack_components:
+                raise KeyError(
+                    f"No component of type '{type}' is registered in the "
+                    f"active stack and no component name was provided."
+                )
+            name = active_stack_components[type][0].name
 
         if is_shared:
             components = self.zen_store.list_stack_components(
@@ -926,7 +949,7 @@ class Repository(metaclass=RepositoryMetaClass):
                 f"'{flavor.type}': No flavor with this name could be found.",
             )
 
-    def get_flavors(self):
+    def get_flavors(self) -> List[FlavorModel]:
         from zenml.stack.flavor_registry import flavor_registry
 
         zenml_flavors = flavor_registry.flavors
@@ -1016,6 +1039,19 @@ class Repository(metaclass=RepositoryMetaClass):
             else:
                 raise KeyError("bir şey barış!")
 
+    def get_pipeline_by_name(self, name: str) -> PipelineModel:
+        """Fetches a pipeline by name.
+
+        Args:
+            name: The name of the pipeline to fetch.
+
+        Returns:
+            The pipeline model.
+        """
+        return self.zen_store.get_pipeline_in_project(
+            pipeline_name=name, project_name_or_id=self.active_project_name
+        )
+
     def _register_pipeline(
         self, pipeline_name: str, pipeline_configuration: Dict[str, str]
     ) -> UUID:
@@ -1038,10 +1074,7 @@ class Repository(metaclass=RepositoryMetaClass):
                 project with the same name but a different configuration.
         """
         try:
-            existing_pipeline = self.zen_store.get_pipeline_in_project(
-                pipeline_name=pipeline_name,
-                project_name_or_id=self.active_project.name,
-            )
+            existing_pipeline = self.get_pipeline_by_name(pipeline_name)
 
         # A) If there is no pipeline with this name, register a new pipeline.
         except KeyError:

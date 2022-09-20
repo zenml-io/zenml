@@ -13,11 +13,11 @@
 #  permissions and limitations under the License.
 
 import os
+from uuid import uuid4
 
 import pytest
 from click.testing import CliRunner
 
-from zenml.artifact_stores import LocalArtifactStore
 from zenml.cli.stack import (
     delete_stack,
     describe_stack,
@@ -28,7 +28,6 @@ from zenml.cli.stack import (
     update_stack,
 )
 from zenml.enums import StackComponentType
-from zenml.orchestrators import LocalOrchestrator
 from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManager,
 )
@@ -57,9 +56,12 @@ def test_stack_describe_fails_for_bad_input(
     assert result.exit_code == 1
 
 
-def test_updating_active_stack_succeeds(clean_repo) -> None:
+def test_updating_active_stack_succeeds(
+    clean_repo, local_artifact_store
+) -> None:
     """Test stack update of active stack succeeds."""
-    new_artifact_store = LocalArtifactStore(name="arias_store", path="/meow")
+    new_artifact_store = local_artifact_store
+    new_artifact_store.name = "arias_store"
     clean_repo.register_stack_component(new_artifact_store)
 
     runner = CliRunner()
@@ -68,13 +70,17 @@ def test_updating_active_stack_succeeds(clean_repo) -> None:
     assert clean_repo.active_stack.artifact_store == new_artifact_store
 
 
-def test_updating_non_active_stack_succeeds(clean_repo) -> None:
+def test_updating_non_active_stack_succeeds(
+    clean_repo, local_orchestrator
+) -> None:
     """Test stack update of pre-existing component of non-active stack succeeds."""
-    new_orchestrator = LocalOrchestrator(name="arias_orchestrator")
+    new_orchestrator = local_orchestrator
+    new_orchestrator.name = "arias_orchestrator"
     clean_repo.register_stack_component(new_orchestrator)
 
     registered_stack = clean_repo.active_stack
     new_stack = Stack(
+        id=uuid4(),
         name="arias_new_stack",
         orchestrator=registered_stack.orchestrator,
         artifact_store=registered_stack.artifact_store,
@@ -157,6 +163,7 @@ def test_renaming_non_active_stack_succeeds(clean_repo) -> None:
     """Test stack rename of non-active stack succeeds."""
     registered_stack = clean_repo.active_stack
     new_stack = Stack(
+        id=uuid4(),
         name="arias_stack",
         orchestrator=registered_stack.orchestrator,
         artifact_store=registered_stack.artifact_store,
@@ -216,6 +223,7 @@ def test_remove_non_core_component_from_stack_succeeds(clean_repo) -> None:
 def test_deleting_stack_with_flag_succeeds(clean_repo) -> None:
     """Test stack delete with flag succeeds."""
     new_stack = Stack(
+        id=uuid4(),
         name="arias_new_stack",
         orchestrator=clean_repo.active_stack.orchestrator,
         artifact_store=clean_repo.active_stack.artifact_store,
@@ -236,17 +244,22 @@ def test_stack_export(clean_repo) -> None:
     assert os.path.exists("default.yaml")
 
 
-def test_stack_export_delete_import(clean_repo) -> None:
+def test_stack_export_delete_import(
+    clean_repo, local_artifact_store, local_orchestrator
+) -> None:
     """Test exporting, deleting, then importing a stack succeeds."""
     # create new stack
     artifact_store_name = "arias_artifact_store"
-    artifact_store = LocalArtifactStore(name=artifact_store_name, path="path/")
+    artifact_store = local_artifact_store
+    artifact_store.name = artifact_store_name
     clean_repo.register_stack_component(artifact_store)
     orchestrator_name = "arias_orchestrator"
-    orchestrator = LocalOrchestrator(name=orchestrator_name)
+    orchestrator = local_orchestrator
+    orchestrator.name = orchestrator_name
     clean_repo.register_stack_component(orchestrator)
     stack_name = "arias_new_stack"
     stack = Stack(
+        id=uuid4(),
         name=stack_name,
         orchestrator=orchestrator,
         artifact_store=artifact_store,

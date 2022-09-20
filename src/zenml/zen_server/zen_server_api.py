@@ -15,6 +15,7 @@
 
 
 import os
+from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
@@ -74,7 +75,7 @@ templates = Jinja2Templates(directory=relative_path(DASHBOARD_DIRECTORY))
 
 
 @app.get("/")
-async def dashboard(request: Request):
+async def dashboard(request: Request) -> Any:
     """Dashboard endpoint."""
     return templates.TemplateResponse("index.html", {"request": request})
 

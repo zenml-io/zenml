@@ -789,7 +789,7 @@ def describe_stack(stack_name: Optional[str]) -> None:
 
     if stack_name:
         try:
-            stack = repo.get_stack_by_name(stack_name)
+            stack = repo.get_stack_by_name(stack_name).to_hydrated_model()
         except KeyError:
             cli_utils.error(
                 f"Stack `{stack_name}` does not exist.",
@@ -1261,10 +1261,13 @@ def register_secrets(
     """
     cli_utils.print_active_config()
 
+    from zenml.stack.stack import Stack
+
     # TODO[Server]: Make this call a function in repo
     if stack_name:
         try:
-            stack_ = Repository().get_stack_by_name(stack_name)
+            stack_model = Repository().get_stack_by_name(stack_name)
+            stack_ = Stack.from_model(stack_model.to_hydrated_model())
         except KeyError:
             cli_utils.error(f"No stack found for name `{stack_name}`.")
     else:

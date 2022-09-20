@@ -19,6 +19,7 @@ from zenml.artifact_stores import BaseArtifactStore
 from zenml.enums import StackComponentType
 from zenml.orchestrators import BaseOrchestrator
 from zenml.stack import Stack, StackComponent, StackValidator
+from zenml.stack.stack_component import StackComponentConfig
 
 MOCK_FLAVOR = "mock_flavor"
 
@@ -54,14 +55,31 @@ def failing_stack_validator():
 
 
 @pytest.fixture
-def stub_component():
-    class _StubComponent(StackComponent):
-        name = "StubComponent"
+def stub_component_config():
+    class _StubComponentConfig(StackComponentConfig):
         some_public_attribute_name = "Aria"
         _some_private_attribute_name = "Also Aria"
 
-        # Class Configuration
-        TYPE = StackComponentType.ORCHESTRATOR
-        FLAVOR = MOCK_FLAVOR
+    return _StubComponentConfig()
 
-    return _StubComponent()
+
+@pytest.fixture
+def stub_component():
+    class _StubComponentConfig(StackComponentConfig):
+        some_public_attribute_name = "Aria"
+        _some_private_attribute_name = "Also Aria"
+
+    class _StubComponent(StackComponent):
+        @property
+        def config(self) -> _StubComponentConfig:
+            return self._config
+
+    return _StubComponent(
+        name="StubComponent",
+        id=uuid4(),
+        config=_StubComponentConfig(),
+        flavor=MOCK_FLAVOR,
+        type=StackComponentType.ORCHESTRATOR,
+        user=uuid4(),
+        project=uuid4(),
+    )

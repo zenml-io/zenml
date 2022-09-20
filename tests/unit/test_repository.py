@@ -20,7 +20,10 @@ from uuid import uuid4
 
 import pytest
 
-from zenml.artifact_stores import LocalArtifactStore
+from zenml.artifact_stores.local_artifact_store import (
+    LocalArtifactStore,
+    LocalArtifactStoreConfig,
+)
 from zenml.enums import StackComponentType
 from zenml.exceptions import (
     InitializationException,
@@ -28,9 +31,12 @@ from zenml.exceptions import (
     StackExistsError,
 )
 from zenml.io import fileio
-from zenml.orchestrators import LocalOrchestrator
+from zenml.models.stack_models import StackModel
+from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
+from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.repository import Repository
 from zenml.stack import Stack
+from zenml.stack.stack_component import StackComponentConfig
 from zenml.utils import io_utils
 
 
@@ -48,8 +54,24 @@ def _create_local_stack(
     orchestrator_name = orchestrator_name or _random_name()
     artifact_store_name = artifact_store_name or _random_name()
 
-    orchestrator = LocalOrchestrator(name=orchestrator_name)
-    artifact_store = LocalArtifactStore(name=artifact_store_name, path="stack")
+    orchestrator = LocalOrchestrator(
+        name=orchestrator_name,
+        id=uuid4(),
+        config=BaseOrchestratorConfig(),
+        flavor="default",
+        type=StackComponentType.ORCHESTRATOR,
+        user=uuid4(),
+        project=uuid4(),
+    )
+    artifact_store = LocalArtifactStore(
+        name=artifact_store_name,
+        id=uuid4(),
+        config=LocalArtifactStoreConfig(),
+        flavor="default",
+        type=StackComponentType.ARTIFACT_STORE,
+        user=uuid4(),
+        project=uuid4(),
+    )
 
     return Stack(
         id=uuid4(),
@@ -199,11 +221,11 @@ def test_activating_a_stack_updates_the_config_file(clean_repo):
 def test_getting_a_stack(clean_repo):
     """Tests that getting a stack succeeds if the stack name exists and fails
     otherwise."""
-    existing_stack_name = clean_repo.active_stack_name
+    existing_stack_name = clean_repo.active_stack.name
 
     with does_not_raise():
         stack = clean_repo.get_stack_by_name(existing_stack_name)
-        assert isinstance(stack, Stack)
+        assert isinstance(stack, StackModel)
 
     with pytest.raises(KeyError):
         clean_repo.get_stack_by_name("stack_name_that_hopefully_does_not_exist")
@@ -255,12 +277,13 @@ def test_registering_a_new_stack_with_already_registered_components(
     )
 
 
-def test_updating_a_stack_with_new_components(clean_repo):
+def test_updating_a_stack_with_new_components(clean_repo, local_orchestrator):
     """Tests that updating a new stack with already registered components
     updates the stack with the new or altered components passed in."""
     current_stack = clean_repo.active_stack
     old_orchestrator = current_stack.orchestrator
-    new_orchestrator = LocalOrchestrator(name="new_orchestrator")
+    new_orchestrator = local_orchestrator
+    new_orchestrator.name = "new_orchestrator"
     updated_stack = Stack(
         id=current_stack.id,
         name=current_stack.name,
@@ -269,7 +292,7 @@ def test_updating_a_stack_with_new_components(clean_repo):
     )
 
     with does_not_raise():
-        clean_repo.update_stack(updated_stack.name, updated_stack)
+        clean_repo.update_stack(updated_stack)
 
     assert old_orchestrator != clean_repo.active_stack.orchestrator
     assert new_orchestrator == clean_repo.active_stack.orchestrator
@@ -287,16 +310,19 @@ def test_renaming_stack_with_update_method_succeeds(clean_repo):
     )
 
     with does_not_raise():
-        clean_repo.update_stack(current_stack.name, updated_stack)
+        clean_repo.update_stack(updated_stack)
     assert new_stack_name == clean_repo.active_stack_name
 
 
-def test_registering_a_stack_registers_unregistered_components(clean_repo):
+def test_registering_a_stack_registers_unregistered_components(
+    clean_repo, local_orchestrator
+):
     """Tests that registering a stack with an unregistered component registers
     the component."""
     registered_stack = clean_repo.active_stack
 
-    new_orchestrator = LocalOrchestrator(name="new_orchestrator_name")
+    new_orchestrator = local_orchestrator
+    new_orchestrator.name = "new_orchestrator_name"
     new_stack = Stack(
         id=uuid4(),
         name="new_stack_name",
@@ -314,7 +340,7 @@ def test_registering_a_stack_registers_unregistered_components(clean_repo):
 
     # if one of the components has a name that is already registered, but it's
     # not the exact registered component then the stack registration should fail
-    another_new_orchestrator = LocalOrchestrator(name=new_orchestrator.name)
+    another_new_orchestrator = local_orchestrator.copy()
     another_new_stack = Stack(
         id=uuid4(),
         name="another_new_stack_name",
@@ -371,9 +397,11 @@ def test_registering_a_stack_component_with_existing_name(clean_repo):
         )
 
 
-def test_registering_a_new_stack_component(clean_repo):
+def test_registering_a_new_stack_component(clean_repo, local_artifact_store):
     """Tests that registering a stack component works and is persisted."""
-    new_artifact_store = LocalArtifactStore(name="arias_store", path="/meow")
+    new_artifact_store = local_artifact_store
+    new_artifact_store.name = "arias_store"
+    new_artifact_store.path = "/meow"
     clean_repo.register_stack_component(new_artifact_store)
 
     new_repo = Repository(clean_repo.root)
@@ -387,9 +415,10 @@ def test_registering_a_new_stack_component(clean_repo):
     assert registered_artifact_store == new_artifact_store
 
 
-def test_deregistering_a_stack_component(clean_repo):
+def test_deregistering_a_stack_component(clean_repo, local_orchestrator):
     """Tests that deregistering a stack component works and is persisted."""
-    component = LocalOrchestrator(name="unregistered_orchestrator")
+    component = local_orchestrator
+    component.name = "unregistered_orchestrator"
     clean_repo.register_stack_component(component)
 
     clean_repo.deregister_stack_component(

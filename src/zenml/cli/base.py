@@ -32,6 +32,7 @@ from zenml.exceptions import GitNotFoundError, InitializationException
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.repository import Repository
+from zenml.stack.stack_component import StackComponent
 from zenml.utils.analytics_utils import (
     AnalyticsEvent,
     identify_user,
@@ -101,7 +102,7 @@ def _delete_local_files(force_delete: bool = False) -> None:
         for _, components in stack_components.items():
             # TODO: [server] this needs to be adjusted as the ComponentModel
             #  does not have the local_path property anymore
-            local_path = components[0].local_path
+            local_path = StackComponent.from_model(components[0]).local_path
             if local_path:
                 for path in Path(local_path).iterdir():
                     if fileio.isdir(str(path)):

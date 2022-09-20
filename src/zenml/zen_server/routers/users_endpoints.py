@@ -17,6 +17,7 @@ from typing import List, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import SecretStr
 
 from zenml.constants import ACTIVATE, DEACTIVATE, ROLES, USERS, VERSION_1
 from zenml.exceptions import IllegalOperationError
@@ -91,7 +92,7 @@ async def create_user(user: CreateUserRequest) -> CreateUserResponse:
     # later time with an activation token
 
     user_model = user.to_model()
-    token: Optional[str] = None
+    token: Optional[SecretStr] = None
     if user.password is None:
         user_model.active = False
         token = user_model.generate_activation_token()

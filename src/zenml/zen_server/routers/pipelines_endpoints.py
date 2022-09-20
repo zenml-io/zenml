@@ -35,7 +35,7 @@ router = APIRouter(
 
 @router.get(
     "/",
-    response_model=Union[List[HydratedPipelineModel], List[PipelineModel]],
+    response_model=Union[List[HydratedPipelineModel], List[PipelineModel]],  # type: ignore[arg-type]
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -73,7 +73,7 @@ async def list_pipelines(
 
 @router.get(
     "/{pipeline_id}",
-    response_model=Union[HydratedPipelineModel, PipelineModel],
+    response_model=Union[HydratedPipelineModel, PipelineModel],  # type: ignore[arg-type]
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -99,7 +99,7 @@ async def get_pipeline(
 
 @router.put(
     "/{pipeline_id}",
-    response_model=Union[HydratedPipelineModel, PipelineModel],
+    response_model=Union[HydratedPipelineModel, PipelineModel],  # type: ignore[arg-type]
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

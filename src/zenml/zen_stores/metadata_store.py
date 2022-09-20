@@ -16,34 +16,49 @@
 import json
 from collections import OrderedDict
 from json import JSONDecodeError
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 from ml_metadata import proto
 from ml_metadata.metadata_store import metadata_store
 from ml_metadata.proto import metadata_store_pb2
-from pydantic import Extra
-from tfx.dsl.compiler.constants import (
-    PIPELINE_CONTEXT_TYPE_NAME,
-    PIPELINE_RUN_CONTEXT_TYPE_NAME,
-)
+from pydantic import BaseModel, Extra
+from tfx.dsl.compiler.constants import PIPELINE_RUN_CONTEXT_TYPE_NAME
 
 from zenml.artifacts.constants import (
     DATATYPE_PROPERTY_KEY,
     MATERIALIZER_PROPERTY_KEY,
 )
-from zenml.enums import ExecutionStatus
+from zenml.enums import ArtifactType, ExecutionStatus
 from zenml.logger import get_logger
-from zenml.models.pipeline_models import (
-    ArtifactModel,
-    PipelineModel,
-    StepRunModel,
-)
 from zenml.steps.utils import (
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
     PARAM_PIPELINE_PARAMETER_NAME,
 )
 
 logger = get_logger(__name__)
+
+
+class MLMDArtifactModel(BaseModel):
+    """Class that models an artifact reponse from the metadata store."""
+
+    mlmd_id: int
+    type: ArtifactType
+    uri: str
+    materializer: str
+    data_type: str
+    mlmd_parent_step_id: int
+    mlmd_producer_step_id: int
+    is_cached: bool
+
+
+class MLMDStepRunModel(BaseModel):
+    """Class that models a step run response from the metadata store."""
+
+    mlmd_id: int
+    mlmd_parent_step_ids: List[int]
+    entrypoint_name: str
+    name: str
+    parameters: Dict[str, str]
 
 
 class MetadataStore:
@@ -98,14 +113,14 @@ class MetadataStore:
 
     def _get_step_model_from_execution(
         self, execution: proto.Execution
-    ) -> StepRunModel:
-        """Get original StepRunModel from an execution.
+    ) -> MLMDStepRunModel:
+        """Get the original step from an execution.
 
         Args:
             execution: proto.Execution object from mlmd store.
 
         Returns:
-            Original `StepRunModel` derived from the proto.Execution.
+            Model of the original step derived from the proto.Execution.
 
         Raises:
             KeyError: If the execution is not associated with a step.
@@ -178,55 +193,13 @@ class MetadataStore:
                 # take the latest one and add execution to the parents.
                 parents_step_ids.add(events_for_input_artifact[-1].execution_id)
 
-        return StepRunModel(
+        return MLMDStepRunModel(
             mlmd_id=execution.id,
             mlmd_parent_step_ids=list(parents_step_ids),
             entrypoint_name=impl_name,
             name=step_name,
             parameters=step_parameters,
-            # TODO[Server]: docstring
         )
-
-    def get_pipelines(self) -> List[PipelineModel]:
-        """Returns a list of all pipelines stored in this metadata store.
-
-        Returns:
-            A list of all pipelines stored in this metadata store.
-        """
-        pipelines = []
-        for pipeline_context in self.store.get_contexts_by_type(
-            PIPELINE_CONTEXT_TYPE_NAME
-        ):
-            pipeline = PipelineModel(
-                id=pipeline_context.id,
-                name=pipeline_context.name,
-            )
-            pipelines.append(pipeline)
-
-        logger.debug("Fetched %d pipelines.", len(pipelines))
-        return pipelines
-
-    def get_pipeline(self, pipeline_name: str) -> Optional[PipelineModel]:
-        """Returns a pipeline for the given name.
-
-        Args:
-            pipeline_name: Name of the pipeline.
-
-        Returns:
-            The pipeline, if found, None otherwise.
-        """
-        pipeline_context = self.store.get_context_by_type_and_name(
-            PIPELINE_CONTEXT_TYPE_NAME, pipeline_name
-        )
-        if pipeline_context:
-            logger.debug("Fetched pipeline with name '%s'", pipeline_name)
-            return PipelineModel(
-                id=pipeline_context.id,
-                name=pipeline_context.name,
-            )
-        else:
-            logger.info("No pipelines found for name '%s'", pipeline_name)
-            return None
 
     def get_all_runs(self) -> Dict[str, int]:
         """Gets a mapping run name -> ID for all runs registered in MLMD.
@@ -239,7 +212,9 @@ class MetadataStore:
         )
         return {run.name: run.id for run in all_pipeline_runs}
 
-    def get_pipeline_run_steps(self, run_id: int) -> Dict[str, StepRunModel]:
+    def get_pipeline_run_steps(
+        self, run_id: int
+    ) -> Dict[str, MLMDStepRunModel]:
         """Gets all steps for the given pipeline run.
 
         Args:
@@ -248,7 +223,7 @@ class MetadataStore:
         Returns:
             A dictionary of step names to step views.
         """
-        steps: Dict[str, StepRunModel] = OrderedDict()
+        steps: Dict[str, MLMDStepRunModel] = OrderedDict()
         # reverse the executions as they get returned in reverse chronological
         # order from the metadata store
         executions = self.store.get_executions_by_context(run_id)
@@ -258,14 +233,14 @@ class MetadataStore:
         logger.debug(f"Fetched {len(steps)} steps for pipeline run '{run_id}'.")
         return steps
 
-    def get_step_by_id(self, step_id: int) -> StepRunModel:
-        """Gets a `StepRunModel` by its ID.
+    def get_step_by_id(self, step_id: int) -> MLMDStepRunModel:
+        """Gets a step by its ID.
 
         Args:
             step_id: The ID of the step to get.
 
         Returns:
-            The `StepRunModel` with the given ID.
+            A model of the step with the given ID.
         """
         execution = self.store.get_executions_by_id([step_id])[0]
         return self._get_step_model_from_execution(execution)
@@ -292,8 +267,8 @@ class MetadataStore:
             return ExecutionStatus.FAILED
 
     def get_step_artifacts(
-        self, step: StepRunModel
-    ) -> Tuple[Dict[str, ArtifactModel], Dict[str, ArtifactModel]]:
+        self, step_id: int, step_parent_step_ids: List[int], step_name: str
+    ) -> Tuple[Dict[str, MLMDArtifactModel], Dict[str, MLMDArtifactModel]]:
         """Returns input and output artifacts for the given step.
 
         Args:
@@ -309,13 +284,13 @@ class MetadataStore:
             type_.id: type_.name for type_ in self.store.get_artifact_types()
         }
 
-        events = self.store.get_events_by_execution_ids([step.mlmd_id])  # noqa
+        events = self.store.get_events_by_execution_ids([step_id])  # noqa
         artifacts = self.store.get_artifacts_by_id(
             [event.artifact_id for event in events]
         )
 
-        inputs: Dict[str, ArtifactModel] = {}
-        outputs: Dict[str, ArtifactModel] = {}
+        inputs: Dict[str, MLMDArtifactModel] = {}
+        outputs: Dict[str, MLMDArtifactModel] = {}
 
         # sort them according to artifact_id's so that the zip works.
         events.sort(key=lambda x: x.artifact_id)
@@ -333,13 +308,17 @@ class MetadataStore:
                 DATATYPE_PROPERTY_KEY
             ].string_value
 
-            parent_step_id = step.mlmd_id
+            parent_step_id = step_id
             if event_proto.type == event_proto.INPUT:
                 # In the case that this is an input event, we actually need
                 # to resolve it via its parents outputs.
-                for parent_id in step.mlmd_parent_step_ids:
+                for parent_id in step_parent_step_ids:
                     parent_step = self.get_step_by_id(parent_id)
-                    parent_outputs = self.get_step_artifacts(parent_step)[1]
+                    parent_outputs = self.get_step_artifacts(
+                        step_id=parent_id,
+                        step_parent_step_ids=parent_step.mlmd_parent_step_ids,
+                        step_name=parent_step.entrypoint_name,
+                    )[1]
                     for parent_output in parent_outputs.values():
                         if artifact_proto.id == parent_output.mlmd_id:
                             parent_step_id = parent_id
@@ -347,7 +326,7 @@ class MetadataStore:
             artifact_id = event_proto.artifact_id
             producer_step = self.get_producer_step_from_artifact(artifact_id)
             producer_step_id = producer_step.mlmd_id
-            artifact = ArtifactModel(
+            artifact = MLMDArtifactModel(
                 mlmd_id=artifact_id,
                 type=artifact_type,
                 uri=artifact_proto.uri,
@@ -367,19 +346,21 @@ class MetadataStore:
             "Fetched %d inputs and %d outputs for step '%s'.",
             len(inputs),
             len(outputs),
-            step.entrypoint_name,
+            step_name,
         )
 
         return inputs, outputs
 
-    def get_producer_step_from_artifact(self, artifact_id: int) -> StepRunModel:
-        """Returns original StepRunModel from an ArtifactModel.
+    def get_producer_step_from_artifact(
+        self, artifact_id: int
+    ) -> MLMDStepRunModel:
+        """Find the original step that created an artifact.
 
         Args:
-            artifact_id: ID of the ArtifactModel to be queried.
+            artifact_id: ID of the artifact for which to get the producer step.
 
         Returns:
-            Original StepRunModel that produced the artifact.
+            Original step that produced the artifact.
         """
         executions_ids = set(
             event.execution_id

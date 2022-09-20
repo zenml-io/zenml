@@ -14,7 +14,7 @@
 """Azure integration flavors."""
 
 from zenml.integrations.azure.flavors.azure_artifact_store_flavor import (
-    AzureArtfactStoreConfig,
+    AzureArtifactStoreConfig,
     AzureArtifactStoreFlavor,
 )
 from zenml.integrations.azure.flavors.azure_secrets_manager_flavor import (
@@ -28,7 +28,7 @@ from zenml.integrations.azure.flavors.azureml_step_operator_flavor import (
 
 __all__ = [
     "AzureArtifactStoreFlavor",
-    "AzureArtfactStoreConfig",
+    "AzureArtifactStoreConfig",
     "AzureSecretsManagerFlavor",
     "AzureSecretsManagerConfig",
     "AzureMLStepOperatorFlavor",

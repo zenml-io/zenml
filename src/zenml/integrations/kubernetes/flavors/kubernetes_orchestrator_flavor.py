@@ -54,9 +54,10 @@ class KubernetesOrchestratorConfig(BaseOrchestratorConfig):
     kubernetes_namespace: str = "zenml"
     synchronous: bool = False
     skip_config_loading: bool = False
+    docker_parent_image: Optional[str] = None
 
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
-        ("custom_docker_base_image_name", "docker_parent_image")
+        "custom_docker_base_image_name", "docker_parent_image"
     )
 
 

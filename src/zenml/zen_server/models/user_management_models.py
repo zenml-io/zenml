@@ -16,7 +16,7 @@
 
 from typing import Any, Optional, cast
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 
 from zenml.models.constants import (
     MODEL_NAME_FIELD_MAX_LENGTH,
@@ -133,7 +133,7 @@ class UpdateUserRequest(UpdateRequest[UserModel]):
         title="Updated email address associated with the account.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
-    password: Optional[str] = Field(
+    password: Optional[SecretStr] = Field(
         default=None,
         title="Updated account password.",
         max_length=USER_PASSWORD_MAX_LENGTH,
@@ -191,7 +191,7 @@ class ActivateUserRequest(UpdateRequest[UserModel]):
         title="Email address associated with the account.",
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
-    password: str = Field(
+    password: SecretStr = Field(
         title="Account password.", max_length=USER_PASSWORD_MAX_LENGTH
     )
     activation_token: str = Field(
@@ -224,7 +224,7 @@ class DeactivateUserResponse(UserModel, UpdateResponse[UserModel]):
 
     _MODEL_TYPE = UserModel
 
-    activation_token: str = Field(..., title="Account activation token.")
+    activation_token: SecretStr = Field(..., title="Account activation token.")
 
     @classmethod
     def from_model(

@@ -135,6 +135,11 @@ class LocalArtifactStore(BaseArtifactStore):
         io_utils.create_dir_recursive_if_not_exists(self._path)
         return self._path
 
+    @property
+    def local_path(self) -> Optional[str]:
+        """Returns the local path of the artifact store."""
+        return self.path
+
     @staticmethod
     def open(name: PathType, mode: str = "r") -> Any:
         """Open a file at the given path.

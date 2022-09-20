@@ -44,6 +44,8 @@ def sample_stepview(sample_step: "BaseStep") -> StepView:
             parameters={},
             mlmd_id=1,
             mlmd_parent_step_ids=[0],
+            pipeline_run_id=uuid4(),
+            parent_step_ids=[],
         )
     )
 

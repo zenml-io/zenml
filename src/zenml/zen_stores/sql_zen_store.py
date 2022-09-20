@@ -2744,15 +2744,22 @@ class SqlZenStore(BaseZenStore):
         mlmd_steps = self.metadata_store.get_pipeline_run_steps(run.mlmd_id)
 
         # For each step in MLMD, sync it into ZenML if it doesn't exist yet.
-        for step_name, step in mlmd_steps.items():
+        for step_name, mlmd_step in mlmd_steps.items():
             if step_name not in zenml_steps:
-                step.pipeline_run_id = run_id
-                step.parent_step_ids = [
-                    self._resolve_mlmd_step_id(parent_step_id)
-                    for parent_step_id in step.mlmd_parent_step_ids
-                ]
-                step = self._create_run_step(step)
-                zenml_steps[step_name] = step
+                new_step = StepRunModel(
+                    name=step_name,
+                    mlmd_id=mlmd_step.mlmd_id,
+                    mlmd_parent_step_ids=mlmd_step.mlmd_parent_step_ids,
+                    entrypoint_name=mlmd_step.entrypoint_name,
+                    parameters=mlmd_step.parameters,
+                    pipeline_run_id=run_id,
+                    parent_step_ids=[
+                        self._resolve_mlmd_step_id(parent_step_id)
+                        for parent_step_id in mlmd_step.mlmd_parent_step_ids
+                    ],
+                )
+                new_step = self._create_run_step(new_step)
+                zenml_steps[step_name] = new_step
 
         # Save parent step IDs into the database.
         for step in zenml_steps.values():
@@ -2784,25 +2791,39 @@ class SqlZenStore(BaseZenStore):
         # Get all MLMD artifacts.
         step_model = self.get_run_step(run_step_id)
         mlmd_inputs, mlmd_outputs = self.metadata_store.get_step_artifacts(
-            step_model
+            step_id=step_model.mlmd_id,
+            step_parent_step_ids=step_model.mlmd_parent_step_ids,
+            step_name=step_model.entrypoint_name,
         )
 
         # For each output in MLMD, sync it into ZenML if it doesn't exist yet.
-        for output_name, artifact in mlmd_outputs.items():
+        for output_name, mlmd_artifact in mlmd_outputs.items():
             if output_name not in zenml_outputs:
-                artifact.name = output_name
-                artifact.parent_step_id = self._resolve_mlmd_step_id(
-                    artifact.mlmd_parent_step_id
+                new_artifact = ArtifactModel(
+                    name=output_name,
+                    mlmd_id=mlmd_artifact.mlmd_id,
+                    type=mlmd_artifact.type,
+                    uri=mlmd_artifact.uri,
+                    materializer=mlmd_artifact.materializer,
+                    data_type=mlmd_artifact.data_type,
+                    mlmd_parent_step_id=mlmd_artifact.mlmd_parent_step_id,
+                    mlmd_producer_step_id=mlmd_artifact.mlmd_producer_step_id,
+                    is_cached=mlmd_artifact.is_cached,
+                    parent_step_id=self._resolve_mlmd_step_id(
+                        mlmd_artifact.mlmd_parent_step_id
+                    ),
+                    producer_step_id=self._resolve_mlmd_step_id(
+                        mlmd_artifact.mlmd_producer_step_id
+                    ),
                 )
-                artifact.producer_step_id = self._resolve_mlmd_step_id(
-                    artifact.mlmd_producer_step_id
-                )
-                self._create_run_step_artifact(artifact)
+                self._create_run_step_artifact(new_artifact)
 
         # For each input in MLMD, sync it into ZenML if it doesn't exist yet.
-        for input_name, artifact in mlmd_inputs.items():
+        for input_name, mlmd_artifact in mlmd_inputs.items():
             if input_name not in zenml_inputs:
-                artifact_id = self._resolve_mlmd_artifact_id(artifact.mlmd_id)
+                artifact_id = self._resolve_mlmd_artifact_id(
+                    mlmd_artifact.mlmd_id
+                )
                 self._set_run_step_input_artifact(
                     step_id=run_step_id,
                     artifact_id=artifact_id,
