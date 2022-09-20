@@ -16,10 +16,10 @@ import platform
 
 import pytest
 
-from src.zenml.runtime_configuration import RuntimeConfiguration
 from zenml.config.docker_configuration import DockerConfiguration
 from zenml.constants import VALID_OPERATING_SYSTEMS
 from zenml.environment import BaseEnvironmentComponent, Environment
+from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.steps import StepEnvironment
 
 

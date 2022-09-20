@@ -789,7 +789,7 @@ class SqlZenStore(BaseZenStore):
             session.add(flavor_in_db)
             session.commit()
 
-        return flavor_in_db.to_model()
+            return flavor_in_db.to_model()
 
     def get_flavor(self, flavor_id: UUID) -> FlavorModel:
         """Get a flavor by ID.

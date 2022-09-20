@@ -1404,8 +1404,7 @@ def test_delete_stack_component_fails_when_component_does_not_exist(
 # Stack component flavors
 # -----------------------
 
-# TODO: remove `xfail` once the method is properly implemented
-@pytest.mark.xfail
+
 def test_create_stack_component_flavor_succeeds(
     sql_store: BaseZenStore,
 ):
@@ -1414,16 +1413,21 @@ def test_create_stack_component_flavor_succeeds(
     blupus_flavor = FlavorModel(
         name=flavor_name,
         type=StackComponentType.ORCHESTRATOR,
+        config_schema="default",
         source=".",
         project=sql_store["default_project"].id,
         user=sql_store["active_user"].id,
     )
     with does_not_raise():
         sql_store["store"].create_flavor(flavor=blupus_flavor)
-        blupus_flavor_id = sql_store["store"].list_flavors(
-            project_name_or_id=sql_store["default_project"].name,
-            component_type=StackComponentType.ORCHESTRATOR,
-            name=flavor_name,
+        blupus_flavor_id = (
+            sql_store["store"]
+            .list_flavors(
+                project_name_or_id=sql_store["default_project"].name,
+                component_type=StackComponentType.ORCHESTRATOR,
+                name=flavor_name,
+            )[0]
+            .id
         )
         created_flavor = sql_store["store"].get_flavor(
             flavor_id=blupus_flavor_id
@@ -1431,8 +1435,6 @@ def test_create_stack_component_flavor_succeeds(
         assert created_flavor.name == flavor_name
 
 
-# TODO: remove `xfail` once the method is properly implemented
-@pytest.mark.xfail
 def test_create_stack_component_fails_when_flavor_already_exists(
     sql_store: BaseZenStore,
 ):
@@ -1441,6 +1443,7 @@ def test_create_stack_component_fails_when_flavor_already_exists(
     scinda_flavor = FlavorModel(
         name=flavor_name,
         type=StackComponentType.ORCHESTRATOR,
+        config_schema="default",
         source=".",
         project=sql_store["default_project"].id,
         user=sql_store["active_user"].id,
@@ -1450,6 +1453,7 @@ def test_create_stack_component_fails_when_flavor_already_exists(
     scinda_copy_flavor = FlavorModel(
         name=flavor_name,
         type=StackComponentType.ORCHESTRATOR,
+        config_schema="default",
         source=".",
         project=sql_store["default_project"].id,
         user=sql_store["active_user"].id,
@@ -1458,8 +1462,6 @@ def test_create_stack_component_fails_when_flavor_already_exists(
         sql_store["store"].create_flavor(flavor=scinda_copy_flavor)
 
 
-# TODO: remove `xfail` once the method is properly implemented
-@pytest.mark.xfail
 def test_get_flavor_succeeds(
     sql_store: BaseZenStore,
 ):
@@ -1468,21 +1470,28 @@ def test_get_flavor_succeeds(
     verata_flavor = FlavorModel(
         name=flavor_name,
         type=StackComponentType.ARTIFACT_STORE,
+        config_schema="default",
         source=".",
         project=sql_store["default_project"].id,
         user=sql_store["active_user"].id,
     )
     with does_not_raise():
         sql_store["store"].create_flavor(flavor=verata_flavor)
-    with does_not_raise():
+        verata_flavor_id = (
+            sql_store["store"]
+            .list_flavors(
+                project_name_or_id=sql_store["default_project"].name,
+                component_type=StackComponentType.ARTIFACT_STORE,
+                name=flavor_name,
+            )[0]
+            .id
+        )
         assert (
-            sql_store["store"].get_flavor(flavor_id=verata_flavor.id).name
+            sql_store["store"].get_flavor(flavor_id=verata_flavor_id).name
             == flavor_name
         )
 
 
-# TODO: remove `xfail` once the method is properly implemented
-@pytest.mark.xfail
 def test_get_flavor_fails_when_flavor_does_not_exist(
     sql_store: BaseZenStore,
 ):
@@ -1491,28 +1500,25 @@ def test_get_flavor_fails_when_flavor_does_not_exist(
         sql_store["store"].get_flavor(flavor_id=uuid.uuid4())
 
 
-# TODO: remove `xfail` once the method is properly implemented
-@pytest.mark.xfail
 def test_list_flavors_succeeds(
     sql_store: BaseZenStore,
 ):
     """Tests listing stack component flavors."""
-    flavor_name = "default"
+    flavor_name = "verata"
+    verata_flavor = FlavorModel(
+        name=flavor_name,
+        type=StackComponentType.ARTIFACT_STORE,
+        config_schema="default",
+        source=".",
+        project=sql_store["default_project"].id,
+        user=sql_store["active_user"].id,
+    )
     with does_not_raise():
-        assert (
-            sql_store["store"]
-            .list_flavors(
-                project_name_or_id=sql_store["default_project"].name,
-                component_type=StackComponentType.ORCHESTRATOR,
-                name=flavor_name,
-            )[0]
-            .name
-            == flavor_name
-        )
+        sql_store["store"].create_flavor(flavor=verata_flavor)
+        assert len(sql_store["store"].list_flavors()) == 1
+        assert sql_store["store"].list_flavors()[0].name == flavor_name
 
 
-# TODO: remove `xfail` once the method is properly implemented
-@pytest.mark.xfail
 def test_list_flavors_fails_with_nonexistent_project(
     sql_store: BaseZenStore,
 ):
