@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 import yaml
 
 import zenml
-from zenml.config.constants import DOCKER_CONFIGURATION_KEY
+from zenml.config.constants import DOCKER_SETTINGS_KEY
 from zenml.config.schedule import Schedule
 from zenml.config.settings import Settings, SettingsOrDict
 from zenml.config.step_configurations import (
@@ -30,7 +30,7 @@ from zenml.config.step_configurations import (
 from zenml.config.strict_base_model import StrictBaseModel
 
 if TYPE_CHECKING:
-    from zenml.config import DockerConfiguration
+    from zenml.config import DockerSettings
 
 from zenml.config.settings import Settings, SettingsOrDict
 
@@ -50,18 +50,18 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
     enable_cache: bool
 
     @property
-    def docker_configuration(self) -> "DockerConfiguration":
-        """Docker configuration of this pipeline.
+    def docker_settings(self) -> "DockerSettings":
+        """Docker settings of this pipeline.
 
         Returns:
-            The Docker configuration of this pipeline.
+            The Docker settings of this pipeline.
         """
-        from zenml.config import DockerConfiguration
+        from zenml.config import DockerSettings
 
         model_or_dict: SettingsOrDict = self.settings.get(
-            DOCKER_CONFIGURATION_KEY, {}
+            DOCKER_SETTINGS_KEY, {}
         )
-        return DockerConfiguration.parse_obj(model_or_dict)
+        return DockerSettings.parse_obj(model_or_dict)
 
 
 class PipelineSpec(StrictBaseModel):

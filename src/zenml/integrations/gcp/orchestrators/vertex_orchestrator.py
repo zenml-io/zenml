@@ -63,7 +63,7 @@ from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 if TYPE_CHECKING:
     from zenml.config.pipeline_configurations import PipelineDeployment
     from zenml.stack import Stack
-    from zenml.steps import ResourceConfiguration
+    from zenml.steps import ResourceSettings
 
 logger = get_logger(__name__)
 
@@ -281,23 +281,23 @@ class VertexOrchestrator(
     def _configure_container_resources(
         self,
         container_op: dsl.ContainerOp,
-        resource_configuration: "ResourceConfiguration",
+        resource_settings: "ResourceSettings",
     ) -> None:
         """Adds resource requirements to the container.
 
         Args:
             container_op: The kubeflow container operation to configure.
-            resource_configuration: The resource configuration to use for this
+            resource_settings: The resource settings to use for this
                 container.
         """
         # Set optional CPU, RAM and GPU constraints for the pipeline
-        cpu_limit = resource_configuration.cpu_count or self.cpu_limit
+        cpu_limit = resource_settings.cpu_count or self.cpu_limit
         if cpu_limit is not None:
             container_op = container_op.set_cpu_limit(str(cpu_limit))
 
         memory_limit = (
-            resource_configuration.memory[:-1]
-            if resource_configuration.memory
+            resource_settings.memory[:-1]
+            if resource_settings.memory
             else self.memory_limit
         )
         if memory_limit is not None:
@@ -309,7 +309,7 @@ class VertexOrchestrator(
                 value=self.node_selector_constraint[1],
             )
 
-        gpu_limit = resource_configuration.gpu_count or self.gpu_limit
+        gpu_limit = resource_settings.gpu_count or self.gpu_limit
         if gpu_limit is not None:
             container_op = container_op.set_gpu_limit(gpu_limit)
 
@@ -431,7 +431,7 @@ class VertexOrchestrator(
 
                 self._configure_container_resources(
                     container_op=container_op,
-                    resource_configuration=step.config.resource_configuration,
+                    resource_settings=step.config.resource_settings,
                 )
 
                 step_name_to_container_op[step.config.name] = container_op

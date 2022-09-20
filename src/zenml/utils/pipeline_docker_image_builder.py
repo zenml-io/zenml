@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING, Iterator, List, Optional, Sequence, Tuple
 from pydantic import BaseModel
 
 import zenml
-from zenml.config.docker_configuration import DockerConfiguration
+from zenml.config import DockerSettings
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE,
@@ -175,12 +175,12 @@ class PipelineDockerImageBuilder(BaseModel):
             The docker image name.
         """
         pipeline_name = deployment.pipeline.name
-        docker_configuration = (
-            deployment.pipeline.docker_configuration or DockerConfiguration()
+        docker_settings = (
+            deployment.pipeline.docker_settings or DockerSettings()
         )
 
         target_image_name = (
-            f"{docker_configuration.target_repository}:{pipeline_name}"
+            f"{docker_settings.target_repository}:{pipeline_name}"
         )
         if container_registry:
             target_image_name = f"{container_registry.uri}/{target_image_name}"
@@ -210,8 +210,8 @@ class PipelineDockerImageBuilder(BaseModel):
                 image build.
         """
         pipeline_name = run_config.pipeline.name
-        docker_configuration = (
-            run_config.pipeline.docker_configuration or DockerConfiguration()
+        docker_settings = (
+            run_config.pipeline.docker_settings or DockerSettings()
         )
 
         logger.info(
@@ -219,13 +219,13 @@ class PipelineDockerImageBuilder(BaseModel):
         )
         requires_zenml_build = any(
             [
-                docker_configuration.requirements,
-                docker_configuration.required_integrations,
-                docker_configuration.replicate_local_python_environment,
-                docker_configuration.install_stack_requirements,
-                docker_configuration.environment,
-                docker_configuration.copy_files,
-                docker_configuration.copy_profile,
+                docker_settings.requirements,
+                docker_settings.required_integrations,
+                docker_settings.replicate_local_python_environment,
+                docker_settings.install_stack_requirements,
+                docker_settings.environment,
+                docker_settings.copy_files,
+                docker_settings.copy_profile,
                 entrypoint,
             ]
         )
@@ -233,12 +233,12 @@ class PipelineDockerImageBuilder(BaseModel):
         # Fallback to the value defined on the stack component if the
         # pipeline configuration doesn't have a configured value
         parent_image = (
-            docker_configuration.parent_image
+            docker_settings.parent_image
             or self.docker_parent_image
             or DEFAULT_DOCKER_PARENT_IMAGE
         )
 
-        if docker_configuration.dockerfile:
+        if docker_settings.dockerfile:
             if parent_image != DEFAULT_DOCKER_PARENT_IMAGE:
                 logger.warning(
                     "You've specified both a Dockerfile and a custom parent "
@@ -258,9 +258,9 @@ class PipelineDockerImageBuilder(BaseModel):
 
             docker_utils.build_image(
                 image_name=user_image_name,
-                dockerfile=docker_configuration.dockerfile,
-                build_context_root=docker_configuration.build_context_root,
-                **docker_configuration.build_options,
+                dockerfile=docker_settings.dockerfile,
+                build_context_root=docker_settings.build_context_root,
+                **docker_settings.build_options,
             )
         elif not requires_zenml_build:
             if parent_image == DEFAULT_DOCKER_PARENT_IMAGE:
@@ -277,13 +277,13 @@ class PipelineDockerImageBuilder(BaseModel):
 
         if requires_zenml_build:
             requirement_files = self._gather_requirements_files(
-                docker_configuration=docker_configuration, stack=stack
+                docker_settings=docker_settings, stack=stack
             )
             requirements_file_names = [f[0] for f in requirement_files]
 
             dockerfile = self._generate_zenml_pipeline_dockerfile(
                 parent_image=parent_image,
-                docker_configuration=docker_configuration,
+                docker_settings=docker_settings,
                 requirements_files=requirements_file_names,
                 entrypoint=entrypoint,
             )
@@ -307,8 +307,7 @@ class PipelineDockerImageBuilder(BaseModel):
 
             # Leave the build context empty if we don't want to copy any files
             requires_build_context = (
-                docker_configuration.copy_files
-                or docker_configuration.copy_profile
+                docker_settings.copy_files or docker_settings.copy_profile
             )
             build_context_root = (
                 source_utils.get_source_root_path()
@@ -317,7 +316,7 @@ class PipelineDockerImageBuilder(BaseModel):
             )
             maybe_include_active_profile = (
                 _include_active_profile(build_context_root=build_context_root)  # type: ignore[arg-type]
-                if docker_configuration.copy_profile
+                if docker_settings.copy_profile
                 else contextlib.nullcontext()
             )
             with maybe_include_active_profile:
@@ -325,19 +324,19 @@ class PipelineDockerImageBuilder(BaseModel):
                     image_name=target_image_name,
                     dockerfile=dockerfile,
                     build_context_root=build_context_root,
-                    dockerignore=docker_configuration.dockerignore,
+                    dockerignore=docker_settings.dockerignore,
                     extra_files=extra_files,
                     pull=pull_parent_image,
                 )
 
     @staticmethod
     def _gather_requirements_files(
-        docker_configuration: DockerConfiguration, stack: "Stack"
+        docker_settings: DockerSettings, stack: "Stack"
     ) -> List[Tuple[str, str]]:
         """Gathers and/or generates pip requirements files.
 
         Args:
-            docker_configuration: Docker configuration that specifies which
+            docker_settings: Docker settings that specifies which
                 requirements to install.
             stack: The stack on which the pipeline will run.
 
@@ -356,10 +355,10 @@ class PipelineDockerImageBuilder(BaseModel):
         logger.info("Gathering requirements for Docker build:")
 
         # Generate requirements file for the local environment if configured
-        if docker_configuration.replicate_local_python_environment:
+        if docker_settings.replicate_local_python_environment:
             try:
                 local_requirements = subprocess.check_output(
-                    docker_configuration.replicate_local_python_environment.command,
+                    docker_settings.replicate_local_python_environment.command,
                     shell=True,
                 ).decode()
             except subprocess.CalledProcessError as e:
@@ -373,19 +372,19 @@ class PipelineDockerImageBuilder(BaseModel):
             logger.info("\t- Including python packages from local environment")
 
         # Generate/Read requirements file for user-defined requirements
-        if isinstance(docker_configuration.requirements, str):
+        if isinstance(docker_settings.requirements, str):
             user_requirements = io_utils.read_file_contents_as_string(
-                docker_configuration.requirements
+                docker_settings.requirements
             )
             logger.info(
                 "\t- Including user-defined requirements from file `%s`",
-                os.path.abspath(docker_configuration.requirements),
+                os.path.abspath(docker_settings.requirements),
             )
-        elif isinstance(docker_configuration.requirements, List):
-            user_requirements = "\n".join(docker_configuration.requirements)
+        elif isinstance(docker_settings.requirements, List):
+            user_requirements = "\n".join(docker_settings.requirements)
             logger.info(
                 "\t- Including user-defined requirements: %s",
-                ", ".join(f"`{r}`" for r in docker_configuration.requirements),
+                ", ".join(f"`{r}`" for r in docker_settings.requirements),
             )
         else:
             user_requirements = None
@@ -401,11 +400,11 @@ class PipelineDockerImageBuilder(BaseModel):
                 integration_registry.select_integration_requirements(
                     integration
                 )
-                for integration in docker_configuration.required_integrations
+                for integration in docker_settings.required_integrations
             )
         )
 
-        if docker_configuration.install_stack_requirements:
+        if docker_settings.install_stack_requirements:
             integration_requirements.update(stack.requirements())
 
         if integration_requirements:
@@ -429,7 +428,7 @@ class PipelineDockerImageBuilder(BaseModel):
     @staticmethod
     def _generate_zenml_pipeline_dockerfile(
         parent_image: str,
-        docker_configuration: DockerConfiguration,
+        docker_settings: DockerSettings,
         requirements_files: Sequence[str] = (),
         entrypoint: Optional[str] = None,
     ) -> List[str]:
@@ -437,7 +436,7 @@ class PipelineDockerImageBuilder(BaseModel):
 
         Args:
             parent_image: The image to use as parent for the Dockerfile.
-            docker_configuration: Docker configuration for this image build.
+            docker_settings: Docker settings for this image build.
             requirements_files: Paths of requirements files to install.
             entrypoint: The default entrypoint command that gets executed when
                 running a container of an image created by this Dockerfile.
@@ -447,21 +446,21 @@ class PipelineDockerImageBuilder(BaseModel):
         """
         lines = [f"FROM {parent_image}", f"WORKDIR {DOCKER_IMAGE_WORKDIR}"]
 
-        if docker_configuration.copy_profile:
+        if docker_settings.copy_profile:
             lines.append(
                 f"ENV {ENV_ZENML_CONFIG_PATH}={DOCKER_IMAGE_ZENML_CONFIG_PATH}"
             )
 
-        for key, value in docker_configuration.environment.items():
+        for key, value in docker_settings.environment.items():
             lines.append(f"ENV {key.upper()}={value}")
 
         for file in requirements_files:
             lines.append(f"COPY {file} .")
             lines.append(f"RUN pip install --no-cache-dir -r {file}")
 
-        if docker_configuration.copy_files:
+        if docker_settings.copy_files:
             lines.append("COPY . .")
-        elif docker_configuration.copy_profile:
+        elif docker_settings.copy_profile:
             lines.append(f"COPY {DOCKER_IMAGE_ZENML_CONFIG_DIR} .")
 
         lines.append("RUN chmod -R a+rw .")

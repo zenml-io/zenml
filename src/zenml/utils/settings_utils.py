@@ -15,10 +15,7 @@
 import re
 from typing import TYPE_CHECKING, Dict, Sequence, Type
 
-from zenml.config.constants import (
-    DOCKER_CONFIGURATION_KEY,
-    RESOURCE_CONFIGURATION_KEY,
-)
+from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.enums import StackComponentType
 
 if TYPE_CHECKING:
@@ -86,11 +83,11 @@ def get_universal_settings() -> Dict[str, Type["Settings"]]:
     Returns:
         Dictionary mapping universal settings keys to their type.
     """
-    from zenml.config import DockerConfiguration, ResourceConfiguration
+    from zenml.config import DockerSettings, ResourceSettings
 
     return {
-        DOCKER_CONFIGURATION_KEY: DockerConfiguration,
-        RESOURCE_CONFIGURATION_KEY: ResourceConfiguration,
+        DOCKER_SETTINGS_KEY: DockerSettings,
+        RESOURCE_SETTINGS_KEY: ResourceSettings,
     }
 
 

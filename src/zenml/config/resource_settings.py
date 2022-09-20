@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Resource Configuration class used to specify resources for a step."""
+"""Resource settings class used to specify resources for a step."""
 
 from enum import Enum
 from typing import Optional, Union
@@ -59,8 +59,8 @@ class ByteUnit(Enum):
 MEMORY_REGEX = r"^[0-9]+(" + "|".join(unit.value for unit in ByteUnit) + r")$"
 
 
-class ResourceConfiguration(Settings):
-    """Class for configuring hardware resources.
+class ResourceSettings(Settings):
+    """Hardware resource settings.
 
     Attributes:
         cpu_count: The amount of CPU cores that should be configured.

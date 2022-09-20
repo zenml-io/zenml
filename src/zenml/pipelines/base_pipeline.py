@@ -37,7 +37,7 @@ from zenml.config.config_keys import (
     PipelineConfigurationKeys,
     StepConfigurationKeys,
 )
-from zenml.config.constants import DOCKER_CONFIGURATION_KEY
+from zenml.config.constants import DOCKER_SETTINGS_KEY
 from zenml.config.pipeline_configurations import (
     PipelineConfiguration,
     PipelineConfigurationUpdate,
@@ -236,11 +236,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
         """
         settings = options.pop(PARAM_SETTINGS, None) or {}
 
-        docker_config = settings.get(DOCKER_CONFIGURATION_KEY, None)
+        docker_config = settings.get(DOCKER_SETTINGS_KEY, None)
         deprecated_docker_config = options.pop(PARAM_DOCKER_CONFIGURATION, None)
         if deprecated_docker_config and docker_config:
             raise RuntimeError(
-                "Docker configuration was specified twice using the "
+                "Docker settings were specified twice using the "
                 f"`{PARAM_DOCKER_CONFIGURATION}` and `{PARAM_SETTINGS}` "
                 "parameters of the @pipeline decorator. Remove the value "
                 f"specified using the `{PARAM_DOCKER_CONFIGURATION}` parameter "
@@ -248,15 +248,15 @@ class BasePipeline(metaclass=BasePipelineMeta):
             )
         elif deprecated_docker_config:
             logger.warning(
-                "Specifying the docker configuration using the `%s` parameter "
+                "Specifying the docker settings using the `%s` parameter "
                 "on the @pipeline decorator is deprecated. Use the `%s` "
                 "parameter instead: "
-                "`@pipeline(%s={'docker': DockerConfiguration(...)})`",
+                "`@pipeline(%s={'docker': DockerSettings(...)})`",
                 PARAM_DOCKER_CONFIGURATION,
                 PARAM_SETTINGS,
                 PARAM_SETTINGS,
             )
-            settings[DOCKER_CONFIGURATION_KEY] = deprecated_docker_config
+            settings[DOCKER_SETTINGS_KEY] = deprecated_docker_config
 
         extra = options.pop(PARAM_EXTRA_OPTIONS, None)
         self.configure(settings=settings, extra=extra)

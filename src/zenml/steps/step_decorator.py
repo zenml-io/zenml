@@ -46,7 +46,7 @@ if TYPE_CHECKING:
     from zenml.artifacts.base_artifact import BaseArtifact
     from zenml.config.settings import SettingsOrDict
     from zenml.materializers.base_materializer import BaseMaterializer
-    from zenml.steps import ResourceConfiguration
+    from zenml.steps import ResourceSettings
 
     ArtifactClassOrStr = Union[str, Type["BaseArtifact"]]
     MaterializerClassOrStr = Union[str, Type["BaseMaterializer"]]
@@ -72,7 +72,7 @@ def step(
     extra: Optional[Dict[str, Any]] = None,
     custom_step_operator: Optional[str] = None,
     output_types: Optional[Dict[str, Type["BaseArtifact"]]] = None,
-    resource_configuration: Optional["ResourceConfiguration"] = None,
+    resource_configuration: Optional["ResourceSettings"] = None,
 ) -> Callable[[F], Type[BaseStep]]:
     ...
 
@@ -90,7 +90,7 @@ def step(
     extra: Optional[Dict[str, Any]] = None,
     custom_step_operator: Optional[str] = None,
     output_types: Optional[Dict[str, Type["BaseArtifact"]]] = None,
-    resource_configuration: Optional["ResourceConfiguration"] = None,
+    resource_configuration: Optional["ResourceSettings"] = None,
 ) -> Union[Type[BaseStep], Callable[[F], Type[BaseStep]]]:
     """Outer decorator function for the creation of a ZenML step.
 
@@ -115,7 +115,7 @@ def step(
             artifact types.
         custom_step_operator: Optional name of a
             `zenml.step_operators.BaseStepOperator` to use for this step.
-        resource_configuration: Optional resource configuration for this step.
+        resource_configuration: Optional resource settings for this step.
 
     Returns:
         the inner decorator which creates the step class based on the

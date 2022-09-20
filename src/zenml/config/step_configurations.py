@@ -14,12 +14,12 @@
 """Pipeline configuration classes."""
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from zenml.config.constants import RESOURCE_CONFIGURATION_KEY
+from zenml.config.constants import RESOURCE_SETTINGS_KEY
 from zenml.config.settings import Settings, SettingsOrDict
 from zenml.config.strict_base_model import StrictBaseModel
 
 if TYPE_CHECKING:
-    from zenml.config import ResourceConfiguration
+    from zenml.config import ResourceSettings
 
 
 class PartialArtifactConfiguration(StrictBaseModel):
@@ -65,18 +65,18 @@ class StepConfiguration(PartialStepConfiguration):
     outputs: Dict[str, ArtifactConfiguration] = {}
 
     @property
-    def resource_configuration(self) -> "ResourceConfiguration":
-        """Docker configuration of this step configuration.
+    def resource_settings(self) -> "ResourceSettings":
+        """Resource settings of this step configuration.
 
         Returns:
-            The resource configuration of this step configuration.
+            The resource settings of this step configuration.
         """
-        from zenml.config import ResourceConfiguration
+        from zenml.config import ResourceSettings
 
         model_or_dict: SettingsOrDict = self.settings.get(
-            RESOURCE_CONFIGURATION_KEY, {}
+            RESOURCE_SETTINGS_KEY, {}
         )
-        return ResourceConfiguration.parse_obj(model_or_dict)
+        return ResourceSettings.parse_obj(model_or_dict)
 
 
 class StepSpec(StrictBaseModel):

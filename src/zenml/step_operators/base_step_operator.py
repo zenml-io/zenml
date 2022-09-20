@@ -37,11 +37,8 @@ class BaseStepOperator(StackComponent, ABC):
     ) -> None:
         """Abstract method to execute a step.
 
-        Concrete step operator subclasses must implement the following
-        functionality in this method:
-        - Prepare the execution environment by copying user files and installing
-          requirements as specified in the `docker_configuration`.
-        - Launch a **synchronous** job that executes the `entrypoint_command`
+        Subclasses must implement this method and launch a **synchronous**
+        job that executes the `entrypoint_command`.
 
         Args:
             step_run_info: Information about the step run.

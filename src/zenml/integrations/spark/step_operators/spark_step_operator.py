@@ -29,8 +29,8 @@ from zenml.step_operators import BaseStepOperator
 
 logger = get_logger(__name__)
 if TYPE_CHECKING:
+    from zenml.config import ResourceSettings
     from zenml.config.pipeline_configurations import StepRunInfo
-    from zenml.config.resource_configuration import ResourceConfiguration
     from zenml.config.step_configurations import StepConfiguration
 
 
@@ -109,34 +109,34 @@ class SparkStepOperator(BaseStepOperator):
     def _resource_configuration(
         self,
         spark_config: SparkConf,
-        resource_configuration: "ResourceConfiguration",
+        resource_settings: "ResourceSettings",
     ) -> None:
-        """Configures Spark to handle the resource configuration.
+        """Configures Spark to handle the resource settings.
 
-        This should serve as the layer between our ResourceConfigurations
+        This should serve as the layer between our ResourceSettings
         and Spark's own ways of configuring its resources.
 
         Note: This is still work-in-progress. In the future, we would like to
         enable much more than executor cores and memory with a dedicated
-        ResourceConfiguration object.
+        ResourceSettings object.
 
         Args:
             spark_config: a SparkConf object which collects all the
                 configuration parameters
-            resource_configuration: the resource configuration for this step
+            resource_settings: the resource settings for this step
         """
-        if resource_configuration.cpu_count:
+        if resource_settings.cpu_count:
             spark_config.set(
                 "spark.executor.cores",
-                str(int(resource_configuration.cpu_count)),
+                str(int(resource_settings.cpu_count)),
             )
 
-        if resource_configuration.memory:
+        if resource_settings.memory:
             # TODO[LOW]: Fix the conversion of the memory unit with a new
             #   type of resource configuration.
             spark_config.set(
                 "spark.executor.memory",
-                resource_configuration.memory.lower().strip("b"),
+                resource_settings.memory.lower().strip("b"),
             )
 
     def _backend_configuration(
@@ -306,7 +306,7 @@ class SparkStepOperator(BaseStepOperator):
         # Add the resource configuration such as cores, memory.
         self._resource_configuration(
             spark_config=conf,
-            resource_configuration=step_run_info.config.resource_configuration,
+            resource_settings=step_run_info.config.resource_settings,
         )
 
         # Add the backend configuration such as namespace, docker images names.

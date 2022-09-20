@@ -36,7 +36,7 @@ from zenml.pipelines.base_pipeline import (
 )
 
 if TYPE_CHECKING:
-    from zenml.config.docker_configuration import DockerConfiguration
+    from zenml.config import DockerSettings
     from zenml.config.settings import SettingsOrDict
 
 F = TypeVar("F", bound=Callable[..., None])
@@ -54,7 +54,7 @@ def pipeline(
     enable_cache: bool = True,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
-    docker_configuration: Optional["DockerConfiguration"] = None,
+    docker_configuration: Optional["DockerSettings"] = None,
 ) -> Callable[[F], Type[BasePipeline]]:
     ...
 
@@ -66,7 +66,7 @@ def pipeline(
     enable_cache: bool = True,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
-    docker_configuration: Optional["DockerConfiguration"] = None,
+    docker_configuration: Optional["DockerSettings"] = None,
 ) -> Union[Type[BasePipeline], Callable[[F], Type[BasePipeline]]]:
     """Outer decorator function for the creation of a ZenML pipeline.
 

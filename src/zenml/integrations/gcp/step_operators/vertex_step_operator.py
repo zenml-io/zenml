@@ -175,8 +175,8 @@ class VertexStepOperator(
             RuntimeError: If the run fails.
             ConnectionError: If the run fails due to a connection error.
         """
-        resource_config = step_run_info.config.resource_configuration
-        if resource_config.cpu_count or resource_config.memory:
+        resource_settings = step_run_info.config.resource_settings
+        if resource_settings.cpu_count or resource_settings.memory:
             logger.warning(
                 "Specifying cpus or memory is not supported for "
                 "the Vertex step operator. If you want to run this step "
@@ -211,7 +211,9 @@ class VertexStepOperator(
         client = aiplatform.gapic.JobServiceClient(
             credentials=credentials, client_options=client_options
         )
-        accelerator_count = resource_config.gpu_count or self.accelerator_count
+        accelerator_count = (
+            resource_settings.gpu_count or self.accelerator_count
+        )
         accelerator_count = self.accelerator_count
         custom_job = {
             "display_name": step_run_info.run_name,

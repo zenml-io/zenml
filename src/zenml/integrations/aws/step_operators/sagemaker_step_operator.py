@@ -120,7 +120,7 @@ class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
             step_run_info: Information about the step run.
             entrypoint_command: Command that executes the step.
         """
-        if not step_run_info.config.resource_configuration.empty:
+        if not step_run_info.config.resource_settings.empty:
             logger.warning(
                 "Specifying custom step resources is not supported for "
                 "the SageMaker step operator. If you want to run this step "

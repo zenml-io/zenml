@@ -38,7 +38,7 @@ from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 if TYPE_CHECKING:
     from zenml.config.pipeline_configurations import PipelineDeployment
     from zenml.stack import Stack
-    from zenml.steps import ResourceConfiguration
+    from zenml.steps import ResourceSettings
 
 
 logger = get_logger(__name__)
@@ -174,27 +174,27 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
     @staticmethod
     def _configure_container_resources(
         container_op: dsl.ContainerOp,
-        resource_configuration: "ResourceConfiguration",
+        resource_settings: "ResourceSettings",
     ) -> None:
         """Adds resource requirements to the container.
 
         Args:
             container_op: The container operation to configure.
-            resource_configuration: The resource configuration to use for this
+            resource_settings: The resource settings to use for this
                 container.
         """
-        if resource_configuration.cpu_count is not None:
+        if resource_settings.cpu_count is not None:
             container_op = container_op.set_cpu_limit(
-                str(resource_configuration.cpu_count)
+                str(resource_settings.cpu_count)
             )
 
-        if resource_configuration.gpu_count is not None:
+        if resource_settings.gpu_count is not None:
             container_op = container_op.set_gpu_limit(
-                resource_configuration.gpu_count
+                resource_settings.gpu_count
             )
 
-        if resource_configuration.memory is not None:
-            memory_limit = resource_configuration.memory[:-1]
+        if resource_settings.memory is not None:
+            memory_limit = resource_settings.memory[:-1]
             container_op = container_op.set_memory_limit(memory_limit)
 
     def prepare_or_run_pipeline(
@@ -257,7 +257,7 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 if self.requires_resources_in_orchestration_environment(step):
                     self._configure_container_resources(
                         container_op=container_op,
-                        resource_configuration=step.config.resource_configuration,
+                        resource_settings=step.config.resource_settings,
                     )
 
                 # Find the upstream container ops of the current step and

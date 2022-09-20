@@ -43,7 +43,7 @@ from tfx.types.channel import Channel
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.artifacts.type_registry import type_registry
-from zenml.config.constants import RESOURCE_CONFIGURATION_KEY
+from zenml.config.constants import RESOURCE_SETTINGS_KEY
 from zenml.config.step_configurations import (
     ArtifactConfiguration,
     PartialArtifactConfiguration,
@@ -448,13 +448,13 @@ class BaseStep(metaclass=BaseStepMeta):
 
         settings = options.pop(PARAM_SETTINGS, None) or {}
 
-        resource_config = settings.get(RESOURCE_CONFIGURATION_KEY, None)
+        resource_config = settings.get(RESOURCE_SETTINGS_KEY, None)
         deprecated_resource_config = options.pop(
             PARAM_RESOURCE_CONFIGURATION, None
         )
         if deprecated_resource_config and resource_config:
             raise RuntimeError(
-                "Resource configuration was specified twice using the "
+                "Resource settings were specified twice using the "
                 f"`{PARAM_RESOURCE_CONFIGURATION}` and "
                 f"`{PARAM_SETTINGS}` parameters of the @step decorator. "
                 "Remove the value specified using the "
@@ -463,15 +463,15 @@ class BaseStep(metaclass=BaseStepMeta):
             )
         elif deprecated_resource_config:
             logger.warning(
-                "Specifying the resource configuration using the `%s` "
+                "Specifying the resource settings using the `%s` "
                 "parameter on the @step decorator is deprecated. Use the `%s` "
                 "parameter instead: "
-                "`@step(%s={'resources': ResourceConfiguration(...)})`",
+                "`@step(%s={'resources': ResourceSettings(...)})`",
                 PARAM_RESOURCE_CONFIGURATION,
                 PARAM_SETTINGS,
                 PARAM_SETTINGS,
             )
-            settings[RESOURCE_CONFIGURATION_KEY] = deprecated_resource_config
+            settings[RESOURCE_SETTINGS_KEY] = deprecated_resource_config
 
         output_materializers = options.pop(PARAM_OUTPUT_MATERIALIZERS, None)
 

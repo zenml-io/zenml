@@ -318,7 +318,7 @@ class BaseOrchestrator(StackComponent, ABC):
         if step.config.step_operator:
             return False
 
-        return not step.config.resource_configuration.empty
+        return not step.config.resource_settings.empty
 
     def _prepare_run(self, pipeline_run: "PipelineDeployment") -> None:
         """Prepares a run.

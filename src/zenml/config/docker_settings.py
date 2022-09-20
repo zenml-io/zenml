@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Docker configuration."""
+"""Docker settings."""
 
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
@@ -46,17 +46,17 @@ class PythonEnvironmentExportMethod(Enum):
         }[self]
 
 
-class DockerConfiguration(Settings):
-    """Configuration for building Docker images to run ZenML pipelines.
+class DockerSettings(Settings):
+    """Settings for building Docker images to run ZenML pipelines.
 
     Build process:
     --------------
-    * No `dockerfile` specified: If any of the configuration options regarding
+    * No `dockerfile` specified: If any of the options regarding
     requirements, environment variables or copying files require us to build an
     image, ZenML will build this image. Otherwise the `parent_image` will be
     used to run the pipeline.
     * `dockerfile` specified: ZenML will first build an image based on the
-    specified Dockerfile. If any of the configuration options regarding
+    specified Dockerfile. If any of the options regarding
     requirements, environment variables or copying files require an additional
     image built on top of that, ZenML will build a second image. If not, the
     image build from the specified Dockerfile will be used to run the pipeline.
@@ -81,10 +81,10 @@ class DockerConfiguration(Settings):
             * If this is a non-local image, the environment which is running
             the pipeline and building the Docker image needs to be able to pull
             this image.
-            * If a custom `dockerfile` is specified for this configuration
+            * If a custom `dockerfile` is specified for this settings
             object, this parent image will be ignored.
         dockerfile: Path to a custom Dockerfile that should be built. Depending
-            on the other values you specify in this configuration, the resulting
+            on the other values you specify in this object, the resulting
             image will be used directly to run your pipeline or ZenML will use
             it as a parent image to build on top of. See the general docstring
             of this class for more information.

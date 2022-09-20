@@ -16,7 +16,7 @@ from contextlib import ExitStack as does_not_raise
 
 import pytest
 
-from zenml.config.docker_configuration import DockerConfiguration
+from zenml.config import DockerSettings
 from zenml.exceptions import (
     PipelineConfigurationError,
     PipelineInterfaceError,
@@ -280,20 +280,20 @@ def test_calling_a_pipeline_twice_raises_no_exception(
         pipeline_instance.run()
 
 
-def test_pipeline_stores_docker_config():
-    """Tests that the pipeline stores the docker configuration."""
-    docker_config = DockerConfiguration(
+def test_pipeline_stores_docker_settings():
+    """Tests that the pipeline stores the docker settings."""
+    docker_settings = DockerSettings(
         parent_image="parent_image", environment={"FAVORITE_CAT": "aria"}
     )
 
-    @pipeline(docker_configuration=docker_config)
+    @pipeline(docker_configuration=docker_settings)
     def my_pipeline():
         pass
 
-    stored_docker_config = DockerConfiguration.parse_obj(
+    stored_docker_settings = DockerSettings.parse_obj(
         my_pipeline().configuration.settings["docker"]
     )
-    assert stored_docker_config == docker_config
+    assert stored_docker_settings == docker_settings
 
 
 def test_pipeline_run_fails_when_required_step_operator_is_missing(
