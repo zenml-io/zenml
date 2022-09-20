@@ -15,12 +15,11 @@ from contextlib import ExitStack as does_not_raise
 
 from sklearn.base import ClassifierMixin
 from sklearn.svm import SVC
+from unit.test_general import _test_materializer
 
 from zenml.integrations.sklearn.materializers.sklearn_materializer import (
     SklearnMaterializer,
 )
-
-from ....test_general import _test_materializer
 
 
 def test_sklearn_materializer(clean_repo):

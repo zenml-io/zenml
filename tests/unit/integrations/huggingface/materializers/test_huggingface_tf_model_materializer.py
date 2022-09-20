@@ -14,12 +14,11 @@
 from contextlib import ExitStack as does_not_raise
 
 from transformers import TFAutoModelForSequenceClassification, TFPreTrainedModel
+from unit.test_general import _test_materializer
 
 from zenml.integrations.huggingface.materializers.huggingface_tf_model_materializer import (
     HFTFModelMaterializer,
 )
-
-from ....test_general import _test_materializer
 
 
 def test_huggingface_tf_pretrained_model_materializer(clean_repo):

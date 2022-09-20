@@ -14,12 +14,11 @@
 from contextlib import ExitStack as does_not_raise
 
 from great_expectations.core import ExpectationSuite
+from unit.test_general import _test_materializer
 
 from zenml.integrations.great_expectations.materializers.ge_materializer import (
     GreatExpectationsMaterializer,
 )
-
-from ....test_general import _test_materializer
 
 
 def test_great_expectations_materializer(clean_repo):

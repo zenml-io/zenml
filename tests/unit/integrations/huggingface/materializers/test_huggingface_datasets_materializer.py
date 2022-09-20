@@ -15,12 +15,11 @@ from contextlib import ExitStack as does_not_raise
 
 import pandas as pd
 from datasets import Dataset
+from unit.test_general import _test_materializer
 
 from zenml.integrations.huggingface.materializers.huggingface_datasets_materializer import (
     HFDatasetMaterializer,
 )
-
-from ....test_general import _test_materializer
 
 
 def test_huggingface_datasets_materializer(clean_repo):

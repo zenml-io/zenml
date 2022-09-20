@@ -15,12 +15,11 @@ from contextlib import ExitStack as does_not_raise
 
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import Dataset
+from unit.test_general import _test_materializer
 
 from zenml.integrations.pytorch.materializers.pytorch_dataloader_materializer import (
     PyTorchDataLoaderMaterializer,
 )
-
-from ....test_general import _test_materializer
 
 
 def test_pytorch_module_materializer(clean_repo):

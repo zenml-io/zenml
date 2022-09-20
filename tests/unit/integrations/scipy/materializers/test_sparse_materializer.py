@@ -14,12 +14,11 @@
 from contextlib import ExitStack as does_not_raise
 
 from scipy.sparse import coo_matrix, spmatrix
+from unit.test_general import _test_materializer
 
 from zenml.integrations.scipy.materializers.sparse_materializer import (
     SparseMaterializer,
 )
-
-from ....test_general import _test_materializer
 
 
 def test_scipy_sparse_matrix_materializer(clean_repo):

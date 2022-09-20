@@ -14,12 +14,11 @@
 from contextlib import ExitStack as does_not_raise
 
 from transformers import PreTrainedModel, RobertaConfig, RobertaModel
+from unit.test_general import _test_materializer
 
 from zenml.integrations.huggingface.materializers.huggingface_pt_model_materializer import (
     HFPTModelMaterializer,
 )
-
-from ....test_general import _test_materializer
 
 
 def test_huggingface_pretrained_model_materializer(clean_repo):

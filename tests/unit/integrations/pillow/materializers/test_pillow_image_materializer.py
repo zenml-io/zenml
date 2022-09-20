@@ -14,12 +14,11 @@
 from contextlib import ExitStack as does_not_raise
 
 from PIL import Image
+from unit.test_general import _test_materializer
 
 from zenml.integrations.pillow.materializers.pillow_image_materializer import (
     PillowImageMaterializer,
 )
-
-from ....test_general import _test_materializer
 
 
 def test_materializer_works_for_pillow_image_objects(clean_repo):

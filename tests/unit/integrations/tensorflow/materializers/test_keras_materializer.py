@@ -14,12 +14,11 @@
 from contextlib import ExitStack as does_not_raise
 
 from tensorflow import keras
+from unit.test_general import _test_materializer
 
 from zenml.integrations.tensorflow.materializers.keras_materializer import (
     KerasMaterializer,
 )
-
-from ....test_general import _test_materializer
 
 
 def test_tensorflow_keras_materializer(clean_repo):

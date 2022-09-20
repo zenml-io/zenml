@@ -16,12 +16,11 @@ from contextlib import ExitStack as does_not_raise
 import numpy as np
 import pandas as pd
 from neuralprophet import NeuralProphet
+from unit.test_general import _test_materializer
 
 from zenml.integrations.neural_prophet.materializers.neural_prophet_materializer import (
     NeuralProphetMaterializer,
 )
-
-from ....test_general import _test_materializer
 
 
 def test_neural_prophet_booster_materializer(clean_repo):

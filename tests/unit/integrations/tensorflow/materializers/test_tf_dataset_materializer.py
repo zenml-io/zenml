@@ -14,12 +14,11 @@
 from contextlib import ExitStack as does_not_raise
 
 import tensorflow as tf
+from unit.test_general import _test_materializer
 
 from zenml.integrations.tensorflow.materializers.tf_dataset_materializer import (
     TensorflowDatasetMaterializer,
 )
-
-from ....test_general import _test_materializer
 
 
 def test_tensorflow_tf_dataset_materializer(clean_repo):

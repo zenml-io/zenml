@@ -16,12 +16,11 @@ from contextlib import ExitStack as does_not_raise
 
 from evidently.model_profile import Profile
 from evidently.model_profile.sections import DataDriftProfileSection
+from unit.test_general import _test_materializer
 
 from zenml.integrations.evidently.materializers.evidently_profile_materializer import (
     EvidentlyProfileMaterializer,
 )
-
-from ....test_general import _test_materializer
 
 
 def test_evidently_profile_materializer(clean_repo):

@@ -14,12 +14,11 @@
 from contextlib import ExitStack as does_not_raise
 
 from torch.nn import Linear, Module
+from unit.test_general import _test_materializer
 
 from zenml.integrations.pytorch.materializers.pytorch_module_materializer import (
     PyTorchModuleMaterializer,
 )
-
-from ....test_general import _test_materializer
 
 
 def test_pytorch_module_materializer(clean_repo):

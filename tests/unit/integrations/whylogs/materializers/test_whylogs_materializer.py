@@ -14,13 +14,12 @@
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
 
+from unit.test_general import _test_materializer
 from whylogs.core import DatasetProfileView
 
 from zenml.integrations.whylogs.materializers.whylogs_materializer import (
     WhylogsMaterializer,
 )
-
-from ....test_general import _test_materializer
 
 
 def test_whylogs_materializer(clean_repo):
