@@ -18,6 +18,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Mapping,
     Optional,
     Type,
     TypeVar,
@@ -29,14 +30,11 @@ from zenml.steps import BaseStep
 from zenml.steps.utils import (
     INSTANCE_CONFIGURATION,
     PARAM_CREATED_BY_FUNCTIONAL_API,
-    PARAM_CUSTOM_STEP_OPERATOR,
     PARAM_ENABLE_CACHE,
     PARAM_EXPERIMENT_TRACKER,
     PARAM_EXTRA_OPTIONS,
     PARAM_OUTPUT_ARTIFACTS,
     PARAM_OUTPUT_MATERIALIZERS,
-    PARAM_OUTPUT_TYPES,
-    PARAM_RESOURCE_CONFIGURATION,
     PARAM_SETTINGS,
     PARAM_STEP_OPERATOR,
     STEP_INNER_FUNC_NAME,
@@ -46,10 +44,15 @@ if TYPE_CHECKING:
     from zenml.artifacts.base_artifact import BaseArtifact
     from zenml.config.settings import SettingsOrDict
     from zenml.materializers.base_materializer import BaseMaterializer
-    from zenml.steps import ResourceSettings
 
     ArtifactClassOrStr = Union[str, Type["BaseArtifact"]]
     MaterializerClassOrStr = Union[str, Type["BaseMaterializer"]]
+    OutputArtifactsSpecification = Union[
+        "ArtifactClassOrStr", Mapping[str, "ArtifactClassOrStr"]
+    ]
+    OutputMaterializersSpecification = Union[
+        "MaterializerClassOrStr", Mapping[str, "MaterializerClassOrStr"]
+    ]
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -66,13 +69,10 @@ def step(
     enable_cache: bool = True,
     experiment_tracker: Optional[str] = None,
     step_operator: Optional[str] = None,
-    output_artifacts: Optional[Dict[str, "ArtifactClassOrStr"]] = None,
-    output_materializers: Optional[Dict[str, "MaterializerClassOrStr"]] = None,
+    output_artifacts: Optional["OutputArtifactsSpecification"] = None,
+    output_materializers: Optional["OutputMaterializersSpecification"] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
-    custom_step_operator: Optional[str] = None,
-    output_types: Optional[Dict[str, Type["BaseArtifact"]]] = None,
-    resource_configuration: Optional["ResourceSettings"] = None,
 ) -> Callable[[F], Type[BaseStep]]:
     ...
 
@@ -84,13 +84,10 @@ def step(
     enable_cache: Optional[bool] = None,
     experiment_tracker: Optional[str] = None,
     step_operator: Optional[str] = None,
-    output_artifacts: Optional[Dict[str, "ArtifactClassOrStr"]] = None,
-    output_materializers: Optional[Dict[str, "MaterializerClassOrStr"]] = None,
+    output_artifacts: Optional["OutputArtifactsSpecification"] = None,
+    output_materializers: Optional["OutputMaterializersSpecification"] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
-    custom_step_operator: Optional[str] = None,
-    output_types: Optional[Dict[str, Type["BaseArtifact"]]] = None,
-    resource_configuration: Optional["ResourceSettings"] = None,
 ) -> Union[Type[BaseStep], Callable[[F], Type[BaseStep]]]:
     """Outer decorator function for the creation of a ZenML step.
 
@@ -107,15 +104,16 @@ def step(
             `zenml.steps.step_context.StepContext` for more information).
         experiment_tracker: The experiment tracker to use for this step.
         step_operator: The step operator to use for this step.
-        output_materializers: Output materializers for this step.
-        output_artifacts: Output artifacts for this step.
-        settings: settings for this step.
+        output_materializers: Output materializers for this step. If
+            given as a dict, the keys must be a subset of the output names
+            of this step. If a single value (type or string) is given, the
+            materializer will be used for all outputs.
+        output_artifacts: Output artifacts for this step. If
+            given as a dict, the keys must be a subset of the output names
+            of this step. If a single value (type or string) is given, the
+            artifact class will be used for all outputs.
+        settings: Settings for this step.
         extra: Extra configurations for this step.
-        output_types: A dictionary which sets different outputs to non-default
-            artifact types.
-        custom_step_operator: Optional name of a
-            `zenml.step_operators.BaseStepOperator` to use for this step.
-        resource_configuration: Optional resource settings for this step.
 
     Returns:
         the inner decorator which creates the step class based on the
@@ -148,9 +146,6 @@ def step(
                     PARAM_OUTPUT_MATERIALIZERS: output_materializers,
                     PARAM_SETTINGS: settings,
                     PARAM_EXTRA_OPTIONS: extra,
-                    PARAM_CUSTOM_STEP_OPERATOR: custom_step_operator,
-                    PARAM_OUTPUT_TYPES: output_types,
-                    PARAM_RESOURCE_CONFIGURATION: resource_configuration,
                 },
                 "__module__": func.__module__,
                 "__doc__": func.__doc__,

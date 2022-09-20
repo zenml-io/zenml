@@ -43,7 +43,6 @@ from tfx.types.channel import Channel
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.artifacts.type_registry import type_registry
-from zenml.config.constants import RESOURCE_SETTINGS_KEY
 from zenml.config.step_configurations import (
     ArtifactConfiguration,
     PartialArtifactConfiguration,
@@ -62,15 +61,12 @@ from zenml.steps.utils import (
     INSTANCE_CONFIGURATION,
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
     PARAM_CREATED_BY_FUNCTIONAL_API,
-    PARAM_CUSTOM_STEP_OPERATOR,
     PARAM_ENABLE_CACHE,
     PARAM_EXPERIMENT_TRACKER,
     PARAM_EXTRA_OPTIONS,
     PARAM_OUTPUT_ARTIFACTS,
     PARAM_OUTPUT_MATERIALIZERS,
-    PARAM_OUTPUT_TYPES,
     PARAM_PIPELINE_PARAMETER_NAME,
-    PARAM_RESOURCE_CONFIGURATION,
     PARAM_SETTINGS,
     PARAM_STEP_OPERATOR,
     create_component_class,
@@ -87,6 +83,12 @@ if TYPE_CHECKING:
     ParametersOrDict = Union["Parameters", Dict[str, Any]]
     ArtifactClassOrStr = Union[str, Type["BaseArtifact"]]
     MaterializerClassOrStr = Union[str, Type["BaseMaterializer"]]
+    OutputArtifactsSpecification = Union[
+        "ArtifactClassOrStr", Mapping[str, "ArtifactClassOrStr"]
+    ]
+    OutputMaterializersSpecification = Union[
+        "MaterializerClassOrStr", Mapping[str, "MaterializerClassOrStr"]
+    ]
 
 
 class BaseStepMeta(type):
@@ -420,83 +422,11 @@ class BaseStep(metaclass=BaseStepMeta):
 
         Args:
             options: Class configurations.
-
-        Raises:
-            RuntimeError: If multiple values are provided for the step operator,
-                resource configuration or output artifacts of the step.
         """
         step_operator = options.pop(PARAM_STEP_OPERATOR, None)
-        deprecated_step_operator = options.pop(PARAM_CUSTOM_STEP_OPERATOR, None)
-        if deprecated_step_operator and step_operator:
-            raise RuntimeError(
-                "Step operator was specified twice using the "
-                f"`{PARAM_CUSTOM_STEP_OPERATOR}` and `{PARAM_STEP_OPERATOR}` "
-                "parameters of the @step decorator. Remove the value specified "
-                f"using the `{PARAM_CUSTOM_STEP_OPERATOR}` parameter to solve "
-                "this issue."
-            )
-        elif deprecated_step_operator:
-            logger.warning(
-                "Specifying the step operator using the `%s` parameter on the "
-                "@step decorator is deprecated. Use the `%s` parameter "
-                "instead: `@step(%s='<STEP_OPERATOR_NAME>')`",
-                PARAM_CUSTOM_STEP_OPERATOR,
-                PARAM_STEP_OPERATOR,
-                PARAM_STEP_OPERATOR,
-            )
-            step_operator = deprecated_step_operator
-
         settings = options.pop(PARAM_SETTINGS, None) or {}
-
-        resource_config = settings.get(RESOURCE_SETTINGS_KEY, None)
-        deprecated_resource_config = options.pop(
-            PARAM_RESOURCE_CONFIGURATION, None
-        )
-        if deprecated_resource_config and resource_config:
-            raise RuntimeError(
-                "Resource settings were specified twice using the "
-                f"`{PARAM_RESOURCE_CONFIGURATION}` and "
-                f"`{PARAM_SETTINGS}` parameters of the @step decorator. "
-                "Remove the value specified using the "
-                f"`{PARAM_RESOURCE_CONFIGURATION}` parameter to solve this "
-                "issue."
-            )
-        elif deprecated_resource_config:
-            logger.warning(
-                "Specifying the resource settings using the `%s` "
-                "parameter on the @step decorator is deprecated. Use the `%s` "
-                "parameter instead: "
-                "`@step(%s={'resources': ResourceSettings(...)})`",
-                PARAM_RESOURCE_CONFIGURATION,
-                PARAM_SETTINGS,
-                PARAM_SETTINGS,
-            )
-            settings[RESOURCE_SETTINGS_KEY] = deprecated_resource_config
-
         output_materializers = options.pop(PARAM_OUTPUT_MATERIALIZERS, None)
-
         output_artifacts = options.pop(PARAM_OUTPUT_ARTIFACTS, None)
-        deprecated_output_artifacts = options.pop(PARAM_OUTPUT_TYPES, None)
-
-        if deprecated_output_artifacts and output_artifacts:
-            raise RuntimeError(
-                "Output artifacts were specified twice using the "
-                f"`{PARAM_OUTPUT_TYPES}` and `{PARAM_OUTPUT_ARTIFACTS}` "
-                "parameters of the @step decorator. Remove the value specified "
-                f"using the `{PARAM_OUTPUT_TYPES}` parameter to solve this "
-                "issue."
-            )
-        elif deprecated_output_artifacts:
-            logger.warning(
-                "Specifying the output artifacts using the `%s` parameter on "
-                "the @step decorator is deprecated. Use the `%s` parameter "
-                "instead: `@step(%s={...})`",
-                PARAM_OUTPUT_TYPES,
-                PARAM_OUTPUT_ARTIFACTS,
-                PARAM_OUTPUT_ARTIFACTS,
-            )
-            output_artifacts = deprecated_output_artifacts
-
         extra = options.pop(PARAM_EXTRA_OPTIONS, None)
         experiment_tracker = options.pop(PARAM_EXPERIMENT_TRACKER, None)
 
@@ -796,11 +726,9 @@ class BaseStep(metaclass=BaseStepMeta):
         step_operator: Optional[str] = None,
         parameters: Optional["ParametersOrDict"] = None,
         output_materializers: Optional[
-            Union[
-                "MaterializerClassOrStr", Mapping[str, "MaterializerClassOrStr"]
-            ]
+            "OutputMaterializersSpecification"
         ] = None,
-        output_artifacts: Optional[Mapping[str, "ArtifactClassOrStr"]] = None,
+        output_artifacts: Optional["OutputArtifactsSpecification"] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         merge: bool = True,
@@ -823,10 +751,13 @@ class BaseStep(metaclass=BaseStepMeta):
             step_operator: The step operator to use for this step.
             parameters: Function parameters for this step
             output_materializers: Output materializers for this step. If
-                given as a dict, the keys must be a subset of the outputs of
-                this step. If a single value (type or string) is given, the
+                given as a dict, the keys must be a subset of the output names
+                of this step. If a single value (type or string) is given, the
                 materializer will be used for all outputs.
-            output_artifacts: Output artifacts for this step.
+            output_artifacts: Output artifacts for this step. If
+                given as a dict, the keys must be a subset of the output names
+                of this step. If a single value (type or string) is given, the
+                artifact class will be used for all outputs.
             settings: settings for this step.
             extra: Extra configurations for this step.
             merge: If `True`, will merge the given dictionary configurations
@@ -872,6 +803,13 @@ class BaseStep(metaclass=BaseStepMeta):
                 outputs[output_name]["materializer_source"] = source
 
         if output_artifacts:
+            if not isinstance(output_artifacts, Mapping):
+                # string of artifact class to be used for all outputs
+                source = _resolve_if_necessary(output_artifacts)
+                output_artifacts = {
+                    output_name: source for output_name in allowed_output_names
+                }
+
             for output_name, artifact in output_artifacts.items():
                 if output_name not in allowed_output_names:
                     raise StepInterfaceError(

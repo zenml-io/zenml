@@ -224,14 +224,14 @@ def test_only_registered_output_artifact_types_are_allowed():
     """Tests that only artifact types which are registered for the output type
     are allowed as custom output artifact types."""
 
-    @step(output_types={"output": DataArtifact})
+    @step(output_artifacts={"output": DataArtifact})
     def some_step() -> CustomType:
         pass
 
     with does_not_raise():
         some_step()
 
-    @step(output_types={"output": ModelArtifact})
+    @step(output_artifacts={"output": ModelArtifact})
     def some_other_step() -> CustomType:
         pass
 
@@ -244,7 +244,7 @@ def test_pass_invalid_type_as_output_artifact_type():
     output artifact type fails.
     """
 
-    @step(output_types={"output": int})
+    @step(output_artifacts={"output": int})
     def some_step() -> int:
         pass
 
@@ -256,7 +256,7 @@ def test_unrecognized_output_in_output_artifact_types():
     """Tests that passing an output artifact type for an output that doesn't
     exist raises an exception."""
 
-    @step(output_types={"non-existent": DataArtifact})
+    @step(output_artifacts={"non-existent": DataArtifact})
     def some_step() -> None:
         pass
 

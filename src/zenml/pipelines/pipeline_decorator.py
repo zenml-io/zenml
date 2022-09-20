@@ -27,7 +27,6 @@ from typing import (
 
 from zenml.pipelines.base_pipeline import (
     INSTANCE_CONFIGURATION,
-    PARAM_DOCKER_CONFIGURATION,
     PARAM_ENABLE_CACHE,
     PARAM_EXTRA_OPTIONS,
     PARAM_SETTINGS,
@@ -36,7 +35,6 @@ from zenml.pipelines.base_pipeline import (
 )
 
 if TYPE_CHECKING:
-    from zenml.config import DockerSettings
     from zenml.config.settings import SettingsOrDict
 
 F = TypeVar("F", bound=Callable[..., None])
@@ -54,7 +52,6 @@ def pipeline(
     enable_cache: bool = True,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
-    docker_configuration: Optional["DockerSettings"] = None,
 ) -> Callable[[F], Type[BasePipeline]]:
     ...
 
@@ -66,7 +63,6 @@ def pipeline(
     enable_cache: bool = True,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
-    docker_configuration: Optional["DockerSettings"] = None,
 ) -> Union[Type[BasePipeline], Callable[[F], Type[BasePipeline]]]:
     """Outer decorator function for the creation of a ZenML pipeline.
 
@@ -78,10 +74,8 @@ def pipeline(
         name: The name of the pipeline. If left empty, the name of the
             decorated function will be used as a fallback.
         enable_cache: Whether to use caching or not.
-        settings: settings for this pipeline.
+        settings: Settings for this pipeline.
         extra: Extra configurations for this pipeline.
-        docker_configuration: DEPRECATED: Configuration of all Docker options.
-            Use the `settings` property instead.
 
     Returns:
         the inner decorator which creates the pipeline class based on the
@@ -107,7 +101,6 @@ def pipeline(
                     PARAM_ENABLE_CACHE: enable_cache,
                     PARAM_SETTINGS: settings,
                     PARAM_EXTRA_OPTIONS: extra,
-                    PARAM_DOCKER_CONFIGURATION: docker_configuration,
                 },
                 "__module__": func.__module__,
                 "__doc__": func.__doc__,
