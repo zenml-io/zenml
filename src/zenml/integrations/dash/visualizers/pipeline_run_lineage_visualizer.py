@@ -189,6 +189,7 @@ class PipelineRunLineageVisualizer(BaseVisualizer):
                 is_input_artifact = True
                 step_node = node_mapping[edge.target]
                 artifact_node = node_mapping[edge.source]
+            assert isinstance(artifact_node, ArtifactNode)
             artifact_is_cached = artifact_node.data.is_cached
             if is_input_artifact and artifact_is_cached:
                 edge_status = self.STATUS_CLASS_MAPPING[ExecutionStatus.CACHED]

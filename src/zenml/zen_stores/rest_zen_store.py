@@ -23,6 +23,7 @@ from pydantic import BaseModel
 
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
+    ARTIFACTS,
     FLAVORS,
     GRAPH,
     INPUTS,
@@ -1429,6 +1430,26 @@ class RestZenStore(BaseZenStore):
         return self._list_resources(
             route=f"{RUNS}/{str(run_id)}{STEPS}",
             resource_model=StepRunModel,
+        )
+
+    def list_artifacts(
+        self, artifact_uri: Optional[str] = None
+    ) -> List[ArtifactModel]:
+        """Lists all artifacts.
+
+        Args:
+            artifact_uri: If specified, only artifacts with the given URI will
+                be returned.
+
+        Returns:
+            A list of all artifacts.
+        """
+        filters = locals()
+        filters.pop("self")
+        return self._list_resources(
+            route=ARTIFACTS,
+            resource_model=ArtifactModel,
+            **filters,
         )
 
     # =======================

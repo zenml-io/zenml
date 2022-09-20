@@ -2272,6 +2272,26 @@ class SqlZenStore(BaseZenStore):
             ).all()
             return [self.get_run_step(step.id) for step in steps]
 
+    def list_artifacts(
+        self, artifact_uri: Optional[str] = None
+    ) -> List[ArtifactModel]:
+        """Lists all artifacts.
+
+        Args:
+            artifact_uri: If specified, only artifacts with the given URI will
+                be returned.
+
+        Returns:
+            A list of all artifacts.
+        """
+        self._sync_runs()
+        with Session(self.engine) as session:
+            query = select(ArtifactSchema)
+            if artifact_uri is not None:
+                query = query.where(ArtifactSchema.uri == artifact_uri)
+            artifacts = session.exec(query).all()
+            return [artifact.to_model() for artifact in artifacts]
+
     # =======================
     # Internal helper methods
     # =======================

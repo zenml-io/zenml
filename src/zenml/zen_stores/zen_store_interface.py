@@ -1176,3 +1176,17 @@ class ZenStoreInterface(ABC):
         Returns:
             A mapping from step names to step models for all steps in the run.
         """
+
+    @abstractmethod
+    def list_artifacts(
+        self, artifact_uri: Optional[str] = None
+    ) -> List[ArtifactModel]:
+        """Lists all artifacts.
+
+        Args:
+            artifact_uri: If specified, only artifacts with the given URI will
+                be returned.
+
+        Returns:
+            A list of all artifacts.
+        """

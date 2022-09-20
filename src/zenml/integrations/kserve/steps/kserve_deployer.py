@@ -31,6 +31,7 @@ from zenml.integrations.kserve.services.kserve_deployment import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.repository import Repository
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseStepConfig,
@@ -429,9 +430,7 @@ def kserve_custom_model_deployer_step(
 
     # Get the model artifact to extract information about the model
     # and how it can be loaded again later in the deployment environment.
-    artifact = stack.metadata_store.store.get_artifacts_by_uri(
-        model.uri
-    )  # TODO
+    artifact = Repository().zen_store.list_artifacts(artifact_uri=model.uri)
     if not artifact:
         raise DoesNotExistException(f"No artifact found at {model.uri}.")
 
