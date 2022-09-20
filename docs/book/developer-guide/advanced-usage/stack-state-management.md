@@ -21,13 +21,13 @@ manage the state of your entire stack:
 
 ```shell
 zenml stack up  # Provision and start all stack components
-zenml metadata-store up  # Provision and start the metadata store only
+zenml orchestrator up  # Provision and start the orchestrator only
 
 zenml stack down  # Stop all stack components
-zenml metadata-store down  # Stop the metadata store only
+zenml orchestrator down  # Stop the orchestrator only
 
 zenml stack down --force  # Stop and deprovision all stack components
-zenml metadata-store down --force  # Stop and deprovision the metadata store only
+zenml orchestrator down --force  # Stop and deprovision the orchestrator only
 ```
 
 ## Defining States of Custom Components

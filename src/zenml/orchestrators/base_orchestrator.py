@@ -201,18 +201,6 @@ class BaseOrchestrator(StackComponent, ABC):
     # Class Configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.ORCHESTRATOR
 
-    @staticmethod
-    def get_mlmd_connection_config() -> metadata.ConnectionConfigType:
-        """Returns the MLMD database connection configuration.
-
-        Returns:
-            The MLMD database connection configuration.
-        """
-        # Query the ZenStore for the metadata connection
-        metadata_config = Repository().zen_store.get_metadata_config()
-        metadata_config_pb = Parse(metadata_config, ConnectionConfig())
-        return metadata_config_pb
-
     @abstractmethod
     def prepare_or_run_pipeline(
         self,
@@ -379,7 +367,7 @@ class BaseOrchestrator(StackComponent, ABC):
             deployment_config, step.name
         )
 
-        metadata_connection_cfg = self.get_mlmd_connection_config()
+        metadata_connection_cfg = Repository().zen_store.get_metadata_config()
 
         custom_executor_operators = {
             executable_spec_pb2.PythonClassExecutableSpec: step.executor_operator

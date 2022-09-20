@@ -13,15 +13,27 @@
 #  permissions and limitations under the License.
 """SQL Zen Store implementation."""
 
+import os
 from pathlib import Path, PurePath
-from typing import Any, ClassVar, Dict, List, Optional, Type, Union, cast
+import re
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union, cast
 from uuid import UUID
+
+from pydantic import root_validator
 
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.exc import ArgumentError, NoResultFound
 from sqlmodel import Session, SQLModel, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
+
+from tfx.orchestration import metadata
+from ml_metadata.proto.metadata_store_pb2 import (
+    MySQLDatabaseConfig,
+    ConnectionConfig,
+)
+
+from zenml.config.global_config import GlobalConfiguration
 
 from zenml.config.store_config import StoreConfiguration
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
@@ -33,7 +45,6 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.metadata_stores.sqlite_metadata_store import SQLiteMetadataStore
 from zenml.models import (
     ArtifactModel,
     ComponentModel,
@@ -50,7 +61,9 @@ from zenml.models import (
 )
 from zenml.utils import io_utils, uuid_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
+from zenml.utils.enum_utils import StrEnum
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME, BaseZenStore
+from zenml.zen_stores.metadata_store import MetadataStore
 from zenml.zen_stores.schemas import (
     ArtifactSchema,
     FlavorSchema,
@@ -81,42 +94,258 @@ logger = get_logger(__name__)
 ZENML_SQLITE_DB_FILENAME = "zenml.db"
 
 
+class SQLDatabaseDriver(StrEnum):
+    """SQL database drivers supported by the SQL ZenML store."""
+
+    MYSQL = "mysql"
+    SQLITE = "sqlite"
+
+
 class SqlZenStoreConfiguration(StoreConfiguration):
     """SQL ZenML store configuration.
 
     Attributes:
         type: The type of the store.
-        _sql_kwargs: Additional keyword arguments to pass to the SQLAlchemy
-            engine.
+        database: database name. If not already present on the server, it will
+            be created automatically on first access.
+        username: The database username.
+        password: The database password.
+        ssl_ca: certificate authority certificate. Required for SSL
+            enabled authentication if the CA certificate is not part of the
+            certificates shipped by the operating system.
+        ssl_cert: client certificate. Required for SSL enabled
+            authentication if client certificates are used.
+        ssl_key: client certificate private key. Required for SSL
+            enabled if client certificates are used.
+        ssl_verify_server_cert: set to verify the identity of the server
+            against the provided server certificate.
     """
 
     type: StoreType = StoreType.SQL
-    _sql_kwargs: Dict[str, Any] = {}
 
-    def __init__(self, **kwargs: Any) -> None:
-        """Initializes the SQL ZenML store configuration.
+    database: Optional[str] = None
+    username: Optional[str] = None
+    password: Optional[str] = None
+    ssl_ca: Optional[str] = None
+    ssl_cert: Optional[str] = None
+    ssl_key: Optional[str] = None
+    ssl_verify_server_cert: bool = False
 
-        The constructor collects all extra fields into a private _sql_kwargs
-        attribute.
+    @root_validator
+    def _validate_url(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate the SQL URL.
+
+        The validator also moves the MySQL username, password and database
+        parameters from the URL into the other configuration arguments, if they
+        are present in the URL.
 
         Args:
-            **kwargs: Keyword arguments to pass to the Pydantic constructor.
-        """
-        # Create a list of fields that are in the Pydantic schema
-        field_names = {
-            field.alias
-            for field in self.__fields__.values()
-            if field.alias != "_sql_kwargs"
-        }
+            values: The values to validate.
 
-        sql_kwargs: Dict[str, Any] = {}
-        for field_name in list(kwargs):
-            if field_name not in field_names:
-                # Remove fields that are not in the Pydantic schema and add them
-                # to the sql_kwargs dict
-                sql_kwargs[field_name] = kwargs.get(field_name)
-        super().__init__(**kwargs)
-        self._sql_kwargs = sql_kwargs
+        Returns:
+            The validated values.
+        """
+        url = values.get("url")
+        if url is None:
+            return values
+
+        try:
+            sql_url = make_url(url)
+        except ArgumentError as e:
+            raise ValueError(
+                "Invalid SQL URL `%s`: %s. The URL must be in the format "
+                "`driver://[[username:password@]hostname:port]/database[?<extra-args>]`.",
+                url,
+                str(e),
+            )
+        if sql_url.drivername not in SQLDatabaseDriver.values():
+            raise ValueError(
+                "Invalid SQL driver value `%s`: The driver must be one of: %s.",
+                url,
+                ", ".join(SQLDatabaseDriver.values()),
+            )
+        if sql_url.drivername == SQLDatabaseDriver.SQLITE:
+            if (
+                sql_url.username
+                or sql_url.password
+                or sql_url.query
+                or sql_url.database is None
+            ):
+                raise ValueError(
+                    "Invalid SQLite URL `%s`: The URL must be in the "
+                    "format `sqlite:///path/to/database.db`.",
+                    url,
+                )
+            if values.get("username") or values.get("password"):
+                raise ValueError(
+                    "Invalid SQLite configuration: The username and password "
+                    "must not be set",
+                    url,
+                )
+            values["database"] = sql_url.database
+        elif sql_url.drivername == SQLDatabaseDriver.MYSQL:
+            if sql_url.username:
+                values["username"] = sql_url.username
+                sql_url = sql_url._replace(username=None)
+            if sql_url.password:
+                values["password"] = sql_url.password
+                sql_url = sql_url._replace(password=None)
+            if sql_url.database:
+                values["database"] = sql_url.database
+                sql_url = sql_url._replace(database=None)
+            if sql_url.query:
+                for k, v in sql_url.query.items():
+                    if k == "ssl_ca":
+                        values["ssl_ca"] = v
+                    elif k == "ssl_cert":
+                        values["ssl_cert"] = v
+                    elif k == "ssl_key":
+                        values["ssl_key"] = v
+                    elif k == "ssl_verify_server_cert":
+                        values["ssl_verify_server_cert"] = v
+                    else:
+                        raise ValueError(
+                            "Invalid MySQL URL query parameter `%s`: The "
+                            "parameter must be one of: ssl_ca, ssl_cert, "
+                            "ssl_key, ssl_verify_server_cert.",
+                            k,
+                        )
+                sql_url = sql_url._replace(query=None)
+
+            database = values.get("database")
+            if (
+                not values.get("username")
+                or not values.get("password")
+                or not database
+            ):
+                raise ValueError(
+                    "Invalid MySQL configuration: The username, password and "
+                    "database must be set in the URL or as configuration "
+                    "attributes",
+                )
+
+            regexp = r"^[^\\/?%*:|\"<>.-]{1,64}$"
+            match = re.match(regexp, database)
+            if not match:
+                raise ValueError(
+                    f"The database name does not conform to the required format "
+                    f"rules ({regexp}): {database}"
+                )
+
+            # Save the certificates in a secure location on disk
+            secret_folder = Path(
+                GlobalConfiguration().local_stores_path,
+                "certificates",
+            )
+            for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
+                content = values.get(key)
+                if content and not os.path.isfile(content):
+                    fileio.makedirs(str(secret_folder))
+                    file_path = Path(secret_folder, f"{key}.pem")
+                    with open(file_path, "w") as f:
+                        f.write(content)
+                    file_path.chmod(0o600)
+                    values[key] = str(file_path)
+
+        values["url"] = str(sql_url)
+        return values
+
+    def get_metadata_config(self) -> ConnectionConfig:
+        """Get the metadata configuration for the SQL ZenML store.
+
+        Returns:
+            The metadata configuration.
+        """
+
+        sql_url = make_url(self.url)
+        if sql_url.drivername == SQLDatabaseDriver.SQLITE:
+            assert self.database is not None
+            mlmd_config = metadata.sqlite_metadata_connection_config(
+                self.database
+            )
+        elif sql_url.drivername == SQLDatabaseDriver.MYSQL:
+            # all these are guaranteed by our root validator
+            assert self.database is not None
+            assert self.username is not None
+            assert self.password is not None
+            assert sql_url.host is not None
+            mlmd_config = metadata.mysql_metadata_connection_config(
+                host=sql_url.host,
+                port=sql_url.port or 3306,
+                database=self.database,
+                username=self.username,
+                password=self.password,
+            )
+
+            mlmd_ssl_options = {}
+            # Handle certificate params
+            for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
+                ssl_setting = getattr(self, key)
+                if ssl_setting and os.path.isfile(ssl_setting):
+                    mlmd_ssl_options[key.lstrip("ssl_")] = ssl_setting
+
+            # Handle additional params
+            if mlmd_ssl_options:
+                mlmd_ssl_options[
+                    "verify_server_cert"
+                ] = self.ssl_verify_server_cert
+                mlmd_config.mysql.ssl_options.CopyFrom(
+                    MySQLDatabaseConfig.SSLOptions(**mlmd_ssl_options)
+                )
+        else:
+            raise NotImplementedError(
+                f"SQL driver `{sql_url.drivername}` is not supported."
+            )
+
+        return mlmd_config
+
+    def get_sqlmodel_config(self) -> Tuple[str, Dict[str, Any]]:
+        """Get the SQLModel engine configuration for the SQL ZenML store.
+
+        Returns:
+            The URL and connection arguments for the SQLModel engine.
+        """
+        sql_url = make_url(self.url)
+        sqlalchemy_connect_args = {}
+        if sql_url.drivername == SQLDatabaseDriver.SQLITE:
+            assert self.database is not None
+            pass
+        elif sql_url.drivername == SQLDatabaseDriver.MYSQL:
+            # all these are guaranteed by our root validator
+            assert self.database is not None
+            assert self.username is not None
+            assert self.password is not None
+            assert sql_url.host is not None
+            sql_url = sql_url._replace(
+                drivername="mysql+pymysql",
+                username=self.username,
+                password=self.password,
+                database=self.database,
+            )
+
+            # Handle certificate params
+            for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
+                ssl_setting = getattr(self, key)
+                if ssl_setting and os.path.isfile(ssl_setting):
+                    if key == "ssl_cert":
+                        sqlalchemy_connect_args["ssl_capath"] = ssl_setting
+                    else:
+                        sqlalchemy_connect_args[key] = ssl_setting
+        else:
+            raise NotImplementedError(
+                f"SQL driver `{sql_url.drivername}` is not supported."
+            )
+
+        return str(sql_url), sqlalchemy_connect_args
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # Validate attributes when assigning them. We need to set this in order
+        # to have a mix of mutable and immutable attributes
+        validate_assignment = True
+        # Forbid extra attributes set in the class.
+        extra = "forbid"
 
 
 class SqlZenStore(BaseZenStore):
@@ -135,7 +364,7 @@ class SqlZenStore(BaseZenStore):
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]] = SqlZenStoreConfiguration
 
     _engine: Optional[Engine] = None
-    _metadata_store: Optional[SQLiteMetadataStore] = None
+    _metadata_store: Optional[MetadataStore] = None
 
     @property
     def engine(self) -> Engine:
@@ -152,7 +381,7 @@ class SqlZenStore(BaseZenStore):
         return self._engine
 
     @property
-    def metadata_store(self) -> SQLiteMetadataStore:
+    def metadata_store(self) -> MetadataStore:
         """The metadata store.
 
         Returns:
@@ -181,37 +410,12 @@ class SqlZenStore(BaseZenStore):
         """
         logger.debug("Initializing SqlZenStore at %s", self.config.url)
 
-        local_path = self.get_path_from_url(self.config.url)
-        if local_path:
-            io_utils.create_dir_recursive_if_not_exists(str(local_path.parent))
-            self._metadata_store = SQLiteMetadataStore(uri=str(local_path))
-        else:
-            raise NotImplementedError("Only SQLite is supported")
+        metadata_config = self.config.get_metadata_config()
+        self._metadata_store = MetadataStore(config=metadata_config)
 
-        self._engine = create_engine(self.config.url, **self.config._sql_kwargs)
+        url, connect_args = self.config.get_sqlmodel_config()
+        self._engine = create_engine(url=url, connect_args=connect_args)
         SQLModel.metadata.create_all(self._engine)
-
-    @staticmethod
-    def get_path_from_url(url: str) -> Optional[Path]:
-        """Get the local path from a URL, if it points to a local sqlite file.
-
-        This method first checks that the URL is a valid SQLite URL, which is
-        backed by a file in the local filesystem. All other types of supported
-        SQLAlchemy connection URLs are considered non-local and won't return
-        a valid local path.
-
-        Args:
-            url: The URL to get the path from.
-
-        Returns:
-            The path extracted from the URL, or None, if the URL does not
-            point to a local sqlite file.
-        """
-        url = SqlZenStore.validate_url(url)
-        if not url.startswith("sqlite:///"):
-            return None
-        url = url.replace("sqlite:///", "")
-        return Path(url)
 
     @staticmethod
     def get_local_url(path: str) -> str:
@@ -224,33 +428,6 @@ class SqlZenStore(BaseZenStore):
             The local SQL url for the given path.
         """
         return f"sqlite:///{path}/{ZENML_SQLITE_DB_FILENAME}"
-
-    @staticmethod
-    def validate_url(url: str) -> str:
-        """Check if the given url is valid.
-
-        Args:
-            url: The url to check.
-
-        Returns:
-            The validated url.
-
-        Raises:
-            ValueError: If the url is not valid.
-        """
-        try:
-            make_url(url)
-        except ArgumentError as e:
-            raise ValueError(
-                "Invalid SQLAlchemy URL `%s`: %s. Check the SQLAlchemy "
-                "documentation at "
-                "https://docs.sqlalchemy.org/en/14/core/engines.html#database"
-                "-urls "
-                "for the correct format.",
-                url,
-                str(e),
-            )
-        return url
 
     @classmethod
     def copy_local_store(
@@ -283,10 +460,14 @@ class SqlZenStore(BaseZenStore):
         """
         config_copy = config.copy()
 
-        local_path = cls.get_path_from_url(config.url)
-        if not local_path:
+        sql_url = make_url(config.url)
+        if sql_url.drivername != SQLDatabaseDriver.SQLITE:
             # this is not a configuration backed by a local filesystem
             return config_copy
+
+        assert sql_url.database
+        local_path = Path(sql_url.database)
+
         io_utils.create_dir_recursive_if_not_exists(path)
         fileio.copy(
             str(local_path), str(Path(path) / local_path.name), overwrite=True
@@ -302,16 +483,13 @@ class SqlZenStore(BaseZenStore):
     # TFX Metadata
     # ------------
 
-    def get_metadata_config(self) -> str:
+    def get_metadata_config(self) -> ConnectionConfig:
         """Get the TFX metadata config of this ZenStore.
 
         Returns:
             The TFX metadata config of this ZenStore.
         """
-        from google.protobuf.json_format import MessageToJson
-
-        config = self.metadata_store.get_tfx_metadata_config()
-        return MessageToJson(config)
+        return self.config.get_metadata_config()
 
     # ------
     # Stacks
@@ -2300,15 +2478,13 @@ class SqlZenStore(BaseZenStore):
                 "provided."
             )
         if uuid_utils.is_valid_uuid(object_name_or_id):
-            filter = schema_class.id == object_name_or_id  # type: ignore[
-            # attr-defined]
+            filter = schema_class.id == object_name_or_id  # type: ignore[attr-defined]
             error_msg = (
                 f"Unable to get {schema_name} with name or ID "
                 f"'{object_name_or_id}': No {schema_name} with this ID found."
             )
         else:
-            filter = schema_class.name == object_name_or_id  # type: ignore[
-            # attr-defined]
+            filter = schema_class.name == object_name_or_id  # type: ignore[attr-defined]
             error_msg = (
                 f"Unable to get {schema_name} with name or ID "
                 f"'{object_name_or_id}': '{object_name_or_id}' is not a valid "

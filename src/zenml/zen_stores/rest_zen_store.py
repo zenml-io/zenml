@@ -14,12 +14,15 @@
 """REST Zen Store implementation."""
 
 import re
+
+from google.protobuf.json_format import Parse
 from pathlib import Path, PurePath
 from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar, Union
 from uuid import UUID
 
 import requests
-from pydantic import BaseModel
+from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
+from pydantic import BaseModel, validator
 
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
@@ -116,14 +119,34 @@ class RestZenStoreConfiguration(StoreConfiguration):
     username: str
     password: str = ""
 
+    @validator("url")
+    def validate_url(cls, url: str) -> str:
+        """Validates that the URL is a well formed REST store URL.
+
+        Args:
+            uri: The URL to be validated.
+
+        Returns:
+            The validated URL without trailing slashes.
+        """
+        url = url.rstrip("/")
+        scheme = re.search("^([a-z0-9]+://)", url)
+        if scheme is None or scheme.group() not in ("https://", "http://"):
+            raise ValueError(
+                "Invalid URL for REST store: {url}. Should be in the form "
+                "https://hostname[:port] or http://hostname[:port]."
+            )
+
+        return url
+
     class Config:
         """Pydantic configuration class."""
 
         # Validate attributes when assigning them. We need to set this in order
         # to have a mix of mutable and immutable attributes
         validate_assignment = True
-        # Ignore extra attributes set in the class.
-        extra = "ignore"
+        # Forbid extra attributes set in the class.
+        extra = "forbid"
 
 
 class RestZenStore(BaseZenStore):
@@ -153,18 +176,6 @@ class RestZenStore(BaseZenStore):
         self.active_user
 
     @staticmethod
-    def get_path_from_url(url: str) -> Optional[Path]:
-        """Get the path from a URL, if it points or is backed by a local file.
-
-        Args:
-            url: The URL to get the path from.
-
-        Returns:
-            None, because there are no local paths from REST URLs.
-        """
-        return None
-
-    @staticmethod
     def get_local_url(path: str) -> str:
         """Get a local URL for a given local path.
 
@@ -175,29 +186,6 @@ class RestZenStore(BaseZenStore):
             NotImplementedError: always
         """
         raise NotImplementedError("Cannot build a REST url from a path.")
-
-    @staticmethod
-    def validate_url(url: str) -> str:
-        """Check if the given url is a valid REST URL.
-
-        Args:
-            url: The url to check.
-
-        Returns:
-            The validated url.
-
-        Raises:
-            ValueError: If the url is not valid.
-        """
-        url = url.rstrip("/")
-        scheme = re.search("^([a-z0-9]+://)", url)
-        if scheme is None or scheme.group() not in ("https://", "http://"):
-            raise ValueError(
-                "Invalid URL for REST store: {url}. Should be in the form "
-                "https://hostname[:port] or http://hostname[:port]."
-            )
-
-        return url
 
     @classmethod
     def copy_local_store(
@@ -235,7 +223,7 @@ class RestZenStore(BaseZenStore):
     # TFX Metadata
     # ------------
 
-    def get_metadata_config(self) -> str:
+    def get_metadata_config(self) -> ConnectionConfig:
         """Get the TFX metadata config of this ZenStore.
 
         Returns:
@@ -246,7 +234,8 @@ class RestZenStore(BaseZenStore):
             raise ValueError(
                 f"Invalid response from server: {body}. Expected string."
             )
-        return body
+        metadata_config_pb = Parse(body, ConnectionConfig())
+        return metadata_config_pb
 
     # ------
     # Stacks
