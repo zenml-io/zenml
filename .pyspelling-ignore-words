@@ -414,6 +414,7 @@ RedPill
 Reproducibility
 ResourceConfiguration
 ResourceConfigurations
+ResourceSettings
 RichHandler
 Roadmap
 RoleBinding
@@ -833,6 +834,7 @@ fcp
 fd
 feedforward
 fff
+ffmpeg
 fileio
 filepath
 filesize
@@ -959,6 +961,8 @@ kwarg
 kwargs
 len
 libcudart
+libsm
+libxext
 lifecycle
 lightgbm
 linux
