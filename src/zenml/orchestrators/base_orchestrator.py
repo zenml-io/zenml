@@ -29,12 +29,10 @@
 # The `run_step()` method of this file is a modified version of the local dag
 # runner implementation of tfx
 """Base orchestrator class."""
-import hashlib
-import json
 import os
 import time
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, Type
 
 from google.protobuf import json_format
 from tfx.dsl.compiler.constants import PIPELINE_RUN_ID_PARAMETER_NAME
@@ -54,24 +52,18 @@ from tfx.orchestration.portable.python_executor_operator import (
     PythonExecutorOperator,
 )
 from tfx.proto.orchestration import executable_spec_pb2
-from tfx.proto.orchestration.pipeline_pb2 import ContextSpec
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 
 from zenml.artifacts.base_artifact import BaseArtifact
-from zenml.constants import (
-    MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME,
-    MLMD_CONTEXT_STACK_PROPERTY_NAME,
-    MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME,
-    ZENML_MLMD_CONTEXT_TYPE,
-)
+from zenml.config.pipeline_configurations import StepRunInfo
 from zenml.enums import StackComponentType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators.utils import get_cache_status
 from zenml.repository import Repository
 from zenml.stack import StackComponent
-from zenml.utils import source_utils, string_utils
+from zenml.utils import proto_utils, source_utils, string_utils
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_configurations import PipelineDeployment
@@ -267,10 +259,16 @@ class BaseOrchestrator(StackComponent, ABC):
             executable_spec_pb2.PythonClassExecutableSpec: executor_operator
         }
 
+        step_run_info = StepRunInfo(
+            config=step.config,
+            pipeline=self._active_run_config.pipeline,
+            run_name=run_name,
+        )
+
         # The protobuf node for the current step is loaded here.
         pipeline_node = self._get_node_with_step_name(step_name)
 
-        self._add_mlmd_contexts(
+        proto_utils.add_mlmd_contexts(
             pipeline_node=pipeline_node,
             step=step,
             deployment=self._active_run_config,
@@ -293,11 +291,11 @@ class BaseOrchestrator(StackComponent, ABC):
         if step.config.step_operator:
             execution_info = self._execute_step(component_launcher)
         else:
-            stack.prepare_step_run(step=step)
+            stack.prepare_step_run(step=step_run_info)
             try:
                 execution_info = self._execute_step(component_launcher)
             finally:
-                stack.cleanup_step_run(step=step)
+                stack.cleanup_step_run(step=step_run_info)
 
         return execution_info
 
@@ -412,73 +410,6 @@ class BaseOrchestrator(StackComponent, ABC):
             return StepExecutorOperator
         else:
             return PythonExecutorOperator
-
-    @staticmethod
-    def _add_pipeline_node_context(
-        pipeline_node: PipelineNode,
-        type_: str,
-        name: str,
-        properties: Dict[str, str],
-    ) -> None:
-        """Adds a new context to a TFX protobuf pipeline node.
-
-        Args:
-            pipeline_node: A tfx protobuf pipeline node
-            type_: The type name for the context to be added
-            name: Unique key for the context
-            properties: dictionary of strings as properties of the context
-        """
-        context: ContextSpec = pipeline_node.contexts.contexts.add()
-        context.type.name = type_
-        context.name.field_value.string_value = name
-        for key, value in properties.items():
-            c_property = context.properties[key]
-            c_property.field_value.string_value = value
-
-    def _add_mlmd_contexts(
-        self,
-        pipeline_node: PipelineNode,
-        step: "Step",
-        deployment: "PipelineDeployment",
-        stack: "Stack",
-    ) -> None:
-        """Adds context to each pipeline node of a pb2_pipeline.
-
-        This attaches important contexts to the nodes; namely
-        pipeline.docker_configuration, stack information and the runtime
-        configuration.
-
-        Args:
-            pipeline_node: The pipeline node to which the contexts should be
-                added.
-            step: The corresponding step for the pipeline node.
-            deployment: The pipeline deployment to store in the contexts.
-            stack: The stack the pipeline will run on.
-        """
-        stack_json = json.dumps(stack.dict(), sort_keys=True)
-        pipeline_config = deployment.json(
-            exclude={"run_name", "proto_pipeline", "steps"}, sort_keys=True
-        )
-
-        context_properties = {
-            MLMD_CONTEXT_STACK_PROPERTY_NAME: stack_json,
-            MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME: pipeline_config,
-        }
-
-        step_context_properties = context_properties.copy()
-        step_context_properties[
-            MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME
-        ] = step.json(sort_keys=True)
-
-        properties_json = json.dumps(step_context_properties, sort_keys=True)
-        context_name = hashlib.md5(properties_json.encode()).hexdigest()
-
-        self._add_pipeline_node_context(
-            pipeline_node,
-            type_=ZENML_MLMD_CONTEXT_TYPE,
-            name=context_name,
-            properties=step_context_properties,
-        )
 
     def _get_node_with_step_name(self, step_name: str) -> PipelineNode:
         """Given the name of a step, return the node with that name from the pb2_pipeline.

@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, cast
 from uuid import UUID
 
 from zenml.integrations.seldon import SELDON_MODEL_DEPLOYER_FLAVOR
+from zenml.integrations.seldon.constants import SELDON_DOCKER_IMAGE_KEY
 from zenml.integrations.seldon.seldon_client import SeldonClient
 from zenml.integrations.seldon.services.seldon_deployment import (
     SeldonDeploymentConfig,
@@ -39,7 +40,6 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT = 300
-SELDON_DOCKER_IMAGE_KEY = "seldon_docker_image"
 
 
 class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):

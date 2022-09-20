@@ -32,7 +32,7 @@ from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
     from zenml.config.pipeline_configurations import PipelineDeployment
-    from zenml.config.step_configurations import Step
+    from zenml.config.step_configurations import StepConfiguration
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -120,7 +120,7 @@ class KubernetesSparkStepOperator(
     def _backend_configuration(
         self,
         spark_config: SparkConf,
-        step: "Step",
+        step_config: "StepConfiguration",
     ) -> None:
         """Configures Spark to run on Kubernetes.
 
@@ -130,9 +130,9 @@ class KubernetesSparkStepOperator(
         Args:
             spark_config: a SparkConf object which collects all the
                 configuration parameters
-            step: The step that will be executed.
+            step_config: Configuration of the step to run.
         """
-        docker_image = step.config.extra[SPARK_DOCKER_IMAGE_KEY]
+        docker_image = step_config.extra[SPARK_DOCKER_IMAGE_KEY]
         # Adjust the spark configuration
         spark_config.set("spark.kubernetes.container.image", docker_image)
         if self.namespace:

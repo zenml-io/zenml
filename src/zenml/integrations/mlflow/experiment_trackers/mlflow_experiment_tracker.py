@@ -37,7 +37,8 @@ from zenml.stack import StackValidator
 from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
-    from zenml.config.step_configurations import Step
+    from zenml.config.pipeline_configurations import StepRunInfo
+
 logger = get_logger(__name__)
 
 
@@ -258,7 +259,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         """
         return self.tracking_uri or self._local_mlflow_backend()
 
-    def prepare_step_run(self, step: "Step") -> None:
+    def prepare_step_run(self, step: "StepRunInfo") -> None:
         """Sets the MLflow tracking uri and credentials.
 
         Args:
@@ -269,13 +270,11 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             MLFlowExperimentTrackerSettings,
             self.get_settings(step) or MLFlowExperimentTrackerSettings(),
         )
-        run_name = "run_name"
-        pipeline_name = "pipeline_name"
 
-        experiment_name = config.experiment_name or pipeline_name
+        experiment_name = config.experiment_name or step.pipeline.name
         experiment = self._set_active_experiment(experiment_name)
         run_id = self.get_run_id(
-            experiment_name=experiment_name, run_name=run_name
+            experiment_name=experiment_name, run_name=step.run_name
         )
 
         tags = config.tags.copy()
@@ -283,7 +282,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
 
         mlflow.start_run(
             run_id=run_id,
-            run_name=run_name,
+            run_name=step.run_name,
             experiment_id=experiment.experiment_id,
             tags=tags,
         )
@@ -291,7 +290,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         if config.nested:
             mlflow.start_run(run_name=step.config.name, nested=True, tags=tags)
 
-    def cleanup_step_run(self, step: "Step") -> None:
+    def cleanup_step_run(self, step: "StepRunInfo") -> None:
         """Stops active MLflow runs and resets the MLflow tracking uri.
 
         Args:

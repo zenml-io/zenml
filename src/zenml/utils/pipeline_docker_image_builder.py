@@ -176,7 +176,7 @@ class PipelineDockerImageBuilder(BaseModel):
         """
         pipeline_name = deployment.pipeline.name
         docker_configuration = (
-            deployment.docker_configuration or DockerConfiguration()
+            deployment.pipeline.docker_configuration or DockerConfiguration()
         )
 
         target_image_name = (
@@ -211,7 +211,7 @@ class PipelineDockerImageBuilder(BaseModel):
         """
         pipeline_name = run_config.pipeline.name
         docker_configuration = (
-            run_config.docker_configuration or DockerConfiguration()
+            run_config.pipeline.docker_configuration or DockerConfiguration()
         )
 
         logger.info(

@@ -22,17 +22,9 @@ from tfx.orchestration.portable import data_types
 from tfx.orchestration.portable.base_executor_operator import (
     BaseExecutorOperator,
 )
-from tfx.proto.orchestration import (
-    executable_spec_pb2,
-    execution_result_pb2,
-    pipeline_pb2,
-)
+from tfx.proto.orchestration import executable_spec_pb2, execution_result_pb2
 
-from zenml.config.step_configurations import Step
-from zenml.constants import (
-    MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME,
-    ZENML_MLMD_CONTEXT_TYPE,
-)
+from zenml.config.pipeline_configurations import StepRunInfo
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.repository import Repository
@@ -43,6 +35,7 @@ from zenml.steps.utils import (
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
     PARAM_PIPELINE_PARAMETER_NAME,
 )
+from zenml.utils import proto_utils
 
 if TYPE_CHECKING:
     from zenml.stack import Stack
@@ -103,31 +96,6 @@ class StepExecutorOperator(BaseExecutorOperator):
         executable_spec_pb2.PythonClassExecutableSpec
     ]
     SUPPORTED_PLATFORM_CONFIG_TYPE: List[Any] = []
-
-    @staticmethod
-    def _get_step(
-        pipeline_node: pipeline_pb2.PipelineNode,
-    ) -> "Step":
-        """Collects the configuration of a step.
-
-        Args:
-            pipeline_node: Pipeline node info for a step.
-
-        Returns:
-            The step configuration.
-
-        Raises:
-            RuntimeError: If no step configuration was found.
-        """
-        for context in pipeline_node.contexts.contexts:
-            if context.type.name == ZENML_MLMD_CONTEXT_TYPE:
-                config_json = context.properties[
-                    MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME
-                ].field_value.string_value
-
-                return Step.parse_raw(config_json)
-
-        raise RuntimeError("Unable to find step.")
 
     @staticmethod
     def _get_step_operator(
@@ -201,9 +169,13 @@ class StepExecutorOperator(BaseExecutorOperator):
         assert execution_info.tmp_dir
         assert execution_info.execution_output_uri
 
-        stack = Repository().active_stack
-        step = self._get_step(pipeline_node=execution_info.pipeline_node)
+        step = proto_utils.get_step(pipeline_node=execution_info.pipeline_node)
+        pipeline_config = proto_utils.get_pipeline_config(
+            pipeline_node=execution_info.pipeline_node
+        )
         assert step.config.step_operator
+
+        stack = Repository().active_stack
         step_operator = self._get_step_operator(
             stack=stack, step_operator_name=step.config.step_operator
         )
@@ -230,11 +202,13 @@ class StepExecutorOperator(BaseExecutorOperator):
             step_operator.name,
             step_name_in_pipeline,
         )
-
-        step_operator.launch(
-            pipeline_name=execution_info.pipeline_info.id,
+        step_run_info = StepRunInfo(
+            config=step.config,
+            pipeline=pipeline_config,
             run_name=execution_info.pipeline_run_id,
-            step=step,
+        )
+        step_operator.launch(
+            step_run_info=step_run_info,
             entrypoint_command=entrypoint_command,
         )
 

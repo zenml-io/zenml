@@ -19,7 +19,7 @@ from zenml.environment import BaseEnvironmentComponent
 
 STEP_ENVIRONMENT_NAME = "step_environment"
 if TYPE_CHECKING:
-    from zenml.config.step_configurations import StepConfiguration
+    from zenml.config.pipeline_configurations import StepRunInfo
 
 
 class StepEnvironment(BaseEnvironmentComponent):
@@ -49,7 +49,7 @@ class StepEnvironment(BaseEnvironmentComponent):
         pipeline_run_id: str,
         step_name: str,
         cache_enabled: bool,
-        step_configuration: "StepConfiguration",
+        step_run_info: "StepRunInfo",
     ):
         """Initialize the environment of the currently running step.
 
@@ -58,14 +58,13 @@ class StepEnvironment(BaseEnvironmentComponent):
             pipeline_run_id: the ID of the currently running pipeline
             step_name: the name of the currently running step
             cache_enabled: whether cache is enabled for this step
-            step_configuration: The configuration of the currently
-                running step.
+            step_run_info: Info about the currently running step.
         """
         super().__init__()
         self._pipeline_name = pipeline_name
         self._pipeline_run_id = pipeline_run_id
         self._step_name = step_name
-        self._step_configuration = step_configuration
+        self._step_run_info = step_run_info
         self._cache_enabled = cache_enabled
 
     @property
@@ -96,13 +95,13 @@ class StepEnvironment(BaseEnvironmentComponent):
         return self._step_name
 
     @property
-    def step_configuration(self) -> "StepConfiguration":
-        """The configuration of the currently running step.
+    def step_run_info(self) -> "StepRunInfo":
+        """Info about the currently running step.
 
         Returns:
-            The configuration of the currently running step.
+            Info about the currently running step.
         """
-        return self._step_configuration
+        return self._step_run_info
 
     @property
     def cache_enabled(self) -> bool:

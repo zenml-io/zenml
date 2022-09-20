@@ -38,7 +38,7 @@ from zenml.logger import get_logger
 from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
-    from zenml.config.step_configurations import Step
+    from zenml.config.pipeline_configurations import StepRunInfo
 
 
 logger = get_logger(__name__)
@@ -116,7 +116,7 @@ class WandbExperimentTracker(BaseExperimentTracker):
         """
         return WandbExperimentTrackerSettings
 
-    def prepare_step_run(self, step: "Step") -> None:
+    def prepare_step_run(self, step: "StepRunInfo") -> None:
         """Configures a Wandb run.
 
         Args:
@@ -128,17 +128,15 @@ class WandbExperimentTracker(BaseExperimentTracker):
             self.get_settings(step) or WandbExperimentTrackerSettings(),
         )
 
-        pipeline_run_name = "pipeline_run"
-        pipeline_name = "pipeline"
-        tags = config.tags + [pipeline_run_name, pipeline_name]
+        tags = config.tags + [step.run_name, step.pipeline.name]
         wandb_run_name = (
-            config.run_name or f"{pipeline_run_name}_{step.config.name}"
+            config.run_name or f"{step.run_name}_{step.config.name}"
         )
         self._initialize_wandb(
             run_name=wandb_run_name, tags=tags, settings=config.settings
         )
 
-    def cleanup_step_run(self, step: "Step") -> None:
+    def cleanup_step_run(self, step: "StepRunInfo") -> None:
         """Stops the Wandb run.
 
         Args:

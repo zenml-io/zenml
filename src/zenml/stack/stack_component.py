@@ -29,6 +29,7 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Extra, Field, root_validator
 
+from zenml.config.pipeline_configurations import PipelineDeployment, StepRunInfo
 from zenml.config.step_configurations import Step
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackComponentInterfaceError
@@ -36,7 +37,6 @@ from zenml.logger import get_logger
 from zenml.utils import secret_utils, settings_utils
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_configurations import PipelineDeployment
     from zenml.config.settings import Settings
     from zenml.stack import Stack, StackValidator
 
@@ -242,7 +242,7 @@ class StackComponent(BaseModel, ABC):
         return None
 
     def get_settings(
-        self, container: Union["Step", "PipelineDeployment"]
+        self, container: Union["Step", "StepRunInfo", "PipelineDeployment"]
     ) -> Optional["Settings"]:
         """Gets settings for this stack component.
 
@@ -251,8 +251,8 @@ class StackComponent(BaseModel, ABC):
         options for this component.
 
         Args:
-            container: The `Step` or `PipelineDeployment` from which to get
-                the settings.
+            container: The `Step`, `StepRunInfo` or `PipelineDeployment` from
+                which to get the settings.
 
         Returns:
             Optional settings for this stack component.
@@ -261,9 +261,10 @@ class StackComponent(BaseModel, ABC):
             return None
 
         key = settings_utils.get_settings_key_for_stack_component(self)
+
         options = (
             container.config.settings
-            if isinstance(container, Step)
+            if isinstance(container, (Step, StepRunInfo))
             else container.pipeline.settings
         )
 
@@ -347,14 +348,14 @@ class StackComponent(BaseModel, ABC):
             stack: The stack on which the pipeline will be deployed.
         """
 
-    def prepare_step_run(self, step: "Step") -> None:
+    def prepare_step_run(self, step: "StepRunInfo") -> None:
         """Prepares running a step.
 
         Args:
             step: The step that will be executed.
         """
 
-    def cleanup_step_run(self, step: "Step") -> None:
+    def cleanup_step_run(self, step: "StepRunInfo") -> None:
         """Cleans up resources after the step run is finished.
 
         Args:

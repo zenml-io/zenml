@@ -48,8 +48,8 @@ from zenml.utils.secret_utils import SecretField
 from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
-    from zenml.config.docker_configuration import DockerConfiguration
-    from zenml.config.step_configurations import Step
+    from zenml.config import DockerConfiguration
+    from zenml.config.pipeline_configurations import StepRunInfo
 
 logger = get_logger(__name__)
 
@@ -205,22 +205,16 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
 
     def launch(
         self,
-        pipeline_name: str,
-        run_name: str,
-        step: "Step",
+        step_run_info: "StepRunInfo",
         entrypoint_command: List[str],
     ) -> None:
         """Launches a step on AzureML.
 
         Args:
-            pipeline_name: Name of the pipeline which the step to be executed
-                is part of.
-            run_name: Name of the pipeline run which the step to be executed
-                is part of.
-            step: Configuration of the step that will to execute.
+            step_run_info: Information about the step run.
             entrypoint_command: Command that executes the step.
         """
-        if not step.config.resource_configuration.empty:
+        if not step_run_info.config.resource_configuration.empty:
             logger.warning(
                 "Specifying custom step resources is not supported for "
                 "the AzureML step operator. If you want to run this step "
@@ -241,10 +235,9 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
             "copy_files",
             "copy_profile",
         ]
-        ignored_docker_fields = (
-            docker_configuration.__fields_set__.intersection(
-                unused_docker_fields
-            )
+        docker_config = step_run_info.pipeline.docker_configuration
+        ignored_docker_fields = docker_config.__fields_set__.intersection(
+            unused_docker_fields
         )
 
         if ignored_docker_fields:
@@ -271,8 +264,8 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
         ):
             environment = self._prepare_environment(
                 workspace=workspace,
-                docker_configuration=docker_configuration,
-                run_name=run_name,
+                docker_configuration=docker_config,
+                run_name=step_run_info.run_name,
             )
             compute_target = ComputeTarget(
                 workspace=workspace, name=self.compute_target_name
@@ -285,8 +278,10 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
                 command=entrypoint_command,
             )
 
-            experiment = Experiment(workspace=workspace, name=pipeline_name)
+            experiment = Experiment(
+                workspace=workspace, name=step_run_info.pipeline.name
+            )
             run = experiment.submit(config=run_config)
 
-        run.display_name = run_name
+        run.display_name = step_run_info.run_name
         run.wait_for_completion(show_output=True)

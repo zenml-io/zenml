@@ -20,7 +20,7 @@ from zenml.enums import StackComponentType
 from zenml.stack import StackComponent
 
 if TYPE_CHECKING:
-    from zenml.config.step_configurations import Step
+    from zenml.config.pipeline_configurations import StepRunInfo
 
 
 class BaseStepOperator(StackComponent, ABC):
@@ -32,9 +32,7 @@ class BaseStepOperator(StackComponent, ABC):
     @abstractmethod
     def launch(
         self,
-        pipeline_name: str,
-        run_name: str,
-        step: "Step",
+        step_run_info: "StepRunInfo",
         entrypoint_command: List[str],
     ) -> None:
         """Abstract method to execute a step.
@@ -46,10 +44,6 @@ class BaseStepOperator(StackComponent, ABC):
         - Launch a **synchronous** job that executes the `entrypoint_command`
 
         Args:
-            pipeline_name: Name of the pipeline which the step to be executed
-                is part of.
-            run_name: Name of the pipeline run which the step to be executed
-                is part of.
-            step: Configuration of the step that will to execute.
+            step_run_info: Information about the step run.
             entrypoint_command: Command that executes the step.
         """

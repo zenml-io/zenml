@@ -26,8 +26,10 @@ from zenml.utils import deprecation_utils
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_configurations import PipelineDeployment
-    from zenml.config.step_configurations import Step
+    from zenml.config.pipeline_configurations import (
+        PipelineDeployment,
+        StepRunInfo,
+    )
 
 logger = get_logger(__name__)
 
@@ -109,22 +111,16 @@ class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
 
     def launch(
         self,
-        pipeline_name: str,
-        run_name: str,
-        step: "Step",
+        step_run_info: "StepRunInfo",
         entrypoint_command: List[str],
     ) -> None:
-        """Launches a step on Sagemaker.
+        """Launches a step on SageMaker.
 
         Args:
-            pipeline_name: Name of the pipeline which the step to be executed
-                is part of.
-            run_name: Name of the pipeline run which the step to be executed
-                is part of.
-            step: Configuration of the step that will to execute.
+            step_run_info: Information about the step run.
             entrypoint_command: Command that executes the step.
         """
-        if not step.config.resource_configuration.empty:
+        if not step_run_info.config.resource_configuration.empty:
             logger.warning(
                 "Specifying custom step resources is not supported for "
                 "the SageMaker step operator. If you want to run this step "
@@ -135,9 +131,9 @@ class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
                 self.name,
             )
 
-        image_name = step.config.extra[SAGEMAKER_DOCKER_IMAGE_KEY]
+        image_name = step_run_info.config.extra[SAGEMAKER_DOCKER_IMAGE_KEY]
         environment = {_ENTRYPOINT_ENV_VARIABLE: " ".join(entrypoint_command)}
-        print(entrypoint_command)
+
         session = sagemaker.Session(default_bucket=self.bucket)
         estimator = sagemaker.estimator.Estimator(
             image_name,
@@ -149,7 +145,7 @@ class SagemakerStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
         )
 
         # Sagemaker doesn't allow any underscores in job/experiment/trial names
-        sanitized_run_name = run_name.replace("_", "-")
+        sanitized_run_name = step_run_info.run_name.replace("_", "-")
 
         experiment_config = {}
         if self.experiment_name:

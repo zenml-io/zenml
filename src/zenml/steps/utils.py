@@ -51,6 +51,7 @@ from tfx.proto.orchestration import execution_result_pb2
 from tfx.types import component_spec
 
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.config.pipeline_configurations import StepRunInfo
 from zenml.config.step_configurations import StepConfiguration
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.io import fileio
@@ -60,7 +61,7 @@ from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_context import StepContext
 from zenml.steps.step_environment import StepEnvironment
 from zenml.steps.step_output import Output
-from zenml.utils import source_utils
+from zenml.utils import proto_utils, source_utils
 
 if TYPE_CHECKING:
     from zenml.config.step_configurations import ArtifactConfiguration
@@ -437,6 +438,14 @@ class _ZenMLStepExecutor(BaseExecutor):
                 "Cannot retrieve pipeline runtime information."
             )
 
+        pipeline_config = proto_utils.get_pipeline_config(
+            self._context.pipeline_node
+        )
+        step_run_info = StepRunInfo(
+            config=self.configuration,
+            pipeline=pipeline_config,
+            run_name=self._context.pipeline_run_id,
+        )
         # Wrap the execution of the step function in a step environment
         # that the step function code can access to retrieve information about
         # the pipeline runtime, such as the current step name and the current
@@ -445,7 +454,7 @@ class _ZenMLStepExecutor(BaseExecutor):
             pipeline_name=self._context.pipeline_info.id,
             pipeline_run_id=self._context.pipeline_run_id,
             step_name=step_name,
-            step_configuration=self.configuration,
+            step_run_info=step_run_info,
             cache_enabled=self.configuration.enable_cache,
         ):
             return_values = step_function(**function_params)

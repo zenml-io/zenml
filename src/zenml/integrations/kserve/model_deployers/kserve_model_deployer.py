@@ -22,6 +22,7 @@ from kubernetes import client
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.integrations.kserve import KSERVE_MODEL_DEPLOYER_FLAVOR
+from zenml.integrations.kserve.constants import KSERVE_DOCKER_IMAGE_KEY
 from zenml.integrations.kserve.services.kserve_deployment import (
     KServeDeploymentConfig,
     KServeDeploymentService,
@@ -42,7 +43,6 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT = 300
-KSERVER_DOCKER_IMAGE_KEY = "kserver_docker_image"
 
 
 class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
@@ -154,7 +154,7 @@ class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
         repo_digest = self.build_and_push_docker_image(
             run_config=pipeline, stack=stack
         )
-        pipeline.add_extra(KSERVER_DOCKER_IMAGE_KEY, repo_digest)
+        pipeline.add_extra(KSERVE_DOCKER_IMAGE_KEY, repo_digest)
 
     def _set_credentials(self) -> None:
         """Set the credentials for the given service instance.

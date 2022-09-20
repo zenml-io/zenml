@@ -23,6 +23,7 @@ from zenml.config.schedule import Schedule
 from zenml.config.settings import Settings, SettingsOrDict
 from zenml.config.step_configurations import (
     Step,
+    StepConfiguration,
     StepConfigurationUpdate,
     StepSpec,
 )
@@ -48,6 +49,20 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
     name: str
     enable_cache: bool
 
+    @property
+    def docker_configuration(self) -> "DockerConfiguration":
+        """Docker configuration of this pipeline.
+
+        Returns:
+            The Docker configuration of this pipeline.
+        """
+        from zenml.config import DockerConfiguration
+
+        model_or_dict: SettingsOrDict = self.settings.get(
+            DOCKER_CONFIGURATION_KEY, {}
+        )
+        return DockerConfiguration.parse_obj(model_or_dict)
+
 
 class PipelineSpec(StrictBaseModel):
     """Specification of a pipeline."""
@@ -65,6 +80,14 @@ class PipelineRunConfiguration(StrictBaseModel):
     steps: Dict[str, StepConfigurationUpdate] = {}
     settings: Dict[str, Settings] = {}
     extra: Dict[str, Any] = {}
+
+
+class StepRunInfo(StrictBaseModel):
+    """All information necessary to run a step."""
+
+    config: StepConfiguration
+    pipeline: PipelineConfiguration
+    run_name: str
 
 
 class PipelineDeployment(StrictBaseModel):
@@ -98,17 +121,3 @@ class PipelineDeployment(StrictBaseModel):
         """
         dict_ = json.loads(self.json(**kwargs, sort_keys=False))
         return cast(str, yaml.dump(dict_, sort_keys=False))
-
-    @property
-    def docker_configuration(self) -> "DockerConfiguration":
-        """Docker configuration of this pipeline deployment.
-
-        Returns:
-            The Docker configuration of this pipeline deployment.
-        """
-        from zenml.config import DockerConfiguration
-
-        model_or_dict: SettingsOrDict = self.pipeline.settings.get(
-            DOCKER_CONFIGURATION_KEY, {}
-        )
-        return DockerConfiguration.parse_obj(model_or_dict)

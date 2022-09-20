@@ -44,8 +44,10 @@ from zenml.utils import deprecation_utils
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_configurations import PipelineDeployment
-    from zenml.config.step_configurations import Step
+    from zenml.config.pipeline_configurations import (
+        PipelineDeployment,
+        StepRunInfo,
+    )
 logger = get_logger(__name__)
 
 VERTEX_DOCKER_IMAGE_DIGEST_KEY = "vertex_docker_image"
@@ -160,26 +162,20 @@ class VertexStepOperator(
 
     def launch(
         self,
-        pipeline_name: str,
-        run_name: str,
-        step: "Step",
+        step_run_info: "StepRunInfo",
         entrypoint_command: List[str],
     ) -> None:
-        """Launches a step on Vertex AI.
+        """Launches a step on VertexAI.
 
         Args:
-            pipeline_name: Name of the pipeline which the step to be executed
-                is part of.
-            run_name: Name of the pipeline run which the step to be executed
-                is part of.
-            step: Configuration of the step that will to execute.
+            step_run_info: Information about the step run.
             entrypoint_command: Command that executes the step.
 
         Raises:
             RuntimeError: If the run fails.
             ConnectionError: If the run fails due to a connection error.
         """
-        resource_config = step.config.resource_configuration
+        resource_config = step_run_info.config.resource_configuration
         if resource_config.cpu_count or resource_config.memory:
             logger.warning(
                 "Specifying cpus or memory is not supported for "
@@ -206,7 +202,7 @@ class VertexStepOperator(
         else:
             self.project = project_id
 
-        image_name = step.config.extra[VERTEX_DOCKER_IMAGE_DIGEST_KEY]
+        image_name = step_run_info.config.extra[VERTEX_DOCKER_IMAGE_DIGEST_KEY]
         # Step 3: Launch the job
         # The AI Platform services require regional API endpoints.
         client_options = {"api_endpoint": self.region + VERTEX_ENDPOINT_SUFFIX}
@@ -218,7 +214,7 @@ class VertexStepOperator(
         accelerator_count = resource_config.gpu_count or self.accelerator_count
         accelerator_count = self.accelerator_count
         custom_job = {
-            "display_name": run_name,
+            "display_name": step_run_info.run_name,
             "job_spec": {
                 "worker_pool_specs": [
                     {

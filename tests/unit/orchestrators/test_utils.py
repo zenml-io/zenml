@@ -114,9 +114,7 @@ def test_pipeline_storing_context_in_the_metadata_store():
     compiled.pipeline.extra["dag_filepath"] = dag_filepath
     compiled.steps["step_"].config.extra["dag_filepath"] = dag_filepath
 
-    expected_pipeline_config = compiled.json(
-        exclude={"run_name", "proto_pipeline", "steps"}, sort_keys=True
-    )
+    expected_pipeline_config = compiled.pipeline.json(sort_keys=True)
     assert (
         contexts[0]
         .custom_properties[MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME]

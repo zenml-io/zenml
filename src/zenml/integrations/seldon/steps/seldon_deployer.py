@@ -22,6 +22,7 @@ from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.environment import Environment
 from zenml.exceptions import DoesNotExistException
+from zenml.integrations.seldon.constants import SELDON_DOCKER_IMAGE_KEY
 from zenml.integrations.seldon.model_deployers.seldon_model_deployer import (
     DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT,
     SeldonModelDeployer,
@@ -333,7 +334,9 @@ def seldon_custom_model_deployer_step(
         )
     stack = context.stack
 
-    docker_image = "TODO"
+    docker_image = step_env.step_run_info.pipeline.extra[
+        SELDON_DOCKER_IMAGE_KEY
+    ]
 
     # copy the model files to new specific directory for the deployment
     served_model_uri = os.path.join(context.get_output_artifact_uri(), "seldon")

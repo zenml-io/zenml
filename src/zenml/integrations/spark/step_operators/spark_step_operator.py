@@ -29,8 +29,9 @@ from zenml.step_operators import BaseStepOperator
 
 logger = get_logger(__name__)
 if TYPE_CHECKING:
+    from zenml.config.pipeline_configurations import StepRunInfo
     from zenml.config.resource_configuration import ResourceConfiguration
-    from zenml.config.step_configurations import Step
+    from zenml.config.step_configurations import StepConfiguration
 
 
 class SparkStepOperator(BaseStepOperator):
@@ -141,14 +142,14 @@ class SparkStepOperator(BaseStepOperator):
     def _backend_configuration(
         self,
         spark_config: SparkConf,
-        step: "Step",
+        step_config: "StepConfiguration",
     ) -> None:
         """Configures Spark to handle backends like YARN, Mesos or Kubernetes.
 
         Args:
             spark_config: a SparkConf object which collects all the
                 configuration parameters
-            step: The step that will be executed.
+            step_config: Configuration of the step to run.
         """
 
     def _io_configuration(self, spark_config: SparkConf) -> None:
@@ -290,19 +291,13 @@ class SparkStepOperator(BaseStepOperator):
 
     def launch(
         self,
-        pipeline_name: str,
-        run_name: str,
-        step: "Step",
+        step_run_info: "StepRunInfo",
         entrypoint_command: List[str],
     ) -> None:
         """Launches a step on Spark.
 
         Args:
-            pipeline_name: Name of the pipeline which the step to be executed
-                is part of.
-            run_name: Name of the pipeline run which the step to be executed
-                is part of.
-            step: Configuration of the step that will to execute.
+            step_run_info: Information about the step run.
             entrypoint_command: Command that executes the step.
         """
         # Start off with an empty configuration
@@ -311,11 +306,13 @@ class SparkStepOperator(BaseStepOperator):
         # Add the resource configuration such as cores, memory.
         self._resource_configuration(
             spark_config=conf,
-            resource_configuration=step.config.resource_configuration,
+            resource_configuration=step_run_info.config.resource_configuration,
         )
 
         # Add the backend configuration such as namespace, docker images names.
-        self._backend_configuration(spark_config=conf, step=step)
+        self._backend_configuration(
+            spark_config=conf, step_config=step_run_info.config
+        )
 
         # Add the IO configuration for the inputs and the outputs
         self._io_configuration(

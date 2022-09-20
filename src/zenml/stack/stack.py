@@ -26,8 +26,6 @@ from typing import (
     Type,
 )
 
-from zenml.config.pipeline_configurations import PipelineDeployment
-from zenml.config.step_configurations import Step
 from zenml.constants import (
     ENV_ZENML_SECRET_VALIDATION_LEVEL,
     ZENML_IGNORE_STORE_COUPLINGS,
@@ -41,7 +39,12 @@ if TYPE_CHECKING:
     from zenml.alerter import BaseAlerter
     from zenml.annotators import BaseAnnotator
     from zenml.artifact_stores import BaseArtifactStore
+    from zenml.config.pipeline_configurations import (
+        PipelineDeployment,
+        StepRunInfo,
+    )
     from zenml.config.settings import Settings
+    from zenml.config.step_configurations import StepConfiguration
     from zenml.container_registries import BaseContainerRegistry
     from zenml.data_validators import BaseDataValidator
     from zenml.experiment_trackers.base_experiment_tracker import (
@@ -737,7 +740,7 @@ class Stack:
 
         Repository().zen_store.register_pipeline_run(pipeline_run_wrapper)
 
-    def deploy_pipeline(self, pipeline: PipelineDeployment) -> Any:
+    def deploy_pipeline(self, pipeline: "PipelineDeployment") -> Any:
         """Deploys a pipeline on this stack.
 
         Args:
@@ -784,7 +787,7 @@ class Stack:
         return return_value
 
     def _get_active_components_for_step(
-        self, step: Step
+        self, step_config: "StepConfiguration"
     ) -> Dict[StackComponentType, "StackComponent"]:
         """Gets all the active stack components for a stack.
 
@@ -805,10 +808,10 @@ class Stack:
                 If the component is used in this step.
             """
             if component.TYPE == StackComponentType.STEP_OPERATOR:
-                return component.name == step.config.step_operator
+                return component.name == step_config.step_operator
 
             if component.TYPE == StackComponentType.EXPERIMENT_TRACKER:
-                return component.name == step.config.experiment_tracker
+                return component.name == step_config.experiment_tracker
 
             return True
 
@@ -818,22 +821,26 @@ class Stack:
             if _is_active(component)
         }
 
-    def prepare_step_run(self, step: "Step") -> None:
+    def prepare_step_run(self, step: "StepRunInfo") -> None:
         """Prepares running a step.
 
         Args:
             step: The step that will be executed.
         """
-        for component in self._get_active_components_for_step(step).values():
+        for component in self._get_active_components_for_step(
+            step.config
+        ).values():
             component.prepare_step_run(step=step)
 
-    def cleanup_step_run(self, step: "Step") -> None:
+    def cleanup_step_run(self, step: "StepRunInfo") -> None:
         """Cleans up resources after the step run is finished.
 
         Args:
             step: The step that was executed.
         """
-        for component in self._get_active_components_for_step(step).values():
+        for component in self._get_active_components_for_step(
+            step.config
+        ).values():
             component.cleanup_step_run(step=step)
 
     @property
