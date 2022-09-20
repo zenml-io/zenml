@@ -2305,15 +2305,13 @@ class SqlZenStore(BaseZenStore):
                 "provided."
             )
         if uuid_utils.is_valid_uuid(object_name_or_id):
-            filter = schema_class.id == object_name_or_id  # type: ignore[
-            # attr-defined]
+            filter = schema_class.id == object_name_or_id  # type: ignore[attr-defined]
             error_msg = (
                 f"Unable to get {schema_name} with name or ID "
                 f"'{object_name_or_id}': No {schema_name} with this ID found."
             )
         else:
-            filter = schema_class.name == object_name_or_id  # type: ignore[
-            # attr-defined]
+            filter = schema_class.name == object_name_or_id  # type: ignore[attr-defined]
             error_msg = (
                 f"Unable to get {schema_name} with name or ID "
                 f"'{object_name_or_id}': '{object_name_or_id}' is not a valid "
