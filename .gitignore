@@ -180,3 +180,6 @@ zenml_examples/
 
 # some examples have yamls; don't ignore them
 !examples/**/*.yaml
+
+# stack recipes
+test_terraform/

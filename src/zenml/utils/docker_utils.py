@@ -334,11 +334,13 @@ def _process_stream(stream: Iterable[bytes]) -> List[Dict[str, Any]]:
                 if "error" in line_json:
                     raise RuntimeError(f"Docker error: {line_json['error']}.")
                 elif "stream" in line_json:
-                    line_text = line_json["stream"].strip()
-                    if re.match(r"^Step [0-9]+/[0-9]+", line_text):
-                        logger.info(line_text)
+                    text = line_json["stream"].strip()
+                    if "ERROR" in text:
+                        logger.error(text)
+                    elif re.match(r"^Step [0-9]+/[0-9]+", text):
+                        logger.info(text)
                     else:
-                        logger.debug(line_text)
+                        logger.debug(text)
                 elif "aux" in line_json:
                     auxiliary_info.append(line_json["aux"])
                 else:

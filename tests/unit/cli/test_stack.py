@@ -261,8 +261,8 @@ def test_stack_export_delete_import(clean_repo) -> None:
 
     # export stack
     runner = CliRunner()
-    export_import_args = ["arias_new_stack", "arias_new_stack.yaml"]
-    result = runner.invoke(export_stack, export_import_args)
+    file_name = "arias_new_stack.yaml"
+    result = runner.invoke(export_stack, [stack_name, file_name])
     assert result.exit_code == 0
     assert os.path.exists("arias_new_stack.yaml")
 
@@ -281,7 +281,7 @@ def test_stack_export_delete_import(clean_repo) -> None:
         clean_repo.get_stack("arias_new_stack")
 
     # import stack
-    result = runner.invoke(import_stack, export_import_args)
+    result = runner.invoke(import_stack, [stack_name, "--filename", file_name])
     assert result.exit_code == 0
     assert clean_repo.get_stack("arias_new_stack") is not None
 

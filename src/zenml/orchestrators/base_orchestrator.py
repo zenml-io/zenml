@@ -32,7 +32,7 @@
 import os
 import time
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Type
 
 from google.protobuf import json_format
 from tfx.dsl.compiler.constants import PIPELINE_RUN_ID_PARAMETER_NAME
@@ -54,6 +54,7 @@ from tfx.orchestration.portable.python_executor_operator import (
 from tfx.proto.orchestration import executable_spec_pb2
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
+from tfx.types.artifact import Artifact
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.config.pipeline_configurations import StepRunInfo
@@ -100,6 +101,24 @@ def _patched_remove_stateful_working_dir(stateful_working_dir: str) -> None:
         )
 
 
+def _patched_remove_output_dirs(output_dict: Dict[str, List[Artifact]]) -> None:
+    """Remove dirs of output artifacts' URI.
+
+    Args:
+        output_dict: Dictionary of strings to output artifacts.
+    """
+    # The original implementation was doing a fileio.rmtree
+    # without checking for the existence of the object. This
+    # caused a cascading failure, and users of ZenML then see
+    # an internal TFX error in some cases.
+    for _, artifact_list in output_dict.items():
+        for artifact in artifact_list:
+            if fileio.isdir(artifact.uri):
+                fileio.rmtree(artifact.uri)
+            elif fileio.exists(artifact.uri):
+                fileio.remove(artifact.uri)
+
+
 assert hasattr(
     outputs_utils, "remove_stateful_working_dir"
 ), "Unable to find tfx function."
@@ -107,6 +126,14 @@ setattr(
     outputs_utils,
     "remove_stateful_working_dir",
     _patched_remove_stateful_working_dir,
+)
+assert hasattr(
+    outputs_utils, "remove_output_dirs"
+), "Unable to find tfx function."
+setattr(
+    outputs_utils,
+    "remove_output_dirs",
+    _patched_remove_output_dirs,
 )
 ### END OF TFX PATCH
 

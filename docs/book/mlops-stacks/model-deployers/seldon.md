@@ -50,7 +50,7 @@ command line argument. This Kubernetes context needs to point to the Kubernetes
 cluster where Seldon Core model servers will be deployed. If the context is not
 explicitly supplied to the example, it defaults to using the locally active
 context. You can find more information about setup and usage of the Kubernetes
-cluster in the [ZenML Cloud Guide](../../cloud-guide/overview.md)
+cluster in the [ZenML Cloud Guide](../../stack-deployment-guide/overview.md)
 
 2. Seldon Core needs to be preinstalled and running in the target Kubernetes
 cluster. Check out the [official Seldon Core installation instructions](https://github.com/SeldonIO/seldon-core/tree/master/examples/auth#demo-setup)).

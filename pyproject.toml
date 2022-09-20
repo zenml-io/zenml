@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.13.1"
+version = "0.13.2"
 packages = [
     { include = "zenml", from = "src" },
 ]
@@ -58,7 +58,7 @@ python-dateutil = "^2.8.1"
 gitpython = "^3.1.18"
 click = "^8.0.1"
 click-params = "^0.3.0"
-pydantic = "^1.9.0"
+pydantic = "~1.9.0"
 analytics-python = "^1.4.0"
 distro = "^1.6.0"
 rich = {extras = ["jupyter"], version = "^12.0.0"}

@@ -120,6 +120,7 @@ DataFrame's
 DataFrames
 DataLoader
 DataQualityProfileSection
+Databricks
 DatasetProfile
 DatasetProfileView
 Deepchecks
@@ -736,6 +737,7 @@ daemonization
 daemonize
 daemonizer
 dango
+databricks
 datadir
 datadrift
 dataframe

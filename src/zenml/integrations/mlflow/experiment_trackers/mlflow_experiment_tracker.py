@@ -47,6 +47,11 @@ MLFLOW_TRACKING_PASSWORD = "MLFLOW_TRACKING_PASSWORD"
 MLFLOW_TRACKING_TOKEN = "MLFLOW_TRACKING_TOKEN"
 MLFLOW_TRACKING_INSECURE_TLS = "MLFLOW_TRACKING_INSECURE_TLS"
 
+DATABRICKS_HOST = "DATABRICKS_HOST"
+DATABRICKS_USERNAME = "DATABRICKS_USERNAME"
+DATABRICKS_PASSWORD = "DATABRICKS_PASSWORD"
+DATABRICKS_TOKEN = "DATABRICKS_TOKEN"
+
 
 class MLFlowExperimentTrackerSettings(Settings):
     """settings for the MLflow experiment tracker.
@@ -95,6 +100,9 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             `tracking_password` must be specified.
         tracking_insecure_tls: Skips verification of TLS connection to the
             MLflow tracking server if set to `True`.
+        databricks_host: The host of the Databricks workspace with the MLflow
+            managed server to connect to. This is only required if
+            `tracking_uri` value is set to `"databricks"`.
     """
 
     tracking_uri: Optional[str] = None
@@ -102,6 +110,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
     tracking_password: Optional[str] = SecretField()
     tracking_token: Optional[str] = SecretField()
     tracking_insecure_tls: bool = False
+    databricks_host: Optional[str] = None
 
     # Class Configuration
     FLAVOR: ClassVar[str] = MLFLOW_MODEL_EXPERIMENT_TRACKER_FLAVOR
@@ -125,10 +134,11 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             valid_schemes = DATABASE_ENGINES + ["http", "https", "file"]
             if not any(
                 tracking_uri.startswith(scheme) for scheme in valid_schemes
-            ):
+            ) and not cls.is_databricks_tracking_uri(tracking_uri):
                 raise ValueError(
                     f"MLflow tracking uri does not start with one of the valid "
-                    f"schemes {valid_schemes}. See "
+                    f"schemes {valid_schemes} or its value is not set to "
+                    f"'databricks'. See "
                     f"https://www.mlflow.org/docs/latest/tracking.html#where-runs-are-recorded "
                     f"for more information."
                 )
@@ -153,26 +163,42 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         """
         tracking_uri = values.get("tracking_uri")
 
-        if tracking_uri and cls.is_remote_tracking_uri(tracking_uri):
-            # we need either username + password or a token to authenticate to
-            # the remote backend
-            basic_auth = values.get("tracking_username") and values.get(
-                "tracking_password"
-            )
-            token_auth = values.get("tracking_token")
+        if tracking_uri:
+            if cls.is_databricks_tracking_uri(tracking_uri):
+                # If the tracking uri is "databricks", then we need the databricks
+                # host to be set.
+                databricks_host = values.get("databricks_host")
 
-            if not (basic_auth or token_auth):
-                raise ValueError(
-                    f"MLflow experiment tracking with a remote backend "
-                    f"{tracking_uri} is only possible when specifying either "
-                    f"username and password or an authentication token in your "
-                    f"stack component. To update your component, run the "
-                    f"following command: `zenml experiment-tracker update "
-                    f"{values['name']} --tracking_username=MY_USERNAME "
-                    f"--tracking_password=MY_PASSWORD "
-                    f"--tracking_token=MY_TOKEN` and specify either your "
-                    f"username and password or token."
+                if not databricks_host:
+                    raise ValueError(
+                        f"MLflow experiment tracking with a Databricks MLflow "
+                        f"managed tracking server requires the `databricks_host` "
+                        f"to be set in your stack component. To update your "
+                        f"component, run `zenml experiment-tracker update "
+                        f"{values['name']} --databricks_host=DATABRICKS_HOST` "
+                        f"and specify the hostname of your Databricks workspace."
+                    )
+
+            if cls.is_remote_tracking_uri(tracking_uri):
+                # we need either username + password or a token to authenticate to
+                # the remote backend
+                basic_auth = values.get("tracking_username") and values.get(
+                    "tracking_password"
                 )
+                token_auth = values.get("tracking_token")
+
+                if not (basic_auth or token_auth):
+                    raise ValueError(
+                        f"MLflow experiment tracking with a remote backend "
+                        f"{tracking_uri} is only possible when specifying either "
+                        f"username and password or an authentication token in your "
+                        f"stack component. To update your component, run the "
+                        f"following command: `zenml experiment-tracker update "
+                        f"{values['name']} --tracking_username=MY_USERNAME "
+                        f"--tracking_password=MY_PASSWORD "
+                        f"--tracking_token=MY_TOKEN` and specify either your "
+                        f"username and password or token."
+                    )
 
         return values
 
@@ -235,7 +261,20 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         return any(
             tracking_uri.startswith(prefix)
             for prefix in ["http://", "https://"]
-        )
+        ) or MLFlowExperimentTracker.is_databricks_tracking_uri(tracking_uri)
+
+    @staticmethod
+    def is_databricks_tracking_uri(tracking_uri: str) -> bool:
+        """Checks whether the given tracking uri is a Databricks tracking uri.
+
+        Args:
+            tracking_uri: The tracking uri to check.
+
+        Returns:
+            `True` if the tracking uri is a Databricks tracking uri, `False`
+            otherwise.
+        """
+        return tracking_uri == "databricks"
 
     @staticmethod
     def _local_mlflow_backend() -> str:
@@ -301,14 +340,26 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
 
     def configure_mlflow(self) -> None:
         """Configures the MLflow tracking URI and any additional credentials."""
-        mlflow.set_tracking_uri(self.get_tracking_uri())
+        tracking_uri = self.get_tracking_uri()
+        mlflow.set_tracking_uri(tracking_uri)
 
-        if self.tracking_username:
-            os.environ[MLFLOW_TRACKING_USERNAME] = self.tracking_username
-        if self.tracking_password:
-            os.environ[MLFLOW_TRACKING_PASSWORD] = self.tracking_password
-        if self.tracking_token:
-            os.environ[MLFLOW_TRACKING_TOKEN] = self.tracking_token
+        if self.is_databricks_tracking_uri(tracking_uri):
+            if self.databricks_host:
+                os.environ[DATABRICKS_HOST] = self.databricks_host
+            if self.tracking_username:
+                os.environ[DATABRICKS_USERNAME] = self.tracking_username
+            if self.tracking_password:
+                os.environ[DATABRICKS_PASSWORD] = self.tracking_password
+            if self.tracking_token:
+                os.environ[DATABRICKS_TOKEN] = self.tracking_token
+        else:
+            if self.tracking_username:
+                os.environ[MLFLOW_TRACKING_USERNAME] = self.tracking_username
+            if self.tracking_password:
+                os.environ[MLFLOW_TRACKING_PASSWORD] = self.tracking_password
+            if self.tracking_token:
+                os.environ[MLFLOW_TRACKING_TOKEN] = self.tracking_token
+
         os.environ[MLFLOW_TRACKING_INSECURE_TLS] = (
             "true" if self.tracking_insecure_tls else "false"
         )
@@ -325,6 +376,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             The id of the run if it exists.
         """
         self.configure_mlflow()
+        experiment_name = self._adjust_experiment_name(experiment_name)
 
         runs = mlflow.search_runs(
             experiment_names=[experiment_name],
@@ -341,8 +393,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         else:
             return None
 
-    @staticmethod
-    def _set_active_experiment(experiment_name: str) -> Experiment:
+    def _set_active_experiment(self, experiment_name: str) -> Experiment:
         """Sets the active MLflow experiment.
 
         If no experiment with this name exists, it is created and then
@@ -357,11 +408,34 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         Returns:
             The experiment.
         """
+        experiment_name = self._adjust_experiment_name(experiment_name)
+
         mlflow.set_experiment(experiment_name=experiment_name)
         experiment = mlflow.get_experiment_by_name(experiment_name)
         if not experiment:
             raise RuntimeError("Failed to set active mlflow experiment.")
         return experiment
+
+    def _adjust_experiment_name(self, experiment_name: str) -> str:
+        """Prepends a slash to the experiment name if using Databricks.
+
+        Databricks requires the experiment name to be an absolute path within
+        the Databricks workspace.
+
+        Args:
+            experiment_name: The experiment name.
+
+        Returns:
+            The potentially adjusted experiment name.
+        """
+        if (
+            self.tracking_uri
+            and self.is_databricks_tracking_uri(self.tracking_uri)
+            and not experiment_name.startswith("/")
+        ):
+            return f"/{experiment_name}"
+        else:
+            return experiment_name
 
     @staticmethod
     def _get_internal_tags() -> Dict[str, Any]:
