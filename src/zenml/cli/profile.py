@@ -571,7 +571,6 @@ def migrate_profiles(
             )
             for component in store.get_components(
                 prefix=prefix,
-                project=project.name,
             ):
                 try:
                     repo.zen_store.create_stack_component(component=component)
