@@ -619,8 +619,8 @@ def migrate_profiles(
                 except StackExistsError:
                     if overwrite:
                         assert stack.id is not None
-                        stack.project_id = project.id
-                        stack.owner = user.id
+                        stack.project = project.id
+                        stack.user = user.id
                         repo.zen_store.update_stack(
                             stack=stack,
                         )

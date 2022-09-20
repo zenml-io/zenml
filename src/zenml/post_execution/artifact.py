@@ -51,7 +51,6 @@ class ArtifactView:
         Returns:
             The artifact id.
         """
-        assert self._model.id
         return self._model.id
 
     @property

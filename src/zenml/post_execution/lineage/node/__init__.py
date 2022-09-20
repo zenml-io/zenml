@@ -22,3 +22,11 @@ from zenml.post_execution.lineage.node.step_node import (  # noqa
     StepNode,
     StepNodeDetails,
 )
+
+__all__ = [
+    "BaseNode",
+    "ArtifactNode",
+    "StepNode",
+    "StepNodeDetails",
+    "ArtifactNodeDetails",
+]

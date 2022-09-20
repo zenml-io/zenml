@@ -201,8 +201,8 @@ class StackComponent:
         type: StackComponentType,
         user: UUID,
         project: UUID,
-        *args,
-        **kwargs,
+        *args: Any,
+        **kwargs: Any,
     ):
         self.id = id
         self.name = name
@@ -216,9 +216,7 @@ class StackComponent:
     def from_model(cls, component_model: "ComponentModel") -> "StackComponent":
         from zenml.repository import Repository
 
-        flavor_model = Repository(
-            skip_repository_check=True  # noqa
-        ).get_flavor_by_name_and_type(
+        flavor_model = Repository().get_flavor_by_name_and_type(
             name=component_model.flavor,
             component_type=component_model.type,
         )
@@ -464,7 +462,7 @@ class StackComponent:
             A string representation of the stack component.
         """
         attribute_representation = ", ".join(
-            f"{key}={value}" for key, value in self.dict().items()
+            f"{key}={value}" for key, value in self.config.dict().items()
         )
         return (
             f"{self.__class__.__qualname__}(type={self.type}, "
