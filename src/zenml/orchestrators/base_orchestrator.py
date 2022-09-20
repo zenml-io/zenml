@@ -35,7 +35,16 @@ import json
 import os
 import time
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Type
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    cast,
+)
 
 from pydantic.json import pydantic_encoder
 from tfx.dsl.compiler.compiler import Compiler
@@ -198,6 +207,10 @@ class BaseOrchestrator(StackComponent, ABC):
 
     # Class Configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.ORCHESTRATOR
+
+    @property
+    def config(self) -> BaseOrchestratorConfig:
+        return cast(BaseOrchestratorConfig, self._config)
 
     @abstractmethod
     def prepare_or_run_pipeline(

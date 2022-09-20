@@ -14,8 +14,17 @@
 """MLFlow integration flavors."""
 
 from zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor import (
+    MLFlowExperimentTrackerConfig,
     MLFlowExperimentTrackerFlavor,
 )
 from zenml.integrations.mlflow.flavors.mlflow_model_deployer_flavor import (
+    MLFlowModelDeployerConfig,
     MLFlowModelDeployerFlavor,
 )
+
+__all__ = [
+    "MLFlowExperimentTrackerFlavor",
+    "MLFlowExperimentTrackerConfig",
+    "MLFlowModelDeployerFlavor",
+    "MLFlowModelDeployerConfig",
+]

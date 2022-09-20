@@ -16,3 +16,5 @@
 from zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator import (  # noqa
     KubeflowOrchestrator,
 )
+
+__all__ = ["KubeflowOrchestrator"]

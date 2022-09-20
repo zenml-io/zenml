@@ -14,5 +14,11 @@
 """HashiCorp Vault integration flavors."""
 
 from zenml.integrations.vault.flavors.vault_secrets_manager_flavor import (
+    VaultSecretsManagerConfig,
     VaultSecretsManagerFlavor,
 )
+
+__all__ = [
+    "VaultSecretsManagerFlavor",
+    "VaultSecretsManagerConfig",
+]

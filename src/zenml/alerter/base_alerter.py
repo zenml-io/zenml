@@ -14,7 +14,7 @@
 """Base class for all ZenML alerters."""
 
 from abc import ABC
-from typing import Optional, Type
+from typing import Optional, Type, cast
 
 from zenml.enums import StackComponentType
 from zenml.stack import Flavor, StackComponent
@@ -28,6 +28,10 @@ class BaseAlerterConfig(StackComponentConfig):
 
 class BaseAlerter(StackComponent, ABC):
     """Base class for all ZenML alerters."""
+
+    @property
+    def config(self) -> BaseAlerterConfig:
+        return cast(BaseAlerterConfig, self._config)
 
     def post(
         self, message: str, config: Optional[BaseAlerterStepConfig]

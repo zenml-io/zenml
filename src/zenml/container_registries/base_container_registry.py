@@ -14,25 +14,21 @@
 """Implementation of a base container registry class."""
 
 import re
-from typing import Optional, Tuple, Type
+from typing import Optional, Tuple, Type, cast
 
 from pydantic import validator
 
 from zenml.enums import StackComponentType
 from zenml.secret.schemas import BasicAuthSecretSchema
-from zenml.stack import StackComponent
 from zenml.stack.authentication_mixin import (
     AuthenticationConfigMixin,
     AuthenticationMixin,
 )
 from zenml.stack.flavor import Flavor
-from zenml.stack.stack_component import StackComponentConfig
 from zenml.utils import docker_utils
 
 
-class BaseContainerRegistryConfig(
-    StackComponentConfig, AuthenticationConfigMixin
-):
+class BaseContainerRegistryConfig(AuthenticationConfigMixin):
     """Base config for a container registry.
 
     Attributes:
@@ -54,8 +50,12 @@ class BaseContainerRegistryConfig(
         return uri.rstrip("/")
 
 
-class BaseContainerRegistry(StackComponent, AuthenticationMixin):
+class BaseContainerRegistry(AuthenticationMixin):
     """Base class for all ZenML container registries."""
+
+    @property
+    def config(self) -> BaseContainerRegistryConfig:
+        return cast(BaseContainerRegistryConfig, self._config)
 
     @property
     def requires_authentication(self) -> bool:
@@ -65,7 +65,7 @@ class BaseContainerRegistry(StackComponent, AuthenticationMixin):
             `True` if the container registry requires authentication,
             `False` otherwise.
         """
-        return bool(self.authentication_secret)
+        return bool(self.config.authentication_secret)
 
     @property
     def credentials(self) -> Optional[Tuple[str, str]]:

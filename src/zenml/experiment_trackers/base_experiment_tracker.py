@@ -14,7 +14,7 @@
 """Base class for all ZenML experiment trackers."""
 
 from abc import ABC, abstractmethod
-from typing import Type
+from typing import Type, cast
 
 from zenml.enums import StackComponentType
 from zenml.stack import Flavor, StackComponent
@@ -27,6 +27,10 @@ class BaseExperimentTrackerConfig(StackComponentConfig):
 
 class BaseExperimentTracker(StackComponent, ABC):
     """Base class for all ZenML experiment trackers."""
+
+    @property
+    def config(self) -> BaseExperimentTrackerConfig:
+        return cast(BaseExperimentTrackerConfig, self._config)
 
 
 class BaseExperimentTrackerFlavor(Flavor):

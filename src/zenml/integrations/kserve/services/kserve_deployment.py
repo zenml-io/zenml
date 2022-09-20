@@ -229,7 +229,7 @@ class KServeDeploymentService(BaseService):
             The Kubernetes namespace, or None, if the default namespace is
             used.
         """
-        return self._get_model_deployer().kubernetes_namespace
+        return self._get_model_deployer().config.kubernetes_namespace
 
     def check_status(self) -> Tuple[ServiceState, str]:
         """Check the state of the KServe inference service.
@@ -534,7 +534,7 @@ class KServeDeploymentService(BaseService):
 
         model_deployer = self._get_model_deployer()
         return os.path.join(
-            model_deployer.base_url,
+            model_deployer.config.base_url,
             "v1/models",
             f"{self.crd_name}:predict",
         )
@@ -553,7 +553,7 @@ class KServeDeploymentService(BaseService):
         namespace = self._get_namespace()
 
         model_deployer = self._get_model_deployer()
-        custom_domain = model_deployer.custom_domain or "example.com"
+        custom_domain = model_deployer.config.custom_domain or "example.com"
         return f"{self.crd_name}.{namespace}.{custom_domain}"
 
     def predict(self, request: str) -> Any:

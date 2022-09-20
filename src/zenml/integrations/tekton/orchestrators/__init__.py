@@ -16,3 +16,5 @@
 from zenml.integrations.tekton.orchestrators.tekton_orchestrator import (  # noqa
     TektonOrchestrator,
 )
+
+__all__ = ["TektonOrchestrator"]

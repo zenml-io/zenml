@@ -40,6 +40,7 @@ from typing import (
     Tuple,
     Type,
     Union,
+    cast,
 )
 
 from pydantic import root_validator
@@ -211,6 +212,10 @@ class BaseArtifactStoreConfig(StackComponentConfig):
 
 class BaseArtifactStore(StackComponent):
     """Base class for all ZenML artifact stores."""
+
+    @property
+    def config(self) -> BaseArtifactStoreConfig:
+        return cast(BaseArtifactStoreConfig, self._config)
 
     @property
     def path(self) -> str:

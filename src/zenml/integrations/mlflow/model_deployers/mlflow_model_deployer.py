@@ -22,6 +22,9 @@ from uuid import UUID
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
 from zenml.integrations.mlflow import MLFLOW_MODEL_DEPLOYER_FLAVOR
+from zenml.integrations.mlflow.flavors.mlflow_model_deployer_flavor import (
+    MLFlowModelDeployerConfig,
+)
 from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentConfig,
     MLFlowDeploymentService,
@@ -41,6 +44,10 @@ class MLFlowModelDeployer(BaseModelDeployer):
     """MLflow implementation of the BaseModelDeployer."""
 
     _service_path: Optional[str] = None
+
+    @property
+    def config(self) -> MLFlowModelDeployerConfig:
+        return cast(MLFlowModelDeployerConfig, self._config)
 
     @staticmethod
     def get_service_path(id_: UUID) -> str:

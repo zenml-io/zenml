@@ -19,7 +19,7 @@ google_cloud_ai_platform/training_clients.py
 """
 
 import time
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, cast
 
 from google.cloud import aiplatform
 
@@ -31,6 +31,9 @@ from zenml.integrations.gcp.constants import (
     VERTEX_ENDPOINT_SUFFIX,
     VERTEX_JOB_STATES_COMPLETED,
     VERTEX_JOB_STATES_FAILED,
+)
+from zenml.integrations.gcp.flavors.vertex_step_operator_flavor import (
+    VertexStepOperatorConfig,
 )
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsMixin,
@@ -56,7 +59,7 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
     ZenML entrypoint command in it.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initializes the step operator and validates the accelerator type."""
         super().__init__(*args, **kwargs)
         self._validate_accelerator_type()
@@ -75,6 +78,10 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
             raise ValueError(
                 f"Accelerator must be one of the following: {accepted_vals}"
             )
+
+    @property
+    def config(self) -> VertexStepOperatorConfig:
+        return cast(VertexStepOperatorConfig, self._config)
 
     @property
     def validator(self) -> Optional[StackValidator]:

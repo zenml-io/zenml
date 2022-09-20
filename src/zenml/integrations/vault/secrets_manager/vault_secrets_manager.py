@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the HashiCorp Vault Secrets Manager integration."""
-from typing import List, Set
+from typing import Any, ClassVar, List, Set, cast
 
 import hvac  # type: ignore[import]
 from hvac.exceptions import InvalidPath  # type: ignore[import]
@@ -20,6 +20,7 @@ from hvac.exceptions import InvalidPath  # type: ignore[import]
 from zenml.constants import ZENML_SCHEMA_NAME
 from zenml.exceptions import SecretExistsError
 from zenml.integrations.vault.flavors.vault_secrets_manager_flavor import (
+    VaultSecretsManagerConfig,
     validate_vault_secret_name_or_namespace,
 )
 from zenml.logger import get_logger
@@ -33,6 +34,12 @@ logger = get_logger(__name__)
 
 class VaultSecretsManager(BaseSecretsManager):
     """Class to interact with the Vault secrets manager - Key/value Engine."""
+
+    CLIENT: ClassVar[Any] = None
+
+    @property
+    def config(self) -> VaultSecretsManagerConfig:
+        return cast(VaultSecretsManagerConfig, self._config)
 
     @classmethod
     def _ensure_client_connected(cls, url: str, token: str) -> None:

@@ -14,13 +14,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Any, List, Optional
+from typing import Any, List, Optional, cast
 
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from slack_sdk.rtm import RTMClient
 
 from zenml.alerter.base_alerter import BaseAlerter
+from zenml.integrations.slack.flavors.slack_alerter_flavor import (
+    SlackAlerterConfig,
+)
 from zenml.logger import get_logger
 from zenml.steps.step_interfaces.base_alerter_step import BaseAlerterStepConfig
 
@@ -46,6 +49,10 @@ class SlackAlerterStepConfig(BaseAlerterStepConfig):
 
 class SlackAlerter(BaseAlerter):
     """Send messages to Slack channels."""
+
+    @property
+    def config(self) -> SlackAlerterConfig:
+        return cast(SlackAlerterConfig, self._config)
 
     def _get_channel_id(self, config: Optional[BaseAlerterStepConfig]) -> str:
         """Get the Slack channel ID to be used by post/ask.

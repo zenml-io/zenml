@@ -14,5 +14,11 @@
 """Feast integration flavors."""
 
 from zenml.integrations.feast.flavors.feast_feature_store_flavor import (
+    FeastFeatureStoreConfig,
     FeastFeatureStoreFlavor,
 )
+
+__all__ = [
+    "FeastFeatureStoreFlavor",
+    "FeastFeatureStoreConfig",
+]

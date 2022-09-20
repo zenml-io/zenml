@@ -14,5 +14,11 @@
 """WhyLabs whylogs integration flavors."""
 
 from zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor import (
+    WhylogsDataValidatorConfig,
     WhylogsDataValidatorFlavor,
 )
+
+__all__ = [
+    "WhylogsDataValidatorFlavor",
+    "WhylogsDataValidatorConfig",
+]

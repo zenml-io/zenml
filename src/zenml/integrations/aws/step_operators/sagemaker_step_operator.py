@@ -13,11 +13,14 @@
 #  permissions and limitations under the License.
 """Implementation of the Sagemaker Step Operator."""
 
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, List, Optional, Tuple, cast
 
 import sagemaker
 
 from zenml.enums import StackComponentType
+from zenml.integrations.aws.flavors.sagemaker_step_operator_flavor import (
+    SagemakerStepOperatorConfig,
+)
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
@@ -39,6 +42,10 @@ class SagemakerStepOperator(BaseStepOperator):
     This class defines code that builds an image with the ZenML entrypoint
     to run using Sagemaker's Estimator.
     """
+
+    @property
+    def config(self) -> SagemakerStepOperatorConfig:
+        return cast(SagemakerStepOperatorConfig, self._config)
 
     @property
     def validator(self) -> Optional[StackValidator]:

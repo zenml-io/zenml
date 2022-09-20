@@ -14,5 +14,11 @@
 """Weights & Biases integration flavors."""
 
 from zenml.integrations.wandb.flavors.wandb_experiment_tracker_flavor import (
+    WandbExperimentTrackerConfig,
     WandbExperimentTrackerFlavor,
 )
+
+__all__ = [
+    "WandbExperimentTrackerFlavor",
+    "WandbExperimentTrackerConfig",
+]

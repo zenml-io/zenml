@@ -16,3 +16,5 @@
 from zenml.integrations.deepchecks.flavors.deepchecks_data_validator_flavor import (
     DeepchecksDataValidatorFlavor,
 )
+
+__all__ = ["DeepchecksDataValidatorFlavor"]

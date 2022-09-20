@@ -13,12 +13,13 @@
 #  permissions and limitations under the License.
 """Implementation of the AWS Secrets Manager integration."""
 import json
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional, cast
 
 import boto3
 
 from zenml.exceptions import SecretExistsError
 from zenml.integrations.aws.flavors.aws_secrets_manager_flavor import (
+    AWSSecretsManagerConfig,
     validate_aws_secret_name_or_namespace,
 )
 from zenml.logger import get_logger
@@ -36,6 +37,10 @@ class AWSSecretsManager(BaseSecretsManager):
     """Class to interact with the AWS secrets manager."""
 
     CLIENT: ClassVar[Any] = None
+
+    @property
+    def config(self) -> AWSSecretsManagerConfig:
+        return cast(AWSSecretsManagerConfig, self._config)
 
     @classmethod
     def _ensure_client_connected(cls, region_name: str) -> None:

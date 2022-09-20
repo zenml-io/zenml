@@ -14,5 +14,11 @@
 """Tekton integration flavors."""
 
 from zenml.integrations.tekton.flavors.tekton_orchestrator_flavor import (
+    TektonOrchestratorConfig,
     TektonOrchestratorFlavor,
 )
+
+__all__ = [
+    "TektonOrchestratorFlavor",
+    "TektonOrchestratorConfig",
+]

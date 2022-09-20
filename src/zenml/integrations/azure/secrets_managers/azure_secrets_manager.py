@@ -15,13 +15,17 @@
 
 import base64
 import json
-from typing import Any, ClassVar, List, Optional
+from typing import Any, ClassVar, List, Optional, cast
 
 from azure.core.exceptions import ResourceNotFoundError
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 
 from zenml.exceptions import SecretExistsError
+from zenml.integrations.azure.flavors.azure_secrets_manager_flavor import (
+    AzureSecretsManagerConfig,
+    validate_azure_secret_name_or_namespace,
+)
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
@@ -45,6 +49,10 @@ class AzureSecretsManager(BaseSecretsManager):
 
     CLIENT: ClassVar[Any] = None
 
+    @property
+    def config(self) -> AzureSecretsManagerConfig:
+        return cast(AzureSecretsManagerConfig, self._config)
+
     @classmethod
     def _ensure_client_connected(cls, vault_name: str) -> None:
         if cls.CLIENT is None:
@@ -59,7 +67,7 @@ class AzureSecretsManager(BaseSecretsManager):
         Args:
             name: the secret name
         """
-        self.validate_secret_name_or_namespace(name, self.config.scope)
+        validate_azure_secret_name_or_namespace(name, self.config.scope)
 
     def _create_or_update_secret(self, secret: BaseSecretSchema) -> None:
         """Creates a new secret or updated an existing one.

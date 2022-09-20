@@ -26,6 +26,9 @@ from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError
 from zenml.integrations.azure import AZURE_ARTIFACT_STORE_FLAVOR
 from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
+from zenml.integrations.label_studio.flavors.label_studio_annotator_flavor import (
+    LabelStudioAnnotatorConfig,
+)
 from zenml.integrations.label_studio.steps.label_studio_standard_steps import (
     LabelStudioDatasetRegistrationConfig,
     LabelStudioDatasetSyncConfig,
@@ -43,6 +46,10 @@ logger = get_logger(__name__)
 
 class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
     """Class to interact with the Label Studio annotation interface."""
+
+    @property
+    def config(self) -> LabelStudioAnnotatorConfig:
+        return cast(LabelStudioAnnotatorConfig, self._config)
 
     @property
     def validator(self) -> Optional["StackValidator"]:

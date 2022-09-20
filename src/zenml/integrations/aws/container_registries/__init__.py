@@ -16,3 +16,5 @@
 from zenml.integrations.aws.container_registries.aws_container_registry import (  # noqa
     AWSContainerRegistry,
 )
+
+__all__ = ["AWSContainerRegistry"]

@@ -38,6 +38,9 @@ from great_expectations.profile.user_configurable_profiler import (  # type: ign
 
 from zenml.data_validators import BaseDataValidator
 from zenml.environment import Environment
+from zenml.integrations.great_expectations.flavors.great_expectations_data_validator_flavor import (
+    GreatExpectationsDataValidatorConfig,
+)
 from zenml.integrations.great_expectations.ge_store_backend import (
     ZenMLArtifactStoreBackend,
 )
@@ -56,7 +59,11 @@ class GreatExpectationsDataValidator(BaseDataValidator):
     """Great Expectations data validator stack component."""
 
     _context: BaseDataContext = None
-    _context_config: Dict[str, Any] = None
+    _context_config: Optional[Dict[str, Any]] = None
+
+    @property
+    def config(self) -> GreatExpectationsDataValidatorConfig:
+        return cast(GreatExpectationsDataValidatorConfig, self._config)
 
     @classmethod
     def get_data_context(cls) -> BaseDataContext:
@@ -75,7 +82,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         return data_validator.data_context
 
     @property
-    def context_config(self):
+    def context_config(self) -> Optional[Dict[str, Any]]:
         """Get the Great Expectations data context configuration.
 
         The first time the context config is loaded from the stack component
@@ -88,30 +95,36 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         Returns:
             A dictionary with the GE data context configuration.
         """
-        if self._context_config is not None:  # No need to load twice
+        # If the context config is already loaded, return it
+        if self._context_config is not None:
             return self._context_config
 
+        # Otherwise, load it from the stack component config
         context_config = self.config.context_config
-        if context_config and not isinstance(context_config, dict):
-
-            # Try to load the context config as a JSON/YAML string
-            try:
-                context_config_dict = yaml.safe_load(context_config)
-            except yaml.parser.ParserError as e:
-                raise ValueError(
-                    f"Malformed `context_config` value. Only JSON and YAML "
-                    f"formats are supported: {str(e)}"
-                )
-
-            # Validate that the context config is a valid GE config
-            try:
-                context_config = DataContextConfig(**context_config_dict)
-                BaseDataContext(project_config=context_config)
-            except Exception as e:
-                raise ValueError(f"Invalid `context_config` value: {str(e)}")
-
-            self._context_config = context_config_dict
+        if context_config is None:
+            return None
+        if isinstance(context_config, dict):
+            self._context_config = context_config
             return self._context_config
+
+        # If the context config is a string, try to parse it as JSON/YAML
+        try:
+            context_config_dict = yaml.safe_load(context_config)
+        except yaml.parser.ParserError as e:
+            raise ValueError(
+                f"Malformed `context_config` value. Only JSON and YAML "
+                f"formats are supported: {str(e)}"
+            )
+
+        # Validate that the context config is a valid GE config
+        try:
+            context_config = DataContextConfig(**context_config_dict)
+            BaseDataContext(project_config=context_config)
+        except Exception as e:
+            raise ValueError(f"Invalid `context_config` value: {str(e)}")
+
+        self._context_config = cast(Dict[str, Any], context_config_dict)
+        return self._context_config
 
     @property
     def local_path(self) -> Optional[str]:
@@ -141,7 +154,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
             "store_backend": {
                 "module_name": ZenMLArtifactStoreBackend.__module__,
                 "class_name": ZenMLArtifactStoreBackend.__name__,
-                "prefix": f"{str(self.uuid)}/{prefix}",
+                "prefix": f"{str(self.id)}/{prefix}",
             },
         }
 
@@ -166,7 +179,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
             store_backend = {
                 "module_name": ZenMLArtifactStoreBackend.__module__,
                 "class_name": ZenMLArtifactStoreBackend.__name__,
-                "prefix": f"{str(self.uuid)}/{prefix}",
+                "prefix": f"{str(self.id)}/{prefix}",
             }
 
         return {
@@ -286,8 +299,8 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         """
         path = os.path.join(
             io_utils.get_global_config_directory(),
-            self.FLAVOR,
-            str(self.uuid),
+            self.flavor,
+            str(self.id),
         )
 
         if not os.path.exists(path):
