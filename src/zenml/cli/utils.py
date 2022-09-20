@@ -46,7 +46,7 @@ from zenml.console import console, zenml_style_defaults
 from zenml.constants import IS_DEBUG_ENV
 from zenml.enums import StoreType
 from zenml.logger import get_logger
-from zenml.models.stack_models import StackModel
+from zenml.models.stack_models import HydratedStackModel
 
 logger = get_logger(__name__)
 
@@ -275,7 +275,7 @@ def print_stack_component_list(
     print_table(configurations)
 
 
-def print_stack_configuration(stack: StackModel, active: bool) -> None:
+def print_stack_configuration(stack: HydratedStackModel, active: bool) -> None:
     """Prints the configuration options of a stack.
 
     Args:

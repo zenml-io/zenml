@@ -21,6 +21,7 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.enums import StackComponentType
 from zenml.repository import Repository
+from zenml.stack.stack_component import StackComponent
 
 if TYPE_CHECKING:
     from zenml.annotators.base_annotator import BaseAnnotator
@@ -53,7 +54,7 @@ def register_annotator_subcommands() -> None:
             )
             return
 
-        ctx.obj = annotator_models[0].to_component()
+        ctx.obj = StackComponent.from_model(annotator_models[0])
 
     @dataset.command(
         "list",
