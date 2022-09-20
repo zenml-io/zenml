@@ -28,11 +28,11 @@ from zenml.exceptions import (
     StackExistsError,
 )
 from zenml.io import fileio
+from zenml.models.stack_models import StackModel
 from zenml.orchestrators import LocalOrchestrator
 from zenml.repository import Repository
 from zenml.stack import Stack
 from zenml.utils import io_utils
-from zenml.models.stack_models import StackModel
 
 
 def _create_local_stack(
@@ -207,9 +207,7 @@ def test_getting_a_stack(clean_repo):
         assert isinstance(stack, StackModel)
 
     with pytest.raises(KeyError):
-        clean_repo.get_stack_by_name(
-            "stack_name_that_hopefully_does_not_exist"
-        )
+        clean_repo.get_stack_by_name("stack_name_that_hopefully_does_not_exist")
 
 
 def test_registering_a_stack(clean_repo):
