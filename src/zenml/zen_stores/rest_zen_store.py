@@ -14,13 +14,12 @@
 """REST Zen Store implementation."""
 
 import re
-
-from google.protobuf.json_format import Parse
-from pathlib import Path, PurePath
+from pathlib import PurePath
 from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar, Union
 from uuid import UUID
 
 import requests
+from google.protobuf.json_format import Parse
 from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
 from pydantic import BaseModel, validator
 

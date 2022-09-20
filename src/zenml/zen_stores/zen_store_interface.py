@@ -13,10 +13,11 @@
 #  permissions and limitations under the License.
 """ZenML Store interface."""
 from abc import ABC, abstractmethod
-from pathlib import Path, PurePath
+from pathlib import PurePath
 from typing import Any, Dict, List, Optional, Union
-from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
 from uuid import UUID
+
+from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
 
 from zenml.config.store_config import StoreConfiguration
 from zenml.enums import ExecutionStatus, StackComponentType

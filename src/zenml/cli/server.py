@@ -14,10 +14,12 @@
 """CLI for managing ZenML server deployments."""
 
 import ipaddress
+import os
 from importlib import import_module
 from typing import Any, Dict, Optional, Union
 
 import click
+import yaml
 from click_params import IP_ADDRESS
 from rich.errors import MarkupError
 from rich.markdown import Markdown
@@ -27,6 +29,7 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.console import console
 from zenml.enums import CliCategories, ServerProviderType
 from zenml.logger import get_logger
+from zenml.utils import yaml_utils
 from zenml.zen_server.deploy.deployer import ServerDeployer
 from zenml.zen_server.deploy.deployment import (
     ServerDeployment,
@@ -98,8 +101,8 @@ def explain_server() -> None:
     type=click.Choice(
         [p.value for p in ServerProviderType], case_sensitive=True
     ),
+    default=None,
     help="Server deployment provider.",
-    default=ServerProviderType.LOCAL.value,
 )
 @click.option(
     "--connect",
@@ -110,9 +113,17 @@ def explain_server() -> None:
 @click.option("--port", type=int, default=None)
 @click.option("--ip-address", type=IP_ADDRESS, default=None)
 @click.option(
-    "--username", type=str, default="default", show_default=True, help="The ."
+    "--username",
+    type=str,
+    default=None,
+    help="The username to use to connect to the server",
 )
-@click.option("--password", type=str, default="", show_default=True)
+@click.option(
+    "--password",
+    type=str,
+    default=None,
+    help="The password to use to connect to the server",
+)
 @click.option(
     "--timeout",
     "-t",
@@ -124,17 +135,24 @@ def explain_server() -> None:
         "to be ready."
     ),
 )
+@click.option(
+    "--config",
+    help="Use a YAML or JSON configuration or configuration file.",
+    required=False,
+    type=str,
+)
 def up_server(
-    provider: str,
-    connect: bool,
-    username: str,
-    password: str,
-    name: Optional[str],
+    provider: Optional[str] = None,
+    connect: bool = False,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+    name: Optional[str] = None,
     ip_address: Union[
         ipaddress.IPv4Address, ipaddress.IPv6Address, None
     ] = None,
     timeout: Optional[int] = None,
     port: Optional[int] = None,
+    config: Optional[str] = None,
 ) -> None:
     """Provisions resources for a ZenML server.
 
@@ -147,19 +165,41 @@ def up_server(
         username: The username to use for authentication.
         password: The password to use for authentication.
         timeout: Time in seconds to wait for the server to start.
+        config: A YAML or JSON configuration or configuration file to use.
     """
-    name = name or provider
-    config_attrs: Dict[str, Any] = dict(
-        name=name,
-        provider=ServerProviderType(provider),
-    )
-    if port is not None:
-        config_attrs["port"] = port
-    if ip_address is not None:
-        config_attrs["ip_address"] = ip_address
+
+    if config:
+        if provider or name or ip_address or port:
+            cli_utils.error(
+                "You cannot pass a config file and pass other configuration "
+                "options as command line arguments at the same time."
+            )
+        if os.path.isfile(config):
+            config_dict = yaml_utils.read_yaml(config)
+        else:
+            config_dict = yaml.safe_load(config)
+        if not isinstance(config_dict, dict):
+            cli_utils.error(
+                "The configuration argument must be JSON/YAML content or "
+                "point to a valid configuration file."
+            )
+        server_config = ServerDeploymentConfig.parse_obj(config_dict)
+    else:
+        provider = provider or ServerProviderType.LOCAL.value
+
+        name = name or provider
+        config_attrs: Dict[str, Any] = dict(
+            name=name,
+            provider=ServerProviderType(provider),
+        )
+        if port is not None:
+            config_attrs["port"] = port
+        if ip_address is not None:
+            config_attrs["ip_address"] = ip_address
+
+        server_config = ServerDeploymentConfig(**config_attrs)
 
     deployer = ServerDeployer()
-    server_config = ServerDeploymentConfig(**config_attrs)
 
     server = deployer.deploy_server(server_config, timeout=timeout)
     if server.status and server.status.url:
@@ -167,7 +207,9 @@ def up_server(
             f"ZenML server '{name}' running at '{server.status.url}'."
         )
     if connect:
-        deployer.connect_to_server(name, username, password)
+        username = username or "default"
+        password = password or ""
+        deployer.connect_to_server(server_config.name, username, password)
 
 
 @server.command("down", help="Shut down and remove a ZenML server instance.")

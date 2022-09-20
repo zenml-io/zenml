@@ -14,27 +14,21 @@
 """SQL Zen Store implementation."""
 
 import os
-from pathlib import Path, PurePath
 import re
+from pathlib import Path, PurePath
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union, cast
 from uuid import UUID
 
+from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
 from pydantic import root_validator
-
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.exc import ArgumentError, NoResultFound
 from sqlmodel import Session, SQLModel, create_engine, or_, select
 from sqlmodel.sql.expression import Select, SelectOfScalar
-
 from tfx.orchestration import metadata
-from ml_metadata.proto.metadata_store_pb2 import (
-    MySQLDatabaseConfig,
-    ConnectionConfig,
-)
 
 from zenml.config.global_config import GlobalConfiguration
-
 from zenml.config.store_config import StoreConfiguration
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.exceptions import (
@@ -269,6 +263,13 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             assert self.username is not None
             assert self.password is not None
             assert sql_url.host is not None
+
+            # config = MySQLDatabaseConfig(
+            #     host=sql_url.host,
+            #     port=int(sql_url.port,
+            #     database=self.database,
+            # )
+
             mlmd_config = metadata.mysql_metadata_connection_config(
                 host=sql_url.host,
                 port=sql_url.port or 3306,
@@ -277,21 +278,21 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 password=self.password,
             )
 
-            mlmd_ssl_options = {}
-            # Handle certificate params
-            for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
-                ssl_setting = getattr(self, key)
-                if ssl_setting and os.path.isfile(ssl_setting):
-                    mlmd_ssl_options[key.lstrip("ssl_")] = ssl_setting
+            # mlmd_ssl_options = {}
+            # # Handle certificate params
+            # for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
+            #     ssl_setting = getattr(self, key)
+            #     if ssl_setting and os.path.isfile(ssl_setting):
+            #         mlmd_ssl_options[key.lstrip("ssl_")] = ssl_setting
 
-            # Handle additional params
-            if mlmd_ssl_options:
-                mlmd_ssl_options[
-                    "verify_server_cert"
-                ] = self.ssl_verify_server_cert
-                mlmd_config.mysql.ssl_options.CopyFrom(
-                    MySQLDatabaseConfig.SSLOptions(**mlmd_ssl_options)
-                )
+            # # Handle additional params
+            # if mlmd_ssl_options:
+            #     mlmd_ssl_options[
+            #         "verify_server_cert"
+            #     ] = self.ssl_verify_server_cert
+            #     mlmd_config.mysql.ssl_options.CopyFrom(
+            #         MySQLDatabaseConfig.SSLOptions(**mlmd_ssl_options)
+            #     )
         else:
             raise NotImplementedError(
                 f"SQL driver `{sql_url.drivername}` is not supported."
@@ -309,7 +310,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         sqlalchemy_connect_args = {}
         if sql_url.drivername == SQLDatabaseDriver.SQLITE:
             assert self.database is not None
-            pass
         elif sql_url.drivername == SQLDatabaseDriver.MYSQL:
             # all these are guaranteed by our root validator
             assert self.database is not None

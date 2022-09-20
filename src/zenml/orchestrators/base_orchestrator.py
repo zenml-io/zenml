@@ -37,8 +37,6 @@ import time
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Type
 
-from google.protobuf.json_format import Parse
-from ml_metadata.proto.metadata_store_pb2 import ConnectionConfig
 from pydantic.json import pydantic_encoder
 from tfx.dsl.compiler.compiler import Compiler
 from tfx.dsl.compiler.constants import PIPELINE_RUN_ID_PARAMETER_NAME

@@ -48,11 +48,6 @@ def base_repo(
     """Fixture to get a base clean global configuration and repository for all
     tests."""
 
-    # the global configuration and repository must not have been instantiated
-    # yet, otherwise the current working configuration might be affected
-    assert GlobalConfiguration.get_instance() is None
-    assert Repository.get_instance() is None
-
     # original working directory
     orig_cwd = os.getcwd()
 

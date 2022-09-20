@@ -19,6 +19,7 @@ import shutil
 from typing import Dict, List, Optional, Tuple, Union, cast
 
 from zenml.config.global_config import GlobalConfiguration
+from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
     ENV_ZENML_CONFIG_PATH,
@@ -88,6 +89,7 @@ class DockerZenServerConfig(ContainerServiceConfig):
     """
 
     server: DockerServerDeploymentConfig
+    store: Optional[StoreConfiguration] = None
 
 
 class DockerZenServer(ContainerService):
@@ -112,21 +114,23 @@ class DockerZenServer(ContainerService):
         """Copy the global configuration to the docker ZenML server location.
 
         The docker ZenML server global configuration is a copy of the docker
-        global configuration with the store configuration set to point to the
-        local store.
+        global configuration. If a store configuration is explicitly set in
+        the server configuration, it will be used. Otherwise, the store
+        configuration is set to point to the local store.
         """
         gc = GlobalConfiguration()
 
-        # this creates a copy of the global configuration with the store
-        # set to where the default local store is mounted in the docker
-        # container and saves it to the server configuration path
+        # this creates a copy of the global configuration and saves it to the
+        # server configuration path. The store is set to where the default local
+        # store is mounted in the docker container unless a custom store
+        # configuration is explicitly supplied with the server configuration.
         store_config = gc.get_default_store()
         store_config.url = SqlZenStore.get_local_url(
             SERVICE_CONTAINER_GLOBAL_CONFIG_PATH
         )
         gc.copy_configuration(
             config_path=DOCKER_ZENML_SERVER_GLOBAL_CONFIG_PATH,
-            store_config=store_config,
+            store_config=self.config.server.store or store_config,
         )
 
     @classmethod
