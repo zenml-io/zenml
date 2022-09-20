@@ -16,8 +16,7 @@
 import os
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
-import yaml
-from pydantic import root_validator, validator
+from pydantic import validator
 
 from zenml.data_validators.base_data_validator import (
     BaseDataValidatorConfig,
@@ -78,46 +77,6 @@ class GreatExpectationsDataValidatorConfig(BaseDataValidatorConfig):
                     f"point to an existing data context path: {context_root_dir}"
                 )
         return context_root_dir
-
-    @root_validator(pre=True)
-    def _convert_context_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Converts context_config from JSON/YAML string format to a dict.
-
-        Args:
-            values: Values passed to the object constructor
-
-        Returns:
-            Values passed to the object constructor
-
-        Raises:
-            ValueError: If the context_config value is not a valid JSON/YAML or
-                if the GE configuration extracted from it fails GE validation.
-        """
-        # TODO: refactor this into the actual implementation
-        from great_expectations.data_context.data_context import (  # type: ignore[import]
-            BaseDataContext,
-        )
-        from great_expectations.data_context.types.base import (  # type: ignore[import]
-            DataContextConfig,
-        )
-
-        context_config = values.get("context_config")
-        if context_config and not isinstance(context_config, dict):
-            try:
-                context_config_dict = yaml.safe_load(context_config)
-            except yaml.parser.ParserError as e:
-                raise ValueError(
-                    f"Malformed `context_config` value. Only JSON and YAML formats "
-                    f"are supported: {str(e)}"
-                )
-            try:
-                context_config = DataContextConfig(**context_config_dict)
-                BaseDataContext(project_config=context_config)
-            except Exception as e:
-                raise ValueError(f"Invalid `context_config` value: {str(e)}")
-
-            values["context_config"] = context_config_dict
-        return values
 
 
 class GreatExpectationsDataValidatorFlavor(BaseDataValidatorFlavor):

@@ -17,6 +17,7 @@ import os
 from typing import Any, Dict, List, Optional, Sequence, cast
 
 import pandas as pd
+import yaml
 from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import]
     CheckpointResult,
 )
@@ -55,6 +56,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
     """Great Expectations data validator stack component."""
 
     _context: BaseDataContext = None
+    _context_config: Dict[str, Any] = None
 
     @classmethod
     def get_data_context(cls) -> BaseDataContext:
@@ -73,6 +75,45 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         return data_validator.data_context
 
     @property
+    def context_config(self):
+        """Get the Great Expectations data context configuration.
+
+        The first time the context config is loaded from the stack component
+        config, it is converted from JSON/YAML string format to a dict.
+
+        Raises:
+            ValueError: If the context_config value is not a valid JSON/YAML or
+                if the GE configuration extracted from it fails GE validation.
+
+        Returns:
+            A dictionary with the GE data context configuration.
+        """
+        if self._context_config is not None:  # No need to load twice
+            return self._context_config
+
+        context_config = self.config.context_config
+        if context_config and not isinstance(context_config, dict):
+
+            # Try to load the context config as a JSON/YAML string
+            try:
+                context_config_dict = yaml.safe_load(context_config)
+            except yaml.parser.ParserError as e:
+                raise ValueError(
+                    f"Malformed `context_config` value. Only JSON and YAML "
+                    f"formats are supported: {str(e)}"
+                )
+
+            # Validate that the context config is a valid GE config
+            try:
+                context_config = DataContextConfig(**context_config_dict)
+                BaseDataContext(project_config=context_config)
+            except Exception as e:
+                raise ValueError(f"Invalid `context_config` value: {str(e)}")
+
+            self._context_config = context_config_dict
+            return self._context_config
+
+    @property
     def local_path(self) -> Optional[str]:
         """Return a local path where this component stores information.
 
@@ -83,7 +124,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         Returns:
             The local path where this component stores information.
         """
-        return self.context_root_dir
+        return self.config.context_root_dir
 
     def get_store_config(self, class_name: str, prefix: str) -> Dict[str, Any]:
         """Generate a Great Expectations store configuration.
@@ -180,11 +221,11 @@ class GreatExpectationsDataValidator(BaseDataValidator):
                 },
             )
 
-            configure_zenml_stores = self.configure_zenml_stores
-            if self.context_root_dir:
+            configure_zenml_stores = self.config.configure_zenml_stores
+            if self.config.context_root_dir:
                 # initialize the local data context, if a local path was
                 # configured
-                self._context = DataContext(self.context_root_dir)
+                self._context = DataContext(self.config.context_root_dir)
             else:
                 # create an in-memory data context configuration that is not
                 # backed by a local YAML file (see https://docs.greatexpectations.io/docs/guides/setup/configuring_data_contexts/how_to_instantiate_a_data_context_without_a_yml_file/).
@@ -225,7 +266,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
                         site_name
                     ] = site_config
 
-            if self.configure_local_docs:
+            if self.config.configure_local_docs:
 
                 repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
                 artifact_store = repo.active_stack.artifact_store

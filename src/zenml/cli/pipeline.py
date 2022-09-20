@@ -60,13 +60,12 @@ def list_pipelines() -> None:
     pipelines = Repository().zen_store.list_pipelines(
         project_name_or_id=Repository().active_project.id
     )
-    hydrated_pipelines = [p.to_hydrated_model() for p in pipelines]
-    if not hydrated_pipelines:
+    if not pipelines:
         cli_utils.declare("No piplines registered.")
         return
 
     cli_utils.print_pydantic_models(
-        hydrated_pipelines,
+        pipelines,
         exclude_columns=["id", "created", "updated", "user", "project"],
     )
 
@@ -101,3 +100,55 @@ def delete_pipeline(pipeline_name_or_id: str) -> None:
     assert pipeline.id is not None
     Repository().zen_store.delete_pipeline(pipeline_id=pipeline.id)
     cli_utils.declare(f"Deleted pipeline '{pipeline_name_or_id}'.")
+
+
+@pipeline.group()
+def run() -> None:
+    """Commands for pipeline runs."""
+
+
+@click.option("--pipeline", "-p", type=str, required=False)
+@click.option("--stack", "-s", type=str, required=False)
+@click.option("--user", "-u", type=str, required=False)
+@click.option("--unlisted", is_flag=True)
+@run.command("list", help="List all registered pipeline runs.")
+def list_pipeline_runs(
+    pipeline: str, stack: str, user: str, unlisted: bool = False
+) -> None:
+    """List all registered pipeline runs.
+
+    Args:
+        pipeline: If provided, only return runs for this pipeline.
+        stack: If provided, only return runs for this stack.
+        user: If provided, only return runs for this user.
+        unlisted: If True, only return unlisted runs that are not
+            associated with any pipeline.
+    """
+    cli_utils.print_active_config()
+    try:
+        pipeline_runs = Repository().zen_store.list_runs(
+            project_name_or_id=Repository().active_project.id,
+            user_name_or_id=user,
+            pipeline_id=pipeline,  # TODO: pipeline_name_or_id
+            stack_id=stack,  # TODO: stack_name_or_id
+            unlisted=unlisted,
+        )
+    except KeyError as err:
+        cli_utils.error(str(err))
+    if not pipeline_runs:
+        cli_utils.declare("No pipeline runs registered.")
+        return
+
+    cli_utils.print_pydantic_models(
+        pipeline_runs,
+        exclude_columns=[
+            "id",
+            "created",
+            "updated",
+            "user",
+            "project",
+            "mlmd_id",
+            "stack_id",
+            "pipeline_id",
+        ],
+    )

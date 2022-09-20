@@ -152,9 +152,7 @@ def mlflow_deployment_example_validation():
     example."""
 
     # Verify the example run was successful
-    deployment_pipeline = get_pipeline(
-        "continuous_deployment_pipeline"
-    )
+    deployment_pipeline = get_pipeline("continuous_deployment_pipeline")
     assert deployment_pipeline is not None
 
     inference_pipeline = get_pipeline("inference_pipeline")

@@ -18,6 +18,7 @@ from typing import Optional, Tuple
 
 import mlflow  # type: ignore[import]
 from mlflow.entities import Experiment  # type: ignore[import]
+from mlflow.store.db.db_types import DATABASE_ENGINES  # type: ignore[import]
 
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.environment import Environment
@@ -61,6 +62,42 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         context.stack.experiment_tracker  # get the tracking_uri etc. from here
     ```
     """
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the experiment tracker and validate the tracking uri.
+
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
+        super().__init__(*args, **kwargs)
+        self._ensure_valid_tracking_uri()
+
+    def _ensure_valid_tracking_uri(self) -> Optional[str]:
+        """Ensures that the tracking uri is a valid mlflow tracking uri.
+
+        Args:
+            tracking_uri: The tracking uri to validate.
+
+        Returns:
+            The tracking uri if it is valid.
+
+        Raises:
+            ValueError: If the tracking uri is not valid.
+        """
+        tracking_uri = self.config.tracking_uri
+        if tracking_uri:
+            valid_schemes = DATABASE_ENGINES + ["http", "https", "file"]
+            if not any(
+                tracking_uri.startswith(scheme) for scheme in valid_schemes
+            ) and not is_databricks_tracking_uri(tracking_uri):
+                raise ValueError(
+                    f"MLflow tracking uri does not start with one of the valid "
+                    f"schemes {valid_schemes} or its value is not set to "
+                    f"'databricks'. See "
+                    f"https://www.mlflow.org/docs/latest/tracking.html#where-runs-are-recorded "
+                    f"for more information."
+                )
 
     @staticmethod
     def _local_mlflow_backend() -> str:

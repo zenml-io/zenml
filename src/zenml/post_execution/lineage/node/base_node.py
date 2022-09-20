@@ -15,9 +15,12 @@
 
 from pydantic import BaseModel
 
+from zenml.enums import ExecutionStatus
+
 
 class BaseNode(BaseModel):
     """A class that represents a node in a lineage graph."""
 
     id: str
     type: str
+    status: ExecutionStatus

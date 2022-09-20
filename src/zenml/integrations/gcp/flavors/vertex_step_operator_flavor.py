@@ -15,8 +15,6 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
-from pydantic import validator as property_validator
-
 from zenml.integrations.gcp import GCP_VERTEX_STEP_OPERATOR_FLAVOR
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
@@ -63,27 +61,6 @@ class VertexStepOperatorConfig(
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
         ("base_image", "docker_parent_image")
     )
-
-    @property_validator("accelerator_type")
-    def validate_accelerator_enum(cls, accelerator_type: Optional[str]) -> None:
-        """Validates that the accelerator type is valid.
-
-        Args:
-            accelerator_type: Accelerator type
-
-        Raises:
-            ValueError: If the accelerator type is not valid.
-        """
-        # TODO: refactor this into the actual implementation
-        from google.cloud import aiplatform
-
-        accepted_vals = list(
-            aiplatform.gapic.AcceleratorType.__members__.keys()
-        )
-        if accelerator_type and accelerator_type.upper() not in accepted_vals:
-            raise ValueError(
-                f"Accelerator must be one of the following: {accepted_vals}"
-            )
 
 
 class VertexStepOperatorFlavor(BaseStepOperatorFlavor):

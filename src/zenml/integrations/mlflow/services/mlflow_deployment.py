@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the MLflow deployment functionality."""
 
+import os
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import numpy as np
@@ -75,7 +76,7 @@ class MLFlowDeploymentEndpoint(LocalDaemonServiceEndpoint):
         uri = self.status.uri
         if not uri:
             return None
-        return f"{uri}{self.config.prediction_url_path}"
+        return os.path.join(uri, self.config.prediction_url_path)
 
 
 class MLFlowDeploymentConfig(LocalDaemonServiceConfig):

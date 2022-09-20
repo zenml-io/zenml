@@ -17,7 +17,7 @@ from functools import wraps
 from typing import Any, Callable, List, TypeVar, cast
 
 from fastapi import HTTPException
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StoreType

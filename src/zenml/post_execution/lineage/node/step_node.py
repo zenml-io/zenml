@@ -17,7 +17,6 @@ from typing import Any, Dict
 
 from pydantic import BaseModel
 
-from zenml.enums import ExecutionStatus
 from zenml.post_execution.lineage.node.base_node import BaseNode
 
 
@@ -37,5 +36,4 @@ class StepNode(BaseNode):
 
     id: str
     type: str = "step"
-    status: ExecutionStatus
     data: StepNodeDetails
