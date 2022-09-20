@@ -1404,8 +1404,7 @@ def test_delete_stack_component_fails_when_component_does_not_exist(
 # Stack component flavors
 # -----------------------
 
-# TODO: remove `xfail` once the method is properly implemented
-@pytest.mark.xfail
+
 def test_create_stack_component_flavor_succeeds(
     sql_store: BaseZenStore,
 ):
@@ -1414,16 +1413,21 @@ def test_create_stack_component_flavor_succeeds(
     blupus_flavor = FlavorModel(
         name=flavor_name,
         type=StackComponentType.ORCHESTRATOR,
+        config_schema="default",
         source=".",
         project=sql_store["default_project"].id,
         user=sql_store["active_user"].id,
     )
     with does_not_raise():
         sql_store["store"].create_flavor(flavor=blupus_flavor)
-        blupus_flavor_id = sql_store["store"].list_flavors(
-            project_name_or_id=sql_store["default_project"].name,
-            component_type=StackComponentType.ORCHESTRATOR,
-            name=flavor_name,
+        blupus_flavor_id = (
+            sql_store["store"]
+            .list_flavors(
+                project_name_or_id=sql_store["default_project"].name,
+                component_type=StackComponentType.ORCHESTRATOR,
+                name=flavor_name,
+            )[0]
+            .id
         )
         created_flavor = sql_store["store"].get_flavor(
             flavor_id=blupus_flavor_id
@@ -1431,8 +1435,6 @@ def test_create_stack_component_flavor_succeeds(
         assert created_flavor.name == flavor_name
 
 
-# TODO: remove `xfail` once the method is properly implemented
-@pytest.mark.xfail
 def test_create_stack_component_fails_when_flavor_already_exists(
     sql_store: BaseZenStore,
 ):
@@ -1458,8 +1460,6 @@ def test_create_stack_component_fails_when_flavor_already_exists(
         sql_store["store"].create_flavor(flavor=scinda_copy_flavor)
 
 
-# TODO: remove `xfail` once the method is properly implemented
-@pytest.mark.xfail
 def test_get_flavor_succeeds(
     sql_store: BaseZenStore,
 ):
@@ -1481,8 +1481,6 @@ def test_get_flavor_succeeds(
         )
 
 
-# TODO: remove `xfail` once the method is properly implemented
-@pytest.mark.xfail
 def test_get_flavor_fails_when_flavor_does_not_exist(
     sql_store: BaseZenStore,
 ):
@@ -1491,8 +1489,6 @@ def test_get_flavor_fails_when_flavor_does_not_exist(
         sql_store["store"].get_flavor(flavor_id=uuid.uuid4())
 
 
-# TODO: remove `xfail` once the method is properly implemented
-@pytest.mark.xfail
 def test_list_flavors_succeeds(
     sql_store: BaseZenStore,
 ):
@@ -1511,8 +1507,6 @@ def test_list_flavors_succeeds(
         )
 
 
-# TODO: remove `xfail` once the method is properly implemented
-@pytest.mark.xfail
 def test_list_flavors_fails_with_nonexistent_project(
     sql_store: BaseZenStore,
 ):
