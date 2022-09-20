@@ -63,9 +63,12 @@ def test_valid_stack_component_update_succeeds(clean_repo) -> None:
     )
     assert register_result.exit_code == 0
     assert (
-        clean_repo.get_stack_component(
-            StackComponentType.CONTAINER_REGISTRY, "new_container_registry"
-        ).uri
+        StackComponent.from_model(
+            clean_repo.get_stack_component_by_name_and_type(
+                type=StackComponentType.CONTAINER_REGISTRY,
+                name="new_container_registry",
+            )
+        ).config.uri
         == "some_random_uri.com"
     )
 
@@ -81,9 +84,12 @@ def test_valid_stack_component_update_succeeds(clean_repo) -> None:
     )
     assert update_result.exit_code == 0
     assert (
-        clean_repo.get_stack_component(
-            StackComponentType.CONTAINER_REGISTRY, "new_container_registry"
-        ).uri
+        StackComponent.from_model(
+            clean_repo.get_stack_component_by_name_and_type(
+                type=StackComponentType.CONTAINER_REGISTRY,
+                name="new_container_registry",
+            )
+        ).config.uri
         == "another_random_uri.com"
     )
 
