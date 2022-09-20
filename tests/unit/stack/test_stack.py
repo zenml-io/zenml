@@ -16,37 +16,33 @@ from uuid import uuid4
 
 import pytest
 
-from zenml.artifact_stores import LocalArtifactStore
-from zenml.container_registries import DefaultContainerRegistryFlavor
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
-from zenml.orchestrators import LocalOrchestrator
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.stack import Stack
 
 
-def test_initializing_a_stack_from_components():
+def test_initializing_a_stack_from_components(
+    local_orchestrator, local_artifact_store, local_container_registry
+):
     """Tests that a stack can be initialized from a dict of components."""
-    orchestrator = LocalOrchestrator(name="")
-    artifact_store = LocalArtifactStore(name="", path="")
 
     components = {
-        StackComponentType.ORCHESTRATOR: orchestrator,
-        StackComponentType.ARTIFACT_STORE: artifact_store,
+        StackComponentType.ORCHESTRATOR: local_orchestrator,
+        StackComponentType.ARTIFACT_STORE: local_artifact_store,
     }
 
     stack = Stack.from_components(id=uuid4(), name="", components=components)
 
-    assert stack.orchestrator is orchestrator
-    assert stack.artifact_store is artifact_store
+    assert stack.orchestrator is local_orchestrator
+    assert stack.artifact_store is local_artifact_store
     assert stack.container_registry is None
 
     # check that it also works with optional container registry
-    container_registry = DefaultContainerRegistryFlavor(name="", uri="")
-    components[StackComponentType.CONTAINER_REGISTRY] = container_registry
+    components[StackComponentType.CONTAINER_REGISTRY] = local_container_registry
 
     stack = Stack.from_components(id=uuid4(), name="", components=components)
-    assert stack.container_registry is container_registry
+    assert stack.container_registry is local_container_registry
 
 
 def test_initializing_a_stack_with_missing_components():
@@ -55,51 +51,49 @@ def test_initializing_a_stack_with_missing_components():
         Stack.from_components(name="", components={}).validate()
 
 
-def test_initializing_a_stack_with_wrong_components():
+def test_initializing_a_stack_with_wrong_components(local_orchestrator):
     """Tests that initializing a stack with wrong component classes fails."""
-    orchestrator = LocalOrchestrator(name="")
 
     # orchestrators for all component types
     components = {
-        StackComponentType.ORCHESTRATOR: orchestrator,
-        StackComponentType.ARTIFACT_STORE: orchestrator,
+        StackComponentType.ORCHESTRATOR: local_orchestrator,
+        StackComponentType.ARTIFACT_STORE: local_orchestrator,
     }
 
     with pytest.raises(TypeError):
         Stack.from_components(name="", components=components).validate()
 
 
-def test_stack_returns_all_its_components():
+def test_stack_returns_all_its_components(
+    local_orchestrator, local_artifact_store, local_container_registry
+):
     """Tests that the stack `components` property returns the correct stack
     components."""
-    orchestrator = LocalOrchestrator(name="")
-    artifact_store = LocalArtifactStore(name="", path="")
     stack = Stack(
         id=uuid4(),
         name="",
-        orchestrator=orchestrator,
-        artifact_store=artifact_store,
+        orchestrator=local_orchestrator,
+        artifact_store=local_artifact_store,
     )
 
     expected_components = {
-        StackComponentType.ORCHESTRATOR: orchestrator,
-        StackComponentType.ARTIFACT_STORE: artifact_store,
+        StackComponentType.ORCHESTRATOR: local_orchestrator,
+        StackComponentType.ARTIFACT_STORE: local_artifact_store,
     }
     assert stack.components == expected_components
 
     # check that it also works with optional container registry
-    container_registry = DefaultContainerRegistryFlavor(name="", uri="")
     stack = Stack(
         id=uuid4(),
         name="",
-        orchestrator=orchestrator,
-        artifact_store=artifact_store,
-        container_registry=container_registry,
+        orchestrator=local_orchestrator,
+        artifact_store=local_artifact_store,
+        container_registry=local_container_registry,
     )
 
     expected_components[
         StackComponentType.CONTAINER_REGISTRY
-    ] = container_registry
+    ] = local_container_registry
 
     assert stack.components == expected_components
 

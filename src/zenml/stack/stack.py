@@ -120,7 +120,7 @@ class Stack:
         self._annotator = annotator
         self._data_validator = data_validator
 
-    def to_model(self) -> "StackModel":
+    def to_model(self, user: UUID, project: UUID) -> "StackModel":
         """Creates a StackModel from an actual Stack instance.
 
         Returns:
@@ -129,8 +129,10 @@ class Stack:
         return StackModel(
             id=self.id,
             name=self.name,
+            user=user,
+            project=project,
             components={
-                type_: component.to_model()
+                type_: [component.to_model().id]
                 for type_, component in self.components.items()
             },
         )

@@ -258,7 +258,7 @@ class StackComponent:
             project=self.project,
             id=self.id,
             type=self.type,
-            flavor_name=self.flavor,
+            flavor=self.flavor,
             name=self.name,
             configuration=self.config.dict(),
         )

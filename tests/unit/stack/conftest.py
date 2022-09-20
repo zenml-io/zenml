@@ -55,15 +55,29 @@ def failing_stack_validator():
 
 
 @pytest.fixture
-def stub_component():
-    class _StubComponent(StackComponent):
+def stub_component_config():
+    class _StubComponentConfig(StackComponentConfig):
         some_public_attribute_name = "Aria"
         _some_private_attribute_name = "Also Aria"
+
+    return _StubComponentConfig()
+
+
+@pytest.fixture
+def stub_component():
+    class _StubComponentConfig(StackComponentConfig):
+        some_public_attribute_name = "Aria"
+        _some_private_attribute_name = "Also Aria"
+
+    class _StubComponent(StackComponent):
+        @property
+        def config(self) -> _StubComponentConfig:
+            return self._config
 
     return _StubComponent(
         name="StubComponent",
         id=uuid4(),
-        config=StackComponentConfig(),
+        config=_StubComponentConfig(),
         flavor=MOCK_FLAVOR,
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
