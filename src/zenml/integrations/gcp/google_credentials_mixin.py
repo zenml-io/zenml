@@ -40,6 +40,11 @@ class GoogleCredentialsMixin(StackComponent):
 
     @property
     def config(self) -> GoogleCredentialsConfigMixin:
+        """Returns the `GoogleCredentialsConfigMixin` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(GoogleCredentialsConfigMixin, self._config)
 
     def _get_authentication(self) -> Tuple["Credentials", str]:

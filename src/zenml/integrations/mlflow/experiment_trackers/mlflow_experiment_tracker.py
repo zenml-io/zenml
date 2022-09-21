@@ -102,6 +102,11 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
 
     @property
     def config(self) -> MLFlowExperimentTrackerConfig:
+        """Returns the `MLFlowExperimentTrackerConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(MLFlowExperimentTrackerConfig, self._config)
 
     @staticmethod

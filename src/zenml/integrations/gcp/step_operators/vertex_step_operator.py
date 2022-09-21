@@ -81,6 +81,11 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
 
     @property
     def config(self) -> VertexStepOperatorConfig:
+        """Returns the `VertexStepOperatorConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(VertexStepOperatorConfig, self._config)
 
     @property

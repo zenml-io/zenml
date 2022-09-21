@@ -174,9 +174,18 @@ class LocalDockerOrchestratorFlavor(BaseOrchestratorFlavor):
 
     @property
     def name(self) -> str:
+        """Name of the orchestrator flavor.
+
+        Returns:
+            Name of the orchestrator flavor.
+        """
         return "local_docker"
 
     @property
     def implementation_class(self) -> Type["LocalDockerOrchestrator"]:
-        """Implementation class for this flavor."""
+        """Implementation class for this flavor.
+
+        Returns:
+            Implementation class for this flavor.
+        """
         return LocalDockerOrchestrator

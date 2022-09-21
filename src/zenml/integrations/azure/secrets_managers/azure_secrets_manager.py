@@ -51,6 +51,11 @@ class AzureSecretsManager(BaseSecretsManager):
 
     @property
     def config(self) -> AzureSecretsManagerConfig:
+        """Returns the `AzureSecretsManagerConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(AzureSecretsManagerConfig, self._config)
 
     @classmethod

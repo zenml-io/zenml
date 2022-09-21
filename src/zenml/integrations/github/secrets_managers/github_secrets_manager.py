@@ -100,6 +100,11 @@ class GitHubSecretsManager(BaseSecretsManager):
 
     @property
     def config(self) -> GitHubSecretsManagerConfig:
+        """Returns the `GitHubSecretsManagerConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(GitHubSecretsManagerConfig, self._config)
 
     @property

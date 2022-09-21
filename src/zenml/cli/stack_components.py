@@ -800,7 +800,6 @@ def generate_stack_component_flavor_list_command(
     Returns:
         A function that can be used as a `click` command.
     """
-
     display_name = _component_display_name(component_type)
 
     def list_stack_component_flavor_command() -> None:
@@ -830,7 +829,6 @@ def generate_stack_component_flavor_register_command(
     Returns:
         A function that can be used as a `click` command.
     """
-
     display_name = _component_display_name(component_type)
 
     @click.argument(
@@ -880,7 +878,6 @@ def generate_stack_component_flavor_describe_command(
     Returns:
         A function that can be used as a `click` command.
     """
-
     display_name = _component_display_name(component_type)
 
     @click.argument(
@@ -922,7 +919,6 @@ def generate_stack_component_flavor_delete_command(
     Returns:
         A function that can be used as a `click` command.
     """
-
     display_name = _component_display_name(component_type)
 
     @click.argument(

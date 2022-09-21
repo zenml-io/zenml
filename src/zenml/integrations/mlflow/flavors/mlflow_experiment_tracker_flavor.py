@@ -150,8 +150,15 @@ class MLFlowExperimentTrackerConfig(BaseExperimentTrackerConfig):
 
 
 class MLFlowExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
+    """Class for the `MLFlowExperimentTrackerFlavor`."""
+
     @property
     def name(self) -> str:
+        """Name of the flavor.
+
+        Returns:
+            The name of the flavor.
+        """
         return MLFLOW_MODEL_EXPERIMENT_TRACKER_FLAVOR
 
     @property
@@ -165,7 +172,11 @@ class MLFlowExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
 
     @property
     def implementation_class(self) -> Type["MLFlowExperimentTracker"]:
-        """Implementation class for this flavor."""
+        """Implementation class for this flavor.
+
+        Returns:
+            The implementation class.
+        """
         from zenml.integrations.mlflow.experiment_trackers import (
             MLFlowExperimentTracker,
         )

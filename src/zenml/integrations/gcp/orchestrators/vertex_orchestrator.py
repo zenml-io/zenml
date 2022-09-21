@@ -88,6 +88,11 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
 
     @property
     def config(self) -> VertexOrchestratorConfig:
+        """Returns the `VertexOrchestratorConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(VertexOrchestratorConfig, self._config)
 
     @property

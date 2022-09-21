@@ -156,6 +156,7 @@ def _sanitize_paths(_func: Callable[..., Any]) -> Callable[..., Any]:
 
 
 class BaseArtifactStoreConfig(StackComponentConfig):
+    """Config class for `BaseArtifactStore`."""
 
     path: str
 
@@ -215,6 +216,11 @@ class BaseArtifactStore(StackComponent):
 
     @property
     def config(self) -> BaseArtifactStoreConfig:
+        """Returns the `BaseArtifactStoreConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(BaseArtifactStoreConfig, self._config)
 
     @property

@@ -45,6 +45,11 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
 
     @property
     def config(self) -> S3ArtifactStoreConfig:
+        """Get the config of this artifact store.
+
+        Returns:
+            The config of this artifact store.
+        """
         return cast(S3ArtifactStoreConfig, self._config)
 
     def _get_credentials(

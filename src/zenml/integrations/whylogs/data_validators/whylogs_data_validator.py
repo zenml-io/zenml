@@ -50,6 +50,11 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
 
     @property
     def config(self) -> WhylogsDataValidatorConfig:
+        """Returns the `WhylogsDataValidatorConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(WhylogsDataValidatorConfig, self._config)
 
     def data_profiling(
@@ -83,7 +88,9 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
         return profile.view()
 
     def upload_profile_view(
-        self, profile_view: DatasetProfileView, dataset_id: Optional[str] = None
+        self,
+        profile_view: DatasetProfileView,
+        dataset_id: Optional[str] = None,
     ) -> None:
         """Upload a whylogs data profile view to Whylabs, if configured to do so.
 

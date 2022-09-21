@@ -32,7 +32,7 @@ DEFAULT_LABEL_STUDIO_PORT = 8093
 class LabelStudioAnnotatorConfig(
     BaseAnnotatorConfig, AuthenticationConfigMixin
 ):
-    """Config for the Label Studio annotator
+    """Config for the Label Studio annotator.
 
     Attributes:
         port: The port to use for the annotation interface.
@@ -46,6 +46,11 @@ class LabelStudioAnnotatorFlavor(BaseAnnotatorFlavor):
 
     @property
     def name(self) -> str:
+        """Name of the flavor.
+
+        Returns:
+            The name of the flavor.
+        """
         return LABEL_STUDIO_ANNOTATOR_FLAVOR
 
     @property
@@ -59,7 +64,11 @@ class LabelStudioAnnotatorFlavor(BaseAnnotatorFlavor):
 
     @property
     def implementation_class(self) -> Type["LabelStudioAnnotator"]:
-        """Implementation class for this flavor."""
+        """Implementation class for this flavor.
+
+        Returns:
+            The implementation class.
+        """
         from zenml.integrations.label_studio.annotators import (
             LabelStudioAnnotator,
         )

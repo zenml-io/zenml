@@ -43,6 +43,12 @@ logger = get_logger(__name__)
 
 
 class LocalSecretsManagerConfig(BaseSecretsManagerConfig):
+    """Configuration for the local secrets manager.
+
+    Attributes:
+        secrets_file: The path to the secrets file.
+    """
+
     secrets_file: str = ""
 
 
@@ -51,6 +57,11 @@ class LocalSecretsManager(BaseSecretsManager):
 
     @property
     def config(self) -> LocalSecretsManagerConfig:
+        """Returns the `LocalSecretsManagerConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(LocalSecretsManagerConfig, self._config)
 
     @property
@@ -225,15 +236,31 @@ class LocalSecretsManager(BaseSecretsManager):
 
 
 class LocalSecretsManagerFlavor(BaseSecretsManagerFlavor):
+    """Class for the `LocalSecretsManagerFlavor`."""
+
     @property
     def name(self) -> str:
+        """Name of the flavor.
+
+        Returns:
+            The name of the flavor.
+        """
         return "local"
 
     @property
     def config_class(self) -> Type[LocalSecretsManagerConfig]:
+        """The config class for this flavor.
+
+        Returns:
+            The config class for this flavor.
+        """
         return LocalSecretsManagerConfig
 
     @property
     def implementation_class(self) -> Type["LocalSecretsManager"]:
-        """Implementation class for this flavor."""
+        """Implementation class for this flavor.
+
+        Returns:
+            The implementation class for this flavor.
+        """
         return LocalSecretsManager

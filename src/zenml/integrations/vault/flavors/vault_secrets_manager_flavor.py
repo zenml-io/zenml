@@ -83,8 +83,15 @@ class VaultSecretsManagerConfig(BaseSecretsManagerConfig):
 
 
 class VaultSecretsManagerFlavor(BaseSecretsManagerFlavor):
+    """Class for the `VaultSecretsManagerFlavor`."""
+
     @property
     def name(self) -> str:
+        """Name of the flavor.
+
+        Returns:
+            The name of the flavor.
+        """
         return VAULT_SECRETS_MANAGER_FLAVOR
 
     @property
@@ -98,7 +105,11 @@ class VaultSecretsManagerFlavor(BaseSecretsManagerFlavor):
 
     @property
     def implementation_class(self) -> Type["VaultSecretsManager"]:
-        """Implementation class for this flavor."""
+        """Implementation class for this flavor.
+
+        Returns:
+            The implementation class.
+        """
         from zenml.integrations.vault.secrets_manager import VaultSecretsManager
 
         return VaultSecretsManager

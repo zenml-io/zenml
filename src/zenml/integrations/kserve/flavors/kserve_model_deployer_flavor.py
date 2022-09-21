@@ -59,6 +59,11 @@ class KServeModelDeployerFlavor(BaseModelDeployerFlavor):
 
     @property
     def name(self) -> str:
+        """Name of the flavor.
+
+        Returns:
+            Name of the flavor.
+        """
         return KSERVE_MODEL_DEPLOYER_FLAVOR
 
     @property
@@ -72,7 +77,11 @@ class KServeModelDeployerFlavor(BaseModelDeployerFlavor):
 
     @property
     def implementation_class(self) -> Type["KServeModelDeployer"]:
-        """Implementation class for this flavor."""
+        """Implementation class for this flavor.
+
+        Returns:
+            The implementation class.
+        """
         from zenml.integrations.kserve.model_deployers import (
             KServeModelDeployer,
         )

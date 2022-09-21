@@ -210,6 +210,11 @@ class BaseOrchestrator(StackComponent, ABC):
 
     @property
     def config(self) -> BaseOrchestratorConfig:
+        """Returns the `BaseOrchestratorConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(BaseOrchestratorConfig, self._config)
 
     @abstractmethod
@@ -606,9 +611,18 @@ class BaseOrchestratorFlavor(Flavor):
 
     @property
     def config_class(self) -> Type[BaseOrchestratorConfig]:
+        """Config class for the base orchestrator flavor.
+
+        Returns:
+            The config class.
+        """
         return BaseOrchestratorConfig
 
     @property
     @abstractmethod
     def implementation_class(self) -> Type["BaseOrchestrator"]:
-        """Implementation class for this flavor."""
+        """Implementation class for this flavor.
+
+        Returns:
+            The implementation class.
+        """

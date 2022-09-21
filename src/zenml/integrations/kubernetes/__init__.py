@@ -41,7 +41,6 @@ class KubernetesIntegration(Integration):
         Returns:
             List of new stack component flavors.
         """
-
         from zenml.integrations.kubernetes.flavors import (
             KubernetesOrchestratorFlavor,
         )

@@ -32,6 +32,11 @@ class BaseFeatureStore(StackComponent, ABC):
 
     @property
     def config(self) -> BaseFeatureStoreConfig:
+        """Returns the `BaseFeatureStoreConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(BaseFeatureStoreConfig, self._config)
 
     @abstractmethod

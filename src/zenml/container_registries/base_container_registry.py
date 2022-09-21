@@ -55,6 +55,11 @@ class BaseContainerRegistry(AuthenticationMixin):
 
     @property
     def config(self) -> BaseContainerRegistryConfig:
+        """Returns the `BaseContainerRegistryConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(BaseContainerRegistryConfig, self._config)
 
     @property

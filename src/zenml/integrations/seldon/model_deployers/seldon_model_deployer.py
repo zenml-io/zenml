@@ -52,6 +52,11 @@ class SeldonModelDeployer(BaseModelDeployer):
 
     @property
     def config(self) -> SeldonModelDeployerConfig:
+        """Returns the `SeldonModelDeployerConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(SeldonModelDeployerConfig, self._config)
 
     @staticmethod

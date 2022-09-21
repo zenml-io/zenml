@@ -395,7 +395,6 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def get_flavor(self, flavor_id: UUID) -> FlavorModel:
-
         """Get a stack component flavor by ID.
 
         Args:

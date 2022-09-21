@@ -39,6 +39,11 @@ class VaultSecretsManager(BaseSecretsManager):
 
     @property
     def config(self) -> VaultSecretsManagerConfig:
+        """Returns the `VaultSecretsManagerConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(VaultSecretsManagerConfig, self._config)
 
     @classmethod

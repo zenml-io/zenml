@@ -70,6 +70,11 @@ class VertexStepOperatorFlavor(BaseStepOperatorFlavor):
 
     @property
     def name(self) -> str:
+        """Name of the flavor.
+
+        Returns:
+            Name of the flavor.
+        """
         return GCP_VERTEX_STEP_OPERATOR_FLAVOR
 
     @property
@@ -83,7 +88,11 @@ class VertexStepOperatorFlavor(BaseStepOperatorFlavor):
 
     @property
     def implementation_class(self) -> Type["VertexStepOperator"]:
-        """Implementation class for this flavor."""
+        """Implementation class for this flavor.
+
+        Returns:
+            The implementation class.
+        """
         from zenml.integrations.gcp.step_operators import VertexStepOperator
 
         return VertexStepOperator

@@ -48,6 +48,11 @@ def validate_aws_secret_name_or_namespace(name: str) -> None:
 
 
 class AWSSecretsManagerConfig(BaseSecretsManagerConfig):
+    """Configuration for the AWS Secrets Manager.
+
+    Attributes:
+        region_name: The region name of the AWS Secrets Manager.
+    """
 
     SUPPORTS_SCOPING: ClassVar[bool] = True
 
@@ -70,18 +75,33 @@ class AWSSecretsManagerConfig(BaseSecretsManagerConfig):
 
 
 class AWSSecretsManagerFlavor(BaseSecretsManagerFlavor):
+    """Class for the `AWSSecretsManagerFlavor`."""
+
     @property
     def name(self) -> str:
+        """Name of the flavor.
+
+        Returns:
+            Name of the flavor.
+        """
         return AWS_SECRET_MANAGER_FLAVOR
 
     @property
     def config_class(self) -> Type[AWSSecretsManagerConfig]:
-        """Config class for this flavor."""
+        """Config class for this flavor.
+
+        Returns:
+            Config class for this flavor.
+        """
         return AWSSecretsManagerConfig
 
     @property
     def implementation_class(self) -> Type["AWSSecretsManager"]:
-        """Implementation class."""
+        """Implementation class.
+
+        Returns:
+            Implementation class.
+        """
         from zenml.integrations.aws.secrets_managers import AWSSecretsManager
 
         return AWSSecretsManager

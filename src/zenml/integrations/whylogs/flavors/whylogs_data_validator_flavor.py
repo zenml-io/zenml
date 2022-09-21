@@ -37,6 +37,11 @@ class WhylogsDataValidatorFlavor(BaseDataValidatorFlavor):
 
     @property
     def name(self) -> str:
+        """Name of the flavor.
+
+        Returns:
+            The name of the flavor.
+        """
         return WHYLOGS_DATA_VALIDATOR_FLAVOR
 
     @property
@@ -50,7 +55,11 @@ class WhylogsDataValidatorFlavor(BaseDataValidatorFlavor):
 
     @property
     def implementation_class(self) -> Type["WhylogsDataValidator"]:
-        """Implementation class for this flavor."""
+        """Implementation class for this flavor.
+
+        Returns:
+            The implementation class.
+        """
         from zenml.integrations.whylogs.data_validators import (
             WhylogsDataValidator,
         )

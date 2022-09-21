@@ -70,6 +70,11 @@ class GCPSecretsManager(BaseSecretsManager):
 
     @property
     def config(self) -> GCPSecretsManagerConfig:
+        """Returns the `GCPSecretsManagerConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(GCPSecretsManagerConfig, self._config)
 
     @classmethod
@@ -317,7 +322,8 @@ class GCPSecretsManager(BaseSecretsManager):
             google_secret_name = self.CLIENT.secret_path(
                 self.config.project_id,
                 self._get_scoped_secret_name(
-                    secret_name, separator=ZENML_GCP_SECRET_SCOPE_PATH_SEPARATOR
+                    secret_name,
+                    separator=ZENML_GCP_SECRET_SCOPE_PATH_SEPARATOR,
                 ),
             )
 

@@ -167,7 +167,6 @@ def up_server(
         timeout: Time in seconds to wait for the server to start.
         config: A YAML or JSON configuration or configuration file to use.
     """
-
     if config:
         if provider or name or ip_address or port:
             cli_utils.error(

@@ -49,6 +49,11 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
 
     @property
     def config(self) -> LabelStudioAnnotatorConfig:
+        """Returns the `LabelStudioAnnotatorConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(LabelStudioAnnotatorConfig, self._config)
 
     @property

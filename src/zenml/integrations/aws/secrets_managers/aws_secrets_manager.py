@@ -40,6 +40,11 @@ class AWSSecretsManager(BaseSecretsManager):
 
     @property
     def config(self) -> AWSSecretsManagerConfig:
+        """Returns the `AWSSecretsManagerConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(AWSSecretsManagerConfig, self._config)
 
     @classmethod

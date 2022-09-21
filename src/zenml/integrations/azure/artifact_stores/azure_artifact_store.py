@@ -45,6 +45,11 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
 
     @property
     def config(self) -> AzureArtifactStoreConfig:
+        """Returns the `AzureArtifactStoreConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(AzureArtifactStoreConfig, self._config)
 
     @property

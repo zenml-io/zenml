@@ -107,15 +107,29 @@ class S3ArtifactStoreFlavor(BaseArtifactStoreFlavor):
 
     @property
     def name(self) -> str:
+        """Name of the flavor.
+
+        Returns:
+            The name of the flavor.
+        """
         return S3_ARTIFACT_STORE_FLAVOR
 
     @property
     def config_class(self) -> Type[S3ArtifactStoreConfig]:
+        """The config class of the flavor.
+
+        Returns:
+            The config class of the flavor.
+        """
         return S3ArtifactStoreConfig
 
     @property
     def implementation_class(self) -> Type["S3ArtifactStore"]:
-        """Implementation class for this flavor."""
+        """Implementation class for this flavor.
+
+        Returns:
+            The implementation class for this flavor.
+        """
         from zenml.integrations.s3.artifact_stores import S3ArtifactStore
 
         return S3ArtifactStore

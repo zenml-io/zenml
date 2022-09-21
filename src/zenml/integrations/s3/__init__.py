@@ -40,7 +40,6 @@ class S3Integration(Integration):
         Returns:
             List of stack component flavors for this integration.
         """
-
         from zenml.integrations.s3.flavors import S3ArtifactStoreFlavor
 
         return [S3ArtifactStoreFlavor]

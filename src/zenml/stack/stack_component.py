@@ -35,6 +35,8 @@ logger = get_logger(__name__)
 
 
 class StackComponentConfig(BaseModel, ABC):
+    """Base class for all ZenML stack component configs."""
+
     def __init__(self, **kwargs: Any) -> None:
         """Ensures that secret references don't clash with pydantic validation.
 
@@ -181,7 +183,6 @@ class StackComponentConfig(BaseModel, ABC):
             True if this config belongs to a component in the active stack,
             False otherwise.
         """
-
         from zenml.repository import Repository
 
         for component in Repository().active_stack.components.values():
@@ -224,6 +225,24 @@ class StackComponent:
         *args: Any,
         **kwargs: Any,
     ):
+        """Initializes a StackComponent.
+
+        Args:
+            name: The name of the component.
+            id: The unique ID of the component.
+            config: The config of the component.
+            flavor: The flavor of the component.
+            type: The type of the component.
+            user: The ID of the user who created the component.
+            project: The ID of the project the component belongs to.
+            created: The creation time of the component.
+            updated: The last update time of the component.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Raises:
+            ValueError: If a secret reference is passed as name.
+        """
         if secret_utils.is_secret_reference(name):
             raise ValueError(
                 "Passing the `name` attribute of a stack component as a "
@@ -242,6 +261,14 @@ class StackComponent:
 
     @classmethod
     def from_model(cls, component_model: "ComponentModel") -> "StackComponent":
+        """Creates a StackComponent from a ComponentModel.
+
+        Args:
+            component_model: The ComponentModel to create the StackComponent
+
+        Returns:
+            The created StackComponent.
+        """
         from zenml.repository import Repository
 
         flavor_model = Repository().get_flavor_by_name_and_type(
@@ -273,6 +300,11 @@ class StackComponent:
         )
 
     def to_model(self) -> "ComponentModel":
+        """Converts a stack component to a model.
+
+        Returns:
+            The model representation of the stack component.
+        """
         return ComponentModel(
             user=self.user,
             project=self.project,
@@ -580,6 +612,14 @@ class StackComponent:
         return values
 
     def __eq__(self, other: object) -> bool:
+        """Checks if two stack components are equal.
+
+        Args:
+            other: The other stack component to compare to.
+
+        Returns:
+            True if the stack components are equal, False otherwise.
+        """
         if isinstance(other, StackComponent):
             return self.to_model() == other.to_model()
         return NotImplemented

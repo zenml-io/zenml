@@ -46,6 +46,11 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
 
     @property
     def config(self) -> GCPArtifactStoreConfig:
+        """Returns the `GCPArtifactStoreConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(GCPArtifactStoreConfig, self._config)
 
     @property

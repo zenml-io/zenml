@@ -54,6 +54,13 @@ class SecretsManagerScope(StrEnum):
 
 
 class BaseSecretsManagerConfig(StackComponentConfig):
+    """Base configuration for secrets managers.
+
+    Attributes:
+        scope: The scope of the secrets manager.
+        namespace: The namespace of the secrets manager.
+    """
+
     SUPPORTS_SCOPING: ClassVar[bool] = False
     scope: SecretsManagerScope = SecretsManagerScope.COMPONENT
     namespace: Optional[str] = None
@@ -191,6 +198,11 @@ class BaseSecretsManager(StackComponent, ABC):
 
     @property
     def config(self) -> BaseSecretsManagerConfig:
+        """Returns the `BaseSecretsManagerConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(BaseSecretsManagerConfig, self._config)
 
     def _get_scope_path(self) -> List[str]:
@@ -451,6 +463,8 @@ class BaseSecretsManager(StackComponent, ABC):
 
 
 class BaseSecretsManagerFlavor(Flavor):
+    """Class for the `BaseSecretsManagerFlavor`."""
+
     @property
     def type(self) -> StackComponentType:
         """Returns the flavor type.
@@ -462,9 +476,18 @@ class BaseSecretsManagerFlavor(Flavor):
 
     @property
     def config_class(self) -> Type[BaseSecretsManagerConfig]:
+        """Returns the config class.
+
+        Returns:
+            The config class.
+        """
         return BaseSecretsManagerConfig
 
     @property
     @abstractmethod
     def implementation_class(self) -> Type["BaseSecretsManager"]:
-        """Implementation class for this flavor."""
+        """Implementation class for this flavor.
+
+        Returns:
+            The implementation class.
+        """

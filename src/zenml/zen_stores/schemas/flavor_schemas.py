@@ -24,7 +24,20 @@ from zenml.models import FlavorModel
 
 
 class FlavorSchema(SQLModel, table=True):
-    """SQL Model for flavors."""
+    """SQL Model for flavors.
+
+    Attributes:
+        id: The unique id of the flavor.
+        name: The name of the flavor.
+        type: The type of the flavor.
+        source: The source of the flavor.
+        config_schema: The config schema of the flavor.
+        integration: The integration associated with the flavor.
+        user: The user associated with the flavor.
+        project: The project associated with the flavor.
+        created: The creation time of the flavor.
+        updated: The last update time of the flavor.
+    """
 
     id: UUID = Field(primary_key=True)
     type: StackComponentType
@@ -41,6 +54,14 @@ class FlavorSchema(SQLModel, table=True):
 
     @classmethod
     def from_create_model(cls, flavor: FlavorModel) -> "FlavorSchema":
+        """Returns a flavor schema from a flavor model.
+
+        Args:
+            flavor: The flavor model.
+
+        Returns:
+            The flavor schema.
+        """
         return cls(
             id=flavor.id,
             name=flavor.name,
@@ -56,9 +77,22 @@ class FlavorSchema(SQLModel, table=True):
         self,
         flavor: FlavorModel,
     ) -> "FlavorSchema":
+        """Returns a flavor schema from a flavor model.
+
+        Args:
+            flavor: The flavor model.
+
+        Returns:
+            The flavor schema.
+        """
         return self
 
     def to_model(self) -> FlavorModel:
+        """Converts a flavor schema to a flavor model.
+
+        Returns:
+            The flavor model.
+        """
         return FlavorModel(
             id=self.id,
             name=self.name,

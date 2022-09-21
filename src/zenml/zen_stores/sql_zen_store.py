@@ -253,7 +253,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         Returns:
             The metadata configuration.
         """
-
         sql_url = make_url(self.url)
         if sql_url.drivername == SQLDatabaseDriver.SQLITE:
             assert self.database is not None

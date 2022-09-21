@@ -47,6 +47,11 @@ class MLFlowModelDeployer(BaseModelDeployer):
 
     @property
     def config(self) -> MLFlowModelDeployerConfig:
+        """Returns the `MLFlowModelDeployerConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(MLFlowModelDeployerConfig, self._config)
 
     @staticmethod

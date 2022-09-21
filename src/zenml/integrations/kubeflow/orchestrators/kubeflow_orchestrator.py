@@ -91,6 +91,11 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
     @property
     def config(self) -> KubeflowOrchestratorConfig:
+        """Returns the `KubeflowOrchestratorConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(KubeflowOrchestratorConfig, self._config)
 
     @staticmethod

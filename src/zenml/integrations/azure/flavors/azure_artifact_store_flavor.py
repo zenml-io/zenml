@@ -39,6 +39,11 @@ class AzureArtifactStoreFlavor(BaseArtifactStoreFlavor):
 
     @property
     def name(self) -> str:
+        """Name of the flavor.
+
+        Returns:
+            The name of the flavor.
+        """
         return AZURE_ARTIFACT_STORE_FLAVOR
 
     @property
@@ -48,7 +53,11 @@ class AzureArtifactStoreFlavor(BaseArtifactStoreFlavor):
 
     @property
     def implementation_class(self) -> Type["AzureArtifactStore"]:
-        """Implementation class."""
+        """Implementation class.
+
+        Returns:
+            The implementation class.
+        """
         from zenml.integrations.azure.artifact_stores import AzureArtifactStore
 
         return AzureArtifactStore

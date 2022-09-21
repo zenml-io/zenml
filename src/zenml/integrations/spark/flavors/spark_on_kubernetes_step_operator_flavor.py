@@ -49,6 +49,11 @@ class KubernetesSparkStepOperatorFlavor(SparkStepOperatorFlavor):
 
     @property
     def name(self) -> str:
+        """Name of the flavor.
+
+        Returns:
+            The name of the flavor.
+        """
         return SPARK_KUBERNETES_STEP_OPERATOR
 
     @property
@@ -62,7 +67,11 @@ class KubernetesSparkStepOperatorFlavor(SparkStepOperatorFlavor):
 
     @property
     def implementation_class(self) -> Type["KubernetesSparkStepOperator"]:
-        """Implementation class for this flavor."""
+        """Implementation class for this flavor.
+
+        Returns:
+            The implementation class.
+        """
         from zenml.integrations.spark.step_operators import (
             KubernetesSparkStepOperator,
         )
