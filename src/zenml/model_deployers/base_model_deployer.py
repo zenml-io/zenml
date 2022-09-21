@@ -238,6 +238,11 @@ class BaseModelDeployerFlavor(Flavor):
 
     @property
     def type(self) -> StackComponentType:
+        """Returns the flavor type.
+
+        Returns:
+            The flavor type.
+        """
         return StackComponentType.MODEL_DEPLOYER
 
     @property
