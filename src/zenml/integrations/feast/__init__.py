@@ -41,7 +41,6 @@ class FeastIntegration(Integration):
         Returns:
             List of stack component flavors for this integration.
         """
-
         from zenml.integrations.feast.flavors import FeastFeatureStoreFlavor
 
         return [FeastFeatureStoreFlavor]

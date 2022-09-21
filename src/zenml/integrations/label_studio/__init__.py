@@ -36,7 +36,6 @@ class LabelStudioIntegration(Integration):
         Returns:
             List of stack component flavors for this integration.
         """
-
         from zenml.integrations.label_studio.flavors import (
             LabelStudioAnnotatorFlavor,
         )

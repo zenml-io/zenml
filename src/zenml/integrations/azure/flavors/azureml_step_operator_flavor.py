@@ -75,6 +75,11 @@ class AzureMLStepOperatorFlavor(BaseStepOperatorFlavor):
 
     @property
     def name(self) -> str:
+        """Name of the flavor.
+
+        Returns:
+            The name of the flavor.
+        """
         return AZUREML_STEP_OPERATOR_FLAVOR
 
     @property
@@ -88,7 +93,11 @@ class AzureMLStepOperatorFlavor(BaseStepOperatorFlavor):
 
     @property
     def implementation_class(self) -> Type["AzureMLStepOperator"]:
-        """Implementation class."""
+        """Implementation class.
+
+        Returns:
+            The implementation class.
+        """
         from zenml.integrations.azure.step_operators import AzureMLStepOperator
 
         return AzureMLStepOperator

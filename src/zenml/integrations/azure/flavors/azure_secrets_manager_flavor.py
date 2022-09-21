@@ -99,6 +99,11 @@ class AzureSecretsManagerFlavor(BaseSecretsManagerFlavor):
 
     @property
     def name(self) -> str:
+        """Name of the flavor.
+
+        Returns:
+            The name of the flavor.
+        """
         return AZURE_SECRETS_MANAGER_FLAVOR
 
     @property
@@ -108,7 +113,11 @@ class AzureSecretsManagerFlavor(BaseSecretsManagerFlavor):
 
     @property
     def implementation_class(self) -> Type["AzureSecretsManager"]:
-        """Implementation class."""
+        """Implementation class.
+
+        Returns:
+            The implementation class.
+        """
         from zenml.integrations.azure.secrets_managers import (
             AzureSecretsManager,
         )

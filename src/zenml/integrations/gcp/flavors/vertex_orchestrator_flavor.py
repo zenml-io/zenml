@@ -119,6 +119,11 @@ class VertexOrchestratorFlavor(BaseOrchestratorFlavor):
 
     @property
     def name(self) -> str:
+        """Name of the orchestrator flavor.
+
+        Returns:
+            Name of the orchestrator flavor.
+        """
         return GCP_VERTEX_ORCHESTRATOR_FLAVOR
 
     @property
@@ -132,7 +137,11 @@ class VertexOrchestratorFlavor(BaseOrchestratorFlavor):
 
     @property
     def implementation_class(self) -> Type["VertexOrchestrator"]:
-        """Implementation class for this flavor."""
+        """Implementation class for this flavor.
+
+        Returns:
+            Implementation class for this flavor.
+        """
         from zenml.integrations.gcp.orchestrators import VertexOrchestrator
 
         return VertexOrchestrator

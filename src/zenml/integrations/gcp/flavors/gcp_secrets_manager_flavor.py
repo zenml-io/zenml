@@ -94,6 +94,11 @@ class GCPSecretsManagerFlavor(BaseSecretsManagerFlavor):
 
     @property
     def name(self) -> str:
+        """Name of the flavor.
+
+        Returns:
+            The name of the flavor.
+        """
         return GCP_SECRETS_MANAGER_FLAVOR
 
     @property
@@ -107,7 +112,11 @@ class GCPSecretsManagerFlavor(BaseSecretsManagerFlavor):
 
     @property
     def implementation_class(self) -> Type["GCPSecretsManager"]:
-        """Implementation class for this flavor."""
+        """Implementation class for this flavor.
+
+        Returns:
+            The implementation class.
+        """
         from zenml.integrations.gcp.secrets_manager import GCPSecretsManager
 
         return GCPSecretsManager

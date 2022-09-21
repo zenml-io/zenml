@@ -29,11 +29,20 @@ class EvidentlyDataValidatorFlavor(BaseDataValidatorFlavor):
 
     @property
     def name(self) -> str:
+        """Name of the flavor.
+
+        Returns:
+            The name of the flavor.
+        """
         return EVIDENTLY_DATA_VALIDATOR_FLAVOR
 
     @property
     def implementation_class(self) -> Type["EvidentlyDataValidator"]:
-        """Implementation class."""
+        """Implementation class.
+
+        Returns:
+            The implementation class.
+        """
         from zenml.integrations.evidently.data_validators import (
             EvidentlyDataValidator,
         )
