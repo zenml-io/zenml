@@ -90,11 +90,19 @@ class BaseFeatureStoreFlavor(Flavor):
 
     @property
     def config_class(self) -> Type[BaseFeatureStoreConfig]:
-        """Config class for this flavor."""
+        """Config class for this flavor.
+
+        Returns:
+            The config class.
+        """
         return BaseFeatureStoreConfig
 
     @property
     @abstractmethod
     def implementation_class(self) -> Type[BaseFeatureStore]:
-        """Implementation class."""
+        """Implementation class.
+
+        Returns:
+            The implementation class.
+        """
         return BaseFeatureStore

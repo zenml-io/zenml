@@ -812,9 +812,7 @@ class Repository(metaclass=RepositoryMetaClass):
             The updated component.
 
         Raises:
-            KeyError: If the component is not registered.
-            ValueError: If another component already exists with the same name
-            and type.
+            ValueError: If another component already exists with the same name and type.
         """
         # Get the existing component model
         existing_component_model = self.get_stack_component_by_id(

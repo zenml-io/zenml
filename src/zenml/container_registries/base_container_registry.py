@@ -144,10 +144,18 @@ class BaseContainerRegistryFlavor(Flavor):
 
     @property
     def config_class(self) -> Type[BaseContainerRegistryConfig]:
-        """Config class for this flavor."""
+        """Config class for this flavor.
+
+        Returns:
+            The config class.
+        """
         return BaseContainerRegistryConfig
 
     @property
     def implementation_class(self) -> Type[BaseContainerRegistry]:
-        """Implementation class."""
+        """Implementation class.
+
+        Returns:
+            The implementation class.
+        """
         return BaseContainerRegistry

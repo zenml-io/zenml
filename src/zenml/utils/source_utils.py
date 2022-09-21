@@ -672,6 +672,13 @@ def validate_config_source(
     Args:
         source: source path of the implementation
         component_type: the type of the stack component
+
+    Returns:
+        The validated config.
+
+    Raises:
+        ValueError: If ZenML cannot import the config class.
+        TypeError: If the config class is not a subclass of the `config_class`.
     """
     from zenml.stack.stack_component import StackComponentConfig
 
