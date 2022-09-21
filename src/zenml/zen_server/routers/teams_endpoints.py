@@ -102,9 +102,8 @@ async def update_team(
     # noqa: DAR401
 
     Args:
-        team: Team to create.
         team_name_or_id: Name or ID of the team.
-
+        team_update: Team update.
 
     Returns:
         The created team.
@@ -140,7 +139,7 @@ async def get_role_assignments_for_team(
     """Returns a list of all roles that are assigned to a team.
 
     Args:
-        user_name_or_id: Name or ID of the team.
+        team_name_or_id: Name or ID of the team.
         project_name_or_id: If provided, only list roles that are limited to
             the given project.
 

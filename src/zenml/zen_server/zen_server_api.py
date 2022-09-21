@@ -76,7 +76,14 @@ templates = Jinja2Templates(directory=relative_path(DASHBOARD_DIRECTORY))
 
 @app.get("/")
 async def dashboard(request: Request) -> Any:
-    """Dashboard endpoint."""
+    """Dashboard endpoint.
+
+    Args:
+        request: Request object.
+
+    Returns:
+        The ZenML dashboard.
+    """
     return templates.TemplateResponse("index.html", {"request": request})
 
 

@@ -101,9 +101,8 @@ async def update_role(
     # noqa: DAR401
 
     Args:
-        role: Role to create.
         role_name_or_id: Name or ID of the role.
-
+        role_update: Role update.
 
     Returns:
         The created role.

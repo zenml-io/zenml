@@ -38,7 +38,11 @@ class FeastFeatureStoreFlavor(BaseFeatureStoreFlavor):
 
     @property
     def name(self) -> str:
-        """Name of the flavor."""
+        """Name of the flavor.
+
+        Returns:
+            The name of the flavor.
+        """
         return FEAST_FEATURE_STORE_FLAVOR
 
     @property
@@ -53,7 +57,11 @@ class FeastFeatureStoreFlavor(BaseFeatureStoreFlavor):
 
     @property
     def implementation_class(self) -> Type["FeastFeatureStore"]:
-        """Implementation class for this flavor."""
+        """Implementation class for this flavor.
+
+        Returns:
+            The implementation class.
+        """
         from zenml.integrations.feast.feature_stores import FeastFeatureStore
 
         return FeastFeatureStore

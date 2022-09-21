@@ -141,6 +141,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
         Returns:
             The validated values.
+
+        Raises:
+            ValueError: If the URL is invalid or the SQL driver is not supported.
         """
         url = values.get("url")
         if url is None:
@@ -252,6 +255,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
         Returns:
             The metadata configuration.
+
+        Raises:
+            NotImplementedError: If the SQL driver is not supported.
         """
         sql_url = make_url(self.url)
         if sql_url.drivername == SQLDatabaseDriver.SQLITE:
@@ -301,6 +307,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
         Returns:
             The URL and connection arguments for the SQLModel engine.
+
+        Raises:
+            NotImplementedError: If the SQL driver is not supported.
         """
         sql_url = make_url(self.url)
         sqlalchemy_connect_args = {}
@@ -399,11 +408,7 @@ class SqlZenStore(BaseZenStore):
     # --------------------------------
 
     def _initialize(self) -> None:
-        """Initialize the SQL store.
-
-        Raises:
-            NotImplementedError: If you try to use anything besides SQLite.
-        """
+        """Initialize the SQL store."""
         logger.debug("Initializing SqlZenStore at %s", self.config.url)
 
         metadata_config = self.config.get_metadata_config()
@@ -875,7 +880,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: if the stack component doesn't exist.
-            ValueError: if the stack component is part of one or more stacks.
+            IllegalOperationError: if the stack component is part of one or more stacks.
         """
         with Session(self.engine) as session:
             try:

@@ -49,6 +49,9 @@ class CreateComponentModel(BaseModel):
         Args:
             project: Project context of the stack.
             user: User context of the stack
+
+        Returns:
+            The updated model.
         """
         return ComponentModel(project=project, user=user, **self.dict())
 
@@ -78,6 +81,9 @@ class UpdateComponentModel(BaseModel):
 
         Args:
             stack: Component model the changes will be applied to
+
+        Returns:
+            The updated component model
         """
         for key, value in self.dict().items():
             if value is not None:

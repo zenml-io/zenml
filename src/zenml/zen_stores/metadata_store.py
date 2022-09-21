@@ -273,11 +273,11 @@ class MetadataStore:
 
         Args:
             step: The step for which to get the artifacts.
+            step_parent_step_ids: The IDs of the parent steps of the given step.
+            step_name: The name of the step.
 
         Returns:
-            A tuple (inputs, outputs) where inputs and outputs
-            are both Dicts mapping artifact names
-            to the input and output artifacts respectively.
+            A tuple (inputs, outputs) where inputs and outputs are both Dicts mapping artifact names to the input and output artifacts respectively.
         """
         # maps artifact types to their string representation
         artifact_type_mapping = {

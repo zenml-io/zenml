@@ -134,6 +134,8 @@ def handle_exceptions(func: F) -> F:
             - 404: if the entity is not found.
             - 409: if the entity already exists.
             - 422: if the request is unable to be processed.
+        KeyError: if the entity is not found.
+        ValueError: if the entity could not be validated.
     """
 
     @wraps(func)

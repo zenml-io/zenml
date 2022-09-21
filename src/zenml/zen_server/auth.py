@@ -169,6 +169,9 @@ def no_authentication() -> AuthContext:
 
     Raises:
         HTTPException: If the default user is not available.
+
+    Returns:
+        The authentication context reflecting the default user.
     """
     auth_context = authenticate_credentials(user_name_or_id=DEFAULT_USERNAME)
 

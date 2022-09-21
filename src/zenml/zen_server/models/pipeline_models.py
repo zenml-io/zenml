@@ -163,6 +163,10 @@ class HydratedPipelineModel(PipelineModel):
     ) -> "HydratedPipelineModel":
         """Converts this model to a hydrated model.
 
+        Args:
+            pipeline_model: The pipeline model to hydrate.
+            num_runs: The number of runs to include.
+
         Returns:
             A hydrated model.
         """

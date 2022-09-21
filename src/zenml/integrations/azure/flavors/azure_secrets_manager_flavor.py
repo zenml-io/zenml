@@ -108,7 +108,11 @@ class AzureSecretsManagerFlavor(BaseSecretsManagerFlavor):
 
     @property
     def config_class(self) -> Type[AzureSecretsManagerConfig]:
-        """Returns AzureSecretsManagerConfig config class."""
+        """Returns AzureSecretsManagerConfig config class.
+
+        Returns:
+            The config class.
+        """
         return AzureSecretsManagerConfig
 
     @property

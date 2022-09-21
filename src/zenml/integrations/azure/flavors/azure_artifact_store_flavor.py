@@ -48,7 +48,11 @@ class AzureArtifactStoreFlavor(BaseArtifactStoreFlavor):
 
     @property
     def config_class(self) -> Type[AzureArtifactStoreConfig]:
-        """Returns AzureArtifactStoreConfig config class."""
+        """Returns AzureArtifactStoreConfig config class.
+
+        Returns:
+            The config class.
+        """
         return AzureArtifactStoreConfig
 
     @property

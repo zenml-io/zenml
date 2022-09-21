@@ -124,10 +124,13 @@ class RestZenStoreConfiguration(StoreConfiguration):
         """Validates that the URL is a well formed REST store URL.
 
         Args:
-            uri: The URL to be validated.
+            url: The URL to be validated.
 
         Returns:
             The validated URL without trailing slashes.
+
+        Raises:
+            ValueError: If the URL is not a well formed REST store URL.
         """
         url = url.rstrip("/")
         scheme = re.search("^([a-z0-9]+://)", url)
@@ -228,6 +231,9 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The TFX metadata config of this ZenStore.
+
+        Raises:
+            ValueError: if the server response is invalid.
         """
         body = self.get(f"{METADATA_CONFIG}")
         if not isinstance(body, str):
@@ -252,10 +258,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The registered stack.
-
-        Raises:
-            StackExistsError: If a stack with the same name is already owned
-                by this user in this project.
         """
         return self._create_project_scoped_resource(
             resource=stack,
@@ -271,9 +273,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The stack with the given ID.
-
-        Raises:
-            KeyError: if the stack doesn't exist.
         """
         return self._get_resource(
             resource_id=stack_id,
@@ -302,9 +301,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             A list of all stacks matching the filter criteria.
-
-        Raises:
-            KeyError: if the project doesn't exist.
         """
         filters = locals()
         filters.pop("self")
@@ -325,9 +321,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The updated stack.
-
-        Raises:
-            KeyError: if the stack doesn't exist.
         """
         return self._update_resource(
             resource=stack,
@@ -340,9 +333,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             stack_id: The ID of the stack to delete.
-
-        Raises:
-            KeyError: if the stack doesn't exist.
         """
         self._delete_resource(
             resource_id=stack_id,
@@ -364,10 +354,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The created stack component.
-
-        Raises:
-            StackComponentExistsError: If a stack component with the same name
-                and type is already owned by this user in this project.
         """
         return self._create_project_scoped_resource(
             resource=component,
@@ -384,9 +370,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The stack component.
-
-        Raises:
-            KeyError: if the stack component doesn't exist.
         """
         return self._get_resource(
             resource_id=component_id,
@@ -417,9 +400,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             A list of all stack components matching the filter criteria.
-
-        Raises:
-            KeyError: if the project doesn't exist.
         """
         filters = locals()
         filters.pop("self")
@@ -440,9 +420,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The updated stack component.
-
-        Raises:
-            KeyError: if the stack component doesn't exist.
         """
         return self._update_resource(
             resource=component,
@@ -456,10 +433,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             component_id: The ID of the stack component to delete.
-
-        Raises:
-            KeyError: if the stack component doesn't exist.
-            ValueError: if the stack component is part of one or more stacks.
         """
         self._delete_resource(
             resource_id=component_id,
@@ -497,10 +470,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The newly created flavor.
-
-        Raises:
-            EntityExistsError: If a flavor with the same name and type
-                is already owned by this user in this project.
         """
         return self._create_project_scoped_resource(
             resource=flavor,
@@ -517,9 +486,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The stack component flavor.
-
-        Raises:
-            KeyError: if the stack component flavor doesn't exist.
         """
         return self._get_resource(
             resource_id=flavor_id,
@@ -548,9 +514,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             List of all the stack component flavors matching the given criteria.
-
-        Raises:
-            KeyError: if the project doesn't exist.
         """
         filters = locals()
         filters.pop("self")
@@ -568,9 +531,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The updated stack component flavor.
-
-        Raises:
-            KeyError: if the stack component flavor doesn't exist.
         """
         return self._update_resource(
             resource=flavor,
@@ -584,9 +544,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             flavor_id: The ID of the stack component flavor to delete.
-
-        Raises:
-            KeyError: if the stack component flavor doesn't exist.
         """
         self._delete_resource(
             resource_id=flavor_id,
@@ -614,9 +571,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The newly created user.
-
-        Raises:
-            EntityExistsError: If a user with the given name already exists.
         """
         return self._create_resource(
             resource=user,
@@ -633,9 +587,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The requested user, if it was found.
-
-        Raises:
-            KeyError: If no user with the given name or ID exists.
         """
         return self._get_resource(
             resource_id=user_name_or_id,
@@ -667,9 +618,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The updated user.
-
-        Raises:
-            KeyError: If no user with the given name exists.
         """
         return self._update_resource(
             resource=user,
@@ -682,9 +630,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             user_name_or_id: The name or ID of the user to delete.
-
-        Raises:
-            KeyError: If no user with the given ID exists.
         """
         self._delete_resource(
             resource_id=user_name_or_id,
@@ -718,9 +663,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The requested team.
-
-        Raises:
-            KeyError: If no team with the given name or ID exists.
         """
         return self._get_resource(
             resource_id=team_name_or_id,
@@ -750,9 +692,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The updated team.
-
-        Raises:
-            KeyError: if the team does not exist.
         """
         return self._update_resource(
             resource=team,
@@ -765,9 +704,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             team_name_or_id: Name or ID of the team to delete.
-
-        Raises:
-            KeyError: If no team with the given ID exists.
         """
         self._delete_resource(
             resource_id=team_name_or_id,
@@ -785,12 +721,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             team_name_or_id: The name or ID of the team for which to get users.
-
-        Returns:
-            A list of all users that are part of the team.
-
-        Raises:
-            KeyError: If no team with the given ID exists.
         """
 
     def get_teams_for_user(
@@ -801,12 +731,6 @@ class RestZenStore(BaseZenStore):
         Args:
             user_name_or_id: The name or ID of the user for which to get all
                 teams.
-
-        Returns:
-            A list of all teams that the user is part of.
-
-        Raises:
-            KeyError: If no user with the given ID exists.
         """
 
     def add_user_to_team(
@@ -819,9 +743,6 @@ class RestZenStore(BaseZenStore):
         Args:
             user_name_or_id: Name or ID of the user to add to the team.
             team_name_or_id: Name or ID of the team to which to add the user to.
-
-        Raises:
-            KeyError: If the team or user does not exist.
         """
 
     def remove_user_from_team(
@@ -834,9 +755,6 @@ class RestZenStore(BaseZenStore):
         Args:
             user_name_or_id: Name or ID of the user to remove from the team.
             team_name_or_id: Name or ID of the team from which to remove the user.
-
-        Raises:
-            KeyError: If the team or user does not exist.
         """
 
     # -----
@@ -852,9 +770,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The newly created role.
-
-        Raises:
-            EntityExistsError: If a role with the given name already exists.
         """
         return self._create_resource(
             resource=role,
@@ -871,9 +786,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The requested role.
-
-        Raises:
-            KeyError: If no role with the given name exists.
         """
         return self._get_resource(
             resource_id=role_name_or_id,
@@ -904,9 +816,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The updated role.
-
-        Raises:
-            KeyError: if the role does not exist.
         """
         return self._update_resource(
             resource=role,
@@ -919,9 +828,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             role_name_or_id: Name or ID of the role to delete.
-
-        Raises:
-            KeyError: If no role with the given ID exists.
         """
         self._delete_resource(
             resource_id=role_name_or_id,
@@ -987,9 +893,6 @@ class RestZenStore(BaseZenStore):
             project_name_or_id: Optional Name or ID of a project in which to
                 assign the role. If this is not provided, the role will be
                 assigned globally.
-
-        Raises:
-            EntityExistsError: If the role assignment already exists.
         """
 
     def revoke_role(
@@ -1009,9 +912,6 @@ class RestZenStore(BaseZenStore):
             project_name_or_id: Optional ID of a project in which to revoke
                 the role. If this is not provided, the role will be revoked
                 globally.
-
-        Raises:
-            KeyError: If the role, user, team, or project does not exists.
         """
 
     # --------
@@ -1026,9 +926,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The newly created project.
-
-        Raises:
-            EntityExistsError: If a project with the given name already exists.
         """
         return self._create_resource(
             resource=project,
@@ -1044,9 +941,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The requested project.
-
-        Raises:
-            KeyError: If there is no such project.
         """
         return self._get_resource(
             resource_id=project_name_or_id,
@@ -1077,9 +971,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The updated project.
-
-        Raises:
-            KeyError: if the project does not exist.
         """
         return self._update_resource(
             resource=project,
@@ -1092,9 +983,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             project_name_or_id: Name or ID of the project to delete.
-
-        Raises:
-            KeyError: If no project with the given name exists.
         """
         self._delete_resource(
             resource_id=project_name_or_id,
@@ -1113,10 +1001,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The newly created pipeline.
-
-        Raises:
-            KeyError: if the project does not exist.
-            EntityExistsError: If an identical pipeline already exists.
         """
         return self._create_project_scoped_resource(
             resource=pipeline,
@@ -1132,9 +1016,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The pipeline.
-
-        Raises:
-            KeyError: if the pipeline does not exist.
         """
         return self._get_resource(
             resource_id=pipeline_id,
@@ -1157,9 +1038,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             A list of pipelines.
-
-        Raises:
-            KeyError: if the project does not exist.
         """
         filters = locals()
         filters.pop("self")
@@ -1177,9 +1055,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The updated pipeline.
-
-        Raises:
-            KeyError: if the pipeline doesn't exist.
         """
         return self._update_resource(
             resource=pipeline,

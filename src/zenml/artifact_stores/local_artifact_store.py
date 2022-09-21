@@ -143,7 +143,11 @@ class LocalArtifactStore(BaseArtifactStore):
 
     @property
     def local_path(self) -> Optional[str]:
-        """Returns the local path of the artifact store."""
+        """Returns the local path of the artifact store.
+
+        Returns:
+            The local path of the artifact store.
+        """
         return self.path
 
     @staticmethod

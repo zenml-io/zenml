@@ -77,12 +77,6 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
     def _ensure_valid_tracking_uri(self) -> None:
         """Ensures that the tracking uri is a valid mlflow tracking uri.
 
-        Args:
-            tracking_uri: The tracking uri to validate.
-
-        Returns:
-            The tracking uri if it is valid.
-
         Raises:
             ValueError: If the tracking uri is not valid.
         """
