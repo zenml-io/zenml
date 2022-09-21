@@ -72,7 +72,7 @@ class WandbExperimentTrackerSettings(BaseSettings):
             Dict representation of the settings.
         """
         if isinstance(value, wandb.Settings):
-            return value.make_static()
+            return cast(Dict[str, Any], value.make_static())
         else:
             return value
 
