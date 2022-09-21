@@ -80,18 +80,6 @@ class WandbExperimentTrackerSettings(BaseSettings):
 class WandbExperimentTracker(BaseExperimentTracker):
     """Stores wandb configuration options.
 
-    ZenML should take care of configuring wandb for you, but should you still
-    need access to the configuration inside your step you can do it using a
-    step context:
-    ```python
-    from zenml.steps import StepContext
-
-    @enable_wandb
-    @step
-    def my_step(context: StepContext, ...)
-        context.stack.experiment_tracker  # get the tracking_uri etc. from here
-    ```
-
     Attributes:
         entity: Name of an existing wandb entity.
         project_name: Name of an existing wandb project to log to.

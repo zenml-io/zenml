@@ -150,9 +150,9 @@ def mlflow_model_deployer_step(
                 f"An MLflow model with name `{params.model_name}` was not "
                 f"logged in the current pipeline run and no running MLflow "
                 f"model server was found. Please ensure that your pipeline "
-                f"includes an `@enable_mlflow` decorated step that trains a "
-                f"model and logs it to MLflow. This could also happen if "
-                f"the current pipeline run did not log an MLflow model  "
+                f"includes a step with a MLflow experiment configured that "
+                "trains a model and logs it to MLflow. This could also happen "
+                "if the current pipeline run did not log an MLflow model  "
                 f"because the training step was cached."
             )
             # return an inactive service just because we have to return

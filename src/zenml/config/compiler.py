@@ -78,16 +78,16 @@ class Compiler:
         )
         pipeline.configure(settings=pipeline_settings, merge=False)
 
-        options_to_passdown = {
-            key: options
-            for key, options in pipeline_settings.items()
-            if ConfigurationLevel.STEP in options.LEVEL
+        settings_to_passdown = {
+            key: settings
+            for key, settings in pipeline_settings.items()
+            if ConfigurationLevel.STEP in settings.LEVEL
         }
 
         steps = {
             name: self._compile_step(
                 step=step,
-                pipeline_settings=options_to_passdown,
+                pipeline_settings=settings_to_passdown,
                 pipeline_extra=pipeline.configuration.extra,
                 stack=stack,
             )

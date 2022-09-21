@@ -668,11 +668,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         pipeline_settings = {}
         step_settings = {}
-        for key, options_class in setting_classes.items():
-            fields = pydantic_utils.TemplateGenerator(options_class).run()
-            if ConfigurationLevel.PIPELINE in options_class.LEVEL:
+        for key, setting_class in setting_classes.items():
+            fields = pydantic_utils.TemplateGenerator(setting_class).run()
+            if ConfigurationLevel.PIPELINE in setting_class.LEVEL:
                 pipeline_settings[key] = fields
-            if ConfigurationLevel.STEP in options_class.LEVEL:
+            if ConfigurationLevel.STEP in setting_class.LEVEL:
                 step_settings[key] = fields
 
         steps = {}

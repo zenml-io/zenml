@@ -70,18 +70,6 @@ class MLFlowExperimentTrackerSettings(BaseSettings):
 class MLFlowExperimentTracker(BaseExperimentTracker):
     """Stores Mlflow configuration options.
 
-    ZenML should take care of configuring MLflow for you, but should you still
-    need access to the configuration inside your step you can do it using a
-    step context:
-    ```python
-    from zenml.steps import StepContext
-
-    @enable_mlflow
-    @step
-    def my_step(context: StepContext, ...)
-        context.stack.experiment_tracker  # get the tracking_uri etc. from here
-    ```
-
     Attributes:
         tracking_uri: The uri of the mlflow tracking server. If no uri is set,
             your stack must contain a `LocalArtifactStore` and ZenML will
