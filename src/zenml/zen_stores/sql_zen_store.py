@@ -1032,6 +1032,9 @@ class SqlZenStore(BaseZenStore):
         Args:
             flavor: The model of the flavor to update.
 
+        Returns:
+            The updated flavor.
+
         Raises:
             KeyError: if the flavor doesn't exist.
         """
@@ -1061,6 +1064,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: if the flavor doesn't exist.
+            IllegalOperationError: if the flavor is used by a stack component.
         """
         with Session(self.engine) as session:
             try:
@@ -1292,6 +1296,9 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             team_name_or_id: Name or ID of the team to delete.
+
+        Raises:
+            KeyError: If no team with the given name exists.
         """
         with Session(self.engine) as session:
             try:
@@ -1381,9 +1388,6 @@ class SqlZenStore(BaseZenStore):
             user_name_or_id: Name or ID of the user to remove from the team.
             team_name_or_id: Name or ID of the team from which to remove the
                 user.
-
-        Raises:
-            KeyError: If the team or user does not exist.
         """
         with Session(self.engine) as session:
             team = self._get_team_schema(team_name_or_id, session=session)
@@ -1491,6 +1495,10 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             role_name_or_id: Name or ID of the role to delete.
+
+        Raises:
+            IllegalOperationError: If the role is still assigned to users.
+            KeyError: If the role does not exist.
         """
         with Session(self.engine) as session:
             try:
@@ -1535,7 +1543,6 @@ class SqlZenStore(BaseZenStore):
         """List all user role assignments.
 
         Args:
-
             project_name_or_id: If provided, only return role assignments for
                 this project.
             user_name_or_id: If provided, only list assignments for this user.
@@ -1918,6 +1925,9 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             project_name_or_id: Name or ID of the project to delete.
+
+        Raises:
+            KeyError: If the project does not exist.
         """
         with Session(self.engine) as session:
             try:

@@ -225,7 +225,11 @@ class BaseArtifactStore(StackComponent):
 
     @property
     def path(self) -> str:
-        """The path to the artifact store."""
+        """The path to the artifact store.
+
+        Returns:
+            The path.
+        """
         return self.config.path
 
     # --- User interface ---
@@ -448,10 +452,18 @@ class BaseArtifactStoreFlavor(Flavor):
 
     @property
     def config_class(self) -> Type[StackComponentConfig]:
-        """Config class for this flavor."""
+        """Config class for this flavor.
+
+        Returns:
+            The config class.
+        """
         return BaseArtifactStoreConfig
 
     @property
     @abstractmethod
     def implementation_class(self) -> Type["BaseArtifactStore"]:
-        """Implementation class."""
+        """Implementation class.
+
+        Returns:
+            The implementation class.
+        """

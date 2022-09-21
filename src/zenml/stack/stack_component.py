@@ -265,6 +265,9 @@ class StackComponent:
 
         Returns:
             The created StackComponent.
+
+        Raises:
+            ImportError: If the flavor can't be imported.
         """
         from zenml.repository import Repository
 
@@ -320,6 +323,9 @@ class StackComponent:
 
         This should be overwritten by any subclasses that define custom configs
         to return the correct config class.
+
+        Returns:
+            The configuration of the stack component.
         """
         return self._config
 

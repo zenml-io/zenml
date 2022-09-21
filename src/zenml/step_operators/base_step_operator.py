@@ -34,7 +34,11 @@ class BaseStepOperator(StackComponent, ABC):
 
     @property
     def config(self) -> BaseStepOperatorConfig:
-        """Returns the config of the step operator."""
+        """Returns the config of the step operator.
+
+        Returns:
+            The config of the step operator.
+        """
         return cast(BaseStepOperatorConfig, self._config)
 
     @abstractmethod

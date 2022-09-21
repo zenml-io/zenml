@@ -123,8 +123,12 @@ class Stack:
     def to_model(self, user: UUID, project: UUID) -> "StackModel":
         """Creates a StackModel from an actual Stack instance.
 
+        Args:
+            user: The user ID of the user who created the stack.
+            project: The project ID of the project the stack belongs to.
+
         Returns:
-            a StackModel
+            A StackModel
         """
         return StackModel(
             id=self.id,

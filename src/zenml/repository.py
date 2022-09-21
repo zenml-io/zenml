@@ -778,6 +778,9 @@ class Repository(metaclass=RepositoryMetaClass):
 
         Args:
             component: The component to register.
+
+        Returns:
+            The model of the registered component.
         """
         # Get the flavor model
         flavor_model = self.get_flavor_by_name_and_type(
@@ -804,6 +807,14 @@ class Repository(metaclass=RepositoryMetaClass):
 
         Args:
             component: The new component to update with.
+
+        Returns:
+            The updated component.
+
+        Raises:
+            KeyError: If the component is not registered.
+            ValueError: If another component already exists with the same name
+            and type.
         """
         # Get the existing component model
         existing_component_model = self.get_stack_component_by_id(
@@ -843,9 +854,6 @@ class Repository(metaclass=RepositoryMetaClass):
 
         Args:
             component: The model of the component to delete.
-
-        Raises:
-            KeyError: If the component does not exist.
         """
         try:
             self.zen_store.delete_stack_component(component_id=component.id)
@@ -931,6 +939,11 @@ class Repository(metaclass=RepositoryMetaClass):
 
         Returns:
             A model of the requested stack component.
+
+        Raises:
+            KeyError: If no component with the given name and type exists.
+            RuntimeError: if multiple components with the given name and type
+                exist.
         """
         if name is None:
             active_stack_components = self.active_stack_model.components
@@ -974,7 +987,11 @@ class Repository(metaclass=RepositoryMetaClass):
     # '---------'
     @property
     def flavors(self) -> List[FlavorModel]:
-        """Fetches all the flavor models."""
+        """Fetches all the flavor models.
+
+        Returns:
+            The list of flavor models.
+        """
         return self.get_flavors()
 
     def create_flavor(self, flavor: "FlavorModel") -> "FlavorModel":

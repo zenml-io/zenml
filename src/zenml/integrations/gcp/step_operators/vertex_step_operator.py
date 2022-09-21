@@ -60,7 +60,12 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Initializes the step operator and validates the accelerator type."""
+        """Initializes the step operator and validates the accelerator type.
+
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
         super().__init__(*args, **kwargs)
         self._validate_accelerator_type()
 

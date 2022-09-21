@@ -70,7 +70,11 @@ class SagemakerStepOperatorFlavor(BaseStepOperatorFlavor):
 
     @property
     def config_class(self) -> Type[SagemakerStepOperatorConfig]:
-        """Returns SagemakerStepOperatorConfig config class."""
+        """Returns SagemakerStepOperatorConfig config class.
+
+        Returns:
+            The config class.
+        """
         return SagemakerStepOperatorConfig
 
     @property

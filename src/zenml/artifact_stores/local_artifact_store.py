@@ -325,15 +325,27 @@ class LocalArtifactStoreFlavor(BaseArtifactStoreFlavor):
 
     @property
     def name(self) -> str:
-        """Returns the name of the artifact store flavor."""
+        """Returns the name of the artifact store flavor.
+
+        Returns:
+            str: The name of the artifact store flavor.
+        """
         return "local"
 
     @property
     def config_class(self) -> Type[LocalArtifactStoreConfig]:
-        """Config class for this flavor."""
+        """Config class for this flavor.
+
+        Returns:
+            The config class.
+        """
         return LocalArtifactStoreConfig
 
     @property
     def implementation_class(self) -> Type[LocalArtifactStore]:
-        """Implementation class."""
+        """Implementation class.
+
+        Returns:
+            The implementation class.
+        """
         return LocalArtifactStore
