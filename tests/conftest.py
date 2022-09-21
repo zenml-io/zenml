@@ -44,6 +44,7 @@ from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
 )
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models.user_management_models import TeamModel
+from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.pipelines import pipeline
 from zenml.repository import Repository
@@ -357,7 +358,7 @@ def local_orchestrator():
     return LocalOrchestrator(
         name="",
         id=uuid4(),
-        config=StackComponentConfig(),
+        config=BaseOrchestratorConfig(),
         flavor="local",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),

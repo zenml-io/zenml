@@ -1090,8 +1090,8 @@ def _import_stack_component(
             project=repo.active_project.id,
             type=component_type,
             name=component_name,
-            flavor_name=component_flavor,
-            confguration=component_config,
+            flavor=component_flavor,
+            configuration=component_config["configuration"],
         )
     )
     return component_name

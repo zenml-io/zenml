@@ -60,8 +60,8 @@ def test_stack_component_dict_only_contains_public_attributes(
     components does not include private attributes."""
     assert stub_component_config._some_private_attribute_name == "Also Aria"
 
-    expected_dict_keys = {"some_public_attribute_name", "name", "uuid"}
-    assert stub_component_config.dict().keys() == expected_dict_keys
+    expected_dict_keys = {"some_public_attribute_name"}
+    assert set(stub_component_config.dict().keys()) == expected_dict_keys
 
 
 def test_stack_component_public_attributes_are_immutable(stub_component_config):

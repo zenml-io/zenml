@@ -201,6 +201,17 @@ class StackComponentConfig(BaseModel, ABC):
         # (see https://github.com/python/mypy/issues/13319).
         __getattribute__ = __custom_getattribute__
 
+    class Config:
+        """Pydantic configuration class."""
+
+        # public attributes are immutable
+        allow_mutation = False
+        # all attributes with leading underscore are private and therefore
+        # are mutable and not included in serialization
+        underscore_attrs_are_private = True
+        # prevent extra attributes during model initialization
+        extra = Extra.forbid
+
 
 class StackComponent:
     """Abstract StackComponent class for all components of a ZenML stack."""
@@ -568,13 +579,7 @@ class StackComponent:
 
         return values
 
-    class Config:
-        """Pydantic configuration class."""
-
-        # public attributes are immutable
-        allow_mutation = False
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True
-        # prevent extra attributes during model initialization
-        extra = Extra.forbid
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, StackComponent):
+            return self.to_model() == other.to_model()
+        return NotImplemented
