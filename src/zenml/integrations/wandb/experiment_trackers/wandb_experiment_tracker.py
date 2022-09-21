@@ -48,7 +48,7 @@ WANDB_API_KEY = "WANDB_API_KEY"
 
 
 class WandbExperimentTrackerSettings(Settings):
-    """settings for the Wandb experiment tracker.
+    """Settings for the Wandb experiment tracker.
 
     Attributes:
         run_name: The Wandb run name.
@@ -123,17 +123,17 @@ class WandbExperimentTracker(BaseExperimentTracker):
             step: The step that will be executed.
         """
         os.environ[WANDB_API_KEY] = self.api_key
-        config = cast(
+        settings = cast(
             WandbExperimentTrackerSettings,
             self.get_settings(step) or WandbExperimentTrackerSettings(),
         )
 
-        tags = config.tags + [step.run_name, step.pipeline.name]
+        tags = settings.tags + [step.run_name, step.pipeline.name]
         wandb_run_name = (
-            config.run_name or f"{step.run_name}_{step.config.name}"
+            settings.run_name or f"{step.run_name}_{step.config.name}"
         )
         self._initialize_wandb(
-            run_name=wandb_run_name, tags=tags, settings=config.settings
+            run_name=wandb_run_name, tags=tags, settings=settings.settings
         )
 
     def cleanup_step_run(self, step: "StepRunInfo") -> None:

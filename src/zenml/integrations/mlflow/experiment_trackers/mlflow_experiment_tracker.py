@@ -54,7 +54,7 @@ DATABRICKS_TOKEN = "DATABRICKS_TOKEN"
 
 
 class MLFlowExperimentTrackerSettings(Settings):
-    """settings for the MLflow experiment tracker.
+    """Settings for the MLflow experiment tracker.
 
     Attributes:
         experiment_name: The MLflow experiment name.
@@ -241,7 +241,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
 
     @property
     def settings_class(self) -> Optional[Type["Settings"]]:
-        """settings class for the Mlflow experiment tracker.
+        """Settings class for the Mlflow experiment tracker.
 
         Returns:
             The settings class.
@@ -305,18 +305,18 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             step: The step that will be executed.
         """
         self.configure_mlflow()
-        config = cast(
+        settings = cast(
             MLFlowExperimentTrackerSettings,
             self.get_settings(step) or MLFlowExperimentTrackerSettings(),
         )
 
-        experiment_name = config.experiment_name or step.pipeline.name
+        experiment_name = settings.experiment_name or step.pipeline.name
         experiment = self._set_active_experiment(experiment_name)
         run_id = self.get_run_id(
             experiment_name=experiment_name, run_name=step.run_name
         )
 
-        tags = config.tags.copy()
+        tags = settings.tags.copy()
         tags.update(self._get_internal_tags())
 
         mlflow.start_run(
@@ -326,7 +326,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             tags=tags,
         )
 
-        if config.nested:
+        if settings.nested:
             mlflow.start_run(run_name=step.config.name, nested=True, tags=tags)
 
     def cleanup_step_run(self, step: "StepRunInfo") -> None:

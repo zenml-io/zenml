@@ -4,22 +4,14 @@
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at:
 #
-#       https://www.apache.org/licenses/LICENSE-2.0
+#       http://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Whylogs integration constants."""
 
-from zenml.enums import StackComponentType
-from zenml.integrations.airflow.orchestrators import AirflowOrchestrator
-
-
-def test_airflow_orchestrator_attributes():
-    """Tests that the basic attributes of the airflow orchestrator are set
-    correctly."""
-    orchestrator = AirflowOrchestrator(name="")
-
-    assert orchestrator.TYPE == StackComponentType.ORCHESTRATOR
-    assert orchestrator.FLAVOR == "airflow"
+WHYLABS_LOGGING_ENABLED_ENV = "WHYLABS_LOGGING_ENABLED"
+WHYLABS_DATASET_ID_ENV = "WHYLABS_DATASET_ID"

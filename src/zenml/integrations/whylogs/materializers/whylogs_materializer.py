@@ -20,11 +20,11 @@ from typing import Any, Type, cast
 from whylogs.core import DatasetProfileView  # type: ignore
 
 from zenml.artifacts import StatisticsArtifact
-from zenml.integrations.whylogs.data_validators import WhylogsDataValidator
-from zenml.integrations.whylogs.whylabs_step_decorator import (
+from zenml.integrations.whylogs.constants import (
     WHYLABS_DATASET_ID_ENV,
     WHYLABS_LOGGING_ENABLED_ENV,
 )
+from zenml.integrations.whylogs.data_validators import WhylogsDataValidator
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 

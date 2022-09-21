@@ -97,7 +97,7 @@ KFP_POD_LABELS = {
 
 
 class KubeflowOrchestratorSettings(Settings):
-    """settings for the Kubeflow orchestrator.
+    """Settings for the Kubeflow orchestrator.
 
     Attributes:
         client_args: Arguments to pass when initializing the KFP client.
@@ -221,7 +221,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
     @property
     def settings_class(self) -> Optional[Type["Settings"]]:
-        """settings class for the Kubeflow orchestrator.
+        """Settings class for the Kubeflow orchestrator.
 
         Returns:
             The settings class.

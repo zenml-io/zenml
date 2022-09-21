@@ -303,14 +303,6 @@ class AirflowOrchestrator(BaseOrchestrator):
             password,
         )
 
-    def settings(self) -> Dict[str, Any]:
-        """settings for the airflow orchestrator.
-
-        Returns:
-            settings dictionary.
-        """
-        return {DAG_FILEPATH_OPTION_KEY: None}
-
     def prepare_pipeline_deployment(
         self,
         pipeline: "PipelineDeployment",
