@@ -30,6 +30,11 @@ class BaseExperimentTracker(StackComponent, ABC):
 
     @property
     def config(self) -> BaseExperimentTrackerConfig:
+        """Returns the config of the experiment tracker.
+
+        Returns:
+            The config of the experiment tracker.
+        """
         return cast(BaseExperimentTrackerConfig, self._config)
 
 
@@ -38,13 +43,28 @@ class BaseExperimentTrackerFlavor(Flavor):
 
     @property
     def type(self) -> StackComponentType:
+        """Type of the flavor.
+
+        Returns:
+            StackComponentType: The type of the flavor.
+        """
         return StackComponentType.EXPERIMENT_TRACKER
 
     @property
     def config_class(self) -> Type[BaseExperimentTrackerConfig]:
+        """Confic class for this flavor.
+
+        Returns:
+            The config class for this flavor.
+        """
         return BaseExperimentTrackerConfig
 
     @property
     @abstractmethod
     def implementation_class(self) -> Type[StackComponent]:
+        """Returns the implementation class for this flavor.
+
+        Returns:
+            The implementation class for this flavor.
+        """
         return BaseExperimentTracker

@@ -34,6 +34,7 @@ class BaseStepOperator(StackComponent, ABC):
 
     @property
     def config(self) -> BaseStepOperatorConfig:
+        """Returns the config of the step operator."""
         return cast(BaseStepOperatorConfig, self._config)
 
     @abstractmethod
@@ -69,13 +70,27 @@ class BaseStepOperatorFlavor(Flavor):
 
     @property
     def type(self) -> StackComponentType:
+        """Returns the flavor type.
+
+        Returns:
+            The type of the flavor.
+        """
         return StackComponentType.STEP_OPERATOR
 
     @property
     def config_class(self) -> Type[BaseStepOperatorConfig]:
+        """Returns the config class for this flavor.
+
+        Returns:
+            The config class for this flavor.
+        """
         return BaseStepOperatorConfig
 
     @property
     @abstractmethod
     def implementation_class(self) -> Type[BaseStepOperator]:
-        """Returns the implementation class for this flavor."""
+        """Returns the implementation class for this flavor.
+
+        Returns:
+            The implementation class for this flavor.
+        """

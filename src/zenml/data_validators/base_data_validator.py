@@ -32,6 +32,12 @@ class BaseDataValidator(StackComponent):
 
     @property
     def config(self) -> BaseDataValidatorConfig:
+        """Returns the config of this data validator.
+
+        Returns:
+            The config of this data validator.
+        """
+
         return cast(BaseDataValidatorConfig, self._config)
 
     @classmethod
@@ -225,12 +231,27 @@ class BaseDataValidatorFlavor(Flavor):
 
     @property
     def type(self) -> StackComponentType:
+        """The type of the component.
+
+        Returns:
+            The type of the component.
+        """
         return StackComponentType.DATA_VALIDATOR
 
     @property
     def config_class(self) -> Type[BaseDataValidatorConfig]:
+        """Config class for data validator.
+
+        Returns:
+            Config class for data validator.
+        """
         return BaseDataValidatorConfig
 
     @property
     def implementation_class(self) -> Type[BaseDataValidator]:
+        """Implementation for data validator.
+
+        Returns:
+            Implementation for data validator.
+        """
         return BaseDataValidator
