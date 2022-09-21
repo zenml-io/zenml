@@ -37,6 +37,36 @@ def test_including_global_config_in_build_context(tmp_path: Path):
     assert not config_path.exists()
 
 
+def test_check_user_is_set():
+    config = DockerConfiguration(
+        install_stack_requirements=False,
+        requirements=None,
+        required_integrations=[],
+        user=None,
+        replicate_local_python_environment="pip_freeze",
+    )
+    generated_dockerfile = (
+        PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
+            "test:test", config
+        )
+    )
+    assert all(["USER" not in line for line in generated_dockerfile])
+
+    config = DockerConfiguration(
+        install_stack_requirements=False,
+        requirements=None,
+        required_integrations=[],
+        user="test_user",
+        replicate_local_python_environment="pip_freeze",
+    )
+    generated_dockerfile = (
+        PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
+            "test:test", config
+        )
+    )
+    assert "USER test_user" in generated_dockerfile
+
+
 def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
     """Tests that the requirements get included in the correct order and only
     when configured."""

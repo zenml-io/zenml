@@ -1,5 +1,8 @@
 blank_issues_enabled: true
 contact_links:
+  - name: Feature Request
+    url: https://zenml.io/discussion
+    about: Request a new feature.
   - name: Slack Channel
     url: https://zenml.io/slack-invite/
     about: Chat with us directly here.

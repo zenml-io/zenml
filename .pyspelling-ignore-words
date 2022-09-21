@@ -135,7 +135,6 @@ DataFrames
 DataLoader
 DataQualityProfileSection
 Databricks
-Databricks
 DatasetProfile
 DatasetProfileView
 Deepchecks
@@ -609,7 +608,6 @@ Util
 VPC
 VRAM
 ValidationError
-ValidationError
 ValueError
 VertexAI
 VertexOrchestrator
@@ -759,7 +757,6 @@ configmaps
 configs
 conll
 containerise
-containerise
 containerregistry
 copyfile
 cp
@@ -786,7 +783,6 @@ daemonization
 daemonize
 daemonizer
 dango
-databricks
 databricks
 datadir
 datadrift
@@ -884,6 +880,7 @@ fcp
 fd
 feedforward
 fff
+ffmpeg
 fileio
 filepath
 filesize
@@ -1012,6 +1009,8 @@ kwarg
 kwargs
 len
 libcudart
+libsm
+libxext
 lifecycle
 lightgbm
 linux

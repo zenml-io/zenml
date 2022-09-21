@@ -207,7 +207,10 @@ class PipelineDockerImageBuilder:
         """
         lines = [f"FROM {parent_image}", f"WORKDIR {DOCKER_IMAGE_WORKDIR}"]
 
-        if docker_configuration.copy_global_config:
+        if docker_configuration.user:
+            lines.append(f"USER {docker_configuration.user}")
+
+        if docker_configuration.copy_profile:
             lines.append(
                 f"ENV {ENV_ZENML_CONFIG_PATH}={DOCKER_IMAGE_ZENML_CONFIG_PATH}"
             )
@@ -221,7 +224,7 @@ class PipelineDockerImageBuilder:
 
         if docker_configuration.copy_files:
             lines.append("COPY . .")
-        elif docker_configuration.copy_global_config:
+        elif docker_configuration.copy_profile:
             lines.append(f"COPY {DOCKER_IMAGE_ZENML_CONFIG_DIR} .")
 
         lines.append("RUN chmod -R a+rw .")
@@ -267,7 +270,7 @@ class PipelineDockerImageBuilder:
                 docker_configuration.install_stack_requirements,
                 docker_configuration.environment,
                 docker_configuration.copy_files,
-                docker_configuration.copy_global_config,
+                docker_configuration.copy_profile,
                 entrypoint,
             ]
         )
@@ -343,7 +346,7 @@ class PipelineDockerImageBuilder:
             # Leave the build context empty if we don't want to copy any files
             requires_build_context = (
                 docker_configuration.copy_files
-                or docker_configuration.copy_global_config
+                or docker_configuration.copy_profile
             )
             build_context_root = (
                 source_utils.get_source_root_path()
@@ -352,7 +355,7 @@ class PipelineDockerImageBuilder:
             )
             maybe_include_global_config = (
                 _include_global_config(build_context_root=build_context_root)  # type: ignore[arg-type]
-                if docker_configuration.copy_global_config
+                if docker_configuration.copy_profile
                 else contextlib.nullcontext()
             )
 
