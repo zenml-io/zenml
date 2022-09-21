@@ -95,6 +95,8 @@ class AzureSecretsManagerConfig(BaseSecretsManagerConfig):
 
 
 class AzureSecretsManagerFlavor(BaseSecretsManagerFlavor):
+    """Class for the `AzureSecretsManagerFlavor`."""
+
     @property
     def name(self) -> str:
         return AZURE_SECRETS_MANAGER_FLAVOR

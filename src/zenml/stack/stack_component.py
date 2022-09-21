@@ -242,6 +242,14 @@ class StackComponent:
 
     @classmethod
     def from_model(cls, component_model: "ComponentModel") -> "StackComponent":
+        """Creates a StackComponent from a ComponentModel.
+
+        Args:
+            component_model: The ComponentModel to create the StackComponent
+
+        Returns:
+            The created StackComponent.
+        """
         from zenml.repository import Repository
 
         flavor_model = Repository().get_flavor_by_name_and_type(
@@ -273,6 +281,11 @@ class StackComponent:
         )
 
     def to_model(self) -> "ComponentModel":
+        """Converts a stack component to a model.
+
+        Returns:
+            The model representation of the stack component.
+        """
         return ComponentModel(
             user=self.user,
             project=self.project,
@@ -580,6 +593,14 @@ class StackComponent:
         return values
 
     def __eq__(self, other: object) -> bool:
+        """Checks if two stack components are equal.
+
+        Args:
+            other: The other stack component to compare to.
+
+        Returns:
+            True if the stack components are equal, False otherwise.
+        """
         if isinstance(other, StackComponent):
             return self.to_model() == other.to_model()
         return NotImplemented

@@ -68,6 +68,12 @@ PathType = Union[bytes, str]
 
 
 class LocalArtifactStoreConfig(BaseArtifactStoreConfig):
+    """Config class for the local artifact store.
+
+    Attributes:
+        path: The path to the local artifact store.
+    """
+
     SUPPORTED_SCHEMES: ClassVar[Set[str]] = {""}
 
     path: str = ""
@@ -315,8 +321,11 @@ class LocalArtifactStore(BaseArtifactStore):
 
 
 class LocalArtifactStoreFlavor(BaseArtifactStoreFlavor):
+    """Class for the `LocalArtifactStoreFlavor`."""
+
     @property
     def name(self) -> str:
+        """Returns the name of the artifact store flavor."""
         return "local"
 
     @property

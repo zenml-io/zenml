@@ -83,6 +83,8 @@ class VaultSecretsManagerConfig(BaseSecretsManagerConfig):
 
 
 class VaultSecretsManagerFlavor(BaseSecretsManagerFlavor):
+    """Class for the `VaultSecretsManagerFlavor`."""
+
     @property
     def name(self) -> str:
         return VAULT_SECRETS_MANAGER_FLAVOR

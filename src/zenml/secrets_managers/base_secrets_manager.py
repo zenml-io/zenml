@@ -456,6 +456,8 @@ class BaseSecretsManager(StackComponent, ABC):
 
 
 class BaseSecretsManagerFlavor(Flavor):
+    """Class for the `BaseSecretsManagerFlavor`."""
+
     @property
     def type(self) -> StackComponentType:
         """Returns the flavor type.

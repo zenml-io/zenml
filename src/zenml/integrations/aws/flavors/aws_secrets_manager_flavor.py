@@ -70,6 +70,8 @@ class AWSSecretsManagerConfig(BaseSecretsManagerConfig):
 
 
 class AWSSecretsManagerFlavor(BaseSecretsManagerFlavor):
+    """Class for the `AWSSecretsManagerFlavor`."""
+
     @property
     def name(self) -> str:
         return AWS_SECRET_MANAGER_FLAVOR

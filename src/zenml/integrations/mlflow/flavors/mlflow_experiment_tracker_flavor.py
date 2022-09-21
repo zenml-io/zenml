@@ -150,6 +150,8 @@ class MLFlowExperimentTrackerConfig(BaseExperimentTrackerConfig):
 
 
 class MLFlowExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
+    """Class for the `MLFlowExperimentTrackerFlavor`."""
+
     @property
     def name(self) -> str:
         return MLFLOW_MODEL_EXPERIMENT_TRACKER_FLAVOR

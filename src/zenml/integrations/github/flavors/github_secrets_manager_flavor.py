@@ -38,6 +38,8 @@ class GitHubSecretsManagerConfig(BaseSecretsManagerConfig):
 
 
 class GitHubSecretsManagerFlavor(BaseSecretsManagerFlavor):
+    """Class for the `GitHubSecretsManagerFlavor`."""
+
     @property
     def name(self) -> str:
         return GITHUB_SECRET_MANAGER_FLAVOR

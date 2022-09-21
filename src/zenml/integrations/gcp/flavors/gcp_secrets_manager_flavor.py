@@ -90,6 +90,8 @@ class GCPSecretsManagerConfig(BaseSecretsManagerConfig):
 
 
 class GCPSecretsManagerFlavor(BaseSecretsManagerFlavor):
+    """Class for the `GCPSecretsManagerFlavor`."""
+
     @property
     def name(self) -> str:
         return GCP_SECRETS_MANAGER_FLAVOR

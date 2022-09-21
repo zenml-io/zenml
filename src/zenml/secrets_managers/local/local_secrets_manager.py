@@ -230,6 +230,8 @@ class LocalSecretsManager(BaseSecretsManager):
 
 
 class LocalSecretsManagerFlavor(BaseSecretsManagerFlavor):
+    """Class for the `LocalSecretsManagerFlavor`."""
+
     @property
     def name(self) -> str:
         return "local"

@@ -80,6 +80,8 @@ class LocalOrchestrator(BaseOrchestrator):
 
 
 class LocalOrchestratorFlavor(BaseOrchestratorFlavor):
+    """Class for the `LocalOrchestratorFlavor`."""
+
     @property
     def name(self) -> str:
         return "local"

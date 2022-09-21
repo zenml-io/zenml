@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Base ZenML Flavor implementation"""
+"""Base ZenML Flavor implementation."""
 
 from abc import abstractmethod
 from typing import Optional, Type, cast
@@ -23,20 +23,34 @@ from zenml.utils.source_utils import load_source_path_class, resolve_class
 
 
 class Flavor:
+    """Class for ZenML Flavors."""
+
     @property
     @abstractmethod
     def name(self) -> str:
-        """"""
+        """The flavor name.
+
+        Returns:
+            The flavor name.
+        """
 
     @property
     @abstractmethod
     def type(self) -> StackComponentType:
-        """"""
+        """The The stack component type.
+
+        Returns:
+            The stack component type.
+        """
 
     @property
     @abstractmethod
     def implementation_class(self) -> Type[StackComponent]:
-        """Implementation class for this flavor."""
+        """Implementation class for this flavor.
+
+        Returns:
+            The implementation class for this flavor.
+        """
 
     @property
     @abstractmethod
@@ -46,19 +60,38 @@ class Flavor:
         Returns:
                 The config class.
         """
-        """"""
 
     @property
     def config_schema(self) -> str:
-        """"""
+        """The config schema for a flavor.
+
+        Returns:
+            The config schema.
+        """
         return self.config_class.schema_json()
 
     @classmethod
     def from_model(cls, flavor_model: FlavorModel) -> "Flavor":
+        """Loads a flavor from a model.
+
+        Args:
+            flavor_model: The model to load from.
+
+        Returns:
+            The loaded flavor.
+        """
         flavor = load_source_path_class(flavor_model.source)()  # noqa
         return cast(Flavor, flavor)
 
     def to_model(self, integration: Optional[str] = None) -> FlavorModel:
+        """Converts a flavor to a model.
+
+        Args:
+            integration: The integration to use for the model.
+
+        Returns:
+            The model.
+        """
         from zenml.repository import Repository
 
         repo = Repository()
