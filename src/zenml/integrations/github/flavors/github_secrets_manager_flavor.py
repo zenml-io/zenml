@@ -42,6 +42,11 @@ class GitHubSecretsManagerFlavor(BaseSecretsManagerFlavor):
 
     @property
     def name(self) -> str:
+        """Name of the flavor.
+
+        Returns:
+            The name of the flavor.
+        """
         return GITHUB_SECRET_MANAGER_FLAVOR
 
     @property
@@ -55,7 +60,11 @@ class GitHubSecretsManagerFlavor(BaseSecretsManagerFlavor):
 
     @property
     def implementation_class(self) -> Type["GitHubSecretsManager"]:
-        """Implementation class for this flavor."""
+        """Implementation class for this flavor.
+
+        Returns:
+            The implementation class.
+        """
         from zenml.integrations.github.secrets_managers import (
             GitHubSecretsManager,
         )

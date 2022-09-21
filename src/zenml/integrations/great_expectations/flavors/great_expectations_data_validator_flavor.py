@@ -84,6 +84,11 @@ class GreatExpectationsDataValidatorFlavor(BaseDataValidatorFlavor):
 
     @property
     def name(self) -> str:
+        """Name of the flavor.
+
+        Returns:
+            The name of the flavor.
+        """
         return GREAT_EXPECTATIONS_DATA_VALIDATOR_FLAVOR
 
     @property
@@ -97,7 +102,11 @@ class GreatExpectationsDataValidatorFlavor(BaseDataValidatorFlavor):
 
     @property
     def implementation_class(self) -> Type["GreatExpectationsDataValidator"]:
-        """Implementation class for this flavor."""
+        """Implementation class for this flavor.
+
+        Returns:
+            The implementation class.
+        """
         from zenml.integrations.great_expectations.data_validators import (
             GreatExpectationsDataValidator,
         )

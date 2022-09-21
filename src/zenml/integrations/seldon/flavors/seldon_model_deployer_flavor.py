@@ -60,6 +60,11 @@ class SeldonModelDeployerFlavor(BaseModelDeployerFlavor):
 
     @property
     def name(self) -> str:
+        """Name of the flavor.
+
+        Returns:
+            The name of the flavor.
+        """
         return SELDON_MODEL_DEPLOYER_FLAVOR
 
     @property
@@ -73,7 +78,11 @@ class SeldonModelDeployerFlavor(BaseModelDeployerFlavor):
 
     @property
     def implementation_class(self) -> Type["SeldonModelDeployer"]:
-        """Implementation class for this flavor."""
+        """Implementation class for this flavor.
+
+        Returns:
+            The implementation class.
+        """
         from zenml.integrations.seldon.model_deployers import (
             SeldonModelDeployer,
         )

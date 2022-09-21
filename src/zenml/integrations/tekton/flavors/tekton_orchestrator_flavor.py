@@ -49,6 +49,11 @@ class TektonOrchestratorFlavor(BaseOrchestratorFlavor):
 
     @property
     def name(self) -> str:
+        """Name of the orchestrator flavor.
+
+        Returns:
+            Name of the orchestrator flavor.
+        """
         return TEKTON_ORCHESTRATOR_FLAVOR
 
     @property
@@ -62,7 +67,11 @@ class TektonOrchestratorFlavor(BaseOrchestratorFlavor):
 
     @property
     def implementation_class(self) -> Type["TektonOrchestrator"]:
-        """Implementation class for this flavor."""
+        """Implementation class for this flavor.
+
+        Returns:
+            Implementation class for this flavor.
+        """
         from zenml.integrations.tekton.orchestrators import TektonOrchestrator
 
         return TektonOrchestrator
