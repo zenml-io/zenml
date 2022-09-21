@@ -57,16 +57,29 @@ class AWSContainerRegistryFlavor(BaseContainerRegistryFlavor):
 
     @property
     def name(self) -> str:
+        """Name of the flavor.
+
+        Returns:
+            The name of the flavor.
+        """
         return AWS_CONTAINER_REGISTRY_FLAVOR
 
     @property
     def config_class(self) -> Type[AWSContainerRegistryConfig]:
-        """Config class for this flavor."""
+        """Config class for this flavor.
+
+        Returns:
+            The config class.
+        """
         return AWSContainerRegistryConfig
 
     @property
     def implementation_class(self) -> Type["AWSContainerRegistry"]:
-        """Implementation class."""
+        """Implementation class.
+
+        Returns:
+            The implementation class.
+        """
         from zenml.integrations.aws.container_registries import (
             AWSContainerRegistry,
         )

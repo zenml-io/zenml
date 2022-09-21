@@ -42,6 +42,11 @@ class SlackAlerterFlavor(BaseAlerterFlavor):
 
     @property
     def name(self) -> str:
+        """Name of the flavor.
+
+        Returns:
+            The name of the flavor.
+        """
         return SLACK_ALERTER_FLAVOR
 
     @property
@@ -55,7 +60,11 @@ class SlackAlerterFlavor(BaseAlerterFlavor):
 
     @property
     def implementation_class(self) -> Type["SlackAlerter"]:
-        """Implementation class for this flavor."""
+        """Implementation class for this flavor.
+
+        Returns:
+            The implementation class.
+        """
         from zenml.integrations.slack.alerters import SlackAlerter
 
         return SlackAlerter

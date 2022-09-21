@@ -40,7 +40,6 @@ class SlackIntegration(Integration):
         Returns:
             List of new flavors defined by the Slack integration.
         """
-
         from zenml.integrations.slack.flavors import SlackAlerterFlavor
 
         return [SlackAlerterFlavor]

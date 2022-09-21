@@ -77,6 +77,11 @@ class KubeflowOrchestratorFlavor(BaseOrchestratorFlavor):
 
     @property
     def name(self) -> str:
+        """Name of the flavor.
+
+        Returns:
+            The name of the flavor.
+        """
         return KUBEFLOW_ORCHESTRATOR_FLAVOR
 
     @property
@@ -90,7 +95,11 @@ class KubeflowOrchestratorFlavor(BaseOrchestratorFlavor):
 
     @property
     def implementation_class(self) -> Type["KubeflowOrchestrator"]:
-        """Implementation class for this flavor."""
+        """Implementation class for this flavor.
+
+        Returns:
+            The implementation class.
+        """
         from zenml.integrations.kubeflow.orchestrators import (
             KubeflowOrchestrator,
         )
