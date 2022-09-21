@@ -155,6 +155,7 @@ class BaseAnnotatorFlavor(Flavor):
 
     @property
     def config_class(self) -> Type[BaseAnnotatorConfig]:
+        """Config class for this flavor."""
         return BaseAnnotatorConfig
 
     @property

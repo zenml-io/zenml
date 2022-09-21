@@ -437,6 +437,7 @@ class BaseArtifactStoreFlavor(Flavor):
 
     @property
     def config_class(self) -> Type[StackComponentConfig]:
+        """Config class for this flavor."""
         return BaseArtifactStoreConfig
 
     @property

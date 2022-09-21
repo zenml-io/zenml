@@ -53,6 +53,11 @@ class TektonOrchestratorFlavor(BaseOrchestratorFlavor):
 
     @property
     def config_class(self) -> Type[TektonOrchestratorConfig]:
+        """Returns `TektonOrchestratorConfig` config class.
+
+        Returns:
+                The config class.
+        """
         return TektonOrchestratorConfig
 
     @property

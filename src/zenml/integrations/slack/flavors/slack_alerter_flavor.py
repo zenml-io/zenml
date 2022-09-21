@@ -46,6 +46,11 @@ class SlackAlerterFlavor(BaseAlerterFlavor):
 
     @property
     def config_class(self) -> Type[SlackAlerterConfig]:
+        """Returns `SlackAlerterConfig` config class.
+
+        Returns:
+                The config class.
+        """
         return SlackAlerterConfig
 
     @property

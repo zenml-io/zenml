@@ -156,6 +156,11 @@ class MLFlowExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
 
     @property
     def config_class(self) -> Type[MLFlowExperimentTrackerConfig]:
+        """Returns `MLFlowExperimentTrackerConfig` config class.
+
+        Returns:
+                The config class.
+        """
         return MLFlowExperimentTrackerConfig
 
     @property

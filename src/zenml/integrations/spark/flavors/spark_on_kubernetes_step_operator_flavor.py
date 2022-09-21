@@ -53,6 +53,11 @@ class KubernetesSparkStepOperatorFlavor(SparkStepOperatorFlavor):
 
     @property
     def config_class(self) -> Type[KubernetesSparkStepOperatorConfig]:
+        """Returns `KubernetesSparkStepOperatorConfig` config class.
+
+        Returns:
+                The config class.
+        """
         return KubernetesSparkStepOperatorConfig
 
     @property

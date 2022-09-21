@@ -88,6 +88,11 @@ class GreatExpectationsDataValidatorFlavor(BaseDataValidatorFlavor):
 
     @property
     def config_class(self) -> Type[GreatExpectationsDataValidatorConfig]:
+        """Returns `GreatExpectationsDataValidatorConfig` config class.
+
+        Returns:
+                The config class.
+        """
         return GreatExpectationsDataValidatorConfig
 
     @property

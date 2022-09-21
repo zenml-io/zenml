@@ -123,6 +123,11 @@ class VertexOrchestratorFlavor(BaseOrchestratorFlavor):
 
     @property
     def config_class(self) -> Type[VertexOrchestratorConfig]:
+        """Returns VertexOrchestratorConfig config class.
+
+        Returns:
+                The config class.
+        """
         return VertexOrchestratorConfig
 
     @property

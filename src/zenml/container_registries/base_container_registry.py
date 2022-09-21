@@ -134,6 +134,7 @@ class BaseContainerRegistryFlavor(Flavor):
 
     @property
     def config_class(self) -> Type[BaseContainerRegistryConfig]:
+        """Config class for this flavor."""
         return BaseContainerRegistryConfig
 
     @property

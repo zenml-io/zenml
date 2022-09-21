@@ -76,6 +76,7 @@ class AWSSecretsManagerFlavor(BaseSecretsManagerFlavor):
 
     @property
     def config_class(self) -> Type[AWSSecretsManagerConfig]:
+        """Config class for this flavor."""
         return AWSSecretsManagerConfig
 
     @property

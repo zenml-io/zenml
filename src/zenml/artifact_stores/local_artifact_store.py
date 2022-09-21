@@ -321,6 +321,7 @@ class LocalArtifactStoreFlavor(BaseArtifactStoreFlavor):
 
     @property
     def config_class(self) -> Type[LocalArtifactStoreConfig]:
+        """Config class for this flavor."""
         return LocalArtifactStoreConfig
 
     @property

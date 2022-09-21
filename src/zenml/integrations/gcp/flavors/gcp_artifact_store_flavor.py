@@ -46,6 +46,11 @@ class GCPArtifactStoreFlavor(BaseArtifactStoreFlavor):
 
     @property
     def config_class(self) -> Type[GCPArtifactStoreConfig]:
+        """Returns GCPArtifactStoreConfig config class.
+
+        Returns:
+                The config class.
+        """
         return GCPArtifactStoreConfig
 
     @property

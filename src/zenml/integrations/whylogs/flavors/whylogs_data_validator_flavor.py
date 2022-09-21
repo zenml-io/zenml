@@ -41,6 +41,11 @@ class WhylogsDataValidatorFlavor(BaseDataValidatorFlavor):
 
     @property
     def config_class(self) -> Type[WhylogsDataValidatorConfig]:
+        """Returns `WhylogsDataValidatorConfig` config class.
+
+        Returns:
+                The config class.
+        """
         return WhylogsDataValidatorConfig
 
     @property

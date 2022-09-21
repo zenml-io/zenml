@@ -64,6 +64,11 @@ class SeldonModelDeployerFlavor(BaseModelDeployerFlavor):
 
     @property
     def config_class(self) -> Type[SeldonModelDeployerConfig]:
+        """Returns `SeldonModelDeployerConfig` config class.
+
+        Returns:
+                The config class.
+        """
         return SeldonModelDeployerConfig
 
     @property

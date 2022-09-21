@@ -74,6 +74,11 @@ class VertexStepOperatorFlavor(BaseStepOperatorFlavor):
 
     @property
     def config_class(self) -> Type[VertexStepOperatorConfig]:
+        """Returns `VertexStepOperatorConfig` config class.
+
+        Returns:
+                The config class.
+        """
         return VertexStepOperatorConfig
 
     @property

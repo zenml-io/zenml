@@ -43,6 +43,11 @@ class FeastFeatureStoreFlavor(BaseFeatureStoreFlavor):
 
     @property
     def config_class(self) -> Type[FeastFeatureStoreConfig]:
+        """Returns FeastFeatureStoreConfig config class.
+
+        Returns:
+                The config class.
+        """
         """Config class for this flavor."""
         return FeastFeatureStoreConfig
 

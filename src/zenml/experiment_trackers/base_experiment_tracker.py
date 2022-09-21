@@ -52,7 +52,7 @@ class BaseExperimentTrackerFlavor(Flavor):
 
     @property
     def config_class(self) -> Type[BaseExperimentTrackerConfig]:
-        """Confic class for this flavor.
+        """Config class for this flavor.
 
         Returns:
             The config class for this flavor.

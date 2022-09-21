@@ -89,6 +89,11 @@ class VaultSecretsManagerFlavor(BaseSecretsManagerFlavor):
 
     @property
     def config_class(self) -> Type[VaultSecretsManagerConfig]:
+        """Returns `VaultSecretsManagerConfig` config class.
+
+        Returns:
+                The config class.
+        """
         return VaultSecretsManagerConfig
 
     @property

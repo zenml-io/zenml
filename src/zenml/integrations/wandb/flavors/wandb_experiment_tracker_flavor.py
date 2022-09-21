@@ -52,6 +52,11 @@ class WandbExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
 
     @property
     def config_class(self) -> Type[WandbExperimentTrackerConfig]:
+        """Returns `WandbExperimentTrackerConfig` config class.
+
+        Returns:
+                The config class.
+        """
         return WandbExperimentTrackerConfig
 
     @property

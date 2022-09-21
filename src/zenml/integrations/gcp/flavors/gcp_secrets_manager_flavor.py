@@ -96,6 +96,11 @@ class GCPSecretsManagerFlavor(BaseSecretsManagerFlavor):
 
     @property
     def config_class(self) -> Type[GCPSecretsManagerConfig]:
+        """Returns GCPSecretsManagerConfig config class.
+
+        Returns:
+                The config class.
+        """
         return GCPSecretsManagerConfig
 
     @property

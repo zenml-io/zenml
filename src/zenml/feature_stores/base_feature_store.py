@@ -80,6 +80,7 @@ class BaseFeatureStoreFlavor(Flavor):
 
     @property
     def config_class(self) -> Type[BaseFeatureStoreConfig]:
+        """Config class for this flavor."""
         return BaseFeatureStoreConfig
 
     @property

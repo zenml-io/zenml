@@ -50,6 +50,11 @@ class LabelStudioAnnotatorFlavor(BaseAnnotatorFlavor):
 
     @property
     def config_class(self) -> Type[LabelStudioAnnotatorConfig]:
+        """Returns `LabelStudioAnnotatorConfig` config class.
+
+        Returns:
+                The config class.
+        """
         return LabelStudioAnnotatorConfig
 
     @property

@@ -93,6 +93,11 @@ class SparkStepOperatorFlavor(BaseStepOperatorFlavor):
 
     @property
     def config_class(self) -> Type[SparkStepOperatorConfig]:
+        """Returns `SparkStepOperatorConfig` config class.
+
+        Returns:
+                The config class.
+        """
         return SparkStepOperatorConfig
 
     @property

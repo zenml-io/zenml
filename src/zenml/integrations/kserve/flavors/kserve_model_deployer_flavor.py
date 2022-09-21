@@ -63,6 +63,11 @@ class KServeModelDeployerFlavor(BaseModelDeployerFlavor):
 
     @property
     def config_class(self) -> Type[KServeModelDeployerConfig]:
+        """Returns `KServeModelDeployerConfig` config class.
+
+        Returns:
+                The config class.
+        """
         return KServeModelDeployerConfig
 
     @property

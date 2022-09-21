@@ -70,6 +70,11 @@ class KubernetesOrchestratorFlavor(BaseOrchestratorFlavor):
 
     @property
     def config_class(self) -> Type[KubernetesOrchestratorConfig]:
+        """Returns `KubernetesOrchestratorConfig` config class.
+
+        Returns:
+                The config class.
+        """
         return KubernetesOrchestratorConfig
 
     @property

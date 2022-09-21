@@ -68,6 +68,11 @@ class GitHubActionsOrchestratorFlavor(BaseOrchestratorFlavor):
 
     @property
     def config_class(self) -> Type[GitHubActionsOrchestratorConfig]:
+        """Returns `GitHubActionsOrchestratorConfig` config class.
+
+        Returns:
+                The config class.
+        """
         return GitHubActionsOrchestratorConfig
 
     @property

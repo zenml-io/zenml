@@ -41,6 +41,11 @@ class Flavor:
     @property
     @abstractmethod
     def config_class(self) -> Type[StackComponentConfig]:
+        """Returns `StackComponentConfig` config class.
+
+        Returns:
+                The config class.
+        """
         """"""
 
     @property

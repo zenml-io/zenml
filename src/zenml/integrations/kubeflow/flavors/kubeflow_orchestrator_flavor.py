@@ -81,6 +81,11 @@ class KubeflowOrchestratorFlavor(BaseOrchestratorFlavor):
 
     @property
     def config_class(self) -> Type[KubeflowOrchestratorConfig]:
+        """Returns `KubeflowOrchestratorConfig` config class.
+
+        Returns:
+                The config class.
+        """
         return KubeflowOrchestratorConfig
 
     @property

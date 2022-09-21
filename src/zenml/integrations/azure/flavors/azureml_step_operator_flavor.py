@@ -79,6 +79,11 @@ class AzureMLStepOperatorFlavor(BaseStepOperatorFlavor):
 
     @property
     def config_class(self) -> Type[AzureMLStepOperatorConfig]:
+        """Returns AzureMLStepOperatorConfig config class.
+
+        Returns:
+                The config class.
+        """
         return AzureMLStepOperatorConfig
 
     @property

@@ -44,6 +44,11 @@ class GitHubSecretsManagerFlavor(BaseSecretsManagerFlavor):
 
     @property
     def config_class(self) -> Type[GitHubSecretsManagerConfig]:
+        """Returns `GitHubSecretsManagerConfig` config class.
+
+        Returns:
+                The config class.
+        """
         return GitHubSecretsManagerConfig
 
     @property

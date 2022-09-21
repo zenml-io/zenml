@@ -45,6 +45,11 @@ class MLFlowModelDeployerFlavor(BaseModelDeployerFlavor):
 
     @property
     def config_class(self) -> Type[MLFlowModelDeployerConfig]:
+        """Returns `MLFlowModelDeployerConfig` config class.
+
+        Returns:
+                The config class.
+        """
         return MLFlowModelDeployerConfig
 
     @property

@@ -61,6 +61,7 @@ class AWSContainerRegistryFlavor(BaseContainerRegistryFlavor):
 
     @property
     def config_class(self) -> Type[AWSContainerRegistryConfig]:
+        """Config class for this flavor."""
         return AWSContainerRegistryConfig
 
     @property

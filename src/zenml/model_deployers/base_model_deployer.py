@@ -242,6 +242,11 @@ class BaseModelDeployerFlavor(Flavor):
 
     @property
     def config_class(self) -> Type[BaseModelDeployerConfig]:
+        """Returns `BaseModelDeployerConfig` config class.
+
+        Returns:
+                The config class.
+        """
         return BaseModelDeployerConfig
 
     @property

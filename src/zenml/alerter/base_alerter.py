@@ -76,6 +76,7 @@ class BaseAlerterFlavor(Flavor):
 
     @property
     def config_class(self) -> Type[BaseAlerterConfig]:
+        """Returns BaseAlerterConfig class."""
         return BaseAlerterConfig
 
     @property
