@@ -127,9 +127,6 @@ def handle_exceptions(func: F) -> F:
 
     Returns:
         Decorated function.
-
-    Raises:
-        HTTPException: If an exception is raised.
     """
 
     @wraps(func)
