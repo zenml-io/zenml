@@ -2672,11 +2672,17 @@ class SqlZenStore(BaseZenStore):
                 )
             return step.id
 
-    def _resolve_mlmd_artifact_id(self, mlmd_id: int) -> UUID:
+    def _resolve_mlmd_artifact_id(
+        self, mlmd_id: int, mlmd_parent_step_id: int
+    ) -> UUID:
         """Resolves an artifact ID from MLMD to a ZenML artifact ID.
+
+        Since a single MLMD artifact can map to multiple ZenML artifacts, we
+        also need to know the parent step to resolve this correctly.
 
         Args:
             mlmd_id: The MLMD ID of the artifact.
+            mlmd_parent_step_id: The MLMD ID of the parent step.
 
         Returns:
             The ZenML artifact ID.
@@ -2686,7 +2692,11 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             artifact = session.exec(
-                select(ArtifactSchema).where(ArtifactSchema.mlmd_id == mlmd_id)
+                select(ArtifactSchema)
+                .where(ArtifactSchema.mlmd_id == mlmd_id)
+                .where(
+                    ArtifactSchema.mlmd_parent_step_id == mlmd_parent_step_id
+                )
             ).first()
             if artifact is None:
                 raise KeyError(
@@ -2836,7 +2846,8 @@ class SqlZenStore(BaseZenStore):
         for input_name, mlmd_artifact in mlmd_inputs.items():
             if input_name not in zenml_inputs:
                 artifact_id = self._resolve_mlmd_artifact_id(
-                    mlmd_artifact.mlmd_id
+                    mlmd_id=mlmd_artifact.mlmd_id,
+                    mlmd_parent_step_id=mlmd_artifact.mlmd_parent_step_id,
                 )
                 self._set_run_step_input_artifact(
                     step_id=run_step_id,
