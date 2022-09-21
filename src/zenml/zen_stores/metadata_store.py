@@ -272,7 +272,7 @@ class MetadataStore:
         """Returns input and output artifacts for the given step.
 
         Args:
-            step: The step for which to get the artifacts.
+            step_id: The ID of the step to get the artifacts for.
             step_parent_step_ids: The IDs of the parent steps of the given step.
             step_name: The name of the step.
 

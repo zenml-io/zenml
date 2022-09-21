@@ -127,15 +127,6 @@ def handle_exceptions(func: F) -> F:
 
     Returns:
         Decorated function.
-
-    Raises:
-        HTTPException:
-            - 401: if the user is not authorized.
-            - 404: if the entity is not found.
-            - 409: if the entity already exists.
-            - 422: if the request is unable to be processed.
-        KeyError: if the entity is not found.
-        ValueError: if the entity could not be validated.
     """
 
     @wraps(func)

@@ -330,7 +330,6 @@ def print_stack_component_configuration(
 
     Args:
         component: The stack component to print.
-        display_name: The name of the stack component.
         active_status: Whether the stack component is active.
     """
     title = f"{component.type.value.upper()} Component Configuration"

@@ -165,11 +165,19 @@ class BaseAnnotatorFlavor(Flavor):
 
     @property
     def config_class(self) -> Type[BaseAnnotatorConfig]:
-        """Config class for this flavor."""
+        """Config class for this flavor.
+
+        Returns:
+            The config class.
+        """
         return BaseAnnotatorConfig
 
     @property
     @abstractmethod
     def implementation_class(self) -> Type[BaseAnnotator]:
-        """Implementation class."""
+        """Implementation class.
+
+        Returns:
+            The implementation class.
+        """
         return BaseAnnotator
