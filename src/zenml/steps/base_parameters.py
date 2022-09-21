@@ -16,5 +16,5 @@
 from pydantic import BaseModel
 
 
-class Parameters(BaseModel):
+class BaseParameters(BaseModel):
     """Base class to pass parameters into a step."""

@@ -24,7 +24,7 @@ from tfx.orchestration.portable.base_executor_operator import (
 )
 from tfx.proto.orchestration import executable_spec_pb2, execution_result_pb2
 
-from zenml.config.pipeline_configurations import StepRunInfo
+from zenml.config.step_run_info import StepRunInfo
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.repository import Repository
@@ -208,7 +208,7 @@ class StepExecutorOperator(BaseExecutorOperator):
             run_name=execution_info.pipeline_run_id,
         )
         step_operator.launch(
-            step_run_info=step_run_info,
+            info=step_run_info,
             entrypoint_command=entrypoint_command,
         )
 

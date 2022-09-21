@@ -55,7 +55,7 @@ from kubernetes import config as k8s_config
 from pydantic import root_validator
 
 from zenml.artifact_stores import LocalArtifactStore
-from zenml.config.settings import Settings
+from zenml.config.base_settings import BaseSettings, ConfigurationLevel
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
@@ -82,7 +82,7 @@ from zenml.utils import deprecation_utils, io_utils, networking_utils
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_configurations import PipelineDeployment
+    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.stack import Stack
     from zenml.steps import ResourceSettings
 
@@ -96,12 +96,14 @@ KFP_POD_LABELS = {
 }
 
 
-class KubeflowOrchestratorSettings(Settings):
+class KubeflowOrchestratorSettings(BaseSettings):
     """Settings for the Kubeflow orchestrator.
 
     Attributes:
         client_args: Arguments to pass when initializing the KFP client.
     """
+
+    LEVEL: ClassVar[ConfigurationLevel] = ConfigurationLevel.PIPELINE
 
     client_args: Dict[str, Any] = {}
 
@@ -220,7 +222,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         return context_names, active_context_name
 
     @property
-    def settings_class(self) -> Optional[Type["Settings"]]:
+    def settings_class(self) -> Optional[Type["BaseSettings"]]:
         """Settings class for the Kubeflow orchestrator.
 
         Returns:
@@ -399,19 +401,19 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
     def prepare_pipeline_deployment(
         self,
-        pipeline: "PipelineDeployment",
+        deployment: "PipelineDeployment",
         stack: "Stack",
     ) -> None:
         """Build a Docker image and push it to the container registry.
 
         Args:
-            pipeline: Representation of the pipeline to run.
-            stack: Stack on which the pipeline will run.
+            deployment: The pipeline deployment configuration.
+            stack: The stack on which the pipeline will be deployed.
         """
         repo_digest = self.build_and_push_docker_image(
-            run_config=pipeline, stack=stack
+            deployment=deployment, stack=stack
         )
-        pipeline.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
+        deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
 
     @staticmethod
     def _configure_container_op(container_op: dsl.ContainerOp) -> None:
@@ -547,7 +549,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
     def prepare_or_run_pipeline(
         self,
-        pipeline: "PipelineDeployment",
+        deployment: "PipelineDeployment",
         stack: "Stack",
     ) -> Any:
         """Creates a kfp yaml file.
@@ -575,8 +577,8 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         then uploaded into the kubeflow pipelines cluster for execution.
 
         Args:
-            pipeline: The pipeline object.
-            stack: The stack object.
+            deployment: The pipeline deployment to prepare or run.
+            stack: The stack the pipeline will run on.
 
         Raises:
             RuntimeError: If trying to run a pipeline in a notebook environment.
@@ -592,7 +594,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 "orchestrator."
             )
 
-        image_name = pipeline.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
+        image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
 
         # Create a callable for future compilation into a dsl.Pipeline.
         def _construct_kfp_pipeline() -> None:
@@ -611,7 +613,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             # Dictionary of container_ops index by the associated step name
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
-            for step_name, step in pipeline.steps.items():
+            for step_name, step in deployment.steps.items():
                 # The command will be needed to eventually call the python step
                 # within the docker container
                 command = (
@@ -669,20 +671,20 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         # Get a filepath to use to save the finished yaml to
         fileio.makedirs(self.pipeline_directory)
         pipeline_file_path = os.path.join(
-            self.pipeline_directory, f"{pipeline.run_name}.yaml"
+            self.pipeline_directory, f"{deployment.run_name}.yaml"
         )
 
         # write the argo pipeline yaml
         KFPCompiler()._create_and_write_workflow(
             pipeline_func=_construct_kfp_pipeline,
-            pipeline_name=pipeline.pipeline.name,
+            pipeline_name=deployment.pipeline.name,
             package_path=pipeline_file_path,
         )
 
         # using the kfp client uploads the pipeline to kubeflow pipelines and
         # runs it there
         self._upload_and_run_pipeline(
-            deployment=pipeline,
+            deployment=deployment,
             pipeline_file_path=pipeline_file_path,
         )
 

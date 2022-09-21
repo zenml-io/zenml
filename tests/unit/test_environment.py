@@ -16,11 +16,9 @@ import platform
 
 import pytest
 
-from zenml.config.pipeline_configurations import (
-    PipelineConfiguration,
-    StepRunInfo,
-)
+from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import StepConfiguration
+from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import VALID_OPERATING_SYSTEMS
 from zenml.environment import BaseEnvironmentComponent, Environment
 from zenml.steps import StepEnvironment

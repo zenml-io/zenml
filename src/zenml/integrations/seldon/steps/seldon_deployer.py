@@ -36,7 +36,12 @@ from zenml.integrations.seldon.services.seldon_deployment import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.steps import STEP_ENVIRONMENT_NAME, Parameters, StepEnvironment, step
+from zenml.steps import (
+    STEP_ENVIRONMENT_NAME,
+    BaseParameters,
+    StepEnvironment,
+    step,
+)
 from zenml.steps.step_context import StepContext
 from zenml.utils import io_utils
 from zenml.utils.materializer_utils import save_model_metadata
@@ -84,7 +89,7 @@ class CustomDeployParameters(BaseModel):
         return predict_func_path
 
 
-class SeldonDeployerStepParameters(Parameters):
+class SeldonDeployerStepParameters(BaseParameters):
     """Seldon model deployer step parameters.
 
     Attributes:

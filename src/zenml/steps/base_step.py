@@ -77,8 +77,8 @@ from zenml.utils import dict_utils, pydantic_utils, settings_utils, source_utils
 
 logger = get_logger(__name__)
 if TYPE_CHECKING:
-    from zenml.config.settings import SettingsOrDict
-    from zenml.steps.parameters import Parameters
+    from zenml.config.base_settings import SettingsOrDict
+    from zenml.steps.base_parameters import BaseParameters
 
     ParametersOrDict = Union["Parameters", Dict[str, Any]]
     ArtifactClassOrStr = Union[str, Type["BaseArtifact"]]
@@ -116,7 +116,7 @@ class BaseStepMeta(type):
         Raises:
             StepInterfaceError: When unable to create the step.
         """
-        from zenml.steps.parameters import Parameters
+        from zenml.steps.base_parameters import BaseParameters
 
         dct.setdefault(INSTANCE_CONFIGURATION, {})
         cls = cast(Type["BaseStep"], super().__new__(mcs, name, bases, dct))
@@ -170,7 +170,7 @@ class BaseStepMeta(type):
                     f"and outputs."
                 )
 
-            if issubclass(arg_type, Parameters):
+            if issubclass(arg_type, BaseParameters):
                 # Raise an error if we already found a config in the signature
                 if cls.PARAMETERS_CLASS is not None:
                     raise StepInterfaceError(
@@ -249,7 +249,7 @@ class BaseStep(metaclass=BaseStepMeta):
     INPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
     OUTPUT_SIGNATURE: ClassVar[Dict[str, Type[Any]]] = None  # type: ignore[assignment] # noqa
     PARAMETERS_FUNCTION_PARAMETER_NAME: ClassVar[Optional[str]] = None
-    PARAMETERS_CLASS: ClassVar[Optional[Type["Parameters"]]] = None
+    PARAMETERS_CLASS: ClassVar[Optional[Type["BaseParameters"]]] = None
     CONTEXT_PARAMETER_NAME: ClassVar[Optional[str]] = None
 
     INSTANCE_CONFIGURATION: Dict[str, Any] = {}

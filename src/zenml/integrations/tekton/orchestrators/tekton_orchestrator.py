@@ -36,7 +36,7 @@ from zenml.utils import io_utils, networking_utils
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_configurations import PipelineDeployment
+    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.stack import Stack
     from zenml.steps import ResourceSettings
 
@@ -157,19 +157,19 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
     def prepare_pipeline_deployment(
         self,
-        pipeline: "PipelineDeployment",
+        deployment: "PipelineDeployment",
         stack: "Stack",
     ) -> None:
         """Build a Docker image and push it to the container registry.
 
         Args:
-            pipeline: Representation of the pipeline to run.
-            stack: Stack on which the pipeline will run.
+            deployment: The pipeline deployment configuration.
+            stack: The stack on which the pipeline will be deployed.
         """
         repo_digest = self.build_and_push_docker_image(
-            run_config=pipeline, stack=stack
+            deployment=deployment, stack=stack
         )
-        pipeline.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
+        deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
 
     @staticmethod
     def _configure_container_resources(
@@ -199,7 +199,7 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
     def prepare_or_run_pipeline(
         self,
-        pipeline: "PipelineDeployment",
+        deployment: "PipelineDeployment",
         stack: "Stack",
     ) -> Any:
         """Runs the pipeline on Tekton.
@@ -208,8 +208,8 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         and then applies this configuration to run the pipeline.
 
         Args:
-            pipeline: The pipeline object.
-            stack: The stack object.
+            deployment: The pipeline deployment to prepare or run.
+            stack: The stack the pipeline will run on.
 
         Raises:
             RuntimeError: If you try to run the pipelines in a notebook environment.
@@ -225,7 +225,7 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 "orchestrator."
             )
 
-        image_name = pipeline.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
+        image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
 
         def _construct_kfp_pipeline() -> None:
             """Create a container_op for each step.
@@ -239,7 +239,7 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             # Dictionary of container_ops index by the associated step name
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
-            for step_name, step in pipeline.steps.items():
+            for step_name, step in deployment.steps.items():
                 command = TektonEntrypointConfiguration.get_entrypoint_command()
                 arguments = (
                     TektonEntrypointConfiguration.get_entrypoint_arguments(
@@ -274,7 +274,7 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         # Get a filepath to use to save the finished yaml to
         fileio.makedirs(self.pipeline_directory)
         pipeline_file_path = os.path.join(
-            self.pipeline_directory, f"{pipeline.run_name}.yaml"
+            self.pipeline_directory, f"{deployment.run_name}.yaml"
         )
 
         # Set the run name, which Tekton reads from this attribute of the
@@ -282,11 +282,11 @@ class TektonOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         setattr(
             _construct_kfp_pipeline,
             "_component_human_name",
-            pipeline.run_name,
+            deployment.run_name,
         )
         TektonCompiler().compile(_construct_kfp_pipeline, pipeline_file_path)
 
-        if pipeline.schedule:
+        if deployment.schedule:
             logger.warning(
                 "The Tekton Orchestrator currently does not support the "
                 "use of schedules. The `schedule` will be ignored "

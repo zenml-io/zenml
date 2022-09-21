@@ -23,7 +23,7 @@ from zenml.exceptions import (
 )
 from zenml.pipelines import pipeline
 from zenml.repository import Repository
-from zenml.steps import Parameters, step
+from zenml.steps import BaseParameters, step
 from zenml.utils.yaml_utils import write_yaml
 
 
@@ -31,7 +31,7 @@ def create_pipeline_with_param_value(param_value: int):
     """Creates pipeline instance with a step named 'step' which has a
     parameter named 'value'."""
 
-    class Params(Parameters):
+    class Params(BaseParameters):
         value: int
 
     @step

@@ -35,7 +35,7 @@ from zenml.logger import get_logger
 from zenml.utils import docker_utils, io_utils, source_utils
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_configurations import PipelineDeployment
+    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.container_registries import BaseContainerRegistry
     from zenml.stack import Stack
 
@@ -112,7 +112,7 @@ class PipelineDockerImageBuilder(BaseModel):
 
     def build_and_push_docker_image(
         self,
-        run_config: "PipelineDeployment",
+        deployment: "PipelineDeployment",
         stack: "Stack",
         entrypoint: Optional[str] = None,
     ) -> str:
@@ -122,7 +122,7 @@ class PipelineDockerImageBuilder(BaseModel):
         reference the pushed image in order to pull or run it.
 
         Args:
-            run_config: The pipeline deployment for which the image should be
+            deployment: The pipeline deployment for which the image should be
                 built.
             stack: The stack on which the pipeline will be deployed.
             entrypoint: Entrypoint to use for the final image. If left empty,
@@ -142,12 +142,12 @@ class PipelineDockerImageBuilder(BaseModel):
             )
 
         target_image_name = self.get_target_image_name(
-            deployment=run_config, container_registry=container_registry
+            deployment=deployment, container_registry=container_registry
         )
 
         self.build_docker_image(
             target_image_name=target_image_name,
-            run_config=run_config,
+            deployment=deployment,
             stack=stack,
             entrypoint=entrypoint,
         )
@@ -190,7 +190,7 @@ class PipelineDockerImageBuilder(BaseModel):
     def build_docker_image(
         self,
         target_image_name: str,
-        run_config: "PipelineDeployment",
+        deployment: "PipelineDeployment",
         stack: "Stack",
         entrypoint: Optional[str] = None,
     ) -> None:
@@ -198,7 +198,7 @@ class PipelineDockerImageBuilder(BaseModel):
 
         Args:
             target_image_name: The name of the image to build.
-            run_config: The pipeline deployment for which the image should be
+            deployment: The pipeline deployment for which the image should be
                 built.
             stack: The stack on which the pipeline will be deployed.
             entrypoint: Entrypoint to use for the final image. If left empty,
@@ -209,9 +209,9 @@ class PipelineDockerImageBuilder(BaseModel):
                 specified and the Docker configuration doesn't require an
                 image build.
         """
-        pipeline_name = run_config.pipeline.name
+        pipeline_name = deployment.pipeline.name
         docker_settings = (
-            run_config.pipeline.docker_settings or DockerSettings()
+            deployment.pipeline.docker_settings or DockerSettings()
         )
 
         logger.info(
@@ -302,7 +302,7 @@ class PipelineDockerImageBuilder(BaseModel):
 
             extra_files = requirement_files.copy()
             extra_files.append(
-                (DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE, run_config.yaml())
+                (DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE, deployment.yaml())
             )
 
             # Leave the build context empty if we don't want to copy any files

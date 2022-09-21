@@ -22,7 +22,7 @@ import whylogs as why  # type: ignore
 from whylogs.api.writer.whylabs import WhyLabsWriter  # type: ignore
 from whylogs.core import DatasetProfileView  # type: ignore
 
-from zenml.config.settings import Settings
+from zenml.config.base_settings import BaseSettings
 from zenml.data_validators import BaseDataValidator
 from zenml.environment import Environment
 from zenml.integrations.whylogs import WHYLOGS_DATA_VALIDATOR_FLAVOR
@@ -38,12 +38,12 @@ from zenml.stack.authentication_mixin import AuthenticationMixin
 from zenml.steps import STEP_ENVIRONMENT_NAME, StepEnvironment
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_configurations import StepRunInfo
+    from zenml.config.step_run_info import StepRunInfo
 
 logger = get_logger(__name__)
 
 
-class WhylogsDataValidatorSettings(Settings):
+class WhylogsDataValidatorSettings(BaseSettings):
     """Settings for the Whylogs data validator.
 
     Attributes:
@@ -72,7 +72,7 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
     NAME: ClassVar[str] = "whylogs"
 
     @property
-    def settings_class(self) -> Optional[Type["Settings"]]:
+    def settings_class(self) -> Optional[Type["BaseSettings"]]:
         """Settings class for the Whylogs data validator.
 
         Returns:
@@ -80,30 +80,30 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
         """
         return WhylogsDataValidatorSettings
 
-    def prepare_step_run(self, step: "StepRunInfo") -> None:
+    def prepare_step_run(self, info: "StepRunInfo") -> None:
         """Configures Whylabs logging.
 
         Args:
-            step: The step that will be executed.
+            info: Info about the step that will be executed.
         """
         settings = cast(
             WhylogsDataValidatorSettings,
-            self.get_settings(step) or WhylogsDataValidatorSettings(),
+            self.get_settings(info) or WhylogsDataValidatorSettings(),
         )
         if settings.enable_whylabs:
             os.environ[WHYLABS_LOGGING_ENABLED_ENV] = "true"
         if settings.dataset_id:
             os.environ[WHYLABS_DATASET_ID_ENV] = settings.dataset_id
 
-    def cleanup_step_run(self, step: "StepRunInfo") -> None:
+    def cleanup_step_run(self, info: "StepRunInfo") -> None:
         """Resets Whylabs configuration.
 
         Args:
-            step: The step that was executed.
+            info: Info about the step that was executed.
         """
         settings = cast(
             WhylogsDataValidatorSettings,
-            self.get_settings(step) or WhylogsDataValidatorSettings(),
+            self.get_settings(info) or WhylogsDataValidatorSettings(),
         )
         if settings.enable_whylabs:
             del os.environ[WHYLABS_LOGGING_ENABLED_ENV]

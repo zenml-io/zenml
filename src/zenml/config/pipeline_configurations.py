@@ -12,34 +12,24 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
-import json
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-import yaml
-
-import zenml
 from zenml.config.constants import DOCKER_SETTINGS_KEY
 from zenml.config.schedule import Schedule
-from zenml.config.settings import Settings, SettingsOrDict
-from zenml.config.step_configurations import (
-    Step,
-    StepConfiguration,
-    StepConfigurationUpdate,
-    StepSpec,
-)
+from zenml.config.step_configurations import StepConfigurationUpdate, StepSpec
 from zenml.config.strict_base_model import StrictBaseModel
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings
 
-from zenml.config.settings import Settings, SettingsOrDict
+from zenml.config.base_settings import BaseSettings, SettingsOrDict
 
 
 class PipelineConfigurationUpdate(StrictBaseModel):
     """Class for pipeline configuration updates."""
 
     enable_cache: Optional[bool] = None
-    settings: Dict[str, Settings] = {}
+    settings: Dict[str, BaseSettings] = {}
     extra: Dict[str, Any] = {}
 
 
@@ -64,13 +54,6 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
         return DockerSettings.parse_obj(model_or_dict)
 
 
-class PipelineSpec(StrictBaseModel):
-    """Specification of a pipeline."""
-
-    version: str = "0.1"
-    steps: List[StepSpec]
-
-
 class PipelineRunConfiguration(StrictBaseModel):
     """Class for pipeline run configurations."""
 
@@ -78,46 +61,12 @@ class PipelineRunConfiguration(StrictBaseModel):
     enable_cache: Optional[bool] = None
     schedule: Optional[Schedule] = None
     steps: Dict[str, StepConfigurationUpdate] = {}
-    settings: Dict[str, Settings] = {}
+    settings: Dict[str, BaseSettings] = {}
     extra: Dict[str, Any] = {}
 
 
-class StepRunInfo(StrictBaseModel):
-    """All information necessary to run a step."""
+class PipelineSpec(StrictBaseModel):
+    """Specification of a pipeline."""
 
-    config: StepConfiguration
-    pipeline: PipelineConfiguration
-    run_name: str
-
-
-class PipelineDeployment(StrictBaseModel):
-    """Class representing the deployment of a ZenML pipeline."""
-
-    zenml_version: str = zenml.__version__
-    run_name: str
-    schedule: Optional[Schedule] = None
-    stack_name: str  # TODO: replace by stack ID
-    pipeline: PipelineConfiguration
-    proto_pipeline: str
-    steps: Dict[str, Step] = {}
-
-    def add_extra(self, key: str, value: Any) -> None:
-        """Adds an extra key-value pair to the pipeline configuration.
-
-        Args:
-            key: Key for which to add the extra value.
-            value: The extra value.
-        """
-        self.pipeline.extra[key] = value
-
-    def yaml(self, **kwargs: Any) -> str:
-        """Yaml string representation of the deployment.
-
-        Args:
-            **kwargs: Kwargs to pass to the pydantic json(...) method.
-
-        Returns:
-            Yaml string representation of the deployment.
-        """
-        dict_ = json.loads(self.json(**kwargs, sort_keys=False))
-        return cast(str, yaml.dump(dict_, sort_keys=False))
+    version: str = "0.1"
+    steps: List[StepSpec]

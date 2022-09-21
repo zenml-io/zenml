@@ -17,7 +17,7 @@ import argparse
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, NoReturn, Optional, Set
 
-from zenml.config.pipeline_configurations import PipelineDeployment
+from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.constants import DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE
 from zenml.utils import source_utils, yaml_utils
 

@@ -16,10 +16,10 @@
 from abc import abstractmethod
 
 from zenml.artifacts import DataArtifact, SchemaArtifact, StatisticsArtifact
-from zenml.steps import BaseStep, Output, Parameters, StepContext
+from zenml.steps import BaseParameters, BaseStep, Output, StepContext
 
 
-class BaseAnalyzerParameters(Parameters):
+class BaseAnalyzerParameters(BaseParameters):
     """Base class for analyzer step parameters."""
 
 

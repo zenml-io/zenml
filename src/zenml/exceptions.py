@@ -17,7 +17,7 @@ import textwrap
 from typing import TYPE_CHECKING, List, Optional, Type
 
 if TYPE_CHECKING:
-    from zenml.steps import Parameters
+    from zenml.steps import BaseParameters
 
 
 class ZenMLBaseException(Exception):
@@ -158,7 +158,7 @@ class MissingStepParameterError(ZenMLBaseException):
         self,
         step_name: str,
         missing_parameters: List[str],
-        parameters_class: Type["Parameters"],
+        parameters_class: Type["BaseParameters"],
     ):
         """Initializes a MissingStepParameterError object.
 

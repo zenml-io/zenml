@@ -40,9 +40,9 @@ from zenml.config.config_keys import (
 from zenml.config.pipeline_configurations import (
     PipelineConfiguration,
     PipelineConfigurationUpdate,
-    PipelineDeployment,
     PipelineRunConfiguration,
 )
+from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.environment import Environment
@@ -63,7 +63,7 @@ from zenml.utils import (
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 if TYPE_CHECKING:
-    from zenml.config.settings import SettingsOrDict
+    from zenml.config.base_settings import SettingsOrDict
     from zenml.stack import Stack
 
     StepConfigurationUpdateOrDict = Union[
@@ -656,7 +656,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             stack: The stack for which the template should be generated. If
                 not given, the active stack will be used.
         """
-        from zenml.config.settings import ConfigurationLevel
+        from zenml.config.base_settings import ConfigurationLevel
         from zenml.config.step_configurations import (
             PartialArtifactConfiguration,
         )

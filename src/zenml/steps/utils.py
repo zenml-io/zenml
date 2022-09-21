@@ -51,8 +51,8 @@ from tfx.proto.orchestration import execution_result_pb2
 from tfx.types import component_spec
 
 from zenml.artifacts.base_artifact import BaseArtifact
-from zenml.config.pipeline_configurations import StepRunInfo
 from zenml.config.step_configurations import StepConfiguration
+from zenml.config.step_run_info import StepRunInfo
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -373,7 +373,7 @@ class _ZenMLStepExecutor(BaseExecutor):
             RuntimeError: if the step fails.
             StepInterfaceError: if the step interface is not implemented.
         """
-        from zenml.steps import Parameters
+        from zenml.steps import BaseParameters
 
         step_name = self.configuration.name
         step_function = self._STEP.entrypoint
@@ -400,7 +400,7 @@ class _ZenMLStepExecutor(BaseExecutor):
             arg_type = spec.annotations.get(arg, None)
             arg_type = resolve_type_annotation(arg_type)
 
-            if issubclass(arg_type, Parameters):
+            if issubclass(arg_type, BaseParameters):
                 try:
                     config_object = arg_type.parse_obj(exec_properties)
                 except pydantic.ValidationError as e:

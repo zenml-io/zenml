@@ -11,15 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from custom_obj_file.custom_obj_file import SomeObj
+"""Step run info."""
 
-from zenml.steps import BaseParameters, Output, step
-
-
-class StepParams(BaseParameters):
-    some_option: int = 4
+from zenml.config.pipeline_configurations import PipelineConfiguration
+from zenml.config.step_configurations import StepConfiguration
+from zenml.config.strict_base_model import StrictBaseModel
 
 
-@step
-def some_step(params: StepParams) -> Output(output_1=SomeObj, output_2=int):
-    return SomeObj("Custom-Object"), params.some_option
+class StepRunInfo(StrictBaseModel):
+    """All information necessary to run a step."""
+
+    config: StepConfiguration
+    pipeline: PipelineConfiguration
+    run_name: str

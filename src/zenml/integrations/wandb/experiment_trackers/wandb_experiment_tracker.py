@@ -29,7 +29,7 @@ from typing import (
 import wandb
 from pydantic import validator
 
-from zenml.config.settings import Settings
+from zenml.config.base_settings import BaseSettings
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
 )
@@ -38,8 +38,7 @@ from zenml.logger import get_logger
 from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_configurations import StepRunInfo
-
+    from zenml.config.step_run_info import StepRunInfo
 
 logger = get_logger(__name__)
 
@@ -47,7 +46,7 @@ logger = get_logger(__name__)
 WANDB_API_KEY = "WANDB_API_KEY"
 
 
-class WandbExperimentTrackerSettings(Settings):
+class WandbExperimentTrackerSettings(BaseSettings):
     """Settings for the Wandb experiment tracker.
 
     Attributes:
@@ -108,7 +107,7 @@ class WandbExperimentTracker(BaseExperimentTracker):
     FLAVOR: ClassVar[str] = WANDB_EXPERIMENT_TRACKER_FLAVOR
 
     @property
-    def settings_class(self) -> Optional[Type["Settings"]]:
+    def settings_class(self) -> Optional[Type["BaseSettings"]]:
         """settings class for the Wandb experiment tracker.
 
         Returns:
@@ -116,31 +115,31 @@ class WandbExperimentTracker(BaseExperimentTracker):
         """
         return WandbExperimentTrackerSettings
 
-    def prepare_step_run(self, step: "StepRunInfo") -> None:
+    def prepare_step_run(self, info: "StepRunInfo") -> None:
         """Configures a Wandb run.
 
         Args:
-            step: The step that will be executed.
+            info: Info about the step that will be executed.
         """
         os.environ[WANDB_API_KEY] = self.api_key
         settings = cast(
             WandbExperimentTrackerSettings,
-            self.get_settings(step) or WandbExperimentTrackerSettings(),
+            self.get_settings(info) or WandbExperimentTrackerSettings(),
         )
 
-        tags = settings.tags + [step.run_name, step.pipeline.name]
+        tags = settings.tags + [info.run_name, info.pipeline.name]
         wandb_run_name = (
-            settings.run_name or f"{step.run_name}_{step.config.name}"
+            settings.run_name or f"{info.run_name}_{info.config.name}"
         )
         self._initialize_wandb(
             run_name=wandb_run_name, tags=tags, settings=settings.settings
         )
 
-    def cleanup_step_run(self, step: "StepRunInfo") -> None:
+    def cleanup_step_run(self, info: "StepRunInfo") -> None:
         """Stops the Wandb run.
 
         Args:
-            step: The step that finished executing.
+            info: Info about the step that was executed.
         """
         wandb.finish()
         os.environ.pop(WANDB_API_KEY, None)

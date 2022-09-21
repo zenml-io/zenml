@@ -35,7 +35,7 @@ from zenml.pipelines.base_pipeline import (
 )
 
 if TYPE_CHECKING:
-    from zenml.config.settings import SettingsOrDict
+    from zenml.config.base_settings import SettingsOrDict
 
 F = TypeVar("F", bound=Callable[..., None])
 

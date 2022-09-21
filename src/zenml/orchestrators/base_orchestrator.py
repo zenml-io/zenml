@@ -57,7 +57,7 @@ from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 from tfx.types.artifact import Artifact
 
 from zenml.artifacts.base_artifact import BaseArtifact
-from zenml.config.pipeline_configurations import StepRunInfo
+from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -67,7 +67,7 @@ from zenml.stack import StackComponent
 from zenml.utils import proto_utils, source_utils, string_utils
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_configurations import PipelineDeployment
+    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_configurations import Step, StepConfiguration
     from zenml.stack import Stack
 
@@ -166,13 +166,13 @@ class BaseOrchestrator(StackComponent, ABC):
 
     # Class Configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.ORCHESTRATOR
-    _active_run_config: Optional["PipelineDeployment"] = None
+    _active_deployment: Optional["PipelineDeployment"] = None
     _active_pb2_pipeline: Optional[Pb2Pipeline] = None
 
     @abstractmethod
     def prepare_or_run_pipeline(
         self,
-        pipeline: "PipelineDeployment",
+        deployment: "PipelineDeployment",
         stack: "Stack",
     ) -> Any:
         """This method needs to be implemented by the respective orchestrator.
@@ -205,7 +205,7 @@ class BaseOrchestrator(StackComponent, ABC):
         or entire pipelines (`zenml.entrypoints.pipeline_entrypoint_configuration.PipelineEntrypointConfiguration`).
 
         Args:
-            pipeline: Representation of the pipeline to run.
+            deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
 
         Returns:
@@ -213,20 +213,20 @@ class BaseOrchestrator(StackComponent, ABC):
             `pipeline_instance.run()` call when someone is running a pipeline.
         """
 
-    def run(self, pipeline_run: "PipelineDeployment", stack: "Stack") -> Any:
+    def run(self, deployment: "PipelineDeployment", stack: "Stack") -> Any:
         """Runs a pipeline on a stack.
 
         Args:
-            pipeline_run: The pipeline to run.
+            deployment: The pipeline deployment.
             stack: The stack on which to run the pipeline.
 
         Returns:
             Orchestrator-specific return value.
         """
-        self._prepare_run(pipeline_run=pipeline_run)
+        self._prepare_run(deployment=deployment)
 
         result = self.prepare_or_run_pipeline(
-            pipeline=pipeline_run, stack=stack
+            deployment=deployment, stack=stack
         )
 
         self._cleanup_run()
@@ -245,7 +245,7 @@ class BaseOrchestrator(StackComponent, ABC):
         Returns:
             The execution info of the step.
         """
-        assert self._active_run_config
+        assert self._active_deployment
         assert self._active_pb2_pipeline
 
         self._ensure_artifact_classes_loaded(step.config)
@@ -253,7 +253,7 @@ class BaseOrchestrator(StackComponent, ABC):
         step_name = step.config.name
         pb2_pipeline = self._active_pb2_pipeline
 
-        run_name = run_name or self._active_run_config.run_name
+        run_name = run_name or self._active_deployment.run_name
         # Substitute the runtime parameter to be a concrete run_id, it is
         # important for this to be unique for each run.
         runtime_parameter_utils.substitute_runtime_parameter(
@@ -288,7 +288,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
         step_run_info = StepRunInfo(
             config=step.config,
-            pipeline=self._active_run_config.pipeline,
+            pipeline=self._active_deployment.pipeline,
             run_name=run_name,
         )
 
@@ -298,7 +298,7 @@ class BaseOrchestrator(StackComponent, ABC):
         proto_utils.add_mlmd_contexts(
             pipeline_node=pipeline_node,
             step=step,
-            deployment=self._active_run_config,
+            deployment=self._active_deployment,
             stack=stack,
         )
 
@@ -318,11 +318,11 @@ class BaseOrchestrator(StackComponent, ABC):
         if step.config.step_operator:
             execution_info = self._execute_step(component_launcher)
         else:
-            stack.prepare_step_run(step=step_run_info)
+            stack.prepare_step_run(info=step_run_info)
             try:
                 execution_info = self._execute_step(component_launcher)
             finally:
-                stack.cleanup_step_run(step=step_run_info)
+                stack.cleanup_step_run(info=step_run_info)
 
         return execution_info
 
@@ -347,24 +347,24 @@ class BaseOrchestrator(StackComponent, ABC):
 
         return not step.config.resource_settings.empty
 
-    def _prepare_run(self, pipeline_run: "PipelineDeployment") -> None:
+    def _prepare_run(self, deployment: "PipelineDeployment") -> None:
         """Prepares a run.
 
         Args:
-            pipeline_run: The run to prepare.
+            deployment: The deployment to prepare.
         """
-        self._active_run_config = pipeline_run
+        self._active_deployment = deployment
 
         pb2_pipeline = Pb2Pipeline()
         pb2_pipeline_json = string_utils.b64_decode(
-            self._active_run_config.proto_pipeline
+            self._active_deployment.proto_pipeline
         )
         json_format.Parse(pb2_pipeline_json, pb2_pipeline)
         self._active_pb2_pipeline = pb2_pipeline
 
     def _cleanup_run(self) -> None:
         """Cleans up the active run."""
-        self._active_run_config = None
+        self._active_deployment = None
         self._active_pb2_pipeline = None
 
     @staticmethod

@@ -20,7 +20,7 @@ from zenml.exceptions import SettingsResolvingError
 from zenml.utils import settings_utils
 
 if TYPE_CHECKING:
-    from zenml.config.settings import Settings
+    from zenml.config.base_settings import BaseSettings
     from zenml.stack import Stack
 
     T = TypeVar("T", bound="Settings")
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 class SettingsResolver:
     """Class for resolving settings."""
 
-    def __init__(self, key: str, options: "Settings"):
+    def __init__(self, key: str, options: "BaseSettings"):
         """Checks if the settings key is valid.
 
         Args:
@@ -45,7 +45,7 @@ class SettingsResolver:
         self._key = key
         self._options = options
 
-    def resolve(self, stack: "Stack") -> "Settings":
+    def resolve(self, stack: "Stack") -> "BaseSettings":
         """Resolves settings for the given stack.
 
         Args:
@@ -65,7 +65,7 @@ class SettingsResolver:
 
     def _resolve_universal_settings_class(
         self,
-    ) -> Type["Settings"]:
+    ) -> Type["BaseSettings"]:
         """Resolves universal settings.
 
         Returns:
@@ -75,7 +75,7 @@ class SettingsResolver:
 
     def _resolve_stack_component_setting_class(
         self, stack: "Stack"
-    ) -> Type["Settings"]:
+    ) -> Type["BaseSettings"]:
         """Resolves stack component settings with the given stack.
 
         Args:

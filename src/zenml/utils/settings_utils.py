@@ -19,7 +19,7 @@ from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.enums import StackComponentType
 
 if TYPE_CHECKING:
-    from zenml.config.settings import Settings
+    from zenml.config.base_settings import BaseSettings
     from zenml.stack import StackComponent
 
 STACK_COMPONENT_REGEX = re.compile(
@@ -77,7 +77,7 @@ def is_universal_setting_key(key: str) -> bool:
     return key in get_universal_settings()
 
 
-def get_universal_settings() -> Dict[str, Type["Settings"]]:
+def get_universal_settings() -> Dict[str, Type["BaseSettings"]]:
     """Returns all universal settings.
 
     Returns:

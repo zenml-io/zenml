@@ -44,10 +44,8 @@ from zenml.utils import deprecation_utils
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_configurations import (
-        PipelineDeployment,
-        StepRunInfo,
-    )
+    from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.config.step_run_info import StepRunInfo
 logger = get_logger(__name__)
 
 VERTEX_DOCKER_IMAGE_DIGEST_KEY = "vertex_docker_image"
@@ -136,25 +134,25 @@ class VertexStepOperator(
 
     def prepare_pipeline_deployment(
         self,
-        pipeline: "PipelineDeployment",
+        deployment: "PipelineDeployment",
         stack: "Stack",
     ) -> None:
         """Build a Docker image and push it to the container registry.
 
         Args:
-            pipeline: Representation of the pipeline to run.
-            stack: Stack on which the pipeline will run.
+            deployment: The pipeline deployment configuration.
+            stack: The stack on which the pipeline will be deployed.
         """
         steps_to_run = [
             step
-            for step in pipeline.steps.values()
+            for step in deployment.steps.values()
             if step.config.step_operator == self.name
         ]
         if not steps_to_run:
             return
 
         image_digest = self.build_and_push_docker_image(
-            run_config=pipeline,
+            deployment=deployment,
             stack=stack,
         )
         for step in steps_to_run:
@@ -162,20 +160,20 @@ class VertexStepOperator(
 
     def launch(
         self,
-        step_run_info: "StepRunInfo",
+        info: "StepRunInfo",
         entrypoint_command: List[str],
     ) -> None:
         """Launches a step on VertexAI.
 
         Args:
-            step_run_info: Information about the step run.
+            info: Information about the step run.
             entrypoint_command: Command that executes the step.
 
         Raises:
             RuntimeError: If the run fails.
             ConnectionError: If the run fails due to a connection error.
         """
-        resource_settings = step_run_info.config.resource_settings
+        resource_settings = info.config.resource_settings
         if resource_settings.cpu_count or resource_settings.memory:
             logger.warning(
                 "Specifying cpus or memory is not supported for "
@@ -202,7 +200,7 @@ class VertexStepOperator(
         else:
             self.project = project_id
 
-        image_name = step_run_info.config.extra[VERTEX_DOCKER_IMAGE_DIGEST_KEY]
+        image_name = info.config.extra[VERTEX_DOCKER_IMAGE_DIGEST_KEY]
         # Step 3: Launch the job
         # The AI Platform services require regional API endpoints.
         client_options = {"api_endpoint": self.region + VERTEX_ENDPOINT_SUFFIX}
@@ -216,7 +214,7 @@ class VertexStepOperator(
         )
         accelerator_count = self.accelerator_count
         custom_job = {
-            "display_name": step_run_info.run_name,
+            "display_name": info.run_name,
             "job_spec": {
                 "worker_pool_specs": [
                     {

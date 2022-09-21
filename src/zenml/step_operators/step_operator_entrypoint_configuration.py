@@ -23,7 +23,7 @@ from tfx.orchestration.portable.python_executor_operator import (
 )
 from tfx.proto.orchestration.execution_invocation_pb2 import ExecutionInvocation
 
-from zenml.config.pipeline_configurations import StepRunInfo
+from zenml.config.step_run_info import StepRunInfo
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
@@ -32,7 +32,7 @@ from zenml.repository import Repository
 from zenml.steps import utils as step_utils
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_configurations import PipelineDeployment
+    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_configurations import Step
 
 EXECUTION_INFO_PATH_OPTION = "execution_info_path"
@@ -110,11 +110,11 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
             run_name=deployment.run_name,
         )
 
-        stack.prepare_step_run(step=step_run_info)
+        stack.prepare_step_run(info=step_run_info)
         try:
             run_with_executor(execution_info=execution_info, executor=executor)
         finally:
-            stack.cleanup_step_run(step=step_run_info)
+            stack.cleanup_step_run(info=step_run_info)
 
         return execution_info
 

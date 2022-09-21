@@ -16,10 +16,10 @@
 from abc import abstractmethod
 
 from zenml.artifacts import DataArtifact
-from zenml.steps import BaseStep, Parameters, StepContext
+from zenml.steps import BaseParameters, BaseStep, StepContext
 
 
-class BaseDatasourceParameters(Parameters):
+class BaseDatasourceParameters(BaseParameters):
     """Base class for datasource parameters to inherit from."""
 
 

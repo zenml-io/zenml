@@ -30,14 +30,14 @@ from zenml.secret.schemas import (
     GCPSecretSchema,
 )
 from zenml.stack.authentication_mixin import AuthenticationMixin
-from zenml.steps import Parameters, StepContext, step
+from zenml.steps import BaseParameters, StepContext, step
 
 logger = get_logger(__name__)
 
 LABEL_STUDIO_AWS_SECRET_NAME = "aws_label_studio"
 
 
-class LabelStudioDatasetRegistrationParameters(Parameters):
+class LabelStudioDatasetRegistrationParameters(BaseParameters):
     """Step parameters when registering a dataset with Label Studio.
 
     Attributes:
@@ -49,7 +49,7 @@ class LabelStudioDatasetRegistrationParameters(Parameters):
     dataset_name: str
 
 
-class LabelStudioDatasetSyncParameters(Parameters):
+class LabelStudioDatasetSyncParameters(BaseParameters):
     """Step parameters when syncing data to Label Studio.
 
     Attributes:

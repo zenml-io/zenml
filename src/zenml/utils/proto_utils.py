@@ -28,7 +28,7 @@ from zenml.constants import (
 )
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_configurations import PipelineDeployment
+    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.stack import Stack
 
 

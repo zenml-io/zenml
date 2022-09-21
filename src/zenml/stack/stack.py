@@ -39,12 +39,10 @@ if TYPE_CHECKING:
     from zenml.alerter import BaseAlerter
     from zenml.annotators import BaseAnnotator
     from zenml.artifact_stores import BaseArtifactStore
-    from zenml.config.pipeline_configurations import (
-        PipelineDeployment,
-        StepRunInfo,
-    )
-    from zenml.config.settings import Settings
+    from zenml.config.base_settings import BaseSettings
+    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_configurations import StepConfiguration
+    from zenml.config.step_run_info import StepRunInfo
     from zenml.container_registries import BaseContainerRegistry
     from zenml.data_validators import BaseDataValidator
     from zenml.experiment_trackers.base_experiment_tracker import (
@@ -474,7 +472,7 @@ class Stack:
         return set.union(*secrets) if secrets else set()
 
     @property
-    def setting_classes(self) -> Dict[str, Type["Settings"]]:
+    def setting_classes(self) -> Dict[str, Type["BaseSettings"]]:
         """Setting classes of all components of this stack.
 
         Returns:
@@ -702,14 +700,14 @@ class Stack:
                     metadata_store_uuid=self.metadata_store.uuid,
                 )
 
-    def _register_pipeline_run(
+    def _register_pipeline_deployment(
         self,
-        pipeline: "PipelineDeployment",
+        deployment: "PipelineDeployment",
     ) -> None:
-        """Registers a pipeline run in the ZenStore.
+        """Registers a pipeline deployment in the ZenStore.
 
         Args:
-            pipeline: The pipeline that will run.
+            deployment: The pipeline deployment to register.
         """
         from zenml.repository import Repository
         from zenml.zen_stores.models import StackWrapper
@@ -724,27 +722,27 @@ class Stack:
 
         step_wrappers = [
             StepWrapper(name=step.config.name)
-            for step in pipeline.steps.values()
+            for step in deployment.steps.values()
         ]
         pipeline_wrapper = PipelineWrapper(
-            name=pipeline.pipeline.name, steps=step_wrappers
+            name=deployment.pipeline.name, steps=step_wrappers
         )
         pipeline_run_wrapper = PipelineRunWrapper(
-            name=pipeline.run_name,
+            name=deployment.run_name,
             pipeline=pipeline_wrapper,
             stack=StackWrapper.from_stack(self),
-            runtime_configuration=pipeline.pipeline.extra,
+            runtime_configuration=deployment.pipeline.extra,
             user_id=repo.active_user.id,
             project_name=active_project.name if active_project else None,
         )
 
         Repository().zen_store.register_pipeline_run(pipeline_run_wrapper)
 
-    def deploy_pipeline(self, pipeline: "PipelineDeployment") -> Any:
+    def deploy_pipeline(self, deployment: "PipelineDeployment") -> Any:
         """Deploys a pipeline on this stack.
 
         Args:
-            pipeline: The pipeline to deploy.
+            deployment: The pipeline deployment.
 
         Returns:
             The return value of the call to `orchestrator.run_pipeline(...)`.
@@ -764,23 +762,25 @@ class Stack:
                 )
 
         for component in self.components.values():
-            component.prepare_pipeline_deployment(pipeline=pipeline, stack=self)
+            component.prepare_pipeline_deployment(
+                deployment=deployment, stack=self
+            )
 
         logger.info(
             "Using stack `%s` to run pipeline `%s`...",
             self.name,
-            pipeline.pipeline.name,
+            deployment.pipeline.name,
         )
         start_time = time.time()
 
-        self._register_pipeline_run(pipeline=pipeline)
+        self._register_pipeline_deployment(deployment=deployment)
 
-        return_value = self.orchestrator.run(pipeline_run=pipeline, stack=self)
+        return_value = self.orchestrator.run(deployment=deployment, stack=self)
 
         run_duration = time.time() - start_time
         logger.info(
             "Pipeline run `%s` has finished in %s.",
-            pipeline.run_name,
+            deployment.run_name,
             string_utils.get_human_readable_time(run_duration),
         )
 
@@ -822,27 +822,27 @@ class Stack:
             if _is_active(component)
         }
 
-    def prepare_step_run(self, step: "StepRunInfo") -> None:
+    def prepare_step_run(self, info: "StepRunInfo") -> None:
         """Prepares running a step.
 
         Args:
-            step: The step that will be executed.
+            info: Info about the step that will be executed.
         """
         for component in self._get_active_components_for_step(
-            step.config
+            info.config
         ).values():
-            component.prepare_step_run(step=step)
+            component.prepare_step_run(info=info)
 
-    def cleanup_step_run(self, step: "StepRunInfo") -> None:
+    def cleanup_step_run(self, info: "StepRunInfo") -> None:
         """Cleans up resources after the step run is finished.
 
         Args:
-            step: The step that was executed.
+            info: Info about the step that was executed.
         """
         for component in self._get_active_components_for_step(
-            step.config
+            info.config
         ).values():
-            component.cleanup_step_run(step=step)
+            component.cleanup_step_run(info=info)
 
     @property
     def is_provisioned(self) -> bool:

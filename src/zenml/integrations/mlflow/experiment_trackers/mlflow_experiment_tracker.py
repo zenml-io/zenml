@@ -23,7 +23,7 @@ from pydantic import root_validator, validator
 
 import zenml
 from zenml.artifact_stores import LocalArtifactStore
-from zenml.config.settings import Settings
+from zenml.config.base_settings import BaseSettings
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
 )
@@ -37,7 +37,7 @@ from zenml.stack import StackValidator
 from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_configurations import StepRunInfo
+    from zenml.config.step_run_info import StepRunInfo
 
 logger = get_logger(__name__)
 
@@ -53,7 +53,7 @@ DATABRICKS_PASSWORD = "DATABRICKS_PASSWORD"
 DATABRICKS_TOKEN = "DATABRICKS_TOKEN"
 
 
-class MLFlowExperimentTrackerSettings(Settings):
+class MLFlowExperimentTrackerSettings(BaseSettings):
     """Settings for the MLflow experiment tracker.
 
     Attributes:
@@ -240,7 +240,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             )
 
     @property
-    def settings_class(self) -> Optional[Type["Settings"]]:
+    def settings_class(self) -> Optional[Type["BaseSettings"]]:
         """Settings class for the Mlflow experiment tracker.
 
         Returns:
@@ -298,22 +298,22 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         """
         return self.tracking_uri or self._local_mlflow_backend()
 
-    def prepare_step_run(self, step: "StepRunInfo") -> None:
+    def prepare_step_run(self, info: "StepRunInfo") -> None:
         """Sets the MLflow tracking uri and credentials.
 
         Args:
-            step: The step that will be executed.
+            info: Info about the step that will be executed.
         """
         self.configure_mlflow()
         settings = cast(
             MLFlowExperimentTrackerSettings,
-            self.get_settings(step) or MLFlowExperimentTrackerSettings(),
+            self.get_settings(info) or MLFlowExperimentTrackerSettings(),
         )
 
-        experiment_name = settings.experiment_name or step.pipeline.name
+        experiment_name = settings.experiment_name or info.pipeline.name
         experiment = self._set_active_experiment(experiment_name)
         run_id = self.get_run_id(
-            experiment_name=experiment_name, run_name=step.run_name
+            experiment_name=experiment_name, run_name=info.run_name
         )
 
         tags = settings.tags.copy()
@@ -321,19 +321,19 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
 
         mlflow.start_run(
             run_id=run_id,
-            run_name=step.run_name,
+            run_name=info.run_name,
             experiment_id=experiment.experiment_id,
             tags=tags,
         )
 
         if settings.nested:
-            mlflow.start_run(run_name=step.config.name, nested=True, tags=tags)
+            mlflow.start_run(run_name=info.config.name, nested=True, tags=tags)
 
-    def cleanup_step_run(self, step: "StepRunInfo") -> None:
+    def cleanup_step_run(self, info: "StepRunInfo") -> None:
         """Stops active MLflow runs and resets the MLflow tracking uri.
 
         Args:
-            step: The step that was executed.
+            info: Info about the step that was executed.
         """
         mlflow_utils.stop_zenml_mlflow_runs()
         mlflow.set_tracking_uri("")

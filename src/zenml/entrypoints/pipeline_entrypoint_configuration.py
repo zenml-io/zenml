@@ -34,7 +34,7 @@ class PipelineEntrypointConfiguration(BaseEntrypointConfiguration):
         integration_registry.activate_integrations()
 
         orchestrator = Repository().active_stack.orchestrator
-        orchestrator._prepare_run(pipeline_run=deployment_config)
+        orchestrator._prepare_run(deployment=deployment_config)
 
         for step in deployment_config.steps.values():
             entrypoint_utils.load_and_configure_step(step)

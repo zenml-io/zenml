@@ -26,11 +26,11 @@ from zenml.integrations.deepchecks.data_validators.deepchecks_data_validator imp
 from zenml.integrations.deepchecks.validation_checks import (
     DeepchecksModelDriftCheck,
 )
-from zenml.steps import BaseStep, Parameters
+from zenml.steps import BaseParameters, BaseStep
 from zenml.steps.utils import clone_step
 
 
-class DeepchecksModelDriftCheckStepParameters(Parameters):
+class DeepchecksModelDriftCheckStepParameters(BaseParameters):
     """Parameters class for the Deepchecks model drift validator step.
 
     Attributes:

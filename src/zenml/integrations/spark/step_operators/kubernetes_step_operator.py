@@ -31,7 +31,7 @@ from zenml.utils.pipeline_docker_image_builder import (
 from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_configurations import PipelineDeployment
+    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_configurations import StepConfiguration
     from zenml.stack import Stack
 
@@ -76,21 +76,21 @@ class KubernetesSparkStepOperator(
 
     def prepare_pipeline_deployment(
         self,
-        pipeline: "PipelineDeployment",
+        deployment: "PipelineDeployment",
         stack: "Stack",
     ) -> None:
         """Build a Docker image and push it to the container registry.
 
         Args:
-            pipeline: Representation of the pipeline to run.
-            stack: Stack on which the pipeline will run.
+            deployment: The pipeline deployment configuration.
+            stack: The stack on which the pipeline will be deployed.
 
         Raises:
             FileExistsError: If the entrypoint file already exists.
         """
         steps_to_run = [
             step
-            for step in pipeline.steps.values()
+            for step in deployment.steps.values()
             if step.config.step_operator == self.name
         ]
         if not steps_to_run:
@@ -109,7 +109,7 @@ class KubernetesSparkStepOperator(
 
         try:
             image_digest = self.build_and_push_docker_image(
-                run_config=pipeline, stack=stack
+                deployment=deployment, stack=stack
             )
         finally:
             fileio.remove(entrypoint_path)

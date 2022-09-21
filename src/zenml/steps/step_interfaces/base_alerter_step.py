@@ -15,10 +15,10 @@
 
 from abc import abstractmethod
 
-from zenml.steps import BaseStep, Parameters, StepContext
+from zenml.steps import BaseParameters, BaseStep, StepContext
 
 
-class BaseAlerterStepParameters(Parameters):
+class BaseAlerterStepParameters(BaseParameters):
     """Step parameters definition for all alerters."""
 
 

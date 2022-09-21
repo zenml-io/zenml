@@ -25,7 +25,7 @@ from zenml.stack import Stack
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_configurations import PipelineDeployment
+    from zenml.config.pipeline_deployment import PipelineDeployment
 
 logger = get_logger(__name__)
 
@@ -41,29 +41,33 @@ class LocalDockerOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
     def prepare_pipeline_deployment(
         self,
-        pipeline: "PipelineDeployment",
+        deployment: "PipelineDeployment",
         stack: "Stack",
     ) -> None:
         """Build a Docker image and (maybe) push it to the container registry.
 
         Args:
-            pipeline: Representation of the pipeline to run.
-            stack: Stack on which the pipeline will run.
+            deployment: The pipeline deployment configuration.
+            stack: The stack on which the pipeline will be deployed.
         """
         if stack.container_registry:
             repo_digest = self.build_and_push_docker_image(
-                run_config=pipeline, stack=stack
+                deployment=deployment, stack=stack
             )
-            pipeline.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
+            deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
         else:
             # If there is no container registry, we only build the image
-            target_image_name = self.get_target_image_name(deployment=pipeline)
+            target_image_name = self.get_target_image_name(
+                deployment=deployment
+            )
             self.build_docker_image(
                 target_image_name=target_image_name,
-                run_config=pipeline,
+                deployment=deployment,
                 stack=stack,
             )
-            pipeline.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, target_image_name)
+            deployment.add_extra(
+                ORCHESTRATOR_DOCKER_IMAGE_KEY, target_image_name
+            )
 
     @staticmethod
     def _get_volumes(stack: "Stack") -> Dict[str, Dict[str, str]]:
@@ -89,16 +93,16 @@ class LocalDockerOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
     def prepare_or_run_pipeline(
         self,
-        pipeline: "PipelineDeployment",
+        deployment: "PipelineDeployment",
         stack: "Stack",
     ) -> Any:
         """Sequentially runs all pipeline steps in local Docker containers.
 
         Args:
-            pipeline: Representation of the pipeline to run.
+            deployment: The pipeline deployment to prepare or run.
             stack: The stack the pipeline will run on.
         """
-        if pipeline.schedule:
+        if deployment.schedule:
             logger.warning(
                 "Local Docker Orchestrator currently does not support the"
                 "use of schedules. The `schedule` will be ignored "
@@ -108,11 +112,11 @@ class LocalDockerOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         from docker.client import DockerClient
 
         docker_client = DockerClient.from_env()
-        image_name = pipeline.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
+        image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
         entrypoint = StepEntrypointConfiguration.get_entrypoint_command()
 
         # Run each step
-        for step_name, step in pipeline.steps.items():
+        for step_name, step in deployment.steps.items():
             if self.requires_resources_in_orchestration_environment(step):
                 logger.warning(
                     "Specifying step resources is not supported for the local "

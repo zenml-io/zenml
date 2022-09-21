@@ -14,8 +14,8 @@
 """Pipeline configuration classes."""
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
+from zenml.config.base_settings import BaseSettings, SettingsOrDict
 from zenml.config.constants import RESOURCE_SETTINGS_KEY
-from zenml.config.settings import Settings, SettingsOrDict
 from zenml.config.strict_base_model import StrictBaseModel
 
 if TYPE_CHECKING:
@@ -43,7 +43,7 @@ class StepConfigurationUpdate(StrictBaseModel):
     step_operator: Optional[str] = None
     experiment_tracker: Optional[str] = None
     parameters: Dict[str, Any] = {}
-    settings: Dict[str, Settings] = {}
+    settings: Dict[str, BaseSettings] = {}
     extra: Dict[str, Any] = {}
 
     outputs: Dict[str, PartialArtifactConfiguration] = {}

@@ -18,7 +18,7 @@ import socket
 
 from kubernetes import client as k8s_client
 
-from zenml.config.pipeline_configurations import PipelineDeployment
+from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.constants import DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE
 from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.orchestrators.dag_runner import (

@@ -23,13 +23,13 @@ from zenml.integrations.great_expectations.data_validators.ge_data_validator imp
     GreatExpectationsDataValidator,
 )
 from zenml.logger import get_logger
-from zenml.steps import BaseStep, Parameters
+from zenml.steps import BaseParameters, BaseStep
 from zenml.steps.utils import clone_step
 
 logger = get_logger(__name__)
 
 
-class GreatExpectationsProfilerParameters(Parameters):
+class GreatExpectationsProfilerParameters(BaseParameters):
     """Parameters class for a Great Expectations profiler step.
 
     Attributes:

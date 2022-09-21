@@ -30,8 +30,8 @@ from zenml.step_operators import BaseStepOperator
 logger = get_logger(__name__)
 if TYPE_CHECKING:
     from zenml.config import ResourceSettings
-    from zenml.config.pipeline_configurations import StepRunInfo
     from zenml.config.step_configurations import StepConfiguration
+    from zenml.config.step_run_info import StepRunInfo
 
 
 class SparkStepOperator(BaseStepOperator):
@@ -291,13 +291,13 @@ class SparkStepOperator(BaseStepOperator):
 
     def launch(
         self,
-        step_run_info: "StepRunInfo",
+        info: "StepRunInfo",
         entrypoint_command: List[str],
     ) -> None:
         """Launches a step on Spark.
 
         Args:
-            step_run_info: Information about the step run.
+            info: Information about the step run.
             entrypoint_command: Command that executes the step.
         """
         # Start off with an empty configuration
@@ -306,13 +306,11 @@ class SparkStepOperator(BaseStepOperator):
         # Add the resource configuration such as cores, memory.
         self._resource_configuration(
             spark_config=conf,
-            resource_settings=step_run_info.config.resource_settings,
+            resource_settings=info.config.resource_settings,
         )
 
         # Add the backend configuration such as namespace, docker images names.
-        self._backend_configuration(
-            spark_config=conf, step_config=step_run_info.config
-        )
+        self._backend_configuration(spark_config=conf, step_config=info.config)
 
         # Add the IO configuration for the inputs and the outputs
         self._io_configuration(

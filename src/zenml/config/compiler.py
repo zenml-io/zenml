@@ -22,11 +22,9 @@ from tfx.dsl.compiler.compiler import Compiler as TFXCompiler
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 
-from zenml.config.pipeline_configurations import (
-    PipelineDeployment,
-    PipelineRunConfiguration,
-)
-from zenml.config.settings import ConfigurationLevel, Settings
+from zenml.config.base_settings import BaseSettings, ConfigurationLevel
+from zenml.config.pipeline_configurations import PipelineRunConfiguration
+from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.config.settings_resolver import SettingsResolver
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
 from zenml.exceptions import SettingsResolvingError, StackValidationError
@@ -144,10 +142,10 @@ class Compiler:
 
     def _filter_and_validate_settings(
         self,
-        settings: Dict[str, "Settings"],
+        settings: Dict[str, "BaseSettings"],
         configuration_level: ConfigurationLevel,
         stack: "Stack",
-    ) -> Dict[str, "Settings"]:
+    ) -> Dict[str, "BaseSettings"]:
         """Filters and validates settings.
 
         Args:
@@ -199,7 +197,7 @@ class Compiler:
     def _compile_step(
         self,
         step: "BaseStep",
-        pipeline_settings: Dict[str, "Settings"],
+        pipeline_settings: Dict[str, "BaseSettings"],
         pipeline_extra: Dict[str, Any],
         stack: "Stack",
     ) -> Step:

@@ -42,7 +42,7 @@ from zenml.steps.utils import (
 
 if TYPE_CHECKING:
     from zenml.artifacts.base_artifact import BaseArtifact
-    from zenml.config.settings import SettingsOrDict
+    from zenml.config.base_settings import SettingsOrDict
     from zenml.materializers.base_materializer import BaseMaterializer
 
     ArtifactClassOrStr = Union[str, Type["BaseArtifact"]]

@@ -23,11 +23,11 @@ from great_expectations.checkpoint.types.checkpoint_result import (  # type: ign
 from zenml.integrations.great_expectations.data_validators.ge_data_validator import (
     GreatExpectationsDataValidator,
 )
-from zenml.steps import BaseStep, Parameters
+from zenml.steps import BaseParameters, BaseStep
 from zenml.steps.utils import clone_step
 
 
-class GreatExpectationsValidatorParameters(Parameters):
+class GreatExpectationsValidatorParameters(BaseParameters):
     """Parameters class for a Great Expectations checkpoint step.
 
     Attributes:

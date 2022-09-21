@@ -49,7 +49,7 @@ from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings
-    from zenml.config.pipeline_configurations import StepRunInfo
+    from zenml.config.step_run_info import StepRunInfo
 
 logger = get_logger(__name__)
 
@@ -205,16 +205,16 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
 
     def launch(
         self,
-        step_run_info: "StepRunInfo",
+        info: "StepRunInfo",
         entrypoint_command: List[str],
     ) -> None:
         """Launches a step on AzureML.
 
         Args:
-            step_run_info: Information about the step run.
+            info: Information about the step run.
             entrypoint_command: Command that executes the step.
         """
-        if not step_run_info.config.resource_settings.empty:
+        if not info.config.resource_settings.empty:
             logger.warning(
                 "Specifying custom step resources is not supported for "
                 "the AzureML step operator. If you want to run this step "
@@ -235,7 +235,7 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
             "copy_files",
             "copy_profile",
         ]
-        docker_settings = step_run_info.pipeline.docker_settings
+        docker_settings = info.pipeline.docker_settings
         ignored_docker_fields = docker_settings.__fields_set__.intersection(
             unused_docker_fields
         )
@@ -265,7 +265,7 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
             environment = self._prepare_environment(
                 workspace=workspace,
                 docker_settings=docker_settings,
-                run_name=step_run_info.run_name,
+                run_name=info.run_name,
             )
             compute_target = ComputeTarget(
                 workspace=workspace, name=self.compute_target_name
@@ -279,9 +279,9 @@ class AzureMLStepOperator(BaseStepOperator, PipelineDockerImageBuilder):
             )
 
             experiment = Experiment(
-                workspace=workspace, name=step_run_info.pipeline.name
+                workspace=workspace, name=info.pipeline.name
             )
             run = experiment.submit(config=run_config)
 
-        run.display_name = step_run_info.run_name
+        run.display_name = info.run_name
         run.wait_for_completion(show_output=True)

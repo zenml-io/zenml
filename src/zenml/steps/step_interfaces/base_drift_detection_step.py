@@ -17,10 +17,10 @@ from abc import abstractmethod
 from typing import Any
 
 from zenml.artifacts import DataArtifact
-from zenml.steps import BaseStep, Parameters, StepContext
+from zenml.steps import BaseParameters, BaseStep, StepContext
 
 
-class BaseDriftDetectionParameters(Parameters):
+class BaseDriftDetectionParameters(BaseParameters):
     """Base class for drift detection step parameters."""
 
 

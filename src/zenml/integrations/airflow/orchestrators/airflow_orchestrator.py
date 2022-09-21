@@ -50,7 +50,7 @@ from zenml.utils.source_utils import get_source_root_path
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_configurations import PipelineDeployment
+    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_configurations import Step
     from zenml.stack import Stack
 
@@ -114,7 +114,7 @@ class AirflowOrchestrator(BaseOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        pipeline: "PipelineDeployment",
+        deployment: "PipelineDeployment",
         stack: "Stack",
     ) -> Any:
         """Creates an Airflow DAG as the intermediate representation for the pipeline.
@@ -136,8 +136,8 @@ class AirflowOrchestrator(BaseOrchestrator):
         Finally, the dag is fully complete and can be returned.
 
         Args:
-            pipeline: The pipeline to be executed.
-            stack: The stack on which the pipeline will be deployed.
+            deployment: The pipeline deployment to prepare or run.
+            stack: The stack the pipeline will run on.
 
         Returns:
             The Airflow DAG.
@@ -147,16 +147,16 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         # Instantiate and configure airflow Dag with name and schedule
         airflow_dag = airflow.DAG(
-            dag_id=pipeline.name,
+            dag_id=deployment.name,
             is_paused_upon_creation=False,
-            **self._translate_schedule(pipeline.schedule),
+            **self._translate_schedule(deployment.schedule),
         )
 
         # Dictionary mapping step names to airflow_operators. This will be needed
         # to configure airflow operator dependencies
         step_name_to_airflow_operator = {}
 
-        for step in pipeline.steps.values():
+        for step in deployment.steps.values():
             # Create callable that will be used by airflow to execute the step
             # within the orchestrated environment
             def _step_callable(step_instance: "Step", **kwargs):
@@ -305,14 +305,14 @@ class AirflowOrchestrator(BaseOrchestrator):
 
     def prepare_pipeline_deployment(
         self,
-        pipeline: "PipelineDeployment",
+        deployment: "PipelineDeployment",
         stack: "Stack",
     ) -> None:
         """Checks Airflow is running and copies DAG file to the DAGs directory.
 
         Args:
-            pipeline: Representation of the pipeline to run.
-            stack: Stack on which the pipeline will run.
+            deployment: The pipeline deployment configuration.
+            stack: The stack on which the pipeline will be deployed.
 
         Raises:
             RuntimeError: If Airflow is not running or no DAG filepath runtime
@@ -334,7 +334,7 @@ class AirflowOrchestrator(BaseOrchestrator):
             )
 
         try:
-            dag_filepath = pipeline.pipeline.extra[DAG_FILEPATH_OPTION_KEY]
+            dag_filepath = deployment.pipeline.extra[DAG_FILEPATH_OPTION_KEY]
         except KeyError:
             raise RuntimeError(
                 f"No DAG filepath found in runtime configuration. Make sure "

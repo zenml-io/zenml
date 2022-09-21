@@ -13,13 +13,13 @@
 #  permissions and limitations under the License.
 """Base class for all ZenML settings."""
 from enum import IntFlag, auto
-from typing import Any, ClassVar, Dict, Optional, Union
+from typing import Any, ClassVar, Dict, Union
 
 from pydantic import Extra
 
 from zenml.config.secret_reference_mixin import SecretReferenceMixin
 
-SettingsOrDict = Union[Dict[str, Any], "Settings"]
+SettingsOrDict = Union[Dict[str, Any], "BaseSettings"]
 
 
 class ConfigurationLevel(IntFlag):
@@ -29,10 +29,9 @@ class ConfigurationLevel(IntFlag):
     PIPELINE = auto()
 
 
-class Settings(SecretReferenceMixin):
+class BaseSettings(SecretReferenceMixin):
     """Base class for settings."""
 
-    KEY: ClassVar[Optional[str]] = None
     LEVEL: ClassVar[ConfigurationLevel] = (
         ConfigurationLevel.PIPELINE | ConfigurationLevel.STEP
     )

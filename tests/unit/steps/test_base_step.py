@@ -22,7 +22,7 @@ from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.pipelines import pipeline
-from zenml.steps import Output, Parameters, StepContext, step
+from zenml.steps import BaseParameters, Output, StepContext, step
 from zenml.utils import source_utils
 
 
@@ -54,7 +54,7 @@ def test_define_step_with_multiple_parameter_classes():
 
         @step
         def some_step(
-            first_params: Parameters, second_params: Parameters
+            first_params: BaseParameters, second_params: BaseParameters
         ) -> None:
             pass
 
@@ -164,17 +164,17 @@ def test_initialize_step_with_unexpected_config():
         pass
 
     with pytest.raises(StepInterfaceError):
-        step_without_params(params=Parameters())
+        step_without_params(params=BaseParameters())
 
 
 def test_initialize_step_with_params():
     """Tests that a step can only be initialized with it's defined
     parameter class."""
 
-    class StepParams(Parameters):
+    class StepParams(BaseParameters):
         pass
 
-    class DifferentParams(Parameters):
+    class DifferentParams(BaseParameters):
         pass
 
     @step
@@ -183,7 +183,7 @@ def test_initialize_step_with_params():
 
     # initialize with wrong param classes
     with pytest.raises(StepInterfaceError):
-        step_with_params(params=Parameters())  # noqa
+        step_with_params(params=BaseParameters())  # noqa
 
     with pytest.raises(StepInterfaceError):
         step_with_params(params=DifferentParams())  # noqa
@@ -673,7 +673,7 @@ def test_step_uses_config_class_default_values_if_no_config_is_passed():
     """Tests that a step falls back to the param class default values if
     no params object is passed at initialization."""
 
-    class ParamsWithDefaultValues(Parameters):
+    class ParamsWithDefaultValues(BaseParameters):
         some_parameter: int = 1
 
     @step
@@ -691,7 +691,7 @@ def test_step_fails_if_config_parameter_value_is_missing():
     """Tests that a step fails if no config object is passed at
     initialization and the config class misses some default values."""
 
-    class ParamsWithoutDefaultValues(Parameters):
+    class ParamsWithoutDefaultValues(BaseParameters):
         some_parameter: int
 
     @step
@@ -709,7 +709,7 @@ def test_step_config_allows_none_as_default_value():
     """Tests that `None` is allowed as a default value for a
     step config field."""
 
-    class ParamsWithNoneDefaultValue(Parameters):
+    class ParamsWithNoneDefaultValue(BaseParameters):
         some_parameter: Optional[int] = None
 
     @step

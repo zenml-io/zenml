@@ -25,7 +25,7 @@ from zenml.integrations.registry import integration_registry
 from zenml.repository import Repository
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_configurations import PipelineDeployment
+    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.config.step_configurations import Step
 
 STEP_NAME_OPTION = "step_name"
@@ -77,7 +77,7 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
     class MyOrchestrator(BaseOrchestrator):
         def prepare_or_run_pipeline(
             self,
-            pipeline: "PipelineDeployment",
+            deployment: "PipelineDeployment",
             stack: "Stack",
         ) -> Any:
             ...
@@ -187,5 +187,5 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
             Optional execution info of the run.
         """
         orchestrator = Repository().active_stack.orchestrator
-        orchestrator._prepare_run(pipeline_run=deployment)
+        orchestrator._prepare_run(deployment=deployment)
         return orchestrator.run_step(step=step)

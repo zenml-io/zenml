@@ -35,7 +35,7 @@ from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
-    from zenml.config.pipeline_configurations import PipelineDeployment
+    from zenml.config.pipeline_deployment import PipelineDeployment
 
 logger = get_logger(__name__)
 
@@ -162,19 +162,19 @@ class SeldonModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
 
     def prepare_pipeline_deployment(
         self,
-        pipeline: "PipelineDeployment",
+        deployment: "PipelineDeployment",
         stack: "Stack",
     ) -> None:
         """Build a Docker image and push it to the container registry.
 
         Args:
-            pipeline: Representation of the pipeline to run.
-            stack: Stack on which the pipeline will run.
+            deployment: The pipeline deployment configuration.
+            stack: The stack on which the pipeline will be deployed.
         """
         repo_digest = self.build_and_push_docker_image(
-            run_config=pipeline, stack=stack
+            deployment=deployment, stack=stack
         )
-        pipeline.add_extra(SELDON_DOCKER_IMAGE_KEY, repo_digest)
+        deployment.add_extra(SELDON_DOCKER_IMAGE_KEY, repo_digest)
 
     def _create_or_update_kubernetes_secret(self) -> Optional[str]:
         """Create or update a Kubernetes secret.

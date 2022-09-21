@@ -18,7 +18,7 @@ from zenml.artifacts import DataArtifact
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.pipelines import pipeline
-from zenml.steps import Output, Parameters, step
+from zenml.steps import BaseParameters, Output, step
 
 
 class SomeObj:
@@ -42,7 +42,7 @@ class SomeMaterializer(BaseMaterializer):
             f.write(my_obj.name)
 
 
-class StepParams(Parameters):
+class StepParams(BaseParameters):
     some_option: int = 4
 
 

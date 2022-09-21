@@ -19,7 +19,7 @@ from zenml.environment import BaseEnvironmentComponent
 
 STEP_ENVIRONMENT_NAME = "step_environment"
 if TYPE_CHECKING:
-    from zenml.config.pipeline_configurations import StepRunInfo
+    from zenml.config.step_run_info import StepRunInfo
 
 
 class StepEnvironment(BaseEnvironmentComponent):

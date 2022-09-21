@@ -37,8 +37,8 @@ from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
+    BaseParameters,
     BaseStep,
-    Parameters,
     StepEnvironment,
     step,
 )
@@ -46,7 +46,7 @@ from zenml.steps import (
 logger = get_logger(__name__)
 
 
-class MLFlowDeployerParameters(Parameters):
+class MLFlowDeployerParameters(BaseParameters):
     """Model deployer step parameters for MLflow.
 
     Attributes:

@@ -14,12 +14,12 @@
 """Utility functions for ZenML entrypoints."""
 from typing import TYPE_CHECKING, Type
 
+from zenml.steps import BaseStep
 from zenml.steps import utils as step_utils
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
-    from zenml.steps import BaseStep
 
 
 def load_and_configure_step(step: "Step") -> "BaseStep":
