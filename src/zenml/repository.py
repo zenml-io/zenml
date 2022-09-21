@@ -618,7 +618,19 @@ class Repository(metaclass=RepositoryMetaClass):
 
         Args:
             stack: Model of the stack to activate.
+
+        Raises:
+            KeyError: If the stack is not registered.
         """
+        # Make sure the stack is registered
+        try:
+            self.zen_store.get_stack(stack_id=stack.id)
+        except KeyError:
+            raise KeyError(
+                f"Stack '{stack.name}' cannot be activated since it is "
+                "not registered yet. Please register it first."
+            )
+
         if self._config:
             self._config.active_stack_id = stack.id
 
@@ -669,9 +681,6 @@ class Repository(metaclass=RepositoryMetaClass):
     def register_stack(self, stack: "StackModel") -> "StackModel":
         """Registers a stack and its components.
 
-        If any of the stack's components aren't registered in the repository
-        yet, this method will try to register them as well.
-
         Args:
             stack: The stack to register.
 
@@ -679,8 +688,20 @@ class Repository(metaclass=RepositoryMetaClass):
             The model of the registered stack.
 
         Raises:
+            KeyError: If one of the components is not registered.
             RuntimeError: If the stack configuration is invalid.
         """
+        for component_type, component_ids in stack.components.items():
+            for component_id in component_ids:
+                try:
+                    self.get_stack_component_by_id(component_id=component_id)
+                except KeyError:
+                    raise KeyError(
+                        f"Cannot register stack '{stack.name}' since it has an "
+                        f"unregistered {component_type} with id "
+                        f"'{component_id}'."
+                    )
+
         if stack.is_valid:
             created_stack = self.zen_store.create_stack(
                 stack=stack,
@@ -1041,7 +1062,8 @@ class Repository(metaclass=RepositoryMetaClass):
                 return zenml_flavor
             else:
                 raise KeyError(
-                    f"No flavor with name {name} and type {type} exists."
+                    f"No flavor with name '{name}' and type '{component_type}' "
+                    "exists."
                 )
 
     def get_pipeline_by_name(self, name: str) -> PipelineModel:
