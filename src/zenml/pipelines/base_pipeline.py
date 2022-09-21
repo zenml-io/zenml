@@ -664,7 +664,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         stack = stack or Repository().active_stack
 
         setting_classes = stack.setting_classes
-        setting_classes.update(settings_utils.get_universal_settings())
+        setting_classes.update(settings_utils.get_general_settings())
 
         pipeline_settings = {}
         step_settings = {}

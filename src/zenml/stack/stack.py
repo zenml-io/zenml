@@ -481,9 +481,7 @@ class Stack:
         setting_classes = {}
         for component in self.components.values():
             if component.settings_class:
-                key = settings_utils.get_settings_key_for_stack_component(
-                    component
-                )
+                key = settings_utils.get_stack_component_setting_key(component)
                 setting_classes[key] = component.settings_class
         return setting_classes
 

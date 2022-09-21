@@ -92,9 +92,7 @@ def whylogs_profiler_step(
     step_class = clone_step(WhylogsProfilerStep, step_name)
     step_instance = step_class(params=params)
 
-    key = settings_utils.get_settings_key_for_stack_component(
-        WhylogsDataValidator
-    )
+    key = settings_utils.get_stack_component_setting_key(WhylogsDataValidator)
     settings = WhylogsDataValidatorSettings(
         enable_whylabs=True, dataset_id=dataset_id
     )

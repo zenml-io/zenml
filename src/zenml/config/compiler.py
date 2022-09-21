@@ -27,7 +27,7 @@ from zenml.config.pipeline_configurations import PipelineRunConfiguration
 from zenml.config.pipeline_deployment import PipelineDeployment
 from zenml.config.settings_resolver import SettingsResolver
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
-from zenml.exceptions import SettingsResolvingError, StackValidationError
+from zenml.exceptions import StackValidationError
 from zenml.utils import source_utils, string_utils
 
 if TYPE_CHECKING:
@@ -59,6 +59,7 @@ class Compiler:
         Returns:
             The compiled pipeline.
         """
+        logger.debug("Compiling pipeline `%s`.", pipeline.name)
         # Copy the pipeline before we apply any run-level configurations so
         # we don't mess with the pipeline object/step objects in any way
         pipeline = copy.deepcopy(pipeline)
@@ -107,7 +108,7 @@ class Compiler:
             json_format.MessageToJson(pb2_pipeline)
         )
 
-        return PipelineDeployment(
+        deployment = PipelineDeployment(
             run_name=run_name,
             stack_name=stack.name,
             schedule=run_configuration.schedule,
@@ -115,6 +116,8 @@ class Compiler:
             proto_pipeline=encoded_pb2_pipeline,
             steps=steps,
         )
+        logger.debug("Compiled pipeline deployment: %s", deployment)
+        return deployment
 
     def _apply_run_configuration(
         self, pipeline: "BasePipeline", config: PipelineRunConfiguration
@@ -161,24 +164,25 @@ class Compiler:
         Returns:
             The filtered settings.
         """
-        validated_options = {}
+        validated_settings = {}
 
-        for key, options in settings.items():
-            resolver = SettingsResolver(key=key, options=options)
+        for key, settings_instance in settings.items():
+            resolver = SettingsResolver(key=key, settings=settings_instance)
             try:
-                options = resolver.resolve(stack=stack)
-            except SettingsResolvingError:
-                logger.debug("Not including settings with key `%s`.", key)
-                continue
-
-            if configuration_level not in options.LEVEL:
-                raise TypeError(
-                    f"The settings class {options.__class__} can't be "
-                    f"specified on a {configuration_level.name} level."
+                settings_instance = resolver.resolve(stack=stack)
+            except KeyError:
+                logger.info(
+                    "Not including stack component settings with key `%s`.", key
                 )
-            validated_options[key] = options
 
-        return validated_options
+            if configuration_level not in settings_instance.LEVEL:
+                raise TypeError(
+                    f"The settings class {settings_instance.__class__} can not "
+                    f"be specified on a {configuration_level.name} level."
+                )
+            validated_settings[key] = settings_instance
+
+        return validated_settings
 
     def _get_step_spec(self, step: "BaseStep") -> StepSpec:
         """Gets the spec for a step.
@@ -232,11 +236,11 @@ class Compiler:
             merge=False,
         )
 
-        final_step_configuration = StepConfiguration(
+        complete_step_configuration = StepConfiguration(
             **step.configuration.dict()
         )
 
-        return Step(spec=step_spec, config=final_step_configuration)
+        return Step(spec=step_spec, config=complete_step_configuration)
 
     def _compile_proto_pipeline(
         self, pipeline: "BasePipeline", stack: "Stack"

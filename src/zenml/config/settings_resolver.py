@@ -29,21 +29,28 @@ if TYPE_CHECKING:
 class SettingsResolver:
     """Class for resolving settings."""
 
-    def __init__(self, key: str, options: "BaseSettings"):
+    def __init__(self, key: str, settings: "BaseSettings"):
         """Checks if the settings key is valid.
 
         Args:
-            key: settings key.
-            options: The settings.
+            key: Settings key.
+            settings: The settings.
 
         Raises:
-            SettingsResolvingError: If the settings key is invalid.
+            ValueError: If the settings key is invalid.
         """
         if not settings_utils.is_valid_setting_key(key):
-            raise SettingsResolvingError(f"Invalid settings key: {key}.")
+            raise ValueError(
+                f"Invalid setting key `{key}`. Setting keys can either refer "
+                "to general settings (available keys: "
+                f"{set(settings_utils.get_general_settings())}) or stack "
+                "component specific settings. Stack component specific keys "
+                "are of the format "
+                "`<STACK_COMPONENT_TYPE>.<STACK_COMPONENT_FLAVOR>`."
+            )
 
         self._key = key
-        self._options = options
+        self._settings = settings
 
     def resolve(self, stack: "Stack") -> "BaseSettings":
         """Resolves settings for the given stack.
@@ -54,8 +61,8 @@ class SettingsResolver:
         Returns:
             The resolved settings.
         """
-        if settings_utils.is_universal_setting_key(self._key):
-            target_class = self._resolve_universal_settings_class()
+        if settings_utils.is_general_setting_key(self._key):
+            target_class = self._resolve_general_settings_class()
         else:
             target_class = self._resolve_stack_component_setting_class(
                 stack=stack
@@ -63,15 +70,15 @@ class SettingsResolver:
 
         return self._convert_settings(target_class=target_class)
 
-    def _resolve_universal_settings_class(
+    def _resolve_general_settings_class(
         self,
     ) -> Type["BaseSettings"]:
-        """Resolves universal settings.
+        """Resolves general settings.
 
         Returns:
             The resolved settings.
         """
-        return settings_utils.get_universal_settings()[self._key]
+        return settings_utils.get_general_settings()[self._key]
 
     def _resolve_stack_component_setting_class(
         self, stack: "Stack"
@@ -82,14 +89,14 @@ class SettingsResolver:
             stack: The stack to use for resolving.
 
         Raises:
-            SettingsResolvingError: If the resolving failed.
+            KeyError: If the stack contains no settings for the key.
 
         Returns:
             The resolved settings.
         """
         settings_class = stack.setting_classes.get(self._key)
         if not settings_class:
-            raise SettingsResolvingError(
+            raise KeyError(
                 f"Failed to resolve settings for key {self._key}: "
                 "No settings for this key exist in the stack. "
                 "Available settings: "
@@ -110,11 +117,11 @@ class SettingsResolver:
         Returns:
             The converted settings.
         """
-        options_dict = self._options.dict()
+        settings_dict = self._settings.dict()
         try:
-            return target_class(**options_dict)
+            return target_class(**settings_dict)
         except ValidationError:
             raise SettingsResolvingError(
-                f"Failed to convert options `{options_dict}` to expected class "
-                f"{target_class}."
+                f"Failed to convert settings `{settings_dict}` to expected "
+                f"class {target_class}."
             )

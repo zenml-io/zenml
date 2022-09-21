@@ -27,16 +27,16 @@ STACK_COMPONENT_REGEX = re.compile(
 )
 
 
-def get_settings_key_for_stack_component(
+def get_stack_component_setting_key(
     stack_component: Union["StackComponent", Type["StackComponent"]],
 ) -> str:
-    """Gets the settings key for a stack component.
+    """Gets the setting key for a stack component.
 
     Args:
         stack_component: The stack component (class) for which to get the key.
 
     Returns:
-        The settings key for the stack component.
+        The setting key for the stack component.
     """
     return f"{stack_component.TYPE}.{stack_component.FLAVOR}"
 
@@ -50,7 +50,7 @@ def is_valid_setting_key(key: str) -> bool:
     Returns:
         If the key is valid.
     """
-    return is_universal_setting_key(key) or is_stack_component_setting_key(key)
+    return is_general_setting_key(key) or is_stack_component_setting_key(key)
 
 
 def is_stack_component_setting_key(key: str) -> bool:
@@ -65,23 +65,23 @@ def is_stack_component_setting_key(key: str) -> bool:
     return bool(STACK_COMPONENT_REGEX.fullmatch(key))
 
 
-def is_universal_setting_key(key: str) -> bool:
-    """Checks whether the key refers to a universal setting.
+def is_general_setting_key(key: str) -> bool:
+    """Checks whether the key refers to a general setting.
 
     Args:
         key: The key to check.
 
     Returns:
-        If the key refers to a universal setting.
+        If the key refers to a general setting.
     """
-    return key in get_universal_settings()
+    return key in get_general_settings()
 
 
-def get_universal_settings() -> Dict[str, Type["BaseSettings"]]:
-    """Returns all universal settings.
+def get_general_settings() -> Dict[str, Type["BaseSettings"]]:
+    """Returns all general settings.
 
     Returns:
-        Dictionary mapping universal settings keys to their type.
+        Dictionary mapping general settings keys to their type.
     """
     from zenml.config import DockerSettings, ResourceSettings
 
@@ -102,4 +102,10 @@ def validate_setting_keys(setting_keys: Sequence[str]) -> None:
     """
     for key in setting_keys:
         if not is_valid_setting_key(key):
-            raise ValueError(f"Invalid settings key: {key}")
+            raise ValueError(
+                f"Invalid setting key `{key}`. Setting keys can either refer "
+                "to general settings (available keys: "
+                f"{set(get_general_settings())}) or stack component specific "
+                "settings. Stack component specific keys are of the format "
+                "`<STACK_COMPONENT_TYPE>.<STACK_COMPONENT_FLAVOR>`."
+            )

@@ -261,7 +261,7 @@ class StackComponent(BaseModel, ABC):
         if not self.settings_class:
             return None
 
-        key = settings_utils.get_settings_key_for_stack_component(self)
+        key = settings_utils.get_stack_component_setting_key(self)
 
         options = (
             container.config.settings
