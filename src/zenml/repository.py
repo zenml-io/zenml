@@ -1022,7 +1022,10 @@ class Repository(metaclass=RepositoryMetaClass):
 
         if custom_flavors:
             if len(custom_flavors) > 1:
-                raise KeyError("More than one flavor by this name exist!")
+                raise KeyError(
+                    f"More than one flavor with name {name} and type "
+                    f"{component_type} exists."
+                )
 
             if zenml_flavor:
                 # If there is one, check whether the same flavor exists as
@@ -1037,7 +1040,9 @@ class Repository(metaclass=RepositoryMetaClass):
             if zenml_flavor:
                 return zenml_flavor
             else:
-                raise KeyError("bir şey barış!")
+                raise KeyError(
+                    f"No flavor with name {name} and type {type} exists."
+                )
 
     def get_pipeline_by_name(self, name: str) -> PipelineModel:
         """Fetches a pipeline by name.

@@ -237,8 +237,10 @@ class StackComponent:
             from zenml.stack import Flavor
 
             flavor = Flavor.from_model(flavor_model)
-        except (ModuleNotFoundError, ImportError, NotImplementedError):
-            raise ImportError(f"tmp")
+        except (ModuleNotFoundError, ImportError, NotImplementedError) as err:
+            raise ImportError(
+                f"Couldn't import flavor {flavor_model.name}: {err}"
+            )
 
         configuration = flavor.config_class(**component_model.configuration)
 

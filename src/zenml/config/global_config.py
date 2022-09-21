@@ -496,7 +496,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         for k, v in os.environ.items():
             if v == "":
                 continue
-            if k.startswith(ENV_ZENML_STORE_PREFIX): 
+            if k.startswith(ENV_ZENML_STORE_PREFIX):
                 env_config[k[len(ENV_ZENML_STORE_PREFIX) :].lower()] = v
         if len(env_config):
             logger.debug(

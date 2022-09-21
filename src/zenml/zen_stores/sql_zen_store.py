@@ -889,7 +889,7 @@ class SqlZenStore(BaseZenStore):
                     raise IllegalOperationError(
                         f"Stack Component `{stack_component.name}` of type "
                         f"`{stack_component.type} can not be "
-                        f"deregistered as it is part of"
+                        f"deregistered as it is part of "
                         f"{len(stack_component.stacks)} stacks. "
                         f"Before unregistering this stack "
                         f"component, make sure to remove it "
