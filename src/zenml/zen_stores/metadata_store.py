@@ -39,7 +39,7 @@ logger = get_logger(__name__)
 
 
 class MLMDArtifactModel(BaseModel):
-    """Class that models an artifact reponse from the metadata store."""
+    """Class that models an artifact response from the metadata store."""
 
     mlmd_id: int
     type: ArtifactType
