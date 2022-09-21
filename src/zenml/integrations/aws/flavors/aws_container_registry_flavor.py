@@ -65,6 +65,7 @@ class AWSContainerRegistryFlavor(BaseContainerRegistryFlavor):
 
     @property
     def implementation_class(self) -> Type["AWSContainerRegistry"]:
+        """Implementation class."""
         from zenml.integrations.aws.container_registries import (
             AWSContainerRegistry,
         )

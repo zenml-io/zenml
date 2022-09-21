@@ -115,6 +115,7 @@ class S3ArtifactStoreFlavor(BaseArtifactStoreFlavor):
 
     @property
     def implementation_class(self) -> Type["S3ArtifactStore"]:
+        """Implementation class for this flavor."""
         from zenml.integrations.s3.artifact_stores import S3ArtifactStore
 
         return S3ArtifactStore

@@ -235,4 +235,5 @@ class LocalSecretsManagerFlavor(BaseSecretsManagerFlavor):
 
     @property
     def implementation_class(self) -> Type["LocalSecretsManager"]:
+        """Implementation class for this flavor."""
         return LocalSecretsManager

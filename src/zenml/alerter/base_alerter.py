@@ -80,4 +80,5 @@ class BaseAlerterFlavor(Flavor):
 
     @property
     def implementation_class(self) -> Type[BaseAlerter]:
+        """Implementation class."""
         return BaseAlerter

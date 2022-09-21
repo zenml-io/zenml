@@ -86,4 +86,5 @@ class LocalOrchestratorFlavor(BaseOrchestratorFlavor):
 
     @property
     def implementation_class(self) -> Type[LocalOrchestrator]:
+        """Implementation class for this flavor."""
         return LocalOrchestrator

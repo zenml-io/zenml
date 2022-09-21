@@ -37,7 +37,6 @@ class BaseDataValidator(StackComponent):
         Returns:
             The config of this data validator.
         """
-
         return cast(BaseDataValidatorConfig, self._config)
 
     @classmethod

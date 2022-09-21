@@ -74,6 +74,7 @@ class KubernetesOrchestratorFlavor(BaseOrchestratorFlavor):
 
     @property
     def implementation_class(self) -> Type["KubernetesOrchestrator"]:
+        """Implementation class for this flavor."""
         from zenml.integrations.kubernetes.orchestrators import (
             KubernetesOrchestrator,
         )

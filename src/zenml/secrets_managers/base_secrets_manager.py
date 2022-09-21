@@ -462,4 +462,4 @@ class BaseSecretsManagerFlavor(Flavor):
     @property
     @abstractmethod
     def implementation_class(self) -> Type["BaseSecretsManager"]:
-        """"""
+        """Implementation class for this flavor."""

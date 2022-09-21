@@ -97,6 +97,7 @@ class SparkStepOperatorFlavor(BaseStepOperatorFlavor):
 
     @property
     def implementation_class(self) -> Type["SparkStepOperator"]:
+        """Implementation class for this flavor."""
         from zenml.integrations.spark.step_operators.spark_step_operator import (
             SparkStepOperator,
         )

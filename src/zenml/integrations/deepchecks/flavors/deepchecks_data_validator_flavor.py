@@ -33,6 +33,7 @@ class DeepchecksDataValidatorFlavor(BaseDataValidatorFlavor):
 
     @property
     def implementation_class(self) -> Type["DeepchecksDataValidator"]:
+        """Implementation class."""
         from zenml.integrations.deepchecks.data_validators import (
             DeepchecksDataValidator,
         )

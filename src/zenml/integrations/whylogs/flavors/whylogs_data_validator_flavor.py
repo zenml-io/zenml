@@ -45,6 +45,7 @@ class WhylogsDataValidatorFlavor(BaseDataValidatorFlavor):
 
     @property
     def implementation_class(self) -> Type["WhylogsDataValidator"]:
+        """Implementation class for this flavor."""
         from zenml.integrations.whylogs.data_validators import (
             WhylogsDataValidator,
         )

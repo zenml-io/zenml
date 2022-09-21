@@ -68,6 +68,7 @@ class SeldonModelDeployerFlavor(BaseModelDeployerFlavor):
 
     @property
     def implementation_class(self) -> Type["SeldonModelDeployer"]:
+        """Implementation class for this flavor."""
         from zenml.integrations.seldon.model_deployers import (
             SeldonModelDeployer,
         )

@@ -72,6 +72,7 @@ class GitHubActionsOrchestratorFlavor(BaseOrchestratorFlavor):
 
     @property
     def implementation_class(self) -> Type["GitHubActionsOrchestrator"]:
+        """Implementation class for this flavor."""
         from zenml.integrations.github.orchestrators import (
             GitHubActionsOrchestrator,
         )

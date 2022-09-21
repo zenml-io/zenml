@@ -69,6 +69,7 @@ class SagemakerStepOperatorFlavor(BaseStepOperatorFlavor):
 
     @property
     def implementation_class(self) -> Type["SagemakerStepOperator"]:
+        """Implementation class."""
         from zenml.integrations.aws.step_operators import SagemakerStepOperator
 
         return SagemakerStepOperator

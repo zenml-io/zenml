@@ -85,4 +85,5 @@ class BaseFeatureStoreFlavor(Flavor):
     @property
     @abstractmethod
     def implementation_class(self) -> Type[BaseFeatureStore]:
+        """Implementation class."""
         return BaseFeatureStore

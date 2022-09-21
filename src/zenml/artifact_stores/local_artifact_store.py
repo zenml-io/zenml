@@ -325,4 +325,5 @@ class LocalArtifactStoreFlavor(BaseArtifactStoreFlavor):
 
     @property
     def implementation_class(self) -> Type[LocalArtifactStore]:
+        """Implementation class."""
         return LocalArtifactStore

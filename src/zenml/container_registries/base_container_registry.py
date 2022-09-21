@@ -138,4 +138,5 @@ class BaseContainerRegistryFlavor(Flavor):
 
     @property
     def implementation_class(self) -> Type[BaseContainerRegistry]:
+        """Implementation class."""
         return BaseContainerRegistry

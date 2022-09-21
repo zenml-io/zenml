@@ -67,6 +67,7 @@ class KServeModelDeployerFlavor(BaseModelDeployerFlavor):
 
     @property
     def implementation_class(self) -> Type["KServeModelDeployer"]:
+        """Implementation class for this flavor."""
         from zenml.integrations.kserve.model_deployers import (
             KServeModelDeployer,
         )

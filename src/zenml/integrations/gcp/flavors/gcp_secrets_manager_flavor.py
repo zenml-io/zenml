@@ -100,6 +100,7 @@ class GCPSecretsManagerFlavor(BaseSecretsManagerFlavor):
 
     @property
     def implementation_class(self) -> Type["GCPSecretsManager"]:
+        """Implementation class for this flavor."""
         from zenml.integrations.gcp.secrets_manager import GCPSecretsManager
 
         return GCPSecretsManager

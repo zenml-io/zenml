@@ -50,6 +50,7 @@ class GCPArtifactStoreFlavor(BaseArtifactStoreFlavor):
 
     @property
     def implementation_class(self) -> Type["GCPArtifactStore"]:
+        """Implementation class for this flavor."""
         from zenml.integrations.gcp.artifact_stores import GCPArtifactStore
 
         return GCPArtifactStore

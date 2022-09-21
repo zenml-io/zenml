@@ -54,6 +54,7 @@ class LabelStudioAnnotatorFlavor(BaseAnnotatorFlavor):
 
     @property
     def implementation_class(self) -> Type["LabelStudioAnnotator"]:
+        """Implementation class for this flavor."""
         from zenml.integrations.label_studio.annotators import (
             LabelStudioAnnotator,
         )

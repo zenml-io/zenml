@@ -47,6 +47,7 @@ class AzureArtifactStoreFlavor(BaseArtifactStoreFlavor):
 
     @property
     def implementation_class(self) -> Type["AzureArtifactStore"]:
+        """Implementation class."""
         from zenml.integrations.azure.artifact_stores import AzureArtifactStore
 
         return AzureArtifactStore

@@ -93,6 +93,7 @@ class VaultSecretsManagerFlavor(BaseSecretsManagerFlavor):
 
     @property
     def implementation_class(self) -> Type["VaultSecretsManager"]:
+        """Implementation class for this flavor."""
         from zenml.integrations.vault.secrets_manager import VaultSecretsManager
 
         return VaultSecretsManager

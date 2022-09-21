@@ -160,4 +160,5 @@ class BaseAnnotatorFlavor(Flavor):
     @property
     @abstractmethod
     def implementation_class(self) -> Type[BaseAnnotator]:
+        """Implementation class."""
         return BaseAnnotator

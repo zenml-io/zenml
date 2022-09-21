@@ -442,4 +442,4 @@ class BaseArtifactStoreFlavor(Flavor):
     @property
     @abstractmethod
     def implementation_class(self) -> Type["BaseArtifactStore"]:
-        """"""
+        """Implementation class."""

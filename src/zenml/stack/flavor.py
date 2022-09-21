@@ -36,7 +36,7 @@ class Flavor:
     @property
     @abstractmethod
     def implementation_class(self) -> Type[StackComponent]:
-        """"""
+        """Implementation class for this flavor."""
 
     @property
     @abstractmethod

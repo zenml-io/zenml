@@ -606,4 +606,4 @@ class BaseOrchestratorFlavor(Flavor):
     @property
     @abstractmethod
     def implementation_class(self) -> Type["BaseOrchestrator"]:
-        """"""
+        """Implementation class for this flavor."""

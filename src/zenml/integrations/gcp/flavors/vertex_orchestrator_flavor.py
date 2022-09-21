@@ -127,6 +127,7 @@ class VertexOrchestratorFlavor(BaseOrchestratorFlavor):
 
     @property
     def implementation_class(self) -> Type["VertexOrchestrator"]:
+        """Implementation class for this flavor."""
         from zenml.integrations.gcp.orchestrators import VertexOrchestrator
 
         return VertexOrchestrator

@@ -78,6 +78,7 @@ class VertexStepOperatorFlavor(BaseStepOperatorFlavor):
 
     @property
     def implementation_class(self) -> Type["VertexStepOperator"]:
+        """Implementation class for this flavor."""
         from zenml.integrations.gcp.step_operators import VertexStepOperator
 
         return VertexStepOperator

@@ -49,6 +49,7 @@ class MLFlowModelDeployerFlavor(BaseModelDeployerFlavor):
 
     @property
     def implementation_class(self) -> Type["MLFlowModelDeployer"]:
+        """Implementation class for this flavor."""
         from zenml.integrations.mlflow.model_deployers import (
             MLFlowModelDeployer,
         )

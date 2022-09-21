@@ -83,6 +83,7 @@ class AzureMLStepOperatorFlavor(BaseStepOperatorFlavor):
 
     @property
     def implementation_class(self) -> Type["AzureMLStepOperator"]:
+        """Implementation class."""
         from zenml.integrations.azure.step_operators import AzureMLStepOperator
 
         return AzureMLStepOperator

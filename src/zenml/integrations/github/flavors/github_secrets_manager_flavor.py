@@ -48,6 +48,7 @@ class GitHubSecretsManagerFlavor(BaseSecretsManagerFlavor):
 
     @property
     def implementation_class(self) -> Type["GitHubSecretsManager"]:
+        """Implementation class for this flavor."""
         from zenml.integrations.github.secrets_managers import (
             GitHubSecretsManager,
         )

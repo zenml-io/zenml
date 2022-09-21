@@ -80,6 +80,7 @@ class AWSSecretsManagerFlavor(BaseSecretsManagerFlavor):
 
     @property
     def implementation_class(self) -> Type["AWSSecretsManager"]:
+        """Implementation class."""
         from zenml.integrations.aws.secrets_managers import AWSSecretsManager
 
         return AWSSecretsManager

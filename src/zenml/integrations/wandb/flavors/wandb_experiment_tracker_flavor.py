@@ -56,6 +56,7 @@ class WandbExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
 
     @property
     def implementation_class(self) -> Type["WandbExperimentTracker"]:
+        """Implementation class for this flavor."""
         from zenml.integrations.wandb.experiment_trackers import (
             WandbExperimentTracker,
         )

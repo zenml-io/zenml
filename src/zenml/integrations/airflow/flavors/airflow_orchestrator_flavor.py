@@ -31,6 +31,7 @@ class AirflowOrchestratorFlavor(BaseOrchestratorFlavor):
 
     @property
     def implementation_class(self) -> Type["AirflowOrchestrator"]:
+        """Implementation class."""
         from zenml.integrations.airflow.orchestrators import AirflowOrchestrator
 
         return AirflowOrchestrator

@@ -160,6 +160,7 @@ class MLFlowExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
 
     @property
     def implementation_class(self) -> Type["MLFlowExperimentTracker"]:
+        """Implementation class for this flavor."""
         from zenml.integrations.mlflow.experiment_trackers import (
             MLFlowExperimentTracker,
         )
