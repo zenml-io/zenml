@@ -677,7 +677,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         steps = {}
         for step_name, step in self.steps.items():
-            function_parameters = (
+            parameters = (
                 pydantic_utils.TemplateGenerator(step.PARAMETERS_CLASS).run()
                 if step.PARAMETERS_CLASS
                 else {}
@@ -687,7 +687,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 for name in step.OUTPUT_SIGNATURE
             }
             step_template = StepConfigurationUpdate(
-                function_parameters=function_parameters,
+                parameters=parameters,
                 settings=step_settings,
                 outputs=outputs,
             )

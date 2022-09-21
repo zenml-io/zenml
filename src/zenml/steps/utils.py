@@ -36,6 +36,7 @@ from typing import (
     ClassVar,
     Dict,
     List,
+    Mapping,
     Optional,
     Sequence,
     Type,
@@ -202,7 +203,7 @@ def _create_component_spec_class(
 
 
 def _create_channel_parameters(
-    artifacts: Dict[str, "ArtifactConfiguration"]
+    artifacts: Mapping[str, "ArtifactConfiguration"]
 ) -> Dict[str, component_spec.ChannelParameter]:
     """Creates TFX channel parameters for ZenML artifacts.
 

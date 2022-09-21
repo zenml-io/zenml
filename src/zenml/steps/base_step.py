@@ -80,7 +80,7 @@ if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
     from zenml.steps.base_parameters import BaseParameters
 
-    ParametersOrDict = Union["Parameters", Dict[str, Any]]
+    ParametersOrDict = Union["BaseParameters", Dict[str, Any]]
     ArtifactClassOrStr = Union[str, Type["BaseArtifact"]]
     MaterializerClassOrStr = Union[str, Type["BaseMaterializer"]]
     OutputArtifactsSpecification = Union[
@@ -895,7 +895,7 @@ class BaseStep(metaclass=BaseStepMeta):
             raise StepInterfaceError("Failed to validate function parameters.")
 
     def _validate_inputs(
-        self, inputs: Dict[str, ArtifactConfiguration]
+        self, inputs: Mapping[str, ArtifactConfiguration]
     ) -> None:
         """Validates the step input configuration.
 
@@ -928,7 +928,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 )
 
     def _validate_outputs(
-        self, outputs: Dict[str, PartialArtifactConfiguration]
+        self, outputs: Mapping[str, PartialArtifactConfiguration]
     ) -> None:
         """Validates the step output configuration.
 

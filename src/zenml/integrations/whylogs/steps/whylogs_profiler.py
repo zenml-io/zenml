@@ -21,14 +21,15 @@ from whylogs.core import DatasetProfileView  # type: ignore
 
 from zenml.integrations.whylogs.data_validators.whylogs_data_validator import (
     WhylogsDataValidator,
+    WhylogsDataValidatorSettings,
 )
-from zenml.integrations.whylogs.whylabs_step_decorator import enable_whylabs
 from zenml.steps.base_step import BaseStep
 from zenml.steps.step_interfaces.base_analyzer_step import (
     BaseAnalyzerParameters,
     BaseAnalyzerStep,
 )
 from zenml.steps.utils import clone_step
+from zenml.utils import settings_utils
 
 
 class WhylogsProfilerParameters(BaseAnalyzerParameters):
@@ -88,7 +89,14 @@ def whylogs_profiler_step(
     Returns:
         a WhylogsProfilerStep step instance
     """
-    step = enable_whylabs(dataset_id=dataset_id)(
-        clone_step(WhylogsProfilerStep, step_name)
+    step_class = clone_step(WhylogsProfilerStep, step_name)
+    step_instance = step_class(params=params)
+
+    key = settings_utils.get_settings_key_for_stack_component(
+        WhylogsDataValidator
     )
-    return step(params=params)
+    settings = WhylogsDataValidatorSettings(
+        enable_whylabs=True, dataset_id=dataset_id
+    )
+    step_instance.configure(settings={key: settings})
+    return step_instance

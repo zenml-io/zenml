@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional
 
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
 from zenml.config.constants import RESOURCE_SETTINGS_KEY
@@ -46,7 +46,7 @@ class StepConfigurationUpdate(StrictBaseModel):
     settings: Dict[str, BaseSettings] = {}
     extra: Dict[str, Any] = {}
 
-    outputs: Dict[str, PartialArtifactConfiguration] = {}
+    outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
 
 class PartialStepConfiguration(StepConfigurationUpdate):
@@ -54,15 +54,15 @@ class PartialStepConfiguration(StepConfigurationUpdate):
 
     name: str
     enable_cache: bool
-    inputs: Dict[str, PartialArtifactConfiguration] = {}
-    outputs: Dict[str, PartialArtifactConfiguration] = {}
+    inputs: Mapping[str, PartialArtifactConfiguration] = {}
+    outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
 
 class StepConfiguration(PartialStepConfiguration):
     """Step configuration class."""
 
-    inputs: Dict[str, ArtifactConfiguration] = {}
-    outputs: Dict[str, ArtifactConfiguration] = {}
+    inputs: Mapping[str, ArtifactConfiguration] = {}
+    outputs: Mapping[str, ArtifactConfiguration] = {}
 
     @property
     def resource_settings(self) -> "ResourceSettings":

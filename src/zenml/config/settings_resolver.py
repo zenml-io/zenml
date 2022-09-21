@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.stack import Stack
 
-    T = TypeVar("T", bound="Settings")
+    T = TypeVar("T", bound="BaseSettings")
 
 
 class SettingsResolver:
