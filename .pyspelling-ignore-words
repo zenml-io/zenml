@@ -831,6 +831,7 @@ fcp
 fd
 feedforward
 fff
+ffmpeg
 fileio
 filepath
 filesize
@@ -957,6 +958,8 @@ kwarg
 kwargs
 len
 libcudart
+libsm
+libxext
 lifecycle
 lightgbm
 linux
