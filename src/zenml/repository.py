@@ -272,7 +272,6 @@ class Repository(metaclass=RepositoryMetaClass):
         doesn't contain outdated information, such as an active stack or
         project that no longer exists.
         """
-
         if not self._config:
             return
 
@@ -412,8 +411,7 @@ class Repository(metaclass=RepositoryMetaClass):
             )
 
         def _find_repo_helper(path_: Path) -> Optional[Path]:
-            """Helper function to recursively search parent directories for a
-            ZenML repository.
+            """Helper function to recursively search parent directories for a ZenML repository.
 
             Args:
                 path_: The path to search.
@@ -765,6 +763,11 @@ class Repository(metaclass=RepositoryMetaClass):
     # '------------'
     @property
     def stack_components(self) -> List[ComponentModel]:
+        """The list of registered stack components.
+
+        Returns:
+            The list of registered stack components.
+        """
         return self.get_stack_components()
 
     def register_stack_component(
@@ -860,6 +863,11 @@ class Repository(metaclass=RepositoryMetaClass):
             )
 
     def get_stack_components(self) -> List[ComponentModel]:
+        """Gets all registered stack components.
+
+        Returns:
+            The list of registered stack components.
+        """
         return self.zen_store.list_stack_components(
             project_name_or_id=self.active_project.id,
             user_name_or_id=self.active_user.id,
@@ -883,7 +891,15 @@ class Repository(metaclass=RepositoryMetaClass):
     def get_stack_components_by_type(
         self, type: StackComponentType, is_shared: bool = False
     ) -> List[ComponentModel]:
-        """ """
+        """Fetches all registered stack components of a given type.
+
+        Args:
+            type: The type of the components to fetch.
+            is_shared: Whether to fetch shared components or not.
+
+        Returns:
+            The registered stack components.
+        """
         if is_shared:
             return self.zen_store.list_stack_components(
                 project_name_or_id=self.active_project.id,
@@ -962,6 +978,14 @@ class Repository(metaclass=RepositoryMetaClass):
         return self.get_flavors()
 
     def create_flavor(self, flavor: "FlavorModel") -> "FlavorModel":
+        """Creates a new flavor.
+
+        Args:
+            flavor: The flavor to create.
+
+        Returns:
+            The created flavor (in model form).
+        """
         from zenml.utils.source_utils import validate_flavor_source
 
         flavor_class = validate_flavor_source(
@@ -974,6 +998,11 @@ class Repository(metaclass=RepositoryMetaClass):
         return self.zen_store.create_flavor(flavor=flavor_model)
 
     def delete_flavor(self, flavor: FlavorModel) -> None:
+        """Deletes a flavor.
+
+        Args:
+            flavor: The flavor to delete.
+        """
         try:
             self.zen_store.delete_flavor(flavor_id=flavor.id)
             logger.info(
