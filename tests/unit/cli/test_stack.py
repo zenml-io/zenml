@@ -136,7 +136,7 @@ def test_updating_non_active_stack_succeeds(clean_repo) -> None:
     )
     stack_model = new_stack.to_model(
         user=clean_repo.active_user.id, project=clean_repo.active_project.id
-    ) 
+    )
     clean_repo.register_stack(stack_model)
 
     runner = CliRunner()
