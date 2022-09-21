@@ -14,8 +14,8 @@
 from contextlib import ExitStack as does_not_raise
 
 from tensorflow import keras
-from unit.test_general import _test_materializer
 
+from tests.unit.test_general import _test_materializer
 from zenml.integrations.tensorflow.materializers.keras_materializer import (
     KerasMaterializer,
 )

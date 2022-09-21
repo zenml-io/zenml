@@ -14,8 +14,8 @@
 from contextlib import ExitStack as does_not_raise
 
 from transformers import TFAutoModelForSequenceClassification, TFPreTrainedModel
-from unit.test_general import _test_materializer
 
+from tests.unit.test_general import _test_materializer
 from zenml.integrations.huggingface.materializers.huggingface_tf_model_materializer import (
     HFTFModelMaterializer,
 )

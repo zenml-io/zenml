@@ -15,8 +15,8 @@ from contextlib import ExitStack as does_not_raise
 
 import pandas as pd
 from datasets import Dataset
-from unit.test_general import _test_materializer
 
+from tests.unit.test_general import _test_materializer
 from zenml.integrations.huggingface.materializers.huggingface_datasets_materializer import (
     HFDatasetMaterializer,
 )

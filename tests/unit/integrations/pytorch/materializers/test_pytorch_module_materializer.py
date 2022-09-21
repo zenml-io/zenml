@@ -14,8 +14,8 @@
 from contextlib import ExitStack as does_not_raise
 
 from torch.nn import Linear, Module
-from unit.test_general import _test_materializer
 
+from tests.unit.test_general import _test_materializer
 from zenml.integrations.pytorch.materializers.pytorch_module_materializer import (
     PyTorchModuleMaterializer,
 )

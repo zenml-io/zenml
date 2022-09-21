@@ -14,8 +14,8 @@
 from contextlib import ExitStack as does_not_raise
 
 from PIL import Image
-from unit.test_general import _test_materializer
 
+from tests.unit.test_general import _test_materializer
 from zenml.integrations.pillow.materializers.pillow_image_materializer import (
     PillowImageMaterializer,
 )

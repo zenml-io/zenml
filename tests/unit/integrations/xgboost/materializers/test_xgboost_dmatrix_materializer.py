@@ -15,8 +15,8 @@ from contextlib import ExitStack as does_not_raise
 
 import numpy as np
 import xgboost as xgb
-from unit.test_general import _test_materializer
 
+from tests.unit.test_general import _test_materializer
 from zenml.integrations.xgboost.materializers.xgboost_dmatrix_materializer import (
     XgboostDMatrixMaterializer,
 )

@@ -15,8 +15,8 @@ from contextlib import ExitStack as does_not_raise
 
 from transformers import AutoTokenizer
 from transformers.tokenization_utils_base import PreTrainedTokenizerBase
-from unit.test_general import _test_materializer
 
+from tests.unit.test_general import _test_materializer
 from zenml.integrations.huggingface.materializers.huggingface_tokenizer_materializer import (
     HFTokenizerMaterializer,
 )
