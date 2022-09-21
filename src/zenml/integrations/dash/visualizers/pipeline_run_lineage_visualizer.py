@@ -169,10 +169,11 @@ class PipelineRunLineageVisualizer(BaseVisualizer):
             node_dict = node.dict()
             node_data = node_dict.pop("data")
             node_dict = {**node_dict, **node_data}
-            node_dict["label"] = node_dict["type"] + " / " + node_dict["name"]
+            node_dict["label"] = node_dict["name"]
             classes = self.STATUS_CLASS_MAPPING[node.status]
             if isinstance(node, ArtifactNode):
                 classes = "rectangle " + classes
+                node_dict["label"] += f" ({node_dict['artifact_data_type']})"
             dash_node = {"data": node_dict, "classes": classes}
             nodes.append(dash_node)
 
@@ -205,7 +206,7 @@ class PipelineRunLineageVisualizer(BaseVisualizer):
 
         app.layout = dbc.Row(
             [
-                dbc.Container(f"Run: {object.name}", class_name="h1"),
+                dbc.Container(f"Run: {object.name}", class_name="h2"),
                 dbc.Row(
                     [
                         dbc.Col(
@@ -315,26 +316,38 @@ class PipelineRunLineageVisualizer(BaseVisualizer):
 
             text = ""
             for data in data_list:
-                text += f'## {data["execution_id"]} / {data["name"]}' + "\n\n"
                 if data["type"] == "artifact":
+                    text += f"### Artifact '{data['name']}'" + "\n\n"
+                    text += "#### Attributes:" + "\n\n"
                     for item in [
+                        "execution_id",
+                        "status",
                         "artifact_data_type",
-                        "is_cached",
                         "producer_step_id",
                         "parent_step_id",
                         "uri",
                     ]:
                         text += f"**{item}**: {data[item]}" + "\n\n"
                 elif data["type"] == "step":
-                    text += "### Inputs:" + "\n\n"
-                    for k, v in data["inputs"].items():
-                        text += f"**{k}**: {v}" + "\n\n"
-                    text += "### Outputs:" + "\n\n"
-                    for k, v in data["outputs"].items():
-                        text += f"**{k}**: {v}" + "\n\n"
-                    text += "### Params:" + "\n\n"
-                    for k, v in data["parameters"].items():
-                        text += f"**{k}**: {v}" + "\n\n"
+                    text += f"### Step '{data['name']}'" + "\n\n"
+                    text += "#### Attributes:" + "\n\n"
+                    for item in [
+                        "execution_id",
+                        "status",
+                    ]:
+                        text += f"**{item}**: {data[item]}" + "\n\n"
+                    if data["inputs"]:
+                        text += "#### Inputs:" + "\n\n"
+                        for k, v in data["inputs"].items():
+                            text += f"**{k}**: {v}" + "\n\n"
+                    if data["outputs"]:
+                        text += "#### Outputs:" + "\n\n"
+                        for k, v in data["outputs"].items():
+                            text += f"**{k}**: {v}" + "\n\n"
+                    if data["parameters"]:
+                        text += "#### Parameters:" + "\n\n"
+                        for k, v in data["parameters"].items():
+                            text += f"**{k}**: {v}" + "\n\n"
             return text
 
         @app.callback(  # type: ignore[misc]
