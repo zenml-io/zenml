@@ -280,4 +280,4 @@ to achieve this.
 
 Example of the [custom class](https://apidocs.zenml.io/0.13.0/api_docs/integrations/#zenml.integrations.seldon.custom_deployer.zenml_custom_model.ZenMLCustomModel)
 
-The built-in Seldon Core custom deployment step responsible for packaging, preparing and deploying to Seldon Core can be found [here](https://apidocs.zenml.io/0.13.0/api_docs/integrations/#zenml.integrations.seldon.steps.seldon_deployer.seldon_model_deployer_step)
+The built-in Seldon Core custom deployment step responsible for packaging, preparing and deploying to Seldon Core can be found [here](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.seldon.steps.seldon_deployer.seldon_model_deployer_step)
