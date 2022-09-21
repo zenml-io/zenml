@@ -986,6 +986,11 @@ class Repository(metaclass=RepositoryMetaClass):
             )
 
     def get_flavors(self) -> List[FlavorModel]:
+        """Fetches all the flavor models.
+
+        Returns:
+            A list of all the flavor models.
+        """
         from zenml.stack.flavor_registry import flavor_registry
 
         zenml_flavors = flavor_registry.flavors

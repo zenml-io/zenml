@@ -25,4 +25,9 @@ class DockerHubContainerRegistryFlavor(BaseContainerRegistryFlavor):
 
     @property
     def name(self) -> str:
+        """Name of the flavor.
+
+        Returns:
+            The name of the flavor.
+        """
         return ContainerRegistryFlavor.DOCKERHUB.value
