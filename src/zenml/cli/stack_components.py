@@ -355,7 +355,14 @@ def generate_stack_component_remove_attribute_command(
 
             # Remove the specified attributes
             for arg in parsed_args:
-                existing_component.configuration.pop(arg)
+                try:
+                    existing_component.configuration.pop(arg)
+                except KeyError:
+                    cli_utils.error(
+                        f"Cannot remove non-existent attribute '{arg}' from "
+                        f"{existing_component.type} '{existing_component.name}'"
+                        f"."
+                    )
 
             print(existing_component)
             # Update the stack component
