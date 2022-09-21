@@ -63,6 +63,11 @@ class AzureMLStepOperator(BaseStepOperator):
 
     @property
     def config(self) -> AzureMLStepOperatorConfig:
+        """Returns the `AzureMLStepOperatorConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(AzureMLStepOperatorConfig, self._config)
 
     def _get_authentication(self) -> Optional[AbstractAuthentication]:

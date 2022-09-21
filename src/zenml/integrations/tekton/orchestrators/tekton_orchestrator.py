@@ -53,6 +53,11 @@ class TektonOrchestrator(BaseOrchestrator):
 
     @property
     def config(self) -> TektonOrchestratorConfig:
+        """Returns the `TektonOrchestratorConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(TektonOrchestratorConfig, self._config)
 
     def get_kubernetes_contexts(self) -> Tuple[List[str], Optional[str]]:

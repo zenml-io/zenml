@@ -45,6 +45,11 @@ class AuthenticationMixin(StackComponent):
 
     @property
     def config(self) -> AuthenticationConfigMixin:
+        """Returns the `AuthenticationConfigMixin` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(AuthenticationConfigMixin, self._config)
 
     def get_authentication_secret(

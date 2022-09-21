@@ -36,6 +36,11 @@ class SparkStepOperator(BaseStepOperator):
 
     @property
     def config(self) -> SparkStepOperatorConfig:
+        """Returns the `SparkStepOperatorConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(SparkStepOperatorConfig, self._config)
 
     @property

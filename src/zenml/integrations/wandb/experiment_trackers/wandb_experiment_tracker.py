@@ -51,6 +51,11 @@ class WandbExperimentTracker(BaseExperimentTracker):
 
     @property
     def config(self) -> WandbExperimentTrackerConfig:
+        """Returns the `WandbExperimentTrackerConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(WandbExperimentTrackerConfig, self._config)
 
     def prepare_step_run(self) -> None:

@@ -34,6 +34,11 @@ class FeastFeatureStore(BaseFeatureStore):
 
     @property
     def config(self) -> FeastFeatureStoreConfig:
+        """Returns the `FeastFeatureStoreConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(FeastFeatureStoreConfig, self._config)
 
     def _validate_connection(self) -> None:

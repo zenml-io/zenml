@@ -215,6 +215,11 @@ class BaseArtifactStore(StackComponent):
 
     @property
     def config(self) -> BaseArtifactStoreConfig:
+        """Returns the `BaseArtifactStoreConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(BaseArtifactStoreConfig, self._config)
 
     @property

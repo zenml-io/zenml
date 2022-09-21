@@ -31,6 +31,11 @@ class BaseAlerter(StackComponent, ABC):
 
     @property
     def config(self) -> BaseAlerterConfig:
+        """Returns the `BaseAlerterConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(BaseAlerterConfig, self._config)
 
     def post(

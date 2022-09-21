@@ -210,6 +210,11 @@ class BaseOrchestrator(StackComponent, ABC):
 
     @property
     def config(self) -> BaseOrchestratorConfig:
+        """Returns the `BaseOrchestratorConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(BaseOrchestratorConfig, self._config)
 
     @abstractmethod

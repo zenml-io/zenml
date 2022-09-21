@@ -36,6 +36,11 @@ class BaseAnnotator(StackComponent, ABC):
 
     @property
     def config(self) -> BaseAnnotatorConfig:
+        """Returns the `BaseAnnotatorConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(BaseAnnotatorConfig, self._config)
 
     @abstractmethod

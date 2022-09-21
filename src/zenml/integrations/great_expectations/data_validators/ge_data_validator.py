@@ -63,6 +63,11 @@ class GreatExpectationsDataValidator(BaseDataValidator):
 
     @property
     def config(self) -> GreatExpectationsDataValidatorConfig:
+        """Returns the `GreatExpectationsDataValidatorConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(GreatExpectationsDataValidatorConfig, self._config)
 
     @classmethod

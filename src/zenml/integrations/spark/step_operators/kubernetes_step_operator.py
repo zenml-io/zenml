@@ -46,6 +46,11 @@ class KubernetesSparkStepOperator(SparkStepOperator):
 
     @property
     def config(self) -> KubernetesSparkStepOperatorConfig:
+        """Returns the `KubernetesSparkStepOperatorConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(KubernetesSparkStepOperatorConfig, self._config)
 
     @property

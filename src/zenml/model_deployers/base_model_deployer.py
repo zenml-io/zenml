@@ -67,6 +67,11 @@ class BaseModelDeployer(StackComponent, ABC):
 
     @property
     def config(self) -> BaseModelDeployerConfig:
+        """Returns the `BaseModelDeployerConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(BaseModelDeployerConfig, self._config)
 
     @abstractmethod

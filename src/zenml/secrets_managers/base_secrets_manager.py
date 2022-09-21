@@ -191,6 +191,11 @@ class BaseSecretsManager(StackComponent, ABC):
 
     @property
     def config(self) -> BaseSecretsManagerConfig:
+        """Returns the `BaseSecretsManagerConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(BaseSecretsManagerConfig, self._config)
 
     def _get_scope_path(self) -> List[str]:

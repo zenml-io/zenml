@@ -55,6 +55,11 @@ class KServeModelDeployer(BaseModelDeployer):
 
     @property
     def config(self) -> KServeModelDeployerConfig:
+        """Returns the `KServeModelDeployerConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(KServeModelDeployerConfig, self._config)
 
     @staticmethod

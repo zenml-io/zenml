@@ -45,6 +45,11 @@ class SagemakerStepOperator(BaseStepOperator):
 
     @property
     def config(self) -> SagemakerStepOperatorConfig:
+        """Returns the `SagemakerStepOperatorConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(SagemakerStepOperatorConfig, self._config)
 
     @property

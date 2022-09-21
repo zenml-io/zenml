@@ -52,6 +52,11 @@ class SlackAlerter(BaseAlerter):
 
     @property
     def config(self) -> SlackAlerterConfig:
+        """Returns the `SlackAlerterConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(SlackAlerterConfig, self._config)
 
     def _get_channel_id(self, config: Optional[BaseAlerterStepConfig]) -> str:

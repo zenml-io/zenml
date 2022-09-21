@@ -51,6 +51,11 @@ class LocalSecretsManager(BaseSecretsManager):
 
     @property
     def config(self) -> LocalSecretsManagerConfig:
+        """Returns the `LocalSecretsManagerConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(LocalSecretsManagerConfig, self._config)
 
     @property

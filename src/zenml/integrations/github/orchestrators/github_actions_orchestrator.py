@@ -72,6 +72,11 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
 
     @property
     def config(self) -> GitHubActionsOrchestratorConfig:
+        """Returns the `GitHubActionsOrchestratorConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(GitHubActionsOrchestratorConfig, self._config)
 
     @property

@@ -35,6 +35,11 @@ class AWSContainerRegistry(BaseContainerRegistry):
 
     @property
     def config(self) -> AWSContainerRegistryConfig:
+        """Returns the `AWSContainerRegistryConfig` config.
+
+        Returns:
+            The configuration.
+        """
         return cast(AWSContainerRegistryConfig, self._config)
 
     def _get_region(self) -> str:
