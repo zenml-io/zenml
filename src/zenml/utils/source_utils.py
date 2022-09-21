@@ -667,8 +667,12 @@ def validate_flavor_source(
 def validate_config_source(
     source: str, component_type: StackComponentType
 ) -> Type["StackComponentConfig"]:
-    """ """
+    """Validates a StackComponentConfig class from a given source.
 
+    Args:
+        source: source path of the implementation
+        component_type: the type of the stack component
+    """
     from zenml.stack.stack_component import StackComponentConfig
 
     try:
