@@ -40,7 +40,7 @@ ZenML provides a Seldon Core flavor build on top of the Seldon Core Integration 
 Model deployer with ZenML and add it to your stack:
 
 ```bash
-zenml integration install seldon-core -y
+zenml integration install seldon -y
 ```
 
 To deploy and make use of the Seldon Core integration we need to have the following prerequisites:
