@@ -14,7 +14,7 @@
 import json
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
-from typing import Iterator
+from typing import Type
 from uuid import uuid4
 
 import pytest
@@ -24,9 +24,14 @@ from zenml.enums import StackComponentType
 from zenml.orchestrators.base_orchestrator import (
     BaseOrchestrator,
     BaseOrchestratorConfig,
+    BaseOrchestratorFlavor,
 )
 from zenml.repository import Repository
-from zenml.stack.flavor_registry import FlavorModel, flavor_registry
+from zenml.secrets_managers.local.local_secrets_manager import (
+    LocalSecretsManagerConfig,
+)
+from zenml.stack.flavor_registry import flavor_registry
+from zenml.stack.stack import Stack
 
 
 def test_stack_component_default_method_implementations(stub_component):
@@ -103,36 +108,40 @@ class StubOrchestrator(BaseOrchestrator):
         pass
 
 
-def _get_stub_orchestrator(name, **kwargs):
+class StubOrchestratorFlavor(BaseOrchestratorFlavor):
+    @property
+    def name(self) -> str:
+        return "TEST"
+
+    @property
+    def config_class(self) -> Type[StubOrchestratorConfig]:
+        return StubOrchestratorConfig
+
+    @property
+    def implementation_class(self) -> Type[StubOrchestrator]:
+        return StubOrchestrator
+
+
+def _get_stub_orchestrator(name, repo=None, **kwargs):
     return StubOrchestrator(
         name=name,
         id=uuid4(),
         config=StubOrchestratorConfig(**kwargs),
         flavor="TEST",
         type=StackComponentType.ORCHESTRATOR,
-        user=uuid4(),
-        project=uuid4(),
+        user=uuid4() if repo is None else repo.active_user.id,
+        project=uuid4() if repo is None else repo.active_project.id,
         created=datetime.now(),
         updated=datetime.now(),
     )
 
 
 @pytest.fixture
-def register_stub_orchestrator_flavor() -> Iterator[FlavorModel]:
+def register_stub_orchestrator_flavor() -> None:
     """Create the stub orchestrator flavor temporarily."""
-    flavor = FlavorModel(
-        name="TEST",
-        type=StackComponentType.ORCHESTRATOR,
-        source=f"{StubOrchestrator.__module__}.{StubOrchestrator.__name__}",
-        integration="built-in",
-        config_schema="",
-        project=uuid4(),
-        user=uuid4(),
-        created=datetime.now(),
-        updated=datetime.now(),
-    )
+    flavor = StubOrchestratorFlavor()
 
-    flavor_registry._register_flavor(flavor)
+    flavor_registry._register_flavor(flavor.to_model())
     yield None
     flavor_registry._flavors[flavor.type].pop(flavor.name)
 
@@ -162,16 +171,27 @@ def test_stack_component_secret_reference_resolving(
 ):
     """Tests that the stack component resolves secrets if possible."""
     component = _get_stub_orchestrator(
-        name="", attribute_without_validator="{{secret.key}}"
+        name="stub_orchestrator",
+        repo=clean_repo,
+        attribute_without_validator="{{secret.key}}",
     )
+    clean_repo.register_stack_component(component.to_model())
     with pytest.raises(RuntimeError):
         # not part of the active stack
         _ = component.config.attribute_without_validator
 
-    stack = clean_repo.active_stack
-    stack._orchestrator = component
+    active_stack = clean_repo.active_stack
+    stack = Stack(
+        id=active_stack.id,
+        name=active_stack.name,
+        artifact_store=active_stack.artifact_store,
+        orchestrator=component,
+    )
+    stack_model = stack.to_model(
+        user=clean_repo.active_user.id, project=clean_repo.active_project.id
+    )
 
-    clean_repo.update_stack(stack=stack.to_model(user=uuid4(), project=uuid4()))
+    clean_repo.update_stack(stack_model)
 
     with pytest.raises(RuntimeError):
         # no secret manager in stack
@@ -179,9 +199,21 @@ def test_stack_component_secret_reference_resolving(
 
     from zenml.secrets_managers import LocalSecretsManager
 
-    secrets_manager = LocalSecretsManager(name="")
-    stack._secrets_manager = secrets_manager
-    clean_repo.update_stack(stack=stack.to_model(user=uuid4(), project=uuid4()))
+    secrets_manager = LocalSecretsManager(
+        name="",
+        id=uuid4(),
+        config=LocalSecretsManagerConfig(),
+        flavor="local",
+        type=StackComponentType.SECRETS_MANAGER,
+        user=clean_repo.active_user.id,
+        project=clean_repo.active_project.id,
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+    clean_repo.register_stack_component(secrets_manager.to_model())
+
+    stack_model.components["secrets_manager"] = [secrets_manager.id]
+    clean_repo.update_stack(stack_model)
 
     with pytest.raises(KeyError):
         # secret doesn't exist

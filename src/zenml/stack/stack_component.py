@@ -80,12 +80,6 @@ class StackComponentConfig(BaseModel, ABC):
                     )
                 continue
 
-            if key == "name":
-                raise ValueError(
-                    "Passing the `name` attribute of a stack component as a "
-                    "secret reference is not allowed."
-                )
-
             requires_validation = field.pre_validators or field.post_validators
             if requires_validation:
                 raise ValueError(
@@ -230,6 +224,12 @@ class StackComponent:
         *args: Any,
         **kwargs: Any,
     ):
+        if secret_utils.is_secret_reference(name):
+            raise ValueError(
+                "Passing the `name` attribute of a stack component as a "
+                "secret reference is not allowed."
+            )
+
         self.id = id
         self.name = name
         self._config = config
