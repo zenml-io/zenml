@@ -219,6 +219,7 @@ async def delete_user(
 
     Args:
         user_name_or_id: Name or ID of the user.
+        auth_context: The authentication context.
     """
     user = zen_store.get_user(user_name_or_id)
 

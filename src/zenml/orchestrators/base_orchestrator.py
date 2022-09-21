@@ -611,9 +611,18 @@ class BaseOrchestratorFlavor(Flavor):
 
     @property
     def config_class(self) -> Type[BaseOrchestratorConfig]:
+        """Config class for the base orchestrator flavor.
+
+        Returns:
+            The config class.
+        """
         return BaseOrchestratorConfig
 
     @property
     @abstractmethod
     def implementation_class(self) -> Type["BaseOrchestrator"]:
-        """Implementation class for this flavor."""
+        """Implementation class for this flavor.
+
+        Returns:
+            The implementation class.
+        """

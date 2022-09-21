@@ -107,6 +107,11 @@ class FlavorRegistry:
 
     @property
     def flavors(self) -> List[FlavorModel]:
+        """Returns all registered flavors.
+
+        Returns:
+            The list of all registered flavors.
+        """
         flavors = list()
         for flavors_by_type in self._flavors.values():
             for flavor in flavors_by_type.values():
@@ -129,6 +134,15 @@ class FlavorRegistry:
     def get_flavor_by_name_and_type(
         self, name: str, component_type: StackComponentType
     ) -> FlavorModel:
+        """Gets the flavor for a given name and type.
+
+        Args:
+            name: The name of the flavor.
+            component_type: The type of the stack component.
+
+        Returns:
+            The flavor with the given name and type.
+        """
         return self._flavors[component_type][name]
 
 

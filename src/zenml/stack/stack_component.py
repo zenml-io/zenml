@@ -35,6 +35,8 @@ logger = get_logger(__name__)
 
 
 class StackComponentConfig(BaseModel, ABC):
+    """Base class for all ZenML stack component configs."""
+
     def __init__(self, **kwargs: Any) -> None:
         """Ensures that secret references don't clash with pydantic validation.
 
@@ -187,7 +189,6 @@ class StackComponentConfig(BaseModel, ABC):
             True if this config belongs to a component in the active stack,
             False otherwise.
         """
-
         from zenml.repository import Repository
 
         for component in Repository().active_stack.components.values():
@@ -230,6 +231,21 @@ class StackComponent:
         *args: Any,
         **kwargs: Any,
     ):
+        """Initializes a StackComponent.
+
+        Args:
+            name: The name of the component.
+            id: The unique ID of the component.
+            config: The config of the component.
+            flavor: The flavor of the component.
+            type: The type of the component.
+            user: The ID of the user who created the component.
+            project: The ID of the project the component belongs to.
+            created: The creation time of the component.
+            updated: The last update time of the component.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+        """
         self.id = id
         self.name = name
         self._config = config
