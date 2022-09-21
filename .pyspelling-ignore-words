@@ -40,12 +40,16 @@ AutoML
 AutoTokenizer
 AutoTokenizercreds
 AzureArtifactStore
+AzureArtifactStoreConfig
 AzureContainerRegistry
 AzureML
+AzureMLStepOperatorConfig
+AzureSecretsManagerConfig
 Backend
 Backpropagation
 Baris
 BaseAlerter
+BaseAlerterConfig
 BaseAlerterStepConfig
 BaseArtifact
 BaseArtifactStore
@@ -188,6 +192,7 @@ FacetStatisticsVisualizer
 FastAPI
 FastaiLearnerMaterializer
 FeastFeatureStore
+FeastFeatureStoreConfig
 FeastHistoricalFeaturesConfig
 FileExistsError
 FileExistsError
@@ -208,7 +213,9 @@ GBDT
 GBM
 GCP
 GCPArtifactStore
+GCPArtifactStoreConfig
 GCPContainerRegistry
+GCPSecretsManagerConfig
 GCS
 GCS
 GID
@@ -471,6 +478,7 @@ SVCTrainerStepConfig
 SageMaker
 Sagemaker
 Sagemaker's
+SagemakerStepOperatorConfig
 Sauron
 Scatch
 SchemaArtifact
@@ -524,6 +532,7 @@ SparkModelMaterializer
 SparkStepOperator
 SqlZenStore
 StackComponent
+StackComponentConfig
 StackComponentConfiguration
 StackComponentExistsError
 StackComponentInterfaceError
@@ -613,6 +622,7 @@ ValidationError
 ValueError
 VertexAI
 VertexOrchestrator
+VertexOrchestratorConfig
 VisionData
 VpcId
 Vpcs
