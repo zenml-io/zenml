@@ -11,39 +11,29 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional
+from typing import Optional, Type
 
-from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
-
-from zenml.orchestrators.base_orchestrator import BaseOrchestrator
-from zenml.steps import BaseStep
-
-if TYPE_CHECKING:
-    from zenml.pipelines import BasePipeline
-    from zenml.runtime_configuration import RuntimeConfiguration
-    from zenml.stack import Stack
+from zenml.orchestrators.base_orchestrator import (
+    BaseOrchestratorConfig,
+    BaseOrchestratorFlavor,
+)
+from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 
 
-class AriaOrchestrator(BaseOrchestrator):
-    FLAVOR: ClassVar[str] = "aria"
-
+class AriaOrchestratorConfig(BaseOrchestratorConfig):
     favorite_orchestration_language: str
-    favorite_orchestration_language_version: Optional[str] = "1.0"
+    favorite_orchestration_language_version: Optional[str] = None
 
-    def prepare_or_run_pipeline(
-        self,
-        sorted_steps: List[BaseStep],
-        pipeline: "BasePipeline",
-        pb2_pipeline: Pb2Pipeline,
-        stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
-    ) -> Any:
-        """Mock function."""
 
-    def run_pipeline(
-        self,
-        pipeline: "BasePipeline",
-        stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
-    ) -> Any:
-        """Mock function."""
+class AriaOrchestratorFlavor(BaseOrchestratorFlavor):
+    @property
+    def name(self) -> str:
+        return "aria"
+
+    @property
+    def config_class(self) -> Type[AriaOrchestratorConfig]:
+        return AriaOrchestratorConfig
+
+    @property
+    def implementation_class(self) -> Type["LocalOrchestrator"]:
+        return LocalOrchestrator
