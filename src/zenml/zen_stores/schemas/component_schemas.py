@@ -75,6 +75,8 @@ class StackComponentSchema(SQLModel, table=True):
             configuration=base64.b64encode(
                 json.dumps(component.configuration).encode("utf-8")
             ),
+            created=component.created,
+            updated=component.updated,
         )
 
     def from_update_model(

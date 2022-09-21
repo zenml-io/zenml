@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from datetime import datetime
 from uuid import uuid4
 
 import pytest
@@ -37,6 +38,8 @@ def test_azure_artifact_store_attributes():
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
         project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
     assert artifact_store.type == StackComponentType.ARTIFACT_STORE
     assert artifact_store.flavor == "azure"
@@ -54,6 +57,8 @@ def test_must_be_azure_path():
             type=StackComponentType.ARTIFACT_STORE,
             user=uuid4(),
             project=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
         )
 
     with pytest.raises(ArtifactStoreInterfaceError):
@@ -65,6 +70,8 @@ def test_must_be_azure_path():
             type=StackComponentType.ARTIFACT_STORE,
             user=uuid4(),
             project=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
         )
 
     artifact_store = AzureArtifactStore(
@@ -75,6 +82,8 @@ def test_must_be_azure_path():
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
         project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
     assert artifact_store.path == "az://mycontainer"
 
@@ -86,5 +95,7 @@ def test_must_be_azure_path():
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
         project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
     assert artifact_store.path == "abfs://mycontainer"

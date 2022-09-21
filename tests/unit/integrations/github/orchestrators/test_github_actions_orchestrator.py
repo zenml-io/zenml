@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 from contextlib import ExitStack as does_not_raise
+from datetime import datetime
 from uuid import uuid4
 
 import pytest
@@ -40,6 +41,8 @@ def _get_github_actions_orchestrator() -> GitHubActionsOrchestrator:
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
         project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
 
 
@@ -62,6 +65,8 @@ def test_github_actions_orchestrator_stack_validation(
         type=StackComponentType.CONTAINER_REGISTRY,
         user=uuid4(),
         project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
 
     with does_not_raise():

@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 
+from datetime import datetime
 from uuid import uuid4
 
 import pytest
@@ -36,6 +37,8 @@ def _get_gcp_artifact_store(**kwargs):
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
         project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
 
 

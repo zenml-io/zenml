@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
+from datetime import datetime
 from typing import ClassVar
 from uuid import uuid4
 
@@ -43,7 +44,8 @@ def test_base_container_registry_requires_authentication_if_secret_provided():
             type=StackComponentType.CONTAINER_REGISTRY,
             user=uuid4(),
             project=uuid4(),
-            uri="",
+            created=datetime.now(),
+            updated=datetime.now(),
         ).requires_authentication
         is False
     )
@@ -59,6 +61,8 @@ def test_base_container_registry_requires_authentication_if_secret_provided():
             type=StackComponentType.CONTAINER_REGISTRY,
             user=uuid4(),
             project=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
         ).requires_authentication
         is True
     )
@@ -77,6 +81,8 @@ def test_base_container_registry_local_property():
             type=StackComponentType.CONTAINER_REGISTRY,
             user=uuid4(),
             project=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
         ).is_local
         is True
     )
@@ -91,6 +97,8 @@ def test_base_container_registry_local_property():
             type=StackComponentType.CONTAINER_REGISTRY,
             user=uuid4(),
             project=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
         ).is_local
         is False
     )
@@ -110,6 +118,8 @@ def test_base_container_registry_prevents_push_if_uri_does_not_match(mocker):
         type=StackComponentType.CONTAINER_REGISTRY,
         user=uuid4(),
         project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
     with does_not_raise():
         registry.push_image("some_uri/image_name")

@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 from contextlib import ExitStack as does_not_raise
+from datetime import datetime
 from uuid import uuid4
 
 import pytest
@@ -60,6 +61,8 @@ def test_base_secrets_manager_prevents_secret_references():
             type=StackComponentType.SECRETS_MANAGER,
             user=uuid4(),
             project=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
         )
 
     with does_not_raise():
@@ -71,4 +74,6 @@ def test_base_secrets_manager_prevents_secret_references():
             type=StackComponentType.SECRETS_MANAGER,
             user=uuid4(),
             project=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
         )

@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from datetime import datetime
 from uuid import uuid4
 
 import pytest
@@ -38,6 +39,8 @@ def local_secrets_manager():
         type=StackComponentType.SECRETS_MANAGER,
         user=uuid4(),
         project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
     yield local_secrets_manager
     local_secrets_manager.delete_all_secrets()

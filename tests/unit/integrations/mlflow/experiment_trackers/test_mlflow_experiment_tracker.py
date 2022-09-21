@@ -14,6 +14,7 @@
 
 import os
 from contextlib import ExitStack as does_not_raise
+from datetime import datetime
 from uuid import uuid4
 
 import pytest
@@ -63,6 +64,8 @@ def test_mlflow_experiment_tracker_attributes() -> None:
         type=StackComponentType.EXPERIMENT_TRACKER,
         user=uuid4(),
         project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
 
     assert experiment_tracker.type == StackComponentType.EXPERIMENT_TRACKER
@@ -80,6 +83,8 @@ def test_mlflow_experiment_tracker_stack_validation() -> None:
         type=StackComponentType.EXPERIMENT_TRACKER,
         user=uuid4(),
         project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
 
     local_orchestrator = LocalOrchestrator(
@@ -90,6 +95,8 @@ def test_mlflow_experiment_tracker_stack_validation() -> None:
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
         project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
     local_artifact_store = LocalArtifactStore(
         name="",
@@ -99,6 +106,8 @@ def test_mlflow_experiment_tracker_stack_validation() -> None:
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
         project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
     remote_artifact_store = GCPArtifactStore(
         name="",
@@ -108,6 +117,8 @@ def test_mlflow_experiment_tracker_stack_validation() -> None:
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
         project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
 
     with pytest.raises(StackValidationError):
@@ -145,6 +156,8 @@ def test_mlflow_experiment_tracker_authentication() -> None:
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
             project=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
         )
 
     # should raise because no authentication parameters are set
@@ -159,6 +172,8 @@ def test_mlflow_experiment_tracker_authentication() -> None:
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
             project=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
         )
 
     # should not raise because username and password are set
@@ -175,6 +190,8 @@ def test_mlflow_experiment_tracker_authentication() -> None:
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
             project=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
         )
 
     with does_not_raise():
@@ -191,6 +208,8 @@ def test_mlflow_experiment_tracker_authentication() -> None:
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
             project=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
         )
 
     # should not raise because token is set
@@ -206,6 +225,8 @@ def test_mlflow_experiment_tracker_authentication() -> None:
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
             project=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
         )
 
     with does_not_raise():
@@ -221,6 +242,8 @@ def test_mlflow_experiment_tracker_authentication() -> None:
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
             project=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
         )
 
 
@@ -241,6 +264,8 @@ def test_mlflow_experiment_tracker_set_config(local_stack: Stack) -> None:
         type=StackComponentType.EXPERIMENT_TRACKER,
         user=uuid4(),
         project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
 
     local_stack._experiment_tracker.configure_mlflow()
@@ -264,6 +289,8 @@ def test_mlflow_experiment_tracker_set_config(local_stack: Stack) -> None:
         type=StackComponentType.EXPERIMENT_TRACKER,
         user=uuid4(),
         project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
 
     local_stack._experiment_tracker.configure_mlflow()

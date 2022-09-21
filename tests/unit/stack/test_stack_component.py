@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 import json
 from contextlib import ExitStack as does_not_raise
+from datetime import datetime
 from typing import Iterator
 from uuid import uuid4
 
@@ -111,6 +112,8 @@ def _get_stub_orchestrator(name, **kwargs):
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
         project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
 
 
@@ -125,6 +128,8 @@ def register_stub_orchestrator_flavor() -> Iterator[FlavorModel]:
         config_schema="",
         project=uuid4(),
         user=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
 
     flavor_registry._register_flavor(flavor)

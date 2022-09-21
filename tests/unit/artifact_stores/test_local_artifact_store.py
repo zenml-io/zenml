@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+from datetime import datetime
 from uuid import uuid4
 
 import pytest
@@ -38,6 +39,8 @@ def test_local_artifact_store_attributes():
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
         project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
     assert artifact_store.type == StackComponentType.ARTIFACT_STORE
     assert artifact_store.flavor == "default"
@@ -55,6 +58,8 @@ def test_local_artifact_store_only_supports_local_paths():
             type=StackComponentType.ARTIFACT_STORE,
             user=uuid4(),
             project=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
         )
 
     with pytest.raises(ArtifactStoreInterfaceError):
@@ -66,6 +71,8 @@ def test_local_artifact_store_only_supports_local_paths():
             type=StackComponentType.ARTIFACT_STORE,
             user=uuid4(),
             project=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
         )
 
     with pytest.raises(ArtifactStoreInterfaceError):
@@ -77,6 +84,8 @@ def test_local_artifact_store_only_supports_local_paths():
             type=StackComponentType.ARTIFACT_STORE,
             user=uuid4(),
             project=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
         )
 
     artifact_store = LocalArtifactStore(
@@ -87,5 +96,7 @@ def test_local_artifact_store_only_supports_local_paths():
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
         project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
     assert artifact_store.path == os.getcwd()

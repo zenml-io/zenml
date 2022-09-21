@@ -16,6 +16,7 @@ import os
 import shutil
 import sys
 import tempfile
+from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
 
@@ -328,6 +329,8 @@ def local_stack():
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
         project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
     artifact_store = LocalArtifactStore(
         name="",
@@ -337,6 +340,8 @@ def local_stack():
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
         project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
     return Stack(
         id=uuid4(),
@@ -357,6 +362,8 @@ def local_orchestrator():
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
         project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
 
 
@@ -371,6 +378,8 @@ def local_artifact_store():
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
         project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
 
 
@@ -385,6 +394,8 @@ def remote_artifact_store():
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
         project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
 
 
@@ -399,6 +410,8 @@ def local_container_registry():
         type=StackComponentType.CONTAINER_REGISTRY,
         user=uuid4(),
         project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
 
 
@@ -413,6 +426,8 @@ def remote_container_registry():
         type=StackComponentType.CONTAINER_REGISTRY,
         user=uuid4(),
         project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
 
 

@@ -14,6 +14,7 @@
 
 
 from contextlib import ExitStack as does_not_raise
+from datetime import datetime
 from uuid import uuid4
 
 import pytest
@@ -37,6 +38,8 @@ def _get_kubernetes_orchestrator() -> KubernetesOrchestrator:
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
         project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
 
 

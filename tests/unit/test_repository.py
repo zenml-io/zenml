@@ -15,6 +15,7 @@ import os
 import random
 import string
 from contextlib import ExitStack as does_not_raise
+from datetime import datetime
 from typing import Optional
 from uuid import uuid4
 
@@ -65,6 +66,8 @@ def _create_local_stack(
         type=StackComponentType.ORCHESTRATOR,
         user=user.id,
         project=project.id,
+        created=datetime.now(),
+        updated=datetime.now(),
     )
     artifact_store = LocalArtifactStore(
         name=artifact_store_name,
@@ -74,6 +77,8 @@ def _create_local_stack(
         type=StackComponentType.ARTIFACT_STORE,
         user=user.id,
         project=project.id,
+        created=datetime.now(),
+        updated=datetime.now(),
     )
 
     return Stack(

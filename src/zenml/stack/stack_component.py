@@ -14,6 +14,7 @@
 """Implementation of the ZenML Stack Component class."""
 import textwrap
 from abc import ABC
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, Optional, Set
 from uuid import UUID
 
@@ -213,6 +214,8 @@ class StackComponent:
         type: StackComponentType,
         user: UUID,
         project: UUID,
+        created: datetime,
+        updated: datetime,
         *args: Any,
         **kwargs: Any,
     ):
@@ -223,6 +226,8 @@ class StackComponent:
         self.type = type
         self.user = user
         self.project = project
+        self.created = created
+        self.updated = updated
 
     @classmethod
     def from_model(cls, component_model: "ComponentModel") -> "StackComponent":
@@ -252,6 +257,8 @@ class StackComponent:
             config=configuration,
             flavor=component_model.flavor,
             type=component_model.type,
+            created=component_model.created,
+            updated=component_model.updated,
         )
 
     def to_model(self) -> "ComponentModel":
@@ -263,6 +270,8 @@ class StackComponent:
             flavor=self.flavor,
             name=self.name,
             configuration=self.config.dict(),
+            created=self.created,
+            updated=self.updated,
         )
 
     @property

@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 from contextlib import ExitStack as does_not_raise
+from datetime import datetime
 from typing import Iterator
 from uuid import uuid4
 
@@ -190,6 +191,8 @@ def test_flavor() -> Iterator[FlavorModel]:
         config_schema="",
         project=uuid4(),
         user=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
 
     flavor_registry._register_flavor(aria_flavor)

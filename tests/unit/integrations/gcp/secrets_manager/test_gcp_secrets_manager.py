@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from datetime import datetime
 from typing import Dict, List, Optional, Type
 from uuid import uuid4
 
@@ -137,6 +138,8 @@ def test_prepend_group_name_to_keys(parametrized_input: ZenMLSecret):
         type=StackComponentType.SECRETS_MANAGER,
         user=uuid4(),
         project=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
     )
     secret_schema = ArbitrarySecretSchema(
         name=parametrized_input.zenml_secret_name
