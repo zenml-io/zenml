@@ -533,6 +533,7 @@ TFServing
 TFTrainer
 TFX
 TFX's
+TLS
 TODO
 Tekton
 TempPathFactory
@@ -1215,6 +1216,7 @@ tfx
 thinknum
 tiangolo
 timedelta
+tls
 tmp
 todo
 todos

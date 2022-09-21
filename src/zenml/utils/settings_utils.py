@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from zenml.stack import StackComponent
 
 STACK_COMPONENT_REGEX = re.compile(
-    "(" + "|".join(StackComponentType.values()) + ")\..*"
+    "(" + "|".join(StackComponentType.values()) + r")\..*"
 )
 
 

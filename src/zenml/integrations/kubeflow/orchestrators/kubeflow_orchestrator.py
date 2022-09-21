@@ -101,11 +101,14 @@ class KubeflowOrchestratorSettings(BaseSettings):
 
     Attributes:
         client_args: Arguments to pass when initializing the KFP client.
+        user_namespace: The user namespace to use when creating experiments
+            and runs.
     """
 
     LEVEL: ClassVar[ConfigurationLevel] = ConfigurationLevel.PIPELINE
 
     client_args: Dict[str, Any] = {}
+    user_namespace: Optional[str] = None
 
 
 class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
@@ -706,6 +709,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             Optional[KubeflowOrchestratorSettings],
             self.get_settings(deployment),
         )
+        user_namespace = settings.user_namespace if settings else None
 
         try:
             logger.info(
@@ -717,19 +721,23 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             client = self._get_kfp_client(settings=settings)
             if deployment.schedule:
                 try:
-                    experiment = client.get_experiment(pipeline_name)
+                    experiment = client.get_experiment(
+                        pipeline_name, namespace=user_namespace
+                    )
                     logger.info(
                         "A recurring run has already been created with this "
                         "pipeline. Creating new recurring run now.."
                     )
                 except (ValueError, ApiException):
-                    experiment = client.create_experiment(pipeline_name)
+                    experiment = client.create_experiment(
+                        pipeline_name, namespace=user_namespace
+                    )
                     logger.info(
                         "Creating a new recurring run for pipeline '%s'.. ",
                         pipeline_name,
                     )
                 logger.info(
-                    "You can see all recurring runs under the '%s' experiment.'",
+                    "You can see all recurring runs under the '%s' experiment.",
                     pipeline_name,
                 )
 
@@ -760,6 +768,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                     arguments={},
                     run_name=run_name,
                     enable_caching=enable_cache,
+                    namespace=user_namespace,
                 )
                 logger.info(
                     "Started one-off pipeline run with ID '%s'.", result.run_id
@@ -1156,35 +1165,3 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             local_deployment_utils.stop_k3d_cluster(
                 cluster_name=self._k3d_cluster_name
             )
-
-    def _get_environment_vars_from_secrets(
-        self, secrets: List[str]
-    ) -> Dict[str, str]:
-        """Get key-value pairs from list of secrets provided by the user.
-
-        Args:
-            secrets: List of secrets provided by the user.
-
-        Returns:
-            A dictionary of key-value pairs.
-
-        Raises:
-            ProvisioningError: If the stack has no secrets manager.
-        """
-        environment_vars: Dict[str, str] = {}
-        secret_manager = Repository().active_stack.secrets_manager
-        if secrets and secret_manager:
-            for secret in secrets:
-                secret_schema = secret_manager.get_secret(secret)
-                environment_vars.update(secret_schema.content)
-        elif secrets and not secret_manager:
-            raise ProvisioningError(
-                "Unable to provision local Kubeflow Pipelines deployment: "
-                f"You passed in the following secrets: { ', '.join(secrets) }, "
-                "however, no secrets manager is registered for the current "
-                "stack."
-            )
-        else:
-            # No secrets provided by the user.
-            pass
-        return environment_vars
