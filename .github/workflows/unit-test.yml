@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tags:
-        description: 'Use tmate session for debugging'
+        description: "Use tmate session for debugging"
         required: false
         type: boolean
   workflow_call:
@@ -16,7 +16,7 @@ jobs:
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
-      PYTHONIOENCODING: 'utf-8'
+      PYTHONIOENCODING: "utf-8"
     # Exit if it's a commit from Gitbook
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
 
@@ -26,8 +26,8 @@ jobs:
 
     strategy:
       matrix:
-        os: [ macos-latest, ubuntu-latest, windows-latest ]
-        python-version: [ 3.7, 3.8, 3.9 ]
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        python-version: [3.7, 3.8, 3.9]
       fail-fast: false
 
     steps:
@@ -41,7 +41,7 @@ jobs:
       - name: Install Prerequisites
         run: |
           source $VENV
-          zenml integration install kubeflow s3 gcp azure gcp_secrets_manager vertex vault pillow evidently mlflow -f
+          zenml integration install kubeflow s3 gcp azure gcp_secrets_manager vertex vault pillow evidently deepchecks great_expectations huggingface lightgbm neural_prophet pytorch tensorflow whylogs xgboost mlflow -f
 
       - name: Setup tmate session
         if: ${{ github.event.inputs.tags }}

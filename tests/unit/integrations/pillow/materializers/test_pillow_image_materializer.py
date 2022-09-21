@@ -15,32 +15,19 @@ from contextlib import ExitStack as does_not_raise
 
 from PIL import Image
 
+from tests.unit.test_general import _test_materializer
 from zenml.integrations.pillow.materializers.pillow_image_materializer import (
     PillowImageMaterializer,
 )
-from zenml.pipelines import pipeline
-from zenml.steps import step
 
 
 def test_materializer_works_for_pillow_image_objects(clean_repo):
     """Check the materializer is able to handle PIL image objects."""
-
-    @step
-    def read_image() -> Image.Image:
-        """Reads and materializes an image file."""
-        return Image.new("RGB", (10, 10), color="red")
-
-    @pipeline
-    def test_pipeline(image_reader) -> None:
-        """Tests the PillowImageMaterializer."""
-        image_reader()
-
     with does_not_raise():
-        test_pipeline(
-            image_reader=read_image().with_return_materializers(
-                PillowImageMaterializer
-            )
-        ).run()
+        _test_materializer(
+            step_output=Image.new("RGB", (10, 10), color="red"),
+            materializer=PillowImageMaterializer,
+        )
 
     last_run = clean_repo.get_pipeline("test_pipeline").runs[-1]
     image = last_run.steps[-1].output.read()
