@@ -211,7 +211,7 @@ class PipelineDockerImageBuilder:
                 docker_settings.install_stack_requirements,
                 docker_settings.environment,
                 docker_settings.copy_files,
-                docker_settings.copy_profile,
+                docker_settings.copy_global_config,
                 entrypoint,
             ]
         )
@@ -291,7 +291,7 @@ class PipelineDockerImageBuilder:
 
             # Leave the build context empty if we don't want to copy any files
             requires_build_context = (
-                docker_settings.copy_files or docker_settings.copy_profile
+                docker_settings.copy_files or docker_settings.copy_global_config
             )
             build_context_root = (
                 source_utils.get_source_root_path()
@@ -300,7 +300,7 @@ class PipelineDockerImageBuilder:
             )
             maybe_include_global_config = (
                 _include_global_config(build_context_root=build_context_root)  # type: ignore[arg-type]
-                if docker_settings.copy_profile
+                if docker_settings.copy_global_config
                 else contextlib.nullcontext()
             )
             with maybe_include_global_config:
@@ -433,7 +433,7 @@ class PipelineDockerImageBuilder:
         if docker_settings.user:
             lines.append(f"USER {docker_settings.user}")
 
-        if docker_settings.copy_profile:
+        if docker_settings.copy_global_config:
             lines.append(
                 f"ENV {ENV_ZENML_CONFIG_PATH}={DOCKER_IMAGE_ZENML_CONFIG_PATH}"
             )
@@ -447,7 +447,7 @@ class PipelineDockerImageBuilder:
 
         if docker_settings.copy_files:
             lines.append("COPY . .")
-        elif docker_settings.copy_profile:
+        elif docker_settings.copy_global_config:
             lines.append(f"COPY {DOCKER_IMAGE_ZENML_CONFIG_DIR} .")
 
         lines.append("RUN chmod -R a+rw .")
