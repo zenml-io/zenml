@@ -52,10 +52,10 @@ A flow to get started for this example can be the following:
 4. You'll notice that a ZenML stack configuration file gets created 🤯! You can run the following command to import the resources as a ZenML stack, manually.
 
     ```shell
-    zenml stack import <STACK-NAME> <PATH-TO-THE-CREATED-STACK-CONFIG-YAML>
+    zenml stack import <STACK_NAME> -f <PATH_TO_THE_CREATED_STACK_CONFIG_YAML>
 
     # set the imported stack as the active stack
-    zenml stack set <STACK-NAME>
+    zenml stack set <STACK_NAME>
     ```
 
 5. You should now create secrets for your newly-created MySQL instance. If you're using a GCP recipe, you can refer to the [Kubeflow example README](../kubeflow_pipelines_orchestration/README.md#🚅-that-seems-like-a-lot-of-infrastructure-work-is-there-a-zen-🧘-way-to-run-this-example) for the necessary commands. For AWS, check out the [Kubernetes Orchestrator example README.](../kubernetes_orchestration/README.md#🚅-that-seems-like-a-lot-of-infrastructure-work-is-there-a-zen-🧘-way-to-run-this-example)
