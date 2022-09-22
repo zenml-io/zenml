@@ -115,7 +115,7 @@
 * [AWS](./popular-stack-guides/aws/aws.md)
   * [Basic AWS Stack](./popular-stack-guides/aws/basic-stack.md)
 * [GCP](./popular-stack-guides/gcp/gcp.md)
-  * [Basic GCP Stack](./popular-stack-guides/aws/basic-stack.md)
+  * [Basic GCP Stack](./popular-stack-guides/gcp/basic-stack.md)
 * [Azure](./popular-stack-guides/azure/azure.md)
   * [Basic Azure Stack](./popular-stack-guides/azure/basic-stack.md)
 
