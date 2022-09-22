@@ -22,7 +22,7 @@
 
 ## Advanced Guide
 
-* [Practical MLOps](./advanced-guide/practical/production.md)
+* [Practical MLOps](./advanced-guide/practical/practical-mlops.md)
   * [Stack Recipes](./advanced-guide/practical/stack-recipes.md)
   * [Switching orchestration](./advanced-guide/practical/switching-orchestration.md)
   * [Secrets Management](./advanced-guide/practical/secrets-management.md)
@@ -109,25 +109,36 @@
   * [Label Studio](./mlops-stacks/annotators/label-studio.md)
   * [Develop a Custom Annotator](./mlops-stacks/annotators/custom.md)
 
-## Resources
+## Popular Stack Guides
 
-* [Contribution Guide](resources/contributing.md)
-* [External Integration Guide](resources/integrating.md)
+* [Overview](./popular-stack-guides/overview.md)
+* [AWS](./popular-stack-guides/aws/aws.md)
+  * [Basic AWS Stack](./popular-stack-guides/aws/basic-stack.md)
+* [GCP](./popular-stack-guides/gcp/gcp.md)
+  * [Basic GCP Stack](./popular-stack-guides/aws/basic-stack.md)
+* [Azure](./popular-stack-guides/azure/azure.md)
+  * [Basic Azure Stack](./popular-stack-guides/azure/basic-stack.md)
+
+## Using ZenML
+
 * [Best Practices](resources/best-practices.md)
 * [Global Configuration](resources/global-config.md)
 * [System Environmental Variables](resources/system-environmental-variables.md)
 * [Usage Analytics](resources/usage-analytics.md)
-
-## Misc
-
-* [Join the Slack Community](https://zenml.io/slack-invite/)
-* [Community Events](https://www.eventbrite.de/o/zenml-44751230043)
-* [Blog](https://blog.zenml.io/)
-* [Podcast](https://podcast.zenml.io/)
-* [YouTube](https://www.youtube.com/channel/UCi79n61eV2sVyYxJOqk\_bMw)
-* [Newsletter](https://zenml.substack.com/)
-* [Roadmap](https://zenml.io/roadmap)
 * [FAQ](resources/faq.md)
+
+## Resources
+
+* [Contribution Guide](resources/contributing.md)
+* [Roadmap](https://zenml.io/roadmap)
+* [External Integration Guide](resources/integrating.md)
+* [Misc]
+  * [Join the Slack Community](https://zenml.io/slack-invite/)
+  * [Blog](https://blog.zenml.io/)
+  * [Podcast](https://podcast.zenml.io/)
+  * [YouTube](https://www.youtube.com/channel/UCi79n61eV2sVyYxJOqk\_bMw)
+  * [Newsletter](https://zenml.substack.com/)
+  * [Community Events](https://www.eventbrite.de/o/zenml-44751230043)
 
 ## Reference
 

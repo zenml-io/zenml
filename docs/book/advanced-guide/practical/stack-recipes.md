@@ -5,8 +5,10 @@ description: Introduction to Stack recipes which help you deploy a full MLOps st
 # Things to change
 
 - Just needs a reread and update
+- We should combine manual terraform and stack recipe terraform into tabs?
 
-# Older content
+
+# Older content (1)
 
 When we first created ZenML as an extensible MLOps framework for creating portable, production-ready MLOps pipelines, we saw many of our users having to deal with the pain of deploying infrastructure from scratch to run these pipelines. 
 
@@ -99,3 +101,47 @@ The number of recipes available right now is finite and there can be combination
 
 The [`CONTRIBUTING.md`](https://github.com/zenml-io/mlops-stacks/blob/main/CONTRIBUTING.md) file on the repository lists the principles that each recipe follows and gives details about the steps you should take when designing your own recipe. Feel free to also reach out to the ZenML community on [Slack](https://zenml.slack.com/ssb/redirect) 👋 if you need help with any part of the process!  
 
+# Older Content (2)
+
+---
+description: Deploy stack recipes without having to install ZenML
+---
+
+As mentioned in the [overview](./overview.md), you can still use the recipe without having using the `zenml stack recipe` CLI commands or even without installing ZenML. Since each recipe is a group of Terraform modules, you can simply use the Terraform CLI to perform apply and destroy operations.
+
+## Create the stack
+
+1. 🎨 Customize your deployment by editing the default values in the `locals.tf` file.
+
+2. 🔐 Add your secret information like keys and passwords into the `values.tfvars.json` file which is not committed and only exists locally.
+
+3. Initialize Terraform modules and download provider definitions.
+    ```
+    terraform init
+    ```
+
+4. Apply the recipe.
+    ```
+    terraform apply
+    ```
+
+## Getting the outputs
+
+For outputs that are sensitive, you'll see that they are not shown directly on the logs. To view the full list of outputs, run the following command:
+
+```
+terraform output
+```
+
+To view individual sensitive outputs, use the following format. Here, the metadata password is being obtained.
+
+```
+terraform output metadata-db-password
+```
+
+## Deleting resources
+
+1. 🗑️ Run the destroy function to clean up all resources.
+    ```
+    terraform destroy
+    ```

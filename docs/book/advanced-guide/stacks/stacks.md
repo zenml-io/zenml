@@ -1,6 +1,12 @@
 ---
-description: An overview of advanced ZenML use cases
+description: How to leverage stacks
 ---
+
+# Things to change
+
+- Present advanced use-cases for stacks
+
+# Older content
 
 The previous sections on [Steps and Pipelines](../steps-pipelines/steps-and-pipelines.md)
 and [Stacks and Repositories](../stacks-repositories/stacks-repositories.md)
