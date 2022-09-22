@@ -23,6 +23,11 @@ from sqlmodel import Field, Relationship, SQLModel
 from zenml.models import RoleAssignmentModel, RoleModel, TeamModel, UserModel
 
 if TYPE_CHECKING:
+    from zenml.zen_stores.schemas import (
+        PipelineSchema,
+        StackComponentSchema,
+        StackSchema,
+    )
     from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 
 
@@ -51,6 +56,15 @@ class UserSchema(SQLModel, table=True):
     )
     assigned_roles: List["UserRoleAssignmentSchema"] = Relationship(
         back_populates="user", sa_relationship_kwargs={"cascade": "delete"}
+    )
+    stacks: List["StackSchema"] = Relationship(
+        back_populates="user", sa_relationship_kwargs={"cascade": "all"}
+    )
+    components: List["StackComponentSchema"] = Relationship(
+        back_populates="user", sa_relationship_kwargs={"cascade": "all"}
+    )
+    pipelines: List["PipelineSchema"] = Relationship(
+        back_populates="user", sa_relationship_kwargs={"cascade": "all"}
     )
 
     @classmethod

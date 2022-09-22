@@ -15,14 +15,18 @@
 
 import json
 from datetime import datetime
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
+from sqlalchemy import Column, ForeignKey
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.enums import ArtifactType
 from zenml.models import PipelineModel, PipelineRunModel
 from zenml.models.pipeline_models import ArtifactModel, StepRunModel
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas import ProjectSchema, UserSchema
 
 
 class PipelineSchema(SQLModel, table=True):
@@ -32,8 +36,15 @@ class PipelineSchema(SQLModel, table=True):
 
     name: str
 
-    project: UUID = Field(foreign_key="projectschema.id")
-    user: UUID = Field(foreign_key="userschema.id")
+    project_id: UUID = Field(
+        sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
+    )
+    project: "ProjectSchema" = Relationship(back_populates="pipelines")
+
+    user_id: UUID = Field(
+        sa_column=Column(ForeignKey("userschema.id", ondelete="SET NULL"))
+    )
+    user: "UserSchema" = Relationship(back_populates="pipelines")
 
     docstring: Optional[str] = Field(nullable=True)
     configuration: str
@@ -43,6 +54,7 @@ class PipelineSchema(SQLModel, table=True):
 
     runs: List["PipelineRunSchema"] = Relationship(
         back_populates="pipeline",
+        sa_relationship_kwargs={"cascade": "all, delete"},
     )
 
     @classmethod
@@ -58,8 +70,8 @@ class PipelineSchema(SQLModel, table=True):
         return cls(
             id=pipeline.id,
             name=pipeline.name,
-            project=pipeline.project,
-            user=pipeline.user,
+            project_id=pipeline.project,
+            user_id=pipeline.user,
             docstring=pipeline.docstring,
             configuration=json.dumps(pipeline.configuration),
         )
@@ -88,8 +100,8 @@ class PipelineSchema(SQLModel, table=True):
         return PipelineModel(
             id=self.id,
             name=self.name,
-            project=self.project,
-            user=self.user,
+            project=self.project_id,
+            user=self.user_id,
             docstring=self.docstring,
             configuration=json.loads(self.configuration),
             created=self.created,

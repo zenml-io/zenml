@@ -16,17 +16,19 @@
 import base64
 import json
 from datetime import datetime
-from typing import List
+from typing import TYPE_CHECKING, List
 from uuid import UUID
 
+from sqlalchemy import Column, ForeignKey
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.enums import StackComponentType
 from zenml.models import ComponentModel
-from zenml.zen_stores.schemas.stack_schemas import (
-    StackCompositionSchema,
-    StackSchema,
-)
+from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas import ProjectSchema, UserSchema
+    from zenml.zen_stores.schemas.stack_schemas import StackSchema
 
 
 class StackComponentSchema(SQLModel, table=True):
@@ -40,8 +42,15 @@ class StackComponentSchema(SQLModel, table=True):
     type: StackComponentType
     flavor: str
 
-    user: UUID = Field(foreign_key="userschema.id")
-    project: UUID = Field(foreign_key="projectschema.id")
+    project_id: UUID = Field(
+        sa_column=Column(ForeignKey("projectschema.id", ondelete="CASCADE"))
+    )
+    project: "ProjectSchema" = Relationship(back_populates="components")
+
+    user_id: UUID = Field(
+        sa_column=Column(ForeignKey("userschema.id", ondelete="SET NULL"))
+    )
+    user: "UserSchema" = Relationship(back_populates="components")
 
     configuration: bytes
 
@@ -67,8 +76,8 @@ class StackComponentSchema(SQLModel, table=True):
         return cls(
             id=component.id,
             name=component.name,
-            project=component.project,
-            user=component.user,
+            project_id=component.project,
+            user_id=component.user,
             is_shared=component.is_shared,
             type=component.type,
             flavor=component.flavor,
@@ -109,8 +118,8 @@ class StackComponentSchema(SQLModel, table=True):
             name=self.name,
             type=self.type,
             flavor=self.flavor,
-            user=self.user,
-            project=self.project,
+            user=self.user_id,
+            project=self.project_id,
             is_shared=self.is_shared,
             configuration=json.loads(
                 base64.b64decode(self.configuration).decode()
