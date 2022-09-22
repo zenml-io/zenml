@@ -13,13 +13,13 @@
 #  permissions and limitations under the License.
 from custom_obj_file.custom_obj_file import SomeObj
 
-from zenml.steps import BaseStepConfig, Output, step
+from zenml.steps import BaseParameters, Output, step
 
 
-class StepConfig(BaseStepConfig):
+class StepParams(BaseParameters):
     some_option: int = 4
 
 
 @step
-def some_step(config: StepConfig) -> Output(output_1=SomeObj, output_2=int):
-    return SomeObj("Custom-Object"), config.some_option
+def some_step(params: StepParams) -> Output(output_1=SomeObj, output_2=int):
+    return SomeObj("Custom-Object"), params.some_option

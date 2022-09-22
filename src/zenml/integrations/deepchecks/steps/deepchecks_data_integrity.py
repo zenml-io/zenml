@@ -25,13 +25,13 @@ from zenml.integrations.deepchecks.data_validators.deepchecks_data_validator imp
 from zenml.integrations.deepchecks.validation_checks import (
     DeepchecksDataIntegrityCheck,
 )
+from zenml.steps import BaseParameters
 from zenml.steps.base_step import BaseStep
-from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.utils import clone_step
 
 
-class DeepchecksDataIntegrityCheckStepConfig(BaseStepConfig):
-    """Config class for the Deepchecks data integrity validator step.
+class DeepchecksDataIntegrityCheckStepParameters(BaseParameters):
+    """Parameters class for the Deepchecks data integrity validator step.
 
     Attributes:
         check_list: Optional list of DeepchecksDataIntegrityCheck identifiers
@@ -60,13 +60,13 @@ class DeepchecksDataIntegrityCheckStep(BaseStep):
     def entrypoint(  # type: ignore[override]
         self,
         dataset: pd.DataFrame,
-        config: DeepchecksDataIntegrityCheckStepConfig,
+        params: DeepchecksDataIntegrityCheckStepParameters,
     ) -> SuiteResult:
         """Main entrypoint for the Deepchecks data integrity validator step.
 
         Args:
             dataset: a Pandas DataFrame to validate
-            config: the configuration for the step
+            params: The parameters for the step
 
         Returns:
             A Deepchecks suite result with the validation results.
@@ -78,16 +78,16 @@ class DeepchecksDataIntegrityCheckStep(BaseStep):
 
         return data_validator.data_validation(
             dataset=dataset,
-            check_list=cast(Optional[Sequence[str]], config.check_list),
-            dataset_kwargs=config.dataset_kwargs,
-            check_kwargs=config.check_kwargs,
-            run_kwargs=config.run_kwargs,
+            check_list=cast(Optional[Sequence[str]], params.check_list),
+            dataset_kwargs=params.dataset_kwargs,
+            check_kwargs=params.check_kwargs,
+            run_kwargs=params.run_kwargs,
         )
 
 
 def deepchecks_data_integrity_check_step(
     step_name: str,
-    config: DeepchecksDataIntegrityCheckStepConfig,
+    params: DeepchecksDataIntegrityCheckStepParameters,
 ) -> BaseStep:
     """Shortcut function to create a new instance of the DeepchecksDataIntegrityCheckStep step.
 
@@ -97,11 +97,11 @@ def deepchecks_data_integrity_check_step(
 
     Args:
         step_name: The name of the step
-        config: The configuration for the step
+        params: The parameters for the step
 
     Returns:
         a DeepchecksDataIntegrityCheckStep step instance
     """
     return clone_step(DeepchecksDataIntegrityCheckStep, step_name)(
-        config=config
+        params=params
     )

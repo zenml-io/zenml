@@ -3,12 +3,10 @@ import pandas as pd
 from sklearn.base import ClassifierMixin
 from sklearn.svm import SVC
 
-from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
 from zenml.steps import step
 
 
-@enable_mlflow  # setup MLflow
-@step(enable_cache=False)
+@step(enable_cache=False, experiment_tracker="mlflow_tracker")
 def svc_trainer_mlflow(
     X_train: pd.DataFrame,
     y_train: pd.Series,

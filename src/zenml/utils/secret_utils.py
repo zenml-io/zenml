@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 _secret_reference_expression = re.compile(r"\{\{\S+?\.\S+\}\}")
 
 PYDANTIC_SENSITIVE_FIELD_MARKER = "sensitive"
+PYDANTIC_CLEAR_TEXT_FIELD_MARKER = "prevent_secret_reference"
 
 
 def is_secret_reference(value: Any) -> bool:
@@ -88,6 +89,22 @@ def SecretField(*args: Any, **kwargs: Any) -> Any:
     return Field(*args, **kwargs)
 
 
+def ClearTextField(*args: Any, **kwargs: Any) -> Any:
+    """Marks a pydantic field to prevent secret references.
+
+    Args:
+        *args: Positional arguments which will be forwarded
+            to `pydantic.Field(...)`.
+        **kwargs: Keyword arguments which will be forwarded to
+            `pydantic.Field(...)`.
+
+    Returns:
+        Pydantic field info.
+    """
+    kwargs[PYDANTIC_CLEAR_TEXT_FIELD_MARKER] = True
+    return Field(*args, **kwargs)
+
+
 def is_secret_field(field: "ModelField") -> bool:
     """Returns whether a pydantic field contains sensitive information or not.
 
@@ -98,3 +115,15 @@ def is_secret_field(field: "ModelField") -> bool:
         `True` if the field contains sensitive information, `False` otherwise.
     """
     return field.field_info.extra.get(PYDANTIC_SENSITIVE_FIELD_MARKER, False)
+
+
+def is_clear_text_field(field: "ModelField") -> bool:
+    """Returns whether a pydantic field prevents secret references or not.
+
+    Args:
+        field: The field to check.
+
+    Returns:
+        `True` if the field prevents secret references, `False` otherwise.
+    """
+    return field.field_info.extra.get(PYDANTIC_CLEAR_TEXT_FIELD_MARKER, False)

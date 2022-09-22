@@ -28,9 +28,9 @@ Steps can be subclassed from the `BaseStep` class, or used via our `@step`
 decorator.
 """
 
-from zenml.config.resource_configuration import ResourceConfiguration
+from zenml.config import ResourceSettings
+from zenml.steps.base_parameters import BaseParameters
 from zenml.steps.base_step import BaseStep
-from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_context import StepContext
 from zenml.steps.step_decorator import step
 from zenml.steps.step_environment import STEP_ENVIRONMENT_NAME, StepEnvironment
@@ -39,10 +39,10 @@ from zenml.steps.step_output import Output
 __all__ = [
     "STEP_ENVIRONMENT_NAME",
     "BaseStep",
-    "BaseStepConfig",
+    "BaseParameters",
     "StepContext",
     "step",
     "Output",
-    "ResourceConfiguration",
+    "ResourceSettings",
     "StepEnvironment",
 ]

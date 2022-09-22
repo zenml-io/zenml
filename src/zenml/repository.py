@@ -36,7 +36,7 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import ComponentModel, FlavorModel, ProjectModel, StackModel
-from zenml.models.pipeline_models import PipelineModel, PipelineRunModel
+from zenml.models.pipeline_models import PipelineModel
 from zenml.stack import Flavor
 from zenml.utils import io_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -51,7 +51,6 @@ if TYPE_CHECKING:
         StackModel,
         UserModel,
     )
-    from zenml.runtime_configuration import RuntimeConfiguration
     from zenml.stack import Stack
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -1203,42 +1202,42 @@ class Repository(metaclass=RepositoryMetaClass):
         )
         raise AlreadyExistsException(error_msg)
 
-    def register_pipeline_run(
-        self,
-        pipeline_name: str,
-        pipeline_configuration: Dict[str, str],
-        runtime_configuration: "RuntimeConfiguration",
-        stack_id: UUID,
-        unlisted: bool = False,
-    ) -> None:
-        """Registers a pipeline run in the ZenStore.
+    # def register_pipeline_run(
+    #     self,
+    #     pipeline_name: str,
+    #     pipeline_configuration: Dict[str, str],
+    #     runtime_configuration: "RuntimeConfiguration",
+    #     stack_id: UUID,
+    #     unlisted: bool = False,
+    # ) -> None:
+    #     """Registers a pipeline run in the ZenStore.
 
-        Args:
-            pipeline_name: The name of the pipeline.
-            pipeline_configuration: The configuration of the pipeline.
-            runtime_configuration: The runtime configuration of the pipeline.
-            stack_id: The ID of the stack that was used to run the pipeline.
-            unlisted: Whether the pipeline run should be unlisted (not assigned
-                to any pipeline).
-        """
-        # If `unlisted` is True, we don't assign the run to any pipeline
-        if unlisted:
-            pipeline_id = None
-        else:
-            pipeline_id = self._register_pipeline(
-                pipeline_name=pipeline_name,
-                pipeline_configuration=pipeline_configuration,
-            )
+    #     Args:
+    #         pipeline_name: The name of the pipeline.
+    #         pipeline_configuration: The configuration of the pipeline.
+    #         runtime_configuration: The runtime configuration of the pipeline.
+    #         stack_id: The ID of the stack that was used to run the pipeline.
+    #         unlisted: Whether the pipeline run should be unlisted (not assigned
+    #             to any pipeline).
+    #     """
+    #     # If `unlisted` is True, we don't assign the run to any pipeline
+    #     if unlisted:
+    #         pipeline_id = None
+    #     else:
+    #         pipeline_id = self._register_pipeline(
+    #             pipeline_name=pipeline_name,
+    #             pipeline_configuration=pipeline_configuration,
+    #         )
 
-        pipeline_run = PipelineRunModel(
-            name=runtime_configuration.run_name,
-            user=self.active_user.id,
-            project=self.active_project.id,
-            stack_id=stack_id,
-            pipeline_id=pipeline_id,
-            runtime_configuration=runtime_configuration,
-        )
-        self.zen_store.create_run(pipeline_run)
+    #     pipeline_run = PipelineRunModel(
+    #         name=runtime_configuration.run_name,
+    #         user=self.active_user.id,
+    #         project=self.active_project.id,
+    #         stack_id=stack_id,
+    #         pipeline_id=pipeline_id,
+    #         runtime_configuration=runtime_configuration,
+    #     )
+    #     self.zen_store.create_run(pipeline_run)
 
     def delete_user(self, user_name_or_id: str) -> None:
         """Delete a user.

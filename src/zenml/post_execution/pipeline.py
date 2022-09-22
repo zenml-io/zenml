@@ -13,15 +13,17 @@
 #  permissions and limitations under the License.
 """Implementation of the post-execution pipeline."""
 
-from typing import Any, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Type, Union
 from uuid import UUID
 
 from zenml.logger import get_apidocs_link, get_logger
 from zenml.models import PipelineModel
-from zenml.pipelines.base_pipeline import BasePipeline
 from zenml.post_execution.pipeline_run import PipelineRunView
 from zenml.repository import Repository
 from zenml.utils.analytics_utils import AnalyticsEvent, track
+
+if TYPE_CHECKING:
+    from zenml.pipelines.base_pipeline import BasePipeline
 
 logger = get_logger(__name__)
 
@@ -77,6 +79,8 @@ def get_pipeline(
     Raises:
         RuntimeError: If the pipeline was not specified correctly.
     """
+    from zenml.pipelines.base_pipeline import BasePipeline
+
     if isinstance(pipeline, str):
         pipeline_name = pipeline
     elif isinstance(pipeline, BasePipeline):

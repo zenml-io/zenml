@@ -16,11 +16,11 @@
 from abc import abstractmethod
 
 from zenml.artifacts import DataArtifact
-from zenml.steps import BaseStep, BaseStepConfig, StepContext
+from zenml.steps import BaseParameters, BaseStep, StepContext
 
 
-class BaseDatasourceConfig(BaseStepConfig):
-    """Base class for datasource configs to inherit from."""
+class BaseDatasourceParameters(BaseParameters):
+    """Base class for datasource parameters to inherit from."""
 
 
 class BaseDatasourceStep(BaseStep):
@@ -29,13 +29,13 @@ class BaseDatasourceStep(BaseStep):
     @abstractmethod
     def entrypoint(  # type: ignore[override]
         self,
-        config: BaseDatasourceConfig,
+        params: BaseDatasourceParameters,
         context: StepContext,
     ) -> DataArtifact:
         """Base entrypoint for any datasource implementation.
 
         Args:
-            config: The configuration for the step.
+            params: The parameters for the step.
             context: The context for the step.
 
         Returns:

@@ -15,6 +15,7 @@
 
 import json
 import os
+import re
 from typing import (
     Any,
     Dict,
@@ -32,7 +33,6 @@ from docker.utils import build as docker_build_utils
 
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.pipelines.base_pipeline import PARAM_DOCKERIGNORE_FILE
 from zenml.utils import io_utils, string_utils
 
 logger = get_logger(__name__)
@@ -147,10 +147,9 @@ def _create_custom_build_context(
             "Build context size for docker image: `%s`. If you believe this is "
             "unreasonably large, make sure to include a `.dockerignore` file "
             "at the root of your build context `%s` or specify a custom file "
-            "for argument `%s` when defining your pipeline.",
+            "in the Docker configuration when defining your pipeline.",
             string_utils.get_human_readable_filesize(build_context_size),
             default_dockerignore_path,
-            PARAM_DOCKERIGNORE_FILE,
         )
 
     return context
@@ -338,6 +337,8 @@ def _process_stream(stream: Iterable[bytes]) -> List[Dict[str, Any]]:
                     text = line_json["stream"].strip()
                     if "ERROR" in text:
                         logger.error(text)
+                    elif re.match(r"^Step [0-9]+/[0-9]+", text):
+                        logger.info(text)
                     else:
                         logger.debug(text)
                 elif "aux" in line_json:

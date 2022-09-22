@@ -83,8 +83,8 @@ from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
-SelectOfScalar.inherit_cache = True
-Select.inherit_cache = True
+SelectOfScalar.inherit_cache = True  # type: ignore[attr-defined]
+Select.inherit_cache = True  # type: ignore[attr-defined]
 
 logger = get_logger(__name__)
 

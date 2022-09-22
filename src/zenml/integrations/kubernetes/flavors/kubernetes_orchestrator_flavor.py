@@ -42,7 +42,7 @@ class KubernetesOrchestratorConfig(BaseOrchestratorConfig):
             You can find the active context by running `kubectl config
             current-context`.
         kubernetes_namespace: Name of the Kubernetes namespace to be used.
-            If not provided, `default` namespace will be used.
+            If not provided, `zenml` namespace will be used.
         synchronous: If `True`, running a pipeline using this orchestrator will
             block until all steps finished running on Kubernetes.
         skip_config_loading: If `True`, don't load the Kubernetes context and

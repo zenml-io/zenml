@@ -30,15 +30,15 @@ from zenml.secret.schemas import (
     GCPSecretSchema,
 )
 from zenml.stack.authentication_mixin import AuthenticationMixin
-from zenml.steps import BaseStepConfig, StepContext, step
+from zenml.steps import BaseParameters, StepContext, step
 
 logger = get_logger(__name__)
 
 LABEL_STUDIO_AWS_SECRET_NAME = "aws_label_studio"
 
 
-class LabelStudioDatasetRegistrationConfig(BaseStepConfig):
-    """Step config when registering a dataset with Label Studio.
+class LabelStudioDatasetRegistrationParameters(BaseParameters):
+    """Step parameters when registering a dataset with Label Studio.
 
     Attributes:
         label_config: The label config to use for the annotation interface.
@@ -49,8 +49,8 @@ class LabelStudioDatasetRegistrationConfig(BaseStepConfig):
     dataset_name: str
 
 
-class LabelStudioDatasetSyncConfig(BaseStepConfig):
-    """Step config when syncing data to Label Studio.
+class LabelStudioDatasetSyncParameters(BaseParameters):
+    """Step parameters when syncing data to Label Studio.
 
     Attributes:
         storage_type: The type of storage to sync to.
@@ -104,13 +104,13 @@ class LabelStudioDatasetSyncConfig(BaseStepConfig):
 
 @step(enable_cache=False)
 def get_or_create_dataset(
-    config: LabelStudioDatasetRegistrationConfig,
+    params: LabelStudioDatasetRegistrationParameters,
     context: StepContext,
 ) -> str:
     """Gets preexisting dataset or creates a new one.
 
     Args:
-        config: Step config.
+        params: Step parameters.
         context: Step context.
 
     Returns:
@@ -133,10 +133,10 @@ def get_or_create_dataset(
 
     if annotator and annotator._connection_available():
         for dataset in annotator.get_datasets():
-            if dataset.get_params()["title"] == config.dataset_name:
+            if dataset.get_params()["title"] == params.dataset_name:
                 return cast(str, dataset.get_params()["title"])
 
-        dataset = annotator.register_dataset_for_annotation(config)
+        dataset = annotator.register_dataset_for_annotation(params)
         return cast(str, dataset.get_params()["title"])
 
     raise StackComponentInterfaceError("No active annotator.")
@@ -206,7 +206,7 @@ def sync_new_data_to_label_studio(
     uri: str,
     dataset_name: str,
     predictions: List[Dict[str, Any]],
-    config: LabelStudioDatasetSyncConfig,
+    params: LabelStudioDatasetSyncParameters,
     context: StepContext,
 ) -> None:
     """Syncs new data to Label Studio.
@@ -215,7 +215,7 @@ def sync_new_data_to_label_studio(
         uri: The URI of the data to sync.
         dataset_name: The name of the dataset to sync to.
         predictions: The predictions to sync.
-        config: The config for the sync.
+        params: The parameters for the sync.
         context: The StepContext.
 
     Raises:
@@ -249,16 +249,16 @@ def sync_new_data_to_label_studio(
         )
 
     # removes the initial forward slash from the prefix attribute by slicing
-    config.prefix = urlparse(uri).path.lstrip("/")
+    params.prefix = urlparse(uri).path.lstrip("/")
     base_uri = urlparse(uri).netloc
 
     # gets the secret used for authentication
-    if config.storage_type == "azure":
+    if params.storage_type == "azure":
         if not isinstance(artifact_store, AuthenticationMixin):
             raise TypeError(
                 "The artifact store must inherit from "
                 f"{AuthenticationMixin.__name__} to work with a Label Studio "
-                f"`{config.storage_type}` storage."
+                f"`{params.storage_type}` storage."
             )
 
         azure_secret = artifact_store.get_authentication_secret(
@@ -270,14 +270,14 @@ def sync_new_data_to_label_studio(
                 "Missing secret to authenticate cloud storage for Label Studio."
             )
 
-        config.azure_account_name = azure_secret.account_name
-        config.azure_account_key = azure_secret.account_key
-    elif config.storage_type == "gcs":
+        params.azure_account_name = azure_secret.account_name
+        params.azure_account_key = azure_secret.account_key
+    elif params.storage_type == "gcs":
         if not isinstance(artifact_store, AuthenticationMixin):
             raise TypeError(
                 "The artifact store must inherit from "
                 f"{AuthenticationMixin.__name__} to work with a Label Studio "
-                f"`{config.storage_type}` storage."
+                f"`{params.storage_type}` storage."
             )
 
         gcp_secret = artifact_store.get_authentication_secret(
@@ -288,8 +288,8 @@ def sync_new_data_to_label_studio(
                 "Missing secret to authenticate cloud storage for Label Studio."
             )
 
-        config.google_application_credentials = gcp_secret.token
-    elif config.storage_type == "s3":
+        params.google_application_credentials = gcp_secret.token
+    elif params.storage_type == "s3":
         aws_secret = secrets_manager.get_secret(LABEL_STUDIO_AWS_SECRET_NAME)
         if not isinstance(aws_secret, AWSSecretSchema):
             raise TypeError(
@@ -297,26 +297,26 @@ def sync_new_data_to_label_studio(
                 f"an `aws` schema secret."
             )
 
-        config.aws_access_key_id = aws_secret.aws_access_key_id
-        config.aws_secret_access_key = aws_secret.aws_secret_access_key
-        config.aws_session_token = aws_secret.aws_session_token
+        params.aws_access_key_id = aws_secret.aws_access_key_id
+        params.aws_secret_access_key = aws_secret.aws_secret_access_key
+        params.aws_session_token = aws_secret.aws_session_token
 
     if annotator and annotator._connection_available():
         # TODO: get existing (CHECK!) or create the sync connection
         annotator.connect_and_sync_external_storage(
             uri=base_uri,
-            config=config,
+            params=params,
             dataset=dataset,
         )
         if predictions:
             filename_reference = TASK_TO_FILENAME_REFERENCE_MAPPING[
-                config.label_config_type
+                params.label_config_type
             ]
             preds_with_task_ids = convert_pred_filenames_to_task_ids(
                 predictions,
                 dataset.tasks,
                 filename_reference,
-                config.storage_type,
+                params.storage_type,
             )
             # TODO: filter out any predictions that exist + have already been
             # made (maybe?). Only pass in preds for tasks without pre-annotations.

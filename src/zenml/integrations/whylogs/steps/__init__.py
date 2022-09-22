@@ -14,7 +14,7 @@
 """Initialization of the whylogs steps."""
 
 from zenml.integrations.whylogs.steps.whylogs_profiler import (
-    WhylogsProfilerConfig,
+    WhylogsProfilerParameters,
     WhylogsProfilerStep,
     whylogs_profiler_step,
 )

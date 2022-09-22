@@ -15,7 +15,7 @@
 
 from zenml.integrations.seldon.steps.seldon_deployer import (
     CustomDeployParameters,
-    SeldonDeployerStepConfig,
+    SeldonDeployerStepParameters,
     seldon_custom_model_deployer_step,
     seldon_model_deployer_step,
 )

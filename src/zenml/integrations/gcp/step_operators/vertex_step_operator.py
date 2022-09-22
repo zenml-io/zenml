@@ -19,7 +19,7 @@ google_cloud_ai_platform/training_clients.py
 """
 
 import time
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, List, Optional, cast
 
 from google.cloud import aiplatform
 
@@ -39,17 +39,16 @@ from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsMixin,
 )
 from zenml.logger import get_logger
-from zenml.repository import Repository
-from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
-    from zenml.config.docker_configuration import DockerConfiguration
-    from zenml.config.resource_configuration import ResourceConfiguration
-
+    from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.config.step_run_info import StepRunInfo
 logger = get_logger(__name__)
+
+VERTEX_DOCKER_IMAGE_DIGEST_KEY = "vertex_docker_image"
 
 
 class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
@@ -100,48 +99,53 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
         Returns:
             StackValidator: Validator for the stack.
         """
-
-        def _ensure_local_orchestrator(stack: Stack) -> Tuple[bool, str]:
-            # For now this only works on local orchestrator and GCP artifact
-            #  store
-            return (
-                (
-                    stack.orchestrator.flavor == "local"
-                    and stack.artifact_store.flavor == "gcp"
-                ),
-                "Only local orchestrator and GCP artifact store are currently "
-                "supported",
-            )
-
         return StackValidator(
             required_components={StackComponentType.CONTAINER_REGISTRY},
-            custom_validation_function=_ensure_local_orchestrator,
         )
+
+    def prepare_pipeline_deployment(
+        self,
+        deployment: "PipelineDeployment",
+        stack: "Stack",
+    ) -> None:
+        """Build a Docker image and push it to the container registry.
+
+        Args:
+            deployment: The pipeline deployment configuration.
+            stack: The stack on which the pipeline will be deployed.
+        """
+        steps_to_run = [
+            step
+            for step in deployment.steps.values()
+            if step.config.step_operator == self.name
+        ]
+        if not steps_to_run:
+            return
+        docker_image_builder = PipelineDockerImageBuilder()
+        image_digest = docker_image_builder.build_and_push_docker_image(
+            deployment=deployment,
+            stack=stack,
+        )
+        for step in steps_to_run:
+            step.config.extra[VERTEX_DOCKER_IMAGE_DIGEST_KEY] = image_digest
 
     def launch(
         self,
-        pipeline_name: str,
-        run_name: str,
-        docker_configuration: "DockerConfiguration",
+        info: "StepRunInfo",
         entrypoint_command: List[str],
-        resource_configuration: "ResourceConfiguration",
     ) -> None:
-        """Launches a step on Vertex AI.
+        """Launches a step on VertexAI.
 
         Args:
-            pipeline_name: Name of the pipeline which the step to be executed
-                is part of.
-            run_name: Name of the pipeline run which the step to be executed
-                is part of.
-            docker_configuration: The Docker configuration for this step.
+            info: Information about the step run.
             entrypoint_command: Command that executes the step.
-            resource_configuration: The resource configuration for this step.
 
         Raises:
             RuntimeError: If the run fails.
             ConnectionError: If the run fails due to a connection error.
         """
-        if resource_configuration.cpu_count or resource_configuration.memory:
+        resource_settings = info.config.resource_settings
+        if resource_settings.cpu_count or resource_settings.memory:
             logger.warning(
                 "Specifying cpus or memory is not supported for "
                 "the Vertex step operator. If you want to run this step "
@@ -167,15 +171,7 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
         else:
             self.config.project = project_id
 
-        # Step 2: Build and push image
-        docker_image_builder = PipelineDockerImageBuilder()
-        image_name = docker_image_builder.build_and_push_docker_image(
-            pipeline_name=pipeline_name,
-            docker_configuration=docker_configuration,
-            stack=Repository().active_stack,
-            runtime_configuration=RuntimeConfiguration(),
-            entrypoint=" ".join(entrypoint_command),
-        )
+        image_name = info.config.extra[VERTEX_DOCKER_IMAGE_DIGEST_KEY]
 
         # Step 3: Launch the job
         # The AI Platform services require regional API endpoints.
@@ -188,10 +184,10 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
             credentials=credentials, client_options=client_options
         )
         accelerator_count = (
-            resource_configuration.gpu_count or self.config.accelerator_count
+            resource_settings.gpu_count or self.config.accelerator_count
         )
         custom_job = {
-            "display_name": run_name,
+            "display_name": info.run_name,
             "job_spec": {
                 "worker_pool_specs": [
                     {
@@ -205,7 +201,7 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
                         "replica_count": 1,
                         "container_spec": {
                             "image_uri": image_name,
-                            "command": [],
+                            "command": entrypoint_command,
                             "args": [],
                         },
                     }
