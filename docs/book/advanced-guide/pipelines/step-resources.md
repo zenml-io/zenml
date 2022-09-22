@@ -1,18 +1,44 @@
 ---
-description: What are stacks and repositories in ZenML
+description: How to specify per-step resources
 ---
 
-Machine learning in production is not just about designing and training models. It is a fractured space consisting of a wide variety of tasks ranging from experiment tracking to orchestration, from model deployment to monitoring, from drift detection to feature stores and much, much more than that. Even though there are already some seemingly well-established solutions for these tasks, it can become increasingly difficult to establish a running production system in a reliable and modular manner once all these solutions are brought together.
+# Things to change
 
-This is a problem which is especially critical when switching from a research setting to a production setting. 
-Due to a lack of standards, the time and resources invested in proof of concepts frequently go completely to waste, because the initial system can not easily be transferred to a production-grade setting.
+- needs a reread
 
-At **ZenML**, we believe that this is one of the most important and challenging problems in the field of MLOps, and it can be solved with a set of standards and well-structured abstractions. Owing to the nature of MLOps, it is essential that these abstractions not only cover concepts such as pipelines and steps but also the infrastructure elements on which the pipelines run.
+# Older content
 
-Taking this into consideration, ZenML provides additional abstractions that
-help you simplify infrastructure configuration and management:
-- [Stacks](./stack.md) represent different configurations of MLOps tools and 
-infrastructure; Each stack consists of multiple
-**Stack Components** that each come in several **Flavors**,
-- [Repositories](./repository.md) link stacks to the pipeline and step code of 
-your ML projects.
+Some steps of your machine learning pipeline might be more resource-intensive
+and require special hardware to execute. In such cases, you can specify the 
+required resources for steps as follows:
+
+{% tabs %}
+{% tab title="Functional API" %}
+
+```python
+from zenml.steps import step, ResourceConfiguration
+
+@step(resource_configuration=ResourceConfiguration(cpu_count=8, gpu_count=2))
+def training_step(...) -> ...:
+    # train a model
+```
+{% endtab %}
+{% tab title="Class-based API" %}
+```python
+from zenml.steps import BaseStep, ResourceConfiguration
+
+class TrainingStep(BaseStep):
+    ...
+
+step = TrainingStep(resource_configuration=ResourceConfiguration(cpu_count=8, gpu_count=2))
+```
+{% endtab %}
+{% endtabs %}
+
+
+{% hint style="info" %}
+If you're using an orchestrator which doesn't support this feature or its underlying
+infrastructure doesn't cover your requirements, you can also take a look at 
+[step operators](../../mlops-stacks/step-operators/step-operators.md) which allow you to execute
+individual steps of your pipeline in environments independent of your orchestrator. 
+{% endhint %}

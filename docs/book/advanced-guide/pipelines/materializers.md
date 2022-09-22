@@ -1,243 +1,469 @@
 ---
-description: How to link stacks to code with repositories
+description: How to use materializers to pass custom data types through steps
 ---
 
-ZenML has two main locations where it stores information on the local machine.
-These are the [Global Configuration](../../resources/global-config.md) and the 
-_Repository_. The latter is also referred to as the _.zen folder_.
+# Things to change
 
-The ZenML **Repository** related to a pipeline run is the folder that contains 
-all the files needed to execute the run, such as the respective Python scripts
-and modules where the pipeline is defined, or other associated files.
-The repository plays a double role in ZenML:
+- Needs a re-read
 
-* It is used by ZenML to identify which files must be copied into Docker images 
-in order to execute pipeline steps remotely, e.g., when orchestrating pipelines
-with [Kubeflow](../../mlops-stacks/orchestrators/kubeflow.md).
-* It defines the local active [Stack](#stacks) that will be used when running
-pipelines from the repository root or one of its sub-folders, as shown
-[below](#setting-the-local-active-stack).
+# Older content
 
-## Registering a Repository
+A ZenML pipeline is built in a data-centric way. The outputs and inputs of steps
+define how steps are connected and the order in which they are executed. Each
+step should be considered as its very own process that reads and writes its
+inputs and outputs from and to the
+[Artifact Store](../../mlops-stacks/artifact-stores/artifact-stores.md). 
+This is where **Materializers** come into play.
 
-You can register your current working directory as a ZenML
-repository by running:
+A materializer dictates how a given artifact can be written to and retrieved
+from the artifact store and also contains all serialization and deserialization
+logic.
 
-```bash
-zenml init
+Whenever you pass artifacts as outputs from one pipeline step to other steps as
+inputs, the corresponding materializer for the respective data type defines
+how this artifact is first serialized and written to the artifact store, and
+then deserialized and read in the next step.
+
+For most data types, ZenML already includes built-in materializers that
+automatically handle artifacts of those data types. For instance, all of the 
+examples from the [Steps and Pipelines](../steps-pipelines/steps-and-pipelines.md)
+section were using built-in materializers under the hood to store and load 
+artifacts correctly.
+
+However, if you want to pass custom objects between pipeline steps, such as a
+PyTorch model that does not inherit from `torch.nn.Module`, then you need to
+define a custom Materializer to tell ZenML how to handle this specific data
+type.
+
+## Building a Custom Materializer
+
+### Base Implementation
+
+Before we dive into how custom materializers can be built, let us briefly
+discuss how materializers in general are implemented. In the following, you
+can see the implementation of the abstract base class `BaseMaterializer`, which
+defines the interface of all materializers:
+
+```python
+from typing import Type, Any
+from zenml.materializers.base_materializer import BaseMaterializerMeta
+
+
+class BaseMaterializer(metaclass=BaseMaterializerMeta):
+    """Base Materializer to realize artifact data."""
+
+    ASSOCIATED_ARTIFACT_TYPES = ()
+    ASSOCIATED_TYPES = ()
+
+    def __init__(self, artifact: "BaseArtifact"):
+        """Initializes a materializer with the given artifact."""
+        self.artifact = artifact
+
+    def handle_input(self, data_type: Type[Any]) -> Any:
+        """Write logic here to handle input of the step function.
+
+        Args:
+            data_type: What type the input should be materialized as.
+        Returns:
+            Any object that is to be passed into the relevant artifact in the
+            step.
+        """
+        # read from self.artifact.uri
+        ...
+
+    def handle_return(self, data: Any) -> None:
+        """Write logic here to handle return of the step function.
+
+        Args:
+            data: Any object that is specified as an input artifact of the step.
+        """
+        # write `data` to self.artifact.uri
+        ...
 ```
 
-This will create a `.zen` directory, which contains a single
-`config.yaml` file that stores the local settings:
+### Which Data Type to Handle?
+
+Each materializer has an `ASSOCIATED_TYPES` attribute that contains a list of
+data types that this materializer can handle. ZenML uses this information to
+call the right materializer at the right time. I.e., if a ZenML step returns a
+`pd.DataFrame`, ZenML will try to find any materializer that has `pd.DataFrame`
+in its `ASSOCIATED_TYPES`. List the data type of your custom object here to
+link the materializer to that data type.
+
+### What Type of Artifact to Generate
+
+Each materializer also has an `ASSOCIATED_ARTIFACT_TYPES` attribute, which
+defines what types of artifacts are being stored.
+
+In most cases, you should choose either `DataArtifact` or `ModelArtifact` here.
+If you are unsure, just use `DataArtifact`. The exact choice is not too 
+important, as the artifact type is only used as a tag in the visualization tools of some certain integrations like Facets.
+
+{% hint style="info" %} 
+You can find a full list of available artifact types in the 
+[API Docs](https://apidocs.zenml.io/latest/api_docs/artifacts/).
+{% endhint %}
+
+### Where to Store the Artifact
+
+Each materializer has an `artifact` object. The most important property of an
+`artifact` object is the `uri`. The `uri` is automatically created by ZenML
+whenever you run a pipeline and points to the directory of a file system where
+the artifact is stored (location in the artifact store). This should not be
+modified.
+
+### How to Store and Retrieve the Artifact
+
+The `handle_input()` and `handle_return()` methods define the serialization and
+deserialization of artifacts.
+
+- `handle_input()` defines how data is read from the artifact store and deserialized,
+- `handle_return()` defines how data is serialized and saved to the artifact store.
+
+These methods you will need to overwrite according to how you plan to serialize
+your objects. E.g., if you have custom PyTorch classes as `ASSOCIATED_TYPES`,
+then you might want to use `torch.save()` and `torch.load()` here. For example,
+have a look at the materializer in the
+[Neural Prophet integration](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/neural_prophet/materializers/neural_prophet_materializer.py).
+
+## Using a Custom Materializer
+
+ZenML automatically scans your source code for definitions of materializers and
+registers them for the corresponding data type, so just having a custom
+materializer definition in your code is enough to enable the respective data
+type to be used in your pipelines.
+
+Alternatively, you can also explicitly define which materializer to use for a
+specific step using the `with_return_materializers()` method of the step. E.g.:
+
+```python
+first_pipeline(
+    step_1=my_first_step().with_return_materializers(MyMaterializer),
+    ...
+).run()
+```
+
+When there are multiple outputs, a dictionary of type
+`{<OUTPUT_NAME>:<MATERIALIZER_CLASS>}` can be supplied to the
+ `with_return_materializers()` method.
+
+{% hint style="info" %} 
+Note that `with_return_materializers` only needs to be called for the output of
+the first step that produced an artifact of a given data type, all downstream
+steps will use the same materializer by default. 
+{% endhint %}
+
+### Configuring Materializers at Runtime
+
+As briefly outlined in the
+[Runtime Configuration](../steps-pipelines/runtime-configuration.md#defining-materializer-source-codes)
+section, which materializer to use for the output of what step can also be
+configured within YAML config files.
+
+For each output of your steps, you can define custom materializers to
+handle the loading and saving. You can configure them like this in the config:
 
 ```yaml
-active_project_name: null
-active_stack_name: default
+...
+steps:
+  <STEP_NAME>:
+    ...
+    materializers:
+      <OUTPUT_NAME>:
+        name: <MaterializerName>
+        file: <relative/filepath>
+```
+
+The name of the output can be found in the function declaration, e.g. 
+`my_step() -> Output(a: int, b: float)` has `a` and `b` as available output
+names.
+
+Similar to other configuration entries, the materializer `name` refers to the 
+class name of your materializer, and the `file` should contain a path to the
+module where the materializer is defined.
+
+## Basic Example
+
+Let's see how materialization works with a basic example. Let's say you have
+a custom class called `MyObject` that flows between two steps in a pipeline:
+
+```python
+import logging
+from zenml.steps import step
+from zenml.pipelines import pipeline
+
+
+class MyObj:
+    def __init__(self, name: str):
+        self.name = name
+
+
+@step
+def my_first_step() -> MyObj:
+    """Step that returns an object of type MyObj"""
+    return MyObj("my_object")
+
+
+@step
+def my_second_step(my_obj: MyObj) -> None:
+    """Step that logs the input object and returns nothing."""
+    logging.info(
+        f"The following object was passed to this step: `{my_obj.name}`"
+    )
+
+
+@pipeline
+def first_pipeline(step_1, step_2):
+    output_1 = step_1()
+    step_2(output_1)
+
+
+first_pipeline(
+    step_1=my_first_step(),
+    step_2=my_second_step()
+).run()
+```
+
+Running the above without a custom materializer will result in the following
+error:
+
+`
+zenml.exceptions.StepInterfaceError: Unable to find materializer for output 'output' of 
+type <class '__main__.MyObj'> in step 'step1'. Please make sure to either explicitly set a materializer for step 
+outputs using step.with_return_materializers(...) or registering a default materializer for specific types by 
+subclassing BaseMaterializer and setting its ASSOCIATED_TYPES class variable. 
+For more information, visit https://docs.zenml.io/developer-guide/advanced-usage/materializer
+`
+
+The error message basically says that ZenML does not know how to persist the
+object of type `MyObj` (how could it? We just created this!). Therefore, we
+have to create our own materializer. To do this, you can extend the
+`BaseMaterializer` by sub-classing it, listing `MyObj` in `ASSOCIATED_TYPES`,
+and overwriting `handle_input()` and `handle_return()`:
+
+```python
+import os
+from typing import Type
+
+from zenml.artifacts import DataArtifact
+from zenml.io import fileio
+from zenml.materializers.base_materializer import BaseMaterializer
+
+
+class MyMaterializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (MyObj,)
+    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
+
+    def handle_input(self, data_type: Type[MyObj]) -> MyObj:
+        """Read from artifact store"""
+        super().handle_input(data_type)
+        with fileio.open(os.path.join(self.artifact.uri, 'data.txt'), 'r') as f:
+            name = f.read()
+        return MyObj(name=name)
+
+    def handle_return(self, my_obj: MyObj) -> None:
+        """Write to artifact store"""
+        super().handle_return(my_obj)
+        with fileio.open(os.path.join(self.artifact.uri, 'data.txt'), 'w') as f:
+            f.write(my_obj.name)
 ```
 
 {% hint style="info" %}
-It is recommended to use the `zenml init` command to initialize a ZenML
-_Repository_ in the same location of your custom Python source tree where you
-would normally point `PYTHONPATH`, especially if your Python code relies on a
-hierarchy of modules spread out across multiple sub-folders.
+Pro-tip: Use the ZenML `fileio` module to ensure your materialization logic
+works across artifact stores (local and remote like S3 buckets).
+{% endhint %}
 
-ZenML CLI commands and ZenML code will display a warning if they are not running
-in the context of a ZenML repository, e.g.:
+Now ZenML can use this materializer to handle outputs and inputs of your customs
+object. Edit the pipeline as follows to see this in action:
+
+```python
+first_pipeline(
+    step_1=my_first_step().with_return_materializers(MyMaterializer),
+    step_2=my_second_step()
+).run()
+```
+
+{% hint style="info" %}
+Due to the typing of the inputs and outputs and the
+`ASSOCIATED_TYPES` attribute of the materializer, you won't necessarily have to add
+`.with_return_materializers(MyMaterializer)` to the step. It should
+automatically be detected. It doesn't hurt to be explicit though.
+{% endhint %}
+
+This will now work as expected and yield the following output:
 
 ```shell
-stefan@aspyre2:/tmp$ zenml stack list
-Unable to find ZenML repository in your current working directory (/tmp) or any parent directories. If you want to use an existing repository which is in a different location, set the environment variable 'ZENML_REPOSITORY_PATH'. If you want to create a new repository, run zenml init.
-Running without an active repository root.
-Using the default local database.
-┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ METADATA_STORE │ ORCHESTRATOR ┃
-┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
-┃   👉   │ default    │ default        │ default        │ default      ┃
-┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
-```
-{% endhint %}
-
-## Setting the Local Active Stack
-
-One of the most useful features of repositories is that you can configure a
-different active stack for each of your projects. This is great if
-you want to use ZenML for multiple projects on the same machine. Whenever you
-create a new ML project, we recommend you run `zenml init` to create a separate
-repository, then use it to define your stacks:
-
-```bash
-zenml init
-zenml stack register ...
-zenml stack set ...
+Creating run for pipeline: `first_pipeline`
+Cache enabled for pipeline `first_pipeline`
+Using stack `default` to run pipeline `first_pipeline`...
+Step `my_first_step` has started.
+Step `my_first_step` has finished in 0.081s.
+Step `my_second_step` has started.
+The following object was passed to this step: `my_object`
+Step `my_second_step` has finished in 0.048s.
+Pipeline run `first_pipeline-22_Apr_22-10_58_51_135729` has finished in 0.153s.
 ```
 
-If you do this, the correct stack will automatically get activated
-whenever you change directory from one project to another in your terminal.
-
-{% hint style="info" %}
-Note that the stacks and stack components are still stored globally, even when
-running from inside a ZenML repository. It is only the active stack setting
-that can be configured locally.
-{% endhint %}
-
-### Detailed Example
+### Code Summary
 
 <details>
-<summary>Detailed usage example of local stacks</summary>
+    <summary>Code Example for Materializing Custom Objects</summary>
 
-The following example shows how the active stack can be configured locally for a
-project without impacting the global settings:
+```python
+import logging
+import os
+from typing import Type
 
-```
-/tmp/zenml$ zenml stack list
-Unable to find ZenML repository in your current working directory (/tmp/zenml)
-or any parent directories. If you want to use an existing repository which is in
-a different location, set the environment variable 'ZENML_REPOSITORY_PATH'. If
-you want to create a new repository, run zenml init.
-Running without an active repository root.
-Using the default local database.
-┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ METADATA_STORE │ ORCHESTRATOR ┃
-┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
-┃   👉   │ default    │ default        │ default        │ default      ┃
-┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
-┃        │ zenml      │ default        │ default        │ default      ┃
-┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+from zenml.steps import step
+from zenml.pipelines import pipeline
 
-/tmp/zenml$ zenml init
-ZenML repository initialized at /tmp/zenml.
-The local active stack was initialized to 'default'. This local configuration will
-only take effect when you're running ZenML from the initialized repository root,
-or from a subdirectory. For more information on repositories and configurations,
-please visit https://docs.zenml.io/developer-guide/stacks-repositories.
+from zenml.artifacts import DataArtifact
+from zenml.io import fileio
+from zenml.materializers.base_materializer import BaseMaterializer
 
 
-$ zenml stack list
-Using the default local database.
-┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ METADATA_STORE │ ORCHESTRATOR ┃
-┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
-┃   👉   │ default    │ default        │ default        │ default      ┃
-┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
-┃        │ zenml      │ default        │ default        │ default      ┃
-┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+class MyObj:
+    def __init__(self, name: str):
+        self.name = name
 
-/tmp/zenml$ zenml stack set zenml
-Using the default local database.
-Active repository stack set to: 'zenml'
 
-/tmp/zenml$ zenml stack list
-Using the default local database.
-┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ METADATA_STORE │ ORCHESTRATOR ┃
-┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
-┃        │ default    │ default        │ default        │ default      ┃
-┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
-┃   👉   │ zenml      │ default        │ default        │ default      ┃
-┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+class MyMaterializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (MyObj,)
+    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
-/tmp/zenml$ cd ..
-/tmp$ zenml stack list
-Unable to find ZenML repository in your current working directory (/tmp) or any
-parent directories. If you want to use an existing repository which is in a
-different location, set the environment variable 'ZENML_REPOSITORY_PATH'. If you
-want to create a new repository, run zenml init.
-Running without an active repository root.
-Using the default local database.
-┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ METADATA_STORE │ ORCHESTRATOR ┃
-┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
-┃   👉   │ default    │ default        │ default        │ default      ┃
-┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
-┃        │ zenml      │ default        │ default        │ default      ┃
-┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+    def handle_input(self, data_type: Type[MyObj]) -> MyObj:
+        """Read from artifact store"""
+        super().handle_input(data_type)
+        with fileio.open(os.path.join(self.artifact.uri, 'data.txt'), 'r') as f:
+            name = f.read()
+        return MyObj(name=name)
+
+    def handle_return(self, my_obj: MyObj) -> None:
+        """Write to artifact store"""
+        super().handle_return(my_obj)
+        with fileio.open(os.path.join(self.artifact.uri, 'data.txt'), 'w') as f:
+            f.write(my_obj.name)
+
+
+@step
+def my_first_step() -> MyObj:
+    """Step that returns an object of type MyObj"""
+    return MyObj("my_object")
+
+
+@step
+def my_second_step(my_obj: MyObj) -> None:
+    """Step that log the input object and returns nothing."""
+    logging.info(
+        f"The following object was passed to this step: `{my_obj.name}`")
+
+
+@pipeline
+def first_pipeline(step_1, step_2):
+    output_1 = step_1()
+    step_2(output_1)
+
+
+first_pipeline(
+    step_1=my_first_step().with_return_materializers(MyMaterializer),
+    step_2=my_second_step()
+).run()
 ```
 
 </details>
 
-## Using the Repository in Python
+## Skipping Materialization
 
-You can access your repository in Python using the `zenml.repository.Repository`
-class:
-
-```python
-from zenml.repository import Repository
-
-
-repo = Repository()
-```
-
-This allows you to perform various repository operations directly in Python, 
-such as [Inspecting Finished Pipeline Runs](../steps-pipelines/inspecting-pipeline-runs.md) or
-accessing and managing stacks, as shown below.
-
-{% hint style="info" %}
-To explore all possible operations that can be performed via the
-`Repository`, please consult the API docs section on
-[Repository](https://apidocs.zenml.io/latest/api_docs/repository/#zenml.repository.Repository).
+{% hint style="warning" %}
+Using artifacts directly might have unintended consequences for downstream
+tasks that rely on materialized artifacts. Only skip materialization if there
+is no other way to do what you want to do.
 {% endhint %}
 
-### Accessing the Active Stack
+While materializers should in most cases be used to control how artifacts are 
+returned and consumed from pipeline steps, you might sometimes need to have a 
+completely non-materialized artifact in a step, e.g., if you need to know the
+exact path to where your artifact is stored.
 
-The following code snippet shows how you can retrieve or modify information
-of your active stack and stack components in Python:
-
-```python
-from zenml.repository import Repository
-
-
-repo = Repository()
-active_stack = repo.active_stack
-print(active_stack.name)
-print(active_stack.orchestrator.name)
-print(active_stack.artifact_store.name)
-print(active_stack.artifact_store.path)
-print(active_stack.metadata_store.name)
-print(active_stack.metadata_store.uri)
-```
-
-### Registering and Changing Stacks
-
-In the following we use the repository to register a new ZenML stack called
-`local` and set it as the active stack of the repository:
+A non-materialized artifact is a `BaseArtifact` (or any of its subclasses) and
+has a property `uri` that points to the unique path in the artifact store where
+the artifact is stored. One can use a non-materialized artifact by 
+specifying it as the type in the step:
 
 ```python
-from zenml.repository import Repository
-from zenml.artifact_stores import LocalArtifactStore
-from zenml.orchestrators import LocalOrchestrator
-from zenml.stack import Stack
+from zenml.artifacts import DataArtifact
+from zenml.steps import step
 
 
-repo = Repository()
-
-# Create a new orchestrator
-orchestrator = LocalOrchestrator(name="local")
-
-# Create a new artifact store
-artifact_store = LocalArtifactStore(
-    name="local",
-    path="/tmp/zenml/artifacts",
-)
-
-# Create a new stack with the new components
-stack = Stack(
-    name="local",
-    orchestrator=orchestrator,
-    artifact_store=artifact_store,
-)
-
-# Register the new stack
-repo.register_stack(stack)
-
-# Set the stack as the active stack of the repository
-repo.activate_stack(stack.name)
+@step
+def my_step(my_artifact: DataArtifact)  # rather than pd.DataFrame
+    pass
 ```
 
-## Unregistering a Repository
+When using artifacts directly, one must be aware of which type they are by 
+looking at the previous step's materializer: if the previous step produces a 
+`ModelArtifact` then you should specify `ModelArtifact` in a non-materialized
+step.
 
-To unregister a repository, delete the `.zen` directory in the
-respective location, e.g., via 
+{% hint style="info" %} 
+Materializers link pythonic types to artifact types implicitly. E.g., a
+`keras.model` or `torch.nn.Module` are pythonic types that are both linked to 
+`ModelArtifact` implicitly via their materializers.
 
-```bash
-rm -rf .zen
+You can find a full list of available artifact types in the 
+[API Docs](https://apidocs.zenml.io/latest/api_docs/artifacts/).
+{% endhint %}
+
+### Example
+
+The following shows an example how non-materialized artifacts can be used in
+the steps of a pipeline. The pipeline we define will look like this:
+
+```shell
+s1 -> s3 
+s2 -> s4
+```
+
+`s1` and `s2` produce identical artifacts, however `s3` consumes materialized
+artifacts while `s4` consumes non-materialized artifacts. `s4` can now use the
+`dict_.uri` and `list_.uri` paths directly rather than their materialized
+counterparts.
+
+```python
+from typing import Dict, List
+
+from zenml.artifacts import DataArtifact, ModelArtifact
+from zenml.pipelines import pipeline
+from zenml.steps import Output, step
+
+
+@step
+def step_1() -> Output(dict_=Dict, list_=List):
+    return {"some": "data"}, []
+
+
+@step
+def step_2() -> Output(dict_=Dict, list_=List):
+    return {"some": "data"}, []
+
+
+@step
+def step_3(dict_: Dict, list_: List) -> None:
+    assert isinstance(dict_, dict)
+    assert isinstance(list_, list)
+
+
+@step
+def step_4(dict_: DataArtifact, list_: ModelArtifact) -> None:
+    assert hasattr(dict_, "uri")
+    assert hasattr(list_, "uri")
+
+
+@pipeline
+def example_pipeline(step_1, step_2, step_3, step_4):
+    step_3(*step_1())
+    step_4(*step_2())
+
+
+example_pipeline(step_1(), step_2(), step_3(), step_4()).run()
 ```
