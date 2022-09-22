@@ -6,8 +6,7 @@ description: How to configure MLOps tooling and infrastructure with stacks
 
 - We should talk here about the stacks and stack components and flavors.
 - We should introduce each concept briefly
-- At the end, we should ask them register a new orchestrator stack component of flavor airflow and build a stack with it. Then we should run the pipeline and show them on the UI what happened
-
+- While we do this, perhaps we can ask them to list stacks they have, and list components they have and also list flavors
 
 # Older content (Page 1)
 

@@ -9,7 +9,6 @@ description: How to collaborate with your team in ZenML
 - Show how collaboration is thought off - maybe mention roles
 - Maybe add an architecture diagram
 
-
 # Old Content (1)
 
 # ZenML for Teams and Organizations
