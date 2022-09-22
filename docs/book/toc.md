@@ -41,7 +41,14 @@
   * [Manage Stack Component States](./advanced-guide/stacks/stack-state-management.md)
   * [Manage External Services](./advanced-guide/stacks/manage-external-services.md)
   * [Set Stacks with Environment Variables](./advanced-guide/stacks/stack-environment-variables.md)
-  
+
+## Using ZenML
+
+* [Deploying ZenML](using-zenml/deploying-zenml.md)
+* [Global Configuration](using-zenml/global-config.md)
+* [Best Practices](using-zenml/best-practices.md)
+* [System Environmental Variables](using-zenml/system-environmental-variables.md)
+
 ## Component Gallery
 
 * [Categories of MLOps Tools](./mlops-stacks/categories.md)
@@ -118,13 +125,6 @@
   * [Basic GCP Stack](./popular-stack-guides/gcp/basic-stack.md)
 * [Azure](./popular-stack-guides/azure/azure.md)
   * [Basic Azure Stack](./popular-stack-guides/azure/basic-stack.md)
-
-## Using ZenML
-
-* [Deploying ZenML](using-zenml/deploying-zenml.md)
-* [Global Configuration](using-zenml/global-config.md)
-* [Best Practices](using-zenml/best-practices.md)
-* [System Environmental Variables](using-zenml/system-environmental-variables.md)
 
 ## Resources
 
