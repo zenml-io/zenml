@@ -95,6 +95,11 @@ KFP_POD_LABELS = {
     "pipelines.kubeflow.org/pipeline-sdk-type": "zenml",
 }
 
+SINGLE_RUN_RUN_NAME_PLACEHOLDER = (
+    "{{workflow.annotations.pipelines.kubeflow.org/run_name}}"
+)
+SCHEDULED_RUN_NAME_PLACEHOLDER = "{{workflow.name}}"
+
 
 class KubeflowOrchestratorSettings(BaseSettings):
     """Settings for the Kubeflow orchestrator.
@@ -127,6 +132,8 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         kubeflow_hostname: The hostname to use to talk to the Kubeflow Pipelines
             API. If not set, the hostname will be derived from the Kubernetes
             API proxy.
+        kubeflow_namespace: The Kubernetes namespace in which Kubeflow
+            Pipelines is deployed.
         kubernetes_context: Optional name of a kubernetes context to run
             pipelines in. If not set, the current active context will be used.
             You can find the active context by running `kubectl config
@@ -144,6 +151,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
     custom_docker_base_image_name: Optional[str] = None
     kubeflow_pipelines_ui_port: int = DEFAULT_KFP_UI_PORT
     kubeflow_hostname: Optional[str] = None
+    kubeflow_namespace: str = "kubeflow"
     kubernetes_context: Optional[str] = None
     synchronous: bool = False
     skip_local_validations: bool = False
@@ -419,7 +427,9 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
 
     @staticmethod
-    def _configure_container_op(container_op: dsl.ContainerOp) -> None:
+    def _configure_container_op(
+        container_op: dsl.ContainerOp, is_scheduled_run: bool
+    ) -> None:
         """Makes changes in place to the configuration of the container op.
 
         Configures persistent mounted volumes for each stack component that
@@ -428,6 +438,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
         Args:
             container_op: The kubeflow container operation to configure.
+            is_scheduled_run: Whether the pipeline is scheduled or a single run.
 
         Raises:
             ValueError: If the local path is not in the global config directory.
@@ -512,12 +523,15 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         for k, v in KFP_POD_LABELS.items():
             container_op.add_pod_label(k, v)
 
-        # Add an environment variable with a placeholder that kubeflow will
-        # replace with the actual run name.
+        run_name = (
+            SCHEDULED_RUN_NAME_PLACEHOLDER
+            if is_scheduled_run
+            else SINGLE_RUN_RUN_NAME_PLACEHOLDER
+        )
         container_op.container.add_env_variable(
             k8s_client.V1EnvVar(
                 name=ENV_ZENML_RUN_NAME,
-                value="{{workflow.annotations.pipelines.kubeflow.org/run_name}}",
+                value=run_name,
             )
         )
 
@@ -598,6 +612,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             )
 
         image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
+        is_scheduled_run = bool(deployment.schedule)
 
         # Create a callable for future compilation into a dsl.Pipeline.
         def _construct_kfp_pipeline() -> None:
@@ -650,9 +665,9 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                     },
                 )
 
-                # Mounts persistent volumes, configmaps and adds labels to the
-                # container op
-                self._configure_container_op(container_op=container_op)
+                self._configure_container_op(
+                    container_op=container_op, is_scheduled_run=is_scheduled_run
+                )
 
                 if self.requires_resources_in_orchestration_environment(step):
                     self._configure_container_resources(
@@ -803,12 +818,17 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             A KFP client instance.
         """
         client_args = {
-            "host": self.kubeflow_hostname,
             "kube_context": self.kubernetes_context,
         }
 
         if settings:
             client_args.update(settings.client_args)
+
+        # The host and namespace are stack component configurations that refer
+        # to the Kubeflow deployment. We don't want these overwritten on a
+        # run by run basis by user settings
+        client_args["host"] = self.kubeflow_hostname
+        client_args["namespace"] = self.kubeflow_namespace
 
         return kfp.Client(**client_args)
 
