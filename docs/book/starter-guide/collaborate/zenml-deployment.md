@@ -2,6 +2,14 @@
 description: How to collaboratively use ZenML in larger organizations with the ZenServer
 ---
 
+# Things to change
+
+- This needs a revamp
+- Show them `zenml server list` to show that they already deployed one
+- AWS, GCP, Azure should be in tabs. mybe added manual deployment tab too
+
+# Older Content
+
 # The ZenML Server
 
 Sometimes, you may need to exchange or collaborate on Stack configurations with

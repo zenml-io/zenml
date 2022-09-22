@@ -2,6 +2,16 @@
 description: How to collaborate with your team in ZenML
 ---
 
+# Things to change
+
+- We should focus here on the ZenServer
+- Perhaps mention import and export as a limited option to open this page
+- Show how collaboration is thought off - maybe mention roles
+- Maybe add an architecture diagram
+
+
+# Old Content (1)
+
 # ZenML for Teams and Organizations
 
 Using ZenML to develop and execute pipelines from the comfortable confines of
@@ -55,3 +65,39 @@ With the [_ZenServer_](./zenml-server.md), you can deploy ZenML as a centralized
 service and connect entire teams and organizations to an easy to manage
 collaboration platform that provides a unified view on the MLOps processes,
 tools and technologies that support your entire AI/ML project lifecycle.
+
+---
+description: How to export and import stacks to YAML files
+---
+
+# Old Content (2)
+
+# Export and Import ZenML Stacks
+
+If you wish to transfer one of your stacks to another user or even another
+machine, you can do so by exporting the stack configuration and then importing
+it again.
+
+To export a stack to YAML, run the following command:
+
+```bash
+zenml stack export STACK_NAME FILENAME.yaml
+```
+
+This will create a FILENAME.yaml containing the config of your stack and all
+of its components, which you can then import again like this:
+
+```bash
+zenml stack import STACK_NAME FILENAME.yaml
+```
+
+## Known Limitations
+
+The exported Stack is only a configuration. It may have local dependencies
+that are not exported and thus will not be available when importing the Stack
+on another machine:
+
+* the secrets stored in the local Secrets Managers
+* any references to local files and local services not accessible from outside
+the machine where the Stack is exported, such as the local Artifact Store and
+Metadata Store

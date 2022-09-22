@@ -2,6 +2,14 @@
 description: What are the core concepts in ZenML
 ---
 
+# Things to change
+
+- [ ]  Sections that come after the `Pipelines and Steps` need to be redesigned. It might be nice to include the UI here as well.
+- [ ]  The visualizations need to be changed to remove stuff like Metadata Store
+- [ ]  Profiles need to be removed
+
+# Older Content
+
 # Core Concepts
 
 ZenML consists of a few components. This guide walks through the various pieces you'll encounter, starting from the basics to things you'll only encounter when deploying to the cloud. 

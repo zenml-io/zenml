@@ -2,6 +2,15 @@
 description: Welcome to ZenML!
 ---
 
+# Things to change
+
+- [ ]  Perhaps, we can tease the ZenServer here somewhere, perhaps down below with a sub-section like: Scaling - deploy ZenML to the Cloud
+- [ ]  The What section needs to talk more about integrations into the MLOps landscape and the exploding ML tooling landscape
+- [ ]  Add a question mark to `Why ZenML` and get rid of the Gartner survey and motivate more in the sense of exploding MLOps tooling
+- [ ]  Change Pipelining Stacking etc to directions
+
+# Older Content
+
 Are you an ML engineer or data scientist shipping models to production and jumbling a plethora of tools?
 Do you struggle with versioning data, code, and models in your projects?
 Have you had trouble replicating production pipelines and monitoring models in production?

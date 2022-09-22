@@ -2,6 +2,12 @@
 description: How to install ZenML
 ---
 
+# Things to change
+
+- It requires another section for the installation of the UI/Dashboard.
+
+# Older Content
+
 # Installation
 
 **ZenML** is a Python package that can be installed directly via `pip`:

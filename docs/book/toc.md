@@ -6,38 +6,49 @@
 * [Core Concepts](./getting-started/core-concepts.md)
 * [Installation](./getting-started/installation.md)
 * [Quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart)
+* [Examples](./getting-started/examples.md)
 
-## Examples & Use-Cases
+## Starter Guide
 
-* [Learn MLOps with ZenML (ZenBytes)](https://github.com/zenml-io/zenbytes)
-* [See Full ZenML Examples (ZenFiles)](https://github.com/zenml-io/zenfiles)
-* [See Integration Examples](https://github.com/zenml-io/zenml/tree/main/examples)
+* [Pipelines](./starter-guide/pipelines/pipelines.md)
+  * [Fetching pipelines](./starter-guide/pipelines/fetching-pipelines.md)
+  * [Caching](./starter-guide/pipelines/caching.md)
+* [Stacks](./starter-guide/stacks/stacks.md)
+  * [Stack Components and Flavors](./starter-guide/stacks/stack-components.md)
+  * [Managing stacks](./starter-guide/stacks/managing-stacks.md)
+* [Collaboration](./starter-guide/collaborate/collaborate.md)
+  * [Deploy ZenML on the Cloud](./starter-guide/collaborate/zenml-deployment.md)
+  * [Invite users](./developer-guide/stacks-repositories/stack.md)
 
-## Developer Guide
+## Advanced Guide
 
-* [Steps & Pipelines](./developer-guide/steps-pipelines/steps-and-pipelines.md)
+* [Running in Production](./developer-guide/stacks-repositories/stacks-repositories.md)
+  * [Deploying production stacks](./developer-guide/stacks-repositories/stacks-repositories.md)
+  * [Switching orchestration](./developer-guide/stacks-repositories/stacks-repositories.md)
   * [Configure Pipelines at Runtime](./developer-guide/steps-pipelines/runtime-configuration.md)
+  * [Manage Docker Images](./developer-guide/advanced-usage/docker.md)
+  * [Tracking experiments](./developer-guide/stacks-repositories/stacks-repositories.md)
+  * [Validating data](./developer-guide/stacks-repositories/stacks-repositories.md)
+  * [Deploying models and batch inference](./developer-guide/stacks-repositories/stacks-repositories.md)
+  * [Configure Stack Components using Secrets](./developer-guide/advanced-usage/secret-references.md)
+  
+* [Pipeline Usage Patterns](./developer-guide/steps-pipelines/steps-and-pipelines.md)
+  * [Control the Step Execution Order](./developer-guide/advanced-usage/step-execution-order.md)
   * [Choose Functional vs. Class-Based API](./developer-guide/steps-pipelines/functional-vs-class-based-api.md)
-  * [Inspect Pipeline Runs](./developer-guide/steps-pipelines/inspecting-pipeline-runs.md)
-  * [Configure Automated Caching](./developer-guide/steps-pipelines/caching.md)
-  * [Visualize Data Lineage](./developer-guide/steps-pipelines/pipeline-visualization.md)
-* [Stacks & Repositories](./developer-guide/stacks-repositories/stacks-repositories.md)
-  * [Stacks: Configure MLOps Tooling and Infrastructure](./developer-guide/stacks-repositories/stack.md)
-  * [Repositories: Link Stacks to Code](./developer-guide/stacks-repositories/repository.md)
-* [Advanced Usage](./developer-guide/advanced-usage/advanced-usage.md)
-  * [Write Custom Stack Component Flavors](./developer-guide/advanced-usage/custom-flavors.md)
-  * [Manage Stack Component States](./developer-guide/advanced-usage/stack-state-management.md)
   * [Pass Custom Data Types through Steps](./developer-guide/advanced-usage/materializer.md)
   * [Access the Active Stack within Steps](./developer-guide/advanced-usage/step-fixtures.md)
   * [Access Global Info within Steps](./developer-guide/advanced-usage/environment.md)
   * [Specify Step Resources](./developer-guide/advanced-usage/specify-step-resources.md)
+  
+* [Stacks Configuration](./developer-guide/stacks-repositories/stacks-repositories.md)
+  * [Write Custom Stack Component Flavors](./developer-guide/advanced-usage/custom-flavors.md)
+  * [Manage Stack Component States](./developer-guide/advanced-usage/stack-state-management.md)
   * [Manage External Services](./developer-guide/advanced-usage/manage-external-services.md)
-  * [Manage Docker Images](./developer-guide/advanced-usage/docker.md)
   * [Set Stacks with Environment Variables](./developer-guide/advanced-usage/stack-environment-variables.md)
-  * [Configure Stack Components using Secrets](./developer-guide/advanced-usage/secret-references.md)
-  * [Control the Step Execution Order](./developer-guide/advanced-usage/step-execution-order.md)
 
-## MLOps Stacks
+
+  
+## Component Gallery
 
 * [Categories of MLOps Tools](./mlops-stacks/categories.md)
 * [Integration Overview](./mlops-stacks/integrations.md)
@@ -110,26 +121,16 @@
   * [Label Studio](./mlops-stacks/annotators/label-studio.md)
   * [Develop a Custom Annotator](./mlops-stacks/annotators/custom.md)
 
-## Stack Deployment Guide
-
-* [Overview: Options for Deploying Infrastructure](./stack-deployment-guide/overview.md)
-* [One Click Deployments with Stack Recipes](./stack-deployment-guide/stack-recipes.md)
-* [Manual Deployments](./stack-deployment-guide/manual-deployments/)
-  * [AWS](./stack-deployment-guide/manual-deployments/aws/aws.md)
-    * [Set Up a Minimal MLOps Stack on AWS](./stack-deployment-guide/manual-deployments/aws/aws-guide.md)
-  * [GCP](./stack-deployment-guide/manual-deployments/gcp/gcp.md)
-    * [Set Up a Minimal MLOps Stack on GCP](./stack-deployment-guide/manual-deployments/gcp/gcp-guide.md)
-  * [Azure](./stack-deployment-guide/manual-deployments/azure/azure.md)
-    * [Set Up a Minimal MLOps Stack on Azure](./stack-deployment-guide/manual-deployments/azure/azure-guide.md)
-* [Deployments with Terraform](./stack-deployment-guide/deploy-terraform.md)
-
-## Collaborate
-
-* [Collaborate with ZenML](./collaborate/collaborate-with-zenml.md)
-* [Export/Import Stacks](./collaborate/stack-export-import.md)
-* [Organization-Wide Collaboration with ZenServer](./collaborate/zenml-server.md)
-
 ## Resources
+
+* [Contribution Guide](resources/contributing.md)
+* [External Integration Guide](resources/integrating.md)
+* [Best Practices](resources/best-practices.md)
+* [Global Configuration](resources/global-config.md)
+* [System Environmental Variables](resources/system-environmental-variables.md)
+* [Usage Analytics](resources/usage-analytics.md)
+
+## Misc
 
 * [Join the Slack Community](https://zenml.io/slack-invite/)
 * [Community Events](https://www.eventbrite.de/o/zenml-44751230043)
@@ -138,12 +139,6 @@
 * [YouTube](https://www.youtube.com/channel/UCi79n61eV2sVyYxJOqk\_bMw)
 * [Newsletter](https://zenml.substack.com/)
 * [Roadmap](https://zenml.io/roadmap)
-* [Contribution Guide](resources/contributing.md)
-* [External Integration Guide](resources/integrating.md)
-* [Best Practices](resources/best-practices.md)
-* [Global Configuration](resources/global-config.md)
-* [System Environmental Variables](resources/system-environmental-variables.md)
-* [Usage Analytics](resources/usage-analytics.md)
 * [FAQ](resources/faq.md)
 
 ## Reference
