@@ -17,8 +17,8 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import numpy as np
 import requests
-from mlflow.pyfunc.backend import PyFuncBackend  # type: ignore [import]
-from mlflow.version import VERSION as MLFLOW_VERSION  # type: ignore [import]
+from mlflow.pyfunc.backend import PyFuncBackend
+from mlflow.version import VERSION as MLFLOW_VERSION
 
 from zenml.logger import get_logger
 from zenml.services import (

@@ -16,8 +16,6 @@
 import os
 from typing import Optional
 
-from zenml import __version__
-
 
 def handle_bool_env_var(var: str, default: bool = False) -> bool:
     """Converts normal env var to boolean.
@@ -93,28 +91,6 @@ ABSL_LOGGING_VERBOSITY: int = handle_int_env_var(
     ENV_ABSL_LOGGING_VERBOSITY, -100
 )
 
-# Base images for zenml
-ZENML_REGISTRY: str = "eu.gcr.io/maiot-zenml"
-ZENML_BASE_IMAGE_NAME: str = f"{ZENML_REGISTRY}/zenml:base-{__version__}"
-ZENML_TRAINER_IMAGE_NAME: str = f"{ZENML_REGISTRY}/zenml:cuda-{__version__}"
-ZENML_DATAFLOW_IMAGE_NAME: str = (
-    f"{ZENML_REGISTRY}/zenml:dataflow-{__version__}"
-)
-
-# Evaluation utils constants
-COMPARISON_NOTEBOOK: str = "comparison_notebook.ipynb"
-EVALUATION_NOTEBOOK: str = "evaluation_notebook.ipynb"
-
-# Pipeline related constants
-PREPROCESSING_FN: str = (
-    "zenml.components.transform.transform_module" ".preprocessing_fn"
-)
-TRAINER_FN: str = "zenml.components.trainer.trainer_module.run_fn"
-
-# GCP Orchestration
-GCP_ENTRYPOINT: str = "zenml.backends.orchestrator.entrypoint"
-AWS_ENTRYPOINT: str = "zenml.backends.orchestrator.entrypoint"
-K8S_ENTRYPOINT: str = "zenml.backends.orchestrator.entrypoint"
 
 # Analytics constants
 VALID_OPERATING_SYSTEMS = ["Windows", "Darwin", "Linux"]
@@ -180,10 +156,12 @@ MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]
 # MLMD context constants
 ZENML_MLMD_CONTEXT_TYPE = "zenml"
 MLMD_CONTEXT_STACK_PROPERTY_NAME = "stack"
-MLMD_CONTEXT_DOCKER_CONFIGURATION_PROPERTY_NAME = "docker_configuration"
-MLMD_CONTEXT_RUNTIME_CONFIG_PROPERTY_NAME = "runtime_configuration"
-MLMD_CONTEXT_STEP_RESOURCES_PROPERTY_NAME = "step_resources"
-MLMD_CONTEXT_MATERIALIZER_SOURCES_PROPERTY_NAME = "materializer_sources"
+MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME = "pipeline_configuration"
+MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME = "step_configuration"
+
 
 # model metadata yaml file name
 MODEL_METADATA_YAML_FILE_NAME = "model_metadata.yaml"
+
+ORCHESTRATOR_DOCKER_IMAGE_KEY = "orchestrator_docker_image"
+DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE = ".zenml_deployment_config.yaml"

@@ -102,6 +102,20 @@ def is_yaml(file_path: str) -> bool:
     return False
 
 
+def comment_out_yaml(yaml_string: str) -> str:
+    """Comments out a yaml string.
+
+    Args:
+        yaml_string: The yaml string to comment out.
+
+    Returns:
+        The commented out yaml string.
+    """
+    lines = yaml_string.splitlines(keepends=True)
+    lines = ["# " + line for line in lines]
+    return "".join(lines)
+
+
 def write_json(
     file_path: str,
     contents: Dict[str, Any],

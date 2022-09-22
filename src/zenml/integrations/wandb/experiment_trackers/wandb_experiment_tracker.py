@@ -14,11 +14,22 @@
 """Implementation for the wandb experiment tracker."""
 
 import os
-from contextlib import contextmanager
-from typing import ClassVar, Iterator, Optional, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    Union,
+    cast,
+)
 
 import wandb
+from pydantic import validator
 
+from zenml.config.base_settings import BaseSettings
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
 )
@@ -26,26 +37,48 @@ from zenml.integrations.wandb import WANDB_EXPERIMENT_TRACKER_FLAVOR
 from zenml.logger import get_logger
 from zenml.utils.secret_utils import SecretField
 
+if TYPE_CHECKING:
+    from zenml.config.step_run_info import StepRunInfo
+
 logger = get_logger(__name__)
 
 
 WANDB_API_KEY = "WANDB_API_KEY"
 
 
+class WandbExperimentTrackerSettings(BaseSettings):
+    """Settings for the Wandb experiment tracker.
+
+    Attributes:
+        run_name: The Wandb run name.
+        tags: Tags for the Wandb run.
+        settings: Settings for the Wandb run.
+    """
+
+    run_name: Optional[str] = None
+    tags: List[str] = []
+    settings: Dict[str, Any] = {}
+
+    @validator("settings", pre=True)
+    def _convert_settings(
+        cls, value: Union[Dict[str, Any], wandb.Settings]
+    ) -> Dict[str, Any]:
+        """Converts settings to a dictionary.
+
+        Args:
+            value: The settings.
+
+        Returns:
+            Dict representation of the settings.
+        """
+        if isinstance(value, wandb.Settings):
+            return cast(Dict[str, Any], value.make_static())
+        else:
+            return value
+
+
 class WandbExperimentTracker(BaseExperimentTracker):
     """Stores wandb configuration options.
-
-    ZenML should take care of configuring wandb for you, but should you still
-    need access to the configuration inside your step you can do it using a
-    step context:
-    ```python
-    from zenml.steps import StepContext
-
-    @enable_wandb
-    @step
-    def my_step(context: StepContext, ...)
-        context.stack.experiment_tracker  # get the tracking_uri etc. from here
-    ```
 
     Attributes:
         entity: Name of an existing wandb entity.
@@ -61,43 +94,65 @@ class WandbExperimentTracker(BaseExperimentTracker):
     # Class Configuration
     FLAVOR: ClassVar[str] = WANDB_EXPERIMENT_TRACKER_FLAVOR
 
-    def prepare_step_run(self) -> None:
-        """Sets the wandb api key."""
-        os.environ[WANDB_API_KEY] = self.api_key
+    @property
+    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+        """settings class for the Wandb experiment tracker.
 
-    @contextmanager
-    def activate_wandb_run(
+        Returns:
+            The settings class.
+        """
+        return WandbExperimentTrackerSettings
+
+    def prepare_step_run(self, info: "StepRunInfo") -> None:
+        """Configures a Wandb run.
+
+        Args:
+            info: Info about the step that will be executed.
+        """
+        os.environ[WANDB_API_KEY] = self.api_key
+        settings = cast(
+            WandbExperimentTrackerSettings,
+            self.get_settings(info) or WandbExperimentTrackerSettings(),
+        )
+
+        tags = settings.tags + [info.run_name, info.pipeline.name]
+        wandb_run_name = (
+            settings.run_name or f"{info.run_name}_{info.config.name}"
+        )
+        self._initialize_wandb(
+            run_name=wandb_run_name, tags=tags, settings=settings.settings
+        )
+
+    def cleanup_step_run(self, info: "StepRunInfo") -> None:
+        """Stops the Wandb run.
+
+        Args:
+            info: Info about the step that was executed.
+        """
+        wandb.finish()
+        os.environ.pop(WANDB_API_KEY, None)
+
+    def _initialize_wandb(
         self,
         run_name: str,
-        tags: Tuple[str, ...] = (),
-        settings: Optional[wandb.Settings] = None,
-    ) -> Iterator[None]:
-        """Activates a wandb run for the duration of this context manager.
-
-        Anything logged to wandb that is run while this context manager is
-        active will automatically log to the same wandb run configured by the
-        run name passed as an argument to this function.
+        tags: List[str],
+        settings: Union[wandb.Settings, Dict[str, Any], None] = None,
+    ) -> None:
+        """Initializes a wandb run.
 
         Args:
             run_name: Name of the wandb run to create.
             tags: Tags to attach to the wandb run.
             settings: Additional settings for the wandb run.
-
-        Yields:
-            None
         """
-        try:
-            logger.info(
-                f"Initializing wandb with project name: {self.project_name}, "
-                f"run_name: {run_name}, entity: {self.entity}."
-            )
-            wandb.init(
-                project=self.project_name,
-                name=run_name,
-                entity=self.entity,
-                settings=settings,
-                tags=tags,
-            )
-            yield
-        finally:
-            wandb.finish()
+        logger.info(
+            f"Initializing wandb with entity {self.entity}, project name: "
+            f"{self.project_name}, run_name: {run_name}."
+        )
+        wandb.init(
+            entity=self.entity,
+            project=self.project_name,
+            name=run_name,
+            tags=tags,
+            settings=settings,
+        )

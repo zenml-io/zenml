@@ -16,11 +16,11 @@
 from abc import abstractmethod
 
 from zenml.artifacts import DataArtifact, SchemaArtifact, StatisticsArtifact
-from zenml.steps import BaseStep, BaseStepConfig, Output, StepContext
+from zenml.steps import BaseParameters, BaseStep, Output, StepContext
 
 
-class BaseAnalyzerConfig(BaseStepConfig):
-    """Base class for analyzer step configurations."""
+class BaseAnalyzerParameters(BaseParameters):
+    """Base class for analyzer step parameters."""
 
 
 class BaseAnalyzerStep(BaseStep):
@@ -30,7 +30,7 @@ class BaseAnalyzerStep(BaseStep):
     def entrypoint(  # type: ignore[override]
         self,
         dataset: DataArtifact,
-        config: BaseAnalyzerConfig,
+        params: BaseAnalyzerParameters,
         context: StepContext,
     ) -> Output(  # type:ignore[valid-type]
         statistics=StatisticsArtifact, schema=SchemaArtifact
@@ -39,7 +39,7 @@ class BaseAnalyzerStep(BaseStep):
 
         Args:
             dataset: The dataset to analyze.
-            config: The configuration for the step.
+            params: The parameters for the step.
             context: The context for the step.
 
         Returns:

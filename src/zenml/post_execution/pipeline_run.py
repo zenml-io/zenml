@@ -21,7 +21,6 @@ from ml_metadata import proto
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_apidocs_link, get_logger
 from zenml.post_execution.step import StepView
-from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
 
 if TYPE_CHECKING:
@@ -99,22 +98,6 @@ class PipelineRunView:
         """
         if self._run_wrapper:
             return self._run_wrapper.git_sha
-        return None
-
-    @property
-    def runtime_configuration(self) -> Optional["RuntimeConfiguration"]:
-        """Runtime configuration that was used for this pipeline run.
-
-        This will only be set if the pipeline run was tracked in a ZenStore.
-
-        Returns:
-            The runtime configuration that was used for this pipeline run.
-        """
-        if self._run_wrapper:
-            return RuntimeConfiguration(
-                **self._run_wrapper.runtime_configuration
-            )
-
         return None
 
     @property

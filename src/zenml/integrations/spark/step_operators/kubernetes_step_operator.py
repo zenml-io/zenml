@@ -13,30 +13,34 @@
 #  permissions and limitations under the License.
 """Implementation of the Kubernetes Spark Step Operator."""
 import os
-from typing import Any, ClassVar, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 from pyspark.conf import SparkConf
 
-from zenml.config.docker_configuration import DockerConfiguration
+from zenml.entrypoints import entrypoint
 from zenml.integrations.spark import SPARK_KUBERNETES_STEP_OPERATOR
-from zenml.integrations.spark.step_operators import spark_entrypoint
 from zenml.integrations.spark.step_operators.spark_step_operator import (
     SparkStepOperator,
 )
-from zenml.io.fileio import copy, remove
+from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.repository import Repository
-from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.utils.pipeline_docker_image_builder import (
     DOCKER_IMAGE_WORKDIR,
     PipelineDockerImageBuilder,
 )
 from zenml.utils.source_utils import get_source_root_path
 
+if TYPE_CHECKING:
+    from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.config.step_configurations import StepConfiguration
+    from zenml.stack import Stack
+
 logger = get_logger(__name__)
 
-LOCAL_ENTRYPOINT = spark_entrypoint.__file__
+LOCAL_ENTRYPOINT = entrypoint.__file__
 ENTRYPOINT_NAME = "zenml_spark_entrypoint.py"
+
+SPARK_DOCKER_IMAGE_KEY = "spark_docker_image"
 
 
 class KubernetesSparkStepOperator(
@@ -70,11 +74,53 @@ class KubernetesSparkStepOperator(
         """
         return f"local://{DOCKER_IMAGE_WORKDIR}/{ENTRYPOINT_NAME}"
 
+    def prepare_pipeline_deployment(
+        self,
+        deployment: "PipelineDeployment",
+        stack: "Stack",
+    ) -> None:
+        """Build a Docker image and push it to the container registry.
+
+        Args:
+            deployment: The pipeline deployment configuration.
+            stack: The stack on which the pipeline will be deployed.
+
+        Raises:
+            FileExistsError: If the entrypoint file already exists.
+        """
+        steps_to_run = [
+            step
+            for step in deployment.steps.values()
+            if step.config.step_operator == self.name
+        ]
+        if not steps_to_run:
+            return
+
+        entrypoint_path = os.path.join(get_source_root_path(), ENTRYPOINT_NAME)
+
+        try:
+            fileio.copy(LOCAL_ENTRYPOINT, entrypoint_path, overwrite=False)
+        except OSError:
+            raise FileExistsError(
+                f"The Kubernetes Spark step operator needs to copy the step "
+                f"entrypoint to {entrypoint_path}, however a file with this "
+                f"path already exists."
+            )
+
+        try:
+            image_digest = self.build_and_push_docker_image(
+                deployment=deployment, stack=stack
+            )
+        finally:
+            fileio.remove(entrypoint_path)
+
+        for step in steps_to_run:
+            step.config.extra[SPARK_DOCKER_IMAGE_KEY] = image_digest
+
     def _backend_configuration(
         self,
         spark_config: SparkConf,
-        docker_configuration: "DockerConfiguration",
-        pipeline_name: str,
+        step_config: "StepConfiguration",
     ) -> None:
         """Configures Spark to run on Kubernetes.
 
@@ -84,39 +130,11 @@ class KubernetesSparkStepOperator(
         Args:
             spark_config: a SparkConf object which collects all the
                 configuration parameters
-            docker_configuration: the Docker configuration for this step
-            pipeline_name: name of the pipeline which the step to be executed
-                is part of
-
-        Raises:
-            FileExistsError: if the path where the entrypoint is copied to is
-                already occupied
+            step_config: Configuration of the step to run.
         """
-        # Copy the entrypoint
-        entrypoint_path = os.path.join(get_source_root_path(), ENTRYPOINT_NAME)
-
-        try:
-            copy(LOCAL_ENTRYPOINT, entrypoint_path, overwrite=False)
-        except OSError:
-            raise FileExistsError(
-                f"The Kubernetes Spark step operator needs to copy the step "
-                f"entrypoint to {entrypoint_path}, however a file with this "
-                f"path already exists."
-            )
-
-        try:
-            # Build and push the image
-            image_name = self.build_and_push_docker_image(
-                pipeline_name=pipeline_name,
-                docker_configuration=docker_configuration,
-                stack=Repository().active_stack,
-                runtime_configuration=RuntimeConfiguration(),
-            )
-        finally:
-            remove(entrypoint_path)
-
+        docker_image = step_config.extra[SPARK_DOCKER_IMAGE_KEY]
         # Adjust the spark configuration
-        spark_config.set("spark.kubernetes.container.image", image_name)
+        spark_config.set("spark.kubernetes.container.image", docker_image)
         if self.namespace:
             spark_config.set(
                 "spark.kubernetes.namespace",

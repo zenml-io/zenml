@@ -25,13 +25,13 @@ from zenml.integrations.deepchecks.data_validators.deepchecks_data_validator imp
 from zenml.integrations.deepchecks.validation_checks import (
     DeepchecksDataDriftCheck,
 )
+from zenml.steps import BaseParameters
 from zenml.steps.base_step import BaseStep
-from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.utils import clone_step
 
 
-class DeepchecksDataDriftCheckStepConfig(BaseStepConfig):
-    """Config class for the Deepchecks data drift validator step.
+class DeepchecksDataDriftCheckStepParameters(BaseParameters):
+    """Parameter class for the Deepchecks data drift validator step.
 
     Attributes:
         check_list: Optional list of DeepchecksDataDriftCheck identifiers
@@ -61,14 +61,14 @@ class DeepchecksDataDriftCheckStep(BaseStep):
         self,
         reference_dataset: pd.DataFrame,
         target_dataset: pd.DataFrame,
-        config: DeepchecksDataDriftCheckStepConfig,
+        params: DeepchecksDataDriftCheckStepParameters,
     ) -> SuiteResult:
         """Main entrypoint for the Deepchecks data drift validator step.
 
         Args:
             reference_dataset: Reference dataset for the data drift check.
             target_dataset: Target dataset to be used for the data drift check.
-            config: the configuration for the step
+            params: The parameters for the step
 
         Returns:
             A Deepchecks suite result with the validation results.
@@ -81,16 +81,16 @@ class DeepchecksDataDriftCheckStep(BaseStep):
         return data_validator.data_validation(
             dataset=reference_dataset,
             comparison_dataset=target_dataset,
-            check_list=cast(Optional[Sequence[str]], config.check_list),
-            dataset_kwargs=config.dataset_kwargs,
-            check_kwargs=config.check_kwargs,
-            run_kwargs=config.run_kwargs,
+            check_list=cast(Optional[Sequence[str]], params.check_list),
+            dataset_kwargs=params.dataset_kwargs,
+            check_kwargs=params.check_kwargs,
+            run_kwargs=params.run_kwargs,
         )
 
 
 def deepchecks_data_drift_check_step(
     step_name: str,
-    config: DeepchecksDataDriftCheckStepConfig,
+    params: DeepchecksDataDriftCheckStepParameters,
 ) -> BaseStep:
     """Shortcut function to create a new instance of the DeepchecksDataDriftCheckStep step.
 
@@ -100,9 +100,9 @@ def deepchecks_data_drift_check_step(
 
     Args:
         step_name: The name of the step
-        config: The configuration for the step
+        params: The parameters for the step
 
     Returns:
         a DeepchecksDataDriftCheckStep step instance
     """
-    return clone_step(DeepchecksDataDriftCheckStep, step_name)(config=config)
+    return clone_step(DeepchecksDataDriftCheckStep, step_name)(params=params)

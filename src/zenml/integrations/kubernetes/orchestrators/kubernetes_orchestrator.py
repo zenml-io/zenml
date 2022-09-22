@@ -30,12 +30,12 @@
 # inspired by the Kubernetes dag runner implementation of tfx
 """Kubernetes-native orchestrator."""
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Tuple
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
-from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
+from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.integrations.kubernetes import KUBERNETES_ORCHESTRATOR_FLAVOR
@@ -54,10 +54,8 @@ from zenml.utils import deprecation_utils
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
-    from zenml.pipelines.base_pipeline import BasePipeline
-    from zenml.runtime_configuration import RuntimeConfiguration
+    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.stack import Stack
-    from zenml.steps import BaseStep
 
 logger = get_logger(__name__)
 
@@ -79,7 +77,7 @@ class KubernetesOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             You can find the active context by running `kubectl config
             current-context`.
         kubernetes_namespace: Name of the Kubernetes namespace to be used.
-            If not provided, `default` namespace will be used.
+            If not provided, `zenml` namespace will be used.
         synchronous: If `True`, running a pipeline using this orchestrator will
             block until all steps finished running on Kubernetes.
         skip_config_loading: If `True`, don't load the Kubernetes context and
@@ -228,40 +226,30 @@ class KubernetesOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
     def prepare_pipeline_deployment(
         self,
-        pipeline: "BasePipeline",
+        deployment: "PipelineDeployment",
         stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
     ) -> None:
-        """Build a Docker image and upload it to the container registry.
+        """Build a Docker image and push it to the container registry.
 
         Args:
-            pipeline: A ZenML pipeline.
-            stack: A ZenML stack.
-            runtime_configuration: The runtime configuration of the pipeline.
+            deployment: The pipeline deployment configuration.
+            stack: The stack on which the pipeline will be deployed.
         """
-        self.build_and_push_docker_image(
-            pipeline_name=pipeline.name,
-            docker_configuration=pipeline.docker_configuration,
-            stack=stack,
-            runtime_configuration=runtime_configuration,
+        repo_digest = self.build_and_push_docker_image(
+            deployment=deployment, stack=stack
         )
+        deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
 
     def prepare_or_run_pipeline(
         self,
-        sorted_steps: List["BaseStep"],
-        pipeline: "BasePipeline",
-        pb2_pipeline: Pb2Pipeline,
+        deployment: "PipelineDeployment",
         stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
-        """Run pipeline in Kubernetes.
+        """Runs the pipeline in Kubernetes.
 
         Args:
-            sorted_steps: List of steps in execution order.
-            pipeline: ZenML pipeline.
-            pb2_pipeline: ZenML pipeline in TFX pb2 format.
-            stack: ZenML stack.
-            runtime_configuration: The runtime configuration of the pipeline.
+            deployment: The pipeline deployment to prepare or run.
+            stack: The stack the pipeline will run on.
 
         Raises:
             RuntimeError: If trying to run from a Jupyter notebook.
@@ -277,29 +265,21 @@ class KubernetesOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 "orchestrator."
             )
 
-        assert runtime_configuration.run_name, "Run name must be set"
-
-        for step in sorted_steps:
+        for step in deployment.steps.values():
             if self.requires_resources_in_orchestration_environment(step):
                 logger.warning(
                     "Specifying step resources is not yet supported for "
                     "the Kubernetes orchestrator, ignoring resource "
                     "configuration for step %s.",
-                    step.name,
+                    step.config.name,
                 )
 
-        run_name = runtime_configuration.run_name
-        pipeline_name = pipeline.name
+        run_name = deployment.run_name
+        pipeline_name = deployment.pipeline.name
         pod_name = kube_utils.sanitize_pod_name(run_name)
 
         # Get Docker image name (for all pods).
-        image_name = runtime_configuration["docker_image"]
-
-        # Get pipeline DAG as dict {"step": ["upstream_step_1", ...], ...}
-        pipeline_dag: Dict[str, List[str]] = {
-            step.name: self.get_upstream_step_names(step, pb2_pipeline)
-            for step in sorted_steps
-        }
+        image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
 
         # Build entrypoint command and args for the orchestrator pod.
         # This will internally also build the command/args for all step pods.
@@ -308,12 +288,8 @@ class KubernetesOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         )
         args = KubernetesOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
             run_name=run_name,
-            pipeline_name=pipeline_name,
             image_name=image_name,
             kubernetes_namespace=self.kubernetes_namespace,
-            pb2_pipeline=pb2_pipeline,
-            sorted_steps=sorted_steps,
-            pipeline_dag=pipeline_dag,
         )
 
         # Authorize pod to run Kubernetes commands inside the cluster.
@@ -326,14 +302,14 @@ class KubernetesOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         )
 
         # Schedule as CRON job if CRON schedule is given.
-        if runtime_configuration.schedule:
-            if not runtime_configuration.schedule.cron_expression:
+        if deployment.schedule:
+            if not deployment.schedule.cron_expression:
                 raise RuntimeError(
                     "The Kubernetes orchestrator only supports scheduling via "
                     "CRON jobs, but the run was configured with a manual "
                     "schedule. Use `Schedule(cron_expression=...)` instead."
                 )
-            cron_expression = runtime_configuration.schedule.cron_expression
+            cron_expression = deployment.schedule.cron_expression
             cron_job_manifest = build_cron_job_manifest(
                 cron_expression=cron_expression,
                 run_name=run_name,

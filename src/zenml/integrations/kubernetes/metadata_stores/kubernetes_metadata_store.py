@@ -56,7 +56,7 @@ class KubernetesMetadataStore(BaseMetadataStore):
         kubernetes_context: Name of the Kubernetes context in which to deploy
             and provision the MySQL database.
         kubernetes_namespace: Name of the Kubernetes namespace.
-            Defaults to "default".
+            Defaults to "zenml".
         storage_capacity: Storage capacity of the metadata store.
             Defaults to `"10Gi"` (=10GB).
     """

@@ -13,18 +13,14 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML local orchestrator."""
 
-from typing import TYPE_CHECKING, Any, ClassVar, List
-
-from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.stack import Stack
-from zenml.steps import BaseStep
 
 if TYPE_CHECKING:
-    from zenml.pipelines import BasePipeline
-    from zenml.runtime_configuration import RuntimeConfiguration
+    from zenml.config.pipeline_deployment import PipelineDeployment
 
 logger = get_logger(__name__)
 
@@ -40,41 +36,32 @@ class LocalOrchestrator(BaseOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        sorted_steps: List[BaseStep],
-        pipeline: "BasePipeline",
-        pb2_pipeline: Pb2Pipeline,
+        deployment: "PipelineDeployment",
         stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
-        """This method iterates through all steps and executes them sequentially.
+        """Iterates through all steps and executes them sequentially.
 
         Args:
-            sorted_steps: A list of steps in the pipeline.
-            pipeline: The pipeline object.
-            pb2_pipeline: The pipeline object in protobuf format.
-            stack: The stack object.
-            runtime_configuration: The runtime configuration object.
+            deployment: The pipeline deployment to prepare or run.
+            stack: The stack on which the pipeline is deployed.
         """
-        if runtime_configuration.schedule:
+        if deployment.schedule:
             logger.warning(
                 "Local Orchestrator currently does not support the"
                 "use of schedules. The `schedule` will be ignored "
                 "and the pipeline will be run immediately."
             )
-        assert runtime_configuration.run_name, "Run name must be set"
 
         # Run each step
-        for step in sorted_steps:
+        for step in deployment.steps.values():
             if self.requires_resources_in_orchestration_environment(step):
                 logger.warning(
                     "Specifying step resources is not supported for the local "
                     "orchestrator, ignoring resource configuration for "
                     "step %s.",
-                    step.name,
+                    step.config.name,
                 )
 
             self.run_step(
                 step=step,
-                run_name=runtime_configuration.run_name,
-                pb2_pipeline=pb2_pipeline,
             )

@@ -21,18 +21,19 @@ from whylogs.core import DatasetProfileView  # type: ignore
 
 from zenml.integrations.whylogs.data_validators.whylogs_data_validator import (
     WhylogsDataValidator,
+    WhylogsDataValidatorSettings,
 )
-from zenml.integrations.whylogs.whylabs_step_decorator import enable_whylabs
 from zenml.steps.base_step import BaseStep
 from zenml.steps.step_interfaces.base_analyzer_step import (
-    BaseAnalyzerConfig,
+    BaseAnalyzerParameters,
     BaseAnalyzerStep,
 )
 from zenml.steps.utils import clone_step
+from zenml.utils import settings_utils
 
 
-class WhylogsProfilerConfig(BaseAnalyzerConfig):
-    """Config class for the WhylogsProfiler step.
+class WhylogsProfilerParameters(BaseAnalyzerParameters):
+    """Parameters class for the WhylogsProfiler step.
 
     Attributes:
         dataset_timestamp: timestamp to associate with the generated
@@ -49,13 +50,13 @@ class WhylogsProfilerStep(BaseAnalyzerStep):
     @staticmethod
     def entrypoint(  # type: ignore[override]
         dataset: pd.DataFrame,
-        config: WhylogsProfilerConfig,
+        params: WhylogsProfilerParameters,
     ) -> DatasetProfileView:
         """Main entrypoint function for the whylogs profiler.
 
         Args:
             dataset: pd.DataFrame, the given dataset
-            config: the configuration of the step
+            params: the parameters of the step
 
         Returns:
             whylogs profile with statistics generated for the input dataset
@@ -65,13 +66,13 @@ class WhylogsProfilerStep(BaseAnalyzerStep):
             WhylogsDataValidator.get_active_data_validator(),
         )
         return data_validator.data_profiling(
-            dataset, dataset_timestamp=config.dataset_timestamp
+            dataset, dataset_timestamp=params.dataset_timestamp
         )
 
 
 def whylogs_profiler_step(
     step_name: str,
-    config: WhylogsProfilerConfig,
+    params: WhylogsProfilerParameters,
     dataset_id: Optional[str] = None,
 ) -> BaseStep:
     """Shortcut function to create a new instance of the WhylogsProfilerStep step.
@@ -82,13 +83,18 @@ def whylogs_profiler_step(
 
     Args:
         step_name: The name of the step
-        config: The step configuration
+        params: The step parameters
         dataset_id: Optional dataset ID to use to upload the profile to Whylabs.
 
     Returns:
         a WhylogsProfilerStep step instance
     """
-    step = enable_whylabs(dataset_id=dataset_id)(
-        clone_step(WhylogsProfilerStep, step_name)
+    step_class = clone_step(WhylogsProfilerStep, step_name)
+    step_instance = step_class(params=params)
+
+    key = settings_utils.get_stack_component_setting_key(WhylogsDataValidator)
+    settings = WhylogsDataValidatorSettings(
+        enable_whylabs=True, dataset_id=dataset_id
     )
-    return step(config=config)
+    step_instance.configure(settings={key: settings})
+    return step_instance

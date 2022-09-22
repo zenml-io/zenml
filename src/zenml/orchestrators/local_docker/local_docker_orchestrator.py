@@ -15,23 +15,17 @@
 
 import os
 import sys
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List
+from typing import TYPE_CHECKING, Any, ClassVar, Dict
 
-from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
-
+from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
+from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
-from zenml.orchestrators.local_docker.local_docker_entrypoint_configuration import (
-    RUN_NAME_OPTION,
-    LocalDockerEntrypointConfiguration,
-)
 from zenml.stack import Stack
-from zenml.steps import BaseStep
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
-    from zenml.pipelines import BasePipeline
-    from zenml.runtime_configuration import RuntimeConfiguration
+    from zenml.config.pipeline_deployment import PipelineDeployment
 
 logger = get_logger(__name__)
 
@@ -47,39 +41,33 @@ class LocalDockerOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
     def prepare_pipeline_deployment(
         self,
-        pipeline: "BasePipeline",
+        deployment: "PipelineDeployment",
         stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
     ) -> None:
-        """Builds a docker image for the current environment.
-
-        This function also uploads it to a container registry if configured.
+        """Build a Docker image and (maybe) push it to the container registry.
 
         Args:
-            pipeline: The pipeline to be deployed.
-            stack: The stack to be deployed.
-            runtime_configuration: The runtime configuration to be used.
+            deployment: The pipeline deployment configuration.
+            stack: The stack on which the pipeline will be deployed.
         """
         if stack.container_registry:
-            self.build_and_push_docker_image(
-                pipeline_name=pipeline.name,
-                docker_configuration=pipeline.docker_configuration,
-                stack=stack,
-                runtime_configuration=runtime_configuration,
+            repo_digest = self.build_and_push_docker_image(
+                deployment=deployment, stack=stack
             )
+            deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
         else:
             # If there is no container registry, we only build the image
-            target_image_name = (
-                f"{pipeline.docker_configuration.target_repository}:"
-                f"{pipeline.name}"
+            target_image_name = self.get_target_image_name(
+                deployment=deployment
             )
             self.build_docker_image(
                 target_image_name=target_image_name,
-                pipeline_name=pipeline.name,
-                docker_configuration=pipeline.docker_configuration,
+                deployment=deployment,
                 stack=stack,
             )
-            runtime_configuration["docker_image"] = target_image_name
+            deployment.add_extra(
+                ORCHESTRATOR_DOCKER_IMAGE_KEY, target_image_name
+            )
 
     @staticmethod
     def _get_volumes(stack: "Stack") -> Dict[str, Dict[str, str]]:
@@ -105,57 +93,46 @@ class LocalDockerOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
     def prepare_or_run_pipeline(
         self,
-        sorted_steps: List[BaseStep],
-        pipeline: "BasePipeline",
-        pb2_pipeline: Pb2Pipeline,
+        deployment: "PipelineDeployment",
         stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
-        """This method iterates through all steps and executes them in Docker.
+        """Sequentially runs all pipeline steps in local Docker containers.
 
         Args:
-            sorted_steps: A list of steps in the pipeline.
-            pipeline: The pipeline object.
-            pb2_pipeline: The pipeline object in protobuf format.
-            stack: The stack object.
-            runtime_configuration: The runtime configuration object.
+            deployment: The pipeline deployment to prepare or run.
+            stack: The stack the pipeline will run on.
         """
-        if runtime_configuration.schedule:
+        if deployment.schedule:
             logger.warning(
                 "Local Docker Orchestrator currently does not support the"
                 "use of schedules. The `schedule` will be ignored "
                 "and the pipeline will be run immediately."
             )
-        assert runtime_configuration.run_name, "Run name must be set"
 
         from docker.client import DockerClient
 
         docker_client = DockerClient.from_env()
-        image_name = runtime_configuration["docker_image"]
-        entrypoint = LocalDockerEntrypointConfiguration.get_entrypoint_command()
+        image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
+        entrypoint = StepEntrypointConfiguration.get_entrypoint_command()
 
         # Run each step
-        for step in sorted_steps:
+        for step_name, step in deployment.steps.items():
             if self.requires_resources_in_orchestration_environment(step):
                 logger.warning(
                     "Specifying step resources is not supported for the local "
                     "Docker orchestrator, ignoring resource configuration for "
                     "step %s.",
-                    step.name,
+                    step.config.name,
                 )
 
-            arguments = (
-                LocalDockerEntrypointConfiguration.get_entrypoint_arguments(
-                    step=step,
-                    pb2_pipeline=pb2_pipeline,
-                    **{RUN_NAME_OPTION: runtime_configuration.run_name},
-                )
+            arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
+                step_name=step_name
             )
             volumes = self._get_volumes(stack=stack)
             user = None
             if sys.platform != "win32":
                 user = os.getuid()
-            logger.info("Running step `%s` in Docker:", step.name)
+            logger.info("Running step `%s` in Docker:", step_name)
             logs = docker_client.containers.run(
                 image=image_name,
                 entrypoint=entrypoint,

@@ -32,7 +32,17 @@
 import os
 import re
 import sys
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    cast,
+)
 from uuid import UUID
 
 import kfp
@@ -43,9 +53,10 @@ from kfp_server_api.exceptions import ApiException
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 from pydantic import root_validator
-from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
 from zenml.artifact_stores import LocalArtifactStore
+from zenml.config.base_settings import BaseSettings, ConfigurationLevel
+from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.exceptions import ProvisioningError
@@ -55,6 +66,7 @@ from zenml.integrations.kubeflow.orchestrators import (
     utils,
 )
 from zenml.integrations.kubeflow.orchestrators.kubeflow_entrypoint_configuration import (
+    ENV_ZENML_RUN_NAME,
     METADATA_UI_PATH_OPTION,
     KubeflowEntrypointConfiguration,
 )
@@ -70,10 +82,9 @@ from zenml.utils import deprecation_utils, io_utils, networking_utils
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
-    from zenml.pipelines.base_pipeline import BasePipeline
-    from zenml.runtime_configuration import RuntimeConfiguration
+    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.stack import Stack
-    from zenml.steps import BaseStep, ResourceConfiguration
+    from zenml.steps import ResourceSettings
 
 
 logger = get_logger(__name__)
@@ -83,6 +94,26 @@ KFP_POD_LABELS = {
     "add-pod-env": "true",
     "pipelines.kubeflow.org/pipeline-sdk-type": "zenml",
 }
+
+SINGLE_RUN_RUN_NAME_PLACEHOLDER = (
+    "{{workflow.annotations.pipelines.kubeflow.org/run_name}}"
+)
+SCHEDULED_RUN_NAME_PLACEHOLDER = "{{workflow.name}}"
+
+
+class KubeflowOrchestratorSettings(BaseSettings):
+    """Settings for the Kubeflow orchestrator.
+
+    Attributes:
+        client_args: Arguments to pass when initializing the KFP client.
+        user_namespace: The user namespace to use when creating experiments
+            and runs.
+    """
+
+    LEVEL: ClassVar[ConfigurationLevel] = ConfigurationLevel.PIPELINE
+
+    client_args: Dict[str, Any] = {}
+    user_namespace: Optional[str] = None
 
 
 class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
@@ -101,6 +132,8 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         kubeflow_hostname: The hostname to use to talk to the Kubeflow Pipelines
             API. If not set, the hostname will be derived from the Kubernetes
             API proxy.
+        kubeflow_namespace: The Kubernetes namespace in which Kubeflow
+            Pipelines is deployed.
         kubernetes_context: Optional name of a kubernetes context to run
             pipelines in. If not set, the current active context will be used.
             You can find the active context by running `kubectl config
@@ -118,6 +151,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
     custom_docker_base_image_name: Optional[str] = None
     kubeflow_pipelines_ui_port: int = DEFAULT_KFP_UI_PORT
     kubeflow_hostname: Optional[str] = None
+    kubeflow_namespace: str = "kubeflow"
     kubernetes_context: Optional[str] = None
     synchronous: bool = False
     skip_local_validations: bool = False
@@ -197,6 +231,15 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         context_names = [c["name"] for c in contexts]
         active_context_name = active_context["name"]
         return context_names, active_context_name
+
+    @property
+    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+        """Settings class for the Kubeflow orchestrator.
+
+        Returns:
+            The settings class.
+        """
+        return KubeflowOrchestratorSettings
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -369,28 +412,24 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
     def prepare_pipeline_deployment(
         self,
-        pipeline: "BasePipeline",
+        deployment: "PipelineDeployment",
         stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
     ) -> None:
-        """Builds a docker image for the current environment.
-
-        This function also uploads it to a container registry if configured.
+        """Build a Docker image and push it to the container registry.
 
         Args:
-            pipeline: The pipeline to be deployed.
-            stack: The stack to be deployed.
-            runtime_configuration: The runtime configuration to be used.
+            deployment: The pipeline deployment configuration.
+            stack: The stack on which the pipeline will be deployed.
         """
-        self.build_and_push_docker_image(
-            pipeline_name=pipeline.name,
-            docker_configuration=pipeline.docker_configuration,
-            stack=stack,
-            runtime_configuration=runtime_configuration,
+        repo_digest = self.build_and_push_docker_image(
+            deployment=deployment, stack=stack
         )
+        deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
 
     @staticmethod
-    def _configure_container_op(container_op: dsl.ContainerOp) -> None:
+    def _configure_container_op(
+        container_op: dsl.ContainerOp, is_scheduled_run: bool
+    ) -> None:
         """Makes changes in place to the configuration of the container op.
 
         Configures persistent mounted volumes for each stack component that
@@ -399,6 +438,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
         Args:
             container_op: The kubeflow container operation to configure.
+            is_scheduled_run: Whether the pipeline is scheduled or a single run.
 
         Raises:
             ValueError: If the local path is not in the global config directory.
@@ -479,25 +519,21 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                     "in kubeflow pipelines container."
                 )
 
-        # Add environment variables for Azure Blob Storage to pod in case they
-        # are set locally
-        # TODO [ENG-699]: remove this as soon as we implement credential
-        #  handling
-        for key in [
-            "AZURE_STORAGE_ACCOUNT_KEY",
-            "AZURE_STORAGE_ACCOUNT_NAME",
-            "AZURE_STORAGE_CONNECTION_STRING",
-            "AZURE_STORAGE_SAS_TOKEN",
-        ]:
-            value = os.getenv(key)
-            if value:
-                container_op.container.add_env_variable(
-                    k8s_client.V1EnvVar(name=key, value=value)
-                )
-
         # Add some pod labels to the container_op
         for k, v in KFP_POD_LABELS.items():
             container_op.add_pod_label(k, v)
+
+        run_name = (
+            SCHEDULED_RUN_NAME_PLACEHOLDER
+            if is_scheduled_run
+            else SINGLE_RUN_RUN_NAME_PLACEHOLDER
+        )
+        container_op.container.add_env_variable(
+            k8s_client.V1EnvVar(
+                name=ENV_ZENML_RUN_NAME,
+                value=run_name,
+            )
+        )
 
         # Mounts configmap containing Metadata gRPC server configuration.
         container_op.apply(utils.mount_config_map_op("metadata-grpc-configmap"))
@@ -505,36 +541,33 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
     @staticmethod
     def _configure_container_resources(
         container_op: dsl.ContainerOp,
-        resource_configuration: "ResourceConfiguration",
+        resource_settings: "ResourceSettings",
     ) -> None:
         """Adds resource requirements to the container.
 
         Args:
             container_op: The kubeflow container operation to configure.
-            resource_configuration: The resource configuration to use for this
+            resource_settings: The resource settings to use for this
                 container.
         """
-        if resource_configuration.cpu_count is not None:
+        if resource_settings.cpu_count is not None:
             container_op = container_op.set_cpu_limit(
-                str(resource_configuration.cpu_count)
+                str(resource_settings.cpu_count)
             )
 
-        if resource_configuration.gpu_count is not None:
+        if resource_settings.gpu_count is not None:
             container_op = container_op.set_gpu_limit(
-                resource_configuration.gpu_count
+                resource_settings.gpu_count
             )
 
-        if resource_configuration.memory is not None:
-            memory_limit = resource_configuration.memory[:-1]
+        if resource_settings.memory is not None:
+            memory_limit = resource_settings.memory[:-1]
             container_op = container_op.set_memory_limit(memory_limit)
 
     def prepare_or_run_pipeline(
         self,
-        sorted_steps: List["BaseStep"],
-        pipeline: "BasePipeline",
-        pb2_pipeline: Pb2Pipeline,
+        deployment: "PipelineDeployment",
         stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
         """Creates a kfp yaml file.
 
@@ -561,16 +594,11 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
         then uploaded into the kubeflow pipelines cluster for execution.
 
         Args:
-            sorted_steps: A list of steps sorted by their order in the
-                pipeline.
-            pipeline: The pipeline object.
-            pb2_pipeline: The pipeline object in protobuf format.
-            stack: The stack object.
-            runtime_configuration: The runtime configuration object.
+            deployment: The pipeline deployment to prepare or run.
+            stack: The stack the pipeline will run on.
 
         Raises:
-            RuntimeError: If you try to run the pipelines in a notebook
-                environment.
+            RuntimeError: If trying to run a pipeline in a notebook environment.
         """
         # First check whether the code running in a notebook
         if Environment.in_notebook():
@@ -583,7 +611,8 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 "orchestrator."
             )
 
-        image_name = runtime_configuration["docker_image"]
+        image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
+        is_scheduled_run = bool(deployment.schedule)
 
         # Create a callable for future compilation into a dsl.Pipeline.
         def _construct_kfp_pipeline() -> None:
@@ -602,7 +631,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             # Dictionary of container_ops index by the associated step name
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
-            for step in sorted_steps:
+            for step_name, step in deployment.steps.items():
                 # The command will be needed to eventually call the python step
                 # within the docker container
                 command = (
@@ -614,8 +643,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 metadata_ui_path = "/outputs/mlpipeline-ui-metadata.json"
                 arguments = (
                     KubeflowEntrypointConfiguration.get_entrypoint_arguments(
-                        step=step,
-                        pb2_pipeline=pb2_pipeline,
+                        step_name=step_name,
                         **{METADATA_UI_PATH_OPTION: metadata_ui_path},
                     )
                 )
@@ -628,7 +656,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 # out more about how these arguments are parsed and used
                 # in the base entrypoint `run()` method.
                 container_op = dsl.ContainerOp(
-                    name=step.name,
+                    name=step.config.name,
                     image=image_name,
                     command=command,
                     arguments=arguments,
@@ -637,68 +665,67 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                     },
                 )
 
-                # Mounts persistent volumes, configmaps and adds labels to the
-                # container op
-                self._configure_container_op(container_op=container_op)
+                self._configure_container_op(
+                    container_op=container_op, is_scheduled_run=is_scheduled_run
+                )
 
                 if self.requires_resources_in_orchestration_environment(step):
                     self._configure_container_resources(
                         container_op=container_op,
-                        resource_configuration=step.resource_configuration,
+                        resource_settings=step.config.resource_settings,
                     )
 
                 # Find the upstream container ops of the current step and
                 # configure the current container op to run after them
-                upstream_step_names = self.get_upstream_step_names(
-                    step=step, pb2_pipeline=pb2_pipeline
-                )
-                for upstream_step_name in upstream_step_names:
+                for upstream_step_name in step.spec.upstream_steps:
                     upstream_container_op = step_name_to_container_op[
                         upstream_step_name
                     ]
                     container_op.after(upstream_container_op)
 
                 # Update dictionary of container ops with the current one
-                step_name_to_container_op[step.name] = container_op
+                step_name_to_container_op[step.config.name] = container_op
 
         # Get a filepath to use to save the finished yaml to
-        assert runtime_configuration.run_name
         fileio.makedirs(self.pipeline_directory)
         pipeline_file_path = os.path.join(
-            self.pipeline_directory, f"{runtime_configuration.run_name}.yaml"
+            self.pipeline_directory, f"{deployment.run_name}.yaml"
         )
 
         # write the argo pipeline yaml
         KFPCompiler()._create_and_write_workflow(
             pipeline_func=_construct_kfp_pipeline,
-            pipeline_name=pipeline.name,
+            pipeline_name=deployment.pipeline.name,
             package_path=pipeline_file_path,
         )
 
         # using the kfp client uploads the pipeline to kubeflow pipelines and
         # runs it there
         self._upload_and_run_pipeline(
-            pipeline_name=pipeline.name,
+            deployment=deployment,
             pipeline_file_path=pipeline_file_path,
-            runtime_configuration=runtime_configuration,
-            enable_cache=pipeline.enable_cache,
         )
 
     def _upload_and_run_pipeline(
         self,
-        pipeline_name: str,
+        deployment: "PipelineDeployment",
         pipeline_file_path: str,
-        runtime_configuration: "RuntimeConfiguration",
-        enable_cache: bool,
     ) -> None:
         """Tries to upload and run a KFP pipeline.
 
         Args:
-            pipeline_name: Name of the pipeline.
+            deployment: The pipeline deployment.
             pipeline_file_path: Path to the pipeline definition file.
-            runtime_configuration: Runtime configuration of the pipeline run.
-            enable_cache: Whether caching is enabled for this pipeline run.
         """
+        pipeline_name = deployment.pipeline.name
+        run_name = deployment.run_name
+        enable_cache = deployment.pipeline.enable_cache
+        settings = cast(
+            Optional[KubeflowOrchestratorSettings],
+            self.get_settings(deployment),
+        )
+        user_namespace = settings.user_namespace if settings else None
+
         try:
             logger.info(
                 "Running in kubernetes context '%s'.",
@@ -706,44 +733,44 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             )
 
             # upload the pipeline to Kubeflow and start it
-            client = kfp.Client(
-                host=self.kubeflow_hostname,
-                kube_context=self.kubernetes_context,
-            )
-            if runtime_configuration.schedule:
+            client = self._get_kfp_client(settings=settings)
+            if deployment.schedule:
                 try:
-                    experiment = client.get_experiment(pipeline_name)
+                    experiment = client.get_experiment(
+                        pipeline_name, namespace=user_namespace
+                    )
                     logger.info(
                         "A recurring run has already been created with this "
                         "pipeline. Creating new recurring run now.."
                     )
                 except (ValueError, ApiException):
-                    experiment = client.create_experiment(pipeline_name)
+                    experiment = client.create_experiment(
+                        pipeline_name, namespace=user_namespace
+                    )
                     logger.info(
                         "Creating a new recurring run for pipeline '%s'.. ",
                         pipeline_name,
                     )
                 logger.info(
-                    "You can see all recurring runs under the '%s' experiment.'",
+                    "You can see all recurring runs under the '%s' experiment.",
                     pipeline_name,
                 )
 
-                schedule = runtime_configuration.schedule
                 interval_seconds = (
-                    schedule.interval_second.seconds
-                    if schedule.interval_second
+                    deployment.schedule.interval_second.seconds
+                    if deployment.schedule.interval_second
                     else None
                 )
                 result = client.create_recurring_run(
                     experiment_id=experiment.id,
-                    job_name=runtime_configuration.run_name,
+                    job_name=run_name,
                     pipeline_package_path=pipeline_file_path,
                     enable_caching=enable_cache,
-                    cron_expression=schedule.cron_expression,
-                    start_time=schedule.utc_start_time,
-                    end_time=schedule.utc_end_time,
+                    cron_expression=deployment.schedule.cron_expression,
+                    start_time=deployment.schedule.utc_start_time,
+                    end_time=deployment.schedule.utc_end_time,
                     interval_second=interval_seconds,
-                    no_catchup=not schedule.catchup,
+                    no_catchup=not deployment.schedule.catchup,
                 )
 
                 logger.info("Started recurring run with ID '%s'.", result.id)
@@ -754,8 +781,9 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 result = client.create_run_from_pipeline_package(
                     pipeline_file_path,
                     arguments={},
-                    run_name=runtime_configuration.run_name,
+                    run_name=run_name,
                     enable_caching=enable_cache,
+                    namespace=user_namespace,
                 )
                 logger.info(
                     "Started one-off pipeline run with ID '%s'.", result.run_id
@@ -763,7 +791,7 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
 
                 if self.synchronous:
                     # TODO [ENG-698]: Allow configuration of the timeout as a
-                    #  runtime option
+                    #  setting
                     client.wait_for_run_completion(
                         run_id=result.run_id, timeout=1200
                     )
@@ -775,6 +803,34 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
                 f"correctly.",
                 error,
             )
+
+    def _get_kfp_client(
+        self,
+        settings: Optional[KubeflowOrchestratorSettings] = None,
+    ) -> kfp.Client:
+        """Creates a KFP client instance.
+
+        Args:
+            settings: Optional settings which can be used to
+                configure the client instance.
+
+        Returns:
+            A KFP client instance.
+        """
+        client_args = {
+            "kube_context": self.kubernetes_context,
+        }
+
+        if settings:
+            client_args.update(settings.client_args)
+
+        # The host and namespace are stack component configurations that refer
+        # to the Kubeflow deployment. We don't want these overwritten on a
+        # run by run basis by user settings
+        client_args["host"] = self.kubeflow_hostname
+        client_args["namespace"] = self.kubeflow_namespace
+
+        return kfp.Client(**client_args)
 
     @property
     def _pid_file_path(self) -> str:
@@ -1129,35 +1185,3 @@ class KubeflowOrchestrator(BaseOrchestrator, PipelineDockerImageBuilder):
             local_deployment_utils.stop_k3d_cluster(
                 cluster_name=self._k3d_cluster_name
             )
-
-    def _get_environment_vars_from_secrets(
-        self, secrets: List[str]
-    ) -> Dict[str, str]:
-        """Get key-value pairs from list of secrets provided by the user.
-
-        Args:
-            secrets: List of secrets provided by the user.
-
-        Returns:
-            A dictionary of key-value pairs.
-
-        Raises:
-            ProvisioningError: If the stack has no secrets manager.
-        """
-        environment_vars: Dict[str, str] = {}
-        secret_manager = Repository().active_stack.secrets_manager
-        if secrets and secret_manager:
-            for secret in secrets:
-                secret_schema = secret_manager.get_secret(secret)
-                environment_vars.update(secret_schema.content)
-        elif secrets and not secret_manager:
-            raise ProvisioningError(
-                "Unable to provision local Kubeflow Pipelines deployment: "
-                f"You passed in the following secrets: { ', '.join(secrets) }, "
-                "however, no secrets manager is registered for the current "
-                "stack."
-            )
-        else:
-            # No secrets provided by the user.
-            pass
-        return environment_vars

@@ -22,6 +22,7 @@ from kubernetes import client
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.integrations.kserve import KSERVE_MODEL_DEPLOYER_FLAVOR
+from zenml.integrations.kserve.constants import KSERVE_DOCKER_IMAGE_KEY
 from zenml.integrations.kserve.services.kserve_deployment import (
     KServeDeploymentConfig,
     KServeDeploymentService,
@@ -37,8 +38,7 @@ from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
-    from zenml.config.docker_configuration import DockerConfiguration
-    from zenml.runtime_configuration import RuntimeConfiguration
+    from zenml.config.pipeline_deployment import PipelineDeployment
 
 logger = get_logger(__name__)
 
@@ -139,6 +139,22 @@ class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
                 context=self.kubernetes_context,
             )
         return self._client
+
+    def prepare_pipeline_deployment(
+        self,
+        deployment: "PipelineDeployment",
+        stack: "Stack",
+    ) -> None:
+        """Build a Docker image and push it to the container registry.
+
+        Args:
+            deployment: The pipeline deployment configuration.
+            stack: The stack on which the pipeline will be deployed.
+        """
+        repo_digest = self.build_and_push_docker_image(
+            deployment=deployment, stack=stack
+        )
+        deployment.add_extra(KSERVE_DOCKER_IMAGE_KEY, repo_digest)
 
     def _set_credentials(self) -> None:
         """Set the credentials for the given service instance.
@@ -530,46 +546,3 @@ class KServeModelDeployer(BaseModelDeployer, PipelineDockerImageBuilder):
                     f"manager `{secret_manager.name}`."
                 )
         return None
-
-    def prepare_custom_deployment_image(
-        self,
-        pipeline_name: str,
-        stack: "Stack",
-        docker_configuration: "DockerConfiguration",
-        runtime_configuration: "RuntimeConfiguration",
-        entrypoint: List[str],
-    ) -> str:
-        """Prepare the custom deployment image for the KServe deployment.
-
-        This function is called by the deployment step of the pipeline.
-        It is responsible for the preparation of the custom deployment image
-        either by returning the image name in the case of a remote orchestrator
-        or by building a new image if only a local orchestrator is used.
-
-        Args:
-            pipeline_name: The pipeline to be deployed.
-            stack: The stack to be deployed.
-            docker_configuration: The Docker configuration to be used.
-            runtime_configuration: The runtime configuration to be used.
-            entrypoint: The entrypoint to be used.
-
-        Returns:
-            The name of the image to be used for the deployment.
-        """
-        # verify the flavor of the orchestrator.
-        # if the orchestrator is local, then we need to build a docker image with the repo
-        # and requirements and push it to the container registry.
-        # if the orchestrator is remote, then we can use the same image used to run the pipeline.
-        if stack.orchestrator.FLAVOR == "local":
-            # more information about stack ..
-            custom_docker_image_name = self.build_and_push_docker_image(
-                pipeline_name=pipeline_name,
-                docker_configuration=docker_configuration,
-                stack=stack,
-                runtime_configuration=runtime_configuration,
-                entrypoint=" ".join(entrypoint),
-            )
-        else:
-            custom_docker_image_name = runtime_configuration["docker_image"]
-
-        return custom_docker_image_name

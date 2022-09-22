@@ -22,6 +22,7 @@ from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.environment import Environment
 from zenml.exceptions import DoesNotExistException
+from zenml.integrations.seldon.constants import SELDON_DOCKER_IMAGE_KEY
 from zenml.integrations.seldon.model_deployers.seldon_model_deployer import (
     DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT,
     SeldonModelDeployer,
@@ -37,7 +38,7 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
-    BaseStepConfig,
+    BaseParameters,
     StepEnvironment,
     step,
 )
@@ -88,8 +89,8 @@ class CustomDeployParameters(BaseModel):
         return predict_func_path
 
 
-class SeldonDeployerStepConfig(BaseStepConfig):
-    """Seldon model deployer step configuration.
+class SeldonDeployerStepParameters(BaseParameters):
+    """Seldon model deployer step parameters.
 
     Attributes:
         service_config: Seldon Core deployment service configuration.
@@ -108,7 +109,7 @@ class SeldonDeployerStepConfig(BaseStepConfig):
 @step(enable_cache=False)
 def seldon_model_deployer_step(
     deploy_decision: bool,
-    config: SeldonDeployerStepConfig,
+    params: SeldonDeployerStepParameters,
     context: StepContext,
     model: ModelArtifact,
 ) -> SeldonDeploymentService:
@@ -119,7 +120,7 @@ def seldon_model_deployer_step(
 
     Args:
         deploy_decision: whether to deploy the model or not
-        config: configuration for the deployer step
+        params: parameters for the deployer step
         model: the model artifact to deploy
         context: the step context
 
@@ -135,9 +136,9 @@ def seldon_model_deployer_step(
     step_name = step_env.step_name
 
     # update the step configuration with the real pipeline runtime information
-    config.service_config.pipeline_name = pipeline_name
-    config.service_config.pipeline_run_id = pipeline_run_id
-    config.service_config.pipeline_step_name = step_name
+    params.service_config.pipeline_name = pipeline_name
+    params.service_config.pipeline_run_id = pipeline_run_id
+    params.service_config.pipeline_step_name = step_name
 
     def prepare_service_config(model_uri: str) -> SeldonDeploymentConfig:
         """Prepare the model files for model serving.
@@ -171,12 +172,12 @@ def seldon_model_deployer_step(
 
         # TODO [ENG-792]: validate the model artifact type against the
         #   supported built-in Seldon server implementations
-        if config.service_config.implementation == "TENSORFLOW_SERVER":
+        if params.service_config.implementation == "TENSORFLOW_SERVER":
             # the TensorFlow server expects model artifacts to be
             # stored in numbered subdirectories, each representing a model
             # version
             io_utils.copy_dir(model_uri, os.path.join(served_model_uri, "1"))
-        elif config.service_config.implementation == "SKLEARN_SERVER":
+        elif params.service_config.implementation == "SKLEARN_SERVER":
             # the sklearn server expects model artifacts to be
             # stored in a file called model.joblib
             model_uri = os.path.join(model.uri, "model")
@@ -194,7 +195,7 @@ def seldon_model_deployer_step(
             # is originally stored
             served_model_uri = model_uri
 
-        service_config = config.service_config.copy()
+        service_config = params.service_config.copy()
         service_config.model_uri = served_model_uri
         return service_config
 
@@ -203,7 +204,7 @@ def seldon_model_deployer_step(
     existing_services = model_deployer.find_model_server(
         pipeline_name=pipeline_name,
         pipeline_step_name=step_name,
-        model_name=config.service_config.model_name,
+        model_name=params.service_config.model_name,
     )
 
     # even when the deploy decision is negative, if an existing model server
@@ -214,14 +215,14 @@ def seldon_model_deployer_step(
             f"Skipping model deployment because the model quality does not "
             f"meet the criteria. Reusing last model server deployed by step "
             f"'{step_name}' and pipeline '{pipeline_name}' for model "
-            f"'{config.service_config.model_name}'..."
+            f"'{params.service_config.model_name}'..."
         )
         service = cast(SeldonDeploymentService, existing_services[0])
         # even when the deploy decision is negative, we still need to start
         # the previous model server if it is no longer running, to ensure that
         # a model server is available at all times
         if not service.is_running:
-            service.start(timeout=config.timeout)
+            service.start(timeout=params.timeout)
         return service
 
     # invoke the Seldon Core model deployer to create a new service
@@ -231,7 +232,7 @@ def seldon_model_deployer_step(
     service = cast(
         SeldonDeploymentService,
         model_deployer.deploy_model(
-            service_config, replace=True, timeout=config.timeout
+            service_config, replace=True, timeout=params.timeout
         ),
     )
 
@@ -246,7 +247,7 @@ def seldon_model_deployer_step(
 @step(enable_cache=False)
 def seldon_custom_model_deployer_step(
     deploy_decision: bool,
-    config: SeldonDeployerStepConfig,
+    params: SeldonDeployerStepParameters,
     context: StepContext,
     model: ModelArtifact,
 ) -> SeldonDeploymentService:
@@ -257,7 +258,7 @@ def seldon_custom_model_deployer_step(
 
     Args:
         deploy_decision: whether to deploy the model or not
-        config: configuration for the deployer step
+        params: parameters for the deployer step
         model: the model artifact to deploy
         context: the step context
 
@@ -269,7 +270,7 @@ def seldon_custom_model_deployer_step(
         Seldon Core deployment service
     """
     # verify that a custom deployer is defined
-    if not config.custom_deploy_parameters:
+    if not params.custom_deploy_parameters:
         raise ValueError(
             "Custom deploy parameter is required as part of the step configuration this parameter is",
             "the path of the custom predict function",
@@ -277,26 +278,24 @@ def seldon_custom_model_deployer_step(
     # get the active model deployer
     model_deployer = SeldonModelDeployer.get_active_model_deployer()
 
-    # get pipeline name, step name, run id, docker config and the runtime config
+    # get pipeline name, step name, run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
     pipeline_name = step_env.pipeline_name
     pipeline_run_id = step_env.pipeline_run_id
     step_name = step_env.step_name
-    docker_configuration = step_env.docker_configuration
-    runtime_configuration = step_env.runtime_configuration
 
     # update the step configuration with the real pipeline runtime information
-    config.service_config.pipeline_name = pipeline_name
-    config.service_config.pipeline_run_id = pipeline_run_id
-    config.service_config.pipeline_step_name = step_name
-    config.service_config.is_custom_deployment = True
+    params.service_config.pipeline_name = pipeline_name
+    params.service_config.pipeline_run_id = pipeline_run_id
+    params.service_config.pipeline_step_name = step_name
+    params.service_config.is_custom_deployment = True
 
     # fetch existing services with the same pipeline name, step name and
     # model name
     existing_services = model_deployer.find_model_server(
         pipeline_name=pipeline_name,
         pipeline_step_name=step_name,
-        model_name=config.service_config.model_name,
+        model_name=params.service_config.model_name,
     )
     # even when the deploy decision is negative if an existing model server
     # is not running for this pipeline/step, we still have to serve the
@@ -306,14 +305,14 @@ def seldon_custom_model_deployer_step(
             f"Skipping model deployment because the model quality does not"
             f" meet the criteria. Reusing the last model server deployed by step "
             f"'{step_name}' and pipeline '{pipeline_name}' for model "
-            f"'{config.service_config.model_name}'..."
+            f"'{params.service_config.model_name}'..."
         )
         service = cast(SeldonDeploymentService, existing_services[0])
         # even when the deployment decision is negative, we still need to start
         # the previous model server if it is no longer running, to ensure that
         # a model server is available at all times
         if not service.is_running:
-            service.start(timeout=config.timeout)
+            service.start(timeout=params.timeout)
         return service
 
     # entrypoint for starting Seldon microservice deployment for custom model
@@ -322,9 +321,9 @@ def seldon_custom_model_deployer_step(
         "-m",
         "zenml.integrations.seldon.custom_deployer.zenml_custom_model",
         "--model_name",
-        config.service_config.model_name,
+        params.service_config.model_name,
         "--predict_func",
-        config.custom_deploy_parameters.predict_function,
+        params.custom_deploy_parameters.predict_function,
     ]
 
     # verify if there is an active stack before starting the service
@@ -335,14 +334,9 @@ def seldon_custom_model_deployer_step(
         )
     stack = context.stack
 
-    # prepare the custom deployment docker image
-    custom_docker_image_name = model_deployer.prepare_custom_deployment_image(
-        pipeline_name=pipeline_name,
-        stack=stack,
-        docker_configuration=docker_configuration,
-        runtime_configuration=runtime_configuration,
-        entrypoint=entrypoint_command,
-    )
+    docker_image = step_env.step_run_info.pipeline.extra[
+        SELDON_DOCKER_IMAGE_KEY
+    ]
 
     # copy the model files to new specific directory for the deployment
     served_model_uri = os.path.join(context.get_output_artifact_uri(), "seldon")
@@ -364,13 +358,13 @@ def seldon_custom_model_deployer_step(
     )
 
     # prepare the service configuration for the deployment
-    service_config = config.service_config.copy()
+    service_config = params.service_config.copy()
     service_config.model_uri = served_model_uri
 
     # create the specification for the custom deployment
     service_config.spec = create_seldon_core_custom_spec(
         model_uri=service_config.model_uri,
-        custom_docker_image=custom_docker_image_name,
+        custom_docker_image=docker_image,
         secret_name=model_deployer.kubernetes_secret_name,
         command=entrypoint_command,
     )
@@ -379,7 +373,7 @@ def seldon_custom_model_deployer_step(
     service = cast(
         SeldonDeploymentService,
         model_deployer.deploy_model(
-            service_config, replace=True, timeout=config.timeout
+            service_config, replace=True, timeout=params.timeout
         ),
     )
 

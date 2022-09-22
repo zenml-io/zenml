@@ -38,18 +38,17 @@ from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsMixin,
 )
 from zenml.logger import get_logger
-from zenml.repository import Repository
-from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 from zenml.utils import deprecation_utils
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
-    from zenml.config.docker_configuration import DockerConfiguration
-    from zenml.config.resource_configuration import ResourceConfiguration
-
+    from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.config.step_run_info import StepRunInfo
 logger = get_logger(__name__)
+
+VERTEX_DOCKER_IMAGE_DIGEST_KEY = "vertex_docker_image"
 
 
 class VertexStepOperator(
@@ -133,30 +132,49 @@ class VertexStepOperator(
                 f"Accelerator must be one of the following: {accepted_vals}"
             )
 
-    def launch(
+    def prepare_pipeline_deployment(
         self,
-        pipeline_name: str,
-        run_name: str,
-        docker_configuration: "DockerConfiguration",
-        entrypoint_command: List[str],
-        resource_configuration: "ResourceConfiguration",
+        deployment: "PipelineDeployment",
+        stack: "Stack",
     ) -> None:
-        """Launches a step on Vertex AI.
+        """Build a Docker image and push it to the container registry.
 
         Args:
-            pipeline_name: Name of the pipeline which the step to be executed
-                is part of.
-            run_name: Name of the pipeline run which the step to be executed
-                is part of.
-            docker_configuration: The Docker configuration for this step.
+            deployment: The pipeline deployment configuration.
+            stack: The stack on which the pipeline will be deployed.
+        """
+        steps_to_run = [
+            step
+            for step in deployment.steps.values()
+            if step.config.step_operator == self.name
+        ]
+        if not steps_to_run:
+            return
+
+        image_digest = self.build_and_push_docker_image(
+            deployment=deployment,
+            stack=stack,
+        )
+        for step in steps_to_run:
+            step.config.extra[VERTEX_DOCKER_IMAGE_DIGEST_KEY] = image_digest
+
+    def launch(
+        self,
+        info: "StepRunInfo",
+        entrypoint_command: List[str],
+    ) -> None:
+        """Launches a step on VertexAI.
+
+        Args:
+            info: Information about the step run.
             entrypoint_command: Command that executes the step.
-            resource_configuration: The resource configuration for this step.
 
         Raises:
             RuntimeError: If the run fails.
             ConnectionError: If the run fails due to a connection error.
         """
-        if resource_configuration.cpu_count or resource_configuration.memory:
+        resource_settings = info.config.resource_settings
+        if resource_settings.cpu_count or resource_settings.memory:
             logger.warning(
                 "Specifying cpus or memory is not supported for "
                 "the Vertex step operator. If you want to run this step "
@@ -182,15 +200,7 @@ class VertexStepOperator(
         else:
             self.project = project_id
 
-        # Step 2: Build and push image
-        image_name = self.build_and_push_docker_image(
-            pipeline_name=pipeline_name,
-            docker_configuration=docker_configuration,
-            stack=Repository().active_stack,
-            runtime_configuration=RuntimeConfiguration(),
-            entrypoint=" ".join(entrypoint_command),
-        )
-
+        image_name = info.config.extra[VERTEX_DOCKER_IMAGE_DIGEST_KEY]
         # Step 3: Launch the job
         # The AI Platform services require regional API endpoints.
         client_options = {"api_endpoint": self.region + VERTEX_ENDPOINT_SUFFIX}
@@ -200,10 +210,11 @@ class VertexStepOperator(
             credentials=credentials, client_options=client_options
         )
         accelerator_count = (
-            resource_configuration.gpu_count or self.accelerator_count
+            resource_settings.gpu_count or self.accelerator_count
         )
+        accelerator_count = self.accelerator_count
         custom_job = {
-            "display_name": run_name,
+            "display_name": info.run_name,
             "job_spec": {
                 "worker_pool_specs": [
                     {
@@ -217,7 +228,7 @@ class VertexStepOperator(
                         "replica_count": 1,
                         "container_spec": {
                             "image_uri": image_name,
-                            "command": [],
+                            "command": entrypoint_command,
                             "args": [],
                         },
                     }

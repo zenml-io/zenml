@@ -23,9 +23,9 @@ Pipelines can be written as simple functions. They are created by using decorato
 """
 
 
-from zenml.config.docker_configuration import DockerConfiguration
+from zenml.config import DockerSettings
+from zenml.config.schedule import Schedule
 from zenml.pipelines.base_pipeline import BasePipeline
 from zenml.pipelines.pipeline_decorator import pipeline
-from zenml.pipelines.schedule import Schedule
 
-__all__ = ["BasePipeline", "DockerConfiguration", "pipeline", "Schedule"]
+__all__ = ["BasePipeline", "DockerSettings", "pipeline", "Schedule"]

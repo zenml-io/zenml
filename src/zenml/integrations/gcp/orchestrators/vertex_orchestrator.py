@@ -30,7 +30,7 @@
 """Implementation of the VertexAI orchestrator."""
 
 import os
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Tuple
 
 import kfp
 from google.api_core import exceptions as google_exceptions
@@ -39,6 +39,7 @@ from kfp import dsl
 from kfp.v2 import dsl as dslv2
 from kfp.v2.compiler import Compiler as KFPV2Compiler
 
+from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.enums import StackComponentType
 from zenml.integrations.gcp import (
     GCP_ARTIFACT_STORE_FLAVOR,
@@ -60,12 +61,9 @@ from zenml.utils.io_utils import get_global_config_directory
 from zenml.utils.pipeline_docker_image_builder import PipelineDockerImageBuilder
 
 if TYPE_CHECKING:
-    from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
-
-    from zenml.pipelines.base_pipeline import BasePipeline
-    from zenml.runtime_configuration import RuntimeConfiguration
+    from zenml.config.pipeline_deployment import PipelineDeployment
     from zenml.stack import Stack
-    from zenml.steps import BaseStep, ResourceConfiguration
+    from zenml.steps import ResourceSettings
 
 logger = get_logger(__name__)
 
@@ -266,46 +264,40 @@ class VertexOrchestrator(
 
     def prepare_pipeline_deployment(
         self,
-        pipeline: "BasePipeline",
+        deployment: "PipelineDeployment",
         stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
     ) -> None:
-        """Build a Docker image for the current environment.
-
-        This uploads it to a container registry if configured.
+        """Build a Docker image and push it to the container registry.
 
         Args:
-            pipeline: The pipeline to be deployed.
-            stack: The stack that will be used to deploy the pipeline.
-            runtime_configuration: The runtime configuration for the pipeline.
+            deployment: The pipeline deployment configuration.
+            stack: The stack on which the pipeline will be deployed.
         """
-        self.build_and_push_docker_image(
-            pipeline_name=pipeline.name,
-            docker_configuration=pipeline.docker_configuration,
-            stack=stack,
-            runtime_configuration=runtime_configuration,
+        repo_digest = self.build_and_push_docker_image(
+            deployment=deployment, stack=stack
         )
+        deployment.add_extra(ORCHESTRATOR_DOCKER_IMAGE_KEY, repo_digest)
 
     def _configure_container_resources(
         self,
         container_op: dsl.ContainerOp,
-        resource_configuration: "ResourceConfiguration",
+        resource_settings: "ResourceSettings",
     ) -> None:
         """Adds resource requirements to the container.
 
         Args:
             container_op: The kubeflow container operation to configure.
-            resource_configuration: The resource configuration to use for this
+            resource_settings: The resource settings to use for this
                 container.
         """
         # Set optional CPU, RAM and GPU constraints for the pipeline
-        cpu_limit = resource_configuration.cpu_count or self.cpu_limit
+        cpu_limit = resource_settings.cpu_count or self.cpu_limit
         if cpu_limit is not None:
             container_op = container_op.set_cpu_limit(str(cpu_limit))
 
         memory_limit = (
-            resource_configuration.memory[:-1]
-            if resource_configuration.memory
+            resource_settings.memory[:-1]
+            if resource_settings.memory
             else self.memory_limit
         )
         if memory_limit is not None:
@@ -317,17 +309,14 @@ class VertexOrchestrator(
                 value=self.node_selector_constraint[1],
             )
 
-        gpu_limit = resource_configuration.gpu_count or self.gpu_limit
+        gpu_limit = resource_settings.gpu_count or self.gpu_limit
         if gpu_limit is not None:
             container_op = container_op.set_gpu_limit(gpu_limit)
 
     def prepare_or_run_pipeline(
         self,
-        sorted_steps: List["BaseStep"],
-        pipeline: "BasePipeline",
-        pb2_pipeline: "Pb2Pipeline",
+        deployment: "PipelineDeployment",
         stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
         """Creates a KFP JSON pipeline.
 
@@ -357,11 +346,8 @@ class VertexOrchestrator(
         execution.
 
         Args:
-            sorted_steps: List of sorted steps.
-            pipeline: Zenml Pipeline instance.
-            pb2_pipeline: Protobuf Pipeline instance.
-            stack: The stack the pipeline was run on.
-            runtime_configuration: The Runtime configuration of the current run.
+            deployment: The pipeline deployment to prepare or run.
+            stack: The stack the pipeline will run on.
 
         Raises:
             ValueError: If the attribute `pipeline_root` is not set and it
@@ -375,7 +361,7 @@ class VertexOrchestrator(
         # `GCPArtifactStore`.
         if not self.pipeline_root:
             artifact_store = stack.artifact_store
-            self._pipeline_root = f"{artifact_store.path.rstrip('/')}/vertex_pipeline_root/{pipeline.name}/{runtime_configuration.run_name}"
+            self._pipeline_root = f"{artifact_store.path.rstrip('/')}/vertex_pipeline_root/{deployment.pipeline.name}/{deployment.run_name}"
             logger.info(
                 "The attribute `pipeline_root` has not been set in the "
                 "orchestrator configuration. One has been generated "
@@ -387,9 +373,15 @@ class VertexOrchestrator(
         else:
             self._pipeline_root = self.pipeline_root
 
+        if deployment.schedule:
+            logger.warning(
+                "Pipeline scheduling configuration was provided, but Vertex "
+                "AI Pipelines does not support scheduling yet. Creating "
+                "a one-time run instead."
+            )
         # Build the Docker image that will be used to run the steps of the
         # pipeline.
-        image_name = runtime_configuration["docker_image"]
+        image_name = deployment.pipeline.extra[ORCHESTRATOR_DOCKER_IMAGE_KEY]
 
         def _construct_kfp_pipeline() -> None:
             """Create a `ContainerOp` for each step.
@@ -406,7 +398,7 @@ class VertexOrchestrator(
             """
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
-            for step in sorted_steps:
+            for step_name, step in deployment.steps.items():
                 # The command will be needed to eventually call the python step
                 # within the docker container
                 command = VertexEntrypointConfiguration.get_entrypoint_command()
@@ -414,8 +406,7 @@ class VertexOrchestrator(
                 # The arguments are passed to configure the entrypoint of the
                 # docker container when the step is called.
                 arguments = VertexEntrypointConfiguration.get_entrypoint_arguments(
-                    step=step,
-                    pb2_pipeline=pb2_pipeline,
+                    step_name=step_name,
                     **{VERTEX_JOB_ID_OPTION: dslv2.PIPELINE_JOB_ID_PLACEHOLDER},
                 )
 
@@ -424,7 +415,7 @@ class VertexOrchestrator(
                 # class directly is deprecated when using the Kubeflow SDK v2.
                 container_op = kfp.components.load_component_from_text(
                     f"""
-                    name: {step.name}
+                    name: {step.config.name}
                     implementation:
                         container:
                             image: {image_name}
@@ -432,10 +423,7 @@ class VertexOrchestrator(
                 )()
 
                 # Set upstream tasks as a dependency of the current step
-                upstream_step_names = self.get_upstream_step_names(
-                    step=step, pb2_pipeline=pb2_pipeline
-                )
-                for upstream_step_name in upstream_step_names:
+                for upstream_step_name in step.spec.upstream_steps:
                     upstream_container_op = step_name_to_container_op[
                         upstream_step_name
                     ]
@@ -443,17 +431,16 @@ class VertexOrchestrator(
 
                 self._configure_container_resources(
                     container_op=container_op,
-                    resource_configuration=step.resource_configuration,
+                    resource_settings=step.config.resource_settings,
                 )
 
-                step_name_to_container_op[step.name] = container_op
+                step_name_to_container_op[step.config.name] = container_op
 
         # Save the generated pipeline to a file.
-        assert runtime_configuration.run_name
         fileio.makedirs(self.pipeline_directory)
         pipeline_file_path = os.path.join(
             self.pipeline_directory,
-            f"{runtime_configuration.run_name}.json",
+            f"{deployment.run_name}.json",
         )
 
         # Compile the pipeline using the Kubeflow SDK V2 compiler that allows
@@ -467,24 +454,24 @@ class VertexOrchestrator(
         KFPV2Compiler().compile(
             pipeline_func=_construct_kfp_pipeline,
             package_path=pipeline_file_path,
-            pipeline_name=_clean_pipeline_name(pipeline.name),
+            pipeline_name=_clean_pipeline_name(deployment.pipeline.name),
         )
 
         # Using the Google Cloud AIPlatform client, upload and execute the
         # pipeline
         # on the Vertex AI Pipelines service.
         self._upload_and_run_pipeline(
-            pipeline_name=pipeline.name,
+            pipeline_name=deployment.pipeline.name,
             pipeline_file_path=pipeline_file_path,
-            runtime_configuration=runtime_configuration,
-            enable_cache=pipeline.enable_cache,
+            run_name=deployment.run_name,
+            enable_cache=deployment.pipeline.enable_cache,
         )
 
     def _upload_and_run_pipeline(
         self,
         pipeline_name: str,
         pipeline_file_path: str,
-        runtime_configuration: "RuntimeConfiguration",
+        run_name: str,
         enable_cache: bool,
     ) -> None:
         """Uploads and run the pipeline on the Vertex AI Pipelines service.
@@ -493,23 +480,13 @@ class VertexOrchestrator(
             pipeline_name: Name of the pipeline.
             pipeline_file_path: Path of the JSON file containing the compiled
                 Kubeflow pipeline (compiled with Kubeflow SDK v2).
-            runtime_configuration: Runtime configuration of the pipeline run.
+            run_name: Name of the pipeline run.
             enable_cache: Whether caching is enabled for this pipeline run.
         """
         # We have to replace the hyphens in the pipeline name with underscores
         # and lower case the string, because the Vertex AI Pipelines service
         # requires this format.
-        assert runtime_configuration.run_name
-        job_id = _clean_pipeline_name(runtime_configuration.run_name)
-
-        # Warn the user that the scheduling is not available using the Vertex
-        # Orchestrator
-        if runtime_configuration.schedule:
-            logger.warning(
-                "Pipeline scheduling configuration was provided, but Vertex "
-                "AI Pipelines "
-                "do not have capabilities for scheduling yet."
-            )
+        job_id = _clean_pipeline_name(run_name)
 
         # Get the credentials that would be used to create the Vertex AI
         # Pipelines

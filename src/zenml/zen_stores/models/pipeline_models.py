@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Pipeline models implementation."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, cast
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -21,10 +21,6 @@ from pydantic import BaseModel, Field
 import zenml
 from zenml.logger import get_logger
 from zenml.zen_stores.models import StackWrapper
-
-if TYPE_CHECKING:
-    from zenml.pipelines import BasePipeline
-    from zenml.steps import BaseStep
 
 logger = get_logger(__name__)
 
@@ -70,21 +66,6 @@ class StepWrapper(BaseModel):
     name: str
     docstring: Optional[str]
 
-    @classmethod
-    def from_step(cls, step: "BaseStep") -> "StepWrapper":
-        """Creates a StepWrapper from a step instance.
-
-        Args:
-            step: The step instance.
-
-        Returns:
-            A StepWrapper instance.
-        """
-        return cls(
-            name=step.name,
-            docstring=step.__doc__,
-        )
-
 
 class PipelineWrapper(BaseModel):
     """Pydantic object representing a pipeline.
@@ -98,26 +79,6 @@ class PipelineWrapper(BaseModel):
     name: str
     docstring: Optional[str]
     steps: List[StepWrapper]
-
-    @classmethod
-    def from_pipeline(cls, pipeline: "BasePipeline") -> "PipelineWrapper":
-        """Creates a PipelineWrapper from a pipeline instance.
-
-        Args:
-            pipeline: The pipeline instance.
-
-        Returns:
-            A PipelineWrapper instance.
-        """
-        steps = [
-            StepWrapper.from_step(step) for step in pipeline.steps.values()
-        ]
-
-        return cls(
-            name=pipeline.name,
-            docstring=pipeline.__doc__,
-            steps=steps,
-        )
 
 
 class PipelineRunWrapper(BaseModel):

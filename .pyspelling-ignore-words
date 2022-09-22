@@ -373,6 +373,7 @@ PathType
 PermissionError
 PillowImageMaterializer
 PipelineConfigurationError
+PipelineDeployment
 PipelineDockerImageBuilder
 PipelineInterfaceError
 PipelineNode
@@ -413,6 +414,7 @@ RedPill
 Reproducibility
 ResourceConfiguration
 ResourceConfigurations
+ResourceSettings
 RichHandler
 Roadmap
 RoleBinding
@@ -475,6 +477,7 @@ ServiceConfig
 ServicePrincipal
 ServiceStatus
 ServiceType
+SettingsResolvingError
 SingleDatasetCheck
 SingletonMetaClass
 SlackAlerter
@@ -530,6 +533,7 @@ TFServing
 TFTrainer
 TFX
 TFX's
+TLS
 TODO
 Tekton
 TempPathFactory
@@ -1212,6 +1216,7 @@ tfx
 thinknum
 tiangolo
 timedelta
+tls
 tmp
 todo
 todos

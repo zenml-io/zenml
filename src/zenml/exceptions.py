@@ -17,7 +17,7 @@ import textwrap
 from typing import TYPE_CHECKING, List, Optional, Type
 
 if TYPE_CHECKING:
-    from zenml.steps import BaseStepConfig
+    from zenml.steps import BaseParameters
 
 
 class ZenMLBaseException(Exception):
@@ -158,26 +158,26 @@ class MissingStepParameterError(ZenMLBaseException):
         self,
         step_name: str,
         missing_parameters: List[str],
-        config_class: Type["BaseStepConfig"],
+        parameters_class: Type["BaseParameters"],
     ):
         """Initializes a MissingStepParameterError object.
 
         Args:
             step_name: Name of the step for which one or more parameters
-                       are missing.
+                are missing.
             missing_parameters: Names of all parameters which are missing.
-            config_class: Class of the configuration object for which
-                          the parameters are missing.
+            parameters_class: Class of the parameters object for which
+                the parameters are missing.
         """
         message = textwrap.fill(
             textwrap.dedent(
                 f"""
             Missing parameters {missing_parameters} for '{step_name}' step.
             There are three ways to solve this issue:
-            (1) Specify a default value in the configuration class
-            `{config_class.__name__}`
+            (1) Specify a default value in the parameters class
+            `{parameters_class.__name__}`
             (2) Specify the parameters in code when creating the pipeline:
-            `my_pipeline({step_name}(config={config_class.__name__}(...))`
+            `my_pipeline({step_name}(params={parameters_class.__name__}(...))`
             (3) Specify the parameters in a yaml configuration file and pass
             it to the pipeline: `my_pipeline(...).with_config('path_to_yaml')`
             """
@@ -236,3 +236,7 @@ class GitNotFoundError(ImportError):
 
 class DuplicatedConfigurationError(ZenMLBaseException):
     """Raised when a configuration parameter is set twice."""
+
+
+class SettingsResolvingError(ZenMLBaseException):
+    """Raised when resolving settings failed."""

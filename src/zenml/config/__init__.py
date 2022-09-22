@@ -27,10 +27,10 @@ The ``ProfileConfiguration`` class is used to model the configuration of a
 Profile. A ``GlobalConfiguration`` object can contain multiple
 ``ProfileConfiguration`` instances.
 """
-from zenml.config.docker_configuration import DockerConfiguration
-from zenml.config.resource_configuration import ResourceConfiguration
+from zenml.config.docker_settings import DockerSettings
+from zenml.config.resource_settings import ResourceSettings
 
 __all__ = [
-    "DockerConfiguration",
-    "ResourceConfiguration",
+    "DockerSettings",
+    "ResourceSettings",
 ]

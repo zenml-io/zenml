@@ -29,7 +29,7 @@ def test_stack_component_default_method_implementations(stub_component):
     StackComponent methods."""
     assert stub_component.validator is None
     assert stub_component.log_file is None
-    assert stub_component.runtime_options == {}
+    assert stub_component.settings_class is None
     assert stub_component.requirements == set()
 
     assert stub_component.is_provisioned is True

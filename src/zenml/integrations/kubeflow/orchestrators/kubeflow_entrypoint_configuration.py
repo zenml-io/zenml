@@ -16,16 +16,13 @@
 import os
 from typing import Any, List, Optional, Set
 
-import kfp
-from kubernetes import config as k8s_config
 from tfx.orchestration.portable import data_types
-from tfx.proto.orchestration.pipeline_pb2 import PipelineNode as Pb2PipelineNode
 
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.integrations.kubeflow.orchestrators import utils
-from zenml.steps import BaseStep
 
 METADATA_UI_PATH_OPTION = "metadata_ui_path"
+ENV_ZENML_RUN_NAME = "ZENML_RUN_NAME"
 
 
 class KubeflowEntrypointConfiguration(StepEntrypointConfiguration):
@@ -35,8 +32,8 @@ class KubeflowEntrypointConfiguration(StepEntrypointConfiguration):
     """
 
     @classmethod
-    def get_custom_entrypoint_options(cls) -> Set[str]:
-        """Kubeflow specific entrypoint options.
+    def get_entrypoint_options(cls) -> Set[str]:
+        """Gets all options required for running with this configuration.
 
         The metadata ui path option expects a path where the markdown file
         that will be displayed in the kubeflow UI should be written. The same
@@ -44,30 +41,28 @@ class KubeflowEntrypointConfiguration(StepEntrypointConfiguration):
         `mlpipeline-ui-metadata` for the corresponding `kfp.dsl.ContainerOp`.
 
         Returns:
-            The set of custom entrypoint options.
+            The superclass options as well as an option for the metadata ui
+            path.
         """
-        return {METADATA_UI_PATH_OPTION}
+        return super().get_entrypoint_options() | {METADATA_UI_PATH_OPTION}
 
     @classmethod
-    def get_custom_entrypoint_arguments(
-        cls, step: BaseStep, *args: Any, **kwargs: Any
-    ) -> List[str]:
-        """Sets the metadata ui path argument to the value passed in via the keyword args.
+    def get_entrypoint_arguments(cls, **kwargs: Any) -> List[str]:
+        """Gets all arguments that the entrypoint command should be called with.
 
         Args:
-            step: The step that is being executed.
-            *args: The positional arguments passed to the step.
-            **kwargs: The keyword arguments passed to the step.
+            **kwargs: Kwargs, must include the metadata ui path.
 
         Returns:
-            A list of strings that will be used as arguments to the step.
+            The superclass arguments as well as arguments for the metadata ui
+            path.
         """
-        return [
+        return super().get_entrypoint_arguments(**kwargs) + [
             f"--{METADATA_UI_PATH_OPTION}",
             kwargs[METADATA_UI_PATH_OPTION],
         ]
 
-    def get_run_name(self, pipeline_name: str) -> str:
+    def get_run_name(self, pipeline_name: str) -> Optional[str]:
         """Returns the Kubeflow pipeline run name.
 
         Args:
@@ -75,16 +70,22 @@ class KubeflowEntrypointConfiguration(StepEntrypointConfiguration):
 
         Returns:
             The Kubeflow pipeline run name.
+
+        Raises:
+            RuntimeError: If the run name environment variable is not set.
         """
-        k8s_config.load_incluster_config()
-        run_id = os.environ["KFP_RUN_ID"]
-        return kfp.Client().get_run(run_id).run.name  # type: ignore[no-any-return]
+        try:
+            return os.environ[ENV_ZENML_RUN_NAME]
+        except KeyError:
+            raise RuntimeError(
+                "Unable to read run name from environment variable "
+                f"{ENV_ZENML_RUN_NAME}."
+            )
 
     def post_run(
         self,
         pipeline_name: str,
         step_name: str,
-        pipeline_node: Pb2PipelineNode,
         execution_info: Optional[data_types.ExecutionInfo] = None,
     ) -> None:
         """Writes a markdown file that will display information.
@@ -95,12 +96,10 @@ class KubeflowEntrypointConfiguration(StepEntrypointConfiguration):
         Args:
             pipeline_name: The name of the pipeline.
             step_name: The name of the step.
-            pipeline_node: The pipeline node that is being executed.
             execution_info: The execution info of the step.
         """
         if execution_info:
             utils.dump_ui_metadata(
-                node=pipeline_node,
                 execution_info=execution_info,
                 metadata_ui_path=self.entrypoint_args[METADATA_UI_PATH_OPTION],
             )

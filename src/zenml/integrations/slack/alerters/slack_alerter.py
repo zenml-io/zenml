@@ -23,7 +23,9 @@ from slack_sdk.rtm import RTMClient
 from zenml.alerter.base_alerter import BaseAlerter
 from zenml.integrations.slack import SLACK_ALERTER_FLAVOR
 from zenml.logger import get_logger
-from zenml.steps.step_interfaces.base_alerter_step import BaseAlerterStepConfig
+from zenml.steps.step_interfaces.base_alerter_step import (
+    BaseAlerterStepParameters,
+)
 from zenml.utils.secret_utils import SecretField
 
 logger = get_logger(__name__)
@@ -33,8 +35,8 @@ DEFAULT_APPROVE_MSG_OPTIONS = ["approve", "LGTM", "ok", "yes"]
 DEFAULT_DISAPPROVE_MSG_OPTIONS = ["decline", "disapprove", "no", "reject"]
 
 
-class SlackAlerterConfig(BaseAlerterStepConfig):
-    """Slack alerter config."""
+class SlackAlerterParameters(BaseAlerterStepParameters):
+    """Slack alerter parameters."""
 
     # The ID of the Slack channel to use for communication.
     slack_channel_id: Optional[str] = None
@@ -59,11 +61,13 @@ class SlackAlerter(BaseAlerter):
     # Class Configuration
     FLAVOR: ClassVar[str] = SLACK_ALERTER_FLAVOR
 
-    def _get_channel_id(self, config: Optional[BaseAlerterStepConfig]) -> str:
+    def _get_channel_id(
+        self, params: Optional[BaseAlerterStepParameters]
+    ) -> str:
         """Get the Slack channel ID to be used by post/ask.
 
         Args:
-            config: Optional runtime configuration.
+            params: Optional parameters.
 
         Returns:
             ID of the Slack channel to be used.
@@ -73,16 +77,16 @@ class SlackAlerter(BaseAlerter):
             ValueError: if a slack channel was neither defined in the config
                 nor in the slack alerter component.
         """
-        if not isinstance(config, BaseAlerterStepConfig):
+        if not isinstance(params, BaseAlerterStepParameters):
             raise RuntimeError(
-                "The config object must be of type `BaseAlerterStepConfig`."
+                "The config object must be of type `BaseAlerterStepParameters`."
             )
         if (
-            isinstance(config, SlackAlerterConfig)
-            and hasattr(config, "slack_channel_id")
-            and config.slack_channel_id is not None
+            isinstance(params, SlackAlerterParameters)
+            and hasattr(params, "slack_channel_id")
+            and params.slack_channel_id is not None
         ):
-            return config.slack_channel_id
+            return params.slack_channel_id
         if self.default_slack_channel_id is not None:
             return self.default_slack_channel_id
         raise ValueError(
@@ -92,56 +96,56 @@ class SlackAlerter(BaseAlerter):
         )
 
     def _get_approve_msg_options(
-        self, config: Optional[BaseAlerterStepConfig]
+        self, params: Optional[BaseAlerterStepParameters]
     ) -> List[str]:
         """Define which messages will lead to approval during ask().
 
         Args:
-            config: Optional runtime configuration.
+            params: Optional parameters.
 
         Returns:
             Set of messages that lead to approval in alerter.ask().
         """
         if (
-            isinstance(config, SlackAlerterConfig)
-            and hasattr(config, "approve_msg_options")
-            and config.approve_msg_options is not None
+            isinstance(params, SlackAlerterParameters)
+            and hasattr(params, "approve_msg_options")
+            and params.approve_msg_options is not None
         ):
-            return config.approve_msg_options
+            return params.approve_msg_options
         return DEFAULT_APPROVE_MSG_OPTIONS
 
     def _get_disapprove_msg_options(
-        self, config: Optional[BaseAlerterStepConfig]
+        self, params: Optional[BaseAlerterStepParameters]
     ) -> List[str]:
         """Define which messages will lead to disapproval during ask().
 
         Args:
-            config: Optional runtime configuration.
+            params: Optional parameters.
 
         Returns:
             Set of messages that lead to disapproval in alerter.ask().
         """
         if (
-            isinstance(config, SlackAlerterConfig)
-            and hasattr(config, "disapprove_msg_options")
-            and config.disapprove_msg_options is not None
+            isinstance(params, SlackAlerterParameters)
+            and hasattr(params, "disapprove_msg_options")
+            and params.disapprove_msg_options is not None
         ):
-            return config.disapprove_msg_options
+            return params.disapprove_msg_options
         return DEFAULT_DISAPPROVE_MSG_OPTIONS
 
     def post(
-        self, message: str, config: Optional[BaseAlerterStepConfig]
+        self, message: str, params: Optional[BaseAlerterStepParameters]
     ) -> bool:
         """Post a message to a Slack channel.
 
         Args:
             message: Message to be posted.
-            config: Optional runtime configuration.
+            params: Optional parameters.
 
         Returns:
             True if operation succeeded, else False
         """
-        slack_channel_id = self._get_channel_id(config=config)
+        slack_channel_id = self._get_channel_id(params=params)
         client = WebClient(token=self.slack_token)
         try:
             response = client.chat_postMessage(
@@ -155,19 +159,19 @@ class SlackAlerter(BaseAlerter):
             return False
 
     def ask(
-        self, message: str, config: Optional[BaseAlerterStepConfig]
+        self, message: str, params: Optional[BaseAlerterStepParameters]
     ) -> bool:
         """Post a message to a Slack channel and wait for approval.
 
         Args:
             message: Initial message to be posted.
-            config: Optional runtime configuration.
+            params: Optional parameters.
 
         Returns:
             True if a user approved the operation, else False
         """
         rtm = RTMClient(token=self.slack_token)
-        slack_channel_id = self._get_channel_id(config=config)
+        slack_channel_id = self._get_channel_id(params=params)
 
         approved = False  # will be modified by handle()
 
@@ -192,14 +196,14 @@ class SlackAlerter(BaseAlerter):
             if event["channel"] == slack_channel_id:
 
                 # approve request (return True)
-                if event["text"] in self._get_approve_msg_options(config):
+                if event["text"] in self._get_approve_msg_options(params):
                     print(f"User {event['user']} approved on slack.")
                     nonlocal approved
                     approved = True
                     rtm.stop()  # type: ignore
 
                 # disapprove request (return False)
-                elif event["text"] in self._get_disapprove_msg_options(config):
+                elif event["text"] in self._get_disapprove_msg_options(params):
                     print(f"User {event['user']} disapproved on slack.")
                     rtm.stop()  # type:ignore
 

@@ -34,10 +34,9 @@ import datetime
 import functools
 import os
 import time
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
 
 from pydantic import root_validator
-from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
 from zenml.environment import Environment
 from zenml.integrations.airflow import AIRFLOW_ORCHESTRATOR_FLAVOR
@@ -45,15 +44,14 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.pipelines import Schedule
-from zenml.steps import BaseStep
 from zenml.utils import daemon, io_utils
 from zenml.utils.source_utils import get_source_root_path
 
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
-    from zenml.pipelines.base_pipeline import BasePipeline
-    from zenml.runtime_configuration import RuntimeConfiguration
+    from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.config.step_configurations import Step
     from zenml.stack import Stack
 
 AIRFLOW_ROOT_DIR = "airflow_root"
@@ -116,11 +114,8 @@ class AirflowOrchestrator(BaseOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        sorted_steps: List[BaseStep],
-        pipeline: "BasePipeline",
-        pb2_pipeline: Pb2Pipeline,
+        deployment: "PipelineDeployment",
         stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
         """Creates an Airflow DAG as the intermediate representation for the pipeline.
 
@@ -141,11 +136,8 @@ class AirflowOrchestrator(BaseOrchestrator):
         Finally, the dag is fully complete and can be returned.
 
         Args:
-            sorted_steps: List of steps in the pipeline.
-            pipeline: The pipeline to be executed.
-            pb2_pipeline: The pipeline as a protobuf message.
-            stack: The stack on which the pipeline will be deployed.
-            runtime_configuration: The runtime configuration.
+            deployment: The pipeline deployment to prepare or run.
+            stack: The stack the pipeline will run on.
 
         Returns:
             The Airflow DAG.
@@ -155,19 +147,19 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         # Instantiate and configure airflow Dag with name and schedule
         airflow_dag = airflow.DAG(
-            dag_id=pipeline.name,
+            dag_id=deployment.name,
             is_paused_upon_creation=False,
-            **self._translate_schedule(runtime_configuration.schedule),
+            **self._translate_schedule(deployment.schedule),
         )
 
         # Dictionary mapping step names to airflow_operators. This will be needed
         # to configure airflow operator dependencies
         step_name_to_airflow_operator = {}
 
-        for step in sorted_steps:
+        for step in deployment.steps.values():
             # Create callable that will be used by airflow to execute the step
             # within the orchestrated environment
-            def _step_callable(step_instance: "BaseStep", **kwargs):
+            def _step_callable(step_instance: "Step", **kwargs):
                 if self.requires_resources_in_orchestration_environment(step):
                     logger.warning(
                         "Specifying step resources is not yet supported for "
@@ -178,11 +170,7 @@ class AirflowOrchestrator(BaseOrchestrator):
                 # Extract run name for the kwargs that will be passed to the
                 # callable
                 run_name = kwargs["ti"].get_dagrun().run_id
-                self.run_step(
-                    step=step_instance,
-                    run_name=run_name,
-                    pb2_pipeline=pb2_pipeline,
-                )
+                self.run_step(step=step_instance, run_name=run_name)
 
             # Create airflow python operator that contains the step callable
             airflow_operator = airflow_python.PythonOperator(
@@ -196,11 +184,8 @@ class AirflowOrchestrator(BaseOrchestrator):
 
             # Configure the current airflow operator to run after all upstream
             # operators finished executing
-            step_name_to_airflow_operator[step.name] = airflow_operator
-            upstream_step_names = self.get_upstream_step_names(
-                step=step, pb2_pipeline=pb2_pipeline
-            )
-            for upstream_step_name in upstream_step_names:
+            step_name_to_airflow_operator[step.config.name] = airflow_operator
+            for upstream_step_name in step.spec.upstream_steps:
                 airflow_operator.set_upstream(
                     step_name_to_airflow_operator[upstream_step_name]
                 )
@@ -318,26 +303,16 @@ class AirflowOrchestrator(BaseOrchestrator):
             password,
         )
 
-    def runtime_options(self) -> Dict[str, Any]:
-        """Runtime options for the airflow orchestrator.
-
-        Returns:
-            Runtime options dictionary.
-        """
-        return {DAG_FILEPATH_OPTION_KEY: None}
-
     def prepare_pipeline_deployment(
         self,
-        pipeline: "BasePipeline",
+        deployment: "PipelineDeployment",
         stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
     ) -> None:
-        """Checks Airflow is running and copies DAG file to the Airflow DAGs directory.
+        """Checks Airflow is running and copies DAG file to the DAGs directory.
 
         Args:
-            pipeline: Pipeline to be deployed.
-            stack: Stack to be deployed.
-            runtime_configuration: Runtime configuration for the pipeline.
+            deployment: The pipeline deployment configuration.
+            stack: The stack on which the pipeline will be deployed.
 
         Raises:
             RuntimeError: If Airflow is not running or no DAG filepath runtime
@@ -359,7 +334,7 @@ class AirflowOrchestrator(BaseOrchestrator):
             )
 
         try:
-            dag_filepath = runtime_configuration[DAG_FILEPATH_OPTION_KEY]
+            dag_filepath = deployment.pipeline.extra[DAG_FILEPATH_OPTION_KEY]
         except KeyError:
             raise RuntimeError(
                 f"No DAG filepath found in runtime configuration. Make sure "
