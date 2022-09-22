@@ -121,18 +121,18 @@
 
 ## Using ZenML
 
-* [Best Practices](resources/best-practices.md)
-* [Global Configuration](resources/global-config.md)
-* [System Environmental Variables](resources/system-environmental-variables.md)
-* [Usage Analytics](resources/usage-analytics.md)
-* [FAQ](resources/faq.md)
+* [Deploying ZenML](using-zenml/deploying-zenml.md)
+* [Global Configuration](using-zenml/global-config.md)
+* [Best Practices](using-zenml/best-practices.md)
+* [System Environmental Variables](using-zenml/system-environmental-variables.md)
 
 ## Resources
 
 * [Contribution Guide](resources/contributing.md)
 * [Roadmap](https://zenml.io/roadmap)
 * [External Integration Guide](resources/integrating.md)
-* [Misc]
+* [Usage Analytics](resources/usage-analytics.md)
+* Community & Content
   * [Join the Slack Community](https://zenml.io/slack-invite/)
   * [Blog](https://blog.zenml.io/)
   * [Podcast](https://podcast.zenml.io/)
@@ -143,6 +143,7 @@
 ## Reference
 
 * [Glossary](reference/glossary.md)
+* [FAQ](resources/faq.md)
 * [CLI Cheat Sheet](reference/cheat-sheet.md)
 * [CLI Reference](https://apidocs.zenml.io/latest/cli/)
 * [API Reference](https://apidocs.zenml.io/latest/)
