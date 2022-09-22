@@ -14,11 +14,11 @@
   * [Fetching pipelines](./starter-guide/pipelines/fetching-pipelines.md)
   * [Caching](./starter-guide/pipelines/caching.md)
 * [Stacks](./starter-guide/stacks/stacks.md)
-  * [Stack Components and Flavors](./starter-guide/stacks/stack-components.md)
+  * [Stack Components and Flavors](./starter-guide/stacks/stacks-components.md)
   * [Managing stacks](./starter-guide/stacks/managing-stacks.md)
 * [Collaboration](./starter-guide/collaborate/collaborate.md)
   * [Deploy ZenML on the Cloud](./starter-guide/collaborate/zenml-deployment.md)
-  * [Invite users](./developer-guide/stacks-repositories/stack.md)
+  * [Invite users](./starter-guide/collaborate/users.md)
 
 ## Advanced Guide
 
