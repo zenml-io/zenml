@@ -26,13 +26,12 @@ from zenml.integrations.deepchecks.data_validators.deepchecks_data_validator imp
 from zenml.integrations.deepchecks.validation_checks import (
     DeepchecksModelDriftCheck,
 )
-from zenml.steps.base_step import BaseStep
-from zenml.steps.base_step_config import BaseStepConfig
+from zenml.steps import BaseParameters, BaseStep
 from zenml.steps.utils import clone_step
 
 
-class DeepchecksModelDriftCheckStepConfig(BaseStepConfig):
-    """Config class for the Deepchecks model drift validator step.
+class DeepchecksModelDriftCheckStepParameters(BaseParameters):
+    """Parameters class for the Deepchecks model drift validator step.
 
     Attributes:
         check_list: Optional list of DeepchecksModelDriftCheck identifiers
@@ -63,7 +62,7 @@ class DeepchecksModelDriftCheckStep(BaseStep):
         reference_dataset: pd.DataFrame,
         target_dataset: pd.DataFrame,
         model: ClassifierMixin,
-        config: DeepchecksModelDriftCheckStepConfig,
+        params: DeepchecksModelDriftCheckStepParameters,
     ) -> SuiteResult:
         """Main entrypoint for the Deepchecks model drift step.
 
@@ -71,7 +70,7 @@ class DeepchecksModelDriftCheckStep(BaseStep):
             reference_dataset: Reference dataset for the model drift check.
             target_dataset: Target dataset to be used for the model drift check.
             model: a scikit-learn model to validate
-            config: the configuration for the step
+            params: the parameters for the step
 
         Returns:
             A Deepchecks suite result with the validation results.
@@ -85,16 +84,16 @@ class DeepchecksModelDriftCheckStep(BaseStep):
             dataset=reference_dataset,
             comparison_dataset=target_dataset,
             model=model,
-            check_list=cast(Optional[Sequence[str]], config.check_list),
-            dataset_kwargs=config.dataset_kwargs,
-            check_kwargs=config.check_kwargs,
-            run_kwargs=config.run_kwargs,
+            check_list=cast(Optional[Sequence[str]], params.check_list),
+            dataset_kwargs=params.dataset_kwargs,
+            check_kwargs=params.check_kwargs,
+            run_kwargs=params.run_kwargs,
         )
 
 
 def deepchecks_model_drift_check_step(
     step_name: str,
-    config: DeepchecksModelDriftCheckStepConfig,
+    params: DeepchecksModelDriftCheckStepParameters,
 ) -> BaseStep:
     """Shortcut function to create a new instance of the DeepchecksModelDriftCheckStep step.
 
@@ -105,9 +104,9 @@ def deepchecks_model_drift_check_step(
 
     Args:
         step_name: The name of the step
-        config: The configuration for the step
+        params: The parameters for the step
 
     Returns:
         a DeepchecksModelDriftCheckStep step instance
     """
-    return clone_step(DeepchecksModelDriftCheckStep, step_name)(config=config)
+    return clone_step(DeepchecksModelDriftCheckStep, step_name)(params=params)

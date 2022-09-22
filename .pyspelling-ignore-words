@@ -402,6 +402,7 @@ PathType
 PermissionError
 PillowImageMaterializer
 PipelineConfigurationError
+PipelineDeployment
 PipelineDockerImageBuilder
 PipelineInterfaceError
 PipelineModel
@@ -445,6 +446,7 @@ RedPill
 Reproducibility
 ResourceConfiguration
 ResourceConfigurations
+ResourceSettings
 RestZenStore
 RichHandler
 Roadmap
@@ -516,6 +518,7 @@ ServiceConfig
 ServicePrincipal
 ServiceStatus
 ServiceType
+SettingsResolvingError
 SingleDatasetCheck
 SingletonMetaClass
 SlackAlerter

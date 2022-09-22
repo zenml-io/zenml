@@ -26,7 +26,7 @@ def test_airflow_orchestrator_attributes():
         name="",
         id=uuid4(),
         config={},
-        flavor="default",
+        flavor="airflow",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
         project=uuid4(),
@@ -35,6 +35,4 @@ def test_airflow_orchestrator_attributes():
     )
 
     assert orchestrator.type == StackComponentType.ORCHESTRATOR
-    assert orchestrator.flavor == "default"
-
-    assert orchestrator.runtime_options() == {"dag_filepath": None}
+    assert orchestrator.flavor == "airflow"

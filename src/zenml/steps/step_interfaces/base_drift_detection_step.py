@@ -17,11 +17,11 @@ from abc import abstractmethod
 from typing import Any
 
 from zenml.artifacts import DataArtifact
-from zenml.steps import BaseStep, BaseStepConfig, StepContext
+from zenml.steps import BaseParameters, BaseStep, StepContext
 
 
-class BaseDriftDetectionConfig(BaseStepConfig):
-    """Base class for drift detection step configurations."""
+class BaseDriftDetectionParameters(BaseParameters):
+    """Base class for drift detection step parameters."""
 
 
 class BaseDriftDetectionStep(BaseStep):
@@ -32,7 +32,7 @@ class BaseDriftDetectionStep(BaseStep):
         self,
         reference_dataset: DataArtifact,
         comparison_dataset: DataArtifact,
-        config: BaseDriftDetectionConfig,
+        params: BaseDriftDetectionParameters,
         context: StepContext,
     ) -> Any:
         """Base entrypoint for any drift detection implementation.
@@ -40,7 +40,7 @@ class BaseDriftDetectionStep(BaseStep):
         Args:
             reference_dataset: The reference dataset.
             comparison_dataset: The comparison dataset.
-            config: The configuration for the step.
+            params: The parameters for the step.
             context: The context for the step.
 
         Returns:

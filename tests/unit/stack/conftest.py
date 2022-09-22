@@ -40,6 +40,7 @@ def stack_with_mock_components(mocker):
     )
     orchestrator.config.required_secrets = set()
     artifact_store.config.required_secrets = set()
+    artifact_store.config.path = "/"
 
     return Stack(
         id=uuid4(),

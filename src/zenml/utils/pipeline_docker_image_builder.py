@@ -21,16 +21,20 @@ from pathlib import PurePath, PurePosixPath
 from typing import TYPE_CHECKING, Iterator, List, Optional, Sequence, Tuple
 
 import zenml
-from zenml.config.docker_configuration import DockerConfiguration
+from zenml.config import DockerSettings
 from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import ENV_ZENML_CONFIG_PATH
+from zenml.constants import (
+    DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE,
+    ENV_ZENML_CONFIG_PATH,
+)
 from zenml.integrations.registry import integration_registry
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import docker_utils, io_utils, source_utils
 
 if TYPE_CHECKING:
-    from zenml.runtime_configuration import RuntimeConfiguration
+    from zenml.config.pipeline_deployment import PipelineDeployment
+    from zenml.container_registries import BaseContainerRegistry
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -90,14 +94,233 @@ class PipelineDockerImageBuilder:
     ```
     """
 
+    def build_and_push_docker_image(
+        self,
+        deployment: "PipelineDeployment",
+        stack: "Stack",
+        entrypoint: Optional[str] = None,
+    ) -> str:
+        """Builds and pushes a Docker image to run a pipeline.
+
+        Use the image name returned by this method whenever you need to uniquely
+        reference the pushed image in order to pull or run it.
+
+        Args:
+            deployment: The pipeline deployment for which the image should be
+                built.
+            stack: The stack on which the pipeline will be deployed.
+            entrypoint: Entrypoint to use for the final image. If left empty,
+                no entrypoint will be included in the image.
+
+        Returns:
+            The Docker repository digest of the pushed image.
+
+        Raises:
+            RuntimeError: If the stack doesn't contain a container registry.
+        """
+        container_registry = stack.container_registry
+        if not container_registry:
+            raise RuntimeError(
+                "Unable to build and push Docker image because stack "
+                f"`{stack.name}` has no container registry."
+            )
+
+        target_image_name = self.get_target_image_name(
+            deployment=deployment, container_registry=container_registry
+        )
+
+        self.build_docker_image(
+            target_image_name=target_image_name,
+            deployment=deployment,
+            stack=stack,
+            entrypoint=entrypoint,
+        )
+
+        repo_digest = container_registry.push_image(target_image_name)
+        return repo_digest
+
+    @staticmethod
+    def get_target_image_name(
+        deployment: "PipelineDeployment",
+        container_registry: Optional["BaseContainerRegistry"] = None,
+    ) -> str:
+        """Returns the target image name.
+
+        If a container registry is given, the image name will include the
+        registry URI
+
+        Args:
+            deployment: The pipeline deployment for which the target image name
+                should be returned.
+            container_registry: Optional container registry to which this
+                image will be pushed.
+
+        Returns:
+            The docker image name.
+        """
+        pipeline_name = deployment.pipeline.name
+        docker_settings = (
+            deployment.pipeline.docker_settings or DockerSettings()
+        )
+
+        target_image_name = (
+            f"{docker_settings.target_repository}:{pipeline_name}"
+        )
+        if container_registry:
+            target_image_name = (
+                f"{container_registry.config.uri}/{target_image_name}"
+            )
+
+        return target_image_name
+
+    def build_docker_image(
+        self,
+        target_image_name: str,
+        deployment: "PipelineDeployment",
+        stack: "Stack",
+        entrypoint: Optional[str] = None,
+    ) -> None:
+        """Builds a Docker image to run a pipeline.
+
+        Args:
+            target_image_name: The name of the image to build.
+            deployment: The pipeline deployment for which the image should be
+                built.
+            stack: The stack on which the pipeline will be deployed.
+            entrypoint: Entrypoint to use for the final image. If left empty,
+                no entrypoint will be included in the image.
+
+        Raises:
+            ValueError: If no Dockerfile and/or custom parent image is
+                specified and the Docker configuration doesn't require an
+                image build.
+        """
+        pipeline_name = deployment.pipeline.name
+        docker_settings = (
+            deployment.pipeline.docker_settings or DockerSettings()
+        )
+
+        logger.info(
+            "Building Docker image(s) for pipeline `%s`.", pipeline_name
+        )
+        requires_zenml_build = any(
+            [
+                docker_settings.requirements,
+                docker_settings.required_integrations,
+                docker_settings.replicate_local_python_environment,
+                docker_settings.install_stack_requirements,
+                docker_settings.environment,
+                docker_settings.copy_files,
+                docker_settings.copy_global_config,
+                entrypoint,
+            ]
+        )
+
+        # Fallback to the value defined on the stack component if the
+        # pipeline configuration doesn't have a configured value
+        parent_image = (
+            docker_settings.parent_image or DEFAULT_DOCKER_PARENT_IMAGE
+        )
+
+        if docker_settings.dockerfile:
+            if parent_image != DEFAULT_DOCKER_PARENT_IMAGE:
+                logger.warning(
+                    "You've specified both a Dockerfile and a custom parent "
+                    "image, ignoring the parent image."
+                )
+
+            if requires_zenml_build:
+                # We will build an additional image on top of this one later
+                # to include user files and/or install requirements. The image
+                # we build now will be used as the parent for the next build.
+                user_image_name = f"zenml-intermediate-build:{pipeline_name}"
+                parent_image = user_image_name
+            else:
+                # The image we'll build from the custom Dockerfile will be
+                # used directly, so we tag it with the requested target name.
+                user_image_name = target_image_name
+
+            docker_utils.build_image(
+                image_name=user_image_name,
+                dockerfile=docker_settings.dockerfile,
+                build_context_root=docker_settings.build_context_root,
+                **docker_settings.build_options,
+            )
+        elif not requires_zenml_build:
+            if parent_image == DEFAULT_DOCKER_PARENT_IMAGE:
+                raise ValueError(
+                    "Unable to run a ZenML pipeline with the given Docker "
+                    "configuration: No Dockerfile or custom parent image "
+                    "specified and no files will be copied or requirements "
+                    "installed."
+                )
+            else:
+                # The parent image will be used directly to run the pipeline and
+                # needs to be tagged so it gets pushed later
+                docker_utils.tag_image(parent_image, target=target_image_name)
+
+        if requires_zenml_build:
+            requirement_files = self._gather_requirements_files(
+                docker_settings=docker_settings, stack=stack
+            )
+            requirements_file_names = [f[0] for f in requirement_files]
+
+            dockerfile = self._generate_zenml_pipeline_dockerfile(
+                parent_image=parent_image,
+                docker_settings=docker_settings,
+                requirements_files=requirements_file_names,
+                entrypoint=entrypoint,
+            )
+
+            if parent_image == DEFAULT_DOCKER_PARENT_IMAGE:
+                # The default parent image is static and doesn't require a pull
+                # each time
+                pull_parent_image = False
+            else:
+                # If the image is local, we don't need to pull it. Otherwise
+                # we play it safe and always pull in case the user pushed a new
+                # image for the given name and tag
+                pull_parent_image = not docker_utils.is_local_image(
+                    parent_image
+                )
+
+            extra_files = requirement_files.copy()
+            extra_files.append(
+                (DOCKER_IMAGE_DEPLOYMENT_CONFIG_FILE, deployment.yaml())
+            )
+
+            # Leave the build context empty if we don't want to copy any files
+            requires_build_context = (
+                docker_settings.copy_files or docker_settings.copy_global_config
+            )
+            build_context_root = (
+                source_utils.get_source_root_path()
+                if requires_build_context
+                else None
+            )
+            maybe_include_global_config = (
+                _include_global_config(build_context_root=build_context_root)  # type: ignore[arg-type]
+                if docker_settings.copy_global_config
+                else contextlib.nullcontext()
+            )
+            with maybe_include_global_config:
+                docker_utils.build_image(
+                    image_name=target_image_name,
+                    dockerfile=dockerfile,
+                    build_context_root=build_context_root,
+                    dockerignore=docker_settings.dockerignore,
+                    extra_files=extra_files,
+                    pull=pull_parent_image,
+                )
+
     @staticmethod
     def _gather_requirements_files(
-        docker_configuration: DockerConfiguration, stack: "Stack"
+        docker_settings: DockerSettings, stack: "Stack"
     ) -> List[Tuple[str, str]]:
         """Gathers and/or generates pip requirements files.
 
         Args:
-            docker_configuration: Docker configuration that specifies which
+            docker_settings: Docker settings that specifies which
                 requirements to install.
             stack: The stack on which the pipeline will run.
 
@@ -116,10 +339,10 @@ class PipelineDockerImageBuilder:
         logger.info("Gathering requirements for Docker build:")
 
         # Generate requirements file for the local environment if configured
-        if docker_configuration.replicate_local_python_environment:
+        if docker_settings.replicate_local_python_environment:
             try:
                 local_requirements = subprocess.check_output(
-                    docker_configuration.replicate_local_python_environment.command,
+                    docker_settings.replicate_local_python_environment.command,
                     shell=True,
                 ).decode()
             except subprocess.CalledProcessError as e:
@@ -133,19 +356,19 @@ class PipelineDockerImageBuilder:
             logger.info("\t- Including python packages from local environment")
 
         # Generate/Read requirements file for user-defined requirements
-        if isinstance(docker_configuration.requirements, str):
+        if isinstance(docker_settings.requirements, str):
             user_requirements = io_utils.read_file_contents_as_string(
-                docker_configuration.requirements
+                docker_settings.requirements
             )
             logger.info(
                 "\t- Including user-defined requirements from file `%s`",
-                os.path.abspath(docker_configuration.requirements),
+                os.path.abspath(docker_settings.requirements),
             )
-        elif isinstance(docker_configuration.requirements, List):
-            user_requirements = "\n".join(docker_configuration.requirements)
+        elif isinstance(docker_settings.requirements, List):
+            user_requirements = "\n".join(docker_settings.requirements)
             logger.info(
                 "\t- Including user-defined requirements: %s",
-                ", ".join(f"`{r}`" for r in docker_configuration.requirements),
+                ", ".join(f"`{r}`" for r in docker_settings.requirements),
             )
         else:
             user_requirements = None
@@ -161,11 +384,11 @@ class PipelineDockerImageBuilder:
                 integration_registry.select_integration_requirements(
                     integration
                 )
-                for integration in docker_configuration.required_integrations
+                for integration in docker_settings.required_integrations
             )
         )
 
-        if docker_configuration.install_stack_requirements:
+        if docker_settings.install_stack_requirements:
             integration_requirements.update(stack.requirements())
 
         if integration_requirements:
@@ -189,7 +412,7 @@ class PipelineDockerImageBuilder:
     @staticmethod
     def _generate_zenml_pipeline_dockerfile(
         parent_image: str,
-        docker_configuration: DockerConfiguration,
+        docker_settings: DockerSettings,
         requirements_files: Sequence[str] = (),
         entrypoint: Optional[str] = None,
     ) -> List[str]:
@@ -197,7 +420,7 @@ class PipelineDockerImageBuilder:
 
         Args:
             parent_image: The image to use as parent for the Dockerfile.
-            docker_configuration: Docker configuration for this image build.
+            docker_settings: Docker settings for this image build.
             requirements_files: Paths of requirements files to install.
             entrypoint: The default entrypoint command that gets executed when
                 running a container of an image created by this Dockerfile.
@@ -207,24 +430,24 @@ class PipelineDockerImageBuilder:
         """
         lines = [f"FROM {parent_image}", f"WORKDIR {DOCKER_IMAGE_WORKDIR}"]
 
-        if docker_configuration.user:
-            lines.append(f"USER {docker_configuration.user}")
+        if docker_settings.user:
+            lines.append(f"USER {docker_settings.user}")
 
-        if docker_configuration.copy_profile:
+        if docker_settings.copy_global_config:
             lines.append(
                 f"ENV {ENV_ZENML_CONFIG_PATH}={DOCKER_IMAGE_ZENML_CONFIG_PATH}"
             )
 
-        for key, value in docker_configuration.environment.items():
+        for key, value in docker_settings.environment.items():
             lines.append(f"ENV {key.upper()}={value}")
 
         for file in requirements_files:
             lines.append(f"COPY {file} .")
             lines.append(f"RUN pip install --no-cache-dir -r {file}")
 
-        if docker_configuration.copy_files:
+        if docker_settings.copy_files:
             lines.append("COPY . .")
-        elif docker_configuration.copy_profile:
+        elif docker_settings.copy_global_config:
             lines.append(f"COPY {DOCKER_IMAGE_ZENML_CONFIG_DIR} .")
 
         lines.append("RUN chmod -R a+rw .")
@@ -233,195 +456,3 @@ class PipelineDockerImageBuilder:
             lines.append(f"ENTRYPOINT {entrypoint}")
 
         return lines
-
-    def build_docker_image(
-        self,
-        target_image_name: str,
-        pipeline_name: str,
-        docker_configuration: DockerConfiguration,
-        stack: "Stack",
-        entrypoint: Optional[str] = None,
-    ) -> None:
-        """Builds a Docker image to run a pipeline.
-
-        Args:
-            target_image_name: The name of the image to build.
-            pipeline_name: Name of the pipeline for which the image(s) should
-                be built.
-            docker_configuration: Docker configuration that specifies what
-                should be included in the image.
-            stack: The stack on which the pipeline will be executed.
-            entrypoint: Entrypoint to use for the final image. If left empty,
-                no entrypoint will be included in the image.
-
-        Raises:
-            ValueError: If no Dockerfile and/or custom parent image is
-                specified and the Docker configuration doesn't require an
-                image build.
-        """
-        logger.info(
-            "Building Docker image(s) for pipeline `%s`.", pipeline_name
-        )
-        requires_zenml_build = any(
-            [
-                docker_configuration.requirements,
-                docker_configuration.required_integrations,
-                docker_configuration.replicate_local_python_environment,
-                docker_configuration.install_stack_requirements,
-                docker_configuration.environment,
-                docker_configuration.copy_files,
-                docker_configuration.copy_profile,
-                entrypoint,
-            ]
-        )
-
-        # Fallback to the value defined on the stack component if the
-        # pipeline configuration doesn't have a configured value
-        parent_image = (
-            docker_configuration.parent_image or DEFAULT_DOCKER_PARENT_IMAGE
-        )
-
-        if docker_configuration.dockerfile:
-            if parent_image != DEFAULT_DOCKER_PARENT_IMAGE:
-                logger.warning(
-                    "You've specified both a Dockerfile and a custom parent "
-                    "image, ignoring the parent image."
-                )
-
-            if requires_zenml_build:
-                # We will build an additional image on top of this one later
-                # to include user files and/or install requirements. The image
-                # we build now will be used as the parent for the next build.
-                user_image_name = f"zenml-intermediate-build:{pipeline_name}"
-                parent_image = user_image_name
-            else:
-                # The image we'll build from the custom Dockerfile will be
-                # used directly, so we tag it with the requested target name.
-                user_image_name = target_image_name
-
-            docker_utils.build_image(
-                image_name=user_image_name,
-                dockerfile=docker_configuration.dockerfile,
-                build_context_root=docker_configuration.build_context_root,
-                **docker_configuration.build_options,
-            )
-        elif not requires_zenml_build:
-            if parent_image == DEFAULT_DOCKER_PARENT_IMAGE:
-                raise ValueError(
-                    "Unable to run a ZenML pipeline with the given Docker "
-                    "configuration: No Dockerfile or custom parent image "
-                    "specified and no files will be copied or requirements "
-                    "installed."
-                )
-            else:
-                # The parent image will be used directly to run the pipeline and
-                # needs to be tagged so it gets pushed later
-                docker_utils.tag_image(parent_image, target=target_image_name)
-
-        if requires_zenml_build:
-            requirement_files = self._gather_requirements_files(
-                docker_configuration=docker_configuration, stack=stack
-            )
-            requirements_file_names = [f[0] for f in requirement_files]
-
-            dockerfile = self._generate_zenml_pipeline_dockerfile(
-                parent_image=parent_image,
-                docker_configuration=docker_configuration,
-                requirements_files=requirements_file_names,
-                entrypoint=entrypoint,
-            )
-
-            if parent_image == DEFAULT_DOCKER_PARENT_IMAGE:
-                # The default parent image is static and doesn't require a pull
-                # each time
-                pull_parent_image = False
-            else:
-                # If the image is local, we don't need to pull it. Otherwise
-                # we play it safe and always pull in case the user pushed a new
-                # image for the given name and tag
-                pull_parent_image = not docker_utils.is_local_image(
-                    parent_image
-                )
-
-            # Leave the build context empty if we don't want to copy any files
-            requires_build_context = (
-                docker_configuration.copy_files
-                or docker_configuration.copy_profile
-            )
-            build_context_root = (
-                source_utils.get_source_root_path()
-                if requires_build_context
-                else None
-            )
-            maybe_include_global_config = (
-                _include_global_config(build_context_root=build_context_root)  # type: ignore[arg-type]
-                if docker_configuration.copy_profile
-                else contextlib.nullcontext()
-            )
-
-            with maybe_include_global_config:
-                docker_utils.build_image(
-                    image_name=target_image_name,
-                    dockerfile=dockerfile,
-                    build_context_root=build_context_root,
-                    dockerignore=docker_configuration.dockerignore,
-                    extra_files=requirement_files,
-                    pull=pull_parent_image,
-                )
-
-    def build_and_push_docker_image(
-        self,
-        pipeline_name: str,
-        docker_configuration: DockerConfiguration,
-        stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
-        entrypoint: Optional[str] = None,
-    ) -> str:
-        """Builds and pushes a Docker image to run a pipeline.
-
-        Use the image name returned by this method whenever you need to uniquely
-        reference the pushed image in order to pull or run it.
-
-        Args:
-            pipeline_name: Name of the pipeline for which the image(s) should
-                be built.
-            docker_configuration: Docker configuration that specifies what
-                should be included in the image.
-            stack: The stack on which the pipeline will be executed.
-            runtime_configuration: The runtime configuration for the pipeline
-                run.
-            entrypoint: Entrypoint to use for the final image. If left empty,
-                no entrypoint will be included in the image.
-
-        Returns:
-            The Docker repository digest of the pushed image.
-
-        Raises:
-            RuntimeError: If the stack doesn't contain a container registry.
-        """
-        container_registry = stack.container_registry
-        if not container_registry:
-            raise RuntimeError(
-                "Unable to build and push Docker image because stack "
-                f"`{stack.name}` has no container registry."
-            )
-
-        target_image_name = (
-            f"{container_registry.config.uri}/"
-            f"{docker_configuration.target_repository}:{pipeline_name}"
-        )
-
-        self.build_docker_image(
-            target_image_name=target_image_name,
-            pipeline_name=pipeline_name,
-            docker_configuration=docker_configuration,
-            stack=stack,
-            entrypoint=entrypoint,
-        )
-
-        repo_digest = container_registry.push_image(target_image_name)
-        # Store the docker repo digest in the runtime configuration so it gets
-        # tracked in the ZenStore
-        runtime_configuration["docker_image"] = repo_digest
-
-        return repo_digest

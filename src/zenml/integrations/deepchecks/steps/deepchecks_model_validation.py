@@ -26,13 +26,12 @@ from zenml.integrations.deepchecks.data_validators.deepchecks_data_validator imp
 from zenml.integrations.deepchecks.validation_checks import (
     DeepchecksModelValidationCheck,
 )
-from zenml.steps.base_step import BaseStep
-from zenml.steps.base_step_config import BaseStepConfig
+from zenml.steps import BaseParameters, BaseStep
 from zenml.steps.utils import clone_step
 
 
-class DeepchecksModelValidationCheckStepConfig(BaseStepConfig):
-    """Config class for the Deepchecks model validation validator step.
+class DeepchecksModelValidationCheckStepParameters(BaseParameters):
+    """Parameters class for the Deepchecks model validation validator step.
 
     Attributes:
         check_list: Optional list of DeepchecksModelValidationCheck identifiers
@@ -62,14 +61,14 @@ class DeepchecksModelValidationCheckStep(BaseStep):
         self,
         dataset: pd.DataFrame,
         model: ClassifierMixin,
-        config: DeepchecksModelValidationCheckStepConfig,
+        params: DeepchecksModelValidationCheckStepParameters,
     ) -> SuiteResult:
         """Main entrypoint for the Deepchecks model validation step.
 
         Args:
             dataset: a Pandas DataFrame to use for the validation
             model: a scikit-learn model to validate
-            config: the configuration for the step
+            params: the parameters for the step
 
         Returns:
             A Deepchecks suite result with the validation results.
@@ -82,16 +81,16 @@ class DeepchecksModelValidationCheckStep(BaseStep):
         return data_validator.model_validation(
             dataset=dataset,
             model=model,
-            check_list=cast(Optional[Sequence[str]], config.check_list),
-            dataset_kwargs=config.dataset_kwargs,
-            check_kwargs=config.check_kwargs,
-            run_kwargs=config.run_kwargs,
+            check_list=cast(Optional[Sequence[str]], params.check_list),
+            dataset_kwargs=params.dataset_kwargs,
+            check_kwargs=params.check_kwargs,
+            run_kwargs=params.run_kwargs,
         )
 
 
 def deepchecks_model_validation_check_step(
     step_name: str,
-    config: DeepchecksModelValidationCheckStepConfig,
+    params: DeepchecksModelValidationCheckStepParameters,
 ) -> BaseStep:
     """Shortcut function to create a new instance of the DeepchecksModelValidationCheckStep step.
 
@@ -102,11 +101,11 @@ def deepchecks_model_validation_check_step(
 
     Args:
         step_name: The name of the step
-        config: The configuration for the step
+        params: The parameters for the step
 
     Returns:
         a DeepchecksModelValidationCheckStep step instance
     """
     return clone_step(DeepchecksModelValidationCheckStep, step_name)(
-        config=config
+        params=params
     )

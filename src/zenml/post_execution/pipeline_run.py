@@ -22,7 +22,6 @@ from zenml.logger import get_apidocs_link, get_logger
 from zenml.models import PipelineRunModel
 from zenml.post_execution.step import StepView
 from zenml.repository import Repository
-from zenml.runtime_configuration import RuntimeConfiguration
 
 logger = get_logger(__name__)
 
@@ -131,19 +130,6 @@ class PipelineRunView:
             The git commit SHA that this pipeline run was performed on.
         """
         return self._model.git_sha
-
-    @property
-    def runtime_configuration(self) -> Optional["RuntimeConfiguration"]:
-        """Runtime configuration that was used for this pipeline run.
-
-        This will only be set if the pipeline run was tracked in a ZenStore.
-
-        Returns:
-            The runtime configuration that was used for this pipeline run.
-        """
-        if self._model.runtime_configuration is None:
-            return None
-        return RuntimeConfiguration(**self._model.runtime_configuration)
 
     @property
     def status(self) -> ExecutionStatus:

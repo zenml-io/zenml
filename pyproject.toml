@@ -247,7 +247,6 @@ module = [
     "azureml.*",
     "google.*",
     "neuralprophet.*",
-    "wandb.*",
     "lightgbm.*",
     "scipy.*",
     "deepchecks.*",
@@ -257,7 +256,8 @@ module = [
     "slack_sdk.*",
     "azure-keyvault-keys.*",
     "model_archiver.*",
-    "kfp_tekton.*"
+    "kfp_tekton.*",
+    "mlflow.*"
 ]
 ignore_missing_imports = true
 

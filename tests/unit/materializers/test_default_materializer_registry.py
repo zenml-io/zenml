@@ -80,25 +80,30 @@ def test_materializer_with_parameter_with_more_than_one_conflicting_baseclass():
         some_step()()
 
 
+class MyFirstType:
+    pass
+
+
+class MySecondType:
+    pass
+
+
+class MyFirstMaterializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (MyFirstType,)
+
+
+class MySecondMaterializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (MySecondType,)
+
+
+class MyConflictingType(MyFirstType, MySecondType):
+    pass
+
+
 def test_materializer_with_conflicting_parameter_and_explicit_materializer():
     """Tests the case where the output parameter is inheriting from more than
     one baseclass which have different default materializers but the
     materializer is explicitly defined"""
-
-    class MyFirstType:
-        pass
-
-    class MySecondType:
-        pass
-
-    class MyFirstMaterializer(BaseMaterializer):
-        ASSOCIATED_TYPES = (MyFirstType,)
-
-    class MySecondMaterializer(BaseMaterializer):
-        ASSOCIATED_TYPES = (MySecondType,)
-
-    class MyConflictingType(MyFirstType, MySecondType):
-        pass
 
     @step
     def some_step() -> MyConflictingType:
