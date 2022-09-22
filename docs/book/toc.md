@@ -31,7 +31,6 @@
   * [Validating data](./developer-guide/stacks-repositories/stacks-repositories.md)
   * [Deploying models and batch inference](./developer-guide/stacks-repositories/stacks-repositories.md)
   * [Configure Stack Components using Secrets](./developer-guide/advanced-usage/secret-references.md)
-  
 * [Pipeline Usage Patterns](./developer-guide/steps-pipelines/steps-and-pipelines.md)
   * [Control the Step Execution Order](./developer-guide/advanced-usage/step-execution-order.md)
   * [Choose Functional vs. Class-Based API](./developer-guide/steps-pipelines/functional-vs-class-based-api.md)
@@ -39,7 +38,6 @@
   * [Access the Active Stack within Steps](./developer-guide/advanced-usage/step-fixtures.md)
   * [Access Global Info within Steps](./developer-guide/advanced-usage/environment.md)
   * [Specify Step Resources](./developer-guide/advanced-usage/specify-step-resources.md)
-  
 * [Stacks Configuration](./developer-guide/stacks-repositories/stacks-repositories.md)
   * [Write Custom Stack Component Flavors](./developer-guide/advanced-usage/custom-flavors.md)
   * [Manage Stack Component States](./developer-guide/advanced-usage/stack-state-management.md)
