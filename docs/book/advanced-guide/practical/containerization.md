@@ -1,219 +1,218 @@
 ---
-description: How automated caching works in ZenML
+description: How ZenML uses Docker images to run your pipeline
 ---
 
-Machine learning pipelines are rerun many times over throughout their
-development lifecycle. Prototyping is often a fast and iterative process that
-benefits a lot from caching. This makes caching a very powerful tool.
-Checkout this [ZenML Blogpost on Caching](https://blog.zenml.io/caching-ml-pipelines/)
-for more context on the benefits of caching and 
-[ZenBytes lesson 1.2](https://github.com/zenml-io/zenbytes/blob/main/1-2_Artifact_Lineage.ipynb)
-for a detailed example on how to configure and visualize caching.
+# Things to change
 
-## Caching in ZenML
+- Needs a re-read
 
-ZenML comes with caching enabled by default. Since ZenML automatically tracks
-and versions all inputs, outputs, and parameters of steps and pipelines, ZenML
-will not re-execute steps within the same pipeline on subsequent pipeline runs
-as long as there is no change in these three.
+When running locally, ZenML will execute the steps of your pipeline in the
+active Python environment. When using a remote [orchestrators](../../mlops-stacks/orchestrators/orchestrators.md)
+or [step operators](../../mlops-stacks/step-operators/step-operators.md) instead,
+ZenML builds [Docker](https://www.docker.com/) images to transport and
+run your pipeline code in an isolated and well-defined environment.
+For this purpose, a [Dockerfile](https://docs.docker.com/engine/reference/builder/) is dynamically generated and used
+to build the image using the local Docker client. This Dockerfile consists of the following steps:
+* Starts from a parent image which needs to have ZenML installed. By default, this will use the [official ZenML image](https://hub.docker.com/r/zenmldocker/zenml/) for the Python and ZenML version that you're using in the active Python environment. If you want to use a different image as the base for the following steps, check out [this guide](#using-a-custom-parent-image).
+* **Installs additional pip dependencies**. ZenML will automatically detect which integrations are used in your stack and install the required dependencies.
+If your pipeline needs any additional requirements, check out our [guide on including custom dependencies](#how-to-install-additional-pip-dependencies).
+* **Copies your active stack configuration**. This is needed so that ZenML can execute your code on the stack that you specified.
+* **Copies your source files**. These files need to be included in the Docker image so ZenML can execute your step code. Check out [this section](#which-files-get-included) for more information on which files get included by default and how to exclude files.
+* **Sets user-defined environment variables.**
+
+{% hint style="info" %}
+ZenML uses the official Docker python library to build and push your images. This library
+loads its authentication credentials to push images from the default config location: `$HOME/.docker/config.json`.
+If your Docker configuration is stored in a different directory, you can use the environment
+variable `DOCKER_CONFIG` to override this behavior:
+```shell
+export DOCKER_CONFIG=/path/to/config_dir
+```
+The directory that you specify here must contain your Docker configuration in a file called `config.json`.
+{% endhint %}
+
+## Customizing the build process
+
+The process explained above is all done automatically by ZenML and covers most basic use cases.
+This section covers all the different ways in which you can hook into the Docker building
+process to customize the resulting image to your needs.
+
+For a full list of configuration options, check out
+[our API Docs](https://apidocs.zenml.io/latest/api_docs/config/#zenml.config.docker_configuration.DockerConfiguration).
+
+For the configuration examples described below, you'll need to import the `DockerConfiguration` module:
+```python
+from zenml.config.docker_configuration import DockerConfiguration
+```
+
+### Which files get included
+
+ZenML will try to determine the root directory of your source files in the following order:
+* If you've created a 
+[ZenML repository](../stacks-repositories/repository.md)
+for your project, the repository directory will be used.
+* Otherwise, the parent directory of the python file you're executing will be the source root.
+For example, running `python /path/to/file.py`, the source root would be `/path/to`.
+
+By default, ZenML will copy all contents of this root directory into the Docker image.
+If you want to exclude files to keep the image smaller, you can do so using a [.dockerignore
+file](https://docs.docker.com/engine/reference/builder/#dockerignore-file) in either of the 
+following two ways:
+* Have a file called `.dockerignore` in your source root directory explained above.
+* Explicitly specify a `.dockerignore` file that you want to use:
+    ```python
+    docker_config = DockerConfiguration(dockerignore="/path/to/.dockerignore")
+    
+    @pipeline(docker_configuration=docker_config)
+    def my_pipeline(...):
+        ...
+    ```
+
+#### Don't include any user files
+
+If you want to prevent ZenML from copying any of your source files, you can do so by
+setting the `copy_files` attribute on the Docker configuration to `False`:
+```python
+docker_config = DockerConfiguration(copy_files=False)
+
+@pipeline(docker_configuration=docker_config)
+def my_pipeline(...):
+    ...
+```
 
 {% hint style="warning" %}
-Currently, the caching does not automatically detect changes within the file
-system or on external APIs. Make sure to set caching to `False` on steps that
-depend on external inputs or if the step should run regardless of caching.
+This is an advanced feature and will most likely break your pipelines. If you use this,
+you're on your own and need to copy all the necessary files to the correct paths yourself.
 {% endhint %}
 
-## Configuring caching behavior of your pipelines
+#### Don't include the stack configuration
 
-Although caching is desirable in many circumstances, one might want to disable
-it in certain instances. For example, if you are quickly prototyping with
-changing step definitions or you have an external API state change in your
-function that ZenML does not detect.
-
-There are multiple ways to take control of when and where caching is used:
-- [Disabling caching for the entire pipeline](#disabling-caching-for-the-entire-pipeline):
-Do this if you want to turn off all caching (not recommended).
-- [Disabling caching for individual steps](#disabling-caching-for-individual-steps):
-This is required for certain steps that depend on external input.
-- [Dynamically disabling caching for a pipeline run](#dynamically-disabling-caching-for-a-pipeline-run):
-This is useful to force a complete rerun of a pipeline.
-
-### Disabling caching for the entire pipeline
-
-On a pipeline level the caching policy can be set as a parameter within the decorator. 
-
+If you want to prevent ZenML from copying the configuration of your active stack,
+you can do so by setting the `copy_global_config` attribute on the Docker
+configuration to `False`:
 ```python
-@pipeline(enable_cache=False)
-def first_pipeline(....):
-    """Pipeline with cache disabled"""
-```
+docker_config = DockerConfiguration(copy_global_config=False)
 
-{% hint style="info" %}
-If caching is explicitly turned off on a pipeline level, all steps are run 
-without caching, even if caching is set to `True` for single steps.
-{% endhint %}
-
-### Disabling caching for individual steps
-
-Caching can also be explicitly turned off at a step level. You might want to turn off caching for steps that take 
-external input (like fetching data from an API or File IO).
-
-```python
-@step(enable_cache=False)
-def import_data_from_api(...):
-    """Import most up-to-date data from public api"""
+@pipeline(docker_configuration=docker_config)
+def my_pipeline(...):
     ...
 ```
 
-{% hint style="info" %}
-You can get a graphical visualization of which steps were cached using
-[ZenML's Pipeline Run Visualization Tool](./pipeline-visualization.md).
+{% hint style="warning" %}
+This is an advanced feature and will most likely break your pipelines. If you use this,
+you're on your own and need to copy a stack configuration to the correct path yourself.
 {% endhint %}
 
-You can disable caching for individual steps via the `config.yaml` file and
-specifying parameters for a specific step (as described [in the section on YAML
-config
-files](https://docs.zenml.io/developer-guide/steps-and-pipelines/runtime-configuration#configuring-with-yaml-config-files).)
-In this case, you would specify `True` or `False` in the place of the
-`<ENABLE_CACHE_VALUE>` below.
+### How to install additional pip dependencies
 
-```yaml
-steps:
-  <STEP_NAME_IN_PIPELINE>:
-    parameters:
-      enable_cache: <ENABLE_CACHE_VALUE>
-      ...
+By default, ZenML will automatically install all the packages required by your
+active ZenML stack. There are, however, various ways in which you can specify
+additional packages that should be installed:
+* Install all the packages in your local python environment (This will use the `pip` or `poetry`
+package manager to get a list of your local packages):
+    ```python
+    # or use "poetry_export"
+    docker_config = DockerConfiguration(replicate_local_python_environment="pip_freeze")
+
+    @pipeline(docker_configuration=docker_config)
+    def my_pipeline(...):
+        ...
+    ```
+* Specify a list of pip requirements in code:
+    ```python
+    docker_config = DockerConfiguration(requirements=["torch==1.12.0", "torchvision"])
+
+    @pipeline(docker_configuration=docker_config)
+    def my_pipeline(...):
+        ...
+    ```
+* Specify a pip requirements file:
+    ```python
+    docker_config = DockerConfiguration(requirements="/path/to/requirements.txt")
+
+    @pipeline(docker_configuration=docker_config)
+    def my_pipeline(...):
+        ...
+    ```
+* Specify a list of [ZenML integrations](../../mlops-stacks/integrations.md) that you're using in your pipeline:
+    ```python
+    from zenml.integrations.constants import PYTORCH, EVIDENTLY
+
+    docker_config = DockerConfiguration(required_integrations=[PYTORCH, EVIDENTLY])
+
+    @pipeline(docker_configuration=docker_config)
+    def my_pipeline(...):
+        ...
+    ```
+* Prevent ZenML from automatically installing the requirements of your stack:
+    ```python
+    docker_config = DockerConfiguration(install_stack_requirements=False)
+
+    @pipeline(docker_configuration=docker_config)
+    def my_pipeline(...):
+        ...
+    ```
+
+You can even combine these methods, but do make sure that your
+list of pip requirements [doesn't overlap](../../resources/best-practices.md#do-not-overlap-requiredintegrations-and-requirements)
+with the ones specified by your required integrations.
+
+Depending on all the options specified in your Docker configuration, ZenML will install the requirements
+in the following order (each step optional):
+- The packages installed in your local python environment
+- The packages specified via the `requirements` attribute
+- The packages specified via the `required_integrations` and potentially stack requirements
+
+## Using a custom parent image
+
+By default, ZenML will perform all the steps described above on top of the
+[official ZenML image](https://hub.docker.com/r/zenmldocker/zenml/) for the Python
+and ZenML version that you're using in the active Python environment. To have more
+control over the entire environment which is used to execute your pipelines,
+you can either specify a custom pre-built parent image or a Dockerfile which ZenML will use to
+build a parent image for you.
+
+{% hint style="info" %}
+If you're going to use a custom parent image (either pre-built or by specifying a Dockerfile),
+you need to make sure that it has Python, pip and ZenML installed for it to work. If you need 
+a starting point, you can take a look at the Dockerfile that ZenML uses
+[here](https://github.com/zenml-io/zenml/blob/main/docker/base.Dockerfile).
+{% endhint %}
+
+### Using a pre-built parent image
+
+If you want to use a static parent image (which for example has some internal dependencies installed)
+that doesn't need to be rebuilt on every pipeline run, you can do so by specifying it on the
+Docker configuration for your pipeline:
+```python
+docker_config = DockerConfiguration(parent_image="my_registry.io/image_name:tag")
+
+@pipeline(docker_configuration=docker_config)
+def my_pipeline(...):
     ...
 ```
 
-You can see an example of this in action in our [PyTorch
-Example](https://github.com/zenml-io/zenml/blob/develop/examples/pytorch/config.yaml),
-where caching is disabled for the `trainer` step.
+### Specifying a Dockerfile to dynamically build a parent image
 
-### Dynamically disabling caching for a pipeline run
+In some cases you might want full control over the resulting Docker image but want
+to build a Docker image dynamically each time a pipeline is executed. To make this process easier,
+ZenML allows you to specify a custom Dockerfile as well as build context directory and
+build options. ZenML then builds an intermediate image based on the Dockerfile you specified and uses
+the intermediate image as the parent image.
 
-Sometimes you want to have control over caching at runtime instead of defaulting to the backed in configurations of 
-your pipeline and its steps. ZenML offers a way to override all caching settings of the pipeline at runtime.
-
-```python
-first_pipeline(step_1=..., step_2=...).run(enable_cache=False)
-```
-
-### Code Example
-
-The following example shows caching in action with the code example from the
-previous section on [Runtime Configuration](./runtime-configuration.md).
-
-For a more detailed example on how caching is used at ZenML and how it works
-under the hood, checkout 
-[ZenBytes lesson 1.2](https://github.com/zenml-io/zenbytes/blob/main/1-2_Artifact_Lineage.ipynb)!
-
-<details>
-    <summary>Code Example of this Section</summary>
+{% hint style="info" %}
+Depending on the configuration of your Docker configuration, this intermediate image
+might also be used directly to execute your pipeline steps.
+{% endhint %}
 
 ```python
-import numpy as np
-from sklearn.base import ClassifierMixin
-from sklearn.datasets import load_digits
-from sklearn.model_selection import train_test_split
-from sklearn.svm import SVC
-
-from zenml.steps import BaseStepConfig, Output, step
-from zenml.pipelines import pipeline
-
-
-@step
-def digits_data_loader() -> Output(
-    X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
-):
-    """Loads the digits dataset as a tuple of flattened numpy arrays."""
-    digits = load_digits()
-    data = digits.images.reshape((len(digits.images), -1))
-    X_train, X_test, y_train, y_test = train_test_split(
-        data, digits.target, test_size=0.2, shuffle=False
-    )
-    return X_train, X_test, y_train, y_test
-
-
-class SVCTrainerStepConfig(BaseStepConfig):
-    """Trainer params"""
-    gamma: float = 0.001
-
-
-@step(enable_cache=False)  # never cache this step, always retrain
-def svc_trainer(
-    config: SVCTrainerStepConfig,
-    X_train: np.ndarray,
-    y_train: np.ndarray,
-) -> ClassifierMixin:
-    """Train a sklearn SVC classifier."""
-    model = SVC(gamma=config.gamma)
-    model.fit(X_train, y_train)
-    return model
-
-
-@pipeline
-def first_pipeline(step_1, step_2):
-    X_train, X_test, y_train, y_test = step_1()
-    step_2(X_train, y_train)
-
-
-first_pipeline_instance = first_pipeline(
-    step_1=digits_data_loader(),
-    step_2=svc_trainer()
+docker_config = DockerConfiguration(
+    dockerfile="/path/to/dockerfile",
+    build_context_root="/path/to/build/context",
+    build_options=...
 )
 
-# The pipeline is executed for the first time, so all steps are run.
-first_pipeline_instance.run()
-
-# Step one will use cache, step two will rerun due to the decorator config
-first_pipeline_instance.run()
-
-# The complete pipeline will be rerun
-first_pipeline_instance.run(enable_cache=False)
+@pipeline(docker_configuration=docker_config)
+def my_pipeline(...):
+    ...
 ```
-
-### Expected Output
-
-#### Run 1:
-
-```
-Creating run for pipeline: first_pipeline
-Cache enabled for pipeline first_pipeline
-Using stack default to run pipeline first_pipeline...
-Step digits_data_loader has started.
-Step digits_data_loader has finished in 0.135s.
-Step svc_trainer has started.
-Step svc_trainer has finished in 0.109s.
-Pipeline run first_pipeline-07_Jul_22-12_05_54_573248 has finished in 0.417s.
-```
-
-#### Run 2:
-
-```
-Creating run for pipeline: first_pipeline
-Cache enabled for pipeline first_pipeline
-Using stack default to run pipeline first_pipeline...
-Step digits_data_loader has started.
-Using cached version of digits_data_loader.
-Step digits_data_loader has finished in 0.014s.
-Step svc_trainer has started.
-Step svc_trainer has finished in 0.051s.
-Pipeline run first_pipeline-07_Jul_22-12_05_55_813554 has finished in 0.161s.
-```
-
-#### Run 3:
-
-```
-Creating run for pipeline: first_pipeline
-Cache enabled for pipeline first_pipeline
-Using stack default to run pipeline first_pipeline...
-Runtime configuration overwriting the pipeline cache settings to enable_cache=False for this pipeline run. The default caching strategy is retained for future pipeline runs.
-Step digits_data_loader has started.
-Step digits_data_loader has finished in 0.078s.
-Step svc_trainer has started.
-Step svc_trainer has finished in 0.048s.
-Pipeline run first_pipeline-07_Jul_22-12_05_56_718489 has finished in 0.219s.
-```
-
-</details>

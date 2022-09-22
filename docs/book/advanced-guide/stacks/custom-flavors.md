@@ -2,6 +2,12 @@
 description: How to write a custom stack component flavor
 ---
 
+# Things to change
+
+- Just needs a reread and update
+
+# Older content
+
 When building sophisticated ML workflows, you will often need to come up with
 custom-tailed solutions. Sometimes, this might even require you to use custom 
 components for your infrastructure or tooling.

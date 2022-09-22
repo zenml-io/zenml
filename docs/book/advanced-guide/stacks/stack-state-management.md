@@ -2,6 +2,12 @@
 description: How to start, stop, provision, and deprovision stacks and stack components
 ---
 
+# Things to change
+
+- Just needs a reread and update
+
+# Older content
+
 # Managing Stack Component States
 
 Some stack components come with built-in daemons for connecting to the

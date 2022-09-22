@@ -2,6 +2,12 @@
 description: How to set stacks with environment variables
 ---
 
+# Things to change
+
+- Just needs a reread and update
+
+# Older content
+
 # Setting Stacks with Environment Variables
 
 Alternatively to using [Repositories](../stacks-repositories/repository.md),
