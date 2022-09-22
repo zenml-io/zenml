@@ -724,7 +724,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 )
                 result = client.create_recurring_run(
                     experiment_id=experiment.id,
-                    job_name=run_name,
+                    job_name=pipeline_name,
                     pipeline_package_path=pipeline_file_path,
                     enable_caching=enable_cache,
                     cron_expression=deployment.schedule.cron_expression,
