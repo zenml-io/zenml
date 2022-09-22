@@ -255,7 +255,18 @@ class BaseStep(metaclass=BaseStepMeta):
     INSTANCE_CONFIGURATION: Dict[str, Any] = {}
 
     class _OutputArtifact(NamedTuple):
-        """Internal step output artifact."""
+        """Internal step output artifact.
+        
+        This class is used for inputs/outputs of the __call__ method of
+        BaseStep. It passes all the information about step outputs so downstream
+        steps can finalize their configuration.
+
+        Attributes:
+            channel: TFX channel that defines the artifact class and id of the
+                step that produced the output.
+            materializer_source: The source of the materializer used to
+                write the output.
+        """
 
         channel: Channel
         materializer_source: str

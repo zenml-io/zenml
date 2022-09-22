@@ -27,7 +27,11 @@ if TYPE_CHECKING:
 
 
 class SettingsResolver:
-    """Class for resolving settings."""
+    """Class for resolving settings.
+    
+    This class converts a `BaseSettings` instance to the correct subclass
+    depending on the key for which these settings were specified. 
+    """
 
     def __init__(self, key: str, settings: "BaseSettings"):
         """Checks if the settings key is valid.

@@ -23,14 +23,23 @@ SettingsOrDict = Union[Dict[str, Any], "BaseSettings"]
 
 
 class ConfigurationLevel(IntFlag):
-    """Settings configuration level."""
+    """Settings configuration level.
+    
+    Bit flag that can be used to specify where a `BaseSettings` subclass
+    can be specified.
+    """
 
     STEP = auto()
     PIPELINE = auto()
 
 
 class BaseSettings(SecretReferenceMixin):
-    """Base class for settings."""
+    """Base class for settings.
+
+    The `LEVEL` class variable defines on which level the settings can be
+    specified. By default, subclasses can be defined on both pipelines and
+    steps.
+    """
 
     LEVEL: ClassVar[ConfigurationLevel] = (
         ConfigurationLevel.PIPELINE | ConfigurationLevel.STEP
