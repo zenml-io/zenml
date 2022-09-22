@@ -256,7 +256,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
     class _OutputArtifact(NamedTuple):
         """Internal step output artifact.
-        
+
         This class is used for inputs/outputs of the __call__ method of
         BaseStep. It passes all the information about step outputs so downstream
         steps can finalize their configuration.

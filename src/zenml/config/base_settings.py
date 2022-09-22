@@ -24,7 +24,7 @@ SettingsOrDict = Union[Dict[str, Any], "BaseSettings"]
 
 class ConfigurationLevel(IntFlag):
     """Settings configuration level.
-    
+
     Bit flag that can be used to specify where a `BaseSettings` subclass
     can be specified.
     """
