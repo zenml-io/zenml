@@ -125,28 +125,26 @@
 * [Azure](./popular-stack-guides/azure/azure.md)
   * [Basic Azure Stack](./popular-stack-guides/azure/basic-stack.md)
 
-## Misc
+
+## Guidelines
 
 * [Best Practices](misc/best-practices.md)
 * [Global Configuration](misc/global-config.md)
 * [System Environmental Variables](misc/system-environmental-variables.md)
-
-## Resources
-
-* [Contribution Guide](resources/contributing.md)
-* [Roadmap](https://zenml.io/roadmap)
-* [External Integration Guide](resources/integrating.md)
 * [Usage Analytics](resources/usage-analytics.md)
+* [Contribution Guide](resources/contributing.md)
+* [External Integration Guide](resources/integrating.md)
+
+## Reference
+
 * Community & Content
   * [Join the Slack Community](https://zenml.io/slack-invite/)
+  * [Roadmap](https://zenml.io/roadmap)
   * [Blog](https://blog.zenml.io/)
   * [Podcast](https://podcast.zenml.io/)
   * [YouTube](https://www.youtube.com/channel/UCi79n61eV2sVyYxJOqk\_bMw)
   * [Newsletter](https://zenml.substack.com/)
   * [Community Events](https://www.eventbrite.de/o/zenml-44751230043)
-
-## Reference
-
 * [Glossary](reference/glossary.md)
 * [FAQ](resources/faq.md)
 * [CLI Cheat Sheet](reference/cheat-sheet.md)
