@@ -20,6 +20,7 @@ from uuid import UUID
 
 from sqlmodel import Field, Relationship, SQLModel
 
+from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.enums import ArtifactType
 from zenml.models import PipelineModel, PipelineRunModel
 from zenml.models.pipeline_models import ArtifactModel, StepRunModel
@@ -36,7 +37,7 @@ class PipelineSchema(SQLModel, table=True):
     user: UUID = Field(foreign_key="userschema.id")
 
     docstring: Optional[str] = Field(nullable=True)
-    configuration: str
+    spec: str
 
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
@@ -61,7 +62,7 @@ class PipelineSchema(SQLModel, table=True):
             project=pipeline.project,
             user=pipeline.user,
             docstring=pipeline.docstring,
-            configuration=json.dumps(pipeline.configuration),
+            spec=pipeline.spec.json(sort_keys=True),
         )
 
     def from_update_model(self, model: PipelineModel) -> "PipelineSchema":
@@ -76,7 +77,7 @@ class PipelineSchema(SQLModel, table=True):
         self.name = model.name
         self.updated = datetime.now()
         self.docstring = model.docstring
-        self.configuration = json.dumps(model.configuration)
+        self.spec = model.spec.json(sort_keys=True)
         return self
 
     def to_model(self) -> "PipelineModel":
@@ -91,7 +92,7 @@ class PipelineSchema(SQLModel, table=True):
             project=self.project,
             user=self.user,
             docstring=self.docstring,
-            configuration=json.loads(self.configuration),
+            spec=PipelineSpec.parse_raw(self.spec),
             created=self.created,
             updated=self.updated,
         )
@@ -112,7 +113,6 @@ class PipelineRunSchema(SQLModel, table=True):
         foreign_key="pipelineschema.id", nullable=True
     )
 
-    runtime_configuration: Optional[str] = Field(nullable=True)
     git_sha: Optional[str] = Field(nullable=True)
     zenml_version: str
 
@@ -144,7 +144,6 @@ class PipelineRunSchema(SQLModel, table=True):
             stack_id=run.stack_id,
             user=run.user,
             pipeline_id=run.pipeline_id,
-            runtime_configuration=json.dumps(run.runtime_configuration),
             git_sha=run.git_sha,
             zenml_version=run.zenml_version,
             pipeline=pipeline,
@@ -161,7 +160,6 @@ class PipelineRunSchema(SQLModel, table=True):
             The updated `PipelineRunSchema`.
         """
         self.name = model.name
-        self.runtime_configuration = json.dumps(model.runtime_configuration)
         self.git_sha = model.git_sha
         if model.zenml_version is not None:
             self.zenml_version = model.zenml_version
@@ -176,16 +174,12 @@ class PipelineRunSchema(SQLModel, table=True):
         Returns:
             The created `PipelineRunModel`.
         """
-        config = self.runtime_configuration
-        if config is not None:
-            config = json.loads(config)
         return PipelineRunModel(
             id=self.id,
             name=self.name,
             stack_id=self.stack_id,
             user=self.user,
             pipeline_id=self.pipeline_id,
-            runtime_configuration=config,
             git_sha=self.git_sha,
             zenml_version=self.zenml_version,
             mlmd_id=self.mlmd_id,

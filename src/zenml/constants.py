@@ -175,12 +175,6 @@ VERSION_1 = "/v1"
 # mandatory stack component attributes
 MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]
 
-# MLMD context constants
-ZENML_MLMD_CONTEXT_TYPE = "zenml"
-MLMD_CONTEXT_STACK_PROPERTY_NAME = "stack"
-MLMD_CONTEXT_PIPELINE_CONFIG_PROPERTY_NAME = "pipeline_configuration"
-MLMD_CONTEXT_STEP_CONFIG_PROPERTY_NAME = "step_configuration"
-
 
 # model metadata yaml file name
 MODEL_METADATA_YAML_FILE_NAME = "model_metadata.yaml"

@@ -13,12 +13,13 @@
 #  permissions and limitations under the License.
 """Model definitions for pipelines, runs, steps, and artifacts."""
 
-from typing import Any, ClassVar, Dict, List, Optional, cast
+from typing import ClassVar, Dict, List, Optional, cast
 from uuid import UUID
 
 from pydantic import Field
 
 from zenml import __version__ as current_zenml_version
+from zenml.config.pipeline_configurations import PipelineSpec
 from zenml.enums import ArtifactType
 from zenml.models.base_models import DomainModel, ProjectScopedDomainModel
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
@@ -66,7 +67,7 @@ class PipelineModel(ProjectScopedDomainModel, AnalyticsTrackedModelMixin):
     )
 
     docstring: Optional[str]
-    configuration: Dict[str, str]
+    spec: PipelineSpec
 
 
 class PipelineRunModel(DomainModel, AnalyticsTrackedModelMixin):
@@ -79,8 +80,6 @@ class PipelineRunModel(DomainModel, AnalyticsTrackedModelMixin):
 
     stack_id: Optional[UUID]  # might not be set for scheduled runs
     pipeline_id: Optional[UUID]  # might not be set for scheduled runs
-
-    runtime_configuration: Optional[Dict[str, Any]]
 
     zenml_version: Optional[str] = current_zenml_version
     git_sha: Optional[str] = Field(default_factory=get_git_sha)
