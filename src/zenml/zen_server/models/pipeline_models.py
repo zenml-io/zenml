@@ -22,6 +22,7 @@ from zenml.models import (
     PipelineRunModel,
     ProjectModel,
     UserModel,
+    StackModel
 )
 from zenml.models.constants import MODEL_NAME_FIELD_MAX_LENGTH
 from zenml.zen_server.models.base_models import (
@@ -82,7 +83,6 @@ class HydratedPipelineModel(PipelineModel):
                 "id": "24db6395-669b-4e6d-8e60-cc2c4f6c47cf",
                 "name": "example_pipeline",
                 "docstring": None,
-                "configuration": {},
                 "project": {
                     "id": "48533493-cb6d-4927-bc72-b8e998503d93",
                     "name": "default",
@@ -183,7 +183,50 @@ class HydratedPipelineModel(PipelineModel):
             user=user,
             runs=runs[:num_runs],
             docstring=pipeline_model.docstring,
-            configuration=pipeline_model.configuration,
             created=pipeline_model.created,
             updated=pipeline_model.updated,
+        )
+
+
+class HydratedPipelineRunModel(PipelineRunModel):
+    """Pipeline model with User and Project fully hydrated."""
+
+    pipeline: PipelineModel = Field(  # type: ignore[assignment]
+        title="The pipeline this run belongs to."
+    )
+    stack: StackModel = Field(  # type: ignore[assignment]
+        title="The stack that was used fro this run."
+    )
+    user: UserModel = Field(  # type: ignore[assignment]
+        title="The user that ran this pipeline.",
+    )
+
+    @classmethod
+    def from_model(
+        cls, run_model: PipelineRunModel,
+    ) -> "HydratedPipelineRunModel":
+        """Converts this model to a hydrated model.
+
+        Args:
+            run_model: The run model to hydrate.
+
+        Returns:
+            A hydrated model.
+        """
+        zen_store = GlobalConfiguration().zen_store
+
+        pipeline = None
+        stack = None
+        user = None
+
+        if run_model.pipeline_id:
+            pipeline = zen_store.get_pipeline(run_model.pipeline_id)
+        if run_model.stack_id:
+            stack = zen_store.get_stack(run_model.stack_id)
+        if run_model.user:
+            user = zen_store.get_user(run_model.user)
+
+        return cls(
+            **run_model.dict(exclude={"user", "pipeline", "stack"}),
+            pipeline=pipeline, stack=stack, user=user
         )

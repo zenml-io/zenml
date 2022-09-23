@@ -12,8 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Zen Server API."""
-
-
 import os
 from typing import Any
 
@@ -97,6 +95,16 @@ async def health() -> str:
         String representing the health status of the server.
     """
     return "OK"
+
+
+@app.get("/version")
+async def version() -> str:
+    """Get version of the server.
+
+    Returns:
+        String representing the version of the server.
+    """
+    return zenml.__version__
 
 
 # to run this file locally, execute:

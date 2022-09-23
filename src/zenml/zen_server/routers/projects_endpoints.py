@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Endpoint definitions for projects."""
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Dict
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
@@ -24,7 +24,7 @@ from zenml.constants import (
     ROLES,
     STACK_COMPONENTS,
     STACKS,
-    VERSION_1,
+    VERSION_1, STATISTICS,
 )
 from zenml.enums import StackComponentType
 from zenml.models import (
@@ -505,3 +505,38 @@ async def create_pipeline(
         return HydratedPipelineModel.from_model(created_pipeline)
     else:
         return created_pipeline
+
+
+
+@router.get(
+    "/{project_name_or_id}" + STATISTICS,
+    response_model=Dict[str, str],  # type: ignore[arg-type]
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+async def get_project_statistics(
+    project_name_or_id: Union[str, UUID]
+) -> Dict[str, int]:
+    """Gets statistics of a project.
+
+    # noqa: DAR401
+
+    Args:
+        project_name_or_id: Name or ID of the project to get statistics for.
+
+    Returns:
+        All pipelines within the project.
+    """
+    # TODO: [server] instead of actually querying all the rows, we should
+    #  use zen_store methods that just return counts
+    zen_store.list_runs()
+    return {
+        "stacks": len(zen_store.list_stacks(
+            project_name_or_id=project_name_or_id)),
+        "components": len(zen_store.list_stack_components(
+            project_name_or_id=project_name_or_id)),
+        "pipelines": len(zen_store.list_pipelines(
+            project_name_or_id=project_name_or_id)),
+        "runs": len(zen_store.list_runs(
+            project_name_or_id=project_name_or_id)),
+    }
