@@ -30,6 +30,10 @@
   * [Tracking experiments](./advanced-guide/practical/tracking-experiments.md)
   * [Validating data](./advanced-guide/practical/validating-data.md)
   * [Deploying models and batch inference](./advanced-guide/practical/deploying-models.md)
+* [Deploying ZenML](advanced-guide/deploying-zenml/deployment.md)
+  * [AWS](./advanced-guide/deploying-zenml/aws.md)
+  * [GCP](./advanced-guide/deploying-zenml/gcp.md)
+  * [Azure](./advanced-guide/deploying-zenml/azure.md)
 * [Configuring Pipelines](./advanced-guide/pipelines/pipelines.md)
   * [Runtime configuration](./advanced-guide/pipelines/runtime-configuration.md)
   * [Pass custom data types through steps (Materializers)](./advanced-guide/pipelines/materializers.md)
@@ -41,10 +45,7 @@
   * [Manage Stack Component States](./advanced-guide/stacks/stack-state-management.md)
   * [Manage External Services](./advanced-guide/stacks/manage-external-services.md)
   * [Set Stacks with Environment Variables](./advanced-guide/stacks/stack-environment-variables.md)
-* [Deploying ZenML](advanced-guide/deploying-zenml/deploying-zenml.md)
-  * [AWS](./advanced-guide/deploying-zenml/aws.md)
-  * [GCP](./advanced-guide/deploying-zenml/gcp.md)
-  * [Azure](./advanced-guide/deploying-zenml/azure.md)
+
 
 ## Component Gallery
 
