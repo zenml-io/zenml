@@ -2524,15 +2524,13 @@ class SqlZenStore(BaseZenStore):
                 "provided."
             )
         if uuid_utils.is_valid_uuid(object_name_or_id):
-            filter = schema_class.id == object_name_or_id  # type: ignore[
-            # attr-defined]
+            filter = schema_class.id == object_name_or_id  # type: ignore[attr-defined]
             error_msg = (
                 f"Unable to get {schema_name} with name or ID "
                 f"'{object_name_or_id}': No {schema_name} with this ID found."
             )
         else:
-            filter = schema_class.name == object_name_or_id  # type: ignore[
-            # attr-defined]
+            filter = schema_class.name == object_name_or_id  # type: ignore[attr-defined]
             error_msg = (
                 f"Unable to get {schema_name} with name or ID "
                 f"'{object_name_or_id}': '{object_name_or_id}' is not a valid "
@@ -2718,7 +2716,11 @@ class SqlZenStore(BaseZenStore):
             return artifact.id
 
     def _sync_runs(self) -> None:
-        """Sync runs from the database with those registered in MLMD."""
+        """Sync runs from MLMD into the database.
+
+        This queries all runs from MLMD, checks for each whether it already
+        exists in the database, and if not, creates it.
+        """
         # Get all runs from ZenML.
         with Session(self.engine) as session:
             zenml_runs_list = session.exec(select(PipelineRunSchema)).all()
@@ -2727,23 +2729,22 @@ class SqlZenStore(BaseZenStore):
         # Get all runs from MLMD.
         mlmd_runs = self.metadata_store.get_all_runs()
 
-        for run_name, mlmd_id in mlmd_runs.items():
+        # Sync all MLMD runs that don't exist in ZenML.
+        for run_name, mlmd_run in mlmd_runs.items():
 
             # If the run is in MLMD but not in ZenML, we create it
             if run_name not in zenml_runs:
-                new_run = PipelineRunModel(name=run_name, mlmd_id=mlmd_id)
+                new_run = PipelineRunModel(
+                    name=run_name,
+                    mlmd_id=mlmd_run.mlmd_id,
+                    project=mlmd_run.project,
+                    user=mlmd_run.user,
+                    stack_id=mlmd_run.stack_id,
+                    pipeline_id=mlmd_run.pipeline_id,
+                    pipeline_configuration=mlmd_run.pipeline_configuration,
+                )
                 new_run = self.create_run(new_run)
-                assert new_run.id is not None
                 self._sync_run_steps(new_run.id)
-                continue
-
-            # If an existing run in ZenML had no MLMD ID, we update it
-            existing_run = zenml_runs[run_name]
-            if not existing_run.mlmd_id:
-                existing_run.mlmd_id = mlmd_id
-                assert existing_run.id is not None
-                self._update_run(run=existing_run)
-                self._sync_run_steps(existing_run.id)
 
     def _sync_run_steps(self, run_id: UUID) -> None:
         """Sync run steps from MLMD into the database.
@@ -2788,6 +2789,7 @@ class SqlZenStore(BaseZenStore):
                     mlmd_parent_step_ids=mlmd_step.mlmd_parent_step_ids,
                     entrypoint_name=mlmd_step.entrypoint_name,
                     parameters=mlmd_step.parameters,
+                    step_configuration=mlmd_step.step_configuration,
                     pipeline_run_id=run_id,
                     parent_step_ids=[
                         self._resolve_mlmd_step_id(parent_step_id)

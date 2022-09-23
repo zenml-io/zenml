@@ -348,6 +348,16 @@ class PipelineRunLineageVisualizer(BaseVisualizer):
                         text += "#### Parameters:" + "\n\n"
                         for k, v in data["parameters"].items():
                             text += f"**{k}**: {v}" + "\n\n"
+                    if data["configuration"]:
+                        text += "#### Configuration:" + "\n\n"
+                        config = {
+                            k: v
+                            for k, v in data["configuration"].items()
+                            if k not in ["inputs", "outputs", "parameters"]
+                            and v
+                        }
+                        for k, v in config.items():
+                            text += f"**{k}**: {v}" + "\n\n"
             return text
 
         @app.callback(  # type: ignore[misc]

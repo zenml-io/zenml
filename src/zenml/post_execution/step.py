@@ -126,6 +126,15 @@ class StepView:
         return self._model.parameters
 
     @property
+    def step_configuration(self) -> Dict[str, Any]:
+        """Returns the step configuration.
+
+        Returns:
+            The step configuration.
+        """
+        return self._model.step_configuration
+
+    @property
     def status(self) -> ExecutionStatus:
         """Returns the current status of the step.
 

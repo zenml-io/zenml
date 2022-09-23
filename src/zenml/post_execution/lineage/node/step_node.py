@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Class for all lineage step nodes."""
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from pydantic import BaseModel
 
@@ -27,6 +27,7 @@ class StepNodeDetails(BaseModel):
     entrypoint_name: str
     name: str
     parameters: Dict[str, Any]
+    configuration: Optional[Dict[str, Any]]
     inputs: Dict[str, Any]
     outputs: Dict[str, Any]
 

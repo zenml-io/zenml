@@ -63,6 +63,7 @@ class LineageGraph(BaseModel):
                     entrypoint_name=step.entrypoint_name,  # redundant for consistency
                     name=step.name,  # redundant for consistency
                     parameters=step.parameters,
+                    configuration=step.step_configuration.get("config", None),
                     inputs={k: v.uri for k, v in step.inputs.items()},
                     outputs={k: v.uri for k, v in step.outputs.items()},
                 ),

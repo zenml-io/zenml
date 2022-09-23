@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Model definitions for pipelines, runs, steps, and artifacts."""
 
-from typing import ClassVar, Dict, List, Optional, cast
+from typing import Any, ClassVar, Dict, List, Optional, cast
 from uuid import UUID
 
 from pydantic import Field
@@ -70,7 +70,7 @@ class PipelineModel(ProjectScopedDomainModel, AnalyticsTrackedModelMixin):
     spec: PipelineSpec
 
 
-class PipelineRunModel(DomainModel, AnalyticsTrackedModelMixin):
+class PipelineRunModel(ProjectScopedDomainModel, AnalyticsTrackedModelMixin):
     """Domain Model representing a pipeline run."""
 
     name: str = Field(
@@ -78,15 +78,15 @@ class PipelineRunModel(DomainModel, AnalyticsTrackedModelMixin):
         max_length=MODEL_NAME_FIELD_MAX_LENGTH,
     )
 
-    stack_id: Optional[UUID]  # might not be set for scheduled runs
-    pipeline_id: Optional[UUID]  # might not be set for scheduled runs
+    stack_id: Optional[UUID]  # Might become None if the stack is deleted.
+    pipeline_id: Optional[UUID]  # Unlisted runs have this as None.
 
+    pipeline_configuration: Dict[str, Any]
     zenml_version: Optional[str] = current_zenml_version
     git_sha: Optional[str] = Field(default_factory=get_git_sha)
 
-    # ID in MLMD - needed for some metadata store methods
-    mlmd_id: Optional[int]
-    user: Optional[UUID]  # might not be set for scheduled runs
+    # ID in MLMD - needed for some metadata store methods.
+    mlmd_id: Optional[int]  # Modeled as Optional, so we can remove it later.
 
 
 class StepRunModel(DomainModel):
@@ -100,9 +100,10 @@ class StepRunModel(DomainModel):
     pipeline_run_id: UUID
     parent_step_ids: List[UUID]
 
-    docstring: Optional[str]
-    parameters: Dict[str, str]
     entrypoint_name: str
+    parameters: Dict[str, str]
+    step_configuration: Dict[str, Any]
+    docstring: Optional[str]
 
     # IDs in MLMD - needed for some metadata store methods
     mlmd_id: int

@@ -116,8 +116,8 @@ class PipelineRunSchema(SQLModel, table=True):
     id: UUID = Field(primary_key=True)
     name: str
 
-    # project_id - redundant since stack has this
-    user: Optional[UUID] = Field(foreign_key="userschema.id", nullable=True)
+    project: UUID = Field(foreign_key="projectschema.id")
+    user: UUID = Field(foreign_key="userschema.id")
     stack_id: Optional[UUID] = Field(
         foreign_key="stackschema.id", nullable=True
     )
@@ -125,8 +125,9 @@ class PipelineRunSchema(SQLModel, table=True):
         foreign_key="pipelineschema.id", nullable=True
     )
 
-    git_sha: Optional[str] = Field(nullable=True)
+    pipeline_configuration: str
     zenml_version: str
+    git_sha: Optional[str] = Field(nullable=True)
 
     created: datetime = Field(default_factory=datetime.now)
     updated: datetime = Field(default_factory=datetime.now)
@@ -154,8 +155,10 @@ class PipelineRunSchema(SQLModel, table=True):
             id=run.id,
             name=run.name,
             stack_id=run.stack_id,
+            project=run.project,
             user=run.user,
             pipeline_id=run.pipeline_id,
+            pipeline_configuration=json.dumps(run.pipeline_configuration),
             git_sha=run.git_sha,
             zenml_version=run.zenml_version,
             pipeline=pipeline,
@@ -190,8 +193,10 @@ class PipelineRunSchema(SQLModel, table=True):
             id=self.id,
             name=self.name,
             stack_id=self.stack_id,
+            project=self.project,
             user=self.user,
             pipeline_id=self.pipeline_id,
+            pipeline_configuration=json.loads(self.pipeline_configuration),
             git_sha=self.git_sha,
             zenml_version=self.zenml_version,
             mlmd_id=self.mlmd_id,
@@ -208,9 +213,10 @@ class StepRunSchema(SQLModel, table=True):
 
     pipeline_run_id: UUID = Field(foreign_key="pipelinerunschema.id")
 
-    docstring: Optional[str]
-    parameters: str
     entrypoint_name: str
+    parameters: str
+    step_configuration: str
+    docstring: Optional[str]
 
     mlmd_id: int = Field(default=None, nullable=True)
 
@@ -232,9 +238,10 @@ class StepRunSchema(SQLModel, table=True):
             id=model.id,
             name=model.name,
             pipeline_run_id=model.pipeline_run_id,
-            docstring=model.docstring,
-            parameters=json.dumps(model.parameters),
             entrypoint_name=model.entrypoint_name,
+            parameters=json.dumps(model.parameters),
+            step_configuration=json.dumps(model.step_configuration),
+            docstring=model.docstring,
             mlmd_id=model.mlmd_id,
         )
 
@@ -255,9 +262,10 @@ class StepRunSchema(SQLModel, table=True):
             name=self.name,
             pipeline_run_id=self.pipeline_run_id,
             parent_step_ids=parent_step_ids,
-            docstring=self.docstring,
-            parameters=json.loads(self.parameters),
             entrypoint_name=self.entrypoint_name,
+            parameters=json.loads(self.parameters),
+            step_configuration=json.loads(self.step_configuration),
+            docstring=self.docstring,
             mlmd_id=self.mlmd_id,
             mlmd_parent_step_ids=mlmd_parent_step_ids,
             created=self.created,
