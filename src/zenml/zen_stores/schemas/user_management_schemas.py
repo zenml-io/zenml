@@ -26,8 +26,8 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         PipelineSchema,
         StackComponentSchema,
-        StackSchema,
-    )
+        StackSchema, FlavorSchema,
+)
     from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 
 
@@ -58,13 +58,16 @@ class UserSchema(SQLModel, table=True):
         back_populates="user", sa_relationship_kwargs={"cascade": "delete"}
     )
     stacks: List["StackSchema"] = Relationship(
-        back_populates="user", sa_relationship_kwargs={"cascade": "all"}
+        back_populates="user",
     )
     components: List["StackComponentSchema"] = Relationship(
-        back_populates="user", sa_relationship_kwargs={"cascade": "all"}
+        back_populates="user",
     )
     pipelines: List["PipelineSchema"] = Relationship(
-        back_populates="user", sa_relationship_kwargs={"cascade": "all"}
+        back_populates="user",
+    )
+    flavors: List["FlavorSchema"] = Relationship(
+        back_populates="user",
     )
 
     @classmethod

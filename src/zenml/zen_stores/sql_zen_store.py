@@ -961,8 +961,8 @@ class SqlZenStore(BaseZenStore):
                 select(FlavorSchema)
                 .where(FlavorSchema.name == flavor.name)
                 .where(FlavorSchema.type == flavor.type)
-                .where(FlavorSchema.project == flavor.project)
-                .where(FlavorSchema.user == flavor.user)
+                .where(FlavorSchema.project_id == flavor.project)
+                .where(FlavorSchema.user_id == flavor.user)
             ).first()
 
             if existing_flavor is not None:
@@ -1027,14 +1027,14 @@ class SqlZenStore(BaseZenStore):
             query = select(FlavorSchema)
             if project_name_or_id:
                 project = self._get_project_schema(project_name_or_id)
-                query = query.where(FlavorSchema.project == project.id)
+                query = query.where(FlavorSchema.project_id == project.id)
             if component_type:
                 query = query.where(FlavorSchema.type == component_type)
             if name:
                 query = query.where(FlavorSchema.name == name)
             if user_name_or_id:
                 user = self._get_user_schema(user_name_or_id)
-                query = query.where(FlavorSchema.user == user.id)
+                query = query.where(FlavorSchema.user_id == user.id)
 
             list_of_flavors_in_db = session.exec(query).all()
 

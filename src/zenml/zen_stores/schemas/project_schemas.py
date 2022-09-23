@@ -25,8 +25,8 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         PipelineSchema,
         StackComponentSchema,
-        StackSchema,
-    )
+        StackSchema, FlavorSchema,
+)
     from zenml.zen_stores.schemas.user_management_schemas import (
         TeamRoleAssignmentSchema,
         UserRoleAssignmentSchema,
@@ -56,6 +56,9 @@ class ProjectSchema(SQLModel, table=True):
         back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
     )
     pipelines: List["PipelineSchema"] = Relationship(
+        back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
+    )
+    flavors: List["FlavorSchema"] = Relationship(
         back_populates="project", sa_relationship_kwargs={"cascade": "delete"}
     )
 
